@@ -31,41 +31,31 @@ var SJ="You are a financial data assistant. CRITICAL: Respond ONLY with a raw JS
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
     var p=await fmp("profile?symbol="+t);
-    if(p&&p.length&&p[0].companyName){var pr=p[0],ed="TBD",et="TBD",domain="",irUrl="";
-      // Try quote endpoint for earnings date (free tier)
-      try{var q=await fmp("quote?symbol="+t);
-        if(q&&q.length&&q[0].earningsAnnouncement){var ea=q[0].earningsAnnouncement;
-          if(ea){var d=new Date(ea);if(!isNaN(d)){ed=d.toISOString().split("T")[0];et=d.getHours()<12?"BMO":"AMC"}}}}catch(e){}
+    if(p&&p.length&&p[0].companyName){var pr=p[0],domain="",irUrl="";
       if(pr.website){try{domain=new URL(pr.website).hostname.replace("www.","")}catch(e){domain=pr.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
-        // Smart IR URL: Google search is the most reliable way to find the right IR page
-        irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1";
-      }
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||""}}
+        irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain,irUrl:irUrl||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found on FMP — enter details manually"}}
-async function fetchEarnings(co,kpis){var fData="",srcUrl=null,srcLbl=null,quarter="Latest";
-  try{
-    var inc=await fmp("income-statement?symbol="+co.ticker+"&period=quarter&limit=2");
-    // If quarterly fails, try annual
-    if(!inc||!inc.length){inc=await fmp("income-statement?symbol="+co.ticker+"&limit=2")}
-    var met=await fmp("key-metrics?symbol="+co.ticker+"&period=quarter&limit=2");
-    if(!met||!met.length){met=await fmp("key-metrics?symbol="+co.ticker+"&limit=2")}
-    var press=null;try{press=await fmp("press-releases?symbol="+co.ticker+"&limit=3")}catch(e){}
-  if(inc&&inc.length){var L=inc[0];quarter=(L.period||"FY")+" "+(L.calendarYear||"");fData="DATA ("+quarter+"):\n";
-    if(L.revenue)fData+="Revenue: $"+(L.revenue/1e9).toFixed(2)+"B\n";if(L.grossProfitRatio!=null)fData+="Gross Margin: "+(L.grossProfitRatio*100).toFixed(1)+"%\n";
-    if(L.operatingIncomeRatio!=null)fData+="Op Margin: "+(L.operatingIncomeRatio*100).toFixed(1)+"%\n";if(L.eps!=null)fData+="EPS: $"+L.eps+"\n";
-    if(L.ebitda)fData+="EBITDA: $"+(L.ebitda/1e9).toFixed(2)+"B\n";if(L.netIncome)fData+="Net Income: $"+(L.netIncome/1e9).toFixed(2)+"B\n";
-    if(inc.length>=2&&inc[1].revenue)fData+="Rev Growth: "+((L.revenue-inc[1].revenue)/Math.abs(inc[1].revenue)*100).toFixed(1)+"%\n"}
-  if(met&&met.length){var M=met[0];if(M.roic!=null)fData+="ROIC: "+(M.roic*100).toFixed(1)+"%\n";if(M.roe!=null)fData+="ROE: "+(M.roe*100).toFixed(1)+"%\n";
-    if(M.currentRatio!=null)fData+="Current Ratio: "+M.currentRatio.toFixed(2)+"\n";if(M.freeCashFlowPerShare!=null)fData+="FCF/Share: $"+M.freeCashFlowPerShare.toFixed(2)+"\n"}
-  if(press&&press.length){srcUrl=press[0].url;srcLbl=(press[0].title||"Press Release").substring(0,60)}}catch(e){console.warn("FMP fetch error:",e)}
-  if(!fData.trim()){return{found:false,reason:"No earnings data found for "+co.ticker+". This may be a free-plan limitation — FMP free tier may restrict quarterly data for some tickers."}}
-  if(!kpis||!kpis.length){return{found:true,quarter:quarter,summary:fData.replace("DATA ("+quarter+"):\n","").trim(),results:[],sourceUrl:srcUrl,sourceLabel:srcLbl}}
-  var kl=kpis.map(function(k){return"- \""+k.name+"\": target "+k.target+(k.notes?" ("+k.notes+")":"")}).join("\n");
-  try{var r=await aiJSON(SJ,"Match KPIs for "+co.ticker+" ("+co.name+").\n"+(fData?"FMP Data:\n"+fData+"\n":"")+"KPIs:\n"+kl+"\nUse only the data provided above. If a KPI cannot be matched to any data point, set status to 'unclear' and actual_value to null.\n"+
-    '{"found":true,"quarter":"'+quarter+'","summary":"2-3 sentences","results":[{"kpi_name":"name","actual_value":0,"status":"met or missed","excerpt":"src"}],"sourceUrl":"url","sourceLabel":"label"}\nIf not reported:{"found":false,"reason":"why"}',false,false);
-    if(!r.sourceUrl&&srcUrl){r.sourceUrl=srcUrl;r.sourceLabel=srcLbl}return r}catch(e){return{found:false,reason:"AI analysis failed — check your Anthropic API credits"}}}
-async function lookupNextEarnings(ticker){try{var q=await fmp("quote?symbol="+ticker);if(q&&q.length&&q[0].earningsAnnouncement){var ea=q[0].earningsAnnouncement;var d=new Date(ea);if(!isNaN(d))return{earningsDate:d.toISOString().split("T")[0],earningsTime:d.getHours()<12?"BMO":"AMC"}}}catch(e){}return{earningsDate:"TBD",earningsTime:"TBD"}}
+async function fetchEarnings(co,kpis){
+  // Build KPI list for the prompt
+  var kl=kpis&&kpis.length?kpis.map(function(k){return"- \""+k.name+"\": target "+k.target+(k.notes?" ("+k.notes+")":"")}).join("\n"):"";
+  var prompt="Search the web for the latest quarterly earnings results for "+co.ticker+" ("+co.name+").\n";
+  prompt+="Find: revenue, EPS, gross margin, operating margin, net income, and any other key metrics reported.\n";
+  if(kl)prompt+="Also check these specific KPIs:\n"+kl+"\n";
+  prompt+="Return JSON:\n";
+  if(kpis&&kpis.length){
+    prompt+='{"found":true,"quarter":"Q? YYYY","summary":"2-3 sentence summary of results","results":[{"kpi_name":"name","actual_value":0,"status":"met or missed or unclear","excerpt":"source text"}],"sourceUrl":"url of earnings press release","sourceLabel":"source name"}\n'
+  }else{
+    prompt+='{"found":true,"quarter":"Q? YYYY","summary":"Full earnings summary with all key metrics","results":[],"sourceUrl":"url","sourceLabel":"source"}\n'
+  }
+  prompt+='If earnings have not been reported yet: {"found":false,"reason":"Earnings not yet reported. Expected date: YYYY-MM-DD"}';
+  try{var r=await aiJSON(SJ,prompt,true,false);return r}
+  catch(e){return{found:false,reason:"Earnings lookup failed. Check your Anthropic API credits."}}}
+async function lookupNextEarnings(ticker){
+  try{var r=await aiJSON(SJ,"What is the next earnings date for "+ticker+"? Search the web. Return:{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"} If unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
+    if(r&&r.earningsDate&&r.earningsDate!=="TBD")return r}catch(e){}
+  return{earningsDate:"TBD",earningsTime:"TBD"}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
 async function analyzeNarrativeDrift(ticker,name,currentText){var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
   return aiJSON("You detect narrative shifts. Return ONLY raw JSON.","Analyze drift for "+ticker+" ("+name+").\n"+(prev?"Previous:\n"+prev.substring(0,12000)+"\n\n":"")+"Current:\n"+currentText.substring(0,6000)+"\n"+(prev?"":"Search web for previous quarters.\n")+'{"drifts":[{"type":"missing_kpi|definition_change|tone_shift|new_narrative","title":"t","detail":"d","severity":"high|medium|low","prevQuarter":"Q3","prevLanguage":"before","currentLanguage":"now"}],"overallRisk":"low|medium|high","summary":"s","quartersCompared":["Q1"]}\nIf no data:{"drifts":[],"overallRisk":"unknown","summary":"Upload transcripts manually.","quartersCompared":[]}',true,true)}
