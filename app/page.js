@@ -18,14 +18,14 @@ function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```js
   for(var i=0;i<c.length;i++){if(c[i]==="{"){if(d===0)s=i;d++}else if(c[i]==="}"){d--;if(d===0&&s>=0)return JSON.parse(c.substring(s,i+1))}}throw new Error("No JSON")}
 async function aiCall(sys,msg,search,useSonnet){
   var model=useSonnet?"claude-sonnet-4-20250514":"claude-haiku-4-5-20251001";
-  var body={model:model,max_tokens:2000};if(sys)body.system=sys;
+  var body={model:model,max_tokens:useSonnet?2000:800};if(sys)body.system=sys;
   if(search)body.tools=[{type:"web_search_20250305",name:"web_search"}];
   body.messages=[{role:"user",content:msg}];
   var r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!r.ok)throw new Error("AI "+r.status);var d=await r.json();
   return(d&&d.content||[]).filter(function(b){return b.type==="text"}).map(function(b){return b.text}).join("\n")}
 async function aiJSON(sys,msg,search,useSonnet){return xJSON(await aiCall(sys,msg,search,useSonnet))}
-var SJ="You are a financial data assistant. CRITICAL: Respond ONLY with a raw JSON object. No markdown, backticks, or text.";
+var SJ="Financial data assistant. Respond ONLY with raw JSON. No markdown.";
 
 // ═══ DATA FUNCTIONS ═══
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
@@ -38,20 +38,18 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found on FMP — enter details manually"}}
 async function fetchEarnings(co,kpis){
-  // Build KPI list for the prompt
-  var kl=kpis&&kpis.length?kpis.map(function(k){return"- \""+k.name+"\": target "+k.target+(k.notes?" ("+k.notes+")":"")}).join("\n"):"";
-  var prompt="Search the web for the latest quarterly earnings results for "+co.ticker+" ("+co.name+").\n";
-  prompt+="Find: revenue, EPS, gross margin, operating margin, net income, and any other key metrics reported.\n";
-  if(kl)prompt+="Also check these specific KPIs:\n"+kl+"\n";
-  prompt+="Return JSON:\n";
-  if(kpis&&kpis.length){
-    prompt+='{"found":true,"quarter":"Q? YYYY","summary":"2-3 sentence summary of results","results":[{"kpi_name":"name","actual_value":0,"status":"met or missed or unclear","excerpt":"source text"}],"sourceUrl":"url of earnings press release","sourceLabel":"source name"}\n'
-  }else{
-    prompt+='{"found":true,"quarter":"Q? YYYY","summary":"Full earnings summary with all key metrics","results":[],"sourceUrl":"url","sourceLabel":"source"}\n'
-  }
-  prompt+='If earnings have not been reported yet: {"found":false,"reason":"Earnings not yet reported. Expected date: YYYY-MM-DD"}';
+  var kl=kpis&&kpis.length?kpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", "):"";
+  var prompt=co.ticker+" "+co.name+" latest quarterly earnings results.";
+  if(kl)prompt+=" Specifically find: "+kl+".";
+  prompt+=" Also find: revenue, EPS, margins, guidance.";
+  prompt+="\nReturn ONLY JSON:\n";
+  prompt+='{"found":true,"quarter":"Q? YYYY","summary":"2-3 sentences with ALL key numbers","results":[';
+  if(kpis&&kpis.length){prompt+=kpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"where you found it"}'}).join(",")}
+  prompt+='],"sourceUrl":"press release URL","sourceLabel":"source name"}';
+  prompt+='\nIf not yet reported: {"found":false,"reason":"why"}';
+  prompt+="\nCRITICAL: You MUST fill actual_value for EVERY KPI in results. Search thoroughly.";
   try{var r=await aiJSON(SJ,prompt,true,false);return r}
-  catch(e){return{found:false,reason:"Earnings lookup failed. Check your Anthropic API credits."}}}
+  catch(e){return{found:false,reason:"Earnings lookup failed. Check Anthropic API credits."}}}
 async function lookupNextEarnings(ticker){
   try{var r=await aiJSON(SJ,"What is the next earnings date for "+ticker+"? Search the web. Return:{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"} If unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
     if(r&&r.earningsDate&&r.earningsDate!=="TBD")return r}catch(e){}
