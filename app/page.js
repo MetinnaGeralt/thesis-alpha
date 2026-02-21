@@ -225,7 +225,7 @@ function TrackerApp(props){
   function PositionModal(){if(!sel)return null;var pos=sel.position||{shares:0,avgCost:0};
     var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||"")}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
-    return<Modal title="Position \u2014 "+sel.ticker onClose={function(){setModal(null)}} w={440} K={K}>
+    return<Modal title={"Position \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
       <Inp label="Shares Held" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="0" K={K}/>
       <Inp label="Average Cost per Share" value={f.avgCost} onChange={function(v){set("avgCost",v)}} type="number" placeholder="0.00" K={K}/>
       <Inp label="Current Price (update anytime)" value={f.currentPrice} onChange={function(v){set("currentPrice",v)}} type="number" placeholder="0.00" K={K}/>
@@ -236,7 +236,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>GAIN/LOSS</div><div style={{fontSize:14,fontWeight:600,color:((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100)>=0?K.grn:K.red,fontFamily:fm}}>{((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100).toFixed(1)}%</div></div></div></div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0}});setModal(null)}}>Save</button></div></Modal>}
   function ConvictionModal(){if(!sel)return null;var _r=useState(sel.conviction||5),r=_r[0],setR=_r[1];var _n2=useState(""),n2=_n2[0],setN2=_n2[1];
-    return<Modal title="Conviction \u2014 "+sel.ticker onClose={function(){setModal(null)}} w={440} K={K}>
+    return<Modal title={"Conviction \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
       <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:48,fontWeight:700,color:r>=8?K.grn:r>=5?K.amb:K.red,fontFamily:fm}}>{r}</div><div style={{fontSize:11,color:K.dim}}>out of 10</div></div>
       <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>{[1,2,3,4,5,6,7,8,9,10].map(function(v){return<button key={v} onClick={function(){setR(v)}} style={{width:32,height:32,borderRadius:6,border:"1px solid "+(v===r?K.acc:K.bdr),background:v===r?K.acc+"20":K.bg,color:v===r?K.acc:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
       <Inp label="Note (optional)" value={n2} onChange={setN2} placeholder="Why this rating?" K={K}/>
@@ -252,7 +252,7 @@ function TrackerApp(props){
         if(ex>=0)hist[ex]=entry;else hist.unshift(entry);
         return Object.assign({},c,{earningSummary:entry.summary,sourceUrl:entry.sourceUrl,sourceLabel:entry.sourceLabel,lastChecked:entry.checkedAt,earningsHistory:hist.slice(0,20),
           kpis:c.kpis.map(function(k){var v=kr[k.id];return v!==undefined&&v!==""?Object.assign({},k,{lastResult:{actual:parseFloat(v),status:eS(k.rule,k.value,parseFloat(v)),excerpt:"Manual — "+f.quarter}}):k})})});setModal(null)}
-    return<Modal title="Enter Earnings \u2014 "+sel.ticker onClose={function(){setModal(null)}} w={540} K={K}>
+    return<Modal title={"Enter Earnings \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={540} K={K}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Quarter" value={f.quarter} onChange={function(v){set("quarter",v)}} placeholder="Q4 2025" K={K}/><Inp label="Source Label" value={f.sourceLabel} onChange={function(v){set("sourceLabel",v)}} placeholder="Press Release" K={K}/></div>
       <Inp label="Source URL" value={f.sourceUrl} onChange={function(v){set("sourceUrl",v)}} placeholder="https://..." K={K}/>
       <Inp label="Summary" value={f.summary} onChange={function(v){set("summary",v)}} ta placeholder="Revenue of $X, up Y% YoY. EPS of $Z..." K={K}/>
