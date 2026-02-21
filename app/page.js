@@ -17,6 +17,28 @@ async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURICompo
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
   for(var i=0;i<c.length;i++){if(c[i]==="{"){if(d===0)s=i;d++}else if(c[i]==="}"){d--;if(d===0&&s>=0)return JSON.parse(c.substring(s,i+1))}}throw new Error("No JSON")}
 function stripCite(s){if(!s)return s;return s.replace(/<\/?cite[^>]*>/gi,"").replace(/<\/?antml:cite[^>]*>/gi,"").trim()}
+// Auto-format text: capitalize sentences, fix spacing, clean up
+function autoFormat(text){if(!text)return text;
+  var s=text.trim();
+  // Fix multiple spaces
+  s=s.replace(/  +/g," ");
+  // Fix multiple newlines
+  s=s.replace(/\n{3,}/g,"\n\n");
+  // Capitalize after sentence endings
+  s=s.replace(/(^|[.!?]\s+)([a-z])/g,function(m,p,c){return p+c.toUpperCase()});
+  // Capitalize first character
+  s=s.charAt(0).toUpperCase()+s.slice(1);
+  // Fix standalone "i " -> "I "
+  s=s.replace(/(^|\s)i(\s|'|$)/g,function(m,b,a){return b+"I"+a});
+  // Add period at end if missing
+  s=s.replace(/([a-zA-Z0-9%])$/,"$1.");
+  // Fix spacing after commas
+  s=s.replace(/,([^\s])/g,", $1");
+  // Clean up dash spacing
+  s=s.replace(/\s*-\s*/g," \u2014 ");
+  // Format paragraphs nicely
+  var paras=s.split(/\n\n+/);
+  return paras.map(function(p){return p.trim()}).filter(function(p){return p}).join("\n\n")}
 async function aiCall(sys,msg,search,useSonnet){
   var model=useSonnet?"claude-sonnet-4-20250514":"claude-haiku-4-5-20251001";
   var body={model:model,max_tokens:useSonnet?2000:800};if(sys)body.system=sys;
@@ -93,6 +115,9 @@ function LoginPage(props){
   var _e=useState(""),email=_e[0],setEmail=_e[1];var _p=useState(""),pw=_p[0],setPw=_p[1];
   var _err=useState(""),err=_err[0],setErr=_err[1];var _mode=useState("login"),mode=_mode[0],setMode=_mode[1];
   var _ld=useState(false),ld2=_ld[0],setLd=_ld[1];
+  var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"light"}catch(e){return"light"}}),theme=_th[0],setTheme=_th[1];
+  var K=theme==="dark"?DARK:LIGHT;
+  function toggleTheme(){var n=theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   async function submit(){if(!email.trim()||!pw.trim()){setErr("Please fill in all fields.");return}setLd(true);setErr("");
     try{
       if(mode==="signup"){if(pw.length<6){setErr("Password must be 6+ characters.");setLd(false);return}
@@ -104,18 +129,19 @@ function LoginPage(props){
         if(res2.error){setErr(res2.error.message);setLd(false);return}
         props.onAuth(res2.data.user)}
     }catch(e){setErr("Something went wrong.");setLd(false)}}
-  return(<div style={{background:DARK.bg,color:DARK.txt,minHeight:"100vh",fontFamily:fb,display:"flex",alignItems:"center",justifyContent:"center"}}>
-  <div style={{width:400,padding:"48px 40px",background:DARK.card,border:"1px solid "+DARK.bdr,borderRadius:20,boxShadow:"0 32px 64px rgba(0,0,0,.4)"}}>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:28}}><TLogo size={24}/><span style={{fontSize:16,fontWeight:600,letterSpacing:2,fontFamily:fm}}>ThesisAlpha</span></div>
-    <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center"}}>{mode==="login"?"Welcome back":"Create account"}</h2>
-    <p style={{fontSize:13,color:DARK.dim,textAlign:"center",margin:"0 0 32px"}}>{mode==="login"?"Sign in to your portfolio":"Start tracking your thesis"}</p>
-    {err&&<div style={{background:DARK.red+"12",border:"1px solid "+DARK.red+"30",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:DARK.red}}>{err}</div>}
-    <div style={{marginBottom:16}}><label style={{display:"block",fontSize:11,color:DARK.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Email</label>
-      <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:DARK.bg,border:"1px solid "+DARK.bdr,borderRadius:8,color:DARK.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <div style={{marginBottom:24}}><label style={{display:"block",fontSize:11,color:DARK.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
-      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} style={{width:"100%",boxSizing:"border-box",background:DARK.bg,border:"1px solid "+DARK.bdr,borderRadius:8,color:DARK.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <button onClick={submit} disabled={ld2} style={{width:"100%",background:DARK.acc,color:"#fff",border:"none",padding:"14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
-    <div style={{textAlign:"center",fontSize:13,color:DARK.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:DARK.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
+  return(<div style={{background:K.bg,color:K.txt,minHeight:"100vh",fontFamily:fb,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+  <button onClick={toggleTheme} style={{position:"absolute",top:20,right:24,background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:14,color:K.mid}}>{theme==="dark"?"\u2600\uFE0F":"\uD83C\uDF19"}</button>
+  <div style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:28}}><TLogo size={24}/><span style={{fontSize:16,fontWeight:600,letterSpacing:2,fontFamily:fm,color:K.txt}}>ThesisAlpha</span></div>
+    <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center",color:K.txt}}>{mode==="login"?"Welcome back":"Create account"}</h2>
+    <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 32px"}}>{mode==="login"?"Sign in to your portfolio":"Start tracking your thesis"}</p>
+    {err&&<div style={{background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:K.red}}>{err}</div>}
+    <div style={{marginBottom:16}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Email</label>
+      <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
+    <div style={{marginBottom:24}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
+      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
+    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.acc,color:"#fff",border:"none",padding:"14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
+    <div style={{textAlign:"center",fontSize:13,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
   </div></div>)}
 
 // ═══ TRACKER APP ═══
@@ -126,6 +152,7 @@ function TrackerApp(props){
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
+  var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
@@ -320,12 +347,13 @@ function TrackerApp(props){
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     return<div style={{width:240,minWidth:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:"sticky",top:0,display:"flex",flexDirection:"column",overflowY:"auto"}}>
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setSelId(null)}}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId?K.blue+"10":"transparent",borderLeft:!selId?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(null)}}><span style={{fontSize:12,color:!selId?K.blue:K.mid,fontWeight:!selId?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("dashboard")}}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("hub")}}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm}}>{"\uD83D\uDCDA"} Owner's Hub</span></div>
     <div style={{display:"flex",padding:"8px 16px 0",gap:0}}>
       <button onClick={function(){setSideTab("portfolio")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="portfolio"?"2px solid "+K.acc:"2px solid transparent",color:sideTab==="portfolio"?K.acc:K.dim,fontFamily:fm}}>Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</button>
       <button onClick={function(){setSideTab("watchlist")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="watchlist"?"2px solid "+K.amb:"2px solid transparent",color:sideTab==="watchlist"?K.amb:K.dim,fontFamily:fm}}>Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</button></div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null)}}>
+      return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setPage("dashboard")}}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?K.txt:K.mid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
@@ -479,8 +507,8 @@ function TrackerApp(props){
         {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:K.blue,textDecoration:"none",marginTop:8}}>{c.sourceLabel||"Source"}{"\u2197"}</a>}
         {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
-        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings (AI)"}</button>
-        <button style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
+        <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
+        <button style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Auto-Check (AI)"}</button></div>
       <EarningsTimeline company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
@@ -510,6 +538,65 @@ function TrackerApp(props){
       <ThesisVault company={c}/>
       <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + Claude AI</div></div>
     </div>}
+  // ── Owner's Hub ─────────────────────────────────────────
+  function OwnersHub(){
+    // Gather all docs from all companies
+    var allDocs=[];cos.forEach(function(c){(c.docs||[]).forEach(function(d){allDocs.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain}))})});
+    // Also gather thesis notes as virtual docs
+    cos.forEach(function(c){if(c.thesisNote){allDocs.push({id:"thesis-"+c.id,title:"Investment Thesis",content:c.thesisNote,folder:"why-i-own",ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,updatedAt:null,isThesis:true})}});
+    allDocs.sort(function(a,b){return(b.updatedAt||"")<(a.updatedAt||"")?-1:1});
+    var _hf=useState("all"),hf=_hf[0],setHf=_hf[1];
+    var _hc=useState("all"),hc=_hc[0],setHc=_hc[1];
+    var _hd=useState(null),hd=_hd[0],setHd=_hd[1];
+    var companies=cos.map(function(c){return{ticker:c.ticker,id:c.id}});
+    var filtered=allDocs.filter(function(d){return(hf==="all"||d.folder===hf)&&(hc==="all"||d.companyId===parseInt(hc))});
+    var selectedDoc=hd?allDocs.find(function(d){return d.id===hd}):null;
+    function exportDocPDF(doc){
+      var formatted=autoFormat(doc.content);
+      var html='<!DOCTYPE html><html><head><title>'+doc.ticker+' \u2014 '+doc.title+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a1a1a;padding:48px;max-width:700px;margin:0 auto;line-height:1.8}h1{font-size:22px;margin-bottom:4px}h2{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#888;margin-bottom:24px}p{margin-bottom:16px;font-size:14px}.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#aaa}@media print{body{padding:24px}}</style></head><body>';
+      html+='<h1>'+doc.ticker+' \u2014 '+doc.title+'</h1>';
+      html+='<h2>'+doc.companyName+(doc.updatedAt?' \u2022 '+new Date(doc.updatedAt).toLocaleDateString():'')+'</h2>';
+      formatted.split("\n\n").forEach(function(p){html+='<p>'+p+'</p>'});
+      html+='<div class="footer">ThesisAlpha \u2022 Owner\'s Hub</div></body></html>';
+      var w=window.open("","_blank");w.document.write(html);w.document.close();w.print()}
+    return<div style={{padding:"0 32px 60px",maxWidth:1000}}>
+      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{"\uD83D\uDCDA"} Owner's Hub</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{allDocs.length} documents across {companies.length} companies</p></div>
+      {/* Filters */}
+      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+        <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:11,fontFamily:fm,outline:"none"}}>
+          <option value="all">All Companies</option>
+          {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
+        <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
+        {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d){return d.folder===fo.id&&(hc==="all"||d.companyId===parseInt(hc))}).length;
+          return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{fo.icon} {fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
+      <div style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
+        {/* Doc list */}
+        <div>
+          {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:32,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:12,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
+          {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});var isActive=hd===d.id;
+            return<div key={d.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:10,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d.id)}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <CoLogo domain={d.domain} ticker={d.ticker} size={18}/>
+                <span style={{fontSize:10,fontWeight:600,color:K.mid,fontFamily:fm}}>{d.ticker}</span>
+                <span style={{fontSize:10,color:K.dim}}>{fo?fo.icon:""}</span>
+                <span style={{flex:1}}/>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
+              <div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d.title}</div>
+              {!selectedDoc&&d.content&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.substring(0,200)}</div>}
+            </div>})}</div>
+        {/* Doc detail / reader */}
+        {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
+            <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
+              <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" \u2022 "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
+            <button onClick={function(){exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>PDF</button>
+            {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Edit</button>}
+          </div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
+        </div>}
+      </div></div>}
+
   function Dashboard(){var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
     var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
@@ -563,7 +650,7 @@ function TrackerApp(props){
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
       </div></div>}
     </div>}
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{sel?<DetailView/>:<Dashboard/>}</div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
