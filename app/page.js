@@ -35,9 +35,10 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
     if(p&&p.length&&p[0].companyName){var pr=p[0],domain="",irUrl="";
       if(pr.website){try{domain=new URL(pr.website).hostname.replace("www.","")}catch(e){domain=pr.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
         irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain,irUrl:irUrl||""}}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:pr.lastDiv||0,mktCap:pr.mktCap||0}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found on FMP — enter details manually"}}
+async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 async function fetchEarnings(co,kpis){
   var kl=kpis&&kpis.length?kpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", "):"";
   var prompt=co.ticker+" "+co.name+" latest quarterly earnings results.";
@@ -126,8 +127,23 @@ function TrackerApp(props){
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
+  var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
+  var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
   var saveTimer=useRef(null);
-  useEffect(function(){ldS("ta-data").then(function(d){if(d&&d.cos){setCos(d.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0},conviction:0,convictionHistory:[],status:"portfolio"},c)}));}if(d&&d.notifs)setNotifs(d.notifs);setLoaded(true)})},[]);
+  useEffect(function(){ldS("ta-data").then(function(d){if(d&&d.cos){setCos(d.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0},c)}));}if(d&&d.notifs)setNotifs(d.notifs);setLoaded(true)})},[]);
+  // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
+  // Auto-notify: check earnings for companies whose date has passed
+  useEffect(function(){if(!loaded||!autoNotify)return;
+    var interval=setInterval(function(){
+      cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
+        if(!c.lastChecked||new Date()-new Date(c.lastChecked)>3600000){checkOne(c.id)}}})
+    },60000);// check every 60s
+    // Also run once immediately
+    cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
+      if(!c.lastChecked||new Date()-new Date(c.lastChecked)>3600000){checkOne(c.id)}}});
+    return function(){clearInterval(interval)}},[loaded,autoNotify]);
   // DEBOUNCED SAVE — waits 500ms after last change to save
   useEffect(function(){if(!loaded)return;if(saveTimer.current)clearTimeout(saveTimer.current);saveTimer.current=setTimeout(function(){svS("ta-data",{cos:cos,notifs:notifs})},500);return function(){if(saveTimer.current)clearTimeout(saveTimer.current)}},[cos,notifs,loaded]);
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<-7){
@@ -156,6 +172,12 @@ function TrackerApp(props){
     catch(e){setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
   async function checkAll(){var pend=cos.filter(function(c){return c.earningsDate!=="TBD"&&dU(c.earningsDate)<=3});for(var i=0;i<pend.length;i++){await checkOne(pend[i].id);await new Promise(function(r){setTimeout(r,800)})}}
+  async function refreshPrices(){setPriceLoading(true);
+    for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
+      if(r&&r.price){upd(c.id,function(prev){return Object.assign({},prev,{lastDiv:r.lastDiv||prev.lastDiv||0,position:Object.assign({},prev.position,{currentPrice:r.price})})})}}catch(e){}
+      await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
+  function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
+    if(nv){setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled \u2014 earnings will be checked automatically",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
 
   // ── Modals ─────────────────────────────────────────────────
   function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:"portfolio"}),f=_f[0],setF=_f[1];
@@ -163,12 +185,12 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||""})});setLs("done");setLm("Auto-filled \u2713")}
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||""})});setLs("done");setLm("Auto-filled \u2713")}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=2&&t.length<=6&&/^[A-Z]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],position:{shares:0,avgCost:0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -473,15 +495,53 @@ function TrackerApp(props){
       <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + Claude AI</div></div>
     </div>}
   function Dashboard(){var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
+    // Sector diversification
+    var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
+    var sectorList=Object.keys(sectors).sort(function(a,b){return sectors[b]-sectors[a]});
+    // Dividend data
+    var divCos=filtered.filter(function(c){return c.lastDiv>0});
+    var totalAnnualDiv=divCos.reduce(function(sum,c){var pos=c.position||{};return sum+(pos.shares||0)*(c.lastDiv||0)*4},0);
     return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies</p></div>
-      <div style={{display:"flex",gap:8}}><button style={S.btnChk} onClick={checkAll}>Check All</button><button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16}}>
-      {filtered.map(function(c){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{priceLoading?" \u2022 Updating prices\u2026":""}</p></div>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <button onClick={toggleAutoNotify} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-notify ON":"Click to enable auto-notify"}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {autoNotify?"Auto-notify ON":"Notify me when earnings drop"}</button>
+        <button style={S.btnChk} onClick={checkAll}>Check All</button><button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
+      {filtered.map(function(c){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",transition:"border-color .2s",position:"relative"}} onClick={function(){setSelId(c.id)}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.bdr2}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}><div style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div></div>}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          {pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
+            <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>${(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}><div style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div>
+    {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:28}}>
+      {/* Sector Diversification */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Sector Diversification</div>
+        {sectorList.map(function(s){var pct=Math.round(sectors[s]/filtered.length*100);
+          return<div key={s} style={{marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:K.mid}}>{s}</span><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{sectors[s]} ({pct}%)</span></div>
+            <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:K.acc}}/></div></div>})}</div>
+      {/* Dividends */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Overview</div>
+        {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected</div>}
+        {divCos.map(function(c){var pos=c.position||{};var annPayout=(pos.shares||0)*(c.lastDiv||0)*4;
+          return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
+            <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,flex:1}}>{c.ticker}</span>
+            <span style={{fontSize:11,color:K.mid,fontFamily:fm}}>${c.lastDiv.toFixed(2)}/qtr</span>
+            {pos.shares>0&&<span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>${annPayout.toFixed(0)}/yr</span>}
+            {!pos.shares&&<span style={{fontSize:10,color:K.dim}}>Add shares</span>}</div>})}
+        {divCos.length>0&&totalAnnualDiv>0&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between"}}>
+          <span style={{fontSize:12,color:K.mid}}>Est. Annual Income</span>
+          <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
+      </div></div>}
+    </div>}
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
 // ═══ ROOT ═══
