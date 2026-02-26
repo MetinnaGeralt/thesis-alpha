@@ -6,9 +6,15 @@ import { createClient } from "@supabase/supabase-js";
 var supabase = typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL
   ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) : null;
 
-// ═══ STORAGE (debounced save) ═══
+// ═══ STORAGE (local + cloud) ═══
 function ldS(k){try{var r=localStorage.getItem(k);return Promise.resolve(r?JSON.parse(r):null)}catch(e){return Promise.resolve(null)}}
 function svS(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){}return Promise.resolve()}
+// Cloud sync via Supabase
+async function cloudLoad(userId){if(!supabase||!userId)return null;
+  try{var res=await supabase.from("portfolios").select("data").eq("user_id",userId).single();
+    if(res.error||!res.data)return null;return res.data.data}catch(e){console.warn("Cloud load:",e);return null}}
+async function cloudSave(userId,payload){if(!supabase||!userId)return;
+  try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
 
 // ═══ FMP (server proxy) ═══
 async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;var d=await r.json();return d}catch(e){console.warn("FMP proxy error:",e);return null}}
@@ -75,6 +81,66 @@ async function fetchEarnings(co,kpis){
   prompt+="\nCRITICAL: You MUST fill actual_value for EVERY KPI. Search the press release, shareholder letter, and investor presentation. Non-financial metrics like daily active users, subscribers, or bookings are often in the press release body, not just the financial tables.";
   try{var r=await aiJSON(SJ,prompt,true,false);return r}
   catch(e){return{found:false,reason:"Earnings lookup failed. Check Anthropic API credits."}}}
+// Free FMP-based earnings check — matches standard KPIs without AI ($0 cost)
+async function fetchEarningsFMP(co,kpis){
+  try{
+    var res=await Promise.all([fmp("income-statement?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("key-metrics?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("ratios?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("cash-flow-statement?symbol="+co.ticker+"&period=quarter&limit=1")]);
+    var inc=res[0],met=res[1],rat=res[2],cf=res[3];
+    if(!inc||!inc.length)return{found:false,reason:"No FMP financial data yet"};
+    var L=inc[0];var prev=inc.length>1?inc[1]:null;var M=met&&met.length?met[0]:{};var R=rat&&rat.length?rat[0]:{};var CF=cf&&cf.length?cf[0]:{};
+    var quarter=(L.period||"Q?")+" "+(L.calendarYear||"");
+    // Build a lookup map of all available financial data
+    var dataMap={};
+    // Income statement
+    if(L.revenue!=null){dataMap["revenue"]={v:L.revenue/1e9,label:"$"+(L.revenue/1e9).toFixed(2)+"B",src:"Income Statement"};dataMap["total revenue"]=dataMap["revenue"]}
+    if(L.eps!=null){dataMap["eps"]={v:L.eps,label:"$"+L.eps,src:"Income Statement"};dataMap["earnings per share"]=dataMap["eps"]}
+    if(L.epsdiluted!=null){dataMap["diluted eps"]={v:L.epsdiluted,label:"$"+L.epsdiluted,src:"Income Statement"}}
+    if(L.grossProfitRatio!=null){var gm=L.grossProfitRatio*100;dataMap["gross margin"]={v:gm,label:gm.toFixed(1)+"%",src:"Income Statement"};dataMap["gross profit margin"]=dataMap["gross margin"]}
+    if(L.operatingIncomeRatio!=null){var om=L.operatingIncomeRatio*100;dataMap["operating margin"]={v:om,label:om.toFixed(1)+"%",src:"Income Statement"};dataMap["op margin"]=dataMap["operating margin"]}
+    if(L.netIncomeRatio!=null){var nm=L.netIncomeRatio*100;dataMap["net margin"]={v:nm,label:nm.toFixed(1)+"%",src:"Income Statement"};dataMap["net income margin"]=dataMap["net margin"];dataMap["profit margin"]=dataMap["net margin"]}
+    if(L.netIncome!=null){dataMap["net income"]={v:L.netIncome/1e9,label:"$"+(L.netIncome/1e9).toFixed(2)+"B",src:"Income Statement"}}
+    if(L.ebitda!=null){dataMap["ebitda"]={v:L.ebitda/1e9,label:"$"+(L.ebitda/1e9).toFixed(2)+"B",src:"Income Statement"}}
+    if(L.operatingIncome!=null){dataMap["operating income"]={v:L.operatingIncome/1e9,label:"$"+(L.operatingIncome/1e9).toFixed(2)+"B",src:"Income Statement"}}
+    if(L.costOfRevenue!=null){dataMap["cost of revenue"]={v:L.costOfRevenue/1e9,label:"$"+(L.costOfRevenue/1e9).toFixed(2)+"B",src:"Income Statement"}}
+    if(L.grossProfit!=null){dataMap["gross profit"]={v:L.grossProfit/1e9,label:"$"+(L.grossProfit/1e9).toFixed(2)+"B",src:"Income Statement"}}
+    // Growth metrics (QoQ and YoY)
+    if(prev&&prev.revenue&&L.revenue){var rg=((L.revenue-prev.revenue)/Math.abs(prev.revenue)*100);dataMap["revenue growth"]={v:rg,label:rg.toFixed(1)+"%",src:"Calculated QoQ"};dataMap["revenue growth qoq"]=dataMap["revenue growth"]}
+    // Key metrics
+    if(M.roic!=null){dataMap["roic"]={v:M.roic*100,label:(M.roic*100).toFixed(1)+"%",src:"Key Metrics"};dataMap["return on invested capital"]=dataMap["roic"]}
+    if(M.roe!=null){dataMap["roe"]={v:M.roe*100,label:(M.roe*100).toFixed(1)+"%",src:"Key Metrics"};dataMap["return on equity"]=dataMap["roe"]}
+    if(M.currentRatio!=null){dataMap["current ratio"]={v:M.currentRatio,label:M.currentRatio.toFixed(2),src:"Key Metrics"}}
+    if(M.debtToEquity!=null){dataMap["debt to equity"]={v:M.debtToEquity,label:M.debtToEquity.toFixed(2),src:"Key Metrics"};dataMap["d/e ratio"]=dataMap["debt to equity"]}
+    if(M.freeCashFlowPerShare!=null){dataMap["fcf per share"]={v:M.freeCashFlowPerShare,label:"$"+M.freeCashFlowPerShare.toFixed(2),src:"Key Metrics"}}
+    if(M.revenuePerShare!=null){dataMap["revenue per share"]={v:M.revenuePerShare,label:"$"+M.revenuePerShare.toFixed(2),src:"Key Metrics"}}
+    if(M.bookValuePerShare!=null){dataMap["book value per share"]={v:M.bookValuePerShare,label:"$"+M.bookValuePerShare.toFixed(2),src:"Key Metrics"}}
+    // Cash flow
+    if(CF.freeCashFlow!=null){dataMap["free cash flow"]={v:CF.freeCashFlow/1e9,label:"$"+(CF.freeCashFlow/1e9).toFixed(2)+"B",src:"Cash Flow"};dataMap["fcf"]=dataMap["free cash flow"];
+      if(L.revenue){var fcfm=CF.freeCashFlow/L.revenue*100;dataMap["fcf margin"]={v:fcfm,label:fcfm.toFixed(1)+"%",src:"Calculated"};dataMap["free cash flow margin"]=dataMap["fcf margin"]}}
+    if(CF.operatingCashFlow!=null){dataMap["operating cash flow"]={v:CF.operatingCashFlow/1e9,label:"$"+(CF.operatingCashFlow/1e9).toFixed(2)+"B",src:"Cash Flow"}}
+    // Ratios
+    if(R.dividendYiel!=null){dataMap["dividend yield"]={v:R.dividendYiel*100,label:(R.dividendYiel*100).toFixed(2)+"%",src:"Ratios"}}
+    // Match KPIs
+    var results=[];var matched=0;
+    if(kpis&&kpis.length){kpis.forEach(function(k){
+      var kn=k.name.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+      // Try exact match first, then fuzzy
+      var found=dataMap[kn];
+      if(!found){Object.keys(dataMap).forEach(function(dk){if(!found&&(dk.includes(kn)||kn.includes(dk)))found=dataMap[dk]})}
+      if(found){matched++;results.push({kpi_name:k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" ("+found.src+")"})}
+      else{results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Not found in FMP data"})}})}
+    // Build summary
+    var sumParts=[];
+    if(dataMap["revenue"])sumParts.push("Revenue: "+dataMap["revenue"].label);
+    if(dataMap["eps"])sumParts.push("EPS: "+dataMap["eps"].label);
+    if(dataMap["gross margin"])sumParts.push("Gross Margin: "+dataMap["gross margin"].label);
+    if(dataMap["operating margin"])sumParts.push("Op Margin: "+dataMap["operating margin"].label);
+    if(dataMap["net income"])sumParts.push("Net Income: "+dataMap["net income"].label);
+    var summary=quarter+": "+sumParts.join(", ")+".";
+    // Only return as found if we matched at least one KPI or have financial data
+    if(matched>0||results.length===0){return{found:true,quarter:quarter,summary:summary,results:results,sourceUrl:"https://financialmodelingprep.com/financial-statements/"+co.ticker,sourceLabel:"FMP Financial Data",fmpOnly:true,matchedCount:matched,totalKpis:kpis?kpis.length:0}}
+    // If we have data but couldn't match any KPIs, return partial
+    return{found:true,quarter:quarter,summary:summary,results:results,sourceUrl:"https://financialmodelingprep.com/financial-statements/"+co.ticker,sourceLabel:"FMP Financial Data",fmpOnly:true,matchedCount:0,totalKpis:kpis?kpis.length:0}
+  }catch(e){return{found:false,reason:"FMP fetch failed: "+e.message}}}
 async function lookupNextEarnings(ticker){
   try{var r=await aiJSON(SJ,"What is the next earnings date for "+ticker+"? Search the web. Return:{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"} If unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
     if(r&&r.earningsDate&&r.earningsDate!=="TBD")return r}catch(e){}
@@ -157,8 +223,27 @@ function TrackerApp(props){
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
-  var saveTimer=useRef(null);
-  useEffect(function(){ldS("ta-data").then(function(d){if(d&&d.cos){setCos(d.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:""},c)}));}if(d&&d.notifs)setNotifs(d.notifs);setLoaded(true)})},[]);
+  var saveTimer=useRef(null);var cloudTimer=useRef(null);
+  useEffect(function(){
+    // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
+    async function loadData(){
+      var cloudData=await cloudLoad(props.userId);
+      if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:""},c)}));
+        if(cloudData.notifs)setNotifs(cloudData.notifs);
+        svS("ta-data",cloudData);// cache locally
+        setLoaded(true);return}
+      // Fallback to localStorage
+      var local=await ldS("ta-data");
+      if(local&&local.cos&&local.cos.length>0){
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:""},c)}));
+        if(local.notifs)setNotifs(local.notifs);
+        // First login on this account — push local data to cloud
+        cloudSave(props.userId,local);
+        setLoaded(true);return}
+      // Brand new user — use sample data
+      setLoaded(true)}
+    loadData()},[]);
   // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
   useEffect(function(){if(!loaded||cos.length===0)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
@@ -172,8 +257,13 @@ function TrackerApp(props){
     cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
       if(!c.lastChecked||new Date()-new Date(c.lastChecked)>3600000){checkOne(c.id)}}});
     return function(){clearInterval(interval)}},[loaded,autoNotify]);
-  // DEBOUNCED SAVE — waits 500ms after last change to save
-  useEffect(function(){if(!loaded)return;if(saveTimer.current)clearTimeout(saveTimer.current);saveTimer.current=setTimeout(function(){svS("ta-data",{cos:cos,notifs:notifs})},500);return function(){if(saveTimer.current)clearTimeout(saveTimer.current)}},[cos,notifs,loaded]);
+  // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs};
+    if(saveTimer.current)clearTimeout(saveTimer.current);
+    saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
+    if(cloudTimer.current)clearTimeout(cloudTimer.current);
+    cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,loaded]);
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<-7){
     setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:"TBD",earningsTime:"TBD"}):x})});
     lookupNextEarnings(c.ticker).then(function(r){if(r.earningsDate!=="TBD")setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,r):x})})}).catch(function(){})}})},[loaded]);
@@ -184,9 +274,17 @@ function TrackerApp(props){
   var upd=function(id,fn){setCos(function(p){return p.map(function(c){return c.id===id?(typeof fn==="function"?fn(c):Object.assign({},c,fn)):c})})};
   var delCo=function(id){setCos(function(p){return p.filter(function(c){return c.id!==id})});setSelId(null);setModal(null)};
   var unread=notifs.filter(function(n){return!n.read}).length;
-  async function checkOne(cid){var co=cos.find(function(c){return c.id===cid});if(!co)return;
+  async function checkOne(cid,forceAI){var co=cos.find(function(c){return c.id===cid});if(!co)return;
     setCheckSt(function(p){var n=Object.assign({},p);n[cid]="checking";return n});
-    try{var r=await fetchEarnings(co,co.kpis||[]);
+    try{
+      // Step 1: Try FMP first (free, $0 cost)
+      var r=null;
+      if(!forceAI){r=await fetchEarningsFMP(co,co.kpis||[]);
+        // If FMP found data but couldn't match some KPIs, note the unmatched count
+        if(r&&r.found&&r.fmpOnly&&r.matchedCount<r.totalKpis&&r.totalKpis>0){
+          r.summary=(r.summary||"")+" ("+r.matchedCount+"/"+r.totalKpis+" KPIs matched from FMP. Use AI check for custom metrics.)"}}
+      // Step 2: Fall back to AI if FMP found nothing or was explicitly skipped
+      if(!r||!r.found){r=await fetchEarnings(co,co.kpis||[])}
       if(r.found&&r.results){setCos(function(prev){return prev.map(function(c){if(c.id!==cid)return c;
         var earningsHistory=c.earningsHistory||[];
         var newEntry={quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),results:(r.results||[]).map(function(x){return{kpi_name:x.kpi_name,actual_value:x.actual_value,status:x.status,excerpt:stripCite(x.excerpt||"")}}),sourceUrl:r.sourceUrl,sourceLabel:stripCite(r.sourceLabel||""),checkedAt:new Date().toISOString()};
@@ -508,7 +606,8 @@ function TrackerApp(props){
         {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-        <button style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Auto-Check (AI)"}</button></div>
+        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings (Free)"}</button>
+        <button style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id,true)}} disabled={cs==="checking"} title="Uses AI + web search (~$0.03-0.05)">AI Deep Check</button></div>
       <EarningsTimeline company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
@@ -664,5 +763,5 @@ export default function App(){
   async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
   if(!ready)return<div style={{background:"#06060A",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#5A5A65",fontSize:13,fontFamily:"monospace"}}>Loading...</span></div>;
   if(!user)return<LoginPage onAuth={onAuth}/>;
-  return<TrackerApp user={user.email||""} onLogout={onLogout}/>;
+  return<TrackerApp user={user.email||""} userId={user.id} onLogout={onLogout}/>;
 }
