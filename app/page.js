@@ -16,16 +16,8 @@ async function cloudLoad(userId){if(!supabase||!userId)return null;
 async function cloudSave(userId,payload){if(!supabase||!userId)return;
   try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
 
-// ═══ FMP (server proxy with rate limit protection) ═══
-var _fmpQueue=Promise.resolve();var _fmpLastCall=0;
-async function fmp(ep){
-  return new Promise(function(resolve){
-    _fmpQueue=_fmpQueue.then(function(){
-      var now=Date.now();var wait=Math.max(0,350-( now-_fmpLastCall));
-      return new Promise(function(r){setTimeout(r,wait)}).then(function(){
-        _fmpLastCall=Date.now();
-        return fetch("/api/fmp?endpoint="+encodeURIComponent(ep)).then(function(r){if(!r.ok){console.warn("FMP "+r.status+" for "+ep);return null}return r.json()}).catch(function(e){console.warn("FMP error:",e);return null})
-      }).then(resolve)})})}
+// ═══ FMP (server proxy — used only for profiles & prices, ~1 call per company) ═══
+async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("FMP:",e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -76,88 +68,19 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   return{error:"Not found on FMP — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 async function fetchEarnings(co,kpis){
-  var kl=kpis&&kpis.length?kpis.map(function(k){return k.name+" (target: "+k.target+")"+(k.notes?" [hint: "+k.notes+"]":"")}).join(", "):"";
-  var prompt=co.ticker+" "+co.name+" latest quarterly earnings results.";
-  if(kl){prompt+=" IMPORTANT: Search specifically for these metrics: "+kl+".";
-    prompt+=" Some may be non-financial (e.g. subscribers, users, bookings). Check the earnings press release AND shareholder letter for ALL metrics.";}
-  prompt+=" Also find: revenue, EPS, margins, guidance.";
-  prompt+="\nReturn ONLY JSON:\n";
-  prompt+='{"found":true,"quarter":"Q? YYYY","summary":"2-3 sentences with ALL key numbers including custom metrics","results":[';
-  if(kpis&&kpis.length){prompt+=kpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"where you found it"}'}).join(",")}
-  prompt+='],"sourceUrl":"press release URL","sourceLabel":"source name"}';
-  prompt+='\nIf not yet reported: {"found":false,"reason":"why"}';
-  prompt+="\nCRITICAL: You MUST fill actual_value for EVERY KPI. Search the press release, shareholder letter, and investor presentation. Non-financial metrics like daily active users, subscribers, or bookings are often in the press release body, not just the financial tables.";
+  var kl=kpis&&kpis.length?kpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", "):"";
+  var prompt=co.ticker+" "+co.name+" latest quarterly earnings.";
+  if(kl)prompt+=" Find these metrics: "+kl+". Check press release AND shareholder letter. Non-financial metrics (DAU, MAU, subscribers, bookings) are in the press release body or shareholder letter, not financial tables.";
+  prompt+=" Also: revenue, EPS, guidance.";
+  prompt+='\nJSON only:\n{"found":true,"quarter":"Q? YYYY","summary":"key numbers","results":[';
+  if(kpis&&kpis.length)prompt+=kpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"source"}'}).join(",");
+  prompt+='],"sourceUrl":"URL","sourceLabel":"name"}';
+  prompt+='\nIf not reported:{"found":false,"reason":"why"}';
+  prompt+="\nFill actual_value for EVERY KPI. Search press release, shareholder letter, investor presentation.";
   try{var r=await aiJSON(SJ,prompt,true,false);return r}
-  catch(e){return{found:false,reason:"Earnings lookup failed. Check Anthropic API credits."}}}
-// Free FMP-based earnings check — matches standard KPIs without AI ($0 cost)
-async function fetchEarningsFMP(co,kpis){
-  try{
-    var res=await Promise.all([fmp("income-statement?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("key-metrics?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("ratios?symbol="+co.ticker+"&period=quarter&limit=2"),fmp("cash-flow-statement?symbol="+co.ticker+"&period=quarter&limit=1")]);
-    var inc=res[0],met=res[1],rat=res[2],cf=res[3];
-    if(!inc||!inc.length)return{found:false,reason:"No FMP financial data yet"};
-    var L=inc[0];var prev=inc.length>1?inc[1]:null;var M=met&&met.length?met[0]:{};var R=rat&&rat.length?rat[0]:{};var CF=cf&&cf.length?cf[0]:{};
-    var quarter=(L.period||"Q?")+" "+(L.calendarYear||"");
-    // Build a lookup map of all available financial data
-    var dataMap={};
-    // Income statement
-    if(L.revenue!=null){dataMap["revenue"]={v:L.revenue/1e9,label:"$"+(L.revenue/1e9).toFixed(2)+"B",src:"Income Statement"};dataMap["total revenue"]=dataMap["revenue"]}
-    if(L.eps!=null){dataMap["eps"]={v:L.eps,label:"$"+L.eps,src:"Income Statement"};dataMap["earnings per share"]=dataMap["eps"]}
-    if(L.epsdiluted!=null){dataMap["diluted eps"]={v:L.epsdiluted,label:"$"+L.epsdiluted,src:"Income Statement"}}
-    if(L.grossProfitRatio!=null){var gm=L.grossProfitRatio*100;dataMap["gross margin"]={v:gm,label:gm.toFixed(1)+"%",src:"Income Statement"};dataMap["gross profit margin"]=dataMap["gross margin"]}
-    if(L.operatingIncomeRatio!=null){var om=L.operatingIncomeRatio*100;dataMap["operating margin"]={v:om,label:om.toFixed(1)+"%",src:"Income Statement"};dataMap["op margin"]=dataMap["operating margin"]}
-    if(L.netIncomeRatio!=null){var nm=L.netIncomeRatio*100;dataMap["net margin"]={v:nm,label:nm.toFixed(1)+"%",src:"Income Statement"};dataMap["net income margin"]=dataMap["net margin"];dataMap["profit margin"]=dataMap["net margin"]}
-    if(L.netIncome!=null){dataMap["net income"]={v:L.netIncome/1e9,label:"$"+(L.netIncome/1e9).toFixed(2)+"B",src:"Income Statement"}}
-    if(L.ebitda!=null){dataMap["ebitda"]={v:L.ebitda/1e9,label:"$"+(L.ebitda/1e9).toFixed(2)+"B",src:"Income Statement"}}
-    if(L.operatingIncome!=null){dataMap["operating income"]={v:L.operatingIncome/1e9,label:"$"+(L.operatingIncome/1e9).toFixed(2)+"B",src:"Income Statement"}}
-    if(L.costOfRevenue!=null){dataMap["cost of revenue"]={v:L.costOfRevenue/1e9,label:"$"+(L.costOfRevenue/1e9).toFixed(2)+"B",src:"Income Statement"}}
-    if(L.grossProfit!=null){dataMap["gross profit"]={v:L.grossProfit/1e9,label:"$"+(L.grossProfit/1e9).toFixed(2)+"B",src:"Income Statement"}}
-    // Growth metrics (QoQ and YoY)
-    if(prev&&prev.revenue&&L.revenue){var rg=((L.revenue-prev.revenue)/Math.abs(prev.revenue)*100);dataMap["revenue growth"]={v:rg,label:rg.toFixed(1)+"%",src:"Calculated QoQ"};dataMap["revenue growth qoq"]=dataMap["revenue growth"]}
-    // Key metrics
-    if(M.roic!=null){dataMap["roic"]={v:M.roic*100,label:(M.roic*100).toFixed(1)+"%",src:"Key Metrics"};dataMap["return on invested capital"]=dataMap["roic"]}
-    if(M.roe!=null){dataMap["roe"]={v:M.roe*100,label:(M.roe*100).toFixed(1)+"%",src:"Key Metrics"};dataMap["return on equity"]=dataMap["roe"]}
-    if(M.currentRatio!=null){dataMap["current ratio"]={v:M.currentRatio,label:M.currentRatio.toFixed(2),src:"Key Metrics"}}
-    if(M.debtToEquity!=null){dataMap["debt to equity"]={v:M.debtToEquity,label:M.debtToEquity.toFixed(2),src:"Key Metrics"};dataMap["d/e ratio"]=dataMap["debt to equity"]}
-    if(M.freeCashFlowPerShare!=null){dataMap["fcf per share"]={v:M.freeCashFlowPerShare,label:"$"+M.freeCashFlowPerShare.toFixed(2),src:"Key Metrics"}}
-    if(M.revenuePerShare!=null){dataMap["revenue per share"]={v:M.revenuePerShare,label:"$"+M.revenuePerShare.toFixed(2),src:"Key Metrics"}}
-    if(M.bookValuePerShare!=null){dataMap["book value per share"]={v:M.bookValuePerShare,label:"$"+M.bookValuePerShare.toFixed(2),src:"Key Metrics"}}
-    // Cash flow
-    if(CF.freeCashFlow!=null){dataMap["free cash flow"]={v:CF.freeCashFlow/1e9,label:"$"+(CF.freeCashFlow/1e9).toFixed(2)+"B",src:"Cash Flow"};dataMap["fcf"]=dataMap["free cash flow"];
-      if(L.revenue){var fcfm=CF.freeCashFlow/L.revenue*100;dataMap["fcf margin"]={v:fcfm,label:fcfm.toFixed(1)+"%",src:"Calculated"};dataMap["free cash flow margin"]=dataMap["fcf margin"]}}
-    if(CF.operatingCashFlow!=null){dataMap["operating cash flow"]={v:CF.operatingCashFlow/1e9,label:"$"+(CF.operatingCashFlow/1e9).toFixed(2)+"B",src:"Cash Flow"}}
-    // Ratios
-    if(R.dividendYiel!=null){dataMap["dividend yield"]={v:R.dividendYiel*100,label:(R.dividendYiel*100).toFixed(2)+"%",src:"Ratios"}}
-    // Match KPIs
-    var results=[];var matched=0;
-    if(kpis&&kpis.length){kpis.forEach(function(k){
-      var kn=k.name.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
-      // Try exact match first, then fuzzy
-      var found=dataMap[kn];
-      if(!found){Object.keys(dataMap).forEach(function(dk){if(!found&&(dk.includes(kn)||kn.includes(dk)))found=dataMap[dk]})}
-      if(found){matched++;results.push({kpi_name:k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" ("+found.src+")"})}
-      else{results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Not found in FMP data"})}})}
-    // Build summary
-    var sumParts=[];
-    if(dataMap["revenue"])sumParts.push("Revenue: "+dataMap["revenue"].label);
-    if(dataMap["eps"])sumParts.push("EPS: "+dataMap["eps"].label);
-    if(dataMap["gross margin"])sumParts.push("Gross Margin: "+dataMap["gross margin"].label);
-    if(dataMap["operating margin"])sumParts.push("Op Margin: "+dataMap["operating margin"].label);
-    if(dataMap["net income"])sumParts.push("Net Income: "+dataMap["net income"].label);
-    var summary=quarter+": "+sumParts.join(", ")+".";
-    // Only return as found if we matched at least one KPI or have financial data
-    if(matched>0||results.length===0){return{found:true,quarter:quarter,summary:summary,results:results,sourceUrl:"https://financialmodelingprep.com/financial-statements/"+co.ticker,sourceLabel:"FMP Financial Data",fmpOnly:true,matchedCount:matched,totalKpis:kpis?kpis.length:0}}
-    // If we have data but couldn't match any KPIs, return partial
-    return{found:true,quarter:quarter,summary:summary,results:results,sourceUrl:"https://financialmodelingprep.com/financial-statements/"+co.ticker,sourceLabel:"FMP Financial Data",fmpOnly:true,matchedCount:0,totalKpis:kpis?kpis.length:0}
-  }catch(e){return{found:false,reason:"FMP fetch failed: "+e.message}}}
+  catch(e){return{found:false,reason:"Earnings lookup failed. Check API credits."}}}
 async function lookupNextEarnings(ticker){
-  // Try FMP earning_calendar first (free, $0)
-  try{var ec=await fmp("earning_calendar?symbol="+ticker);
-    if(ec&&ec.length){var upcoming=ec.filter(function(e){return new Date(e.date)>=new Date()}).sort(function(a,b){return new Date(a.date)-new Date(b.date)});
-      if(upcoming.length){return{earningsDate:upcoming[0].date,earningsTime:upcoming[0].time||"TBD"}}
-      // If no upcoming, use most recent as reference
-      if(ec[0]&&ec[0].date)return{earningsDate:ec[0].date,earningsTime:ec[0].time||"TBD"}}}catch(e){}
-  // Fallback: AI search (costs ~$0.02)
-  try{var r=await aiJSON(SJ,"What is the next earnings date for "+ticker+"? Search the web. Return:{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"} If unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
+  try{var r=await aiJSON(SJ,"Next earnings date for "+ticker+"? Search the web.\n{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"}\nIf unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
     if(r&&r.earningsDate&&r.earningsDate!=="TBD")return r}catch(e){}
   return{earningsDate:"TBD",earningsTime:"TBD"}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
@@ -282,6 +205,16 @@ function TrackerApp(props){
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<-7){
     setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:"TBD",earningsTime:"TBD"}):x})});
     lookupNextEarnings(c.ticker).then(function(r){if(r.earningsDate!=="TBD")setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,r):x})})}).catch(function(){})}})},[loaded]);
+  // Auto-lookup earnings dates for TBD companies (staggered to avoid rate limits)
+  useEffect(function(){if(!loaded)return;
+    var tbdCos=cos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
+    if(!tbdCos.length)return;
+    var i=0;var tmr=setInterval(function(){if(i>=tbdCos.length){clearInterval(tmr);return}
+      var c=tbdCos[i];i++;
+      lookupNextEarnings(c.ticker).then(function(r){if(r&&r.earningsDate&&r.earningsDate!=="TBD"){
+        setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:r.earningsDate,earningsTime:r.earningsTime||"TBD"}):x})})}}).catch(function(){})
+    },3000);// 3s between each lookup to stay cheap
+    return function(){clearInterval(tmr)}},[loaded]);
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d \u2014 "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
@@ -289,17 +222,9 @@ function TrackerApp(props){
   var upd=function(id,fn){setCos(function(p){return p.map(function(c){return c.id===id?(typeof fn==="function"?fn(c):Object.assign({},c,fn)):c})})};
   var delCo=function(id){setCos(function(p){return p.filter(function(c){return c.id!==id})});setSelId(null);setModal(null)};
   var unread=notifs.filter(function(n){return!n.read}).length;
-  async function checkOne(cid,forceAI){var co=cos.find(function(c){return c.id===cid});if(!co)return;
+  async function checkOne(cid){var co=cos.find(function(c){return c.id===cid});if(!co)return;
     setCheckSt(function(p){var n=Object.assign({},p);n[cid]="checking";return n});
-    try{
-      // Step 1: Try FMP first (free, $0 cost)
-      var r=null;
-      if(!forceAI){r=await fetchEarningsFMP(co,co.kpis||[]);
-        // If FMP found data but couldn't match some KPIs, note the unmatched count
-        if(r&&r.found&&r.fmpOnly&&r.matchedCount<r.totalKpis&&r.totalKpis>0){
-          r.summary=(r.summary||"")+" ("+r.matchedCount+"/"+r.totalKpis+" KPIs matched from FMP. Use AI check for custom metrics.)"}}
-      // Step 2: Fall back to AI if FMP found nothing or was explicitly skipped
-      if(!r||!r.found){r=await fetchEarnings(co,co.kpis||[])}
+    try{var r=await fetchEarnings(co,co.kpis||[]);
       if(r.found&&r.results){setCos(function(prev){return prev.map(function(c){if(c.id!==cid)return c;
         var earningsHistory=c.earningsHistory||[];
         var newEntry={quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),results:(r.results||[]).map(function(x){return{kpi_name:x.kpi_name,actual_value:x.actual_value,status:x.status,excerpt:stripCite(x.excerpt||"")}}),sourceUrl:r.sourceUrl,sourceLabel:stripCite(r.sourceLabel||""),checkedAt:new Date().toISOString()};
@@ -624,8 +549,7 @@ function TrackerApp(props){
         {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings (Free)"}</button>
-        <button style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id,true)}} disabled={cs==="checking"} title="Uses AI + web search (~$0.03-0.05)">AI Deep Check</button></div>
+        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}{cs!=="checking"&&cs!=="found"&&cs!=="not-yet"&&cs!=="error"?<span style={{fontSize:9,opacity:.6,marginLeft:4}}>~$0.02</span>:null}</button></div>
       <EarningsTimeline company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
