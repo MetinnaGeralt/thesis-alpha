@@ -60,7 +60,7 @@ async function aiJSON(sys,msg,search,useSonnet){return xJSON(await aiCall(sys,ms
 var SJ="Financial data assistant. Respond ONLY with raw JSON. No markdown.";
 
 // ═══ SPENDING GUARD — hard daily cap, blocks all AI if exceeded ═══
-var DAILY_CAP_KEY="ta-spend";var DEFAULT_CAP=0.50;// $0.50/day default
+var DAILY_CAP_KEY="ta-spend";var DEFAULT_CAP=0;// $0/day — AI disabled until user tops up and sets a cap
 function getSpend(){try{var d=JSON.parse(localStorage.getItem(DAILY_CAP_KEY)||"{}");
   var today=new Date().toISOString().slice(0,10);
   if(d.date!==today)return{date:today,total:0,calls:0,cap:d.cap||DEFAULT_CAP};
@@ -166,19 +166,11 @@ async function lookupNextEarnings(ticker){
       var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
       if(recent.length)return{earningsDate:recent[0].date,earningsTime:recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}catch(e){}
   return{earningsDate:"TBD",earningsTime:"TBD"}}
-// New: Company news feed (Finnhub, $0)
-async function fetchNews(ticker){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-  var n=await finnhub("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,5)}catch(e){return[]}}
-// New: Analyst recommendations (Finnhub, $0)
-async function fetchAnalyst(ticker){try{var r=await finnhub("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,4)}catch(e){return[]}}
-// New: Earnings surprises — actual vs estimate history (Finnhub, $0)
-async function fetchSurprises(ticker){try{var r=await finnhub("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
-// New: Insider transactions (Finnhub, $0)
+// Finnhub ownership & insider data ($0)
 async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,10):[]}catch(e){return[]}}
-// Insider sentiment = aggregate monthly buy/sell (Finnhub, $0)
 async function fetchInsiderSentiment(ticker){try{var r=await finnhub("stock/insider-sentiment?symbol="+ticker);return r&&r.data?(r.data).slice(0,6):[]}catch(e){return[]}}
-// New: Peer companies (Finnhub, $0)
-async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
+async function fetchOwnership(ticker){try{var r=await finnhub("stock/fund-ownership?symbol="+ticker+"&limit=10");return r&&r.ownership?(r.ownership).slice(0,10):[]}catch(e){return[]}}
+async function fetchInstitutional(ticker){try{var r=await finnhub("stock/institutional-ownership?symbol="+ticker);return r&&r.data&&r.data.length?r.data[0]:{}}catch(e){return{}}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
 async function analyzeNarrativeDrift(ticker,name,currentText){if(!canSpend())return{drifts:[],overallRisk:"unknown",summary:"Daily spending cap reached.",quartersCompared:[]};
   var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
@@ -496,11 +488,8 @@ function TrackerApp(props){
           {d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btnP,{width:"100%",padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"})}}>+ Add Company</button></div></div>}
-  function TopBar(){var sp=getSpend();var spPct=sp.cap>0?Math.min(sp.total/sp.cap*100,100):0;var overCap=sp.total>=sp.cap;
+  function TopBar(){
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card,position:"sticky",top:0,zIndex:50,gap:12}}>
-    <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",border:"1px solid "+(overCap?K.red+"40":K.bdr),borderRadius:6,background:overCap?K.red+"08":"transparent"}} title={"AI spend today: $"+sp.total.toFixed(2)+" / $"+sp.cap.toFixed(2)+" cap ("+sp.calls+" calls)"}>
-      <div style={{width:40,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:spPct+"%",borderRadius:2,background:overCap?K.red:spPct>60?K.amb:K.grn}}/></div>
-      <span style={{fontSize:10,color:overCap?K.red:K.dim,fontFamily:fm}}>${sp.total.toFixed(2)}/{sp.cap.toFixed(2)}</span></div>
     <button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={isDark?"Light mode":"Dark mode"}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -617,69 +606,53 @@ function TrackerApp(props){
 
   // ── Detail View ───────────────────────────────────────────
   // ── Finnhub-Powered Sections (all FREE, $0) ────────────
-  function CompanyNews(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _ld=useState(false),ld=_ld[0],setLd=_ld[1];
-    function load(){setLd(true);fetchNews(c.ticker).then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})}
-    if(!data&&!ld)return<div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={S.sec}>News</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={load}>Load News <span style={{fontSize:9,opacity:.5}}>Free</span></button></div></div>;
-    if(ld)return<div style={{marginBottom:20}}><div style={S.sec}>News</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
-    if(!data||!data.length)return<div style={{marginBottom:20}}><div style={S.sec}>News</div><div style={{fontSize:11,color:K.dim}}>No recent news found.</div></div>;
-    return<div style={{marginBottom:20}}><div style={S.sec}>News</div>
-      {data.map(function(n,i){return<a key={i} href={n.url} target="_blank" rel="noreferrer" style={{display:"block",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:6,textDecoration:"none"}}>
-        <div style={{fontSize:12,color:K.txt,lineHeight:1.4,marginBottom:4}}>{n.headline}</div>
-        <div style={{fontSize:10,color:K.dim}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</div></a>})}</div>}
-  function AnalystConsensus(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];
-    useEffect(function(){fetchAnalyst(c.ticker).then(function(r){if(r&&r.length)setData(r[0])}).catch(function(){})},[c.ticker]);
-    if(!data)return null;var total=(data.buy||0)+(data.hold||0)+(data.sell||0)+(data.strongBuy||0)+(data.strongSell||0);if(!total)return null;
-    var buys=(data.strongBuy||0)+(data.buy||0);var sells=(data.strongSell||0)+(data.sell||0);
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
-      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
-      <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",marginBottom:8}}>
-        {data.strongBuy>0&&<div style={{width:(data.strongBuy/total*100)+"%",background:"#00C853"}}/>}
-        {data.buy>0&&<div style={{width:(data.buy/total*100)+"%",background:"#66BB6A"}}/>}
-        {data.hold>0&&<div style={{width:(data.hold/total*100)+"%",background:K.amb}}/>}
-        {data.sell>0&&<div style={{width:(data.sell/total*100)+"%",background:"#EF5350"}}/>}
-        {data.strongSell>0&&<div style={{width:(data.strongSell/total*100)+"%",background:"#C62828"}}/>}</div>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,fontFamily:fm}}>
-        <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {data.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
-      <div style={{fontSize:10,color:K.dim,marginTop:4}}>{data.period}</div></div>}
-  function EarningsSurprises(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];
-    useEffect(function(){fetchSurprises(c.ticker).then(function(r){if(r&&r.length)setData(r)}).catch(function(){})},[c.ticker]);
-    if(!data||!data.length)return null;
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
-      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>EPS History (actual vs est.)</div>
-      {data.slice(0,4).map(function(e,i){var beat=e.actual>e.estimate;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
-        return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <span style={{fontSize:11,color:K.dim,fontFamily:fm,width:55}}>Q{e.quarter} {e.year}</span>
-          <span style={{fontSize:11,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,width:55}}>${e.actual!=null?e.actual.toFixed(2):"?"}</span>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>est: ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
-          <span style={{fontSize:10,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,marginLeft:"auto"}}>{beat?"+":""}{pct.toFixed(1)}%</span></div>})}</div>}
-  function InsiderActivity(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _sent=useState(null),sent=_sent[0],setSent=_sent[1];var _sh=useState(false),sh=_sh[0],setSh=_sh[1];var _tab=useState("txns"),tab=_tab[0],setTab=_tab[1];
-    function load(){setSh(true);fetchInsiders(c.ticker).then(function(r){setData(r)}).catch(function(){});fetchInsiderSentiment(c.ticker).then(function(r){setSent(r)}).catch(function(){})}
-    if(!sh)return<div style={{marginBottom:16}}><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={load}>Show Insider Activity <span style={{fontSize:9,opacity:.5}}>Free</span></button></div>;
-    if((!data||!data.length)&&(!sent||!sent.length))return<div style={{marginBottom:16,fontSize:11,color:K.dim}}>No recent insider data found.</div>;
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Insider Activity</div>
-        <div style={{display:"flex",gap:4}}>{["txns","sentiment"].map(function(t){return<button key={t} onClick={function(){setTab(t)}} style={{background:tab===t?K.acc+"20":"transparent",border:"1px solid "+(tab===t?K.acc+"50":K.bdr),borderRadius:4,padding:"3px 10px",fontSize:10,color:tab===t?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{t==="txns"?"Transactions":"Monthly Trend"}</button>})}</div></div>
-      {tab==="txns"&&data&&data.length>0&&data.slice(0,6).map(function(t,i){var isBuy=t.change>0;
-        return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:11}}>
-          <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:40}}>{isBuy?"BUY":"SELL"}</span>
-          <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
-          <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
-          <span style={{color:K.dim,fontFamily:fm,fontSize:10,whiteSpace:"nowrap"}}>{t.transactionDate}</span></div>})}
-      {tab==="txns"&&(!data||!data.length)&&<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No recent transactions.</div>}
-      {tab==="sentiment"&&sent&&sent.length>0&&<div>
-        <div style={{display:"flex",gap:4,marginBottom:8,fontSize:10,color:K.dim,fontFamily:fm}}><span style={{width:60}}>Month</span><span style={{flex:1}}>Net (shares)</span><span>MSPR</span></div>
-        {sent.map(function(s,i){var net=s.change||0;var mspr=s.mspr||0;
-          return<div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:4,fontSize:11}}>
-            <span style={{width:60,color:K.dim,fontFamily:fm}}>{s.year}-{String(s.month).padStart(2,"0")}</span>
-            <div style={{flex:1,display:"flex",alignItems:"center",gap:6}}>
-              <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}>
-                <div style={{height:"100%",width:Math.min(Math.abs(net)/10000*100,100)+"%",background:net>=0?K.grn:K.red,borderRadius:3}}/></div>
-              <span style={{fontSize:10,color:net>=0?K.grn:K.red,fontFamily:fm,fontWeight:600,minWidth:50,textAlign:"right"}}>{net>=0?"+":""}{net.toLocaleString()}</span></div>
-            <span style={{fontSize:10,color:mspr>=0?K.grn:K.red,fontFamily:fm,fontWeight:600,minWidth:40,textAlign:"right"}}>{mspr>=0?"+":""}{mspr.toFixed(2)}</span></div>})}
-        <div style={{fontSize:10,color:K.dim,marginTop:6}}>MSPR = Monthly Share Purchase Ratio (positive = net buying)</div></div>}
-      {tab==="sentiment"&&(!sent||!sent.length)&&<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No monthly sentiment data.</div>}</div>}
+  function OwnershipInsiders(p){var c=p.company;
+    var _owners=useState(null),owners=_owners[0],setOwners=_owners[1];
+    var _inst=useState(null),inst=_inst[0],setInst=_inst[1];
+    var _txns=useState(null),txns=_txns[0],setTxns=_txns[1];
+    var _sent=useState(null),sent=_sent[0],setSent=_sent[1];
+    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
+    useEffect(function(){setLd(true);
+      Promise.all([fetchOwnership(c.ticker),fetchInstitutional(c.ticker),fetchInsiders(c.ticker),fetchInsiderSentiment(c.ticker)]).then(function(res){setOwners(res[0]);setInst(res[1]);setTxns(res[2]);setSent(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Ownership & Insiders</div><div style={{fontSize:11,color:K.dim}}>Loading ownership data...</div></div>;
+    var hasOwners=owners&&owners.length>0;var hasInst=inst&&((inst.ownership&&inst.ownership.length>0));var hasTxns=txns&&txns.length>0;var hasSent=sent&&sent.length>0;
+    if(!hasOwners&&!hasInst&&!hasTxns&&!hasSent)return null;
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
+      <div style={S.sec}>Ownership & Insiders</div>
+      {/* Top Shareholders */}
+      {hasOwners&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Largest Fund Holders</div>
+        {owners.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown Fund"}</span>
+          <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
+          {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
+      {/* Institutional ownership summary */}
+      {hasInst&&inst.ownership&&inst.ownership.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Top Institutional Holders</div>
+        {inst.ownership.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown"}</span>
+          <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
+          {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
+      {/* Insider Transactions */}
+      {hasTxns&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Recent Insider Transactions</div>
+        {txns.slice(0,6).map(function(t,i){var isBuy=t.change>0;
+          return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,fontSize:11}}>
+            <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:36,fontSize:10}}>{isBuy?"BUY":"SELL"}</span>
+            <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
+            <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
+            <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
+      {/* Monthly Insider Sentiment */}
+      {hasSent&&<div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Monthly Insider Sentiment</div>
+        <div style={{display:"flex",gap:6}}>
+          {sent.slice(0,6).map(function(s,i){var net=s.change||0;var mspr=s.mspr||0;
+            return<div key={i} style={{flex:1,background:K.bg,borderRadius:6,padding:"8px 6px",textAlign:"center"}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{s.month}/{String(s.year).slice(2)}</div>
+              <div style={{fontSize:12,fontWeight:600,color:mspr>=0?K.grn:K.red,fontFamily:fm}}>{mspr>=0?"+":""}{mspr.toFixed(1)}</div>
+              <div style={{fontSize:8,color:K.dim,marginTop:2}}>MSPR</div></div>})}</div>
+        <div style={{fontSize:9,color:K.dim,marginTop:6}}>MSPR: Monthly Share Purchase Ratio. Positive = net insider buying.</div></div>}
+    </div>}
 
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
@@ -713,13 +686,8 @@ function TrackerApp(props){
         {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}{cs!=="checking"&&cs!=="found"&&cs!=="not-yet"&&cs!=="error"?<span style={{fontSize:9,opacity:.6,marginLeft:4}}>{c.kpis&&c.kpis.some(function(k){return isCustomKpi(k.name)})?"~$0.02":"Free"}</span>:null}</button></div>
+        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
       <EarningsTimeline company={c}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-        <AnalystConsensus company={c}/>
-        <EarningsSurprises company={c}/></div>
-      <CompanyNews company={c}/>
-      <InsiderActivity company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
         {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
@@ -746,7 +714,8 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + Claude AI</div></div>
+      <OwnershipInsiders company={c}/>
+      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a> + Claude AI</div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
