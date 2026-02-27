@@ -16,8 +16,11 @@ async function cloudLoad(userId){if(!supabase||!userId)return null;
 async function cloudSave(userId,payload){if(!supabase||!userId)return;
   try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
 
-// ═══ FMP (server proxy — used only for profiles & prices, ~1 call per company) ═══
+// ═══ FMP (server proxy — profiles & prices) ═══
 async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("FMP:",e);return null}}
+
+// ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
+async function fh(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("Finnhub:",e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -56,37 +59,130 @@ async function aiCall(sys,msg,search,useSonnet){
 async function aiJSON(sys,msg,search,useSonnet){return xJSON(await aiCall(sys,msg,search,useSonnet))}
 var SJ="Financial data assistant. Respond ONLY with raw JSON. No markdown.";
 
+// ═══ SPENDING GUARD — hard daily cap, blocks all AI if exceeded ═══
+var DAILY_CAP_KEY="ta-spend";var DEFAULT_CAP=0.50;// $0.50/day default
+function getSpend(){try{var d=JSON.parse(localStorage.getItem(DAILY_CAP_KEY)||"{}");
+  var today=new Date().toISOString().slice(0,10);
+  if(d.date!==today)return{date:today,total:0,calls:0,cap:d.cap||DEFAULT_CAP};
+  return d}catch(e){return{date:new Date().toISOString().slice(0,10),total:0,calls:0,cap:DEFAULT_CAP}}}
+function logSpend(cost){var d=getSpend();d.total=Math.round((d.total+cost)*1000)/1000;d.calls++;
+  try{localStorage.setItem(DAILY_CAP_KEY,JSON.stringify(d))}catch(e){}return d}
+function canSpend(){var d=getSpend();return d.total<(d.cap||DEFAULT_CAP)}
+function setDailyCap(v){var d=getSpend();d.cap=v;try{localStorage.setItem(DAILY_CAP_KEY,JSON.stringify(d))}catch(e){}}
+
 // ═══ DATA FUNCTIONS ═══
+// Standard financial KPI names that Finnhub metrics can provide
+var FINNHUB_KPIS={"revenue":1,"total revenue":1,"eps":1,"earnings per share":1,"diluted eps":1,"gross margin":1,"gross profit margin":1,"operating margin":1,"net margin":1,"net income margin":1,"profit margin":1,"roe":1,"return on equity":1,"roic":1,"return on invested capital":1,"roa":1,"return on assets":1,"current ratio":1,"debt to equity":1,"d/e ratio":1,"free cash flow":1,"fcf":1,"fcf margin":1,"free cash flow margin":1,"p/e":1,"pe ratio":1,"p/e ratio":1,"p/b":1,"price to book":1,"revenue growth":1,"eps growth":1,"dividend yield":1,"book value per share":1,"ebitda":1,"operating income":1,"net income":1,"gross profit":1,"operating cash flow":1,"revenue per share":1,"ebitda margin":1};
+function isCustomKpi(name){return!FINNHUB_KPIS[name.toLowerCase().replace(/[^a-z0-9 /]/g,"").trim()]}
+
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
     var p=await fmp("profile?symbol="+t);
     if(p&&p.length&&p[0].companyName){var pr=p[0],domain="",irUrl="";
       if(pr.website){try{domain=new URL(pr.website).hostname.replace("www.","")}catch(e){domain=pr.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
         irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:pr.lastDiv||0,mktCap:pr.mktCap||0}}
+      // Grab earnings date from Finnhub (free, $0)
+      var ed="TBD",et="TBD";
+      try{var ec=await fh("calendar/earnings?symbol="+t);
+        if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
+          var now=new Date().toISOString().slice(0,10);
+          var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
+          if(upcoming.length){ed=upcoming[0].date;et=upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"}
+          else{var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
+            if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:pr.lastDiv||0,mktCap:pr.mktCap||0}}
   }catch(e){console.warn("FMP lookup failed:",e)}
-  return{error:"Not found on FMP — enter details manually"}}
+  return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 async function fetchEarnings(co,kpis){
-  var kl=kpis&&kpis.length?kpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", "):"";
-  var prompt=co.ticker+" "+co.name+" latest quarterly earnings.";
-  if(kl)prompt+=" Find these metrics: "+kl+". Check press release AND shareholder letter. Non-financial metrics (DAU, MAU, subscribers, bookings) are in the press release body or shareholder letter, not financial tables.";
-  prompt+=" Also: revenue, EPS, guidance.";
-  prompt+='\nJSON only:\n{"found":true,"quarter":"Q? YYYY","summary":"key numbers","results":[';
-  if(kpis&&kpis.length)prompt+=kpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"source"}'}).join(",");
-  prompt+='],"sourceUrl":"URL","sourceLabel":"name"}';
-  prompt+='\nIf not reported:{"found":false,"reason":"why"}';
-  prompt+="\nFill actual_value for EVERY KPI. Search press release, shareholder letter, investor presentation.";
-  try{var r=await aiJSON(SJ,prompt,true,false);return r}
-  catch(e){return{found:false,reason:"Earnings lookup failed. Check API credits."}}}
+  var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";
+  // Step 1: Finnhub basic financials (FREE, $0)
+  try{var met=await fh("stock/metric?symbol="+co.ticker+"&metric=all");
+    var earn=await fh("stock/earnings?symbol="+co.ticker);
+    if(met&&met.metric){var m=met.metric;
+      // Map Finnhub metric names to our KPI format
+      var fhMap={"revenue":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2)+"/sh":"N/A"},
+        "eps":{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
+        "gross margin":{v:m["grossMarginTTM"]!=null?m["grossMarginTTM"]*100:null,label:m["grossMarginTTM"]!=null?(m["grossMarginTTM"]*100).toFixed(1)+"%":"N/A"},
+        "operating margin":{v:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"]*100:null,label:m["operatingMarginTTM"]!=null?(m["operatingMarginTTM"]*100).toFixed(1)+"%":"N/A"},
+        "net margin":{v:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"]*100:null,label:m["netProfitMarginTTM"]!=null?(m["netProfitMarginTTM"]*100).toFixed(1)+"%":"N/A"},
+        "roe":{v:m["roeTTM"]!=null?m["roeTTM"]*100:null,label:m["roeTTM"]!=null?(m["roeTTM"]*100).toFixed(1)+"%":"N/A"},
+        "roa":{v:m["roaTTM"]!=null?m["roaTTM"]*100:null,label:m["roaTTM"]!=null?(m["roaTTM"]*100).toFixed(1)+"%":"N/A"},
+        "roic":{v:m["roicTTM"]!=null?m["roicTTM"]*100:null,label:m["roicTTM"]!=null?(m["roicTTM"]*100).toFixed(1)+"%":"N/A"},
+        "current ratio":{v:m["currentRatioQuarterly"],label:m["currentRatioQuarterly"]?m["currentRatioQuarterly"].toFixed(2):"N/A"},
+        "debt to equity":{v:m["totalDebt/totalEquityQuarterly"],label:m["totalDebt/totalEquityQuarterly"]?m["totalDebt/totalEquityQuarterly"].toFixed(2):"N/A"},
+        "p/e":{v:m["peTTM"],label:m["peTTM"]?m["peTTM"].toFixed(1):"N/A"},
+        "p/b":{v:m["pbQuarterly"],label:m["pbQuarterly"]?m["pbQuarterly"].toFixed(2):"N/A"},
+        "dividend yield":{v:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"]*100:null,label:m["dividendYieldIndicatedAnnual"]!=null?(m["dividendYieldIndicatedAnnual"]*100).toFixed(2)+"%":"N/A"},
+        "book value per share":{v:m["bookValuePerShareQuarterly"],label:m["bookValuePerShareQuarterly"]?"$"+m["bookValuePerShareQuarterly"].toFixed(2):"N/A"},
+        "revenue growth":{v:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"]*100:null,label:m["revenueGrowthTTMYoy"]!=null?(m["revenueGrowthTTMYoy"]*100).toFixed(1)+"%":"N/A"},
+        "eps growth":{v:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"]*100:null,label:m["epsGrowthTTMYoy"]!=null?(m["epsGrowthTTMYoy"]*100).toFixed(1)+"%":"N/A"},
+        "free cash flow":{v:m["freeCashFlowPerShareTTM"],label:m["freeCashFlowPerShareTTM"]?"$"+m["freeCashFlowPerShareTTM"].toFixed(2)+"/sh":"N/A"},
+        "ebitda margin":{v:m["ebitdPerShareTTM"],label:m["ebitdPerShareTTM"]?"$"+m["ebitdPerShareTTM"].toFixed(2)+"/sh":"N/A"},
+        "revenue per share":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2):"N/A"}};
+      // Aliases
+      ["total revenue","earnings per share","diluted eps","gross profit margin","net income margin","profit margin","return on equity","return on invested capital","return on assets","d/e ratio","fcf","free cash flow margin","fcf margin","pe ratio","p/e ratio","price to book"].forEach(function(a){
+        var map={"total revenue":"revenue","earnings per share":"eps","diluted eps":"eps","gross profit margin":"gross margin","net income margin":"net margin","profit margin":"net margin","return on equity":"roe","return on invested capital":"roic","return on assets":"roa","d/e ratio":"debt to equity","fcf":"free cash flow","free cash flow margin":"free cash flow","fcf margin":"free cash flow","pe ratio":"p/e","p/e ratio":"p/e","price to book":"p/b"};
+        if(map[a]&&fhMap[map[a]])fhMap[a]=fhMap[map[a]]});
+      // Get quarter from earnings data
+      if(earn&&earn.length){quarter="Q"+(earn[0].quarter||"?")+" "+(earn[0].year||"");
+        srcUrl="https://finnhub.io/";srcLabel="Finnhub"}
+      // Build summary from Finnhub data
+      var sumParts=[];
+      if(earn&&earn.length&&earn[0].actual!=null)sumParts.push("EPS: $"+earn[0].actual+(earn[0].estimate!=null?" (est: $"+earn[0].estimate+")":""));
+      if(m["revenuePerShareTTM"])sumParts.push("Rev/sh: $"+m["revenuePerShareTTM"].toFixed(2));
+      if(m["grossMarginTTM"]!=null)sumParts.push("Gross: "+(m["grossMarginTTM"]*100).toFixed(1)+"%");
+      if(m["roeTTM"]!=null)sumParts.push("ROE: "+(m["roeTTM"]*100).toFixed(1)+"%");
+      summary=(quarter||"Latest")+": "+sumParts.join(", ");
+      // Match standard KPIs from Finnhub
+      if(kpis&&kpis.length){kpis.forEach(function(k){
+        var kn=k.name.toLowerCase().replace(/[^a-z0-9 /]/g,"").trim();
+        var found=fhMap[kn];
+        if(found&&found.v!=null){results.push({kpi_name:k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" (Finnhub)"})}
+        else if(!isCustomKpi(k.name)){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Not in Finnhub data"})}})}}}catch(e){console.warn("Finnhub metrics:",e)}
+  // Step 2: Check if there are CUSTOM KPIs that need AI (DAU, MAU, subscribers, etc.)
+  var customKpis=kpis?kpis.filter(function(k){return isCustomKpi(k.name)&&!results.some(function(r){return r.kpi_name===k.name})}):[];
+  if(customKpis.length>0){
+    if(!canSpend()){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Daily cap reached — cannot check custom KPIs"})});
+    }else{
+      // Only call AI for custom KPIs — much smaller prompt, much cheaper
+      var prompt=co.ticker+" "+co.name+" latest quarterly earnings. Find ONLY these metrics: "+customKpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", ")+". Check press release AND shareholder letter.";
+      prompt+='\nJSON only:\n{"quarter":"Q? YYYY","results":['+customKpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"source"}'}).join(",")+'],"summary":"1 sentence with custom metrics","sourceUrl":"URL"}';
+      try{var aiR=await aiJSON(SJ,prompt,true,false);logSpend(0.02);
+        if(aiR&&aiR.results){aiR.results.forEach(function(r){results.push(r)});
+          if(aiR.quarter&&!quarter)quarter=aiR.quarter;
+          if(aiR.summary)summary=(summary?summary+". ":"")+stripCite(aiR.summary);
+          if(aiR.sourceUrl){srcUrl=aiR.sourceUrl;srcLabel=stripCite(aiR.sourceLabel||"Press Release")}}}
+      catch(e){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI check failed"})})}}}
+  if(!results.length&&!quarter)return{found:false,reason:"No earnings data found. Try adding KPIs first."};
+  return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved from Finnhub.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub"}}
+// Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
-  try{var r=await aiJSON(SJ,"Next earnings date for "+ticker+"? Search the web.\n{\"earningsDate\":\"YYYY-MM-DD\",\"earningsTime\":\"BMO or AMC\"}\nIf unknown:{\"earningsDate\":\"TBD\",\"earningsTime\":\"TBD\"}",true,false);
-    if(r&&r.earningsDate&&r.earningsDate!=="TBD")return r}catch(e){}
+  try{var ec=await fh("calendar/earnings?symbol="+ticker);
+    if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
+      var now=new Date().toISOString().slice(0,10);
+      var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
+      if(upcoming.length)return{earningsDate:upcoming[0].date,earningsTime:upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"};
+      var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
+      if(recent.length)return{earningsDate:recent[0].date,earningsTime:recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}catch(e){}
   return{earningsDate:"TBD",earningsTime:"TBD"}}
+// New: Company news feed (Finnhub, $0)
+async function fetchNews(ticker){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+  var n=await fh("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,5)}catch(e){return[]}}
+// New: Analyst recommendations (Finnhub, $0)
+async function fetchAnalyst(ticker){try{var r=await fh("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,4)}catch(e){return[]}}
+// New: Earnings surprises — actual vs estimate history (Finnhub, $0)
+async function fetchSurprises(ticker){try{var r=await fh("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
+// New: Insider transactions (Finnhub, $0)
+async function fetchInsiders(ticker){try{var r=await fh("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,10):[]}catch(e){return[]}}
+// New: Peer companies (Finnhub, $0)
+async function fetchPeers(ticker){try{var r=await fh("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
-async function analyzeNarrativeDrift(ticker,name,currentText){var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
-  return aiJSON("You detect narrative shifts. Return ONLY raw JSON.","Analyze drift for "+ticker+" ("+name+").\n"+(prev?"Previous:\n"+prev.substring(0,12000)+"\n\n":"")+"Current:\n"+currentText.substring(0,6000)+"\n"+(prev?"":"Search web for previous quarters.\n")+'{"drifts":[{"type":"missing_kpi|definition_change|tone_shift|new_narrative","title":"t","detail":"d","severity":"high|medium|low","prevQuarter":"Q3","prevLanguage":"before","currentLanguage":"now"}],"overallRisk":"low|medium|high","summary":"s","quartersCompared":["Q1"]}\nIf no data:{"drifts":[],"overallRisk":"unknown","summary":"Upload transcripts manually.","quartersCompared":[]}',true,true)}
-async function analyzeQAEvasion(ticker,transcript){return aiJSON("You detect evasive earnings call answers. Return ONLY raw JSON.","Analyze Q&A for "+ticker+":\n"+transcript.substring(0,10000)+"\nFlag evasions with worryPhrases and ignoredTopics.\n"+'{"evasions":[{"analystQuestion":"q","executiveAnswer":"a","evasionType":"topic_redirect|vague_generalization|non_answer|cherry_pick","severity":"high|medium|low","explanation":"why","worryPhrases":["p"],"ignoredTopics":["t"]}],"evasionScore":0.0,"summary":"s"}',false,true)}
+async function analyzeNarrativeDrift(ticker,name,currentText){if(!canSpend())return{drifts:[],overallRisk:"unknown",summary:"Daily spending cap reached.",quartersCompared:[]};
+  var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
+  var r=await aiJSON("You detect narrative shifts. Return ONLY raw JSON.","Analyze drift for "+ticker+" ("+name+").\n"+(prev?"Previous:\n"+prev.substring(0,12000)+"\n\n":"")+"Current:\n"+currentText.substring(0,6000)+"\n"+(prev?"":"Search web for previous quarters.\n")+'{"drifts":[{"type":"missing_kpi|definition_change|tone_shift|new_narrative","title":"t","detail":"d","severity":"high|medium|low","prevQuarter":"Q3","prevLanguage":"before","currentLanguage":"now"}],"overallRisk":"low|medium|high","summary":"s","quartersCompared":["Q1"]}\nIf no data:{"drifts":[],"overallRisk":"unknown","summary":"Upload transcripts manually.","quartersCompared":[]}',true,true);logSpend(0.05);return r}
+async function analyzeQAEvasion(ticker,transcript){if(!canSpend())return{evasions:[],evasionScore:0,summary:"Daily spending cap reached."};
+  var r=await aiJSON("You detect evasive earnings call answers. Return ONLY raw JSON.","Analyze Q&A for "+ticker+":\n"+transcript.substring(0,10000)+"\nFlag evasions with worryPhrases and ignoredTopics.\n"+'{"evasions":[{"analystQuestion":"q","executiveAnswer":"a","evasionType":"topic_redirect|vague_generalization|non_answer|cherry_pick","severity":"high|medium|low","explanation":"why","worryPhrases":["p"],"ignoredTopics":["t"]}],"evasionScore":0.0,"summary":"s"}',false,true);logSpend(0.05);return r}
 async function fetchQATranscript(ticker){try{var ts=await fetchTranscripts(ticker,2);if(ts.length&&ts[0].content){var c=ts[0].content,qi=c.search(/question.{0,5}(and|&).{0,5}answer|q\s*&\s*a/i);if(qi>0)return{found:true,transcript:c.substring(qi,qi+15000),quarter:ts[0].quarter};return{found:true,transcript:c.substring(Math.floor(c.length*.6)),quarter:ts[0].quarter}}}catch(e){}return{found:false}}
 
 // ═══ THEME SYSTEM ═══
@@ -185,16 +281,12 @@ function TrackerApp(props){
   // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
   useEffect(function(){if(!loaded||cos.length===0)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
-  // Auto-notify: check earnings for companies whose date has passed
+  // Auto-notify: only creates reminder notifications — NEVER calls AI automatically
   useEffect(function(){if(!loaded||!autoNotify)return;
-    var interval=setInterval(function(){
-      cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
-        if(!c.lastChecked||new Date()-new Date(c.lastChecked)>3600000){checkOne(c.id)}}})
-    },60000);// check every 60s
-    // Also run once immediately
     cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
-      if(!c.lastChecked||new Date()-new Date(c.lastChecked)>3600000){checkOne(c.id)}}});
-    return function(){clearInterval(interval)}},[loaded,autoNotify]);
+      if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"}))
+        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released \u2014 click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}});
+    return undefined},[loaded,autoNotify,cos]);
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs};
     if(saveTimer.current)clearTimeout(saveTimer.current);
@@ -202,19 +294,23 @@ function TrackerApp(props){
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
     return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,loaded]);
-  useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<-7){
-    setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:"TBD",earningsTime:"TBD"}):x})});
-    lookupNextEarnings(c.ticker).then(function(r){if(r.earningsDate!=="TBD")setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,r):x})})}).catch(function(){})}})},[loaded]);
-  // Auto-lookup earnings dates for TBD companies (staggered to avoid rate limits)
+  // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
-    var tbdCos=cos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
-    if(!tbdCos.length)return;
-    var i=0;var tmr=setInterval(function(){if(i>=tbdCos.length){clearInterval(tmr);return}
-      var c=tbdCos[i];i++;
+    var toFetch=[];
+    cos.forEach(function(c){
+      if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<-7){
+        setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:"TBD",earningsTime:"TBD"}):x})});
+        toFetch.push(c)}
+      else if(!c.earningsDate||c.earningsDate==="TBD"){toFetch.push(c)}});
+    // Staggered Finnhub lookups (free, no AI, no cost)
+    if(!toFetch.length)return;
+    var i=0;var tmr=setInterval(function(){if(i>=toFetch.length){clearInterval(tmr);return}
+      var c=toFetch[i];i++;
       lookupNextEarnings(c.ticker).then(function(r){if(r&&r.earningsDate&&r.earningsDate!=="TBD"){
         setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:r.earningsDate,earningsTime:r.earningsTime||"TBD"}):x})})}}).catch(function(){})
-    },3000);// 3s between each lookup to stay cheap
+    },500);// 500ms between calls — Finnhub allows 60/min
     return function(){clearInterval(tmr)}},[loaded]);
+  // Upcoming earnings notification (no AI — just a reminder)
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d \u2014 "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
@@ -260,10 +356,7 @@ function TrackerApp(props){
       if(t.length>=1&&t.length<=6&&/^[A-Z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
       var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null);
-      // Auto-lookup earnings date if not provided
-      if(!f.earningsDate){var tid=nc.id;var tk=nc.ticker;
-        lookupNextEarnings(tk).then(function(r){if(r&&r.earningsDate&&r.earningsDate!=="TBD"){setCos(function(p){return p.map(function(c){return c.id===tid?Object.assign({},c,{earningsDate:r.earningsDate,earningsTime:r.earningsTime||c.earningsTime}):c})})}}).catch(function(){})}}
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
       <div style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
@@ -401,7 +494,11 @@ function TrackerApp(props){
           {d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btnP,{width:"100%",padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"})}}>+ Add Company</button></div></div>}
-  function TopBar(){return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card,position:"sticky",top:0,zIndex:50,gap:12}}>
+  function TopBar(){var sp=getSpend();var spPct=sp.cap>0?Math.min(sp.total/sp.cap*100,100):0;var overCap=sp.total>=sp.cap;
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card,position:"sticky",top:0,zIndex:50,gap:12}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",border:"1px solid "+(overCap?K.red+"40":K.bdr),borderRadius:6,background:overCap?K.red+"08":"transparent"}} title={"AI spend today: $"+sp.total.toFixed(2)+" / $"+sp.cap.toFixed(2)+" cap ("+sp.calls+" calls)"}>
+      <div style={{width:40,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:spPct+"%",borderRadius:2,background:overCap?K.red:spPct>60?K.amb:K.grn}}/></div>
+      <span style={{fontSize:10,color:overCap?K.red:K.dim,fontFamily:fm}}>${sp.total.toFixed(2)}/{sp.cap.toFixed(2)}</span></div>
     <button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={isDark?"Light mode":"Dark mode"}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -517,6 +614,56 @@ function TrackerApp(props){
           <div style={{fontSize:10,color:K.dim,marginTop:4}}>Checked: {fT(selectedEntry.checkedAt)}</div></div>}</div></div>}
 
   // ── Detail View ───────────────────────────────────────────
+  // ── Finnhub-Powered Sections (all FREE, $0) ────────────
+  function CompanyNews(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _ld=useState(false),ld=_ld[0],setLd=_ld[1];
+    function load(){setLd(true);fetchNews(c.ticker).then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})}
+    if(!data&&!ld)return<div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={S.sec}>News</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={load}>Load News <span style={{fontSize:9,opacity:.5}}>Free</span></button></div></div>;
+    if(ld)return<div style={{marginBottom:20}}><div style={S.sec}>News</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    if(!data||!data.length)return<div style={{marginBottom:20}}><div style={S.sec}>News</div><div style={{fontSize:11,color:K.dim}}>No recent news found.</div></div>;
+    return<div style={{marginBottom:20}}><div style={S.sec}>News</div>
+      {data.map(function(n,i){return<a key={i} href={n.url} target="_blank" rel="noreferrer" style={{display:"block",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:6,textDecoration:"none"}}>
+        <div style={{fontSize:12,color:K.txt,lineHeight:1.4,marginBottom:4}}>{n.headline}</div>
+        <div style={{fontSize:10,color:K.dim}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</div></a>})}</div>}
+  function AnalystConsensus(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];
+    useEffect(function(){fetchAnalyst(c.ticker).then(function(r){if(r&&r.length)setData(r[0])}).catch(function(){})},[c.ticker]);
+    if(!data)return null;var total=(data.buy||0)+(data.hold||0)+(data.sell||0)+(data.strongBuy||0)+(data.strongSell||0);if(!total)return null;
+    var buys=(data.strongBuy||0)+(data.buy||0);var sells=(data.strongSell||0)+(data.sell||0);
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
+      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
+      <div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",marginBottom:8}}>
+        {data.strongBuy>0&&<div style={{width:(data.strongBuy/total*100)+"%",background:"#00C853"}}/>}
+        {data.buy>0&&<div style={{width:(data.buy/total*100)+"%",background:"#66BB6A"}}/>}
+        {data.hold>0&&<div style={{width:(data.hold/total*100)+"%",background:K.amb}}/>}
+        {data.sell>0&&<div style={{width:(data.sell/total*100)+"%",background:"#EF5350"}}/>}
+        {data.strongSell>0&&<div style={{width:(data.strongSell/total*100)+"%",background:"#C62828"}}/>}</div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:11,fontFamily:fm}}>
+        <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {data.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
+      <div style={{fontSize:10,color:K.dim,marginTop:4}}>{data.period}</div></div>}
+  function EarningsSurprises(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];
+    useEffect(function(){fetchSurprises(c.ticker).then(function(r){if(r&&r.length)setData(r)}).catch(function(){})},[c.ticker]);
+    if(!data||!data.length)return null;
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
+      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>EPS History (actual vs est.)</div>
+      {data.slice(0,4).map(function(e,i){var beat=e.actual>e.estimate;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
+        return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontSize:11,color:K.dim,fontFamily:fm,width:55}}>Q{e.quarter} {e.year}</span>
+          <span style={{fontSize:11,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,width:55}}>${e.actual!=null?e.actual.toFixed(2):"?"}</span>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>est: ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
+          <span style={{fontSize:10,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,marginLeft:"auto"}}>{beat?"+":""}{ pct.toFixed(1)}%</span></div>})}</div>}
+  function InsiderActivity(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _sh=useState(false),sh=_sh[0],setSh=_sh[1];
+    function load(){setSh(true);fetchInsiders(c.ticker).then(function(r){setData(r)}).catch(function(){})}
+    if(!sh)return<div style={{marginBottom:16}}><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={load}>Show Insider Activity <span style={{fontSize:9,opacity:.5}}>Free</span></button></div>;
+    if(!data||!data.length)return<div style={{marginBottom:16,fontSize:11,color:K.dim}}>No recent insider transactions.</div>;
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
+      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
+      {data.slice(0,5).map(function(t,i){var isBuy=t.change>0;
+        return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:11}}>
+          <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:40}}>{isBuy?"BUY":"SELL"}</span>
+          <span style={{color:K.mid,flex:1}}>{t.name}</span>
+          <span style={{color:K.dim,fontFamily:fm}}>{Math.abs(t.change).toLocaleString()} shares</span>
+          <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
+
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
@@ -549,8 +696,13 @@ function TrackerApp(props){
         {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}{cs!=="checking"&&cs!=="found"&&cs!=="not-yet"&&cs!=="error"?<span style={{fontSize:9,opacity:.6,marginLeft:4}}>~$0.02</span>:null}</button></div>
+        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}{cs!=="checking"&&cs!=="found"&&cs!=="not-yet"&&cs!=="error"?<span style={{fontSize:9,opacity:.6,marginLeft:4}}>{c.kpis&&c.kpis.some(function(k){return isCustomKpi(k.name)})?"~$0.02":"Free"}</span>:null}</button></div>
       <EarningsTimeline company={c}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        <AnalystConsensus company={c}/>
+        <EarningsSurprises company={c}/></div>
+      <CompanyNews company={c}/>
+      <InsiderActivity company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
         {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
