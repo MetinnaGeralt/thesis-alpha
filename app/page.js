@@ -20,7 +20,7 @@ async function cloudSave(userId,payload){if(!supabase||!userId)return;
 async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("FMP:",e);return null}}
 
 // ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
-async function fh(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("Finnhub:",e);return null}}
+async function finnhub(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("Finnhub:",e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -83,7 +83,7 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
         irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
       // Grab earnings date from Finnhub (free, $0)
       var ed="TBD",et="TBD";
-      try{var ec=await fh("calendar/earnings?symbol="+t);
+      try{var ec=await finnhub("calendar/earnings?symbol="+t);
         if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
           var now=new Date().toISOString().slice(0,10);
           var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
@@ -97,8 +97,8 @@ async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";
   // Step 1: Finnhub basic financials (FREE, $0)
-  try{var met=await fh("stock/metric?symbol="+co.ticker+"&metric=all");
-    var earn=await fh("stock/earnings?symbol="+co.ticker);
+  try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
+    var earn=await finnhub("stock/earnings?symbol="+co.ticker);
     if(met&&met.metric){var m=met.metric;
       // Map Finnhub metric names to our KPI format
       var fhMap={"revenue":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2)+"/sh":"N/A"},
@@ -158,7 +158,7 @@ async function fetchEarnings(co,kpis){
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved from Finnhub.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub"}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
-  try{var ec=await fh("calendar/earnings?symbol="+ticker);
+  try{var ec=await finnhub("calendar/earnings?symbol="+ticker);
     if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
       var now=new Date().toISOString().slice(0,10);
       var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
@@ -168,15 +168,17 @@ async function lookupNextEarnings(ticker){
   return{earningsDate:"TBD",earningsTime:"TBD"}}
 // New: Company news feed (Finnhub, $0)
 async function fetchNews(ticker){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-  var n=await fh("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,5)}catch(e){return[]}}
+  var n=await finnhub("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,5)}catch(e){return[]}}
 // New: Analyst recommendations (Finnhub, $0)
-async function fetchAnalyst(ticker){try{var r=await fh("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,4)}catch(e){return[]}}
+async function fetchAnalyst(ticker){try{var r=await finnhub("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,4)}catch(e){return[]}}
 // New: Earnings surprises — actual vs estimate history (Finnhub, $0)
-async function fetchSurprises(ticker){try{var r=await fh("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
+async function fetchSurprises(ticker){try{var r=await finnhub("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
 // New: Insider transactions (Finnhub, $0)
-async function fetchInsiders(ticker){try{var r=await fh("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,10):[]}catch(e){return[]}}
+async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,10):[]}catch(e){return[]}}
+// Insider sentiment = aggregate monthly buy/sell (Finnhub, $0)
+async function fetchInsiderSentiment(ticker){try{var r=await finnhub("stock/insider-sentiment?symbol="+ticker);return r&&r.data?(r.data).slice(0,6):[]}catch(e){return[]}}
 // New: Peer companies (Finnhub, $0)
-async function fetchPeers(ticker){try{var r=await fh("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
+async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
 async function analyzeNarrativeDrift(ticker,name,currentText){if(!canSpend())return{drifts:[],overallRisk:"unknown",summary:"Daily spending cap reached.",quartersCompared:[]};
   var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
@@ -650,19 +652,34 @@ function TrackerApp(props){
           <span style={{fontSize:11,color:K.dim,fontFamily:fm,width:55}}>Q{e.quarter} {e.year}</span>
           <span style={{fontSize:11,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,width:55}}>${e.actual!=null?e.actual.toFixed(2):"?"}</span>
           <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>est: ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
-          <span style={{fontSize:10,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,marginLeft:"auto"}}>{beat?"+":""}{ pct.toFixed(1)}%</span></div>})}</div>}
-  function InsiderActivity(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _sh=useState(false),sh=_sh[0],setSh=_sh[1];
-    function load(){setSh(true);fetchInsiders(c.ticker).then(function(r){setData(r)}).catch(function(){})}
+          <span style={{fontSize:10,fontWeight:600,color:beat?K.grn:K.red,fontFamily:fm,marginLeft:"auto"}}>{beat?"+":""}{pct.toFixed(1)}%</span></div>})}</div>}
+  function InsiderActivity(p){var c=p.company;var _d=useState(null),data=_d[0],setData=_d[1];var _sent=useState(null),sent=_sent[0],setSent=_sent[1];var _sh=useState(false),sh=_sh[0],setSh=_sh[1];var _tab=useState("txns"),tab=_tab[0],setTab=_tab[1];
+    function load(){setSh(true);fetchInsiders(c.ticker).then(function(r){setData(r)}).catch(function(){});fetchInsiderSentiment(c.ticker).then(function(r){setSent(r)}).catch(function(){})}
     if(!sh)return<div style={{marginBottom:16}}><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={load}>Show Insider Activity <span style={{fontSize:9,opacity:.5}}>Free</span></button></div>;
-    if(!data||!data.length)return<div style={{marginBottom:16,fontSize:11,color:K.dim}}>No recent insider transactions.</div>;
+    if((!data||!data.length)&&(!sent||!sent.length))return<div style={{marginBottom:16,fontSize:11,color:K.dim}}>No recent insider data found.</div>;
     return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
-      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
-      {data.slice(0,5).map(function(t,i){var isBuy=t.change>0;
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Insider Activity</div>
+        <div style={{display:"flex",gap:4}}>{["txns","sentiment"].map(function(t){return<button key={t} onClick={function(){setTab(t)}} style={{background:tab===t?K.acc+"20":"transparent",border:"1px solid "+(tab===t?K.acc+"50":K.bdr),borderRadius:4,padding:"3px 10px",fontSize:10,color:tab===t?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{t==="txns"?"Transactions":"Monthly Trend"}</button>})}</div></div>
+      {tab==="txns"&&data&&data.length>0&&data.slice(0,6).map(function(t,i){var isBuy=t.change>0;
         return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,fontSize:11}}>
           <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:40}}>{isBuy?"BUY":"SELL"}</span>
-          <span style={{color:K.mid,flex:1}}>{t.name}</span>
-          <span style={{color:K.dim,fontFamily:fm}}>{Math.abs(t.change).toLocaleString()} shares</span>
-          <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
+          <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
+          <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
+          <span style={{color:K.dim,fontFamily:fm,fontSize:10,whiteSpace:"nowrap"}}>{t.transactionDate}</span></div>})}
+      {tab==="txns"&&(!data||!data.length)&&<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No recent transactions.</div>}
+      {tab==="sentiment"&&sent&&sent.length>0&&<div>
+        <div style={{display:"flex",gap:4,marginBottom:8,fontSize:10,color:K.dim,fontFamily:fm}}><span style={{width:60}}>Month</span><span style={{flex:1}}>Net (shares)</span><span>MSPR</span></div>
+        {sent.map(function(s,i){var net=s.change||0;var mspr=s.mspr||0;
+          return<div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:4,fontSize:11}}>
+            <span style={{width:60,color:K.dim,fontFamily:fm}}>{s.year}-{String(s.month).padStart(2,"0")}</span>
+            <div style={{flex:1,display:"flex",alignItems:"center",gap:6}}>
+              <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}>
+                <div style={{height:"100%",width:Math.min(Math.abs(net)/10000*100,100)+"%",background:net>=0?K.grn:K.red,borderRadius:3}}/></div>
+              <span style={{fontSize:10,color:net>=0?K.grn:K.red,fontFamily:fm,fontWeight:600,minWidth:50,textAlign:"right"}}>{net>=0?"+":""}{net.toLocaleString()}</span></div>
+            <span style={{fontSize:10,color:mspr>=0?K.grn:K.red,fontFamily:fm,fontWeight:600,minWidth:40,textAlign:"right"}}>{mspr>=0?"+":""}{mspr.toFixed(2)}</span></div>})}
+        <div style={{fontSize:10,color:K.dim,marginTop:6}}>MSPR = Monthly Share Purchase Ratio (positive = net buying)</div></div>}
+      {tab==="sentiment"&&(!sent||!sent.length)&&<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No monthly sentiment data.</div>}</div>}
 
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
