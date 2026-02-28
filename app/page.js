@@ -182,11 +182,13 @@ async function lookupNextEarnings(ticker){
       var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
       if(recent.length)return{earningsDate:recent[0].date,earningsTime:recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}catch(e){}
   return{earningsDate:"TBD",earningsTime:"TBD"}}
-// Finnhub ownership & insider data ($0)
-async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,10):[]}catch(e){return[]}}
-async function fetchInsiderSentiment(ticker){try{var r=await finnhub("stock/insider-sentiment?symbol="+ticker);return r&&r.data?(r.data).slice(0,6):[]}catch(e){return[]}}
-async function fetchOwnership(ticker){try{var r=await finnhub("stock/fund-ownership?symbol="+ticker+"&limit=10");return r&&r.ownership?(r.ownership).slice(0,10):[]}catch(e){return[]}}
-async function fetchInstitutional(ticker){try{var r=await finnhub("stock/institutional-ownership?symbol="+ticker);return r&&r.data&&r.data.length?r.data[0]:{}}catch(e){return{}}}
+// Finnhub data — all FREE tier ($0)
+async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,15):[]}catch(e){return[]}}
+async function fetchRecommendations(ticker){try{var r=await finnhub("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,6)}catch(e){return[]}}
+async function fetchEPSHistory(ticker){try{var r=await finnhub("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
+async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
+async function fetchCompanyNews(ticker,days){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-(days||14)*86400000).toISOString().slice(0,10);
+  var n=await finnhub("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,8)}catch(e){return[]}}
 async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
 async function analyzeNarrativeDrift(ticker,name,currentText){if(!canSpend())return{drifts:[],overallRisk:"unknown",summary:"Daily spending cap reached.",quartersCompared:[]};
   var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
@@ -197,7 +199,7 @@ async function fetchQATranscript(ticker){try{var ts=await fetchTranscripts(ticke
 
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#121217",side:"#0c0c14",card:"#1c1c28",bdr:"#2a2a3a",bdr2:"#363648",txt:"#f0f0f5",mid:"#b0b0c0",dim:"#6e6e82",blue:"#5b9bf6",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#818CF8"};
-var LIGHT={bg:"#FFF8F0",side:"#FFFFFF",card:"#FFFFFF",bdr:"#E0D5C7",bdr2:"#D1C4B2",txt:"#1A1A1A",mid:"#555555",dim:"#888888",blue:"#2563EB",grn:"#16A34A",red:"#DC2626",amb:"#D97706",acc:"#6366F1"};
+var LIGHT={bg:"#F5F0FA",side:"#FFFFFF",card:"#FFFFFF",bdr:"#E2D8EE",bdr2:"#D0C4DE",txt:"#1A1128",mid:"#4A3D5C",dim:"#8878A0",blue:"#5B3E96",grn:"#16A34A",red:"#DC2626",amb:"#D97706",acc:"#5B3E96"};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 var SUGS={Semiconductors:["Revenue","Gross Margin","Data Center Revenue","Next-Q Guidance"],Cybersecurity:["Net New ARR","Revenue Growth YoY","Gross Retention","FCF Margin"],SaaS:["ARR Growth YoY","Net Revenue Retention","FCF Margin"],_def:["Revenue Growth YoY","Gross Margin","Operating Margin","EPS Growth YoY"]};
@@ -331,17 +333,18 @@ function TrackerApp(props){
   async function checkOne(cid){var co=cos.find(function(c){return c.id===cid});if(!co)return;
     setCheckSt(function(p){var n=Object.assign({},p);n[cid]="checking";return n});
     try{var r=await fetchEarnings(co,co.kpis||[]);
-      if(r.found&&r.results){setCos(function(prev){return prev.map(function(c){if(c.id!==cid)return c;
+      // Also fetch news (free, $0)
+      var news=await fetchCompanyNews(co.ticker,14).catch(function(){return[]});
+      if(r.found){setCos(function(prev){return prev.map(function(c){if(c.id!==cid)return c;
         var earningsHistory=c.earningsHistory||[];
         var newEntry={quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),results:(r.results||[]).map(function(x){return{kpi_name:x.kpi_name,actual_value:x.actual_value,status:x.status,excerpt:stripCite(x.excerpt||"")}}),sourceUrl:r.sourceUrl,sourceLabel:stripCite(r.sourceLabel||""),checkedAt:new Date().toISOString()};
-        // Don't duplicate same quarter
         var exists=earningsHistory.findIndex(function(h){return h.quarter===newEntry.quarter});
         if(exists>=0){earningsHistory=earningsHistory.slice();earningsHistory[exists]=newEntry}else{earningsHistory=[newEntry].concat(earningsHistory)}
-        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},kpis:c.kpis.map(function(k){var m=r.results.find(function(x){return x.kpi_name===k.name});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
+        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var m=r.results.find(function(x){return x.kpi_name===k.name});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
         setCheckSt(function(p){var n=Object.assign({},p);n[cid]="found";return n});
         setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n});upd(cid,{lastChecked:new Date().toISOString()})}}
-    catch(e){setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
+    catch(e){console.warn("checkOne error:",e);setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
   async function checkAll(){var pend=cos.filter(function(c){return c.earningsDate!=="TBD"&&dU(c.earningsDate)<=3});for(var i=0;i<pend.length;i++){await checkOne(pend[i].id);await new Promise(function(r){setTimeout(r,800)})}}
   async function refreshPrices(){setPriceLoading(true);
@@ -622,62 +625,82 @@ function TrackerApp(props){
 
   // ── Detail View ───────────────────────────────────────────
   // ── Finnhub-Powered Sections (all FREE, $0) ────────────
-  // ── Financial Snapshot (from Finnhub, auto-populated on Check Earnings) ──
-  function FinancialSnapshot(p){var c=p.company;var snap=c.financialSnapshot;
+  // ── Earnings Report Card (appears after Check Earnings) ──
+  function EarningsReportCard(p){var c=p.company;var snap=c.financialSnapshot;var news=c.latestNews;
     if(!snap||!Object.keys(snap).length)return null;
     var keys=Object.keys(snap);
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
-      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Financial Snapshot <span style={{textTransform:"none",letterSpacing:0,opacity:.6}}>(Finnhub)</span></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:8}}>
-        {keys.map(function(k){var item=snap[k];
-          return<div key={k} style={{background:K.bg,borderRadius:6,padding:"8px 10px"}}>
-            <div style={{fontSize:9,color:K.dim,marginBottom:3,fontFamily:fm}}>{item.label}</div>
-            <div style={{fontSize:13,fontWeight:600,color:item.positive!=null?(item.positive?K.grn:K.red):item.beat!=null?(item.beat?K.grn:K.red):K.txt,fontFamily:fm}}>{item.value}</div>
-            {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>}
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:20}}>
+      <div style={{padding:"16px 24px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>{c.financialSnapshot&&c.financialSnapshot.eps?"Earnings Report":""} {c.earningsHistory&&c.earningsHistory[0]?c.earningsHistory[0].quarter:""}</div>
+          {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>Updated {fT(c.lastChecked)}</div>}</div>
+        {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>{c.sourceLabel||"Source"} {"\u2197"}</a>}</div>
+      {/* Summary text */}
+      {c.earningSummary&&<div style={{padding:"14px 24px",borderBottom:"1px solid "+K.bdr,fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>}
+      {/* Financial grid */}
+      <div style={{padding:"16px 24px"}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Key Financials</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:8}}>
+          {keys.map(function(k){var item=snap[k];
+            return<div key={k} style={{background:K.bg,borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:9,color:K.dim,marginBottom:4,fontFamily:fm}}>{item.label}</div>
+              <div style={{fontSize:14,fontWeight:600,color:item.positive!=null?(item.positive?K.grn:K.red):item.beat!=null?(item.beat?K.grn:K.red):K.txt,fontFamily:fm}}>{item.value}</div>
+              {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>
+      {/* Recent news */}
+      {news&&news.length>0&&<div style={{padding:"0 24px 16px"}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Recent News</div>
+        {news.slice(0,4).map(function(n,i){return<a key={i} href={n.url} target="_blank" rel="noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<3?"1px solid "+K.bdr:"none",textDecoration:"none",gap:8}}>
+          <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
+          <span style={{fontSize:9,color:K.dim,whiteSpace:"nowrap",fontFamily:fm}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</span></a>})}</div>}</div>}
 
-  function OwnershipInsiders(p){var c=p.company;
-    var _owners=useState(null),owners=_owners[0],setOwners=_owners[1];
-    var _inst=useState(null),inst=_inst[0],setInst=_inst[1];
+  // ── Analyst & Insider Section (all FREE endpoints) ──
+  function AnalystInsiders(p){var c=p.company;
+    var _recs=useState(null),recs=_recs[0],setRecs=_recs[1];
+    var _eps=useState(null),eps=_eps[0],setEps=_eps[1];
     var _txns=useState(null),txns=_txns[0],setTxns=_txns[1];
-    var _sent=useState(null),sent=_sent[0],setSent=_sent[1];
+    var _peers=useState(null),peers=_peers[0],setPeers=_peers[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);
-      Promise.all([fetchOwnership(c.ticker).catch(function(){return[]}),fetchInstitutional(c.ticker).catch(function(){return{}}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchInsiderSentiment(c.ticker).catch(function(){return[]})]).then(function(res){setOwners(res[0]);setInst(res[1]);setTxns(res[2]);setSent(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Ownership & Insiders</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
-    var hasOwners=owners&&owners.length>0;var hasInst=inst&&inst.ownership&&inst.ownership.length>0;var hasTxns=txns&&txns.length>0;var hasSent=sent&&sent.length>0;
-    var hasAny=hasOwners||hasInst||hasTxns||hasSent;
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
-      <div style={S.sec}>Ownership & Insiders</div>
-      {!hasAny&&<div style={{fontSize:12,color:K.dim,padding:"12px 0"}}>No ownership or insider data available for {c.ticker}. Finnhub may not cover this ticker for these endpoints.</div>}
-      {hasOwners&&<div style={{marginBottom:16}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Largest Fund Holders</div>
-        {owners.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown Fund"}</span>
-          <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
-          {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
-      {hasInst&&<div style={{marginBottom:16}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Top Institutional Holders</div>
-        {inst.ownership.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-          <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown"}</span>
-          <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
-          {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
-      {hasTxns&&<div style={{marginBottom:16}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Recent Insider Transactions</div>
+      Promise.all([fetchRecommendations(c.ticker).catch(function(){return[]}),fetchEPSHistory(c.ticker).catch(function(){return[]}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchPeers(c.ticker).catch(function(){return[]})]).then(function(res){setRecs(res[0]);setEps(res[1]);setTxns(res[2]);setPeers(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    var hasRecs=recs&&recs.length>0;var hasEps=eps&&eps.length>0;var hasTxns=txns&&txns.length>0;var hasPeers=peers&&peers.length>0;
+    if(!hasRecs&&!hasEps&&!hasTxns&&!hasPeers)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No Finnhub data available for {c.ticker}. Non-US tickers may need exchange suffix (e.g. HFG.DE, PROT.OL).</div></div>;
+    return<div style={{marginBottom:20}}>
+      {/* Analyst + EPS row */}
+      <div style={{display:"grid",gridTemplateColumns:hasRecs&&hasEps?"1fr 1fr":"1fr",gap:12,marginBottom:12}}>
+        {hasRecs&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
+          {function(){var r=recs[0];var total=(r.buy||0)+(r.hold||0)+(r.sell||0)+(r.strongBuy||0)+(r.strongSell||0);if(!total)return null;
+            var buys=(r.strongBuy||0)+(r.buy||0);var sells=(r.strongSell||0)+(r.sell||0);
+            return<div><div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",marginBottom:8}}>
+              {r.strongBuy>0&&<div style={{width:(r.strongBuy/total*100)+"%",background:"#00C853"}}/>}
+              {r.buy>0&&<div style={{width:(r.buy/total*100)+"%",background:"#66BB6A"}}/>}
+              {r.hold>0&&<div style={{width:(r.hold/total*100)+"%",background:K.amb}}/>}
+              {r.sell>0&&<div style={{width:(r.sell/total*100)+"%",background:"#EF5350"}}/>}
+              {r.strongSell>0&&<div style={{width:(r.strongSell/total*100)+"%",background:"#C62828"}}/>}</div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,fontFamily:fm}}>
+                <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {r.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
+              <div style={{fontSize:10,color:K.dim,marginTop:4}}>{r.period} · {total} analysts</div></div>}()}</div>}
+        {hasEps&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>EPS History</div>
+          {eps.slice(0,4).map(function(e,i){var beat=e.actual!=null&&e.estimate!=null?e.actual>=e.estimate:null;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:50}}>Q{e.quarter} {String(e.year).slice(2)}</span>
+              <span style={{fontSize:11,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.txt,fontFamily:fm,width:50}}>${e.actual!=null?e.actual.toFixed(2):"?"}</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>est ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
+              <span style={{fontSize:9,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.dim,fontFamily:fm,marginLeft:"auto"}}>{beat!=null?(pct>=0?"+":"")+pct.toFixed(1)+"%":""}</span></div>})}</div>}</div>
+      {/* Insider Transactions */}
+      {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:12}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
         {txns.slice(0,6).map(function(t,i){var isBuy=t.change>0;
           return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,fontSize:11}}>
             <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:36,fontSize:10}}>{isBuy?"BUY":"SELL"}</span>
             <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
             <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
             <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
-      {hasSent&&<div>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Monthly Insider Sentiment</div>
-        <div style={{display:"flex",gap:6}}>
-          {sent.slice(0,6).map(function(s,i){var mspr=s.mspr||0;
-            return<div key={i} style={{flex:1,background:K.bg,borderRadius:6,padding:"8px 6px",textAlign:"center"}}>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{s.month}/{String(s.year).slice(2)}</div>
-              <div style={{fontSize:12,fontWeight:600,color:mspr>=0?K.grn:K.red,fontFamily:fm}}>{mspr>=0?"+":""}{mspr.toFixed(1)}</div>
-              <div style={{fontSize:8,color:K.dim,marginTop:2}}>MSPR</div></div>})}</div>
-        <div style={{fontSize:9,color:K.dim,marginTop:6}}>MSPR: Monthly Share Purchase Ratio. Positive = net insider buying.</div></div>}
+      {/* Peers */}
+      {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Peer Companies</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
 
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
@@ -707,13 +730,10 @@ function TrackerApp(props){
               {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
           </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
       {c.thesisNote&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>}
-      {c.earningSummary&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Latest Earnings</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>
-        {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:K.blue,textDecoration:"none",marginTop:8}}>{c.sourceLabel||"Source"}{"\u2197"}</a>}
-        {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Checked: {fT(c.lastChecked)}</div>}</div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
         <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
-      <FinancialSnapshot company={c}/>
+      <EarningsReportCard company={c}/>
       <EarningsTimeline company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
@@ -741,7 +761,7 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <OwnershipInsiders company={c}/>
+      <AnalystInsiders company={c}/>
       <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a> + Claude AI</div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
