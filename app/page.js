@@ -95,11 +95,28 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 async function fetchEarnings(co,kpis){
-  var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";
+  var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
   // Step 1: Finnhub basic financials (FREE, $0)
   try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
     var earn=await finnhub("stock/earnings?symbol="+co.ticker);
     if(met&&met.metric){var m=met.metric;
+      // Build raw snapshot for display regardless of KPIs
+      if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
+      if(m["revenuePerShareTTM"])snapshot.revPerShare={label:"Revenue/Share",value:"$"+m["revenuePerShareTTM"].toFixed(2)};
+      if(m["grossMarginTTM"]!=null)snapshot.grossMargin={label:"Gross Margin",value:(m["grossMarginTTM"]*100).toFixed(1)+"%"};
+      if(m["operatingMarginTTM"]!=null)snapshot.opMargin={label:"Operating Margin",value:(m["operatingMarginTTM"]*100).toFixed(1)+"%"};
+      if(m["netProfitMarginTTM"]!=null)snapshot.netMargin={label:"Net Margin",value:(m["netProfitMarginTTM"]*100).toFixed(1)+"%"};
+      if(m["roeTTM"]!=null)snapshot.roe={label:"ROE",value:(m["roeTTM"]*100).toFixed(1)+"%"};
+      if(m["roicTTM"]!=null)snapshot.roic={label:"ROIC",value:(m["roicTTM"]*100).toFixed(1)+"%"};
+      if(m["currentRatioQuarterly"])snapshot.currentRatio={label:"Current Ratio",value:m["currentRatioQuarterly"].toFixed(2)};
+      if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
+      if(m["peTTM"])snapshot.pe={label:"P/E",value:m["peTTM"].toFixed(1)};
+      if(m["pbQuarterly"])snapshot.pb={label:"P/B",value:m["pbQuarterly"].toFixed(2)};
+      if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
+      if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",value:(m["revenueGrowthTTMYoy"]*100).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
+      if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:(m["epsGrowthTTMYoy"]*100).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
+      if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
+      if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
       // Map Finnhub metric names to our KPI format
       var fhMap={"revenue":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2)+"/sh":"N/A"},
         "eps":{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
@@ -143,9 +160,8 @@ async function fetchEarnings(co,kpis){
   // Step 2: Check if there are CUSTOM KPIs that need AI (DAU, MAU, subscribers, etc.)
   var customKpis=kpis?kpis.filter(function(k){return isCustomKpi(k.name)&&!results.some(function(r){return r.kpi_name===k.name})}):[];
   if(customKpis.length>0){
-    if(!canSpend()){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Daily cap reached — cannot check custom KPIs"})});
+    if(!canSpend()){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI disabled — top up credits to check custom KPIs"})});
     }else{
-      // Only call AI for custom KPIs — much smaller prompt, much cheaper
       var prompt=co.ticker+" "+co.name+" latest quarterly earnings. Find ONLY these metrics: "+customKpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", ")+". Check press release AND shareholder letter.";
       prompt+='\nJSON only:\n{"quarter":"Q? YYYY","results":['+customKpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"source"}'}).join(",")+'],"summary":"1 sentence with custom metrics","sourceUrl":"URL"}';
       try{var aiR=await aiJSON(SJ,prompt,true,false);logSpend(0.02);
@@ -154,8 +170,8 @@ async function fetchEarnings(co,kpis){
           if(aiR.summary)summary=(summary?summary+". ":"")+stripCite(aiR.summary);
           if(aiR.sourceUrl){srcUrl=aiR.sourceUrl;srcLabel=stripCite(aiR.sourceLabel||"Press Release")}}}
       catch(e){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI check failed"})})}}}
-  if(!results.length&&!quarter)return{found:false,reason:"No earnings data found. Try adding KPIs first."};
-  return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved from Finnhub.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub"}}
+  if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Finnhub may not cover this ticker."};
+  return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
   try{var ec=await finnhub("calendar/earnings?symbol="+ticker);
@@ -321,7 +337,7 @@ function TrackerApp(props){
         // Don't duplicate same quarter
         var exists=earningsHistory.findIndex(function(h){return h.quarter===newEntry.quarter});
         if(exists>=0){earningsHistory=earningsHistory.slice();earningsHistory[exists]=newEntry}else{earningsHistory=[newEntry].concat(earningsHistory)}
-        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),kpis:c.kpis.map(function(k){var m=r.results.find(function(x){return x.kpi_name===k.name});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
+        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},kpis:c.kpis.map(function(k){var m=r.results.find(function(x){return x.kpi_name===k.name});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
         setCheckSt(function(p){var n=Object.assign({},p);n[cid]="found";return n});
         setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n});upd(cid,{lastChecked:new Date().toISOString()})}}
@@ -606,6 +622,19 @@ function TrackerApp(props){
 
   // ── Detail View ───────────────────────────────────────────
   // ── Finnhub-Powered Sections (all FREE, $0) ────────────
+  // ── Financial Snapshot (from Finnhub, auto-populated on Check Earnings) ──
+  function FinancialSnapshot(p){var c=p.company;var snap=c.financialSnapshot;
+    if(!snap||!Object.keys(snap).length)return null;
+    var keys=Object.keys(snap);
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:16}}>
+      <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Financial Snapshot <span style={{textTransform:"none",letterSpacing:0,opacity:.6}}>(Finnhub)</span></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:8}}>
+        {keys.map(function(k){var item=snap[k];
+          return<div key={k} style={{background:K.bg,borderRadius:6,padding:"8px 10px"}}>
+            <div style={{fontSize:9,color:K.dim,marginBottom:3,fontFamily:fm}}>{item.label}</div>
+            <div style={{fontSize:13,fontWeight:600,color:item.positive!=null?(item.positive?K.grn:K.red):item.beat!=null?(item.beat?K.grn:K.red):K.txt,fontFamily:fm}}>{item.value}</div>
+            {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>}
+
   function OwnershipInsiders(p){var c=p.company;
     var _owners=useState(null),owners=_owners[0],setOwners=_owners[1];
     var _inst=useState(null),inst=_inst[0],setInst=_inst[1];
@@ -613,27 +642,25 @@ function TrackerApp(props){
     var _sent=useState(null),sent=_sent[0],setSent=_sent[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);
-      Promise.all([fetchOwnership(c.ticker),fetchInstitutional(c.ticker),fetchInsiders(c.ticker),fetchInsiderSentiment(c.ticker)]).then(function(res){setOwners(res[0]);setInst(res[1]);setTxns(res[2]);setSent(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Ownership & Insiders</div><div style={{fontSize:11,color:K.dim}}>Loading ownership data...</div></div>;
-    var hasOwners=owners&&owners.length>0;var hasInst=inst&&((inst.ownership&&inst.ownership.length>0));var hasTxns=txns&&txns.length>0;var hasSent=sent&&sent.length>0;
-    if(!hasOwners&&!hasInst&&!hasTxns&&!hasSent)return null;
+      Promise.all([fetchOwnership(c.ticker).catch(function(){return[]}),fetchInstitutional(c.ticker).catch(function(){return{}}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchInsiderSentiment(c.ticker).catch(function(){return[]})]).then(function(res){setOwners(res[0]);setInst(res[1]);setTxns(res[2]);setSent(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Ownership & Insiders</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    var hasOwners=owners&&owners.length>0;var hasInst=inst&&inst.ownership&&inst.ownership.length>0;var hasTxns=txns&&txns.length>0;var hasSent=sent&&sent.length>0;
+    var hasAny=hasOwners||hasInst||hasTxns||hasSent;
     return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
       <div style={S.sec}>Ownership & Insiders</div>
-      {/* Top Shareholders */}
+      {!hasAny&&<div style={{fontSize:12,color:K.dim,padding:"12px 0"}}>No ownership or insider data available for {c.ticker}. Finnhub may not cover this ticker for these endpoints.</div>}
       {hasOwners&&<div style={{marginBottom:16}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Largest Fund Holders</div>
         {owners.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
           <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown Fund"}</span>
           <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
           {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
-      {/* Institutional ownership summary */}
-      {hasInst&&inst.ownership&&inst.ownership.length>0&&<div style={{marginBottom:16}}>
+      {hasInst&&<div style={{marginBottom:16}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Top Institutional Holders</div>
         {inst.ownership.slice(0,6).map(function(o,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
           <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.name||"Unknown"}</span>
           <span style={{fontSize:11,color:K.txt,fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{o.share!=null?(o.share*100).toFixed(2)+"%":o.noShares?Math.round(o.noShares).toLocaleString()+" sh":""}</span>
           {o.change!=null&&o.change!==0&&<span style={{fontSize:10,color:o.change>0?K.grn:K.red,fontFamily:fm}}>{o.change>0?"+":""}{(o.change*100).toFixed(2)}%</span>}</div>})}</div>}
-      {/* Insider Transactions */}
       {hasTxns&&<div style={{marginBottom:16}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Recent Insider Transactions</div>
         {txns.slice(0,6).map(function(t,i){var isBuy=t.change>0;
@@ -642,11 +669,10 @@ function TrackerApp(props){
             <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
             <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
             <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
-      {/* Monthly Insider Sentiment */}
       {hasSent&&<div>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Monthly Insider Sentiment</div>
         <div style={{display:"flex",gap:6}}>
-          {sent.slice(0,6).map(function(s,i){var net=s.change||0;var mspr=s.mspr||0;
+          {sent.slice(0,6).map(function(s,i){var mspr=s.mspr||0;
             return<div key={i} style={{flex:1,background:K.bg,borderRadius:6,padding:"8px 6px",textAlign:"center"}}>
               <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{s.month}/{String(s.year).slice(2)}</div>
               <div style={{fontSize:12,fontWeight:600,color:mspr>=0?K.grn:K.red,fontFamily:fm}}>{mspr>=0?"+":""}{mspr.toFixed(1)}</div>
@@ -687,6 +713,7 @@ function TrackerApp(props){
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
         <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
+      <FinancialSnapshot company={c}/>
       <EarningsTimeline company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
