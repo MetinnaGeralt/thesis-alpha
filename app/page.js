@@ -71,9 +71,34 @@ function canSpend(){var d=getSpend();return d.total<(d.cap||DEFAULT_CAP)}
 function setDailyCap(v){var d=getSpend();d.cap=v;try{localStorage.setItem(DAILY_CAP_KEY,JSON.stringify(d))}catch(e){}}
 
 // ═══ DATA FUNCTIONS ═══
-// Standard financial KPI names that Finnhub metrics can provide
-var FINNHUB_KPIS={"revenue":1,"total revenue":1,"eps":1,"earnings per share":1,"diluted eps":1,"gross margin":1,"gross profit margin":1,"operating margin":1,"net margin":1,"net income margin":1,"profit margin":1,"roe":1,"return on equity":1,"roic":1,"return on invested capital":1,"roa":1,"return on assets":1,"current ratio":1,"debt to equity":1,"d/e ratio":1,"free cash flow":1,"fcf":1,"fcf margin":1,"free cash flow margin":1,"p/e":1,"pe ratio":1,"p/e ratio":1,"p/b":1,"price to book":1,"revenue growth":1,"eps growth":1,"dividend yield":1,"book value per share":1,"ebitda":1,"operating income":1,"net income":1,"gross profit":1,"operating cash flow":1,"revenue per share":1,"ebitda margin":1};
-function isCustomKpi(name){return!FINNHUB_KPIS[name.toLowerCase().replace(/[^a-z0-9 /]/g,"").trim()]}
+// Predefined metrics — each maps to an exact Finnhub field
+var METRICS=[
+  {id:"eps",label:"EPS",unit:"$",cat:"Earnings",fh:"earnings"},
+  {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Margins"},
+  {id:"opMargin",label:"Operating Margin",unit:"%",cat:"Margins"},
+  {id:"netMargin",label:"Net Margin",unit:"%",cat:"Margins"},
+  {id:"roe",label:"ROE",unit:"%",cat:"Returns"},
+  {id:"roa",label:"ROA",unit:"%",cat:"Returns"},
+  {id:"roic",label:"ROIC",unit:"%",cat:"Returns"},
+  {id:"revGrowth",label:"Revenue Growth YoY",unit:"%",cat:"Growth"},
+  {id:"epsGrowth",label:"EPS Growth YoY",unit:"%",cat:"Growth"},
+  {id:"revPerShare",label:"Revenue Per Share",unit:"$",cat:"Revenue"},
+  {id:"fcfPerShare",label:"Free Cash Flow / Share",unit:"$",cat:"Cash Flow"},
+  {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation"},
+  {id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation"},
+  {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health"},
+  {id:"debtEquity",label:"Debt / Equity",unit:"x",cat:"Health"},
+  {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income"},
+  {id:"bvps",label:"Book Value / Share",unit:"$",cat:"Valuation"},
+  {id:"ebitdaPerShare",label:"EBITDA / Share",unit:"$",cat:"Earnings"}
+];
+var METRIC_MAP={};METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
+// Legacy name → metricId mapping for existing user data
+var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
+var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","current ratio":"currentRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf margin":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth"};
+Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
+function resolveMetricId(kpi){if(kpi.metricId)return kpi.metricId;var n=kpi.name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return LEGACY_MAP[n]||null}
+function isCustomKpi(name){if(METRIC_MAP[name])return false;var n=name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return!LEGACY_MAP[n]}
 
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
@@ -119,30 +144,26 @@ async function fetchEarnings(co,kpis){
       if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
       if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
-      // Map Finnhub metric names to our KPI format
-      var fhMap={"revenue":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2)+"/sh":"N/A"},
-        "eps":{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
-        "gross margin":{v:m["grossMarginTTM"]!=null?m["grossMarginTTM"]:null,label:m["grossMarginTTM"]!=null?(m["grossMarginTTM"]).toFixed(1)+"%":"N/A"},
-        "operating margin":{v:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"]:null,label:m["operatingMarginTTM"]!=null?(m["operatingMarginTTM"]).toFixed(1)+"%":"N/A"},
-        "net margin":{v:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"]:null,label:m["netProfitMarginTTM"]!=null?(m["netProfitMarginTTM"]).toFixed(1)+"%":"N/A"},
-        "roe":{v:m["roeTTM"]!=null?m["roeTTM"]:null,label:m["roeTTM"]!=null?(m["roeTTM"]).toFixed(1)+"%":"N/A"},
-        "roa":{v:m["roaTTM"]!=null?m["roaTTM"]:null,label:m["roaTTM"]!=null?(m["roaTTM"]).toFixed(1)+"%":"N/A"},
-        "roic":{v:m["roicTTM"]!=null?m["roicTTM"]:null,label:m["roicTTM"]!=null?(m["roicTTM"]).toFixed(1)+"%":"N/A"},
-        "current ratio":{v:m["currentRatioQuarterly"],label:m["currentRatioQuarterly"]?m["currentRatioQuarterly"].toFixed(2):"N/A"},
-        "debt to equity":{v:m["totalDebt/totalEquityQuarterly"],label:m["totalDebt/totalEquityQuarterly"]?m["totalDebt/totalEquityQuarterly"].toFixed(2):"N/A"},
-        "p/e":{v:m["peTTM"],label:m["peTTM"]?m["peTTM"].toFixed(1):"N/A"},
-        "p/b":{v:m["pbQuarterly"],label:m["pbQuarterly"]?m["pbQuarterly"].toFixed(2):"N/A"},
-        "dividend yield":{v:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"]:null,label:m["dividendYieldIndicatedAnnual"]!=null?(m["dividendYieldIndicatedAnnual"]).toFixed(2)+"%":"N/A"},
-        "book value per share":{v:m["bookValuePerShareQuarterly"],label:m["bookValuePerShareQuarterly"]?"$"+m["bookValuePerShareQuarterly"].toFixed(2):"N/A"},
-        "revenue growth":{v:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"]:null,label:m["revenueGrowthTTMYoy"]!=null?(m["revenueGrowthTTMYoy"]).toFixed(1)+"%":"N/A"},
-        "eps growth":{v:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"]:null,label:m["epsGrowthTTMYoy"]!=null?(m["epsGrowthTTMYoy"]).toFixed(1)+"%":"N/A"},
-        "free cash flow":{v:m["freeCashFlowPerShareTTM"],label:m["freeCashFlowPerShareTTM"]?"$"+m["freeCashFlowPerShareTTM"].toFixed(2)+"/sh":"N/A"},
-        "ebitda margin":{v:m["ebitdPerShareTTM"],label:m["ebitdPerShareTTM"]?"$"+m["ebitdPerShareTTM"].toFixed(2)+"/sh":"N/A"},
-        "revenue per share":{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2):"N/A"}};
-      // Aliases
-      ["total revenue","earnings per share","diluted eps","gross profit margin","net income margin","profit margin","return on equity","return on invested capital","return on assets","d/e ratio","fcf","free cash flow margin","fcf margin","pe ratio","p/e ratio","price to book"].forEach(function(a){
-        var map={"total revenue":"revenue","earnings per share":"eps","diluted eps":"eps","gross profit margin":"gross margin","net income margin":"net margin","profit margin":"net margin","return on equity":"roe","return on invested capital":"roic","return on assets":"roa","d/e ratio":"debt to equity","fcf":"free cash flow","free cash flow margin":"free cash flow","fcf margin":"free cash flow","pe ratio":"p/e","p/e ratio":"p/e","price to book":"p/b"};
-        if(map[a]&&fhMap[map[a]])fhMap[a]=fhMap[map[a]]});
+      // Map Finnhub data to predefined metric IDs
+      var fhMap={
+        eps:{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
+        grossMargin:{v:m["grossMarginTTM"]!=null?m["grossMarginTTM"]:null,label:m["grossMarginTTM"]!=null?m["grossMarginTTM"].toFixed(1)+"%":"N/A"},
+        opMargin:{v:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"]:null,label:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"].toFixed(1)+"%":"N/A"},
+        netMargin:{v:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"]:null,label:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"].toFixed(1)+"%":"N/A"},
+        roe:{v:m["roeTTM"]!=null?m["roeTTM"]:null,label:m["roeTTM"]!=null?m["roeTTM"].toFixed(1)+"%":"N/A"},
+        roa:{v:m["roaTTM"]!=null?m["roaTTM"]:null,label:m["roaTTM"]!=null?m["roaTTM"].toFixed(1)+"%":"N/A"},
+        roic:{v:m["roicTTM"]!=null?m["roicTTM"]:null,label:m["roicTTM"]!=null?m["roicTTM"].toFixed(1)+"%":"N/A"},
+        revGrowth:{v:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"]:null,label:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"].toFixed(1)+"%":"N/A"},
+        epsGrowth:{v:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"]:null,label:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"].toFixed(1)+"%":"N/A"},
+        revPerShare:{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2):"N/A"},
+        fcfPerShare:{v:m["freeCashFlowPerShareTTM"],label:m["freeCashFlowPerShareTTM"]?"$"+m["freeCashFlowPerShareTTM"].toFixed(2):"N/A"},
+        pe:{v:m["peTTM"],label:m["peTTM"]?m["peTTM"].toFixed(1):"N/A"},
+        pb:{v:m["pbQuarterly"],label:m["pbQuarterly"]?m["pbQuarterly"].toFixed(2):"N/A"},
+        currentRatio:{v:m["currentRatioQuarterly"],label:m["currentRatioQuarterly"]?m["currentRatioQuarterly"].toFixed(2):"N/A"},
+        debtEquity:{v:m["totalDebt/totalEquityQuarterly"],label:m["totalDebt/totalEquityQuarterly"]?m["totalDebt/totalEquityQuarterly"].toFixed(2):"N/A"},
+        divYield:{v:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"]:null,label:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"].toFixed(2)+"%":"N/A"},
+        bvps:{v:m["bookValuePerShareQuarterly"],label:m["bookValuePerShareQuarterly"]?"$"+m["bookValuePerShareQuarterly"].toFixed(2):"N/A"},
+        ebitdaPerShare:{v:m["ebitdPerShareTTM"],label:m["ebitdPerShareTTM"]?"$"+m["ebitdPerShareTTM"].toFixed(2):"N/A"}};
       // Get quarter from earnings data
       if(earn&&earn.length){quarter="Q"+(earn[0].quarter||"?")+" "+(earn[0].year||"");
         srcUrl="https://finnhub.io/";srcLabel="Finnhub"}
@@ -153,14 +174,14 @@ async function fetchEarnings(co,kpis){
       if(m["grossMarginTTM"]!=null)sumParts.push("Gross: "+(m["grossMarginTTM"]).toFixed(1)+"%");
       if(m["roeTTM"]!=null)sumParts.push("ROE: "+(m["roeTTM"]).toFixed(1)+"%");
       summary=(quarter||"Latest")+": "+sumParts.join(", ");
-      // Match standard KPIs from Finnhub
+      // Match user's tracked KPIs by metric ID (supports legacy names)
       if(kpis&&kpis.length){kpis.forEach(function(k){
-        var kn=k.name.toLowerCase().replace(/[^a-z0-9 /]/g,"").trim();
-        var found=fhMap[kn];
-        if(found&&found.v!=null){results.push({kpi_name:k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" (Finnhub)"})}
-        else if(!isCustomKpi(k.name)){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"Not in Finnhub data"})}})}}}catch(e){console.warn("Finnhub metrics:",e)}
+        var metricId=resolveMetricId(k);
+        var found=metricId?fhMap[metricId]:null;
+        if(found&&found.v!=null){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" (Finnhub)"})}
+        else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub"})}})}}}catch(e){console.warn("Finnhub metrics:",e)}
   // Step 2: Check if there are CUSTOM KPIs that need AI (DAU, MAU, subscribers, etc.)
-  var customKpis=kpis?kpis.filter(function(k){return isCustomKpi(k.name)&&!results.some(function(r){return r.kpi_name===k.name})}):[];
+  var customKpis=kpis?kpis.filter(function(k){var mid=resolveMetricId(k);return(!mid||isCustomKpi(mid))&&!results.some(function(r){return r.kpi_name===(k.metricId||k.name)})}):[];
   if(customKpis.length>0){
     if(!canSpend()){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI disabled — top up credits to check custom KPIs"})});
     }else{
@@ -205,8 +226,7 @@ var DARK={bg:"#121217",side:"#0c0c14",card:"#1c1c28",bdr:"#2a2a3a",bdr2:"#363648
 var LIGHT={bg:"#F5F0FA",side:"#FFFFFF",card:"#FFFFFF",bdr:"#E2D8EE",bdr2:"#D0C4DE",txt:"#1A1128",mid:"#4A3D5C",dim:"#8878A0",blue:"#5B3E96",grn:"#16A34A",red:"#DC2626",amb:"#D97706",acc:"#5B3E96"};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
-var SUGS={Semiconductors:["Revenue","Gross Margin","Data Center Revenue","Next-Q Guidance"],Cybersecurity:["Net New ARR","Revenue Growth YoY","Gross Retention","FCF Margin"],SaaS:["ARR Growth YoY","Net Revenue Retention","FCF Margin"],_def:["Revenue Growth YoY","Gross Margin","Operating Margin","EPS Growth YoY"]};
-function getSugs(sec){if(!sec)return SUGS._def;var k=Object.keys(SUGS).find(function(s){return s!=="_def"&&sec.toLowerCase().includes(s.toLowerCase())});return SUGS[k]||SUGS._def}
+// (sector suggestions removed — using predefined METRICS dropdown)
 var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"\uD83D\uDCA1"},{id:"my-writeups",label:"My Write-Ups",icon:"\u270D\uFE0F"},{id:"deep-dives",label:"Other Deep Dives",icon:"\uD83D\uDD0D"},{id:"reports",label:"Reports & Presentations",icon:"\uD83D\uDCCA"},{id:"notes",label:"Quick Notes",icon:"\uD83D\uDCDD"}];
 var SAMPLE=[{id:1,ticker:"NVDA",name:"NVIDIA Corporation",sector:"Semiconductors",domain:"nvidia.com",irUrl:"https://investor.nvidia.com",earningsDate:"2026-02-26",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:"https://investor.nvidia.com",sourceLabel:"Q4 FY26",earningSummary:"Data Center revenue surged 93% YoY to $39.2B.",thesisNote:"AI capex cycle still early innings.",position:{shares:50,avgCost:128.5},conviction:9,convictionHistory:[{date:"2025-06-01",rating:8,note:"Strong but expensive"},{date:"2025-11-20",rating:9,note:"Data center demand insatiable"},{date:"2026-01-15",rating:9,note:"AI capex still accelerating"}],status:"portfolio",docs:[{id:1,title:"Core Thesis: AI Infrastructure",folder:"why-i-own",content:"NVIDIA is the picks-and-shovels play on AI. Data center GPU demand is insatiable.",updatedAt:"2026-01-15T10:00:00Z"}],earningsHistory:[{quarter:"Q3 2025",summary:"Revenue $35.1B (+94% YoY). Data Center $30.8B. Gross margin 74.6%.",results:[{kpi_name:"Data Center Revenue",actual_value:30.8,status:"met",excerpt:"Data Center $30.8B"},{kpi_name:"Gross Margin",actual_value:74.6,status:"met",excerpt:"GAAP GM 74.6%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-11-20T18:00:00Z"},{quarter:"Q2 2025",summary:"Revenue $30.0B (+122% YoY). Data Center $26.3B. Gross margin 75.1%.",results:[{kpi_name:"Data Center Revenue",actual_value:26.3,status:"met",excerpt:"Data Center $26.3B"},{kpi_name:"Gross Margin",actual_value:75.1,status:"met",excerpt:"GAAP GM 75.1%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-08-28T18:00:00Z"}],kpis:[{id:1,name:"Data Center Revenue",target:"\u226535B",rule:"gte",value:35,unit:"B",period:"Q4 FY26",notes:"",lastResult:{actual:39.2,status:"met",excerpt:"Data Center revenue was $39.2B."}},{id:2,name:"Gross Margin",target:"\u226573%",rule:"gte",value:73,unit:"%",period:"Q4 FY26",notes:"GAAP",lastResult:{actual:73.5,status:"met",excerpt:"GAAP gross margin was 73.5%."}}]},{id:2,ticker:"CRWD",name:"CrowdStrike",sector:"Cybersecurity",domain:"crowdstrike.com",irUrl:"https://ir.crowdstrike.com",earningsDate:"2026-03-04",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:null,sourceLabel:null,earningSummary:null,thesisNote:"Post-outage recovery.",position:{shares:0,avgCost:0},conviction:6,convictionHistory:[{date:"2025-09-01",rating:5,note:"Outage fallout"},{date:"2026-01-10",rating:6,note:"Recovery underway"}],status:"watchlist",docs:[],earningsHistory:[],kpis:[{id:1,name:"Net New ARR",target:"\u2265220M",rule:"gte",value:220,unit:"M",period:"Q4 FY26",notes:"",lastResult:null},{id:2,name:"Gross Retention",target:"\u226595%",rule:"gte",value:95,unit:"%",period:"Q4 FY26",notes:"",lastResult:null}]}];
 var dU=function(d){if(!d||d==="TBD")return 999;return Math.ceil((new Date(d)-new Date())/864e5)};
@@ -343,7 +363,7 @@ function TrackerApp(props){
         var newEntry={quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),results:(r.results||[]).map(function(x){return{kpi_name:x.kpi_name,actual_value:x.actual_value,status:x.status,excerpt:stripCite(x.excerpt||"")}}),sourceUrl:r.sourceUrl,sourceLabel:stripCite(r.sourceLabel||""),checkedAt:new Date().toISOString()};
         var exists=earningsHistory.findIndex(function(h){return h.quarter===newEntry.quarter});
         if(exists>=0){earningsHistory=earningsHistory.slice();earningsHistory[exists]=newEntry}else{earningsHistory=[newEntry].concat(earningsHistory)}
-        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var m=r.results.find(function(x){return x.kpi_name===k.name});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
+        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var mid=resolveMetricId(k);var m=r.results.find(function(x){return x.kpi_name===mid||x.kpi_name===(k.metricId||k.name)});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
         setCheckSt(function(p){var n=Object.assign({},p);n[cid]="found";return n});
         setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n});upd(cid,{lastChecked:new Date().toISOString()})}}
@@ -394,17 +414,33 @@ function TrackerApp(props){
   function ThesisModal(){if(!sel)return null;var _v=useState(sel.thesisNote||""),v=_v[0],sv2=_v[1];
     return<Modal title={sel.ticker+" \u2014 Thesis"} onClose={function(){setModal(null)}} K={K}><Inp value={v} onChange={sv2} ta placeholder="Why do you own this?" K={K}/><div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{thesisNote:v.trim()});setModal(null)}}>Save</button></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
-    var _f=useState({name:ex?ex.name:"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",unit:ex?ex.unit:"%",period:ex?ex.period:"",notes:ex?ex.notes:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
-    var sugs=!ex?getSugs(sel.sector).filter(function(s){return!sel.kpis.some(function(k){return k.name.toLowerCase()===s.toLowerCase()})}):[];
-    function doSave(){var nv=parseFloat(f.value);if(!f.name.trim()||isNaN(nv))return;var kd={name:f.name.trim(),rule:f.rule,value:nv,unit:f.unit,period:f.period.trim(),target:bT(f.rule,nv,f.unit),notes:f.notes.trim()};
-      if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});else upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)])})});setModal(null)}
-    return<Modal title={ex?"Edit Metric":"Add Metric"} onClose={function(){setModal(null)}} w={500} K={K}>
-      {sugs.length>0&&<div style={{marginBottom:20}}><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Suggested for {sel.sector}</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sugs.map(function(s,i){return<button key={i} onClick={function(){set("name",s)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"5px 10px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}>{s}</button>})}</div></div>}
-      <Inp label="Metric Name" value={f.name} onChange={function(v){set("name",v)}} placeholder="Revenue Growth YoY" K={K}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"\u2265 At least"},{v:"lte",l:"\u2264 At most"},{v:"eq",l:"= Exactly"}]} K={K}/><Inp label="Target" value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder="35" K={K}/><Sel label="Unit" value={f.unit} onChange={function(v){set("unit",v)}} options={[{v:"%",l:"%"},{v:"B",l:"Billions"},{v:"M",l:"Millions"},{v:"$",l:"$"},{v:"x",l:"x"},{v:"",l:"None"}]} K={K}/></div>
-      <Inp label="Period" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/>
-      <Inp label="Lookup Hints" value={f.notes} onChange={function(v){set("notes",v)}} ta placeholder="Help AI find: 'GAAP basis', 'non-GAAP op income'" K={K}/>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.filter(function(k){return k.id!==kid})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.name.trim()&&f.value?1:.4})} onClick={doSave}>Save</button></div></Modal>}
+    var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
+    // Filter out already-tracked metrics
+    var used=sel.kpis.map(function(k){return k.metricId});
+    var avail=METRICS.filter(function(m){return!used.includes(m.id)||m.id===(ex&&ex.metricId)});
+    var cats={};avail.forEach(function(m){if(!cats[m.cat])cats[m.cat]=[];cats[m.cat].push(m)});
+    var selMet=f.metricId?METRIC_MAP[f.metricId]:null;
+    function doSave(){if(!f.metricId||isNaN(parseFloat(f.value)))return;var met=METRIC_MAP[f.metricId];var nv=parseFloat(f.value);
+      var kd={metricId:f.metricId,name:met.label,rule:f.rule,value:nv,unit:met.unit,period:f.period.trim(),target:bT(f.rule,nv,met.unit),notes:""};
+      if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});
+      else upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)])})});setModal(null)}
+    return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
+      {/* Metric picker grid */}
+      {!ex&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Choose Metric</div>
+        {Object.keys(cats).map(function(cat){return<div key={cat} style={{marginBottom:12}}>
+          <div style={{fontSize:10,color:K.dim,marginBottom:6,fontFamily:fm}}>{cat}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {cats[cat].map(function(m){var isSel=f.metricId===m.id;
+              return<button key={m.id} onClick={function(){set("metricId",m.id);if(!f.value&&m.unit==="%")set("value","");}} style={{background:isSel?K.acc+"20":K.bg,border:"1px solid "+(isSel?K.acc:K.bdr),borderRadius:6,padding:"6px 12px",fontSize:11,color:isSel?K.acc:K.mid,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400}}>{m.label}</button>})}</div></div>})}</div>}
+      {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:11,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
+      {f.metricId&&<div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
+          <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"\u2265 At least"},{v:"lte",l:"\u2264 At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
+          <Inp label={"Target"+(selMet?" ("+selMet.unit+")":"")} value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder={selMet&&selMet.unit==="%"?"e.g. 20":"e.g. 5"} K={K}/>
+          <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
+        <div style={{fontSize:11,color:K.dim,marginTop:4,marginBottom:12}}>Auto-fetched from Finnhub when you click Check Earnings</div></div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.filter(function(k){return k.id!==kid})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.metricId&&f.value?1:.4})} onClick={doSave}>Save</button></div></Modal>}
   function ResultModal(){if(!sel)return null;var kpi=sel.kpis.find(function(k){return k.id===modal.data});if(!kpi)return null;
     var _a=useState(kpi.lastResult?String(kpi.lastResult.actual):""),a=_a[0],setA=_a[1];var _ex=useState(kpi.lastResult?kpi.lastResult.excerpt||"":""),ex=_ex[0],setEx=_ex[1];var pv=a?eS(kpi.rule,kpi.value,a):null;
     return<Modal title="Enter Result" onClose={function(){setModal(null)}} w={440} K={K}><div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"14px 18px",marginBottom:20}}><div style={{fontSize:14,color:K.txt}}>{kpi.name}</div><div style={{fontSize:12,color:K.dim}}>Target: {kpi.target}</div></div>
@@ -461,7 +497,7 @@ function TrackerApp(props){
     var _kr=useState({}),kr=_kr[0],setKr=_kr[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     function doSave(){if(!f.quarter.trim()||!f.summary.trim())return;
-      var results=sel.kpis.map(function(k){var v=kr[k.id];return{kpi_name:k.name,actual_value:v!==undefined&&v!==""?parseFloat(v):null,status:v!==undefined&&v!==""?eS(k.rule,k.value,parseFloat(v)):"unclear",excerpt:"Manual entry"}});
+      var results=sel.kpis.map(function(k){var v=kr[k.id];return{kpi_name:k.metricId||k.name,actual_value:v!==undefined&&v!==""?parseFloat(v):null,status:v!==undefined&&v!==""?eS(k.rule,k.value,parseFloat(v)):"unclear",excerpt:"Manual entry"}});
       var entry={quarter:f.quarter.trim(),summary:f.summary.trim(),results:results,sourceUrl:f.sourceUrl.trim(),sourceLabel:f.sourceLabel.trim()||"Manual Entry",checkedAt:new Date().toISOString()};
       upd(selId,function(c){var hist=(c.earningsHistory||[]).slice();var ex=hist.findIndex(function(h){return h.quarter===entry.quarter});
         if(ex>=0)hist[ex]=entry;else hist.unshift(entry);
@@ -621,7 +657,7 @@ function TrackerApp(props){
           <div style={{fontSize:13,color:K.mid,lineHeight:1.6,marginBottom:8}}>{selectedEntry.summary}</div>
           {selectedEntry.results&&selectedEntry.results.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
             {selectedEntry.results.map(function(r,i){return<div key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"6px 12px"}}>
-              <div style={{fontSize:10,color:K.dim}}>{r.kpi_name}</div>
+              <div style={{fontSize:10,color:K.dim}}>{METRIC_MAP[r.kpi_name]?METRIC_MAP[r.kpi_name].label:r.kpi_name}</div>
               <div style={{fontSize:13,fontWeight:600,color:r.status==="met"?K.grn:r.status==="missed"?K.red:K.mid,fontFamily:fm}}>{r.actual_value!=null?r.actual_value:"—"}</div></div>})}</div>}
           {selectedEntry.sourceUrl&&<a href={selectedEntry.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>{selectedEntry.sourceLabel||"Source"} &#x2197;</a>}
           <div style={{fontSize:10,color:K.dim,marginTop:4}}>Checked: {fT(selectedEntry.checkedAt)}</div></div>}</div></div>}
