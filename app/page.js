@@ -48,27 +48,7 @@ function autoFormat(text){if(!text)return text;
   // Format paragraphs nicely
   var paras=s.split(/\n\n+/);
   return paras.map(function(p){return p.trim()}).filter(function(p){return p}).join("\n\n")}
-async function aiCall(sys,msg,search,useSonnet){
-  var model=useSonnet?"claude-sonnet-4-20250514":"claude-haiku-4-5-20251001";
-  var body={model:model,max_tokens:useSonnet?2000:800};if(sys)body.system=sys;
-  if(search)body.tools=[{type:"web_search_20250305",name:"web_search"}];
-  body.messages=[{role:"user",content:msg}];
-  var r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!r.ok)throw new Error("AI "+r.status);var d=await r.json();
-  return(d&&d.content||[]).filter(function(b){return b.type==="text"}).map(function(b){return b.text}).join("\n")}
-async function aiJSON(sys,msg,search,useSonnet){return xJSON(await aiCall(sys,msg,search,useSonnet))}
-var SJ="Financial data assistant. Respond ONLY with raw JSON. No markdown.";
-
-// ═══ SPENDING GUARD — hard daily cap, blocks all AI if exceeded ═══
-var DAILY_CAP_KEY="ta-spend";var DEFAULT_CAP=0;// $0/day — AI disabled until user tops up and sets a cap
-function getSpend(){try{var d=JSON.parse(localStorage.getItem(DAILY_CAP_KEY)||"{}");
-  var today=new Date().toISOString().slice(0,10);
-  if(d.date!==today)return{date:today,total:0,calls:0,cap:d.cap||DEFAULT_CAP};
-  return d}catch(e){return{date:new Date().toISOString().slice(0,10),total:0,calls:0,cap:DEFAULT_CAP}}}
-function logSpend(cost){var d=getSpend();d.total=Math.round((d.total+cost)*1000)/1000;d.calls++;
-  try{localStorage.setItem(DAILY_CAP_KEY,JSON.stringify(d))}catch(e){}return d}
-function canSpend(){var d=getSpend();return d.total<(d.cap||DEFAULT_CAP)}
-function setDailyCap(v){var d=getSpend();d.cap=v;try{localStorage.setItem(DAILY_CAP_KEY,JSON.stringify(d))}catch(e){}}
+// ═══ NO AI — all data from free APIs (Finnhub + FMP) ═══
 
 // ═══ DATA FUNCTIONS ═══
 // Predefined metrics — each maps to an exact Finnhub field
@@ -180,19 +160,6 @@ async function fetchEarnings(co,kpis){
         var found=metricId?fhMap[metricId]:null;
         if(found&&found.v!=null){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" (Finnhub)"})}
         else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub"})}})}}}catch(e){console.warn("Finnhub metrics:",e)}
-  // Step 2: Check if there are CUSTOM KPIs that need AI (DAU, MAU, subscribers, etc.)
-  var customKpis=kpis?kpis.filter(function(k){var mid=resolveMetricId(k);return(!mid||isCustomKpi(mid))&&!results.some(function(r){return r.kpi_name===(k.metricId||k.name)})}):[];
-  if(customKpis.length>0){
-    if(!canSpend()){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI disabled — top up credits to check custom KPIs"})});
-    }else{
-      var prompt=co.ticker+" "+co.name+" latest quarterly earnings. Find ONLY these metrics: "+customKpis.map(function(k){return k.name+" (target: "+k.target+")"}).join(", ")+". Check press release AND shareholder letter.";
-      prompt+='\nJSON only:\n{"quarter":"Q? YYYY","results":['+customKpis.map(function(k){return'{"kpi_name":"'+k.name+'","actual_value":NUMBER_OR_NULL,"status":"met|missed|unclear","excerpt":"source"}'}).join(",")+'],"summary":"1 sentence with custom metrics","sourceUrl":"URL"}';
-      try{var aiR=await aiJSON(SJ,prompt,true,false);logSpend(0.02);
-        if(aiR&&aiR.results){aiR.results.forEach(function(r){results.push(r)});
-          if(aiR.quarter&&!quarter)quarter=aiR.quarter;
-          if(aiR.summary)summary=(summary?summary+". ":"")+stripCite(aiR.summary);
-          if(aiR.sourceUrl){srcUrl=aiR.sourceUrl;srcLabel=stripCite(aiR.sourceLabel||"Press Release")}}}
-      catch(e){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI check failed"})})}}}
   if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Finnhub may not cover this ticker."};
   console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub",snapshot:snapshot}}
@@ -213,13 +180,8 @@ async function fetchEPSHistory(ticker){try{var r=await finnhub("stock/earnings?s
 async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
 async function fetchCompanyNews(ticker,days){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-(days||14)*86400000).toISOString().slice(0,10);
   var n=await finnhub("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,8)}catch(e){return[]}}
-async function fetchTranscripts(ticker,n){var ts=[],y=2026,q=4;for(var i=0;i<(n||4);i++){try{var t=await fmp("earning-call-transcript?symbol="+ticker+"&year="+y+"&quarter="+q);if(t&&t.length&&t[0].content)ts.push({quarter:"Q"+q+" "+y,content:t[0].content})}catch(e){}q--;if(q<=0){q=4;y--}}return ts}
-async function analyzeNarrativeDrift(ticker,name,currentText){if(!canSpend())return{drifts:[],overallRisk:"unknown",summary:"Daily spending cap reached.",quartersCompared:[]};
-  var prev="";try{var ts=await fetchTranscripts(ticker,4);if(ts.length>=2)prev=ts.map(function(t){return"=== "+t.quarter+" ===\n"+t.content.substring(0,3000)}).join("\n\n")}catch(e){}
-  var r=await aiJSON("You detect narrative shifts. Return ONLY raw JSON.","Analyze drift for "+ticker+" ("+name+").\n"+(prev?"Previous:\n"+prev.substring(0,12000)+"\n\n":"")+"Current:\n"+currentText.substring(0,6000)+"\n"+(prev?"":"Search web for previous quarters.\n")+'{"drifts":[{"type":"missing_kpi|definition_change|tone_shift|new_narrative","title":"t","detail":"d","severity":"high|medium|low","prevQuarter":"Q3","prevLanguage":"before","currentLanguage":"now"}],"overallRisk":"low|medium|high","summary":"s","quartersCompared":["Q1"]}\nIf no data:{"drifts":[],"overallRisk":"unknown","summary":"Upload transcripts manually.","quartersCompared":[]}',true,true);logSpend(0.05);return r}
-async function analyzeQAEvasion(ticker,transcript){if(!canSpend())return{evasions:[],evasionScore:0,summary:"Daily spending cap reached."};
-  var r=await aiJSON("You detect evasive earnings call answers. Return ONLY raw JSON.","Analyze Q&A for "+ticker+":\n"+transcript.substring(0,10000)+"\nFlag evasions with worryPhrases and ignoredTopics.\n"+'{"evasions":[{"analystQuestion":"q","executiveAnswer":"a","evasionType":"topic_redirect|vague_generalization|non_answer|cherry_pick","severity":"high|medium|low","explanation":"why","worryPhrases":["p"],"ignoredTopics":["t"]}],"evasionScore":0.0,"summary":"s"}',false,true);logSpend(0.05);return r}
-async function fetchQATranscript(ticker){try{var ts=await fetchTranscripts(ticker,2);if(ts.length&&ts[0].content){var c=ts[0].content,qi=c.search(/question.{0,5}(and|&).{0,5}answer|q\s*&\s*a/i);if(qi>0)return{found:true,transcript:c.substring(qi,qi+15000),quarter:ts[0].quarter};return{found:true,transcript:c.substring(Math.floor(c.length*.6)),quarter:ts[0].quarter}}}catch(e){}return{found:false}}
+// SEC filings from Finnhub (FREE, $0)
+async function fetchFilings(ticker){try{var r=await finnhub("stock/filings?symbol="+ticker+"&from="+new Date(Date.now()-180*86400000).toISOString().slice(0,10));return(r||[]).slice(0,12)}catch(e){return[]}}
 
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#121217",side:"#0c0c14",card:"#1c1c28",bdr:"#2a2a3a",bdr2:"#363648",txt:"#f0f0f5",mid:"#b0b0c0",dim:"#6e6e82",blue:"#5b9bf6",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#818CF8"};
@@ -298,14 +260,14 @@ function TrackerApp(props){
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:""},c)}));
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[]},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
       // Fallback to localStorage
       var local=await ldS("ta-data");
       if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:""},c)}));
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[]},c)}));
         if(local.notifs)setNotifs(local.notifs);
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
@@ -391,7 +353,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -560,54 +522,78 @@ function TrackerApp(props){
     <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
-  function NarrativeDrift(p){var c=p.company;var _st=useState("idle"),st=_st[0],setSt=_st[1];var _d=useState(null),data=_d[0],setData=_d[1];var _txt=useState(""),txt=_txt[0],setTxt=_txt[1];var _su=useState(false),su=_su[0],setSu=_su[1];
-    var sev=function(s){return s==="high"?K.red:s==="medium"?K.amb:K.grn};
-    function runWith(text){if(!text||!text.trim())return;setSt("loading");analyzeNarrativeDrift(c.ticker,c.name,text).then(function(r){if(r.overallRisk==="unknown"&&(!r.drifts||!r.drifts.length)){setSt("idle");setSu(true)}else{setData(r);setSt("done")}}).catch(function(){setSt("error");setSu(true)})}
-    function autoRun(){var t=(c.earningSummary||"");c.kpis.forEach(function(k){if(k.lastResult)t+="\n"+k.name+": "+k.lastResult.actual});if(c.notes)t+="\n"+c.notes;if(!t.trim()){setSu(true);return}runWith(t)}
-    function handleFile(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){setTxt(ev.target.result)};r.readAsText(f)}
-    return<div style={{marginBottom:28}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={S.sec}>{"\uD83D\uDD0D"} Narrative Drift</div>
-      <div style={{display:"flex",gap:6}}>{st!=="loading"&&<button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={autoRun}>{st==="done"?"Re-analyze":"Auto-Analyze"}</button>}{st!=="loading"&&<button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setSu(!su)}}>{su?"Hide":"Upload"}</button>}</div></div>
-    {st==="idle"&&!su&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>Compares current vs previous quarters for narrative changes.</div>}
-    {su&&st!=="done"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}><label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm}}>Upload .txt<input type="file" accept=".txt" style={{display:"none"}} onChange={handleFile}/></label><span style={{fontSize:11,color:K.dim}}>or paste below</span></div>
-      <textarea value={txt} onChange={function(e){setTxt(e.target.value)}} rows={4} placeholder="Paste transcript..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fm,outline:"none",resize:"vertical"}}/>
-      <div style={{display:"flex",justifyContent:"flex-end",marginTop:10}}><button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11,opacity:txt.trim()?1:.4})} onClick={function(){runWith(txt)}} disabled={!txt.trim()}>Analyze</button></div></div>}
-    {st==="loading"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:24,textAlign:"center"}}><span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.blue+"40",borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite",verticalAlign:"middle",marginRight:8}}/><span style={{fontSize:12,color:K.blue}}>Analyzing{"\u2026"}</span></div>}
-    {st==="error"&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:10,padding:16,fontSize:12,color:K.red}}>Failed. Try uploading manually.</div>}
-    {st==="done"&&data&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
-      <div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><span style={{fontSize:12,color:K.txt}}>Overall Risk</span>{data.quartersCompared&&data.quartersCompared.length>0&&<span style={{fontSize:10,color:K.dim,marginLeft:10,fontFamily:fm}}>vs {data.quartersCompared.join(", ")}</span>}</div><span style={S.badge(sev(data.overallRisk))}>{(data.overallRisk||"low").toUpperCase()}</span></div>
-      {data.summary&&<div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,fontSize:12,color:K.mid,lineHeight:1.6}}>{data.summary}</div>}
-      {data.drifts&&data.drifts.map(function(d,i){var tl=d.type==="missing_kpi"?"Missing KPI":d.type==="definition_change"?"Def Change":d.type==="tone_shift"?"Tone Shift":"New Narrative";
-        return<div key={i} style={{padding:"14px 20px",borderBottom:i<data.drifts.length-1?"1px solid "+K.bdr:"none"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:6,height:6,borderRadius:"50%",background:sev(d.severity)}}/><span style={{fontSize:10,color:sev(d.severity),textTransform:"uppercase",letterSpacing:1,fontWeight:600,fontFamily:fm}}>{tl}</span><span style={{fontSize:12,color:K.txt,fontWeight:500,marginLeft:4}}>{d.title}</span></div>
-          <div style={{fontSize:12,color:K.dim,lineHeight:1.6,paddingLeft:14}}>{d.detail}</div></div>})}
-      <div style={{padding:"12px 20px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setSt("idle");setSu(true)}}>Re-analyze</button></div></div>}</div>}
-  function QAEvasion(p){var c=p.company;var _st=useState("idle"),st=_st[0],setSt=_st[1];var _d=useState(null),data=_d[0],setData=_d[1];var _txt=useState(""),txt=_txt[0],setTxt=_txt[1];var _su=useState(false),su=_su[0],setSu=_su[1];
-    var sev=function(s){return s==="high"?K.red:s==="medium"?K.amb:K.grn};var sc=function(s){return s>=.6?K.red:s>=.3?K.amb:K.grn};
-    function run(t){var text=t||txt;if(!text.trim())return;setSt("loading");analyzeQAEvasion(c.ticker,text).then(function(r){setData(r);setSt("done")}).catch(function(){setSt("error")})}
-    function autoFetch(){setSt("loading");fetchQATranscript(c.ticker).then(function(r){if(r.found){setTxt(r.transcript);run(r.transcript)}else{setSt("idle");setSu(true)}}).catch(function(){setSt("idle");setSu(true)})}
-    function handleFile(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){setTxt(ev.target.result)};r.readAsText(f)}
-    return<div style={{marginBottom:28}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-      <div style={S.sec}>{"\u26A0\uFE0F"} Q&A Evasion</div>
-      <div style={{display:"flex",gap:6}}>{st!=="loading"&&<button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={autoFetch}>Auto-Fetch</button>}{st!=="loading"&&<button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setSu(!su)}}>{su?"Hide":"Upload"}</button>}</div></div>
-    {st==="idle"&&!su&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>Flags evasive answers, topic redirects, vague generalizations.</div>}
-    {su&&st!=="done"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:12}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}><label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm}}>Upload .txt<input type="file" accept=".txt" style={{display:"none"}} onChange={handleFile}/></label><span style={{fontSize:11,color:K.dim}}>or paste Q&A</span></div>
-      <textarea value={txt} onChange={function(e){setTxt(e.target.value)}} rows={4} placeholder="Paste Q&A..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fm,outline:"none",resize:"vertical"}}/>
-      <div style={{display:"flex",justifyContent:"flex-end",marginTop:10}}><button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11,opacity:txt.trim()?1:.4})} onClick={function(){run()}} disabled={!txt.trim()}>Analyze</button></div></div>}
-    {st==="loading"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:24,textAlign:"center"}}><span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.blue+"40",borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite",verticalAlign:"middle",marginRight:8}}/><span style={{fontSize:12,color:K.blue}}>Analyzing{"\u2026"}</span></div>}
-    {st==="error"&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:10,padding:16,fontSize:12,color:K.red}}>Failed. Try pasting manually.</div>}
-    {st==="done"&&data&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
-      <div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:K.txt}}>Evasion Score</span><span style={S.badge(sc(data.evasionScore||0))}>{Math.round((data.evasionScore||0)*100)}%</span></div>
-      {data.summary&&<div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,fontSize:12,color:K.mid,lineHeight:1.6}}>{data.summary}</div>}
-      {data.evasions&&data.evasions.map(function(ev,i){var tl=ev.evasionType==="topic_redirect"?"Redirect":ev.evasionType==="vague_generalization"?"Vague":ev.evasionType==="non_answer"?"Non-Answer":"Cherry Pick";
-        return<div key={i} style={{padding:"14px 20px",borderBottom:i<data.evasions.length-1?"1px solid "+K.bdr:"none"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:6,height:6,borderRadius:"50%",background:sev(ev.severity)}}/><span style={{fontSize:10,color:sev(ev.severity),textTransform:"uppercase",letterSpacing:1,fontWeight:600,fontFamily:fm}}>{tl}</span></div>
-          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:8}}><div style={{fontSize:10,color:K.dim,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Analyst</div><div style={{fontSize:12,color:K.txt,lineHeight:1.5}}>{ev.analystQuestion}</div></div>
-          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:8}}><div style={{fontSize:10,color:K.dim,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Executive</div><div style={{fontSize:12,color:K.txt,lineHeight:1.5}}>{ev.executiveAnswer}</div></div>
-          <div style={{fontSize:11,color:K.amb,lineHeight:1.5}}>{ev.explanation}</div></div>})}
-      <div style={{padding:"12px 20px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setSt("idle");setSu(true)}}>Re-analyze</button></div></div>}
-    </div>}
+  // ── Research Links (paste URLs per holding) ──
+  function ResearchLinks(p){var c=p.company;var links=c.researchLinks||[];
+    var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
+    var _url=useState(""),url=_url[0],setUrl=_url[1];var _label=useState(""),label=_label[0],setLabel=_label[1];var _cat=useState("article"),cat=_cat[0],setCat=_cat[1];
+    var cats=[{v:"article",l:"Article"},{v:"report",l:"Report/Filing"},{v:"video",l:"Video/Podcast"},{v:"twitter",l:"Twitter/X Thread"},{v:"other",l:"Other"}];
+    var catIcons={article:"\uD83D\uDCF0",report:"\uD83D\uDCC4",video:"\uD83C\uDFA5",twitter:"\uD83D\uDCAC",other:"\uD83D\uDD17"};
+    function addLink(){if(!url.trim())return;
+      var newLink={id:Date.now(),url:url.trim(),label:label.trim()||url.trim().replace(/https?:\/\/(www\.)?/,"").split("/")[0],category:cat,addedAt:new Date().toISOString()};
+      upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).concat([newLink])})});
+      setUrl("");setLabel("");setAdding(false)}
+    function removeLink(lid){upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).filter(function(l){return l.id!==lid})})})}
+    return<div style={{marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>{"\uD83D\uDD17"} Research</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Add Link</button></div>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:12}}>
+        <Inp label="URL" value={url} onChange={setUrl} placeholder="https://..." K={K}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Label (optional)" value={label} onChange={setLabel} placeholder="Article title" K={K}/><Sel label="Type" value={cat} onChange={setCat} options={cats} K={K}/></div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:url.trim()?1:.4})} onClick={addLink}>Add</button></div></div>}
+      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
+      {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+        {links.map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
+          <span style={{fontSize:14}}>{catIcons[l.category]||"\uD83D\uDD17"}</span>
+          <a href={l.url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:12,color:K.blue,textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.label}</a>
+          <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{l.category}</span>
+          <button onClick={function(){removeLink(l.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:2,opacity:.5}}>{"\u2715"}</button></div>})}</div>}</div>}
+
+  // ── Decision Journal (BUY/SELL/HOLD log) ──
+  function DecisionJournal(p){var c=p.company;var decisions=c.decisions||[];
+    var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
+    var _f=useState({action:"BUY",price:"",shares:"",reasoning:""}),f=_f[0],setF=_f[1];
+    var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
+    function addDecision(){if(!f.reasoning.trim())return;
+      var entry={id:Date.now(),action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),date:new Date().toISOString(),priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null};
+      upd(c.id,function(prev){return Object.assign({},prev,{decisions:[entry].concat(prev.decisions||[]).slice(0,50)})});
+      setF({action:"BUY",price:"",shares:"",reasoning:""});setAdding(false)}
+    var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn};
+    return<div style={{marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>{"\uD83D\uDCD3"} Decision Journal</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Log Decision</button></div>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
+          <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"}]} K={K}/>
+          <Inp label="Price" value={f.price} onChange={function(v){set("price",v)}} type="number" placeholder="$" K={K}/>
+          <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/></div>
+        <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Reasoning</label>
+          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="Why am I making this decision? What would have to change for me to reverse it?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.4})} onClick={addDecision}>Save</button></div></div>}
+      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Log every BUY/SELL decision with your reasoning. Review later.</div>}
+      {decisions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+        {decisions.slice(0,8).map(function(d,i){return<div key={d.id} style={{padding:"12px 16px",borderBottom:i<Math.min(decisions.length,8)-1?"1px solid "+K.bdr:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+            <span style={{fontWeight:700,fontSize:11,color:actionColors[d.action]||K.txt,fontFamily:fm,letterSpacing:1}}>{d.action}</span>
+            {d.shares&&<span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{d.shares} shares</span>}
+            {d.price&&<span style={{fontSize:11,color:K.mid,fontFamily:fm}}>@ ${d.price}</span>}
+            <span style={{marginLeft:"auto",fontSize:9,color:K.dim,fontFamily:fm}}>{new Date(d.date).toLocaleDateString()}</span></div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.reasoning}</div>
+          {d.priceAtTime&&<div style={{fontSize:9,color:K.dim,marginTop:4,fontFamily:fm}}>Price at time: ${d.priceAtTime}</div>}</div>})}</div>}</div>}
+
+  // ── SEC Filings (Finnhub FREE) ──
+  function SECFilings(p){var c=p.company;
+    var _filings=useState(null),filings=_filings[0],setFilings=_filings[1];
+    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
+    useEffect(function(){setLd(true);fetchFilings(c.ticker).then(function(r){setFilings(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>SEC Filings</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    if(!filings||!filings.length)return null;
+    var formColors={"10-K":K.blue,"10-Q":K.acc,"8-K":K.amb,"4":K.grn,SC:K.dim};
+    return<div style={{marginBottom:20}}>
+      <div style={Object.assign({},S.sec,{marginBottom:12})}>SEC Filings</div>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+        {filings.slice(0,8).map(function(f,i){var form=(f.form||"").toUpperCase();var color=formColors[form]||K.dim;
+          return<a key={i} href={f.reportUrl||f.filingUrl||"#"} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<7?"1px solid "+K.bdr:"none",textDecoration:"none"}}>
+            <span style={{background:color+"15",color:color,fontFamily:fm,fontWeight:600,fontSize:10,padding:"3px 8px",borderRadius:4,border:"1px solid "+color+"30",minWidth:36,textAlign:"center"}}>{form}</span>
+            <span style={{flex:1,fontSize:11,color:K.mid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.symbol} — filed {f.filedDate||f.acceptedDate||""}</span>
+            <span style={{fontSize:11,color:K.blue}}>{"\u2197"}</span></a>})}</div></div>}
 
   // ── Notes Editor (local state, debounced sync) ────────────
   function ThesisVault(p){var c=p.company;var docs=c.docs||[];
@@ -787,7 +773,9 @@ function TrackerApp(props){
             <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"result",data:k.id})}}>Enter Result</button>
             <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"kpi",data:k.id})}}>Edit</button>
             {k.lastResult&&k.lastResult.excerpt&&<div style={{flex:1,fontSize:11,color:K.dim,fontStyle:"italic",paddingLeft:8}}>"{k.lastResult.excerpt}"</div>}</div>}</div>})}</div>
-      <NarrativeDrift company={c}/><QAEvasion company={c}/>
+      <ResearchLinks company={c}/>
+      <DecisionJournal company={c}/>
+      <SECFilings company={c}/>
       {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
         <div style={S.sec}>Conviction History</div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
@@ -802,7 +790,7 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a> + Claude AI</div></div>
+      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a> free APIs · $0/day</div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
