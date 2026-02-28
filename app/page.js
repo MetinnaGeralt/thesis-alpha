@@ -20,7 +20,7 @@ async function cloudSave(userId,payload){if(!supabase||!userId)return;
 async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("FMP:",e);return null}}
 
 // ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
-async function finnhub(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("Finnhub:",e);return null}}
+async function finnhub(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -99,6 +99,8 @@ async function fetchEarnings(co,kpis){
   // Step 1: Finnhub basic financials (FREE, $0)
   try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
     var earn=await finnhub("stock/earnings?symbol="+co.ticker);
+    console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
+    console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
     if(met&&met.metric){var m=met.metric;
       // Build raw snapshot for display regardless of KPIs
       if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
@@ -171,6 +173,7 @@ async function fetchEarnings(co,kpis){
           if(aiR.sourceUrl){srcUrl=aiR.sourceUrl;srcLabel=stripCite(aiR.sourceLabel||"Press Release")}}}
       catch(e){customKpis.forEach(function(k){results.push({kpi_name:k.name,actual_value:null,status:"unclear",excerpt:"AI check failed"})})}}}
   if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Finnhub may not cover this ticker."};
+  console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
@@ -626,27 +629,28 @@ function TrackerApp(props){
   // ── Detail View ───────────────────────────────────────────
   // ── Finnhub-Powered Sections (all FREE, $0) ────────────
   // ── Earnings Report Card (appears after Check Earnings) ──
-  function EarningsReportCard(p){var c=p.company;var snap=c.financialSnapshot;var news=c.latestNews;
-    if(!snap||!Object.keys(snap).length)return null;
-    var keys=Object.keys(snap);
+  function EarningsReportCard(p){var c=p.company;var snap=c.financialSnapshot||{};var news=c.latestNews||[];
+    var hasSnap=Object.keys(snap).length>0;var hasSummary=!!c.earningSummary;var hasNews=news.length>0;var hasHistory=c.earningsHistory&&c.earningsHistory.length>0;
+    if(!hasSnap&&!hasSummary&&!hasHistory)return null;
     return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:20}}>
       <div style={{padding:"16px 24px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>{c.financialSnapshot&&c.financialSnapshot.eps?"Earnings Report":""} {c.earningsHistory&&c.earningsHistory[0]?c.earningsHistory[0].quarter:""}</div>
+        <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>Earnings Report {hasHistory?c.earningsHistory[0].quarter:""}</div>
           {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>Updated {fT(c.lastChecked)}</div>}</div>
         {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>{c.sourceLabel||"Source"} {"\u2197"}</a>}</div>
-      {/* Summary text */}
-      {c.earningSummary&&<div style={{padding:"14px 24px",borderBottom:"1px solid "+K.bdr,fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>}
+      {/* Summary text — always shows if available */}
+      {hasSummary&&<div style={{padding:"14px 24px",borderBottom:hasSnap||hasNews?"1px solid "+K.bdr:"none",fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>}
       {/* Financial grid */}
-      <div style={{padding:"16px 24px"}}>
+      {hasSnap&&<div style={{padding:"16px 24px",borderBottom:hasNews?"1px solid "+K.bdr:"none"}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Key Financials</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:8}}>
-          {keys.map(function(k){var item=snap[k];
+          {Object.keys(snap).map(function(k){var item=snap[k];
             return<div key={k} style={{background:K.bg,borderRadius:8,padding:"10px 12px"}}>
               <div style={{fontSize:9,color:K.dim,marginBottom:4,fontFamily:fm}}>{item.label}</div>
               <div style={{fontSize:14,fontWeight:600,color:item.positive!=null?(item.positive?K.grn:K.red):item.beat!=null?(item.beat?K.grn:K.red):K.txt,fontFamily:fm}}>{item.value}</div>
-              {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>
+              {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>}
+      {!hasSnap&&hasSummary&&<div style={{padding:"12px 24px",fontSize:11,color:K.dim}}>Click Check Earnings again if financial details don't appear — Finnhub may have rate-limited this request.</div>}
       {/* Recent news */}
-      {news&&news.length>0&&<div style={{padding:"0 24px 16px"}}>
+      {hasNews&&<div style={{padding:"12px 24px"}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Recent News</div>
         {news.slice(0,4).map(function(n,i){return<a key={i} href={n.url} target="_blank" rel="noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<3?"1px solid "+K.bdr:"none",textDecoration:"none",gap:8}}>
           <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
@@ -660,7 +664,7 @@ function TrackerApp(props){
     var _peers=useState(null),peers=_peers[0],setPeers=_peers[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);
-      Promise.all([fetchRecommendations(c.ticker).catch(function(){return[]}),fetchEPSHistory(c.ticker).catch(function(){return[]}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchPeers(c.ticker).catch(function(){return[]})]).then(function(res){setRecs(res[0]);setEps(res[1]);setTxns(res[2]);setPeers(res[3]);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+      Promise.all([fetchRecommendations(c.ticker).catch(function(){return[]}),fetchEPSHistory(c.ticker).catch(function(){return[]}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchPeers(c.ticker).catch(function(){return[]})]).then(function(res){console.log("[ThesisAlpha] AnalystInsiders for "+c.ticker+":",{recs:res[0].length,eps:res[1].length,insiders:res[2].length,peers:res[3].length});setRecs(res[0]);setEps(res[1]);setTxns(res[2]);setPeers(res[3]);setLd(false)}).catch(function(e){console.warn("[ThesisAlpha] AnalystInsiders error:",e);setLd(false)})},[c.ticker]);
     if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
     var hasRecs=recs&&recs.length>0;var hasEps=eps&&eps.length>0;var hasTxns=txns&&txns.length>0;var hasPeers=peers&&peers.length>0;
     if(!hasRecs&&!hasEps&&!hasTxns&&!hasPeers)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No Finnhub data available for {c.ticker}. Non-US tickers may need exchange suffix (e.g. HFG.DE, PROT.OL).</div></div>;
@@ -735,6 +739,7 @@ function TrackerApp(props){
         <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
       <EarningsReportCard company={c}/>
       <EarningsTimeline company={c}/>
+      <AnalystInsiders company={c}/>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
         {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
@@ -761,7 +766,6 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <AnalystInsiders company={c}/>
       <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a> + Claude AI</div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
