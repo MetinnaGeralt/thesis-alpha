@@ -254,6 +254,7 @@ function TrackerApp(props){
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
+  var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   useEffect(function(){
@@ -279,12 +280,37 @@ function TrackerApp(props){
   // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
   useEffect(function(){if(!loaded||cos.length===0)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
-  // Auto-notify: only creates reminder notifications — NEVER calls AI automatically
+  // Auto-notify: when earnings date has passed, automatically check them
+  var autoCheckDone=useRef({});
   useEffect(function(){if(!loaded||!autoNotify)return;
     cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
-      if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"}))
-        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released \u2014 click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}});
+      // Auto-check if not already checked and not already in progress
+      var key=c.ticker+"-"+c.earningsDate;
+      if(!c.lastChecked&&!autoCheckDone.current[key]&&!checkSt[c.id]){
+        autoCheckDone.current[key]=true;
+        setTimeout(function(){checkOne(c.id).then(function(){
+          // Send browser push if enabled
+          if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
+            try{new Notification("ThesisAlpha: "+c.ticker,{body:"Earnings results are now available",icon:"/logo.png"})}catch(e){}}
+          // Build email notification if enabled
+          if(emailNotify){sendEarningsEmail(c)}
+        })},Math.random()*3000+1000)}// Stagger 1-4s
+      else if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"})){
+        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released \u2014 click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
     return undefined},[loaded,autoNotify,cos]);
+  // Send earnings email via mailto (free, no backend needed)
+  function sendEarningsEmail(c){
+    var sub="ThesisAlpha: "+c.ticker+" earnings released";
+    var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
+    var total=c.kpis.filter(function(k){return k.lastResult}).length;
+    var body=c.ticker+" ("+c.name+") earnings are out.\n\n";
+    if(c.earningSummary)body+="Summary: "+c.earningSummary+"\n\n";
+    if(total>0)body+="KPIs: "+met+"/"+total+" met\n";
+    c.kpis.forEach(function(k){if(k.lastResult)body+=k.name+": "+k.lastResult.actual+(k.unit||"")+" ("+(k.lastResult.status||"pending")+")\n"});
+    body+="\nOpen ThesisAlpha to review.";
+    window.open("mailto:"+encodeURIComponent(props.user)+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank")}
+  // Request browser notification permission
+  function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs};
     if(saveTimer.current)clearTimeout(saveTimer.current);
@@ -341,7 +367,9 @@ function TrackerApp(props){
         return Object.assign({},prev,updates)})}}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
-    if(nv){setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled \u2014 earnings will be checked automatically",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
+    if(nv){requestPushPermission();
+      setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled \u2014 earnings will be checked and you'll be notified",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
+  function toggleEmailNotify(){var nv=!emailNotify;setEmailNotify(nv);try{localStorage.setItem("ta-emailnotify",String(nv))}catch(e){}}
 
   // ── Modals ─────────────────────────────────────────────────
   function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:"portfolio"}),f=_f[0],setF=_f[1];
@@ -931,9 +959,12 @@ function TrackerApp(props){
     return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{priceLoading?" \u2022 Updating prices\u2026":""}</p></div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <button onClick={toggleAutoNotify} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-notify ON":"Click to enable auto-notify"}>
+        <button onClick={toggleAutoNotify} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          {autoNotify?"Auto-notify ON":"Notify me when earnings drop"}</button>
+          {autoNotify?"Auto-check ON":"Auto-check"}</button>
+        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Email notifications ON — opens mailto when earnings drop":"Click to also get email when earnings drop"}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+          {emailNotify?"Email ON":"+ Email"}</button>}
         <button style={S.btnChk} onClick={checkAll}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
@@ -1025,7 +1056,7 @@ function TrackerApp(props){
         {divCos.length>0&&totalAnnualDiv>0&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between"}}>
           <span style={{fontSize:12,color:K.mid}}>Est. Annual Income</span>
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
-      </div></div>}
+      </div></div></div>}
     </div>}
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
