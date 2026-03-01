@@ -86,9 +86,10 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
     if(p&&p.length&&p[0].companyName){var pr=p[0],domain="",irUrl="";
       if(pr.website){try{domain=new URL(pr.website).hostname.replace("www.","")}catch(e){domain=pr.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
         irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
-      // Grab earnings date from Finnhub (free, $0)
+      // Grab earnings date from Finnhub (free, $0) — include date range for better coverage
       var ed="TBD",et="TBD";
-      try{var ec=await finnhub("calendar/earnings?symbol="+t);
+      try{var from2=new Date(Date.now()-30*86400000).toISOString().slice(0,10);var to2=new Date(Date.now()+120*86400000).toISOString().slice(0,10);
+        var ec=await finnhub("calendar/earnings?symbol="+t+"&from="+from2+"&to="+to2);
         if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
           var now=new Date().toISOString().slice(0,10);
           var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
@@ -165,7 +166,8 @@ async function fetchEarnings(co,kpis){
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
-  try{var ec=await finnhub("calendar/earnings?symbol="+ticker);
+  try{var from3=new Date(Date.now()-30*86400000).toISOString().slice(0,10);var to3=new Date(Date.now()+120*86400000).toISOString().slice(0,10);
+    var ec=await finnhub("calendar/earnings?symbol="+ticker+"&from="+from3+"&to="+to3);
     if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
       var now=new Date().toISOString().slice(0,10);
       var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
@@ -377,7 +379,7 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||""})});setLs("done");setLm("Auto-filled \u2713")}
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||""})});setLs("done");setLm("Auto-filled \u2713"+(r.earningsDate&&r.earningsDate!=="TBD"?" (incl. earnings date)":""))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
