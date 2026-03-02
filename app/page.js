@@ -1308,7 +1308,7 @@ function TrackerApp(props){
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Concentration</div>
           <div style={{fontSize:28,fontWeight:700,color:hhiColor,fontFamily:fm}}>{held.length>0?Math.round(hhi):"\u2014"}</div>
-          <div style={{fontSize:10,color:hhiColor,marginTop:4,fontFamily:fm}}>HHI \u2014 {held.length>0?hhiRating:"Add positions"}</div></div>
+          <div style={{fontSize:10,color:hhiColor,marginTop:4,fontFamily:fm}}>HHI {"\u2014"} {held.length>0?hhiRating:"Add positions"}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Top Sector</div>
           <div style={{fontSize:16,fontWeight:600,color:topSectorPct>40?K.amb:K.txt,fontFamily:fm}}>{sectorList[0]||"\u2014"}</div>
