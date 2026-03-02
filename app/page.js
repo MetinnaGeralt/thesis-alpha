@@ -17,7 +17,7 @@ async function cloudSave(userId,payload){if(!supabase||!userId)return;
   try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
 
 // ═══ FMP (server proxy — profiles & prices) ═══
-async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));if(!r.ok)return null;return await r.json()}catch(e){console.warn("FMP:",e);return null}}
+async function fmp(ep){try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));return d}catch(e){console.warn("FMP:",ep,e);return null}}
 
 // ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
 async function finnhub(ep){try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
@@ -939,8 +939,13 @@ function TrackerApp(props){
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
     var _chart=useState("revenue"),chart=_chart[0],setChart=_chart[1];
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
-    useEffect(function(){setLd(true);
-      fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,per]);
+    var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
+    useEffect(function(){setLd(true);setDiag("");
+      fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){
+        setData(r);setLd(false);
+        var ic=(r&&r.income?r.income.length:0),bc=(r&&r.balance?r.balance.length:0),cc=(r&&r.cashflow?r.cashflow.length:0);
+        if(ic===0&&bc===0&&cc===0){setDiag("All statements returned 0 rows. Check browser console (F12) for [FMP client] logs, or visit /api/fmp-test?ticker="+c.ticker+" to diagnose.")}
+      }).catch(function(e){setLd(false);setDiag("Fetch error: "+e.message)})},[c.ticker,per]);
     var stab=STMT_TABS.find(function(t){return t.id===tab})||STMT_TABS[0];
     var rows=data?data[tab]:[];if(!rows)rows=[];
     // Chart data
@@ -965,7 +970,11 @@ function TrackerApp(props){
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Loading financial data for {c.ticker}...</div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>This could be because: the FMP API key is on the free tier (250 req/day limit), the daily request quota has been exhausted, or the endpoint returned empty data. Financial statements should be available for most US-listed companies on the free tier.<br/><button onClick={function(){setLd(true);delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})}} style={{marginTop:8,background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div>:
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Financial statements should be available for US-listed companies on FMP Starter+.<br/>
+        {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:6,color:K.amb,fontSize:10,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
+        <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
+        <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Visit /api/fmp-test?ticker="+c.ticker+" for diagnostics.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button>
+        <a href={"/api/fmp-test?ticker="+c.ticker} target="_blank" rel="noreferrer" style={{background:K.amb+"15",border:"1px solid "+K.amb+"30",color:K.amb,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm,textDecoration:"none"}}>Run Diagnostics</a></div></div></div>:
       <div>
       {/* Chart section */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
