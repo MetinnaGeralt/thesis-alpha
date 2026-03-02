@@ -1285,7 +1285,7 @@ function TrackerApp(props){
     var weakest=withMoat.slice().sort(function(a,b){return a.moat.composite-b.moat.composite}).slice(0,3);
     var strongest=withMoat.slice().sort(function(a,b){return b.moat.composite-a.moat.composite}).slice(0,3);
     // Quality score = conviction * moat / 10
-    var qualityScores=withMoat.map(function(x){return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,conv:x.conv,moat:x.moat.composite,quality:Math.round(x.conv*x.moat.composite/10),w:x.w}}).sort(function(a,b){return b.quality-a.quality});
+    var qualityScores=withMoat.map(function(x){var hasConv=x.conv>0;var q=hasConv?Math.round((x.conv+x.moat.composite)/2):x.moat.composite;return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,conv:x.conv,moat:x.moat.composite,quality:q,partial:!hasConv,w:x.w}}).sort(function(a,b){return b.quality-a.quality});
     var avgQuality=qualityScores.length>0?Math.round(qualityScores.reduce(function(s,x){return s+x.quality},0)/qualityScores.length):0;
 
     return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
@@ -1300,7 +1300,7 @@ function TrackerApp(props){
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Portfolio Quality</div>
           <div style={{fontSize:28,fontWeight:700,color:avgQuality>=7?K.grn:avgQuality>=5?K.amb:K.red,fontFamily:fm}}>{avgQuality||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
-          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>Conviction \u00D7 Moat avg</div></div>
+          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>Avg of conviction + moat</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Avg Moat Score</div>
           <div style={{fontSize:28,fontWeight:700,color:moatColor(avgMoat),fontFamily:fm}}>{avgMoat||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
@@ -1331,12 +1331,13 @@ function TrackerApp(props){
           <div style={{position:"absolute",top:"50%",left:2,transform:"rotate(-90deg) translateX(-50%)",transformOrigin:"top left",fontSize:8,color:K.dim,fontFamily:fm}}>CONVICTION \u2192</div>
           {/* Plot dots */}
           {qualityScores.map(function(q){
-            var x=Math.max(5,Math.min(95,q.moat*10));var y=Math.max(5,Math.min(95,100-q.conv*10));
+            var hasConv=q.conv>0;
+            var x=Math.max(5,Math.min(95,q.moat*10));var y=hasConv?Math.max(5,Math.min(95,100-q.conv*10)):50;
             var dotColor=q.quality>=7?K.grn:q.quality>=5?K.amb:K.red;
             var dotSize=Math.max(8,Math.min(28,q.w/2+8));
-            return<div key={q.id} style={{position:"absolute",left:x+"%",top:y+"%",transform:"translate(-50%,-50%)",width:dotSize,height:dotSize,borderRadius:"50%",background:dotColor+"40",border:"2px solid "+dotColor,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:10}} onClick={function(){setSelId(q.id);setPage("dashboard")}} title={q.ticker+": Conv "+q.conv+", Moat "+q.moat+", Quality "+q.quality}>
-              <span style={{fontSize:Math.max(7,dotSize/3),fontWeight:700,color:dotColor,fontFamily:fm}}>{q.ticker}</span></div>})}</div>
-        <div style={{marginTop:10,fontSize:10,color:K.dim,fontFamily:fm}}>Dot size = portfolio weight. Top-right quadrant = highest quality holdings (high conviction + wide moat).</div></div>}
+            return<div key={q.id} style={{position:"absolute",left:x+"%",top:y+"%",transform:"translate(-50%,-50%)",width:dotSize,height:dotSize,borderRadius:"50%",background:dotColor+(hasConv?"40":"20"),border:"2px "+(hasConv?"solid":"dashed")+" "+dotColor+(hasConv?"":"60"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:10}} onClick={function(){setSelId(q.id);setPage("dashboard")}} title={q.ticker+": Conv "+(hasConv?q.conv:"not set")+", Moat "+q.moat+", Quality "+q.quality}>
+              <span style={{fontSize:Math.max(7,dotSize/3),fontWeight:700,color:dotColor+(hasConv?"":"90"),fontFamily:fm}}>{q.ticker}</span></div>})}</div>
+        <div style={{marginTop:10,fontSize:10,color:K.dim,fontFamily:fm}}>Dot size = portfolio weight. Dashed dots = conviction not yet set (centered vertically). Top-right quadrant = highest quality holdings.</div></div>}
 
       {/* Portfolio Moat Summary */}
       {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
@@ -1396,9 +1397,9 @@ function TrackerApp(props){
             return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setPage("dashboard")}}>
               <td style={{padding:"10px 10px",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
-              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:q.conv>=8?K.grn:q.conv>=5?K.amb:K.red,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.conv||"\u2014"}</td>
+              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:q.conv>=8?K.grn:q.conv>=5?K.amb:q.conv>0?K.red:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.conv||"\u2014"}</td>
               <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:moatColor(q.moat),fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.moat}</td>
-              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:qColor,fontFamily:fm,background:qColor+"15",padding:"3px 10px",borderRadius:4}}>{q.quality}</span></td>
+              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:qColor,fontFamily:fm,background:qColor+"15",padding:"3px 10px",borderRadius:4}}>{q.quality}</span>{q.partial&&<span style={{fontSize:8,color:K.amb,marginLeft:4,fontFamily:fm}} title="Set conviction to get full quality score">{"\u26A0"}</span>}</td>
               <td style={{padding:"10px 10px",textAlign:"center",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.w>0?q.w.toFixed(1)+"%":"\u2014"}</td></tr>})}</tbody></table></div>}
 
       {portCos.length===0&&<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim}}>No portfolio companies yet. Add companies and set their status to Portfolio.</div></div>}
