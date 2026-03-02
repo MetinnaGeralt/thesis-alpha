@@ -107,8 +107,17 @@ async function fetchFinancialStatements(ticker,period){
   try{var isQ=period==="quarter";var lim=isQ?20:5;
     var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
     console.log("[ThesisAlpha] Fetching financials for "+ticker+" ("+period+")");
+    // Try all three statements via proxy (route tries stable→v3→v4)
     var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
     var _is=results[0],_bs=results[1],_cf=results[2];
+    // Handle error objects from route
+    if(_is&&_is._fmpError){console.warn("[FMP] Income error:",_is.reason);_is=null}
+    if(_bs&&_bs._fmpError){console.warn("[FMP] Balance error:",_bs.reason);_bs=null}
+    if(_cf&&_cf._fmpError){console.warn("[FMP] CF error:",_cf.reason);_cf=null}
+    // Handle cases where proxy returns non-array
+    if(_is&&!Array.isArray(_is))_is=null;
+    if(_bs&&!Array.isArray(_bs))_bs=null;
+    if(_cf&&!Array.isArray(_cf))_cf=null;
     console.log("[ThesisAlpha] Income rows:",(_is||[]).length,"Balance:",(_bs||[]).length,"CF:",(_cf||[]).length);
     var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse()};
     if(res.income.length>0||res.balance.length>0||res.cashflow.length>0)_fincache[key]=res;
@@ -605,10 +614,12 @@ function TrackerApp(props){
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setSelId(null)}}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("dashboard")}}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("hub")}}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm}}>{"\uD83D\uDCDA"} Owner's Hub</span></div>
-    <div style={{display:"flex",padding:"8px 16px 0",gap:0}}>
-      <button onClick={function(){setSideTab("portfolio")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="portfolio"?"2px solid "+K.acc:"2px solid transparent",color:sideTab==="portfolio"?K.acc:K.dim,fontFamily:fm}}>Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</button>
-      <button onClick={function(){setSideTab("watchlist")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="watchlist"?"2px solid "+K.amb:"2px solid transparent",color:sideTab==="watchlist"?K.amb:K.dim,fontFamily:fm}}>Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</button>
-      <button onClick={function(){setSideTab("toohard")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="toohard"?"2px solid "+K.red:"2px solid transparent",color:sideTab==="toohard"?K.red:K.dim,fontFamily:fm}}>Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</button></div>
+    <div style={{padding:"10px 16px 6px"}}>
+      <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+        <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
+        <option value="watchlist">Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</option>
+        <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
+      </select></div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
       return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setPage("dashboard")}}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
@@ -954,7 +965,7 @@ function TrackerApp(props){
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Loading financial data for {c.ticker}...</div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim}}>This may be due to FMP free tier limitations. Try checking if your FMP API key supports financial statements.</div></div>:
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>This could be because: the FMP API key is on the free tier (250 req/day limit), the daily request quota has been exhausted, or the endpoint returned empty data. Financial statements should be available for most US-listed companies on the free tier.<br/><button onClick={function(){setLd(true);delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})}} style={{marginTop:8,background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div>:
       <div>
       {/* Chart section */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
