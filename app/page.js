@@ -233,8 +233,8 @@ function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
   if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"#2a2a3a",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
   if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"#2a2a3a",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
   return<div style={{width:sz,height:sz,borderRadius:4,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"#6e6e82",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
-function mkS(K){return{btn:{background:"transparent",border:"1px solid "+K.bdr,color:K.mid,padding:"8px 16px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm},btnP:{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:"9px 18px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600},btnD:{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:"8px 16px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm},btnChk:{background:K.blue+"12",border:"1px solid "+K.blue+"40",color:K.blue,padding:"9px 18px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600},sec:{fontSize:10,letterSpacing:4,textTransform:"uppercase",color:K.dim,marginBottom:12,fontWeight:500,fontFamily:fm},badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:500,color:c,background:c+"15",padding:"3px 10px",borderRadius:4,fontFamily:fm}},dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}}}}
-function Modal(p){var K=p.K||DARK;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(8px)"}} onClick={p.onClose}><div style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:14,padding:"28px 32px",width:p.w||500,maxWidth:"92vw",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 48px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h2 style={{margin:0,fontSize:17,fontWeight:500,color:K.txt,fontFamily:fh}}>{p.title}</h2><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer"}}>{"\u2715"}</button></div>{p.children}</div></div>}
+function mkS(K){return{btn:{background:"transparent",border:"1px solid "+K.bdr,color:K.mid,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnP:{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},btnD:{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnChk:{background:K.blue+"12",border:"1px solid "+K.blue+"40",color:K.blue,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},sec:{fontSize:10,letterSpacing:4,textTransform:"uppercase",color:K.dim,marginBottom:12,fontWeight:500,fontFamily:fm},badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:500,color:c,background:c+"15",padding:"3px 10px",borderRadius:6,fontFamily:fm}},dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}}}}
+function Modal(p){var K=p.K||DARK;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(10px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide" style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:16,padding:"28px 32px",width:p.w||500,maxWidth:"92vw",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h2 style={{margin:0,fontSize:17,fontWeight:500,color:K.txt,fontFamily:fh}}>{p.title}</h2><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}} onMouseEnter={function(e){e.target.style.color=K.txt}} onMouseLeave={function(e){e.target.style.color=K.dim}}>{"\u2715"}</button></div>{p.children}</div></div>}
 function Inp(p){var K=p.K||DARK;var b={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"};return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}{p.ta?<textarea value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} rows={3} style={Object.assign({},b,{resize:"vertical"})}/>:<input type={p.type||"text"} value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} spellCheck={p.spellCheck!==undefined?p.spellCheck:true} autoCorrect={p.autoCorrect||"on"} autoComplete={p.autoComplete||"on"} style={b}/>}</div>}
 function Sel(p){var K=p.K||DARK;return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}<select value={p.value} onChange={function(e){p.onChange(e.target.value)}} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"}}>{p.options.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>})}</select></div>}
 
@@ -259,7 +259,7 @@ function LoginPage(props){
     }catch(e){setErr("Something went wrong.");setLd(false)}}
   return(<div style={{background:K.bg,color:K.txt,minHeight:"100vh",fontFamily:fb,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
   <button onClick={toggleTheme} style={{position:"absolute",top:20,right:24,background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}}>{theme==="dark"?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>
-  <div style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
+  <div className="ta-slide" style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:28}}><TLogo size={24}/><span style={{fontSize:16,fontWeight:600,letterSpacing:2,fontFamily:fm,color:K.txt}}>ThesisAlpha</span></div>
     <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center",color:K.txt}}>{mode==="login"?"Welcome back":"Create account"}</h2>
     <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 32px"}}>{mode==="login"?"Sign in to your portfolio":"Start tracking your thesis"}</p>
@@ -268,7 +268,7 @@ function LoginPage(props){
       <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
     <div style={{marginBottom:24}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
       <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:10,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
+    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
     <div style={{textAlign:"center",fontSize:13,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
   </div></div>)}
 
@@ -291,6 +291,39 @@ function TrackerApp(props){
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
+  // ── Inject global CSS for animations & polish ──
+  useEffect(function(){
+    if(typeof document==="undefined")return;
+    var id="ta-global-css";if(document.getElementById(id))return;
+    var style=document.createElement("style");style.id=id;
+    style.textContent=[
+      "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
+      "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
+      "@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}",
+      "@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}",
+      "@keyframes spin{to{transform:rotate(360deg)}}",
+      "@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}",
+      ".ta-fade{animation:fadeIn .3s ease-out both}",
+      ".ta-slide{animation:slideUp .35s ease-out both}",
+      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease}",
+      ".ta-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(-1px)}",
+      ".ta-btn{transition:all .15s ease}",
+      ".ta-btn:hover{filter:brightness(1.15)}",
+      ".ta-btn:active{transform:translateY(0.5px)}",
+      ".ta-skel{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.04) 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:6px}",
+      "::-webkit-scrollbar{width:6px;height:6px}",
+      "::-webkit-scrollbar-track{background:transparent}",
+      "::-webkit-scrollbar-thumb{background:rgba(120,120,160,.2);border-radius:3px}",
+      "::-webkit-scrollbar-thumb:hover{background:rgba(120,120,160,.35)}",
+      "input:focus,textarea:focus,select:focus{border-color:rgba(129,140,248,.5)!important;box-shadow:0 0 0 3px rgba(129,140,248,.1)!important;transition:all .15s ease}",
+      "button{transition:all .12s ease}",
+      "select{transition:border-color .15s ease}",
+      ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
+      ".ta-side-item:hover{background:rgba(129,140,248,.06)}",
+    ].join("\n");
+    document.head.appendChild(style);
+    return function(){var el=document.getElementById(id);if(el)el.remove()}},[]);
+  // ── Load data ──
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
     async function loadData(){
@@ -627,7 +660,7 @@ function TrackerApp(props){
         <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
       </select></div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setPage("dashboard")}}>
+      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setPage("dashboard")}}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?K.txt:K.mid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
@@ -635,7 +668,7 @@ function TrackerApp(props){
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btnP,{width:"100%",padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"})}}>+ Add Company</button></div></div>}
   function TopBar(){
-    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card,position:"sticky",top:0,zIndex:50,gap:12}}>
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,gap:12}}>
     <button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={isDark?"Light mode":"Dark mode"}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -662,12 +695,12 @@ function TrackerApp(props){
     function removeLink(lid){upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).filter(function(l){return l.id!==lid})})})}
     return<div style={{marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>{"\uD83D\uDD17"} Research</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Add Link</button></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
         <Inp label="URL" value={url} onChange={setUrl} placeholder="https://..." K={K}/>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Label (optional)" value={label} onChange={setLabel} placeholder="Article title" K={K}/><Sel label="Type" value={cat} onChange={setCat} options={cats} K={K}/></div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:url.trim()?1:.4})} onClick={addLink}>Add</button></div></div>}
-      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
-      {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
+      {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
         {links.map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
           <span style={{fontSize:14}}>{catIcons[l.category]||"\uD83D\uDD17"}</span>
           <a href={l.url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:12,color:K.blue,textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.label}</a>
@@ -692,7 +725,7 @@ function TrackerApp(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>{"\uD83D\uDCD3"} Decision Ledger</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>{scored.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{rights}/{scored.length} right ({Math.round(rights/scored.length*100)}%)</span>}
         <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Log Decision</button></div></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:10,padding:"20px 24px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:12,padding:"20px 24px",marginBottom:12}}>
         <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION ENTRY</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
           <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
@@ -705,8 +738,8 @@ function TrackerApp(props){
           <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would kill this thesis" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
         {c.conviction>0&&<div style={{fontSize:11,color:K.dim,marginBottom:12,fontFamily:fm}}>Conviction snapshot: <span style={{color:c.conviction>=8?K.grn:c.conviction>=5?K.amb:K.red,fontWeight:600}}>{c.conviction}/10</span></div>}
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()&&f.invalidator.trim()?1:.3})} onClick={addDecision}>Save to Ledger</button></div></div>}
-      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:4}}>No decisions logged yet</div><div style={{fontSize:11,color:K.dim}}>Record every BUY, SELL, or PASS with your reasoning and invalidation criteria.</div></div>}
-      {decisions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:4}}>No decisions logged yet</div><div style={{fontSize:11,color:K.dim}}>Record every BUY, SELL, or PASS with your reasoning and invalidation criteria.</div></div>}
+      {decisions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
         {decisions.slice(0,10).map(function(d,i){var isExp=expDec===d.id;return<div key={d.id} style={{padding:"12px 16px",borderBottom:i<Math.min(decisions.length,10)-1?"1px solid "+K.bdr:"none",cursor:"pointer",background:isExp?K.acc+"06":"transparent"}} onClick={function(){setExpDec(isExp?null:d.id)}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
             <span style={{fontWeight:700,fontSize:11,color:actionColors[d.action]||K.txt,fontFamily:fm,letterSpacing:1}}>{actionIcons[d.action]||""} {d.action}</span>
@@ -732,12 +765,12 @@ function TrackerApp(props){
     var _filings=useState(null),filings=_filings[0],setFilings=_filings[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);fetchFilings(c.ticker).then(function(r){setFilings(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>SEC Filings</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>SEC Filings</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
     if(!filings||!filings.length)return null;
     var formColors={"10-K":K.blue,"10-Q":K.acc,"8-K":K.amb,"4":K.grn,SC:K.dim};
     return<div style={{marginBottom:20}}>
       <div style={Object.assign({},S.sec,{marginBottom:12})}>SEC Filings</div>
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
         {filings.slice(0,8).map(function(f,i){var form=(f.form||"").toUpperCase();var color=formColors[form]||K.dim;
           return<a key={i} href={f.filingUrl||f.reportUrl||"#"} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<7?"1px solid "+K.bdr:"none",textDecoration:"none"}}>
             <span style={{background:color+"15",color:color,fontFamily:fm,fontWeight:600,fontSize:10,padding:"3px 8px",borderRadius:4,border:"1px solid "+color+"30",minWidth:36,textAlign:"center"}}>{form}</span>
@@ -756,13 +789,13 @@ function TrackerApp(props){
     var statusLabels={intact:"Thesis Intact",weakened:"Partially Weakened",broken:"Thesis Broken"};
     return<div style={{marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>{"\uD83C\uDFAF"} Thesis Scorecard</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Review</button></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
         <div style={{fontSize:12,color:K.mid,marginBottom:12}}>Is your original thesis still intact?</div>
         <div style={{display:"flex",gap:8,marginBottom:12}}>{["intact","weakened","broken"].map(function(s){return<button key={s} onClick={function(){setF(function(p2){return Object.assign({},p2,{status:s})})}} style={{flex:1,padding:"10px",borderRadius:8,fontSize:12,fontWeight:f.status===s?600:400,cursor:"pointer",fontFamily:fm,background:f.status===s?statusColors[s]+"15":"transparent",border:"1px solid "+(f.status===s?statusColors[s]+"50":K.bdr),color:f.status===s?statusColors[s]:K.dim}}>{statusLabels[s]}</button>})}</div>
         <div style={{marginBottom:12}}><textarea value={f.note} onChange={function(e){setF(function(p2){return Object.assign({},p2,{note:e.target.value})})}} rows={2} placeholder="What changed? What would break this thesis?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical"}}/></div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={S.btnP} onClick={addReview}>Save Review</button></div></div>}
-      {reviews.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Periodically review: is your thesis still intact?</div>}
-      {reviews.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+      {reviews.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Periodically review: is your thesis still intact?</div>}
+      {reviews.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
         {reviews.slice(0,6).map(function(r,i){return<div key={r.id} style={{padding:"10px 16px",borderBottom:i<Math.min(reviews.length,6)-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"flex-start",gap:10}}>
           <div style={{width:8,height:8,borderRadius:"50%",background:statusColors[r.status]||K.dim,marginTop:5,flexShrink:0}}/>
           <div style={{flex:1}}><div style={{fontSize:11,fontWeight:600,color:statusColors[r.status]||K.mid,fontFamily:fm}}>{statusLabels[r.status]||r.status}</div>
@@ -781,9 +814,9 @@ function TrackerApp(props){
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:11,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
         {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:11,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{fo.icon} {fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
-      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:28,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>Create your first note</button></div>}
+      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:28,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>Create your first note</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
-        return<div key={d.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:"doc",data:d.id})}}>
+        return<div key={d.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:"doc",data:d.id})}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
             <span style={{fontSize:12}}>{fo?fo.icon:"\uD83D\uDCDD"}</span>
             <span style={{fontSize:13,fontWeight:500,color:K.txt,flex:1}}>{d.title}</span>
@@ -804,7 +837,7 @@ function TrackerApp(props){
     var selectedEntry=selQ&&years[selYear]?years[selYear][selQ]:null;
     return<div style={{marginBottom:20}}>
       <div style={S.sec}>Earnings History</div>
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
         <div style={{display:"flex",gap:6,marginBottom:12}}>
           {sortedYears.map(function(yr){return<button key={yr} onClick={function(){setSelYear(yr);setSelQ(null)}} style={{background:selYear===yr?K.acc+"20":"transparent",border:"1px solid "+(selYear===yr?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 14px",fontSize:12,fontWeight:600,color:selYear===yr?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{yr}</button>})}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8}}>
@@ -862,15 +895,15 @@ function TrackerApp(props){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);
       Promise.all([fetchRecommendations(c.ticker).catch(function(){return[]}),fetchEPSHistory(c.ticker).catch(function(){return[]}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchPeers(c.ticker).catch(function(){return[]}),fetchPriceTarget(c.ticker).catch(function(){return null})]).then(function(res){setRecs(res[0]);setEps(res[1]);setTxns(res[2]);setPeers(res[3]);setPt(res[4]);setLd(false)}).catch(function(e){console.warn("[ThesisAlpha] AnalystInsiders error:",e);setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:11,color:K.dim}}>Loading...</div></div>;
     var hasRecs=recs&&recs.length>0;var hasEps=eps&&eps.length>0;var hasTxns=txns&&txns.length>0;var hasPeers=peers&&peers.length>0;var hasPt=pt&&pt.targetMean;
-    if(!hasRecs&&!hasEps&&!hasTxns&&!hasPeers&&!hasPt)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No Finnhub data available for {c.ticker}.</div></div>;
+    if(!hasRecs&&!hasEps&&!hasTxns&&!hasPeers&&!hasPt)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No Finnhub data available for {c.ticker}.</div></div>;
     // Beat streak
     var beatStreak=0;if(hasEps){for(var bi=0;bi<eps.length;bi++){if(eps[bi].actual!=null&&eps[bi].estimate!=null&&eps[bi].actual>=eps[bi].estimate)beatStreak++;else break}}
     var curPrice=(c.position&&c.position.currentPrice)?c.position.currentPrice:0;
     return<div style={{marginBottom:20}}>
       {/* Price Target bar */}
-      {hasPt&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:12}}>
+      {hasPt&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Price Target</div>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{flex:1}}>
@@ -888,13 +921,13 @@ function TrackerApp(props){
             <div style={{fontSize:9,color:K.dim}}>upside</div></div>}</div>
         <div style={{fontSize:10,color:K.dim,marginTop:4}}>{pt.lastUpdated?"Updated "+pt.lastUpdated:""}</div></div>}
       {/* Beat streak badge */}
-      {hasEps&&beatStreak>=2&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+      {hasEps&&beatStreak>=2&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:12,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:16}}>{beatStreak>=4?"\uD83D\uDD25":"\u2705"}</span>
         <span style={{fontSize:12,color:K.grn,fontWeight:600,fontFamily:fm}}>{beatStreak} Quarter Beat Streak</span>
         <span style={{fontSize:11,color:K.dim}}>Consecutively beat EPS estimates</span></div>}
       {/* Analyst + EPS row */}
       <div style={{display:"grid",gridTemplateColumns:hasRecs&&hasEps?"1fr 1fr":"1fr",gap:12,marginBottom:12}}>
-        {hasRecs&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+        {hasRecs&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
           {function(){var r=recs[0];var total=(r.buy||0)+(r.hold||0)+(r.sell||0)+(r.strongBuy||0)+(r.strongSell||0);if(!total)return null;
             var buys=(r.strongBuy||0)+(r.buy||0);var sells=(r.strongSell||0)+(r.sell||0);
@@ -907,7 +940,7 @@ function TrackerApp(props){
               <div style={{display:"flex",justifyContent:"space-between",fontSize:11,fontFamily:fm}}>
                 <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {r.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
               <div style={{fontSize:10,color:K.dim,marginTop:4}}>{r.period} · {total} analysts</div></div>}()}</div>}
-        {hasEps&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+        {hasEps&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>EPS History</div>
           {eps.slice(0,4).map(function(e,i){var beat=e.actual!=null&&e.estimate!=null?e.actual>=e.estimate:null;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
             return<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
@@ -916,7 +949,7 @@ function TrackerApp(props){
               <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>est ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
               <span style={{fontSize:9,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.dim,fontFamily:fm,marginLeft:"auto"}}>{beat!=null?(pct>=0?"+":"")+pct.toFixed(1)+"%":""}</span></div>})}</div>}</div>
       {/* Insider Transactions */}
-      {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:12}}>
+      {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
         {txns.slice(0,6).map(function(t,i){var isBuy=t.change>0;
           return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,fontSize:11}}>
@@ -925,7 +958,7 @@ function TrackerApp(props){
             <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
             <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
       {/* Peers */}
-      {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+      {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Peer Companies</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
@@ -998,7 +1031,12 @@ function TrackerApp(props){
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Moat Analysis</span></div>
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div></div>
-      {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Analyzing competitive advantages for {c.ticker}...</div>:
+      {ld?<div style={{padding:"32px 0"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        {[0,1,2,3].map(function(i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:22}}>
+          <div className="ta-skel" style={{height:14,width:"60%",background:K.bdr,marginBottom:12}}/>
+          <div className="ta-skel" style={{height:6,background:K.bdr,marginBottom:8}}/>
+          <div className="ta-skel" style={{height:10,width:"40%",background:K.bdr}}/></div>})}</div>
+        <div style={{textAlign:"center",fontSize:11,color:K.dim,marginTop:16,fontFamily:fm}}>Analyzing {c.ticker} competitive advantages...</div></div>:
       !moat?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>Insufficient financial data to analyze moat</div><div style={{fontSize:11,color:K.dim}}>Need at least 2 years of financial statements from SEC EDGAR.</div></div>:
       <div>
       {/* Composite Score */}
@@ -1014,7 +1052,7 @@ function TrackerApp(props){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {moat.metrics.map(function(m){
           var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
-          return<div key={m.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"18px 22px"}}>
+          return<div key={m.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
               <span style={{fontSize:16}}>{m.icon}</span>
               <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{m.name}</div></div>
@@ -1030,7 +1068,7 @@ function TrackerApp(props){
                 return<div key={ti} style={{flex:1,height:h,borderRadius:2,background:barColor+"60"}}/>})}</div>}
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
       {/* Munger quote */}
-      <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+      <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
         <div style={{fontSize:12,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"\u201C"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"\u201D"}</div>
         <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>{"\u2014"} Warren Buffett (Munger's partner)</div></div>
       </div>}</div>}
@@ -1080,14 +1118,20 @@ function TrackerApp(props){
       {/* Statement Tabs */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
-      {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Loading financial data for {c.ticker}...</div>:
+      {ld?<div style={{padding:"32px 0"}}><div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:24}}>
+        {[0,1,2,3,4,5].map(function(i){return<div key={i} style={{display:"flex",gap:12,marginBottom:12}}>
+          <div className="ta-skel" style={{height:12,flex:1,background:K.bdr}}/>
+          <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
+          <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
+          <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/></div>})}</div>
+        <div style={{textAlign:"center",fontSize:11,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from SEC EDGAR...</div></div>:
       rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from SEC EDGAR (free). This company may not have XBRL filings, or the data may use non-standard XBRL tags.<br/>
         {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:6,color:K.amb,fontSize:10,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
         <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
       <div>
       {/* Chart section */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
           {chartItems.map(function(ci){return<button key={ci.k} onClick={function(){setChart(ci.k)}} style={{padding:"3px 10px",fontSize:10,fontFamily:fm,background:chart===ci.k?K.acc+"18":"transparent",color:chart===ci.k?K.acc:K.dim,border:"1px solid "+(chart===ci.k?K.acc+"30":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap"}}>{ci.l}</button>})}</div>
         {chartRows.length>0?<div style={{overflowX:"auto"}}><svg width={cW} height={cH} style={{display:"block"}}>
@@ -1102,7 +1146,7 @@ function TrackerApp(props){
             </g>})}</svg></div>:<div style={{padding:20,textAlign:"center",fontSize:11,color:K.dim}}>No chart data for {cDef.l}</div>}
       </div>
       {/* Full data table */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
         <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11,fontFamily:fm}}>
           <thead><tr><th style={{position:"sticky",left:0,background:K.card,padding:"10px 14px",textAlign:"left",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,minWidth:200,zIndex:2}}>
             {stab.l} ({per==="quarter"?"Quarterly":"Annual"})</th>
@@ -1132,21 +1176,21 @@ function TrackerApp(props){
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
       {/* Position + Conviction bar */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
           <div style={S.sec}>Position</div>
           {pos.shares>0?<div style={{display:"flex",gap:16}}>
             <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>SHARES</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>{pos.shares}</div></div>
             <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>AVG COST</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>${pos.avgCost}</div></div>
             {pos.currentPrice>0&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>RETURN</div><div style={{fontSize:16,fontWeight:600,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</div></div>}
           </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
           <div style={S.sec}>Conviction</div>
           {conv>0?<div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
             <div style={{flex:1}}><div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
               {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
           </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
-      {c.thesisNote&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>}
+      {c.thesisNote&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>}
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
         <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
@@ -1154,16 +1198,16 @@ function TrackerApp(props){
       <EarningsTimeline company={c}/>
       {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
       {/* Moat Tracker page link */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
+      <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
         <div><div style={S.sec}>{"\uD83C\uDFF0"} Moat Durability</div><div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring — margin stability, ROIC, FCF quality, financial fortress</div></div>
         <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
       {/* Financials page link */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
+      <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
         <div><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
         <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
-        {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
-        {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
+        {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
+        {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}><div style={S.dot(k.lastResult?k.lastResult.status:null)}/>
             <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" \u2022 "+k.period:""}</div></div>
             {k.lastResult&&<div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{k.unit||""}</div><div style={{fontSize:10,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.status.toUpperCase()}</div></div>}
@@ -1178,7 +1222,7 @@ function TrackerApp(props){
       <ThesisScorecard company={c}/>
       {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
         <div style={S.sec}>Conviction History</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{display:"flex",alignItems:"flex-end",gap:2,height:60,marginBottom:8}}>
             {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
               <div style={{fontSize:9,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
@@ -1191,7 +1235,7 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
+      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
@@ -1227,9 +1271,9 @@ function TrackerApp(props){
       <div style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
         {/* Doc list */}
         <div>
-          {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:32,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:12,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
+          {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:32,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:12,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
           {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});var isActive=hd===d.id;
-            return<div key={d.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:10,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d.id)}}>
+            return<div key={d.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d.id)}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <CoLogo domain={d.domain} ticker={d.ticker} size={18}/>
                 <span style={{fontSize:10,fontWeight:600,color:K.mid,fontFamily:fm}}>{d.ticker}</span>
@@ -1451,14 +1495,14 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
     {/* Analytics quick link */}
-    {sideTab==="portfolio"&&filtered.length>=2&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
+    {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
       <span style={{fontSize:18}}>{"\uD83D\uDCCA"}</span>
       <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Conviction \u00D7 moat matrix, concentration risk, sector allocation & quality ranking</div></div>
       <span style={{fontSize:16,color:K.acc}}>{"\u2192"}</span></div>}
-    {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:10,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
+    {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
-      {filtered.map(function(c){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
-        return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",transition:"border-color .2s",position:"relative"}} onClick={function(){setSelId(c.id)}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.bdr2}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+      {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
+        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id)}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
@@ -1520,7 +1564,8 @@ function TrackerApp(props){
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
       </div>}</div></div>}
     </div>}
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
+  var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/><div key={contentKey} className="ta-fade">{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
@@ -1532,7 +1577,7 @@ export default function App(){
     return function(){sub.data.subscription.unsubscribe()}},[]);
   function onAuth(u){setUser(u)}
   async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
-  if(!ready)return<div style={{background:"#121217",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#6e6e82",fontSize:13,fontFamily:"monospace"}}>Loading...</span></div>;
+  if(!ready)return<div style={{background:"#121217",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid #2a2a3a",borderTopColor:"#818CF8",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:"#6e6e82",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>;
   if(!user)return<LoginPage onAuth={onAuth}/>;
   return<TrackerApp user={user.email||""} userId={user.id} onLogout={onLogout}/>;
 }
