@@ -929,6 +929,131 @@ function TrackerApp(props){
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
 
+  // ── Moat Durability Tracker ─────────────────────────────
+  function MoatTracker(p){var c=p.company;
+    var _data=useState(null),data=_data[0],setData=_data[1];
+    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
+    useEffect(function(){setLd(true);
+      fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    // Calculate moat metrics from financial data
+    function calcMoat(){
+      if(!data)return null;
+      var inc=data.income||[],bal=data.balance||[],cf=data.cashflow||[];
+      if(inc.length<2)return null;
+      // Helper: get values array for a field
+      function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
+      function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
+      function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
+      // Recent 3-5 years for stability metrics
+      var recent=inc.slice(-5);var recentBal=bal.slice(-5);var recentCf=cf.slice(-5);
+      var metrics=[];
+      // 1. GROSS MARGIN STABILITY — high & stable = pricing power
+      var gm=vals(recent,"grossProfitRatio");
+      if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
+        var score=Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5))));
+        metrics.push({id:"grossMargin",name:"Gross Margin Stability",desc:"High & stable margins indicate pricing power and competitive advantage",score:score,value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (\u00B1"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F"})}
+      else if(recent.length>=2){
+        var revs=vals(recent,"revenue");var gps=vals(recent,"grossProfit");
+        if(revs.length>=2&&gps.length>=2){var gmCalc=gps.map(function(g,i){return revs[i]?g/revs[i]:null}).filter(function(v){return v!=null});
+          if(gmCalc.length>=2){var gmA=avg(gmCalc)*100;var gmS=stdDev(gmCalc)*100;var sc2=Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5))));
+            metrics.push({id:"grossMargin",name:"Gross Margin Stability",desc:"High & stable margins indicate pricing power and competitive advantage",score:sc2,value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (\u00B1"+gmS.toFixed(1)+"%)",trend:gmCalc.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F"})}}}
+      // 2. REVENUE GROWTH CONSISTENCY — steady = demand durability
+      var revs=vals(recent,"revenue");
+      if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
+        var grAvg=avg(growths);var grStd=stdDev(growths);
+        var sc=Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10)));
+        metrics.push({id:"revGrowth",name:"Revenue Growth",desc:"Consistent growth signals durable demand and expanding moat",score:sc,value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (\u00B1"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"\uD83D\uDCC8"})}
+      // 3. OPERATING LEVERAGE — expanding margins = scale advantage
+      var om=vals(recent,"operatingIncomeRatio");
+      if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
+      if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;
+        var expanding=omLast>omFirst;var sc3=Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1)));
+        metrics.push({id:"opLeverage",name:"Operating Leverage",desc:"Expanding operating margins signal scale advantages and efficiency gains",score:sc3,value:omAvg.toFixed(1)+"%",detail:(expanding?"\u2191 Expanding":"\u2193 Contracting")+" ("+omFirst.toFixed(1)+"% \u2192 "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"\u2699\uFE0F"})}
+      // 4. ROIC — Return on Invested Capital
+      if(recent.length>=2&&recentBal.length>=2){
+        var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){
+          var opInc=recent[ri].operatingIncome||recent[ri].netIncome;var ta=recentBal[ri]?recentBal[ri].totalAssets:null;var cl=recentBal[ri]?recentBal[ri].totalCurrentLiabilities||0:0;
+          if(opInc!=null&&ta&&(ta-cl)>0){roics.push(opInc/(ta-cl)*100)}}
+        if(roics.length>=2){var roicAvg=avg(roics);
+          var sc4=Math.min(10,Math.max(1,Math.round(roicAvg>30?9:roicAvg>20?8:roicAvg>15?7:roicAvg>10?6:roicAvg>5?4:2)));
+          metrics.push({id:"roic",name:"Return on Invested Capital",desc:"High ROIC sustained over time is the hallmark of a true competitive moat",score:sc4,value:roicAvg.toFixed(1)+"%",detail:"Avg ROIC "+roicAvg.toFixed(1)+"% over "+roics.length+"yr",trend:roics,icon:"\uD83C\uDFAF"})}}
+      // 5. FCF CONVERSION — FCF / Net Income
+      if(recentCf.length>=2&&recent.length>=2){
+        var fcfConvs=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){
+          var fcf=recentCf[fi].freeCashFlow||recentCf[fi].operatingCashFlow;var ni=recent[fi].netIncome;
+          if(fcf!=null&&ni&&ni>0){fcfConvs.push(fcf/ni*100)}}
+        if(fcfConvs.length>=2){var fcfAvg=avg(fcfConvs);
+          var sc5=Math.min(10,Math.max(1,Math.round(fcfAvg>120?9:fcfAvg>100?8:fcfAvg>80?7:fcfAvg>50?5:fcfAvg>0?3:1)));
+          metrics.push({id:"fcfConversion",name:"FCF Conversion",desc:"High free cash flow relative to net income shows earnings quality",score:sc5,value:fcfAvg.toFixed(0)+"%",detail:"FCF/NI ratio avg "+fcfAvg.toFixed(0)+"% over "+fcfConvs.length+"yr",trend:fcfConvs,icon:"\uD83D\uDCB0"})}}
+      // 6. FINANCIAL FORTRESS — Net Debt / EBITDA (lower = stronger)
+      if(recentBal.length>=1&&recent.length>=1){
+        var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];
+        var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);
+        var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
+        if(ebitda&&ebitda>0){var ratio=nd/ebitda;
+          var sc6=Math.min(10,Math.max(1,Math.round(ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1)));
+          metrics.push({id:"fortress",name:"Financial Fortress",desc:"Low leverage provides resilience and optionality. Munger: 'The first rule is to not go broke'",score:sc6,value:ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x"),trend:null,icon:"\uD83C\uDFF0"})}
+        else if(nd<0){metrics.push({id:"fortress",name:"Financial Fortress",desc:"Low leverage provides resilience and optionality",score:9,value:"Net Cash",detail:"Company has more cash than debt",trend:null,icon:"\uD83C\uDFF0"})}}
+      // 7. R&D INTENSITY — innovation moat (context-dependent)
+      var rds=[];for(var rdi=0;rdi<recent.length;rdi++){var rd=recent[rdi].researchAndDevelopmentExpenses;var rv2=recent[rdi].revenue;if(rd&&rv2)rds.push(rd/rv2*100)}
+      if(rds.length>=2){var rdAvg=avg(rds);
+        var sc7=Math.min(10,Math.max(1,Math.round(rdAvg>20?8:rdAvg>12?7:rdAvg>6?6:rdAvg>3?5:3)));
+        metrics.push({id:"rdIntensity",name:"R&D Investment",desc:"Sustained R&D spending builds and defends innovation moats",score:sc7,value:rdAvg.toFixed(1)+"%",detail:"R&D/Revenue avg "+rdAvg.toFixed(1)+"%",trend:rds,icon:"\uD83D\uDD2C"})}
+      // 8. NET MARGIN TREND — profitability trajectory
+      var nm=vals(recent,"netIncomeRatio");
+      if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
+      if(nm.length>=2){var nmFirst=nm[0]*100;var nmLast=nm[nm.length-1]*100;var nmAvg=avg(nm)*100;
+        var improving=nmLast>nmFirst;var sc8=Math.min(10,Math.max(1,Math.round(nmAvg>20?8:nmAvg>12?7:nmAvg>5?5:nmAvg>0?3:1)+(improving?1:0)));
+        metrics.push({id:"netMargin",name:"Net Margin Trend",desc:"Improving profitability indicates strengthening competitive position",score:sc8,value:nmAvg.toFixed(1)+"%",detail:(improving?"\u2191":"\u2193")+" "+nmFirst.toFixed(1)+"% \u2192 "+nmLast.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"\uD83D\uDCCA"})}
+      if(metrics.length===0)return null;
+      var composite=Math.round(avg(metrics.map(function(m){return m.score})));
+      return{metrics:metrics,composite:composite,years:recent.length}}
+    var moat=calcMoat();
+    var cLabel=!moat?"Insufficient Data":moat.composite>=8?"Wide Moat":moat.composite>=6?"Narrow Moat":moat.composite>=4?"Weak Moat":"No Moat";
+    var cColor=!moat?K.dim:moat.composite>=8?K.grn:moat.composite>=6?K.amb:K.red;
+    return<div style={{padding:"0 32px 60px",maxWidth:900}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+        <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Moat Analysis</span></div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div></div>
+      {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Analyzing competitive advantages for {c.ticker}...</div>:
+      !moat?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>Insufficient financial data to analyze moat</div><div style={{fontSize:11,color:K.dim}}>Need at least 2 years of financial statements from SEC EDGAR.</div></div>:
+      <div>
+      {/* Composite Score */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"28px 32px",marginBottom:24,display:"flex",alignItems:"center",gap:32}}>
+        <div style={{width:100,height:100,borderRadius:"50%",border:"4px solid "+cColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <div style={{fontSize:36,fontWeight:700,color:cColor,fontFamily:fm,lineHeight:1}}>{moat.composite}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>/10</div></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:20,fontWeight:500,color:cColor,fontFamily:fh,marginBottom:4}}>{cLabel}</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{moat.composite>=8?"This company shows strong competitive advantages across multiple dimensions. Durable moats deserve premium conviction.":moat.composite>=6?"Some competitive advantages are visible, but not all dimensions are strong. Monitor for moat erosion.":moat.composite>=4?"Limited competitive advantages detected. This company may be vulnerable to competition.":"No clear competitive moat identified. High conviction requires a special thesis."}</div>
+          <div style={{fontSize:10,color:K.dim,marginTop:8,fontFamily:fm}}>Based on {moat.years} years of SEC EDGAR data · {moat.metrics.length} dimensions analyzed</div></div></div>
+      {/* Individual Metrics */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        {moat.metrics.map(function(m){
+          var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
+          return<div key={m.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"18px 22px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <span style={{fontSize:16}}>{m.icon}</span>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{m.name}</div></div>
+              <div style={{fontSize:22,fontWeight:700,color:barColor,fontFamily:fm}}>{m.score}</div></div>
+            {/* Score bar */}
+            <div style={{height:6,borderRadius:3,background:K.bdr,marginBottom:8,overflow:"hidden"}}>
+              <div style={{height:"100%",width:m.score*10+"%",borderRadius:3,background:barColor,transition:"width .3s"}}/></div>
+            <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{m.value}</div>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>{m.detail}</div>
+            {/* Mini sparkline */}
+            {m.trend&&m.trend.length>=2&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:24,marginTop:4}}>
+              {m.trend.map(function(v,ti){var mx=Math.max.apply(null,m.trend);var mn=Math.min.apply(null,m.trend);var range=mx-mn||1;var h=Math.max(3,((v-mn)/range)*22);
+                return<div key={ti} style={{flex:1,height:h,borderRadius:2,background:barColor+"60"}}/>})}</div>}
+            <div style={{fontSize:10,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
+      {/* Munger quote */}
+      <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+        <div style={{fontSize:12,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"\u201C"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"\u201D"}</div>
+        <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>{"\u2014"} Warren Buffett (Munger's partner)</div></div>
+      </div>}</div>}
+
   // ── Financial Statements — Full Page (Morningstar-style) ──
   var IS_ITEMS=[{k:"revenue",l:"Revenue",b:1},{k:"costOfRevenue",l:"Cost of Revenue"},{k:"grossProfit",l:"Gross Profit",b:1},{k:"grossProfitRatio",l:"Gross Margin",p:1,d:1},{},{k:"researchAndDevelopmentExpenses",l:"R&D Expenses"},{k:"sellingGeneralAndAdministrativeExpenses",l:"SG&A Expenses"},{k:"operatingExpenses",l:"Total Operating Expenses"},{k:"operatingIncome",l:"Operating Income",b:1},{k:"operatingIncomeRatio",l:"Operating Margin",p:1,d:1},{},{k:"interestExpense",l:"Interest Expense"},{k:"totalOtherIncomeExpensesNet",l:"Other Income / Expense"},{k:"incomeBeforeTax",l:"Income Before Tax"},{k:"incomeTaxExpense",l:"Income Tax Expense"},{k:"netIncome",l:"Net Income",b:1},{k:"netIncomeRatio",l:"Net Margin",p:1,d:1},{},{k:"eps",l:"EPS (Basic)",b:1,sm:1},{k:"epsdiluted",l:"EPS (Diluted)",b:1,sm:1},{k:"weightedAverageShsOut",l:"Shares Outstanding"},{k:"weightedAverageShsOutDil",l:"Diluted Shares"},{k:"ebitda",l:"EBITDA",b:1},{k:"depreciationAndAmortization",l:"D&A"}];
   var BS_ITEMS=[{k:"cashAndCashEquivalents",l:"Cash & Equivalents"},{k:"shortTermInvestments",l:"Short-term Investments"},{k:"netReceivables",l:"Receivables"},{k:"inventory",l:"Inventory"},{k:"totalCurrentAssets",l:"Total Current Assets",b:1},{},{k:"propertyPlantEquipmentNet",l:"PP&E (Net)"},{k:"goodwillAndIntangibleAssets",l:"Goodwill & Intangibles"},{k:"longTermInvestments",l:"Long-term Investments"},{k:"totalNonCurrentAssets",l:"Total Non-Current Assets"},{k:"totalAssets",l:"Total Assets",b:1},{},{k:"accountPayables",l:"Accounts Payable"},{k:"shortTermDebt",l:"Short-term Debt"},{k:"totalCurrentLiabilities",l:"Total Current Liabilities",b:1},{k:"longTermDebt",l:"Long-term Debt"},{k:"totalNonCurrentLiabilities",l:"Total Non-Current Liabilities"},{k:"totalLiabilities",l:"Total Liabilities",b:1},{},{k:"retainedEarnings",l:"Retained Earnings"},{k:"totalStockholdersEquity",l:"Stockholders' Equity",b:1},{},{k:"totalDebt",l:"Total Debt"},{k:"netDebt",l:"Net Debt"}];
@@ -1047,6 +1172,10 @@ function TrackerApp(props){
       <EarningsReportCard company={c}/>
       <EarningsTimeline company={c}/>
       {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
+      {/* Moat Tracker page link */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
+        <div><div style={S.sec}>{"\uD83C\uDFF0"} Moat Durability</div><div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring — margin stability, ROIC, FCF quality, financial fortress</div></div>
+        <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
       {/* Financials page link */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
         <div><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
@@ -1081,7 +1210,7 @@ function TrackerApp(props){
           {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
         </div></div>}
       <ThesisVault company={c}/>
-      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
+      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
@@ -1252,7 +1381,7 @@ function TrackerApp(props){
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
       </div>}</div></div>}
     </div>}
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
