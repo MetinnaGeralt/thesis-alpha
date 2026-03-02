@@ -1363,7 +1363,7 @@ function TrackerApp(props){
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span></div>
               <div style={{fontSize:16,fontWeight:700,color:barColor,fontFamily:fm}}>{w.toFixed(1)}%</div>
               <div style={{height:3,borderRadius:2,background:K.bdr,marginTop:4}}><div style={{height:"100%",width:Math.min(100,w*2)+"%",borderRadius:2,background:barColor}}/></div>
-              {w>25&&<div style={{fontSize:9,color:K.red,marginTop:4,fontFamily:fm}}>{"\u26A0"} >25% single position</div>}</div>})}</div>
+              {w>25&&<div style={{fontSize:9,color:K.red,marginTop:4,fontFamily:fm}}>{"\u26A0"} {">"} 25% single position</div>}</div>})}</div>
         <div style={{display:"flex",gap:16,fontSize:11,color:K.dim,fontFamily:fm}}>
           <span>HHI: <b style={{color:hhiColor}}>{Math.round(hhi)}</b> ({hhiRating})</span>
           <span>Top 3: <b style={{color:K.txt}}>{held.sort(function(a,b){return weight(b)-weight(a)}).slice(0,3).reduce(function(s,c2){return s+weight(c2)},0).toFixed(0)}%</b></span>
