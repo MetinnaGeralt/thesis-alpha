@@ -1,106 +1,96 @@
-// app/api/fmp/route.js — Handles FMP stable + v3 + v4 API formats
+// app/api/fmp/route.js — FMP proxy with stable + v3 fallback
+export const dynamic = 'force-dynamic'; // Disable caching
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const endpoint = searchParams.get('endpoint');
   const key = process.env.FMP_KEY;
 
-  if (!endpoint || !key) {
-    return Response.json({ error: 'Missing endpoint or API key' }, { status: 400 });
+  if (!endpoint) {
+    return Response.json({ error: 'Missing endpoint param' }, { status: 400 });
+  }
+  if (!key) {
+    console.error('[FMP] FMP_KEY environment variable is not set!');
+    return Response.json({ error: 'API key not configured' }, { status: 500 });
   }
 
-  const separator = endpoint.includes('?') ? '&' : '?';
+  // Parse the endpoint: "income-statement/AAPL?period=annual&limit=5"
+  const qIdx = endpoint.indexOf('?');
+  const pathPart = qIdx >= 0 ? endpoint.substring(0, qIdx) : endpoint;
+  const queryPart = qIdx >= 0 ? endpoint.substring(qIdx + 1) : '';
+  const segments = pathPart.split('/');
 
-  // Build URLs to try — stable first (recommended by FMP), then v3, then v4
+  // Build URL list to try
   const urls = [];
 
-  // 1. Stable API format (PREFERRED): /stable/income-statement?symbol=AAPL&period=annual
-  const stableUrl = buildStableUrl(endpoint, key);
-  if (stableUrl) urls.push(stableUrl);
+  if (segments.length >= 2) {
+    const ep = segments[0];   // "income-statement"
+    const sym = segments[1];  // "AAPL"
+    const qs = queryPart ? `&${queryPart}` : '';
 
-  // 2. Standard v3 format: /api/v3/income-statement/AAPL?period=annual
-  urls.push(`https://financialmodelingprep.com/api/v3/${endpoint}${separator}apikey=${key}`);
-
-  // 3. v4 format for some endpoints
-  urls.push(`https://financialmodelingprep.com/api/v4/${endpoint}${separator}apikey=${key}`);
-
-  let lastError = null;
+    // Stable API (recommended)
+    urls.push(`https://financialmodelingprep.com/stable/${ep}?symbol=${sym}${qs}&apikey=${key}`);
+    // v3 fallback
+    urls.push(`https://financialmodelingprep.com/api/v3/${ep}/${sym}${queryPart ? '?' + queryPart + '&' : '?'}apikey=${key}`);
+  } else {
+    // Single-segment endpoint (e.g. "search?query=...")
+    const sep = endpoint.includes('?') ? '&' : '?';
+    urls.push(`https://financialmodelingprep.com/stable/${endpoint}${sep}apikey=${key}`);
+    urls.push(`https://financialmodelingprep.com/api/v3/${endpoint}${sep}apikey=${key}`);
+  }
 
   for (const url of urls) {
+    const safeUrl = url.replace(key, 'KEY');
     try {
+      console.log(`[FMP] Trying: ${safeUrl}`);
       const res = await fetch(url, {
         headers: { 'User-Agent': 'ThesisAlpha/1.0' },
-        next: { revalidate: 300 }
+        cache: 'no-store'
       });
 
       if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        console.log(`[FMP] ${res.status} for ${url.replace(key, 'KEY')} — ${text.substring(0, 200)}`);
-        lastError = `HTTP ${res.status}`;
+        const body = await res.text().catch(() => '');
+        console.log(`[FMP] HTTP ${res.status} for ${safeUrl}: ${body.substring(0, 200)}`);
         continue;
       }
 
-      const data = await res.json();
-
-      // Check for FMP error responses
-      if (data && data['Error Message']) {
-        console.log(`[FMP] Error: ${data['Error Message']} for ${url.replace(key, 'KEY')}`);
-        lastError = data['Error Message'];
+      const text = await res.text();
+      if (!text || text.trim() === '' || text.trim() === 'null') {
+        console.log(`[FMP] Empty response for ${safeUrl}`);
         continue;
       }
 
-      // Check for _fmpError-style responses from nested calls
-      if (data && data._fmpError) {
-        lastError = data.reason;
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.log(`[FMP] JSON parse error for ${safeUrl}: ${e.message}`);
         continue;
       }
 
-      // Skip empty arrays (wrong endpoint/tier)
+      // Check for FMP error messages
+      if (data && typeof data === 'object' && !Array.isArray(data) && data['Error Message']) {
+        console.log(`[FMP] API error for ${safeUrl}: ${data['Error Message']}`);
+        continue;
+      }
+
+      // Skip empty arrays
       if (Array.isArray(data) && data.length === 0) {
-        console.log(`[FMP] Empty array for ${url.replace(key, 'KEY')}`);
-        lastError = 'empty';
+        console.log(`[FMP] Empty array for ${safeUrl}`);
         continue;
       }
 
-      // Valid data found
-      if (data !== null && data !== undefined) {
-        return Response.json(data);
-      }
+      // Success!
+      console.log(`[FMP] Success for ${safeUrl} — ${Array.isArray(data) ? data.length + ' items' : 'object'}`);
+      return Response.json(data);
+
     } catch (e) {
-      console.warn(`[FMP] Fetch error for ${url.replace(key, 'KEY')}:`, e.message);
-      lastError = e.message;
+      console.error(`[FMP] Fetch error for ${safeUrl}:`, e.message);
       continue;
     }
   }
 
-  // All URLs failed — return diagnostic info
-  console.log(`[FMP] All URLs failed for endpoint: ${endpoint} (last: ${lastError})`);
-  return Response.json({ _fmpError: true, reason: lastError || 'all_failed', endpoint });
-}
-
-function buildStableUrl(endpoint, key) {
-  try {
-    // Parse: "income-statement/AAPL?period=annual&limit=5"
-    // Into: "/stable/income-statement?symbol=AAPL&period=annual&limit=5"
-    const [pathPart, queryPart] = endpoint.split('?');
-    const pathSegments = pathPart.split('/');
-
-    if (pathSegments.length >= 2) {
-      const endpointName = pathSegments[0]; // e.g. "income-statement"
-      const symbol = pathSegments[1]; // e.g. "AAPL"
-
-      let url = `https://financialmodelingprep.com/stable/${endpointName}?symbol=${symbol}`;
-      if (queryPart) url += `&${queryPart}`;
-      url += `&apikey=${key}`;
-      return url;
-    }
-
-    // Single segment endpoints
-    if (pathSegments.length === 1) {
-      return `https://financialmodelingprep.com/stable/${endpoint}${endpoint.includes('?') ? '&' : '?'}apikey=${key}`;
-    }
-
-    return null;
-  } catch (e) {
-    return null;
-  }
+  // All failed
+  console.error(`[FMP] ALL URLS FAILED for endpoint: ${endpoint}`);
+  return Response.json(null);
 }
