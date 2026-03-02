@@ -104,22 +104,27 @@ async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
   var key=ticker+"-"+(period||"annual");if(_fincache[key])return _fincache[key];
-  try{var isQ=period==="quarter";var lim=isQ?20:5;
+  try{
+    console.log("[ThesisAlpha] Fetching financials via SEC EDGAR for "+ticker+" ("+period+")");
+    // Primary: SEC EDGAR (free, no API key needed)
+    var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
+    if(r.ok){var d=await r.json();
+      if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
+        console.log("[ThesisAlpha] SEC EDGAR success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
+        var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
+        _fincache[key]=res;return res}
+      console.log("[ThesisAlpha] SEC EDGAR returned empty, trying FMP fallback...")}
+    else{console.warn("[ThesisAlpha] SEC route HTTP "+r.status+", trying FMP fallback...")}
+    // Fallback: FMP (if user has premium plan)
+    var isQ=period==="quarter";var lim=isQ?20:5;
     var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
-    console.log("[ThesisAlpha] Fetching financials for "+ticker+" ("+period+")");
-    // Try all three statements via proxy (route tries stable→v3→v4)
     var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
     var _is=results[0],_bs=results[1],_cf=results[2];
-    // Handle error objects from route
-    if(_is&&_is._fmpError){console.warn("[FMP] Income error:",_is.reason);_is=null}
-    if(_bs&&_bs._fmpError){console.warn("[FMP] Balance error:",_bs.reason);_bs=null}
-    if(_cf&&_cf._fmpError){console.warn("[FMP] CF error:",_cf.reason);_cf=null}
-    // Handle cases where proxy returns non-array
-    if(_is&&!Array.isArray(_is))_is=null;
-    if(_bs&&!Array.isArray(_bs))_bs=null;
-    if(_cf&&!Array.isArray(_cf))_cf=null;
-    console.log("[ThesisAlpha] Income rows:",(_is||[]).length,"Balance:",(_bs||[]).length,"CF:",(_cf||[]).length);
-    var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse()};
+    if(_is&&(_is._fmpError||!Array.isArray(_is)))_is=null;
+    if(_bs&&(_bs._fmpError||!Array.isArray(_bs)))_bs=null;
+    if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
+    console.log("[ThesisAlpha] FMP fallback — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
+    var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
     if(res.income.length>0||res.balance.length>0||res.cashflow.length>0)_fincache[key]=res;
     return res}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
 
@@ -964,17 +969,16 @@ function TrackerApp(props){
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}{data&&data.source?<span style={{marginLeft:8,fontSize:9,padding:"2px 6px",borderRadius:3,background:data.source==="sec-edgar"?K.grn+"15":K.acc+"15",color:data.source==="sec-edgar"?K.grn:K.acc}}>{"Source: "+(data.source==="sec-edgar"?"SEC EDGAR":"FMP")}</span>:""}</div></div>
         <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:11,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}</div></div>
       {/* Statement Tabs */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Loading financial data for {c.ticker}...</div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Financial statements should be available for US-listed companies on FMP Starter+.<br/>
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from SEC EDGAR (free). This company may not have XBRL filings, or the data may use non-standard XBRL tags.<br/>
         {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:6,color:K.amb,fontSize:10,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
-        <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Visit /api/fmp-test?ticker="+c.ticker+" for diagnostics.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button>
-        <a href={"/api/fmp-test?ticker="+c.ticker} target="_blank" rel="noreferrer" style={{background:K.amb+"15",border:"1px solid "+K.amb+"30",color:K.amb,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm,textDecoration:"none"}}>Run Diagnostics</a></div></div></div>:
+        <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
       <div>
       {/* Chart section */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
