@@ -280,6 +280,7 @@ function TrackerApp(props){
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
+  var _dt=useState("overview"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
@@ -320,6 +321,8 @@ function TrackerApp(props){
       "select{transition:border-color .15s ease}",
       ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
       ".ta-side-item:hover{background:rgba(129,140,248,.06)}",
+      ".ta-tab{transition:all .15s ease;position:relative}",
+      ".ta-tab:hover{color:#f0f0f5}",
     ].join("\n");
     document.head.appendChild(style);
     return function(){var el=document.getElementById(id);if(el)el.remove()}},[]);
@@ -660,7 +663,7 @@ function TrackerApp(props){
         <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
       </select></div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setPage("dashboard")}}>
+      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("overview");setPage("dashboard")}}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?K.txt:K.mid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
@@ -1165,7 +1168,9 @@ function TrackerApp(props){
       </div>}
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
+    var TABS=[{id:"overview",label:"Overview",icon:"\uD83D\uDCCB"},{id:"analysis",label:"Analysis",icon:"\uD83D\uDD2C"},{id:"journal",label:"Journal",icon:"\uD83D\uDCD3"}];
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
+      {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span><span style={{fontSize:11,color:K.dim}}>{"\u2022"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
@@ -1174,68 +1179,97 @@ function TrackerApp(props){
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"edit"})}}>Settings</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
-      {/* Position + Conviction bar */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
-          <div style={S.sec}>Position</div>
-          {pos.shares>0?<div style={{display:"flex",gap:16}}>
-            <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>SHARES</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>{pos.shares}</div></div>
-            <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>AVG COST</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>${pos.avgCost}</div></div>
-            {pos.currentPrice>0&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>RETURN</div><div style={{fontSize:16,fontWeight:600,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</div></div>}
-          </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
-          <div style={S.sec}>Conviction</div>
-          {conv>0?<div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
-            <div style={{flex:1}}><div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
-              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
-          </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
-      {c.thesisNote&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>}
-      <div style={{display:"flex",gap:8,marginBottom:20}}>
-        <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-        <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
-      <EarningsReportCard company={c}/>
-      <EarningsTimeline company={c}/>
-      {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
-      {/* Moat Tracker page link */}
-      <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
-        <div><div style={S.sec}>{"\uD83C\uDFF0"} Moat Durability</div><div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring — margin stability, ROIC, FCF quality, financial fortress</div></div>
-        <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
-      {/* Financials page link */}
-      <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
-        <div><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
-        <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
-      <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
-        {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
-        {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}><div style={S.dot(k.lastResult?k.lastResult.status:null)}/>
-            <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" \u2022 "+k.period:""}</div></div>
-            {k.lastResult&&<div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{k.unit||""}</div><div style={{fontSize:10,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.status.toUpperCase()}</div></div>}
-            {!k.lastResult&&<span style={{fontSize:11,color:K.dim}}>Pending</span>}</div>
-          {expKpi===k.id&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",gap:8}}>
-            <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"result",data:k.id})}}>Enter Result</button>
-            <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"kpi",data:k.id})}}>Edit</button>
-            {k.lastResult&&k.lastResult.excerpt&&<div style={{flex:1,fontSize:11,color:K.dim,fontStyle:"italic",paddingLeft:8}}>"{k.lastResult.excerpt}"</div>}</div>}</div>})}</div>
-      <ResearchLinks company={c}/>
-      <DecisionJournal company={c}/>
-      <SECFilings company={c}/>
-      <ThesisScorecard company={c}/>
-      {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
-        <div style={S.sec}>Conviction History</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-          <div style={{display:"flex",alignItems:"flex-end",gap:2,height:60,marginBottom:8}}>
-            {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              <div style={{fontSize:9,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
-              <div style={{width:"100%",maxWidth:24,height:pct+"%",minHeight:3,borderRadius:3,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
-          </div>
-          <div style={{display:"flex",gap:2}}>
-            {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:8,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
-          </div>
-          {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
-          {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
-        </div></div>}
-      <ThesisVault company={c}/>
-      <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
+      {/* Tab Navigation */}
+      <div style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
+        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){setDetailTab(t.id)}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fm,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13}}>{t.icon}</span>{t.label}</button>})}</div>
+      {/* ═══ OVERVIEW TAB ═══ */}
+      {detailTab==="overview"&&<div className="ta-fade">
+        {/* Position + Conviction */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
+            <div style={S.sec}>Position</div>
+            {pos.shares>0?<div style={{display:"flex",gap:16}}>
+              <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>SHARES</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>{pos.shares}</div></div>
+              <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>AVG COST</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>${pos.avgCost}</div></div>
+              {pos.currentPrice>0&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>RETURN</div><div style={{fontSize:16,fontWeight:600,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</div></div>}
+            </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
+          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+            <div style={S.sec}>Conviction</div>
+            {conv>0?<div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
+              <div style={{flex:1}}><div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
+                {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
+            </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
+        {/* Thesis */}
+        {c.thesisNote?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>
+          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"18px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}><div style={{fontSize:12,color:K.dim}}>Click to write your investment thesis</div></div>}
+        {/* Earnings */}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
+          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
+        <EarningsReportCard company={c}/>
+        <EarningsTimeline company={c}/>
+        {/* KPIs */}
+        <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
+          {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet. Track what matters.</div>}
+          {c.kpis.map(function(k){return<div key={k.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={S.dot(k.lastResult?k.lastResult.status:null)}/>
+              <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" \u2022 "+k.period:""}</div></div>
+              {k.lastResult&&<div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{k.unit||""}</div><div style={{fontSize:10,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.status.toUpperCase()}</div></div>}
+              {!k.lastResult&&<span style={{fontSize:11,color:K.dim}}>Pending</span>}</div>
+            {expKpi===k.id&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",gap:8}}>
+              <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"result",data:k.id})}}>Enter Result</button>
+              <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"kpi",data:k.id})}}>Edit</button>
+              {k.lastResult&&k.lastResult.excerpt&&<div style={{flex:1,fontSize:11,color:K.dim,fontStyle:"italic",paddingLeft:8}}>"{k.lastResult.excerpt}"</div>}</div>}</div>})}</div>
+      </div>}
+      {/* ═══ ANALYSIS TAB ═══ */}
+      {detailTab==="analysis"&&<div className="ta-fade">
+        {/* Moat Tracker link */}
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
+          <div><div style={S.sec}>{"\uD83C\uDFF0"} Moat Durability</div><div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring — margin stability, ROIC, FCF quality, financial fortress</div></div>
+          <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
+        {/* Financials link */}
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
+          <div><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
+          <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
+        {/* Analyst & Insider */}
+        {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
+        {/* SEC Filings */}
+        <SECFilings company={c}/>
+        {/* Thesis Scorecard */}
+        <ThesisScorecard company={c}/>
+        {/* Attribution */}
+        <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
+      </div>}
+      {/* ═══ JOURNAL TAB ═══ */}
+      {detailTab==="journal"&&<div className="ta-fade">
+        {/* Conviction History */}
+        {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
+          <div style={S.sec}>Conviction History</div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+            <div style={{display:"flex",alignItems:"flex-end",gap:2,height:60,marginBottom:8}}>
+              {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                <div style={{fontSize:9,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
+                <div style={{width:"100%",maxWidth:24,height:pct+"%",minHeight:3,borderRadius:3,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
+            </div>
+            <div style={{display:"flex",gap:2}}>
+              {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:8,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
+            </div>
+            {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
+            {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
+          </div></div>}
+        {/* Decision Journal */}
+        <DecisionJournal company={c}/>
+        {/* Research Links */}
+        <ResearchLinks company={c}/>
+        {/* Thesis Vault (docs) */}
+        <ThesisVault company={c}/>
+        {/* Empty state for Journal */}
+        {(!c.convictionHistory||c.convictionHistory.length<=1)&&(!c.decisions||c.decisions.length===0)&&(!c.researchLinks||c.researchLinks.length===0)&&(!c.docs||c.docs.length===0)&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 20px",textAlign:"center"}}>
+          <div style={{fontSize:16,marginBottom:8}}>{"\uD83D\uDCD3"}</div>
+          <div style={{fontSize:13,color:K.dim,marginBottom:4}}>Your investment journal is empty</div>
+          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Record decisions, save research links, write thesis documents, and track conviction changes over time. This becomes your most valuable asset.</div></div>}
+      </div>}
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
@@ -1502,7 +1536,7 @@ function TrackerApp(props){
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
-        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id)}}>
+        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("overview")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
