@@ -619,6 +619,7 @@ function TrackerApp(props){
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setSelId(null)}}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("dashboard")}}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("hub")}}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm}}>{"\uD83D\uDCDA"} Owner's Hub</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="analytics"?K.acc+"10":"transparent",borderLeft:page==="analytics"?"2px solid "+K.acc:"2px solid transparent"}} onClick={function(){setSelId(null);setPage("analytics")}}><span style={{fontSize:12,color:page==="analytics"?K.acc:K.mid,fontWeight:page==="analytics"?600:400,fontFamily:fm}}>{"\uD83D\uDCCA"} Analytics</span></div>
     <div style={{padding:"10px 16px 6px"}}>
       <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
         <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
@@ -929,88 +930,68 @@ function TrackerApp(props){
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
 
+  // ── Moat Calculator (shared) ────────────────────────────
+  function calcMoatFromData(finData){
+    if(!finData)return null;
+    var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
+    if(inc.length<2)return null;
+    function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
+    function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
+    function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
+    var recent=inc.slice(-5);var recentBal=bal.slice(-5);var recentCf=cf.slice(-5);
+    var metrics=[];
+    // 1. GROSS MARGIN
+    var gm=vals(recent,"grossProfitRatio");
+    if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
+      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5)))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (\u00B1"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F",desc:"High & stable margins indicate pricing power"})}
+    else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
+      if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
+        if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
+          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5)))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (\u00B1"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F",desc:"High & stable margins indicate pricing power"})}}}
+    // 2. REVENUE GROWTH
+    var revs=vals(recent,"revenue");
+    if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
+      var grAvg=avg(growths);var grStd=stdDev(growths);
+      metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (\u00B1"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"\uD83D\uDCC8",desc:"Consistent growth signals durable demand"})}
+    // 3. OPERATING LEVERAGE
+    var om=vals(recent,"operatingIncomeRatio");
+    if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
+    if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;var expanding=omLast>omFirst;
+      metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"\u2191 Expanding":"\u2193 Contracting")+" ("+omFirst.toFixed(1)+"% \u2192 "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"\u2699\uFE0F",desc:"Expanding operating margins signal scale advantages"})}
+    // 4. ROIC
+    if(recent.length>=2&&recentBal.length>=2){var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){var opInc=recent[ri].operatingIncome||recent[ri].netIncome;var ta=recentBal[ri]?recentBal[ri].totalAssets:null;var cl=recentBal[ri]?recentBal[ri].totalCurrentLiabilities||0:0;if(opInc!=null&&ta&&(ta-cl)>0)roics.push(opInc/(ta-cl)*100)}
+      if(roics.length>=2){metrics.push({id:"roic",name:"Return on Invested Capital",score:Math.min(10,Math.max(1,Math.round(avg(roics)>30?9:avg(roics)>20?8:avg(roics)>15?7:avg(roics)>10?6:avg(roics)>5?4:2))),value:avg(roics).toFixed(1)+"%",detail:"Avg ROIC "+avg(roics).toFixed(1)+"% over "+roics.length+"yr",trend:roics,icon:"\uD83C\uDFAF",desc:"High ROIC is the hallmark of a true moat"})}}
+    // 5. FCF CONVERSION
+    if(recentCf.length>=2&&recent.length>=2){var fcfC=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){var fcf=recentCf[fi].freeCashFlow||recentCf[fi].operatingCashFlow;var ni=recent[fi].netIncome;if(fcf!=null&&ni&&ni>0)fcfC.push(fcf/ni*100)}
+      if(fcfC.length>=2){metrics.push({id:"fcfConversion",name:"FCF Conversion",score:Math.min(10,Math.max(1,Math.round(avg(fcfC)>120?9:avg(fcfC)>100?8:avg(fcfC)>80?7:avg(fcfC)>50?5:avg(fcfC)>0?3:1))),value:avg(fcfC).toFixed(0)+"%",detail:"FCF/NI ratio avg "+avg(fcfC).toFixed(0)+"%",trend:fcfC,icon:"\uD83D\uDCB0",desc:"High FCF relative to net income shows earnings quality"})}}
+    // 6. FINANCIAL FORTRESS
+    if(recentBal.length>=1&&recent.length>=1){var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
+      if(ebitda&&ebitda>0){var ratio=nd/ebitda;metrics.push({id:"fortress",name:"Financial Fortress",score:Math.min(10,Math.max(1,Math.round(ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1))),value:ratio<0?"Net Cash":ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x"),trend:null,icon:"\uD83C\uDFF0",desc:"Low leverage = resilience and optionality"})}
+      else if(nd<0){metrics.push({id:"fortress",name:"Financial Fortress",score:9,value:"Net Cash",detail:"More cash than debt",trend:null,icon:"\uD83C\uDFF0",desc:"Low leverage = resilience and optionality"})}}
+    // 7. R&D
+    var rds=[];for(var rdi=0;rdi<recent.length;rdi++){var rd=recent[rdi].researchAndDevelopmentExpenses;var rv2=recent[rdi].revenue;if(rd&&rv2)rds.push(rd/rv2*100)}
+    if(rds.length>=2){metrics.push({id:"rdIntensity",name:"R&D Investment",score:Math.min(10,Math.max(1,Math.round(avg(rds)>20?8:avg(rds)>12?7:avg(rds)>6?6:avg(rds)>3?5:3))),value:avg(rds).toFixed(1)+"%",detail:"R&D/Revenue avg "+avg(rds).toFixed(1)+"%",trend:rds,icon:"\uD83D\uDD2C",desc:"Sustained R&D builds innovation moats"})}
+    // 8. NET MARGIN
+    var nm=vals(recent,"netIncomeRatio");
+    if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
+    if(nm.length>=2){var nmF=nm[0]*100;var nmL=nm[nm.length-1]*100;var nmA=avg(nm)*100;var imp=nmL>nmF;
+      metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"\u2191":"\u2193")+" "+nmF.toFixed(1)+"% \u2192 "+nmL.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"\uD83D\uDCCA",desc:"Improving profitability = strengthening position"})}
+    if(metrics.length===0)return null;
+    var composite=Math.round(avg(metrics.map(function(m){return m.score})));
+    return{metrics:metrics,composite:composite,years:recent.length}}
+
+  function moatLabel(score){return score>=8?"Wide Moat":score>=6?"Narrow Moat":score>=4?"Weak Moat":"No Moat"}
+  function moatColor(score){return score>=8?K.grn:score>=6?K.amb:K.red}
+
   // ── Moat Durability Tracker ─────────────────────────────
   function MoatTracker(p){var c=p.company;
     var _data=useState(null),data=_data[0],setData=_data[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);
       fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
-    // Calculate moat metrics from financial data
-    function calcMoat(){
-      if(!data)return null;
-      var inc=data.income||[],bal=data.balance||[],cf=data.cashflow||[];
-      if(inc.length<2)return null;
-      // Helper: get values array for a field
-      function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
-      function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
-      function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
-      // Recent 3-5 years for stability metrics
-      var recent=inc.slice(-5);var recentBal=bal.slice(-5);var recentCf=cf.slice(-5);
-      var metrics=[];
-      // 1. GROSS MARGIN STABILITY — high & stable = pricing power
-      var gm=vals(recent,"grossProfitRatio");
-      if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-        var score=Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5))));
-        metrics.push({id:"grossMargin",name:"Gross Margin Stability",desc:"High & stable margins indicate pricing power and competitive advantage",score:score,value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (\u00B1"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F"})}
-      else if(recent.length>=2){
-        var revs=vals(recent,"revenue");var gps=vals(recent,"grossProfit");
-        if(revs.length>=2&&gps.length>=2){var gmCalc=gps.map(function(g,i){return revs[i]?g/revs[i]:null}).filter(function(v){return v!=null});
-          if(gmCalc.length>=2){var gmA=avg(gmCalc)*100;var gmS=stdDev(gmCalc)*100;var sc2=Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5))));
-            metrics.push({id:"grossMargin",name:"Gross Margin Stability",desc:"High & stable margins indicate pricing power and competitive advantage",score:sc2,value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (\u00B1"+gmS.toFixed(1)+"%)",trend:gmCalc.map(function(v){return v*100}),icon:"\uD83D\uDEE1\uFE0F"})}}}
-      // 2. REVENUE GROWTH CONSISTENCY — steady = demand durability
-      var revs=vals(recent,"revenue");
-      if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
-        var grAvg=avg(growths);var grStd=stdDev(growths);
-        var sc=Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10)));
-        metrics.push({id:"revGrowth",name:"Revenue Growth",desc:"Consistent growth signals durable demand and expanding moat",score:sc,value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (\u00B1"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"\uD83D\uDCC8"})}
-      // 3. OPERATING LEVERAGE — expanding margins = scale advantage
-      var om=vals(recent,"operatingIncomeRatio");
-      if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
-      if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;
-        var expanding=omLast>omFirst;var sc3=Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1)));
-        metrics.push({id:"opLeverage",name:"Operating Leverage",desc:"Expanding operating margins signal scale advantages and efficiency gains",score:sc3,value:omAvg.toFixed(1)+"%",detail:(expanding?"\u2191 Expanding":"\u2193 Contracting")+" ("+omFirst.toFixed(1)+"% \u2192 "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"\u2699\uFE0F"})}
-      // 4. ROIC — Return on Invested Capital
-      if(recent.length>=2&&recentBal.length>=2){
-        var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){
-          var opInc=recent[ri].operatingIncome||recent[ri].netIncome;var ta=recentBal[ri]?recentBal[ri].totalAssets:null;var cl=recentBal[ri]?recentBal[ri].totalCurrentLiabilities||0:0;
-          if(opInc!=null&&ta&&(ta-cl)>0){roics.push(opInc/(ta-cl)*100)}}
-        if(roics.length>=2){var roicAvg=avg(roics);
-          var sc4=Math.min(10,Math.max(1,Math.round(roicAvg>30?9:roicAvg>20?8:roicAvg>15?7:roicAvg>10?6:roicAvg>5?4:2)));
-          metrics.push({id:"roic",name:"Return on Invested Capital",desc:"High ROIC sustained over time is the hallmark of a true competitive moat",score:sc4,value:roicAvg.toFixed(1)+"%",detail:"Avg ROIC "+roicAvg.toFixed(1)+"% over "+roics.length+"yr",trend:roics,icon:"\uD83C\uDFAF"})}}
-      // 5. FCF CONVERSION — FCF / Net Income
-      if(recentCf.length>=2&&recent.length>=2){
-        var fcfConvs=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){
-          var fcf=recentCf[fi].freeCashFlow||recentCf[fi].operatingCashFlow;var ni=recent[fi].netIncome;
-          if(fcf!=null&&ni&&ni>0){fcfConvs.push(fcf/ni*100)}}
-        if(fcfConvs.length>=2){var fcfAvg=avg(fcfConvs);
-          var sc5=Math.min(10,Math.max(1,Math.round(fcfAvg>120?9:fcfAvg>100?8:fcfAvg>80?7:fcfAvg>50?5:fcfAvg>0?3:1)));
-          metrics.push({id:"fcfConversion",name:"FCF Conversion",desc:"High free cash flow relative to net income shows earnings quality",score:sc5,value:fcfAvg.toFixed(0)+"%",detail:"FCF/NI ratio avg "+fcfAvg.toFixed(0)+"% over "+fcfConvs.length+"yr",trend:fcfConvs,icon:"\uD83D\uDCB0"})}}
-      // 6. FINANCIAL FORTRESS — Net Debt / EBITDA (lower = stronger)
-      if(recentBal.length>=1&&recent.length>=1){
-        var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];
-        var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);
-        var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
-        if(ebitda&&ebitda>0){var ratio=nd/ebitda;
-          var sc6=Math.min(10,Math.max(1,Math.round(ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1)));
-          metrics.push({id:"fortress",name:"Financial Fortress",desc:"Low leverage provides resilience and optionality. Munger: 'The first rule is to not go broke'",score:sc6,value:ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x"),trend:null,icon:"\uD83C\uDFF0"})}
-        else if(nd<0){metrics.push({id:"fortress",name:"Financial Fortress",desc:"Low leverage provides resilience and optionality",score:9,value:"Net Cash",detail:"Company has more cash than debt",trend:null,icon:"\uD83C\uDFF0"})}}
-      // 7. R&D INTENSITY — innovation moat (context-dependent)
-      var rds=[];for(var rdi=0;rdi<recent.length;rdi++){var rd=recent[rdi].researchAndDevelopmentExpenses;var rv2=recent[rdi].revenue;if(rd&&rv2)rds.push(rd/rv2*100)}
-      if(rds.length>=2){var rdAvg=avg(rds);
-        var sc7=Math.min(10,Math.max(1,Math.round(rdAvg>20?8:rdAvg>12?7:rdAvg>6?6:rdAvg>3?5:3)));
-        metrics.push({id:"rdIntensity",name:"R&D Investment",desc:"Sustained R&D spending builds and defends innovation moats",score:sc7,value:rdAvg.toFixed(1)+"%",detail:"R&D/Revenue avg "+rdAvg.toFixed(1)+"%",trend:rds,icon:"\uD83D\uDD2C"})}
-      // 8. NET MARGIN TREND — profitability trajectory
-      var nm=vals(recent,"netIncomeRatio");
-      if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
-      if(nm.length>=2){var nmFirst=nm[0]*100;var nmLast=nm[nm.length-1]*100;var nmAvg=avg(nm)*100;
-        var improving=nmLast>nmFirst;var sc8=Math.min(10,Math.max(1,Math.round(nmAvg>20?8:nmAvg>12?7:nmAvg>5?5:nmAvg>0?3:1)+(improving?1:0)));
-        metrics.push({id:"netMargin",name:"Net Margin Trend",desc:"Improving profitability indicates strengthening competitive position",score:sc8,value:nmAvg.toFixed(1)+"%",detail:(improving?"\u2191":"\u2193")+" "+nmFirst.toFixed(1)+"% \u2192 "+nmLast.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"\uD83D\uDCCA"})}
-      if(metrics.length===0)return null;
-      var composite=Math.round(avg(metrics.map(function(m){return m.score})));
-      return{metrics:metrics,composite:composite,years:recent.length}}
-    var moat=calcMoat();
-    var cLabel=!moat?"Insufficient Data":moat.composite>=8?"Wide Moat":moat.composite>=6?"Narrow Moat":moat.composite>=4?"Weak Moat":"No Moat";
-    var cColor=!moat?K.dim:moat.composite>=8?K.grn:moat.composite>=6?K.amb:K.red;
+    var moat=calcMoatFromData(data);
+    var cLabel=!moat?"Insufficient Data":moatLabel(moat.composite);
+    var cColor=!moat?K.dim:moatColor(moat.composite);
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
@@ -1271,6 +1252,158 @@ function TrackerApp(props){
         </div>}
       </div></div>}
 
+  // ── Portfolio Analytics ─────────────────────────────────
+  function PortfolioAnalytics(){
+    var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var _moats=useState({}),moats=_moats[0],setMoats=_moats[1];
+    var _ldM=useState(true),ldM=_ldM[0],setLdM=_ldM[1];
+    var _prog=useState(0),prog=_prog[0],setProg=_prog[1];
+    // Fetch moat data for all portfolio companies
+    useEffect(function(){if(portCos.length===0){setLdM(false);return}
+      var done=0;var results={};
+      portCos.forEach(function(c){
+        fetchFinancialStatements(c.ticker,"annual").then(function(r){
+          var m=calcMoatFromData(r);if(m)results[c.id]=m;done++;setProg(done);
+          if(done>=portCos.length){setMoats(results);setLdM(false)}
+        }).catch(function(){done++;setProg(done);if(done>=portCos.length){setMoats(results);setLdM(false)}})})
+    },[cos.length]);
+    // Helpers
+    var held=portCos.filter(function(c){var p=c.position||{};return p.shares>0&&p.currentPrice>0});
+    var totalVal=held.reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
+    function weight(c2){if(totalVal<=0)return 0;var p=c2.position||{};return(p.shares||0)*(p.currentPrice||0)/totalVal*100}
+    // Sector data
+    var sectorVal={};held.forEach(function(c2){var s=c2.sector||"Other";var w=weight(c2);sectorVal[s]=(sectorVal[s]||0)+w});
+    var sectorList=Object.keys(sectorVal).sort(function(a,b){return sectorVal[b]-sectorVal[a]});
+    var topSectorPct=sectorList.length>0?sectorVal[sectorList[0]]:0;
+    // HHI (Herfindahl)
+    var hhi=held.reduce(function(s,c2){var w=weight(c2);return s+w*w},0);
+    var hhiRating=hhi>2500?"Concentrated":hhi>1500?"Moderate":"Diversified";
+    var hhiColor=hhi>2500?K.amb:hhi>1500?K.acc:K.grn;
+    // Moat-enriched companies
+    var withMoat=portCos.filter(function(c2){return moats[c2.id]}).map(function(c2){return{company:c2,moat:moats[c2.id],conv:c2.conviction||0,w:weight(c2)}});
+    var avgMoat=withMoat.length>0?Math.round(withMoat.reduce(function(s,x){return s+x.moat.composite},0)/withMoat.length):0;
+    var weakest=withMoat.slice().sort(function(a,b){return a.moat.composite-b.moat.composite}).slice(0,3);
+    var strongest=withMoat.slice().sort(function(a,b){return b.moat.composite-a.moat.composite}).slice(0,3);
+    // Quality score = conviction * moat / 10
+    var qualityScores=withMoat.map(function(x){return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,conv:x.conv,moat:x.moat.composite,quality:Math.round(x.conv*x.moat.composite/10),w:x.w}}).sort(function(a,b){return b.quality-a.quality});
+    var avgQuality=qualityScores.length>0?Math.round(qualityScores.reduce(function(s,x){return s+x.quality},0)/qualityScores.length):0;
+
+    return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
+      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
+        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" · Loading moat data ("+prog+"/"+portCos.length+")...":withMoat.length>0?" · "+withMoat.length+" moat scores loaded":""}</p></div>
+
+      {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:13,color:K.dim}}>Fetching financial data for {portCos.length} companies...</div>
+        <div style={{height:4,borderRadius:2,background:K.bdr,maxWidth:300,margin:"16px auto"}}><div style={{height:"100%",borderRadius:2,background:K.acc,width:(portCos.length>0?prog/portCos.length*100:0)+"%",transition:"width .3s"}}/></div></div>:
+      <div>
+      {/* Top-level summary cards */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Portfolio Quality</div>
+          <div style={{fontSize:28,fontWeight:700,color:avgQuality>=7?K.grn:avgQuality>=5?K.amb:K.red,fontFamily:fm}}>{avgQuality||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
+          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>Conviction \u00D7 Moat avg</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Avg Moat Score</div>
+          <div style={{fontSize:28,fontWeight:700,color:moatColor(avgMoat),fontFamily:fm}}>{avgMoat||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
+          <div style={{fontSize:10,color:moatColor(avgMoat),marginTop:4,fontFamily:fm}}>{avgMoat>0?moatLabel(avgMoat):""}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Concentration</div>
+          <div style={{fontSize:28,fontWeight:700,color:hhiColor,fontFamily:fm}}>{held.length>0?Math.round(hhi):"\u2014"}</div>
+          <div style={{fontSize:10,color:hhiColor,marginTop:4,fontFamily:fm}}>HHI \u2014 {held.length>0?hhiRating:"Add positions"}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Top Sector</div>
+          <div style={{fontSize:16,fontWeight:600,color:topSectorPct>40?K.amb:K.txt,fontFamily:fm}}>{sectorList[0]||"\u2014"}</div>
+          <div style={{fontSize:10,color:topSectorPct>40?K.amb:K.dim,marginTop:4,fontFamily:fm}}>{topSectorPct>0?topSectorPct.toFixed(0)+"% weight":"No positions"}{topSectorPct>40?" \u26A0 Concentrated":""}</div></div></div>
+
+      {/* Conviction × Moat Quality Matrix */}
+      {qualityScores.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:16,fontFamily:fm}}>Conviction \u00D7 Moat Quality Matrix</div>
+        <div style={{position:"relative",height:260,border:"1px solid "+K.bdr,borderRadius:8,overflow:"hidden",background:K.bg}}>
+          {/* Quadrant labels */}
+          <div style={{position:"absolute",top:8,left:8,fontSize:9,color:K.dim+"80",fontFamily:fm}}>High Conviction / Weak Moat</div>
+          <div style={{position:"absolute",top:8,right:8,fontSize:9,color:K.grn+"60",fontFamily:fm,fontWeight:600}}>High Conviction / Wide Moat</div>
+          <div style={{position:"absolute",bottom:8,left:8,fontSize:9,color:K.red+"60",fontFamily:fm}}>Low Conviction / Weak Moat</div>
+          <div style={{position:"absolute",bottom:8,right:8,fontSize:9,color:K.dim+"80",fontFamily:fm}}>Low Conviction / Wide Moat</div>
+          {/* Grid lines */}
+          <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,background:K.bdr}}/>
+          <div style={{position:"absolute",left:"50%",top:0,bottom:0,width:1,background:K.bdr}}/>
+          {/* Axis labels */}
+          <div style={{position:"absolute",left:"50%",bottom:2,transform:"translateX(-50%)",fontSize:8,color:K.dim,fontFamily:fm}}>MOAT SCORE \u2192</div>
+          <div style={{position:"absolute",top:"50%",left:2,transform:"rotate(-90deg) translateX(-50%)",transformOrigin:"top left",fontSize:8,color:K.dim,fontFamily:fm}}>CONVICTION \u2192</div>
+          {/* Plot dots */}
+          {qualityScores.map(function(q){
+            var x=Math.max(5,Math.min(95,q.moat*10));var y=Math.max(5,Math.min(95,100-q.conv*10));
+            var dotColor=q.quality>=7?K.grn:q.quality>=5?K.amb:K.red;
+            var dotSize=Math.max(8,Math.min(28,q.w/2+8));
+            return<div key={q.id} style={{position:"absolute",left:x+"%",top:y+"%",transform:"translate(-50%,-50%)",width:dotSize,height:dotSize,borderRadius:"50%",background:dotColor+"40",border:"2px solid "+dotColor,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:10}} onClick={function(){setSelId(q.id);setPage("dashboard")}} title={q.ticker+": Conv "+q.conv+", Moat "+q.moat+", Quality "+q.quality}>
+              <span style={{fontSize:Math.max(7,dotSize/3),fontWeight:700,color:dotColor,fontFamily:fm}}>{q.ticker}</span></div>})}</div>
+        <div style={{marginTop:10,fontSize:10,color:K.dim,fontFamily:fm}}>Dot size = portfolio weight. Top-right quadrant = highest quality holdings (high conviction + wide moat).</div></div>}
+
+      {/* Portfolio Moat Summary */}
+      {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Strongest Moats</div>
+          {strongest.map(function(x){return<div key={x.company.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+            <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Weakest Moats {"\u26A0"}</div>
+          {weakest.map(function(x){return<div key={x.company.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+            <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div></div>}
+
+      {/* Concentration Risk */}
+      {held.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Position Sizing & Concentration</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
+          {held.sort(function(a,b){return weight(b)-weight(a)}).map(function(c2){var w=weight(c2);
+            var barColor=w>25?K.red:w>15?K.amb:K.acc;
+            return<div key={c2.id} style={{background:barColor+"12",border:"1px solid "+barColor+"30",borderRadius:8,padding:"10px 14px",minWidth:80,flex:"0 1 auto",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setPage("dashboard")}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span></div>
+              <div style={{fontSize:16,fontWeight:700,color:barColor,fontFamily:fm}}>{w.toFixed(1)}%</div>
+              <div style={{height:3,borderRadius:2,background:K.bdr,marginTop:4}}><div style={{height:"100%",width:Math.min(100,w*2)+"%",borderRadius:2,background:barColor}}/></div>
+              {w>25&&<div style={{fontSize:9,color:K.red,marginTop:4,fontFamily:fm}}>{"\u26A0"} >25% single position</div>}</div>})}</div>
+        <div style={{display:"flex",gap:16,fontSize:11,color:K.dim,fontFamily:fm}}>
+          <span>HHI: <b style={{color:hhiColor}}>{Math.round(hhi)}</b> ({hhiRating})</span>
+          <span>Top 3: <b style={{color:K.txt}}>{held.sort(function(a,b){return weight(b)-weight(a)}).slice(0,3).reduce(function(s,c2){return s+weight(c2)},0).toFixed(0)}%</b></span>
+          <span>{held.length} positions</span></div></div>}
+
+      {/* Sector Allocation */}
+      {sectorList.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Sector Allocation</div>
+        {/* Visual bar chart */}
+        <div style={{display:"flex",gap:4,height:32,marginBottom:16,borderRadius:6,overflow:"hidden"}}>
+          {sectorList.map(function(s,i){var pct=sectorVal[s];var colors=[K.acc,K.grn,K.amb,K.blue,K.red,"#9C27B0","#FF9800","#00BCD4"];var c2=colors[i%colors.length];
+            return<div key={s} style={{flex:pct,background:c2+"50",display:"flex",alignItems:"center",justifyContent:"center",minWidth:pct>5?40:0,overflow:"hidden"}} title={s+": "+pct.toFixed(1)+"%"}>
+              {pct>8&&<span style={{fontSize:9,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.length>10?s.substring(0,8)+"..":s}</span>}</div>})}</div>
+        {sectorList.map(function(s,i){var pct=sectorVal[s];var warn=pct>40;var colors=[K.acc,K.grn,K.amb,K.blue,K.red,"#9C27B0","#FF9800","#00BCD4"];var c2=colors[i%colors.length];
+          return<div key={s} style={{marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:2,background:c2+"50"}}/><span style={{fontSize:12,color:K.mid}}>{s}</span></div>
+              <span style={{fontSize:11,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct.toFixed(1)}%{warn?" \u26A0 Drift warning":""}</span></div>
+            <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:c2+"80"}}/></div></div>})}
+        {topSectorPct>40&&<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"10",border:"1px solid "+K.amb+"20",borderRadius:6,fontSize:11,color:K.amb}}>
+          {"\u26A0"} Sector drift alert: {sectorList[0]} represents {topSectorPct.toFixed(0)}% of your portfolio. Consider diversification.</div>}
+      </div>}
+
+      {/* Quality Ranking Table */}
+      {qualityScores.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Holdings Quality Ranking</div>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["","Company","Conviction","Moat","Quality","Weight"].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:10,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fm,fontWeight:500}}>{h}</th>})}</tr></thead>
+          <tbody>{qualityScores.map(function(q,i){var qColor=q.quality>=7?K.grn:q.quality>=5?K.amb:K.red;
+            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setPage("dashboard")}}>
+              <td style={{padding:"10px 10px",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
+              <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
+              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:q.conv>=8?K.grn:q.conv>=5?K.amb:K.red,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.conv||"\u2014"}</td>
+              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:moatColor(q.moat),fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.moat}</td>
+              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:qColor,fontFamily:fm,background:qColor+"15",padding:"3px 10px",borderRadius:4}}>{q.quality}</span></td>
+              <td style={{padding:"10px 10px",textAlign:"center",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.w>0?q.w.toFixed(1)+"%":"\u2014"}</td></tr>})}</tbody></table></div>}
+
+      {portCos.length===0&&<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim}}>No portfolio companies yet. Add companies and set their status to Portfolio.</div></div>}
+      </div>}</div>}
+
   function Dashboard(){var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
     var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
@@ -1316,6 +1449,11 @@ function TrackerApp(props){
           <div style={{fontSize:18,fontWeight:600,color:K.red,fontFamily:fm}}>{worst?worst.ticker:"\u2014"}</div>
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
+    {/* Analytics quick link */}
+    {sideTab==="portfolio"&&filtered.length>=2&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
+      <span style={{fontSize:18}}>{"\uD83D\uDCCA"}</span>
+      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Conviction \u00D7 moat matrix, concentration risk, sector allocation & quality ranking</div></div>
+      <span style={{fontSize:16,color:K.acc}}>{"\u2192"}</span></div>}
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:10,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
@@ -1381,7 +1519,7 @@ function TrackerApp(props){
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
       </div>}</div></div>}
     </div>}
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
