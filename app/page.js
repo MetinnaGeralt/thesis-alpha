@@ -104,12 +104,15 @@ async function fetchPrice(ticker){try{var p=await fmp("profile?symbol="+ticker);
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
   var key=ticker+"-"+(period||"annual");if(_fincache[key])return _fincache[key];
-  try{var pq=period==="quarter"?"&period=quarter":"";
-    var _is=await fmp("income-statement/"+ticker+"?limit=20"+pq);
-    var _bs=await fmp("balance-sheet-statement/"+ticker+"?limit=20"+pq);
-    var _cf=await fmp("cash-flow-statement/"+ticker+"?limit=20"+pq);
+  try{var isQ=period==="quarter";var lim=isQ?20:5;
+    var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
+    console.log("[ThesisAlpha] Fetching financials for "+ticker+" ("+period+")");
+    var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
+    var _is=results[0],_bs=results[1],_cf=results[2];
+    console.log("[ThesisAlpha] Income rows:",(_is||[]).length,"Balance:",(_bs||[]).length,"CF:",(_cf||[]).length);
     var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse()};
-    _fincache[key]=res;return res}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
+    if(res.income.length>0||res.balance.length>0||res.cashflow.length>0)_fincache[key]=res;
+    return res}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
 
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
@@ -262,6 +265,7 @@ function TrackerApp(props){
   function toggleTheme(){var n=theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
+  var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
@@ -269,6 +273,9 @@ function TrackerApp(props){
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
+  var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:true,showSectors:true,showDividends:true,showAnalyst:true,showBuyZone:true};
+  var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
+  function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
@@ -547,7 +554,16 @@ function TrackerApp(props){
       rows.push([c.ticker,'"'+c.name+'"',c.sector,c.status||"portfolio",pos.shares||"",pos.avgCost||"",pos.currentPrice||"",ret,val,c.conviction||"",c.earningsDate||"",total>0?met+"/"+total:"",c.targetPrice||"",'"'+(c.thesisNote||"").replace(/"/g,"''")+'"'])});
     var csv=rows.map(function(r){return r.join(",")}).join("\n");
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal};var C=map[modal.type];return C?<C/>:null}
+  function SettingsModal(){
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price on company cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return % on company cards"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded portfolio performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking and yields"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets, insider trades"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below analyst targets"}];
+    return<Modal title="Dashboard Settings" onClose={function(){setModal(null)}} K={K} w={480}>
+      <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Customize your dashboard. Toggle features to make it as clean or feature-packed as you want.</div>
+      {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
+        <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
+        <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
+          <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
+      <div style={{marginTop:20,textAlign:"right"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Sidebar + TopBar ──────────────────────────────────────
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
@@ -559,7 +575,7 @@ function TrackerApp(props){
       <button onClick={function(){setSideTab("portfolio")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="portfolio"?"2px solid "+K.acc:"2px solid transparent",color:sideTab==="portfolio"?K.acc:K.dim,fontFamily:fm}}>Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</button>
       <button onClick={function(){setSideTab("watchlist")}} style={{flex:1,padding:"8px 0",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600,cursor:"pointer",background:"none",border:"none",borderBottom:sideTab==="watchlist"?"2px solid "+K.amb:"2px solid transparent",color:sideTab==="watchlist"?K.amb:K.dim,fontFamily:fm}}>Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</button></div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setPage("dashboard")}}>
+      return<div key={c.id} style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setPage("dashboard")}}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?K.txt:K.mid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
@@ -576,6 +592,7 @@ function TrackerApp(props){
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:10})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:12,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:K.amb,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
+    <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
     <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
 
@@ -839,103 +856,82 @@ function TrackerApp(props){
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
 
-  // ── Financial Statements Interactive Chart ──
-  var FMETRICS=[
-    {id:"revenue",label:"Revenue",src:"income",fmt:"$"},
-    {id:"grossProfit",label:"Gross Profit",src:"income",fmt:"$"},
-    {id:"operatingIncome",label:"Operating Income",src:"income",fmt:"$"},
-    {id:"netIncome",label:"Net Income",src:"income",fmt:"$"},
-    {id:"ebitda",label:"EBITDA",src:"income",fmt:"$"},
-    {id:"eps",label:"EPS",src:"income",fmt:"$",small:true},
-    {id:"epsdiluted",label:"EPS Diluted",src:"income",fmt:"$",small:true},
-    {id:"grossProfitRatio",label:"Gross Margin",src:"income",fmt:"%",pct:true},
-    {id:"operatingIncomeRatio",label:"Operating Margin",src:"income",fmt:"%",pct:true},
-    {id:"netIncomeRatio",label:"Net Margin",src:"income",fmt:"%",pct:true},
-    {id:"totalAssets",label:"Total Assets",src:"balance",fmt:"$"},
-    {id:"totalLiabilities",label:"Total Liabilities",src:"balance",fmt:"$"},
-    {id:"totalStockholdersEquity",label:"Equity",src:"balance",fmt:"$"},
-    {id:"totalDebt",label:"Total Debt",src:"balance",fmt:"$"},
-    {id:"cashAndCashEquivalents",label:"Cash & Equiv.",src:"balance",fmt:"$"},
-    {id:"netDebt",label:"Net Debt",src:"balance",fmt:"$"},
-    {id:"freeCashFlow",label:"Free Cash Flow",src:"cashflow",fmt:"$"},
-    {id:"operatingCashFlow",label:"Operating CF",src:"cashflow",fmt:"$"},
-    {id:"capitalExpenditure",label:"CapEx",src:"cashflow",fmt:"$"},
-    {id:"dividendsPaid",label:"Dividends Paid",src:"cashflow",fmt:"$"}
-  ];
-  function fmtBig(v,fmt){if(v==null||isNaN(v))return"—";if(fmt==="%")return(v*100).toFixed(1)+"%";
-    var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(1)+"B";else if(a>=1e6)s=(a/1e6).toFixed(0)+"M";else if(a>=1e3)s=(a/1e3).toFixed(0)+"K";else s=a.toFixed(2);return(neg?"-":"")+(fmt==="$"?"$":"")+s}
-  function FinancialsChart(p){var c=p.company;
+  // ── Financial Statements — Full Page (Morningstar-style) ──
+  var IS_ITEMS=[{k:"revenue",l:"Revenue",b:1},{k:"costOfRevenue",l:"Cost of Revenue"},{k:"grossProfit",l:"Gross Profit",b:1},{k:"grossProfitRatio",l:"Gross Margin",p:1,d:1},{},{k:"researchAndDevelopmentExpenses",l:"R&D Expenses"},{k:"sellingGeneralAndAdministrativeExpenses",l:"SG&A Expenses"},{k:"operatingExpenses",l:"Total Operating Expenses"},{k:"operatingIncome",l:"Operating Income",b:1},{k:"operatingIncomeRatio",l:"Operating Margin",p:1,d:1},{},{k:"interestExpense",l:"Interest Expense"},{k:"totalOtherIncomeExpensesNet",l:"Other Income / Expense"},{k:"incomeBeforeTax",l:"Income Before Tax"},{k:"incomeTaxExpense",l:"Income Tax Expense"},{k:"netIncome",l:"Net Income",b:1},{k:"netIncomeRatio",l:"Net Margin",p:1,d:1},{},{k:"eps",l:"EPS (Basic)",b:1,sm:1},{k:"epsdiluted",l:"EPS (Diluted)",b:1,sm:1},{k:"weightedAverageShsOut",l:"Shares Outstanding"},{k:"weightedAverageShsOutDil",l:"Diluted Shares"},{k:"ebitda",l:"EBITDA",b:1},{k:"depreciationAndAmortization",l:"D&A"}];
+  var BS_ITEMS=[{k:"cashAndCashEquivalents",l:"Cash & Equivalents"},{k:"shortTermInvestments",l:"Short-term Investments"},{k:"netReceivables",l:"Receivables"},{k:"inventory",l:"Inventory"},{k:"totalCurrentAssets",l:"Total Current Assets",b:1},{},{k:"propertyPlantEquipmentNet",l:"PP&E (Net)"},{k:"goodwillAndIntangibleAssets",l:"Goodwill & Intangibles"},{k:"longTermInvestments",l:"Long-term Investments"},{k:"totalNonCurrentAssets",l:"Total Non-Current Assets"},{k:"totalAssets",l:"Total Assets",b:1},{},{k:"accountPayables",l:"Accounts Payable"},{k:"shortTermDebt",l:"Short-term Debt"},{k:"totalCurrentLiabilities",l:"Total Current Liabilities",b:1},{k:"longTermDebt",l:"Long-term Debt"},{k:"totalNonCurrentLiabilities",l:"Total Non-Current Liabilities"},{k:"totalLiabilities",l:"Total Liabilities",b:1},{},{k:"retainedEarnings",l:"Retained Earnings"},{k:"totalStockholdersEquity",l:"Stockholders' Equity",b:1},{},{k:"totalDebt",l:"Total Debt"},{k:"netDebt",l:"Net Debt"}];
+  var CF_ITEMS=[{k:"netIncome",l:"Net Income"},{k:"depreciationAndAmortization",l:"D&A"},{k:"stockBasedCompensation",l:"Stock-Based Compensation"},{k:"changeInWorkingCapital",l:"Changes in Working Capital"},{k:"operatingCashFlow",l:"Operating Cash Flow",b:1},{},{k:"capitalExpenditure",l:"Capital Expenditures"},{k:"acquisitionsNet",l:"Acquisitions"},{k:"purchasesOfInvestments",l:"Purchases of Investments"},{k:"salesMaturitiesOfInvestments",l:"Sales of Investments"},{k:"netCashUsedForInvestingActivites",l:"Investing Cash Flow",b:1},{},{k:"debtRepayment",l:"Debt Repayment"},{k:"commonStockRepurchased",l:"Share Buybacks"},{k:"dividendsPaid",l:"Dividends Paid"},{k:"netCashUsedProvidedByFinancingActivities",l:"Financing Cash Flow",b:1},{},{k:"freeCashFlow",l:"Free Cash Flow",b:1}];
+  var STMT_TABS=[{id:"income",l:"Income Statement",items:IS_ITEMS},{id:"balance",l:"Balance Sheet",items:BS_ITEMS},{id:"cashflow",l:"Cash Flow",items:CF_ITEMS}];
+  function fmtBig(v,pct){if(v==null||isNaN(v))return"\u2014";if(pct)return(v*100).toFixed(1)+"%";
+    var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(2)+"B";else if(a>=1e6)s=(a/1e6).toFixed(1)+"M";else if(a>=1e3)s=(a/1e3).toFixed(1)+"K";else s=Math.abs(v)<100?v.toFixed(2):a.toFixed(0);return(neg?"-":"")+"$"+s}
+  function fmtCell(v,item){if(v==null||v===undefined)return"\u2014";var n=Number(v);if(isNaN(n))return"\u2014";if(item.p)return(n*100).toFixed(1)+"%";if(item.sm)return"$"+n.toFixed(2);return fmtBig(n)}
+  function FinancialsPage(p){var c=p.company;
     var _data=useState(null),data=_data[0],setData=_data[1];
-    var _ld=useState(false),ld=_ld[0],setLd=_ld[1];
+    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
-    var _met=useState("revenue"),met=_met[0],setMet=_met[1];
+    var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
+    var _chart=useState("revenue"),chart=_chart[0],setChart=_chart[1];
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
-    var _open=useState(false),isOpen=_open[0],setOpen=_open[1];
-    useEffect(function(){if(!isOpen)return;setLd(true);
-      fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,per,isOpen]);
-    if(!isOpen)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20,cursor:"pointer"}} onClick={function(){setOpen(true)}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><span style={{fontSize:11,color:K.acc,fontFamily:fm}}>Click to load {"\u25B6"}</span></div>
-      <div style={{fontSize:12,color:K.dim}}>Interactive charts for income statement, balance sheet & cash flow</div></div>;
-    var mDef=FMETRICS.find(function(m){return m.id===met})||FMETRICS[0];
-    var src=data?data[mDef.src]:[];
-    var points=(src||[]).map(function(row,i){
-      var v=mDef.id==="epsdiluted"?row.epsdiluted:row[mDef.id];
-      return{date:row.date||row.calendarYear||"",period:row.period||"FY",val:v!=null?Number(v):null}}).filter(function(p){return p.val!=null});
-    var vals=points.map(function(p){return p.val});
-    var mx=Math.max.apply(null,vals.concat([0]));var mn=Math.min.apply(null,vals.concat([0]));
-    var hasNeg=mn<0;var range=mx-mn||1;
-    var cW=Math.max(600,points.length*52);var cH=180;var pad={t:10,b:30,l:0,r:0};
-    var plotH=cH-pad.t-pad.b;var barW=Math.min(36,Math.max(16,(cW-40)/points.length-8));
-    var zeroY=hasNeg?pad.t+(mx/(range))*plotH:cH-pad.b;
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-        <div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div>
-        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"4px 12px",fontSize:10,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}</div></div>
-      {/* Metric pills */}
-      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
-        {FMETRICS.map(function(m){return<button key={m.id} onClick={function(){setMet(m.id)}} style={{padding:"3px 10px",fontSize:10,fontFamily:fm,background:met===m.id?K.acc+"18":"transparent",color:met===m.id?K.acc:K.dim,border:"1px solid "+(met===m.id?K.acc+"30":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap"}}>{m.label}</button>})}</div>
-      {ld?<div style={{padding:40,textAlign:"center",fontSize:12,color:K.dim}}>Loading financial data...</div>:
-      points.length===0?<div style={{padding:40,textAlign:"center",fontSize:12,color:K.dim}}>No data available for {mDef.label}</div>:
+    useEffect(function(){setLd(true);
+      fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,per]);
+    var stab=STMT_TABS.find(function(t){return t.id===tab})||STMT_TABS[0];
+    var rows=data?data[tab]:[];if(!rows)rows=[];
+    // Chart data
+    var chartItems=[{k:"revenue",l:"Revenue"},{k:"grossProfit",l:"Gross Profit"},{k:"operatingIncome",l:"Op. Income"},{k:"netIncome",l:"Net Income"},{k:"ebitda",l:"EBITDA"},{k:"eps",l:"EPS",sm:1},{k:"freeCashFlow",l:"Free Cash Flow"},{k:"operatingCashFlow",l:"Op. Cash Flow"},{k:"totalAssets",l:"Total Assets"},{k:"totalDebt",l:"Total Debt"},{k:"totalStockholdersEquity",l:"Equity"},{k:"grossProfitRatio",l:"Gross Margin",p:1},{k:"operatingIncomeRatio",l:"Op. Margin",p:1},{k:"netIncomeRatio",l:"Net Margin",p:1}];
+    var cDef=chartItems.find(function(ci){return ci.k===chart})||chartItems[0];
+    // Build chart points from whichever statement has the data
+    var allRows=[].concat(data?data.income:[],data?data.balance:[],data?data.cashflow:[]);
+    var dateMap={};rows.forEach(function(r){dateMap[r.date]=r});
+    // For chart, find data across all statements
+    var chartRows=rows.map(function(r){var v=r[cDef.k];if(v==null&&data){var inc=(data.income||[]).find(function(x){return x.date===r.date});var bal=(data.balance||[]).find(function(x){return x.date===r.date});var cf=(data.cashflow||[]).find(function(x){return x.date===r.date});if(inc&&inc[cDef.k]!=null)v=inc[cDef.k];else if(bal&&bal[cDef.k]!=null)v=bal[cDef.k];else if(cf&&cf[cDef.k]!=null)v=cf[cDef.k]}return{date:r.date,period:r.period||"FY",val:v!=null?Number(v):null}}).filter(function(pt){return pt.val!=null});
+    var vals=chartRows.map(function(pt){return pt.val});var mx=Math.max.apply(null,vals.concat([0]));var mn=Math.min.apply(null,vals.concat([0]));var range=mx-mn||1;var hasNeg=mn<0;
+    var cW=Math.max(500,chartRows.length*52);var cH=160;var zeroY=hasNeg?10+(mx/range)*140:150;var barW=Math.min(36,Math.max(14,(cW-40)/Math.max(chartRows.length,1)-6));
+    return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+        <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div>
+        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:11,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}</div></div>
+      {/* Statement Tabs */}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {ld?<div style={{padding:60,textAlign:"center",fontSize:13,color:K.dim}}>Loading financial data for {c.ticker}...</div>:
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim}}>This may be due to FMP free tier limitations. Try checking if your FMP API key supports financial statements.</div></div>:
       <div>
-      {/* Chart */}
-      <div style={{overflowX:"auto",marginBottom:12}}><svg width={cW} height={cH} style={{display:"block"}}>
-        {/* Zero line */}
-        <line x1={0} y1={zeroY} x2={cW} y2={zeroY} stroke={K.bdr2} strokeWidth={1} strokeDasharray={hasNeg?"4,3":"0"}/>
-        {/* Grid lines */}
-        {[.25,.5,.75].map(function(f,i){var y=pad.t+f*plotH;return<line key={i} x1={0} y1={y} x2={cW} y2={y} stroke={K.bdr} strokeWidth={.5}/>})}
-        {points.map(function(pt,i){var x=20+i*((cW-40)/points.length);
-          var val=pt.val;var barH=Math.abs(val)/range*plotH;
-          var y=val>=0?zeroY-barH:zeroY;
-          var isHov=hov===i;var col=val>=0?K.acc:K.red;
-          var prev=i>0?points[i-1].val:null;var yoy=prev&&prev!==0?((val-prev)/Math.abs(prev)*100):null;
-          return<g key={i} onMouseEnter={function(){setHov(i)}} onMouseLeave={function(){setHov(null)}} style={{cursor:"pointer"}}>
-            <rect x={x} y={y} width={barW} height={Math.max(barH,2)} rx={3} fill={isHov?col:col+"90"} style={{transition:"fill .15s"}}/>
-            {/* Value label on hover */}
-            {isHov&&<text x={x+barW/2} y={val>=0?y-6:y+barH+14} textAnchor="middle" fill={K.txt} fontSize={10} fontFamily="JetBrains Mono" fontWeight={600}>{fmtBig(val,mDef.fmt)}</text>}
-            {/* YoY growth on hover */}
-            {isHov&&yoy!=null&&<text x={x+barW/2} y={val>=0?y-18:y+barH+26} textAnchor="middle" fill={yoy>=0?K.grn:K.red} fontSize={9} fontFamily="JetBrains Mono">{yoy>=0?"+":""}{yoy.toFixed(1)}%</text>}
-            {/* Date label */}
-            <text x={x+barW/2} y={cH-4} textAnchor="middle" fill={K.dim} fontSize={per==="quarter"?8:9} fontFamily="JetBrains Mono">{per==="quarter"?(pt.period+" "+pt.date.substring(2,4)):pt.date.substring(0,4)}</text>
-          </g>})}
-      </svg></div>
-      {/* Summary row */}
-      {hov!=null&&points[hov]&&<div style={{display:"flex",gap:20,padding:"8px 0",borderTop:"1px solid "+K.bdr,fontSize:11,color:K.mid,fontFamily:fm}}>
-        <span>{points[hov].date}</span><span style={{color:K.txt,fontWeight:600}}>{fmtBig(points[hov].val,mDef.fmt)}</span>
-        {hov>0&&points[hov-1].val!==0&&<span style={{color:((points[hov].val-points[hov-1].val)/Math.abs(points[hov-1].val)*100)>=0?K.grn:K.red}}>YoY: {((points[hov].val-points[hov-1].val)/Math.abs(points[hov-1].val)*100)>=0?"+":""}{((points[hov].val-points[hov-1].val)/Math.abs(points[hov-1].val)*100).toFixed(1)}%</span>}
+      {/* Chart section */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
+          {chartItems.map(function(ci){return<button key={ci.k} onClick={function(){setChart(ci.k)}} style={{padding:"3px 10px",fontSize:10,fontFamily:fm,background:chart===ci.k?K.acc+"18":"transparent",color:chart===ci.k?K.acc:K.dim,border:"1px solid "+(chart===ci.k?K.acc+"30":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap"}}>{ci.l}</button>})}</div>
+        {chartRows.length>0?<div style={{overflowX:"auto"}}><svg width={cW} height={cH} style={{display:"block"}}>
+          <line x1={0} y1={zeroY} x2={cW} y2={zeroY} stroke={K.bdr} strokeWidth={1} strokeDasharray={hasNeg?"4,3":"0"}/>
+          {chartRows.map(function(pt,i){var x=20+i*((cW-40)/chartRows.length);var val=pt.val;var barH=Math.abs(val)/range*140;var y=val>=0?zeroY-barH:zeroY;var isHov=hov===i;var col=val>=0?K.acc:K.red;
+            var prev=i>0?chartRows[i-1].val:null;var yoy=prev&&prev!==0?((val-prev)/Math.abs(prev)*100):null;
+            return<g key={i} onMouseEnter={function(){setHov(i)}} onMouseLeave={function(){setHov(null)}} style={{cursor:"pointer"}}>
+              <rect x={x} y={y} width={barW} height={Math.max(barH,2)} rx={3} fill={isHov?col:col+"80"}/>
+              {isHov&&<text x={x+barW/2} y={val>=0?y-6:y+barH+14} textAnchor="middle" fill={K.txt} fontSize={10} fontFamily="JetBrains Mono" fontWeight={600}>{cDef.p?(val*100).toFixed(1)+"%":fmtBig(val)}</text>}
+              {isHov&&yoy!=null&&<text x={x+barW/2} y={val>=0?y-18:y+barH+26} textAnchor="middle" fill={yoy>=0?K.grn:K.red} fontSize={9} fontFamily="JetBrains Mono">{yoy>=0?"+":""}{yoy.toFixed(1)}%</text>}
+              <text x={x+barW/2} y={cH-2} textAnchor="middle" fill={K.dim} fontSize={per==="quarter"?7:9} fontFamily="JetBrains Mono">{per==="quarter"?(pt.period+" '"+pt.date.substring(2,4)):pt.date.substring(0,4)}</text>
+            </g>})}</svg></div>:<div style={{padding:20,textAlign:"center",fontSize:11,color:K.dim}}>No chart data for {cDef.l}</div>}
+      </div>
+      {/* Full data table */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden"}}>
+        <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:11,fontFamily:fm}}>
+          <thead><tr><th style={{position:"sticky",left:0,background:K.card,padding:"10px 14px",textAlign:"left",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,minWidth:200,zIndex:2}}>
+            {stab.l} ({per==="quarter"?"Quarterly":"Annual"})</th>
+            {rows.map(function(r,i){return<th key={i} style={{padding:"10px 12px",textAlign:"right",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>{per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4)}</th>})}</tr></thead>
+          <tbody>{stab.items.map(function(item,ri){
+            if(!item.k)return<tr key={ri}><td colSpan={rows.length+1} style={{height:8,background:K.bg}}></td></tr>;
+            return<tr key={ri} style={{background:item.b?K.acc+"06":"transparent"}}>
+              <td style={{position:"sticky",left:0,background:item.b?K.acc+"08":K.card,padding:"7px 14px",color:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b?600:400,borderBottom:"1px solid "+K.bdr,fontSize:item.b?11:10.5,zIndex:1}}>{item.l}</td>
+              {rows.map(function(r,ci){var v=r[item.k];var yoy=null;if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
+                return<td key={ci} style={{padding:"7px 12px",textAlign:"right",color:v!=null&&Number(v)<0?K.red:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b?600:400,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap",fontSize:item.b?11:10.5}}>
+                  <div>{fmtCell(v,item)}</div>
+                  {yoy!=null&&!isNaN(yoy)&&<div style={{fontSize:9,color:yoy>=0?K.grn:K.red,marginTop:1}}>{yoy>=0?"+":""}{yoy.toFixed(1)}%</div>}
+                </td>})}</tr>})}</tbody>
+        </table></div></div>
+      <div style={{fontSize:10,color:K.dim,marginTop:12,padding:"0 4px"}}>Source: Financial Modeling Prep (SEC filings) · {per==="annual"?"Annual":"Quarterly"} data · {rows.length} periods</div>
       </div>}
-      {/* Data table */}
-      <div style={{overflowX:"auto",marginTop:8}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:10,fontFamily:fm}}>
-        <thead><tr><td style={{padding:"4px 8px",color:K.dim,borderBottom:"1px solid "+K.bdr}}>Period</td>
-          {points.map(function(pt,i){return<td key={i} style={{padding:"4px 6px",textAlign:"right",color:K.dim,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap"}}>{per==="quarter"?pt.period+" '"+pt.date.substring(2,4):pt.date.substring(0,4)}</td>})}</tr></thead>
-        <tbody><tr><td style={{padding:"6px 8px",color:K.mid}}>{mDef.label}</td>
-          {points.map(function(pt,i){return<td key={i} style={{padding:"6px 6px",textAlign:"right",color:pt.val<0?K.red:K.txt,fontWeight:500}}>{fmtBig(pt.val,mDef.fmt)}</td>})}</tr>
-        <tr><td style={{padding:"4px 8px",color:K.dim}}>YoY</td>
-          {points.map(function(pt,i){if(i===0)return<td key={i} style={{padding:"4px 6px",textAlign:"right",color:K.dim}}>—</td>;
-            var prev=points[i-1].val;var g=prev?((pt.val-prev)/Math.abs(prev)*100):null;
-            return<td key={i} style={{padding:"4px 6px",textAlign:"right",color:g>=0?K.grn:K.red}}>{g!=null?(g>=0?"+":"")+g.toFixed(1)+"%":"—"}</td>})}</tr></tbody>
-      </table></div>
-      </div>}
-      <div style={{fontSize:10,color:K.dim,marginTop:8}}>Source: FMP (SEC filings) · {per==="annual"?"Annual":"Quarterly"} data · {points.length} periods</div>
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
@@ -969,8 +965,11 @@ function TrackerApp(props){
         <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
       <EarningsReportCard company={c}/>
       <EarningsTimeline company={c}/>
-      <AnalystInsiders company={c}/>
-      <FinancialsChart company={c}/>
+      {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
+      {/* Financials page link */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
+        <div><div style={S.sec}>{"\uD83D\uDCC8"} Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
+        <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
       <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
         {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet.</div>}
         {c.kpis.map(function(k){return<div key={k.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
@@ -1080,7 +1079,7 @@ function TrackerApp(props){
         <button style={S.btnChk} onClick={checkAll}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
-    {sideTab==="portfolio"&&function(){
+    {dashSet.showSummary&&sideTab==="portfolio"&&function(){
       var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
       if(held.length===0)return null;
       var totalCost=held.reduce(function(s,c){return s+(c.position.shares*c.position.avgCost)},0);
@@ -1110,19 +1109,19 @@ function TrackerApp(props){
       {filtered.map(function(c){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",transition:"border-color .2s",position:"relative"}} onClick={function(){setSelId(c.id)}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.bdr2}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
-          {pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>${(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</span>
-              {c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:9,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
+              {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:9,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div>
-    {sideTab==="portfolio"&&filtered.length>0&&<div style={{marginBottom:28}}>
+    {sideTab==="portfolio"&&filtered.length>0&&(dashSet.showHeatmap||dashSet.showSectors||dashSet.showDividends)&&<div style={{marginBottom:28}}>
       {/* Portfolio Heatmap */}
-      {function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
+      {dashSet.showHeatmap&&function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
         if(withPrice.length<2)return null;
         return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
           <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Portfolio Heatmap</div>
@@ -1136,9 +1135,9 @@ function TrackerApp(props){
                 <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</div>
                 <div style={{fontSize:13,fontWeight:700,color:clr,fontFamily:fm}}>{pct>=0?"+":""}{pct.toFixed(1)}%</div>
                 <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{weight.toFixed(0)}% of portfolio</div></div>})}</div></div>}()}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:(dashSet.showSectors&&dashSet.showDividends)?"1fr 1fr":"1fr",gap:16}}>
       {/* Sector Concentration (value-weighted) */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+      {dashSet.showSectors&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
         <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Sector Concentration</div>
         {function(){var sectorVal={};var totalVal=0;
           filtered.forEach(function(c2){var s=c2.sector||"Other";var pos2=c2.position||{};var val=pos2.shares>0&&pos2.currentPrice>0?pos2.shares*pos2.currentPrice:0;sectorVal[s]=(sectorVal[s]||0)+val;totalVal+=val});
@@ -1150,7 +1149,7 @@ function TrackerApp(props){
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:K.mid}}>{s}</span><span style={{fontSize:11,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct}%{warn?" \u26A0":""}</span></div>
               <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>
       {/* Dividends */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+      {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
         <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Overview</div>
         {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Set dividends in Position settings.</span></div>}
         {divCos.map(function(c){var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var annDiv=dps*mult;var yld=pos.currentPrice?annDiv/pos.currentPrice*100:0;var annPayout=(pos.shares||0)*annDiv;
@@ -1168,9 +1167,9 @@ function TrackerApp(props){
         {divCos.length>0&&totalAnnualDiv>0&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between"}}>
           <span style={{fontSize:12,color:K.mid}}>Est. Annual Income</span>
           <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
-      </div></div></div>}
+      </div>}</div></div>}
     </div>}
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/>{page==="hub"?<OwnersHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
