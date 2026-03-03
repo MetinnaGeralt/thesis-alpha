@@ -554,7 +554,7 @@ function TrackerApp(props){
       else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})})}setModal(null)}
     return<Modal title={ex?"Edit Note":"New Note"} onClose={function(){setModal(null)}} w={560} K={K}>
       <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder="e.g. Q4 2025 Earnings Analysis" K={K}/>
-      <Sel label="Save to Folder" value={f.folder} onChange={function(v){set("folder",v)}} options={FOLDERS.map(function(fo){return{v:fo.id,l:fo.icon+" "+fo.label}})} K={K}/>
+      <Sel label="Save to Folder" value={f.folder} onChange={function(v){set("folder",v)}} options={FOLDERS.map(function(fo){return{v:fo.id,l:fo.label}})} K={K}/>
       <div style={{marginBottom:16}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
         <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>Save</button></div></Modal>}
@@ -852,7 +852,7 @@ function TrackerApp(props){
         <button style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ New Note</button></div>
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:11,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
-        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:11,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{fo.icon} {fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
+        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:11,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
       {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:28,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>Create your first note</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
         return<div key={d.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:"doc",data:d.id})}}>
@@ -1287,9 +1287,35 @@ function TrackerApp(props){
       </div>}
       {/* ═══ JOURNAL TAB ═══ */}
       {detailTab==="journal"&&<div className="ta-fade">
-        {/* Conviction History */}
+        {/* Journal Stats Banner */}
+        {function(){var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;var nLink=(c.researchLinks||[]).length;var nConv=(c.convictionHistory||[]).length;
+          var firstDate=null;if(c.convictionHistory&&c.convictionHistory.length>0)firstDate=c.convictionHistory[0].date;
+          if(c.decisions&&c.decisions.length>0){var dd=c.decisions[c.decisions.length-1].date;if(!firstDate||dd<firstDate)firstDate=dd}
+          var daysTracking=firstDate?Math.max(1,Math.ceil((new Date()-new Date(firstDate))/864e5)):0;
+          var hasData=nDec>0||nDoc>0||nLink>0||nConv>1;
+          return hasData?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:24}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nDec}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Decisions</div></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nDoc}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Documents</div></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nLink}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Sources</div></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{daysTracking}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Days Tracking</div></div>
+          </div>:null}()}
+        {/* Decision Ledger — the core */}
+        <DecisionJournal company={c}/>
+        {/* Thesis Vault (docs) */}
+        <ThesisVault company={c}/>
+        {/* Research Links */}
+        <ResearchLinks company={c}/>
+        {/* Conviction History — at bottom */}
         {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
-          <div style={S.sec}>Conviction History</div>
+          <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction History</div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
             <div style={{display:"flex",alignItems:"flex-end",gap:2,height:60,marginBottom:8}}>
               {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
@@ -1302,17 +1328,11 @@ function TrackerApp(props){
             {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
             {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
           </div></div>}
-        {/* Decision Journal */}
-        <DecisionJournal company={c}/>
-        {/* Research Links */}
-        <ResearchLinks company={c}/>
-        {/* Thesis Vault (docs) */}
-        <ThesisVault company={c}/>
-        {/* Empty state for Journal */}
+        {/* Empty state — only when truly empty */}
         {(!c.convictionHistory||c.convictionHistory.length<=1)&&(!c.decisions||c.decisions.length===0)&&(!c.researchLinks||c.researchLinks.length===0)&&(!c.docs||c.docs.length===0)&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 20px",textAlign:"center"}}>
           <div style={{marginBottom:8}}><IC name="journal" size={24} color={K.dim}/></div>
-          <div style={{fontSize:13,color:K.dim,marginBottom:4}}>Your investment journal is empty</div>
-          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Record decisions, save research links, write thesis documents, and track conviction changes over time. This becomes your most valuable asset.</div></div>}
+          <div style={{fontSize:13,color:K.mid,marginBottom:6}}>Start building your investment journal</div>
+          <div style={{fontSize:11,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>Every great investor keeps a record. Log your buy/sell decisions, write thesis documents, save research sources, and track how your conviction evolves. Over time, this becomes your most valuable asset.</div></div>}
       </div>}
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
@@ -1345,7 +1365,7 @@ function TrackerApp(props){
           {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
         <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
         {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d){return d.folder===fo.id&&(hc==="all"||d.companyId===parseInt(hc))}).length;
-          return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{fo.icon} {fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
+          return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
       <div style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
         {/* Doc list */}
         <div>
@@ -1355,7 +1375,7 @@ function TrackerApp(props){
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <CoLogo domain={d.domain} ticker={d.ticker} size={18}/>
                 <span style={{fontSize:10,fontWeight:600,color:K.mid,fontFamily:fm}}>{d.ticker}</span>
-                <span style={{fontSize:10,color:K.dim}}>{fo?fo.icon:""}</span>
+                <IC name={fo?fo.icon:"file"} size={12} color={K.dim}/>
                 <span style={{flex:1}}/>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
               <div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d.title}</div>
