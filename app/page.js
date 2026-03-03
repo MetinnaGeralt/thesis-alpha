@@ -254,9 +254,25 @@ async function fetchHistoricalPrice(ticker,range){
       _pricecache[key]=pts;return pts}
     return[]}catch(e){console.warn("[ThesisAlpha] Price history error:",e);return[]}}
 
+// ═══ FMP KEY METRICS + RATIOS (Starter plan) ═══
+var _fmpmetricscache={};
+async function fetchFMPMetrics(ticker){
+  if(_fmpmetricscache[ticker])return _fmpmetricscache[ticker];
+  try{
+    var results=await Promise.all([fmp("ratios-ttm/"+ticker),fmp("key-metrics-ttm/"+ticker)]);
+    var ratios=results[0]&&Array.isArray(results[0])&&results[0].length?results[0][0]:null;
+    var km=results[1]&&Array.isArray(results[1])&&results[1].length?results[1][0]:null;
+    if(!ratios&&!km)return null;
+    var out={ratios:ratios||{},km:km||{}};
+    _fmpmetricscache[ticker]=out;
+    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+    return out;
+  }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
+
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
   // Step 1: Finnhub basic financials (FREE, $0)
+  var fhMap={};
   try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
     var earn=await finnhub("stock/earnings?symbol="+co.ticker);
     console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
@@ -280,7 +296,7 @@ async function fetchEarnings(co,kpis){
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
       if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
       // Map Finnhub data to predefined metric IDs
-      var fhMap={
+      fhMap={
         eps:{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
         grossMargin:{v:m["grossMarginTTM"]!=null?m["grossMarginTTM"]:null,label:m["grossMarginTTM"]!=null?m["grossMarginTTM"].toFixed(1)+"%":"N/A"},
         opMargin:{v:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"]:null,label:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"].toFixed(1)+"%":"N/A"},
@@ -309,15 +325,72 @@ async function fetchEarnings(co,kpis){
       if(m["grossMarginTTM"]!=null)sumParts.push("Gross: "+(m["grossMarginTTM"]).toFixed(1)+"%");
       if(m["roeTTM"]!=null)sumParts.push("ROE: "+(m["roeTTM"]).toFixed(1)+"%");
       summary=(quarter||"Latest")+": "+sumParts.join(", ");
-      // Match user's tracked KPIs by metric ID (supports legacy names)
-      if(kpis&&kpis.length){kpis.forEach(function(k){
-        var metricId=resolveMetricId(k);
-        var found=metricId?fhMap[metricId]:null;
-        if(found&&found.v!=null){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label+" (Finnhub)"})}
-        else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub"})}})}}}catch(e){console.warn("Finnhub metrics:",e)}
-  if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Finnhub may not cover this ticker."};
+    }}catch(e){console.warn("Finnhub metrics:",e)}
+
+  // Step 2: FMP key-metrics + ratios (Starter plan — fills Finnhub gaps)
+  try{var fmpM=await fetchFMPMetrics(co.ticker);
+    if(fmpM){var ra=fmpM.ratios;var km=fmpM.km;
+      // Build FMP metric map — only values that exist
+      var fmpMap={
+        grossMargin:{v:ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        opMargin:{v:ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        netMargin:{v:ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roe:{v:ra.returnOnEquityTTM!=null?ra.returnOnEquityTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roa:{v:ra.returnOnAssetsTTM!=null?ra.returnOnAssetsTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roic:{v:ra.returnOnCapitalEmployedTTM!=null?ra.returnOnCapitalEmployedTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        pe:{v:km.peRatioTTM!=null?km.peRatioTTM:null,fmt:function(v){return v.toFixed(1)}},
+        pb:{v:km.priceToBookRatioTTM!=null?km.priceToBookRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        currentRatio:{v:ra.currentRatioTTM!=null?ra.currentRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        debtEquity:{v:km.debtToEquityTTM!=null?km.debtToEquityTTM:null,fmt:function(v){return v.toFixed(2)}},
+        divYield:{v:km.dividendYieldTTM!=null?km.dividendYieldTTM*100:null,fmt:function(v){return v.toFixed(2)+"%"}},
+        revPerShare:{v:km.revenuePerShareTTM!=null?km.revenuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        fcfPerShare:{v:km.freeCashFlowPerShareTTM!=null?km.freeCashFlowPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        bvps:{v:km.bookValuePerShareTTM!=null?km.bookValuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        ebitdaPerShare:{v:km.enterpriseValueOverEBITDATTM!=null?km.enterpriseValueOverEBITDATTM:null,fmt:function(v){return v.toFixed(2)}},
+        revGrowth:{v:ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(km.revenueGrowthTTM!=null?km.revenueGrowthTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
+        epsGrowth:{v:km.earningsGrowthTTM!=null?km.earningsGrowthTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        eps:{v:km.netIncomePerShareTTM!=null?km.netIncomePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}}};
+      // Fill gaps: merge FMP into fhMap where Finnhub returned null
+      var fmpFilled=0;
+      Object.keys(fmpMap).forEach(function(key){
+        if(fmpMap[key].v!=null){
+          if(!fhMap[key]||fhMap[key].v==null){
+            fhMap[key]={v:fmpMap[key].v,label:fmpMap[key].fmt(fmpMap[key].v)+" (FMP)"};fmpFilled++}
+        }});
+      // Enrich snapshot with FMP data where Finnhub didn't have it
+      if(!snapshot.grossMargin&&fmpMap.grossMargin.v!=null)snapshot.grossMargin={label:"Gross Margin",value:fmpMap.grossMargin.fmt(fmpMap.grossMargin.v),source:"FMP"};
+      if(!snapshot.opMargin&&fmpMap.opMargin.v!=null)snapshot.opMargin={label:"Operating Margin",value:fmpMap.opMargin.fmt(fmpMap.opMargin.v),source:"FMP"};
+      if(!snapshot.netMargin&&fmpMap.netMargin.v!=null)snapshot.netMargin={label:"Net Margin",value:fmpMap.netMargin.fmt(fmpMap.netMargin.v),source:"FMP"};
+      if(!snapshot.roe&&fmpMap.roe.v!=null)snapshot.roe={label:"ROE",value:fmpMap.roe.fmt(fmpMap.roe.v),source:"FMP"};
+      if(!snapshot.roic&&fmpMap.roic.v!=null)snapshot.roic={label:"ROIC",value:fmpMap.roic.fmt(fmpMap.roic.v),source:"FMP"};
+      if(!snapshot.pe&&fmpMap.pe.v!=null)snapshot.pe={label:"P/E",value:fmpMap.pe.fmt(fmpMap.pe.v),source:"FMP"};
+      if(!snapshot.pb&&fmpMap.pb.v!=null)snapshot.pb={label:"P/B",value:fmpMap.pb.fmt(fmpMap.pb.v),source:"FMP"};
+      if(!snapshot.currentRatio&&fmpMap.currentRatio.v!=null)snapshot.currentRatio={label:"Current Ratio",value:fmpMap.currentRatio.fmt(fmpMap.currentRatio.v),source:"FMP"};
+      if(!snapshot.debtEquity&&fmpMap.debtEquity.v!=null)snapshot.debtEquity={label:"Debt/Equity",value:fmpMap.debtEquity.fmt(fmpMap.debtEquity.v),source:"FMP"};
+      if(!snapshot.fcf&&fmpMap.fcfPerShare.v!=null)snapshot.fcf={label:"FCF/Share",value:fmpMap.fcfPerShare.fmt(fmpMap.fcfPerShare.v),source:"FMP"};
+      if(!snapshot.revGrowth&&fmpMap.revGrowth.v!=null)snapshot.revGrowth={label:"Rev Growth YoY",value:fmpMap.revGrowth.fmt(fmpMap.revGrowth.v),positive:fmpMap.revGrowth.v>=0,source:"FMP"};
+      if(!snapshot.epsGrowth&&fmpMap.epsGrowth.v!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:fmpMap.epsGrowth.fmt(fmpMap.epsGrowth.v),positive:fmpMap.epsGrowth.v>=0,source:"FMP"};
+      // Extra FMP-only metrics for snapshot
+      if(km.marketCapTTM!=null&&!snapshot.mktCap)snapshot.mktCap={label:"Market Cap",value:"$"+(km.marketCapTTM/1e9).toFixed(1)+"B",source:"FMP"};
+      if(km.evToSalesTTM!=null&&!snapshot.evSales)snapshot.evSales={label:"EV/Sales",value:km.evToSalesTTM.toFixed(1)+"x",source:"FMP"};
+      if(km.evToFreeCashFlowTTM!=null&&!snapshot.evFcf)snapshot.evFcf={label:"EV/FCF",value:km.evToFreeCashFlowTTM.toFixed(1)+"x",source:"FMP"};
+      if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
+      if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
+      if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
+      if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
+      console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
+    }}catch(e){console.warn("FMP metrics enrichment:",e)}
+
+  // Step 3: Match user's tracked KPIs from merged map
+  if(kpis&&kpis.length){kpis.forEach(function(k){
+    var metricId=resolveMetricId(k);
+    var found=metricId?fhMap[metricId]:null;
+    if(found&&found.v!=null){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:found.v,status:eS(k.rule,k.value,found.v),excerpt:found.label})}
+    else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub or FMP"})}})}
+
+  if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Neither Finnhub nor FMP returned metrics."};
   console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
-  return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub",snapshot:snapshot}}
+  return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub+FMP",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
   try{var from3=new Date(Date.now()-30*86400000).toISOString().slice(0,10);var to3=new Date(Date.now()+120*86400000).toISOString().slice(0,10);
