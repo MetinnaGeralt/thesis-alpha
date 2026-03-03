@@ -215,28 +215,42 @@ var _fincache={};
 async function fetchFinancialStatements(ticker,period){
   var key=ticker+"-"+(period||"annual");if(_fincache[key])return _fincache[key];
   try{
-    console.log("[ThesisAlpha] Fetching financials via SEC EDGAR for "+ticker+" ("+period+")");
-    // Primary: SEC EDGAR (free, no API key needed)
-    var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
-    if(r.ok){var d=await r.json();
-      if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
-        console.log("[ThesisAlpha] SEC EDGAR success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
-        var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
-        _fincache[key]=res;return res}
-      console.log("[ThesisAlpha] SEC EDGAR returned empty, trying FMP fallback...")}
-    else{console.warn("[ThesisAlpha] SEC route HTTP "+r.status+", trying FMP fallback...")}
-    // Fallback: FMP (if user has premium plan)
+    // Primary: FMP (Starter plan — 300 req/min, 5yr history)
     var isQ=period==="quarter";var lim=isQ?20:5;
     var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
+    console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
     var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
     var _is=results[0],_bs=results[1],_cf=results[2];
     if(_is&&(_is._fmpError||!Array.isArray(_is)))_is=null;
     if(_bs&&(_bs._fmpError||!Array.isArray(_bs)))_bs=null;
     if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
-    console.log("[ThesisAlpha] FMP fallback — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
-    var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
-    if(res.income.length>0||res.balance.length>0||res.cashflow.length>0)_fincache[key]=res;
-    return res}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
+    if((_is&&_is.length>0)||(_bs&&_bs.length>0)||(_cf&&_cf.length>0)){
+      console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
+      var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
+      _fincache[key]=res;return res}
+    console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
+    // Fallback: SEC EDGAR (free, no API key needed)
+    var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
+    if(r.ok){var d=await r.json();
+      if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
+        console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
+        var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
+        _fincache[key]=res;return res}}
+    return{income:[],balance:[],cashflow:[]}}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
+
+// ═══ HISTORICAL PRICE DATA (FMP Starter) ═══
+var _pricecache={};
+async function fetchHistoricalPrice(ticker,range){
+  var key=ticker+"-"+(range||"1Y");if(_pricecache[key])return _pricecache[key];
+  try{
+    var days=range==="6M"?180:range==="2Y"?730:range==="5Y"?1825:365;
+    var from=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+    var to=new Date().toISOString().slice(0,10);
+    var r=await fmp("historical-price-full/"+ticker+"?from="+from+"&to="+to);
+    if(r&&r.historical&&r.historical.length>0){
+      var pts=r.historical.reverse();
+      _pricecache[key]=pts;return pts}
+    return[]}catch(e){console.warn("[ThesisAlpha] Price history error:",e);return[]}}
 
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
@@ -1509,6 +1523,85 @@ function TrackerApp(props){
       if(score>=3)suggestions.push({id:mt.id,score:score,reasons:reasons})});
     return suggestions.sort(function(a,b){return b.score-a.score}).slice(0,4)}
 
+  // ── Price Chart with Entry Points + Conviction Markers ──
+  function PriceChart(p){var c=p.company;
+    var _pts=useState(null),pts=_pts[0],setPts=_pts[1];
+    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
+    var _range=useState("1Y"),range=_range[0],setRange=_range[1];
+    var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
+    useEffect(function(){setLd(true);
+      fetchHistoricalPrice(c.ticker,range).then(function(r){setPts(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,range]);
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}>
+      <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
+      <div className="ta-skel" style={{height:140,background:K.bdr,borderRadius:8}}/></div>;
+    if(!pts||pts.length<5)return null;
+    var cW=Math.max(600,pts.length>200?700:pts.length*3.5);var cH=160;var pad={l:0,r:0,t:10,b:20};
+    var prices=pts.map(function(p2){return p2.close});
+    var mn=Math.min.apply(null,prices);var mx=Math.max.apply(null,prices);var rng=mx-mn||1;
+    function x(i){return pad.l+i/(pts.length-1)*(cW-pad.l-pad.r)}
+    function y(v){return pad.t+(mx-v)/rng*(cH-pad.t-pad.b)}
+    var line=pts.map(function(p2,i){return(i===0?"M":"L")+x(i).toFixed(1)+","+y(p2.close).toFixed(1)}).join(" ");
+    var area=line+" L"+x(pts.length-1)+","+(cH-pad.b)+" L"+x(0)+","+(cH-pad.b)+" Z";
+    // Entry points from decisions
+    var entries=[];(c.decisions||[]).forEach(function(d){if(!d.date||(!d.price&&!d.priceAtTime))return;
+      var dStr=d.date.substring(0,10);var closest=null;var minDiff=Infinity;
+      pts.forEach(function(p2,i){var diff=Math.abs(new Date(p2.date)-new Date(dStr));if(diff<minDiff){minDiff=diff;closest=i}});
+      if(closest!==null&&minDiff<7*864e5)entries.push({idx:closest,action:d.action,price:d.price||d.priceAtTime,date:dStr})});
+    // Conviction changes
+    var convMarks=[];(c.convictionHistory||[]).forEach(function(ch){if(!ch.date)return;
+      var closest=null;var minDiff=Infinity;
+      pts.forEach(function(p2,i){var diff=Math.abs(new Date(p2.date)-new Date(ch.date));if(diff<minDiff){minDiff=diff;closest=i}});
+      if(closest!==null&&minDiff<7*864e5)convMarks.push({idx:closest,rating:ch.rating,date:ch.date})});
+    // Earnings dates
+    var earnDates=[];(c.earningsHistory||[]).forEach(function(eh){if(!eh.checkedAt)return;
+      var dStr=eh.checkedAt.substring(0,10);var closest=null;var minDiff=Infinity;
+      pts.forEach(function(p2,i){var diff=Math.abs(new Date(p2.date)-new Date(dStr));if(diff<minDiff){minDiff=diff;closest=i}});
+      if(closest!==null&&minDiff<14*864e5)earnDates.push({idx:closest,quarter:eh.quarter})});
+    var hovPt=hov!==null?pts[hov]:null;var lastPt=pts[pts.length-1];var firstPt=pts[0];
+    var totalRet=((lastPt.close-firstPt.close)/firstPt.close*100);
+    var ranges=["6M","1Y","2Y","5Y"];
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"14px":"16px 20px",marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+          {hovPt&&<span style={{fontSize:11,fontFamily:fm,color:K.txt,marginRight:8}}>{hovPt.date} <strong>${hovPt.close.toFixed(2)}</strong></span>}
+          <span style={{fontSize:10,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm,marginRight:8}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}% ({range})</span>
+          {ranges.map(function(r){return<button key={r} onClick={function(){setRange(r)}} style={{padding:"3px 8px",fontSize:10,fontFamily:fm,background:range===r?K.acc+"18":"transparent",color:range===r?K.acc:K.dim,border:"1px solid "+(range===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
+      <div style={{overflowX:"auto"}}>
+        <svg width={cW} height={cH} style={{display:"block"}} onMouseLeave={function(){setHov(null)}}>
+          <defs><linearGradient id={"pg-"+c.id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={totalRet>=0?K.grn:K.red} stopOpacity="0.15"/>
+            <stop offset="100%" stopColor={totalRet>=0?K.grn:K.red} stopOpacity="0.01"/></linearGradient></defs>
+          <path d={area} fill={"url(#pg-"+c.id+")"}/>
+          <path d={line} fill="none" stroke={totalRet>=0?K.grn:K.red} strokeWidth="1.5"/>
+          {/* Hover detection rects */}
+          {pts.map(function(p2,i){return<rect key={i} x={x(i)-3} y={0} width={6} height={cH} fill="transparent" onMouseEnter={function(){setHov(i)}}/>})}
+          {/* Hover crosshair */}
+          {hov!==null&&<g><line x1={x(hov)} y1={pad.t} x2={x(hov)} y2={cH-pad.b} stroke={K.dim} strokeWidth="0.5" strokeDasharray="3,3"/>
+            <circle cx={x(hov)} cy={y(pts[hov].close)} r={3} fill={K.txt} stroke={K.card} strokeWidth="2"/></g>}
+          {/* Entry point markers */}
+          {entries.map(function(e,i){var cx2=x(e.idx);var cy2=y(pts[e.idx].close);var isBuy=e.action==="BUY"||e.action==="ADD";
+            return<g key={"e"+i}><circle cx={cx2} cy={cy2} r={5} fill={isBuy?K.grn:K.red} stroke={K.card} strokeWidth="2"/>
+              <text x={cx2} y={cy2-10} textAnchor="middle" fill={isBuy?K.grn:K.red} fontSize="8" fontFamily="JetBrains Mono" fontWeight="600">{e.action}</text></g>})}
+          {/* Conviction markers */}
+          {convMarks.map(function(cm,i){var cx2=x(cm.idx);var clr=cm.rating>=8?K.grn:cm.rating>=5?K.amb:K.red;
+            return<g key={"c"+i}><line x1={cx2} y1={cH-pad.b} x2={cx2} y2={cH-pad.b+3} stroke={clr} strokeWidth="2"/>
+              <text x={cx2} y={cH-pad.b+12} textAnchor="middle" fill={clr} fontSize="8" fontFamily="JetBrains Mono" fontWeight="600">{cm.rating}</text></g>})}
+          {/* Earnings markers */}
+          {earnDates.map(function(ed,i){var cx2=x(ed.idx);
+            return<g key={"ed"+i}><line x1={cx2} y1={pad.t} x2={cx2} y2={cH-pad.b} stroke={K.amb} strokeWidth="0.5" strokeDasharray="2,4" opacity="0.5"/>
+              <text x={cx2} y={pad.t-2} textAnchor="middle" fill={K.amb} fontSize="7" fontFamily="JetBrains Mono" opacity="0.7">E</text></g>})}
+          {/* Price axis labels */}
+          <text x={cW-2} y={y(mx)+4} textAnchor="end" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">${mx.toFixed(0)}</text>
+          <text x={cW-2} y={y(mn)-2} textAnchor="end" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">${mn.toFixed(0)}</text>
+        </svg></div>
+      {/* Legend */}
+      {(entries.length>0||convMarks.length>0)&&<div style={{display:"flex",gap:14,marginTop:8,flexWrap:"wrap"}}>
+        {entries.length>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:"50%",background:K.grn}}/> Buy/Add <span style={{width:8,height:8,borderRadius:"50%",background:K.red}}/> Sell/Trim</span>}
+        {convMarks.length>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:2,background:K.amb}}/> Conviction updates</span>}
+        {earnDates.length>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:8,color:K.amb,fontWeight:700}}>E</span> Earnings</span>}</div>}
+    </div>}
+
   // ── Moat Durability Tracker ─────────────────────────────
   function MoatTracker(p){var c=p.company;
     var _data=useState(null),data=_data[0],setData=_data[1];
@@ -1687,8 +1780,8 @@ function TrackerApp(props){
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/></div>})}</div>
-        <div style={{textAlign:"center",fontSize:11,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from SEC EDGAR...</div></div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from SEC EDGAR (free). This company may not have XBRL filings, or the data may use non-standard XBRL tags.<br/>
+        <div style={{textAlign:"center",fontSize:11,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from FMP...</div></div>:
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:11,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available.<br/>
         {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:6,color:K.amb,fontSize:10,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
         <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
@@ -1773,6 +1866,8 @@ function TrackerApp(props){
           {(function(){var sec2=parseThesis(c.thesisNote);return sec2.core?<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.card,borderRadius:8}}><strong style={{color:K.txt,fontSize:11}}>Thesis:</strong> {sec2.core.substring(0,200)}{sec2.core.length>200?"...":""}</div>:null})()}
           {c.moatTrend==="Eroding"&&<div style={{marginTop:8,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding \u2014 watch for further deterioration signals.</div>}
         </div>}
+        {/* Price Chart */}
+        <PriceChart company={c}/>
         {/* Position + Conviction */}
         <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 16px":"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
