@@ -628,14 +628,14 @@ function TrackerApp(props){
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
       // Fallback to localStorage
       var local=await ldS("ta-data");
       if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
         if(local.notifs)setNotifs(local.notifs);
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
@@ -751,7 +751,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -1215,7 +1215,7 @@ function TrackerApp(props){
       else{setOLook("idle")}}
     function addOnboardingCompany(){
       if(!oTicker.trim()||!oName.trim())return;
-      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setObStep(4)}
     var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
     var card={background:K.card,border:"1px solid "+K.bdr,borderRadius:isMobile?0:16,width:isMobile?"100%":520,maxWidth:isMobile?"100%":"90vw",maxHeight:isMobile?"100vh":"90vh",height:isMobile?"100vh":"auto",overflowY:"auto",padding:isMobile?"24px 20px":"36px 40px",position:"relative"};
@@ -1882,11 +1882,13 @@ function TrackerApp(props){
     useEffect(function(){setLd(true);
       fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
     var moat=calcMoatFromData(data);
+    var adjComposite=moat?moat.composite:null;
+    if(moat&&c.pricingPower&&c.pricingPower.score!=null){var gmOrig=moat.metrics.find(function(m){return m.id==="grossMargin"});if(gmOrig){var total=moat.metrics.reduce(function(s,m){return s+m.score},0);var adjTotal=total-gmOrig.score+c.pricingPower.score;adjComposite=Math.round(adjTotal/moat.metrics.length)}}
     // Cache moat for PDF export (only if changed)
-    useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score});
-      if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null]);
-    var cLabel=!moat?"Insufficient Data":moatLabel(moat.composite);
-    var cColor=!moat?K.dim:moatColor(moat.composite);
+    useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:adjComposite||moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score});if(c.pricingPower&&c.pricingPower.score!=null)cache.grossMargin=c.pricingPower.score;
+      if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null,c.pricingPower?c.pricingPower.score:null]);
+    var cLabel=!moat?"Insufficient Data":moatLabel(adjComposite);
+    var cColor=!moat?K.dim:moatColor(adjComposite);
     return<div className="ta-page-pad" style={{padding:"0 32px 60px",maxWidth:900}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
@@ -1904,12 +1906,13 @@ function TrackerApp(props){
       {/* Composite Score */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"28px 32px",marginBottom:24,display:"flex",alignItems:"center",gap:32}}>
         <div style={{width:100,height:100,borderRadius:"50%",border:"4px solid "+cColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <div style={{fontSize:36,fontWeight:700,color:cColor,fontFamily:fm,lineHeight:1}}>{moat.composite}</div>
+          <div style={{fontSize:36,fontWeight:700,color:cColor,fontFamily:fm,lineHeight:1}}>{adjComposite}</div>
           <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>/10</div></div>
         <div style={{flex:1}}>
           <div style={{fontSize:20,fontWeight:500,color:cColor,fontFamily:fh,marginBottom:4}}>{cLabel}</div>
-          <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{moat.composite>=8?"This company shows strong competitive advantages across multiple dimensions. Durable moats deserve premium conviction.":moat.composite>=6?"Some competitive advantages are visible, but not all dimensions are strong. Monitor for moat erosion.":moat.composite>=4?"Limited competitive advantages detected. This company may be vulnerable to competition.":"No clear competitive moat identified. High conviction requires a special thesis."}</div>
-          <div style={{fontSize:10,color:K.dim,marginTop:8,fontFamily:fm}}>Based on {moat.years} years of SEC EDGAR data · {moat.metrics.length} dimensions analyzed</div></div></div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{adjComposite>=8?"This company shows strong competitive advantages across multiple dimensions. Durable moats deserve premium conviction.":adjComposite>=6?"Some competitive advantages are visible, but not all dimensions are strong. Monitor for moat erosion.":adjComposite>=4?"Limited competitive advantages detected. This company may be vulnerable to competition.":"No clear competitive moat identified. High conviction requires a special thesis."}</div>
+          <div style={{fontSize:10,color:K.dim,marginTop:8,fontFamily:fm}}>Based on {moat.years} years of SEC EDGAR data · {moat.metrics.length} dimensions analyzed{c.pricingPower&&c.pricingPower.score!=null?" · Pricing power adjusted by owner":""}
+          </div></div></div>
       {/* Moat Type Classification */}
       {function(){var mt=c.moatTypes||{};var suggestions=suggestMoatTypes(c,moat);
         var hasSuggestions=suggestions.length>0;
@@ -1977,18 +1980,108 @@ function TrackerApp(props){
                     {isSuggested&&<div style={{fontSize:9,color:t.color,marginTop:3,fontFamily:fm}}>{sug.reasons[0]}</div>}
                   </div></button>})}</div></div>
         </div>}()}
+
+      {/* ── Pricing Power Assessment ── */}
+      {function(){
+        var pp=c.pricingPower||{};var gmMetric=moat.metrics.find(function(m){return m.id==="grossMargin"});
+        var gmScore=gmMetric?gmMetric.score:null;var gmVal=gmMetric?gmMetric.value:"N/A";
+        var qs=[
+          {id:"raised",q:"Has this company raised prices in the last 2 years without meaningful customer loss?",tip:"Look for revenue growth outpacing volume growth, or explicit price increase announcements."},
+          {id:"switch",q:"Would customers face significant pain, cost, or risk to switch?",tip:"Consider workflow integration, data migration, retraining, regulatory re-approval, or mid-contract lock-in."},
+          {id:"substitute",q:"Is there a lack of close substitutes for what this company sells?",tip:"If the product disappeared tomorrow, could customers easily replicate it elsewhere?"},
+          {id:"margin",q:"Have gross margins been stable or expanding over 5+ years?",tip:"Expanding margins through inflation = strong evidence. Declining margins = pricing pressure."}
+        ];
+        var answers=pp.answers||{};
+        var yesCount=Object.values(answers).filter(function(v){return v==="yes"}).length;
+        var partialCount=Object.values(answers).filter(function(v){return v==="partial"}).length;
+        var answered=Object.keys(answers).length;
+        // Auto-suggest: start from GM base, boost for structural answers
+        var suggested=gmScore||5;
+        if(answered>=3){suggested=Math.round(2+yesCount*2+partialCount*1);suggested=Math.min(10,Math.max(1,suggested))}
+        var finalScore=pp.score!=null?pp.score:null;
+        var displayScore=finalScore!=null?finalScore:gmScore;
+        var scoreColor=displayScore>=8?K.grn:displayScore>=6?K.amb:displayScore>=4?"#F59E0B":K.red;
+        var isOverridden=finalScore!=null&&gmScore!=null&&finalScore!==gmScore;
+
+        function setAnswer(qid,val){var prev=c.pricingPower||{};var na=Object.assign({},prev.answers||{});na[qid]=val;
+          upd(c.id,{pricingPower:Object.assign({},prev,{answers:na})})}
+        function setScore(val){var prev=c.pricingPower||{};upd(c.id,{pricingPower:Object.assign({},prev,{score:val})})}
+        function setNote(val){var prev=c.pricingPower||{};upd(c.id,{pricingPower:Object.assign({},prev,{note:val})})}
+        function clearOverride(){var prev=c.pricingPower||{};upd(c.id,{pricingPower:Object.assign({},prev,{score:null})})}
+
+        return<div style={{marginBottom:24}}>
+          <div style={S.sec}><IC name="shield" size={14} color={K.dim}/>Pricing Power Assessment</div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"22px 24px"}}>
+            {/* Header with scores */}
+            <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1}}>DATA SCORE</div>
+                <div style={{fontSize:16,fontWeight:700,color:gmScore?scoreColor:K.dim,fontFamily:fm}}>{gmScore||"\u2014"}<span style={{fontSize:10,fontWeight:400,color:K.dim}}>/10</span></div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Gross margin: {gmVal}</div>
+              </div>
+              {finalScore!=null&&<div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{fontSize:10,color:K.acc,fontFamily:fm,letterSpacing:1}}>YOUR SCORE</div>
+                <div style={{fontSize:22,fontWeight:700,color:scoreColor,fontFamily:fm}}>{finalScore}<span style={{fontSize:10,fontWeight:400,color:K.dim}}>/10</span></div>
+                {isOverridden&&<span style={{fontSize:8,fontWeight:700,color:K.acc,background:K.acc+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>OVERRIDE</span>}
+              </div>}
+            </div>
+            {/* Guided questions */}
+            <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:14,lineHeight:1.5}}>Gross margins alone miss structural pricing power. Answer these to get a better score:</div>
+            {qs.map(function(q){var val=answers[q.id]||"";
+              return<div key={q.id} style={{marginBottom:14}}>
+                <div style={{fontSize:12,color:K.txt,lineHeight:1.5,marginBottom:6}}>{q.q}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  {["yes","partial","no"].map(function(opt){
+                    var active=val===opt;var clr=opt==="yes"?K.grn:opt==="partial"?K.amb:K.red;
+                    return<button key={opt} onClick={function(){setAnswer(q.id,active?"":opt)}}
+                      style={{padding:"5px 14px",borderRadius:6,border:"1px solid "+(active?clr+"60":K.bdr),
+                        background:active?clr+"15":"transparent",color:active?clr:K.dim,
+                        fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,textTransform:"capitalize"}}>{opt}</button>})}
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:8,fontStyle:"italic"}}>{q.tip}</span>
+                </div>
+              </div>})}
+            {/* Suggested + final score */}
+            {answered>=3&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginTop:6}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1}}>SUGGESTED SCORE</div>
+                <div style={{fontSize:16,fontWeight:700,color:suggested>=8?K.grn:suggested>=6?K.amb:K.red,fontFamily:fm}}>{suggested}/10</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>({yesCount} yes, {partialCount} partial, {answered-yesCount-partialCount} no)</div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:80}}>SET SCORE</span>
+                <div style={{display:"flex",gap:3}}>
+                  {[1,2,3,4,5,6,7,8,9,10].map(function(v){
+                    var active=finalScore===v;var clr=v>=8?K.grn:v>=6?K.amb:v>=4?"#F59E0B":K.red;
+                    return<button key={v} onClick={function(){setScore(v)}}
+                      style={{width:28,height:26,borderRadius:4,border:"1px solid "+(active?clr+"80":v===suggested?K.acc+"40":K.bdr),
+                        background:active?clr+"20":v===suggested?K.acc+"08":"transparent",
+                        color:active?clr:v===suggested?K.acc:K.dim,
+                        fontSize:11,fontWeight:active?700:500,cursor:"pointer",fontFamily:fm}}>{v}</button>})}
+                </div>
+                {finalScore!=null&&<button onClick={clearOverride} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:10,fontFamily:fm,marginLeft:8,textDecoration:"underline"}}>Clear</button>}
+              </div>
+            </div>}
+            {/* Note */}
+            <textarea value={pp.note||""} onChange={function(e){setNote(e.target.value)}}
+              placeholder={"Why does "+c.ticker+" have "+(finalScore>=7?"strong":"weak")+" pricing power? What\u2019s the structural reason?"}
+              rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5,marginTop:12}}/>
+          </div>
+        </div>}()}
       {/* Individual Metrics */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {moat.metrics.map(function(m){
-          var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
-          return<div key={m.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          var ppOverride=m.id==="grossMargin"&&c.pricingPower&&c.pricingPower.score!=null;
+          var displayScore=ppOverride?c.pricingPower.score:m.score;
+          var barColor=displayScore>=8?K.grn:displayScore>=6?K.amb:K.red;
+          return<div key={m.id} style={{background:K.card,border:"1px solid "+(ppOverride?K.acc+"40":K.bdr),borderRadius:12,padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
               <IC name={m.icon} size={16} color={K.dim}/>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{m.name}</div></div>
-              <div style={{fontSize:22,fontWeight:700,color:barColor,fontFamily:fm}}>{m.score}</div></div>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{ppOverride?"Pricing Power (Owner)":m.name}</div>
+                {ppOverride&&<div style={{fontSize:9,color:K.acc,fontFamily:fm}}>Data score: {m.score}/10 · Overridden by your assessment</div>}</div>
+              <div style={{fontSize:22,fontWeight:700,color:barColor,fontFamily:fm}}>{displayScore}</div></div>
             {/* Score bar */}
             <div style={{height:6,borderRadius:3,background:K.bdr,marginBottom:8,overflow:"hidden"}}>
-              <div style={{height:"100%",width:m.score*10+"%",borderRadius:3,background:barColor,transition:"width .3s"}}/></div>
+              <div style={{height:"100%",width:displayScore*10+"%",borderRadius:3,background:barColor,transition:"width .3s"}}/></div>
             <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{m.value}</div>
             <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>{m.detail}</div>
             {/* Mini sparkline */}
@@ -2628,7 +2721,10 @@ function TrackerApp(props){
     var dimIds=["grossMargin","revGrowth","opLeverage","roic","fcfConversion","fortress","rdIntensity","netMargin"];
     var dimLabels={grossMargin:"Pricing Power",revGrowth:"Revenue Growth",opLeverage:"Operating Leverage",roic:"Capital Efficiency",fcfConversion:"Earnings Quality",fortress:"Financial Strength",rdIntensity:"R&D Moat",netMargin:"Profitability"};
     var dimIcons={grossMargin:"shield",revGrowth:"trending",opLeverage:"gear",roic:"target",fcfConversion:"dollar",fortress:"castle",rdIntensity:"flask",netMargin:"bar"};
-    var dimAvgs={};dimIds.forEach(function(d){var scores=withMoat.map(function(x){return x.dims[d]?x.dims[d].score:null}).filter(function(v){return v!=null});dimAvgs[d]=scores.length>0?Math.round(scores.reduce(function(s,v){return s+v},0)/scores.length):null});
+    var dimAvgs={};dimIds.forEach(function(d){var scores=withMoat.map(function(x){
+      if(d==="grossMargin"&&x.company.pricingPower&&x.company.pricingPower.score!=null)return x.company.pricingPower.score;
+      return x.dims[d]?x.dims[d].score:null}).filter(function(v){return v!=null});
+      dimAvgs[d]=scores.length>0?Math.round(scores.reduce(function(s,v){return s+v},0)/scores.length):null});
 
     var avgMoat=withMoat.length>0?Math.round(withMoat.reduce(function(s,x){return s+x.moat.composite},0)/withMoat.length):0;
 
@@ -2643,7 +2739,7 @@ function TrackerApp(props){
     var holdings=withMoat.map(function(x){
       return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,moat:x.moat.composite,
         fortress:x.dims.fortress?x.dims.fortress.score:null,
-        pricing:x.dims.grossMargin?x.dims.grossMargin.score:null,
+        pricing:(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:(x.dims.grossMargin?x.dims.grossMargin.score:null),
         roic:x.dims.roic?x.dims.roic.score:null,
         fcf:x.dims.fcfConversion?x.dims.fcfConversion.score:null}
     }).sort(function(a,b){return b.moat-a.moat});
@@ -2698,7 +2794,7 @@ function TrackerApp(props){
           if(x.dims.roic&&x.dims.roic.score<5)issues.push("Low ROIC ("+x.dims.roic.value+")");
           if(x.dims.fortress&&x.dims.fortress.score<4)issues.push("Weak balance sheet ("+x.dims.fortress.value+")");
           if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
-          if(x.dims.grossMargin&&x.dims.grossMargin.score<4)issues.push("Weak margins ("+x.dims.grossMargin.value+")");
+          if(x.dims.grossMargin){var ppOver=(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:x.dims.grossMargin.score;if(ppOver<4)issues.push("Weak pricing power ("+ppOver+"/10)")};
           return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("analysis");setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
@@ -2863,7 +2959,7 @@ function TrackerApp(props){
       for(var i=0;i<tickers.length;i++){var t=tickers[i];
         try{setStatus("Looking up "+t+" ("+(i+1)+"/"+tickers.length+")...");
           var r=await lookupTicker(t);
-          if(r&&!r.error){var nc={id:nId(cos.concat(res.filter(function(x){return x.ok}).map(function(x){return x.co}))),ticker:t,name:r.name,sector:r.sector||"",industry:r.industry||"",domain:r.domain||"",irUrl:r.irUrl||"",earningsDate:r.earningsDate||"TBD",earningsTime:r.earningsTime||"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:r.price||0},conviction:0,convictionHistory:[],status:"watchlist",investStyle:"",lastDiv:r.lastDiv||0,divPerShare:r.lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+          if(r&&!r.error){var nc={id:nId(cos.concat(res.filter(function(x){return x.ok}).map(function(x){return x.co}))),ticker:t,name:r.name,sector:r.sector||"",industry:r.industry||"",domain:r.domain||"",irUrl:r.irUrl||"",earningsDate:r.earningsDate||"TBD",earningsTime:r.earningsTime||"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:r.price||0},conviction:0,convictionHistory:[],status:"watchlist",investStyle:"",lastDiv:r.lastDiv||0,divPerShare:r.lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
             res.push({ticker:t,ok:true,name:r.name,co:nc})}
           else{res.push({ticker:t,ok:false,err:r.error||"Not found"})}}
         catch(e){res.push({ticker:t,ok:false,err:"Lookup failed"})}
