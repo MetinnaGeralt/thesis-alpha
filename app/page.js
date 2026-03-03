@@ -798,21 +798,46 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
     var sections=[
-      {key:"core",label:"Why I Own It",placeholder:sty?sty.thesisPrompt:"What makes this a great business? What's the core thesis?",icon:"lightbulb"},
-      {key:"moat",label:"Competitive Moat",placeholder:sty?sty.moatPrompt:"What protects this business? Switching costs, brand, network effects, cost advantages, regulatory barriers?",icon:"castle"},
-      {key:"risks",label:"Key Risks",placeholder:sty?sty.riskPrompt:"What could go wrong? Competition, regulation, technology disruption, management risk?",icon:"alert"},
-      {key:"sell",label:"What Would Make Me Sell",placeholder:sty?sty.sellPrompt:"Define your exit criteria upfront. What conditions would break this thesis?",icon:"target"}];
+      {key:"core",label:"Why I Own It",placeholder:sty?sty.thesisPrompt:"What makes this a great business? What's the core thesis?",icon:"lightbulb",color:K.acc},
+      {key:"moat",label:"Competitive Moat",placeholder:sty?sty.moatPrompt:"What protects this business? Switching costs, brand, network effects, cost advantages, regulatory barriers?",icon:"castle",color:K.grn},
+      {key:"risks",label:"Key Risks",placeholder:sty?sty.riskPrompt:"What could go wrong? Competition, regulation, technology disruption, management risk?",icon:"alert",color:K.amb},
+      {key:"sell",label:"What Would Make Me Sell",placeholder:sty?sty.sellPrompt:"Define your exit criteria upfront. What conditions would break this thesis?",icon:"target",color:K.red}];
+    // Live quality scoring
+    var filled=sections.filter(function(s){return f[s.key]&&f[s.key].trim().length>15}).length;
+    var totalWords=sections.reduce(function(a,s){return a+(f[s.key]||"").trim().split(/\s+/).filter(function(w){return w}).length},0);
+    var qualityPct=Math.round(filled/4*100);
+    var qualityColor=qualityPct>=100?K.grn:qualityPct>=75?K.acc:qualityPct>=50?K.amb:K.dim;
+    var qualityLabel=qualityPct>=100?"Complete thesis":qualityPct>=75?"Almost there":qualityPct>=50?"Good start":"Needs more detail";
+    var isChanged=(joinThesis(f)!==sel.thesisNote);
     return<Modal title={sel.ticker+" \u2014 Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
+      {/* Quality meter */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:8}}>
+        <div style={{position:"relative",width:40,height:40,flexShrink:0}}>
+          <svg width={40} height={40} viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="20" cy="20" r="16" fill="none" stroke={qualityColor} strokeWidth="3" strokeDasharray={Math.round(qualityPct/100*100)+" 100"} strokeLinecap="round" transform="rotate(-90 20 20)"/></svg>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:qualityColor,fontFamily:fm}}>{filled}/4</div></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:12,fontWeight:600,color:qualityColor}}>{qualityLabel}</div>
+          <div style={{fontSize:10,color:K.dim}}>{totalWords} words · {filled} of 4 sections filled</div></div>
+        <div style={{display:"flex",gap:4}}>
+          {sections.map(function(s){var done=f[s.key]&&f[s.key].trim().length>15;
+            return<div key={s.key} style={{width:20,height:20,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:done?s.color+"15":"transparent",border:"1px solid "+(done?s.color+"30":K.bdr)}} title={s.label}>
+              {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={9} color={K.dim}/>}</div>})}</div></div>
       <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>A well-structured thesis forces clarity. Munger: "If you can't state the argument against your position, you don't understand it well enough."</div>
-      {sections.map(function(sec){return<div key={sec.key} style={{marginBottom:16}}>
-        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}><IC name={sec.icon} size={12} color={K.dim}/>{sec.label}</label>
-        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>})}
+      {sections.map(function(sec){var wordCount=(f[sec.key]||"").trim().split(/\s+/).filter(function(w){return w}).length;var done=f[sec.key]&&f[sec.key].trim().length>15;
+        return<div key={sec.key} style={{marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:done?sec.color:K.mid,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>
+          {done?<IC name="check" size={11} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
+          {wordCount>0&&<span style={{fontSize:9,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label>
+        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
       {sel.thesisVersions&&sel.thesisVersions.length>0&&<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
         <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
         <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
           return<div key={i} style={{fontSize:11,color:K.mid,marginBottom:4,paddingLeft:8,borderLeft:"2px solid "+K.bdr}}>
           <span style={{fontFamily:fm,color:K.dim,fontSize:10}}>{v.date}</span> {"\u2014"} {v.summary||"Updated"}</div>})}</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});setModal(null)}}>Save & Snapshot</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+        {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
+        {!isChanged&&<div/>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});showToast("\u2713 Thesis saved — "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -917,8 +942,11 @@ function TrackerApp(props){
     var _n2=useState(""),n2=_n2[0],setN2=_n2[1];
     var flagCount=Object.values(flags).filter(function(v){return v}).length;
     var allAnswered=Object.keys(flags).length===BIAS_CHECKS.length;
+    var prevRating=sel.convictionHistory&&sel.convictionHistory.length>0?sel.convictionHistory[sel.convictionHistory.length-1].rating:null;
+    var delta=prevRating!==null?r-prevRating:null;
     function toggleFlag(id){setFlags(function(p){var n=Object.assign({},p);n[id]=!p[id];return n})}
-    function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});setModal(null)}
+    function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
+      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("\u2713 "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);setModal(null)}
     if(step==="checklist")return<Modal title={"\u2708\uFE0F Pre-Flight Checklist \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:16}}>Before updating conviction, pause and honestly assess each bias. Flag any that apply right now.</div>
       <div style={{marginBottom:16}}>
@@ -934,9 +962,27 @@ function TrackerApp(props){
         <button style={Object.assign({},S.btnP,{opacity:allAnswered?1:.35})} onClick={function(){if(allAnswered)setStep("rate")}}>Continue to Rating {"\u2192"}</button></div></div></Modal>;
     return<Modal title={"Conviction Rating \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
       {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:6,padding:"8px 12px",marginBottom:16,fontSize:11,color:K.amb,fontFamily:fm}}>{"\u26A0"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
-      <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:48,fontWeight:700,color:r>=8?K.grn:r>=5?K.amb:K.red,fontFamily:fm}}>{r}</div><div style={{fontSize:11,color:K.dim}}>out of 10</div></div>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:48,fontWeight:700,color:r>=8?K.grn:r>=5?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{r}</div>
+        <div style={{fontSize:11,color:K.dim}}>out of 10</div>
+        {/* Delta from previous */}
+        {delta!==null&&delta!==0&&<div style={{fontSize:13,fontWeight:600,color:delta>0?K.grn:K.red,fontFamily:fm,marginTop:4}}>
+          {delta>0?"\u25B2 +"+delta:"\u25BC "+delta} from last ({prevRating}/10)</div>}
+        {delta===0&&prevRating!==null&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Same as last ({prevRating}/10)</div>}
+      </div>
       <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>{[1,2,3,4,5,6,7,8,9,10].map(function(v){return<button key={v} onClick={function(){setR(v)}} style={{width:32,height:32,borderRadius:6,border:"1px solid "+(v===r?K.acc:K.bdr),background:v===r?K.acc+"20":K.bg,color:v===r?K.acc:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
-      <Inp label="Note (optional)" value={n2} onChange={setN2} placeholder="Why this rating?" K={K}/>
+      {/* Mini sparkline of history */}
+      {sel.convictionHistory&&sel.convictionHistory.length>1&&<div style={{textAlign:"center",marginBottom:14}}>
+        <svg width={Math.min(sel.convictionHistory.length*24,280)} height={32} viewBox={"0 0 "+Math.min(sel.convictionHistory.length*24,280)+" 32"}>
+          {(function(){var ch=sel.convictionHistory.slice(-12);var w=Math.min(ch.length*24,280);
+            var pts=ch.map(function(p,i){return{x:ch.length>1?i/(ch.length-1)*w:w/2,y:30-2-(p.rating/10)*26,r:p.rating}});
+            var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
+            return React.createElement(React.Fragment,null,
+              React.createElement("path",{d:line,fill:"none",stroke:K.bdr,strokeWidth:1.5}),
+              pts.map(function(p,i){var cl=p.r>=8?K.grn:p.r>=5?K.amb:K.red;return React.createElement("circle",{key:i,cx:p.x.toFixed(1),cy:p.y.toFixed(1),r:3,fill:cl,stroke:K.bg,strokeWidth:1.5})}))})()}
+        </svg>
+        <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{sel.convictionHistory.length} updates over time</div></div>}
+      <Inp label="Note (optional)" value={n2} onChange={setN2} placeholder="Why this rating? What changed?" K={K}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}><button style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}} onClick={function(){setStep("checklist")}}>{"\u2190"} Back to checklist</button>
         <div style={{display:"flex",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={saveConviction}>Save</button></div></div></Modal>}
   function ManualEarningsModal(){if(!sel)return null;
@@ -2106,10 +2152,26 @@ function TrackerApp(props){
             </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
             <div style={S.sec}>Conviction</div>
-            {conv>0?<div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
-              <div style={{flex:1}}><div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
-                {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
+            {conv>0?<div>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
+                <div style={{flex:1}}>
+                  <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                    {c.convictionHistory&&c.convictionHistory.length>=2&&function(){var prev=c.convictionHistory[c.convictionHistory.length-2].rating;var d5=conv-prev;
+                      return<span style={{fontSize:10,color:d5>0?K.grn:d5<0?K.red:K.dim,fontFamily:fm,fontWeight:600}}>{d5>0?"\u25B2 +"+d5:d5<0?"\u25BC "+d5:"\u2014 same"}</span>}()}
+                    {c.convictionHistory&&c.convictionHistory.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.convictionHistory[c.convictionHistory.length-1].date)}</span>}
+                  </div></div></div>
+              {/* Mini sparkline */}
+              {c.convictionHistory&&c.convictionHistory.length>2&&<div style={{marginTop:8}}>
+                <svg width="100%" height={24} viewBox={"0 0 200 24"} preserveAspectRatio="none">
+                  {(function(){var ch2=c.convictionHistory.slice(-10);
+                    var pts=ch2.map(function(p,i){return{x:ch2.length>1?i/(ch2.length-1)*200:100,y:22-(p.rating/10)*20}});
+                    var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
+                    return React.createElement(React.Fragment,null,
+                      React.createElement("path",{d:line,fill:"none",stroke:K.bdr,strokeWidth:1}),
+                      pts.map(function(p,i){var cl=ch2[i].rating>=8?K.grn:ch2[i].rating>=5?K.amb:K.red;return React.createElement("circle",{key:i,cx:p.x.toFixed(1),cy:p.y.toFixed(1),r:2.5,fill:cl})}))})()}
+                </svg></div>}
             </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
         {/* Investment style inline selector */}
         {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:12,padding:"14px 20px",marginBottom:16}}>
@@ -2125,8 +2187,24 @@ function TrackerApp(props){
           <button onClick={function(){setModal({type:"edit"})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm}}>Change</button></div>}
         {/* Thesis */}
         {c.thesisNote&&function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
+          var sectionsFilled=[sec.core,sec.moat,sec.risks,sec.sell].filter(function(s){return s&&s.trim().length>15}).length;
+          var versionCount=(c.thesisVersions||[]).length;
+          var ageDays=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):null;
+          var ageColor=ageDays===null?K.dim:ageDays>180?K.red:ageDays>90?K.amb:K.grn;
+          var ageLabel=ageDays===null?"Never edited":ageDays===0?"Today":ageDays===1?"Yesterday":ageDays+"d ago";
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis</div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {/* Section completion dots */}
+                <div style={{display:"flex",gap:3}} title={sectionsFilled+"/4 sections"}>
+                  {[{k:"core",c:K.acc},{k:"moat",c:K.grn},{k:"risks",c:K.amb},{k:"sell",c:K.red}].map(function(d){var done=sec[d.k]&&sec[d.k].trim().length>15;
+                    return<div key={d.k} style={{width:8,height:8,borderRadius:"50%",background:done?d.c:K.bdr}}/>})}</div>
+                {/* Freshness */}
+                <span style={{fontSize:9,color:ageColor,fontFamily:fm,fontWeight:500}}>{ageLabel}</span>
+                {/* Version count */}
+                {versionCount>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>v{versionCount+1}</span>}
+              </div></div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.core}</div>
             {hasSections&&<div style={{marginTop:14,display:"grid",gap:10}}>
               {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.grn}}>
@@ -2140,21 +2218,29 @@ function TrackerApp(props){
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
             </div>}
           </div>}()}
-        {!c.thesisNote&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"24px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={{marginBottom:6}}><IC name="lightbulb" size={18} color={K.dim}/></div>
-            <div style={{fontSize:13,color:K.mid,marginBottom:4}}>Write your investment thesis</div>
-            <div style={{fontSize:11,color:K.dim}}>Why do you own this? What's the moat? When would you sell?</div></div>}
+        {!c.thesisNote&&<div style={{background:"linear-gradient(135deg, "+K.acc+"08 0%, "+K.grn+"06 100%)",border:"1px dashed "+K.acc+"40",borderRadius:12,padding:"28px 24px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={{marginBottom:8}}><IC name="lightbulb" size={22} color={K.acc}/></div>
+            <div style={{fontSize:15,fontWeight:600,color:K.txt,marginBottom:4}}>Write your investment thesis</div>
+            <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:360,margin:"0 auto"}}>Every position needs a written reason. Define why you own it, the moat, risks, and when you'd sell. This is your decision anchor.</div>
+            <div style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:6,padding:"6px 16px",background:K.acc+"15",borderRadius:6,fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>Write thesis {"\u2192"}</div></div>}
         {/* Thesis staleness check */}
         {function(){var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
           var lastEdit=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
           var lastTouch=lastReview&&lastEdit?(lastReview>lastEdit?lastReview:lastEdit):lastReview||lastEdit;
           var daysSince=lastTouch?Math.floor((Date.now()-lastTouch)/864e5):null;
           var hasThesis=!!c.thesisNote;
-          if(hasThesis&&(daysSince===null||daysSince>90))return<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
-            <IC name="clock" size={14} color={K.amb}/>
-            <div style={{flex:1}}><div style={{fontSize:11,color:daysSince>180?K.red:K.amb,fontWeight:600}}>{daysSince===null?"Thesis never reviewed or edited":daysSince>180?"Thesis stale — "+daysSince+" days since last update":"Last touched "+daysSince+" days ago"}</div>
-              <div style={{fontSize:11,color:K.dim}}>{daysSince>180?"This thesis urgently needs a review. Is your thesis still intact?":"Munger reviews his thesis every quarter. Is yours still intact?"}</div></div>
-            <span style={{fontSize:10,color:K.amb,fontFamily:fm}}>Review {"\u2192"}</span></div>;return null}()}
+          if(hasThesis&&(daysSince===null||daysSince>90)){
+            var urgency=daysSince===null?"unknown":daysSince>180?"critical":"stale";
+            var freshPct=daysSince===null?0:Math.max(0,Math.round((1-daysSince/365)*100));
+            var bgColor=urgency==="critical"?K.red:K.amb;
+            return<div style={{background:bgColor+"08",border:"1px solid "+bgColor+"25",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={{position:"relative",width:36,height:36,flexShrink:0}}>
+              <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="14" fill="none" stroke={bgColor} strokeWidth="3" strokeDasharray={Math.round(freshPct/100*88)+" 88"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="clock" size={12} color={bgColor}/></div></div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,color:bgColor,fontWeight:600}}>{daysSince===null?"Thesis never reviewed":urgency==="critical"?"Thesis urgently needs review \u2014 "+daysSince+"d stale":"Thesis review overdue \u2014 "+daysSince+"d since last update"}</div>
+              <div style={{fontSize:11,color:K.dim}}>{urgency==="critical"?"Your score is losing 2 points from thesis decay. Is your thesis still intact?":"Your score is losing 1 point from staleness. A quick review keeps your thinking sharp."}</div></div>
+            <span style={{fontSize:10,color:bgColor,fontFamily:fm,fontWeight:600,flexShrink:0}}>Review {"\u2192"}</span></div>}return null}()}
         {/* Earnings */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
