@@ -142,6 +142,8 @@ function calcOwnerScore(cos){
     if(c.thesisNote&&c.thesisNote.indexOf("## RISKS")>=0)score+=1;
     if(c.thesisNote&&c.thesisNote.indexOf("## SELL")>=0)score+=1;
     if(c.thesisVersions&&c.thesisVersions.length>1)score+=1;
+    // Staleness penalty: decay 1pt per 90 days without update
+    if(c.thesisNote&&c.thesisUpdatedAt){var ageDays=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);if(ageDays>180)score=Math.max(0,score-2);else if(ageDays>90)score=Math.max(0,score-1)}
     thesisP+=Math.min(score,5)});
   thesisP=Math.round(thesisP/portfolio.length/5*20);
   // 2. KPI discipline (20 pts)
@@ -533,14 +535,14 @@ function TrackerApp(props){
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[]},c)}));
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
       // Fallback to localStorage
       var local=await ldS("ta-data");
       if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[]},c)}));
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
         if(local.notifs)setNotifs(local.notifs);
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
@@ -656,7 +658,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[]};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -717,7 +719,7 @@ function TrackerApp(props){
         <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
           return<div key={i} style={{fontSize:11,color:K.mid,marginBottom:4,paddingLeft:8,borderLeft:"2px solid "+K.bdr}}>
           <span style={{fontFamily:fm,color:K.dim,fontSize:10}}>{v.date}</span> {"\u2014"} {v.summary||"Updated"}</div>})}</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30)});setModal(null)}}>Save & Snapshot</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});setModal(null)}}>Save & Snapshot</button></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -927,7 +929,7 @@ function TrackerApp(props){
       <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
         <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}}
@@ -951,7 +953,7 @@ function TrackerApp(props){
       else{setOLook("idle")}}
     function addOnboardingCompany(){
       if(!oTicker.trim()||!oName.trim())return;
-      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[]};
+      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setObStep(4)}
     var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
     var card={background:K.card,border:"1px solid "+K.bdr,borderRadius:isMobile?0:16,width:isMobile?"100%":520,maxWidth:isMobile?"100%":"90vw",maxHeight:isMobile?"100vh":"90vh",height:isMobile?"100vh":"auto",overflowY:"auto",padding:isMobile?"24px 20px":"36px 40px",position:"relative"};
@@ -1078,7 +1080,9 @@ function TrackerApp(props){
     return null}
 
   // ── Sidebar + TopBar ──────────────────────────────────────
+  var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
+    if(sideSearch.trim()){var q=sideSearch.toLowerCase();pCos=pCos.filter(function(c){return c.ticker.toLowerCase().indexOf(q)>=0||c.name.toLowerCase().indexOf(q)>=0||(c.sector||"").toLowerCase().indexOf(q)>=0})}
     if(isMobile&&!sideOpen)return null;
     function navClick(fn){return function(){fn();if(isMobile)setSideOpen(false)}}
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
@@ -1087,12 +1091,14 @@ function TrackerApp(props){
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:K.mid}/>Owner's Hub</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="analytics"?K.acc+"10":"transparent",borderLeft:page==="analytics"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("analytics")})}><span style={{fontSize:12,color:page==="analytics"?K.acc:K.mid,fontWeight:page==="analytics"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="bar" size={14} color={page==="analytics"?K.acc:K.mid}/>Analytics</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="calendar"?K.amb+"10":"transparent",borderLeft:page==="calendar"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("calendar")})}><span style={{fontSize:12,color:page==="calendar"?K.amb:K.mid,fontWeight:page==="calendar"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="target" size={14} color={page==="calendar"?K.amb:K.mid}/>Earnings Calendar</span></div>
     <div style={{padding:"10px 16px 6px"}}>
       <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
         <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
         <option value="watchlist">Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</option>
         <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
-      </select></div>
+      </select>
+      {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 10px",fontSize:11,fontFamily:fm,outline:"none"}}/>}</div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
       return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("overview");setPage("dashboard")})}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
@@ -1100,7 +1106,9 @@ function TrackerApp(props){
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
           {d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
-    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr}}><button style={Object.assign({},S.btnP,{width:"100%",padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add Company</button></div></div></div>}
+    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6}}>
+      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
+      <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}} title="Bulk import tickers">Import</button></div></div></div>}
   function TopBar(){
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:isMobile?"10px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,gap:isMobile?8:12}}>
     {isMobile&&<button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,marginRight:"auto"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>}
@@ -1113,7 +1121,7 @@ function TrackerApp(props){
     {showNotifs&&<div className="ta-notif-panel" style={{position:"absolute",top:48,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":380,maxHeight:isMobile?"70vh":420,overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:10})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:12,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
+        <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
     <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
     <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
@@ -1922,12 +1930,14 @@ function TrackerApp(props){
             <div style={{fontSize:11,color:K.dim}}>Why do you own this? What's the moat? When would you sell?</div></div>}
         {/* Thesis staleness check */}
         {function(){var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
-          var daysSince=lastReview?Math.floor((Date.now()-lastReview)/864e5):null;
+          var lastEdit=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
+          var lastTouch=lastReview&&lastEdit?(lastReview>lastEdit?lastReview:lastEdit):lastReview||lastEdit;
+          var daysSince=lastTouch?Math.floor((Date.now()-lastTouch)/864e5):null;
           var hasThesis=!!c.thesisNote;
-          if(hasThesis&&(daysSince===null||daysSince>90))return<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setDetailTab("analysis")}}>
+          if(hasThesis&&(daysSince===null||daysSince>90))return<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
             <IC name="clock" size={14} color={K.amb}/>
-            <div style={{flex:1}}><div style={{fontSize:11,color:K.amb,fontWeight:600}}>{daysSince===null?"No thesis review on record":"Last reviewed "+daysSince+" days ago"}</div>
-              <div style={{fontSize:11,color:K.dim}}>Munger reviews his thesis every quarter. Is yours still intact?</div></div>
+            <div style={{flex:1}}><div style={{fontSize:11,color:daysSince>180?K.red:K.amb,fontWeight:600}}>{daysSince===null?"Thesis never reviewed or edited":daysSince>180?"Thesis stale — "+daysSince+" days since last update":"Last touched "+daysSince+" days ago"}</div>
+              <div style={{fontSize:11,color:K.dim}}>{daysSince>180?"This thesis urgently needs a review. Is your thesis still intact?":"Munger reviews his thesis every quarter. Is yours still intact?"}</div></div>
             <span style={{fontSize:10,color:K.amb,fontFamily:fm}}>Review {"\u2192"}</span></div>;return null}()}
         {/* Earnings */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
@@ -2295,6 +2305,101 @@ function TrackerApp(props){
       </div>}</div>}
 
 
+  // ── Earnings Calendar ──────────────────────────────────────
+  function EarningsCalendar(){
+    var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});
+    var upcoming=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0}).sort(function(a,b){return a.earningsDate>b.earningsDate?1:-1});
+    var recent=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-30}).sort(function(a,b){return b.earningsDate>a.earningsDate?-1:1});
+    var tbdCos=allCos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
+      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Earnings Calendar</h1>
+        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{upcoming.length} upcoming · {recent.length} recent · {tbdCos.length} TBD</p></div>
+      {/* This week */}
+      {function(){var thisWeek=upcoming.filter(function(c){return dU(c.earningsDate)<=7});
+        if(!thisWeek.length)return null;
+        return<div style={{marginBottom:24}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm,fontWeight:600}}>This Week</div>
+          {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
+            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+              <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
+              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
+                <div style={{fontSize:11,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:K.amb,fontFamily:fm}}>{d===0?"Today":d===1?"Tomorrow":d+"d"}</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</div></div>
+              <span style={S.badge(h.c)}>{h.l}</span></div>})}</div>}()}
+      {/* Upcoming (>7 days) */}
+      {function(){var later=upcoming.filter(function(c){return dU(c.earningsDate)>7});
+        if(!later.length)return null;
+        return<div style={{marginBottom:24}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+            {later.map(function(c,i){var d=dU(c.earningsDate);
+              return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                <div style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:11,color:K.dim}}>{c.name}</span></div>
+                <span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</span>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,minWidth:30,textAlign:"right"}}>{d}d</span></div>})}</div></div>}()}
+      {/* Recently reported */}
+      {recent.length>0&&<div style={{marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+          {recent.map(function(c,i){var h=gH(c.kpis);
+            return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+              <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+              <div style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:11,color:K.dim}}>{c.name}</span></div>
+              <span style={S.badge(h.c)}>{h.l}</span>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)}</span></div>})}</div></div>}
+      {tbdCos.length>0&&<div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Date Not Set ({tbdCos.length})</div>
+        <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Earnings dates auto-update via Finnhub. These companies don't have a known upcoming date yet: {tbdCos.map(function(c){return c.ticker}).join(", ")}</div></div>}
+    </div>}
+
+  // ── CSV Import Modal ──────────────────────────────────────
+  function CSVImportModal(){
+    var _txt=useState(""),txt=_txt[0],setTxt=_txt[1];
+    var _status=useState(null),status=_status[0],setStatus=_status[1];
+    var _results=useState([]),results=_results[0],setResults=_results[1];
+    var _importing=useState(false),importing=_importing[0],setImporting=_importing[1];
+    function parseTickers(){var lines=txt.split(/[\n,;]+/).map(function(l){return l.trim().toUpperCase().replace(/[^A-Z.]/g,"")}).filter(function(l){return l.length>=1&&l.length<=6});
+      var existing=cos.map(function(c){return c.ticker});
+      return lines.filter(function(t,i){return lines.indexOf(t)===i&&existing.indexOf(t)<0})}
+    var tickers=parseTickers();
+    async function doImport(){if(!tickers.length)return;setImporting(true);setResults([]);
+      var res=[];
+      for(var i=0;i<tickers.length;i++){var t=tickers[i];
+        try{setStatus("Looking up "+t+" ("+(i+1)+"/"+tickers.length+")...");
+          var r=await lookupTicker(t);
+          if(r&&!r.error){var nc={id:nId(cos.concat(res.filter(function(x){return x.ok}).map(function(x){return x.co}))),ticker:t,name:r.name,sector:r.sector||"",industry:r.industry||"",domain:r.domain||"",irUrl:r.irUrl||"",earningsDate:r.earningsDate||"TBD",earningsTime:r.earningsTime||"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:r.price||0},conviction:0,convictionHistory:[],status:"watchlist",investStyle:"",lastDiv:r.lastDiv||0,divPerShare:r.lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+            res.push({ticker:t,ok:true,name:r.name,co:nc})}
+          else{res.push({ticker:t,ok:false,err:r.error||"Not found"})}}
+        catch(e){res.push({ticker:t,ok:false,err:"Lookup failed"})}
+        setResults(res.slice());
+        await new Promise(function(r2){setTimeout(r2,400)})}
+      // Add all successful
+      var newCos=res.filter(function(x){return x.ok}).map(function(x){return x.co});
+      if(newCos.length>0){setCos(function(p){return p.concat(newCos)})}
+      setStatus(null);setImporting(false)}
+    return<Modal title="Import Companies" onClose={function(){if(!importing)setModal(null)}} w={520} K={K}>
+      <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>Paste tickers separated by commas, newlines, or semicolons. Each will be looked up via FMP and added to your Watchlist.</div>
+      <textarea value={txt} onChange={function(e){setTxt(e.target.value)}} placeholder={"AAPL\nMSFT\nGOOG\nAMZN"} rows={5} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fm,outline:"none",resize:"vertical",lineHeight:1.6}} disabled={importing}/>
+      {tickers.length>0&&!importing&&<div style={{fontSize:11,color:K.acc,marginTop:8,fontFamily:fm}}>{tickers.length} new ticker{tickers.length>1?"s":""} found: {tickers.slice(0,15).join(", ")}{tickers.length>15?" +"+( tickers.length-15)+" more":""}</div>}
+      {results.length>0&&<div style={{marginTop:12,maxHeight:160,overflowY:"auto"}}>{results.map(function(r){
+        return<div key={r.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:11}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:r.ok?K.grn:K.red}}/>
+          <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{r.ticker}</span>
+          <span style={{color:r.ok?K.mid:K.red}}>{r.ok?r.name:r.err}</span></div>})}</div>}
+      {status&&<div style={{fontSize:11,color:K.acc,marginTop:8,fontFamily:fm}}>{status}</div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}>
+        <button style={S.btn} onClick={function(){if(!importing)setModal(null)}} disabled={importing}>Cancel</button>
+        <button style={Object.assign({},S.btnP,{opacity:tickers.length>0&&!importing?1:.4})} onClick={doImport} disabled={!tickers.length||importing}>{importing?"Importing...":"Import "+tickers.length+" Companies"}</button></div></Modal>}
+
+  // ── Watchlist Price Alerts ──────────────────────────────
+  useEffect(function(){if(!loaded)return;
+    cos.forEach(function(c){
+      if(c.status==="watchlist"&&c.targetPrice>0&&c.position&&c.position.currentPrice>0&&c.position.currentPrice<=c.targetPrice){
+        if(!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="price-alert"&&n.price===c.targetPrice})){
+          setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"price-alert",ticker:c.ticker,msg:"Price $"+c.position.currentPrice.toFixed(2)+" is at or below your target of $"+c.targetPrice,time:new Date().toISOString(),read:false,price:c.targetPrice}].concat(p).slice(0,30)})}}})
+  },[cos,loaded]);
+
   function Dashboard(){var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
     var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
@@ -2361,9 +2466,11 @@ function TrackerApp(props){
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
     {/* Quick-start nudge for incomplete holdings */}
     {sideTab==="portfolio"&&filtered.length>0&&function(){var noThesis=filtered.filter(function(c){return!c.thesisNote});var noKpi=filtered.filter(function(c){return c.kpis.length===0});var noStyle=filtered.filter(function(c){return!c.investStyle});
-      if(noThesis.length===0&&noKpi.length===0&&noStyle.length===0)return null;
+      var stale=filtered.filter(function(c){if(!c.thesisNote||!c.thesisUpdatedAt)return false;var age=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);return age>90});
+      if(noThesis.length===0&&noKpi.length===0&&noStyle.length===0&&stale.length===0)return null;
       var nudges=[];if(noThesis.length>0)nudges.push({icon:"lightbulb",color:K.grn,msg:noThesis.length===1?noThesis[0].ticker+" needs a thesis":noThesis.length+" holdings need a thesis",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview")}});
-      if(noKpi.length>0)nudges.push({icon:"target",color:K.blue,msg:noKpi.length===1?noKpi[0].ticker+" has no KPIs tracked":noKpi.length+" holdings have no KPIs",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview")}});
+      if(stale.length>0&&nudges.length<3)nudges.push({icon:"alert",color:K.amb,msg:stale.length===1?stale[0].ticker+" thesis is stale (>90d)":stale.length+" theses need review",action:"Review",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
+      if(noKpi.length>0&&nudges.length<3)nudges.push({icon:"target",color:K.blue,msg:noKpi.length===1?noKpi[0].ticker+" has no KPIs tracked":noKpi.length+" holdings have no KPIs",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview")}});
       if(noStyle.length>0&&nudges.length<3)nudges.push({icon:"bar",color:K.acc,msg:noStyle.length===1?noStyle[0].ticker+" has no investment style":noStyle.length+" holdings need a style",action:"Set style",onClick:function(){setSelId(noStyle[0].id);setDetailTab("overview")}});
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Quick Start</div>
@@ -2457,7 +2564,7 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}<Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}<Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
