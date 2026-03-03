@@ -221,7 +221,7 @@ async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-tar
 
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
-var LIGHT={bg:"#F5F0FA",side:"#FFFFFF",card:"#FFFFFF",bdr:"#E2D8EE",bdr2:"#D0C4DE",txt:"#1A1128",mid:"#4A3D5C",dim:"#8878A0",blue:"#5B3E96",grn:"#16A34A",red:"#DC2626",amb:"#D97706",acc:"#5B3E96",prim:"#5B3E96",primTxt:"#FFFFFF"};
+var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
@@ -235,9 +235,9 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"\u2265":r==="lte"?"\u2264":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"#333",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"#333",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
-  return<div style={{width:sz,height:sz,borderRadius:4,background:"#333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"#777",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
+  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
+  return<div style={{width:sz,height:sz,borderRadius:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
   var paths={
@@ -336,8 +336,16 @@ function TrackerApp(props){
   // ── Inject global CSS for animations & polish ──
   useEffect(function(){
     if(typeof document==="undefined")return;
-    var id="ta-global-css";if(document.getElementById(id))return;
+    var id="ta-global-css";var prev=document.getElementById(id);if(prev)prev.remove();
     var style=document.createElement("style");style.id=id;
+    var hov=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
+    var hovTxt=isDark?"#eeeeee":"#1a1a1a";
+    var scrollT=isDark?"rgba(255,255,255,.1)":"rgba(0,0,0,.12)";
+    var scrollH=isDark?"rgba(255,255,255,.2)":"rgba(0,0,0,.2)";
+    var focusC=isDark?"rgba(255,255,255,.25)":"rgba(0,0,0,.15)";
+    var focusS=isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
+    var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
+    var cardSh=isDark?"rgba(0,0,0,.2)":"rgba(0,0,0,.08)";
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
@@ -348,25 +356,25 @@ function TrackerApp(props){
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
       ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease}",
-      ".ta-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(-1px)}",
+      ".ta-card:hover{box-shadow:0 4px 20px "+cardSh+";transform:translateY(-1px)}",
       ".ta-btn{transition:all .15s ease}",
       ".ta-btn:hover{filter:brightness(1.15)}",
       ".ta-btn:active{transform:translateY(0.5px)}",
-      ".ta-skel{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.04) 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:6px}",
+      ".ta-skel{background:linear-gradient(90deg,transparent 0%,"+shimC+" 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:6px}",
       "::-webkit-scrollbar{width:6px;height:6px}",
       "::-webkit-scrollbar-track{background:transparent}",
-      "::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}",
-      "::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}",
-      "input:focus,textarea:focus,select:focus{border-color:rgba(255,255,255,.25)!important;box-shadow:0 0 0 3px rgba(255,255,255,.06)!important;transition:all .15s ease}",
+      "::-webkit-scrollbar-thumb{background:"+scrollT+";border-radius:3px}",
+      "::-webkit-scrollbar-thumb:hover{background:"+scrollH+"}",
+      "input:focus,textarea:focus,select:focus{border-color:"+focusC+"!important;box-shadow:0 0 0 3px "+focusS+"!important;transition:all .15s ease}",
       "button{transition:all .12s ease}",
       "select{transition:border-color .15s ease}",
       ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
-      ".ta-side-item:hover{background:rgba(255,255,255,.04)}",
+      ".ta-side-item:hover{background:"+hov+"}",
       ".ta-tab{transition:all .15s ease;position:relative}",
-      ".ta-tab:hover{color:#eeeeee}",
+      ".ta-tab:hover{color:"+hovTxt+"}",
     ].join("\n");
     document.head.appendChild(style);
-    return function(){var el=document.getElementById(id);if(el)el.remove()}},[]);
+    return function(){var el=document.getElementById(id);if(el)el.remove()}},[isDark]);
   // ── Load data ──
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
@@ -513,8 +521,30 @@ function TrackerApp(props){
       <Inp label="Logo Domain" value={f.domain} onChange={function(v){set("domain",v)}} placeholder="apple.com" K={K}/>
       <Inp label="IR URL" value={f.irUrl} onChange={function(v){set("irUrl",v)}} placeholder="https://investor.apple.com" K={K}/>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime});setModal(null)}}>Save</button></div></Modal>}
-  function ThesisModal(){if(!sel)return null;var _v=useState(sel.thesisNote||""),v=_v[0],sv2=_v[1];
-    return<Modal title={sel.ticker+" \u2014 Thesis"} onClose={function(){setModal(null)}} K={K}><Inp value={v} onChange={sv2} ta placeholder="Why do you own this?" K={K}/><div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{thesisNote:v.trim()});setModal(null)}}>Save</button></div></Modal>}
+  function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
+    var sections={core:"",moat:"",risks:"",sell:""};var cur="core";
+    var lines=(note||"").split("\n");
+    for(var i=0;i<lines.length;i++){var l=lines[i].trim();
+      if(/^##?\s*MOAT/i.test(l)||/^##?\s*COMPETITIVE/i.test(l)){cur="moat";continue}
+      if(/^##?\s*RISK/i.test(l)||/^##?\s*KEY RISK/i.test(l)){cur="risks";continue}
+      if(/^##?\s*SELL/i.test(l)||/^##?\s*INVALIDAT/i.test(l)){cur="sell";continue}
+      sections[cur]+=(sections[cur]?"\n":"")+lines[i]}
+    Object.keys(sections).forEach(function(k){sections[k]=sections[k].trim()});return sections}
+  function joinThesis(s){var parts=[];if(s.core)parts.push(s.core);if(s.moat)parts.push("## MOAT\n"+s.moat);if(s.risks)parts.push("## RISKS\n"+s.risks);if(s.sell)parts.push("## SELL CRITERIA\n"+s.sell);return parts.join("\n\n")}
+  function ThesisModal(){if(!sel)return null;var parsed=parseThesis(sel.thesisNote);
+    var _f=useState(parsed),f=_f[0],setF=_f[1];
+    var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
+    var sections=[
+      {key:"core",label:"Why I Own It",placeholder:"What makes this a great business? What's the core thesis?",icon:"lightbulb"},
+      {key:"moat",label:"Competitive Moat",placeholder:"What protects this business? Switching costs, brand, network effects, cost advantages, regulatory barriers?",icon:"castle"},
+      {key:"risks",label:"Key Risks",placeholder:"What could go wrong? Competition, regulation, technology disruption, management risk?",icon:"alert"},
+      {key:"sell",label:"What Would Make Me Sell",placeholder:"Define your exit criteria upfront. What conditions would break this thesis?",icon:"target"}];
+    return<Modal title={sel.ticker+" \u2014 Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
+      <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>A well-structured thesis forces clarity. Munger: "If you can't state the argument against your position, you don't understand it well enough."</div>
+      {sections.map(function(sec){return<div key={sec.key} style={{marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}><IC name={sec.icon} size={12} color={K.dim}/>{sec.label}</label>
+        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>})}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{thesisNote:joinThesis(f)});setModal(null)}}>Save Thesis</button></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -655,21 +685,40 @@ function TrackerApp(props){
           <span style={{fontSize:12,color:K.mid,flex:1}}>{k.name} <span style={{color:K.dim}}>({k.target})</span></span>
           <input type="number" value={kr[k.id]||""} onChange={function(e){setKr(function(p){var n=Object.assign({},p);n[k.id]=e.target.value;return n})}} placeholder="Actual" style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>})}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.quarter.trim()&&f.summary.trim()?1:.4})} onClick={doSave}>Save Earnings</button></div></Modal>}
-  function exportPDF(){if(!sel)return;var c=sel;var h=gH(c.kpis);var pos=c.position||{};
-    var html='<!DOCTYPE html><html><head><title>'+c.ticker+' Thesis</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a1a1a;padding:48px;max-width:800px;margin:0 auto}h1{font-size:28px;margin-bottom:4px}h2{font-size:14px;text-transform:uppercase;letter-spacing:3px;color:#888;margin:28px 0 12px;border-bottom:1px solid #ddd;padding-bottom:6px}.meta{color:#666;font-size:14px;margin-bottom:24px}.card{border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:12px}.row{display:flex;gap:16px;margin-bottom:8px}.col{flex:1}.label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px}.val{font-size:16px;font-weight:600}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}@media print{body{padding:24px}}</style></head><body>';
-    html+='<h1>'+c.ticker+' \u2014 '+c.name+'</h1><div class="meta">'+c.sector+' \u2022 Generated '+(new Date().toLocaleDateString())+'</div>';
-    if(c.conviction)html+='<div class="card"><div class="row"><div class="col"><div class="label">Conviction</div><div class="val">'+(c.conviction)+'/10</div></div>';
-    if(pos.shares)html+='<div class="col"><div class="label">Position</div><div class="val">'+pos.shares+' shares @ $'+pos.avgCost+'</div></div>';
-    if(pos.currentPrice)html+='<div class="col"><div class="label">Current</div><div class="val">$'+pos.currentPrice+' ('+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'%)</div></div>';
-    html+='</div></div>';
-    if(c.thesisNote)html+='<h2>Investment Thesis</h2><div class="card"><p>'+c.thesisNote+'</p></div>';
-    if(c.earningSummary)html+='<h2>Latest Earnings</h2><div class="card"><p>'+c.earningSummary+'</p></div>';
+  function exportPDF(){if(!sel)return;var c=sel;var h=gH(c.kpis);var pos=c.position||{};var sec=parseThesis(c.thesisNote);
+    var html='<!DOCTYPE html><html><head><title>'+c.ticker+' \u2014 ThesisAlpha</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;padding:40px 48px;max-width:780px;margin:0 auto;font-size:13px;line-height:1.7}h1{font-size:24px;font-weight:600;margin-bottom:2px;letter-spacing:-.5px}h2{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#888;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid #e0e0e0;font-weight:600}.meta{color:#666;font-size:12px;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #1a1a1a}.card{border:1px solid #e0e0e0;border-radius:8px;padding:14px 18px;margin-bottom:10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}.stat{padding:12px 16px;border:1px solid #e0e0e0;border-radius:8px}.stat .label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.stat .val{font-size:18px;font-weight:600}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.sec-block{padding:10px 14px;border-radius:6px;margin-bottom:8px;border-left:3px solid #ddd;background:#fafafa}.sec-block.moat{border-left-color:#16a34a}.sec-block.risk{border-left-color:#d97706}.sec-block.sell{border-left-color:#dc2626}.sec-block .sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.sec-block.moat .sec-title{color:#16a34a}.sec-block.risk .sec-title{color:#d97706}.sec-block.sell .sec-title{color:#dc2626}.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}.bar-label{font-size:11px;color:#666;width:120px}.bar-track{flex:1;height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden}.bar-fill{height:100%;border-radius:3px}.bar-val{font-size:11px;font-weight:600;width:32px;text-align:right}@media print{body{padding:24px}}</style></head><body>';
+    html+='<h1>'+c.ticker+' \u2014 '+c.name+'</h1>';
+    html+='<div class="meta">'+c.sector+(c.industry?" \u2022 "+c.industry:"")+(c.earningsDate&&c.earningsDate!=="TBD"?" \u2022 Next earnings: "+c.earningsDate:"")+" \u2022 Generated "+new Date().toLocaleDateString()+'</div>';
+    // Position & conviction
+    html+='<div class="grid4">';
+    if(c.conviction)html+='<div class="stat"><div class="label">Conviction</div><div class="val '+(c.conviction>=8?"grn":c.conviction>=5?"":"red")+'">'+c.conviction+'/10</div></div>';
+    if(pos.shares)html+='<div class="stat"><div class="label">Position</div><div class="val">'+pos.shares+' sh</div></div>';
+    if(pos.avgCost)html+='<div class="stat"><div class="label">Avg Cost</div><div class="val">$'+pos.avgCost+'</div></div>';
+    if(pos.currentPrice&&pos.avgCost){var ret=((pos.currentPrice-pos.avgCost)/pos.avgCost*100);html+='<div class="stat"><div class="label">Return</div><div class="val '+(ret>=0?"grn":"red")+'">'+(ret>=0?"+":"")+ret.toFixed(1)+'%</div></div>'}
+    html+='</div>';
+    // Thesis sections
+    if(sec.core||sec.moat||sec.risks||sec.sell){html+='<h2>Investment Thesis</h2>';
+      if(sec.core)html+='<div class="card"><p>'+sec.core.replace(/\n/g,"<br/>")+'</p></div>';
+      if(sec.moat)html+='<div class="sec-block moat"><div class="sec-title">Competitive Moat</div><p>'+sec.moat.replace(/\n/g,"<br/>")+'</p></div>';
+      if(sec.risks)html+='<div class="sec-block risk"><div class="sec-title">Key Risks</div><p>'+sec.risks.replace(/\n/g,"<br/>")+'</p></div>';
+      if(sec.sell)html+='<div class="sec-block sell"><div class="sec-title">Sell Criteria</div><p>'+sec.sell.replace(/\n/g,"<br/>")+'</p></div>'}
+    // Moat scores if available
+    if(c._moatCache){var mc=c._moatCache;var dims=["pricingPower","revenueGrowth","opLeverage","capitalEfficiency","earningsQuality","fortress","rdMoat","profitability"];
+      var dimLabels={pricingPower:"Pricing Power",revenueGrowth:"Revenue Growth",opLeverage:"Operating Leverage",capitalEfficiency:"Capital Efficiency",earningsQuality:"Earnings Quality",fortress:"Financial Strength",rdMoat:"R&D Moat",profitability:"Profitability"};
+      if(mc.composite!=null){html+='<h2>Moat Durability \u2014 '+moatLabel(mc.composite)+' ('+mc.composite.toFixed(1)+'/10)</h2>';
+        dims.forEach(function(d){if(mc[d]!=null){var v=mc[d];var clr=v>=8?"#16a34a":v>=6?"#555":v>=4?"#d97706":"#dc2626";
+          html+='<div class="bar-row"><span class="bar-label">'+dimLabels[d]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+v*10+'%;background:'+clr+'"></div></div><span class="bar-val" style="color:'+clr+'">'+v.toFixed(1)+'</span></div>'}})}}
+    // KPIs
     if(c.kpis.length){html+='<h2>Key Metrics</h2>';c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";
-      html+='<div class="card"><div class="row"><div class="col"><strong>'+k.name+'</strong><br/><span style="color:#888">Target: '+k.target+'</span></div><div class="col" style="text-align:right"><div class="val '+(st==="met"?"grn":st==="missed"?"red":"")+'">'+(k.lastResult?k.lastResult.actual+(k.unit||""):"Pending")+'</div><div class="label">'+st.toUpperCase()+'</div></div></div></div>'})}
-    if(c.earningsHistory&&c.earningsHistory.length){html+='<h2>Earnings History</h2>';c.earningsHistory.slice(0,8).forEach(function(e){html+='<div class="card"><strong>'+e.quarter+'</strong><p>'+e.summary+'</p></div>'})}
-    if(c.convictionHistory&&c.convictionHistory.length){html+='<h2>Conviction History</h2><div class="card">';c.convictionHistory.forEach(function(ch){html+='<div style="margin-bottom:6px"><strong>'+ch.date+':</strong> '+ch.rating+'/10'+(ch.note?' \u2014 '+ch.note:'')+(ch.biasFlags&&ch.biasFlags.length?' <span style="color:#d97706">[Flags: '+ch.biasFlags.join(', ')+']</span>':'')+'</div>'});html+='</div>'}
-    if(c.decisions&&c.decisions.length){html+='<h2>Decision Ledger</h2>';c.decisions.slice(0,10).forEach(function(d){html+='<div class="card"><strong class="'+(d.action==="BUY"||d.action==="ADD"?"grn":"red")+'">'+d.action+'</strong> \u2014 '+new Date(d.date).toLocaleDateString()+(d.convictionAtTime?' (C:'+d.convictionAtTime+')':'')+(d.outcome?' \u2014 <strong class="'+(d.outcome==="right"?"grn":"red")+'">'+d.outcome.toUpperCase()+'</strong>':'')+'<p>'+d.reasoning+'</p>'+(d.invalidator?'<p style="color:#dc2626;font-size:13px">\u26A0 Kill thesis if: '+d.invalidator+'</p>':'')+'</div>'})}
-    html+='<div style="margin-top:32px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#aaa">ThesisAlpha \u2022 thesisalpha.io</div></body></html>';
+      html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+k.name+'</strong><br/><span style="color:#888;font-size:11px">Target: '+k.target+'</span></div><div style="text-align:right"><div class="val '+(st==="met"?"grn":st==="missed"?"red":"")+'" style="font-size:16px">'+(k.lastResult?k.lastResult.actual+(k.unit||""):"Pending")+'</div><div style="font-size:10px;color:#888">'+st.toUpperCase()+'</div></div></div>'})}
+    // Decisions
+    if(c.decisions&&c.decisions.length){html+='<h2>Decision Ledger</h2>';c.decisions.slice(0,8).forEach(function(d){
+      html+='<div class="card"><strong class="'+(d.action==="BUY"||d.action==="ADD"?"grn":"red")+'">'+d.action+'</strong> \u2014 '+new Date(d.date).toLocaleDateString()+(d.convictionAtTime?" (Conviction: "+d.convictionAtTime+")":"")+(d.outcome?' \u2014 <strong class="'+(d.outcome==="right"?"grn":"red")+'">'+d.outcome.toUpperCase()+'</strong>':'')+'<p style="margin-top:6px">'+d.reasoning+'</p>'+(d.invalidator?'<p style="color:#dc2626;margin-top:4px;font-size:12px">\u26A0 Kill thesis if: '+d.invalidator+'</p>':'')+'</div>'})}
+    // Conviction history
+    if(c.convictionHistory&&c.convictionHistory.length>1){html+='<h2>Conviction History</h2><div class="card">';c.convictionHistory.forEach(function(ch){html+='<div style="margin-bottom:4px"><strong>'+ch.date+':</strong> '+ch.rating+'/10'+(ch.note?" \u2014 "+ch.note:"")+(ch.biasFlags&&ch.biasFlags.length?' <span class="amb">['+ch.biasFlags.join(", ")+']</span>':'')+'</div>'});html+='</div>'}
+    // Earnings history
+    if(c.earningsHistory&&c.earningsHistory.length){html+='<h2>Earnings History</h2>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<div class="card"><strong>'+e.quarter+'</strong><p>'+e.summary+'</p></div>'})}
+    html+='<div style="margin-top:36px;padding-top:14px;border-top:1px solid #e0e0e0;font-size:10px;color:#aaa;display:flex;justify-content:space-between"><span>ThesisAlpha</span><span>thesisalpha.io</span></div></body></html>';
     var w=window.open("","_blank");w.document.write(html);w.document.close();w.print()}
   function exportCSV(list){
     var rows=[["Ticker","Company","Sector","Status","Shares","Avg Cost","Current Price","Return %","Market Value","Conviction","Earnings Date","KPIs Met","Target Price","Thesis"]];
@@ -733,7 +782,12 @@ function TrackerApp(props){
     var cats=[{v:"article",l:"Article"},{v:"report",l:"Report/Filing"},{v:"video",l:"Video/Podcast"},{v:"twitter",l:"Twitter/X Thread"},{v:"other",l:"Other"}];
     var catIcons={article:"news",report:"file",video:"video",twitter:"msg",other:"link"};
     function addLink(){if(!url.trim())return;
-      var newLink={id:Date.now(),url:url.trim(),label:label.trim()||url.trim().replace(/https?:\/\/(www\.)?/,"").split("/")[0],category:cat,addedAt:new Date().toISOString()};
+      var u=url.trim();var autoLabel=u;
+      try{var pu=new URL(u.startsWith("http")?u:"https://"+u);var host=pu.hostname.replace("www.","");
+        var path=pu.pathname.replace(/^\/|\/$/g,"").replace(/-|_/g," ");
+        if(path&&path.length>3&&path.length<80){var segs=path.split("/");autoLabel=host.split(".")[0]+" \u2014 "+segs[segs.length-1].replace(/\.[^.]+$/,"")}
+        else{autoLabel=host}}catch(e){autoLabel=u.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
+      var newLink={id:Date.now(),url:u.startsWith("http")?u:"https://"+u,label:label.trim()||autoLabel,category:cat,addedAt:new Date().toISOString()};
       upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).concat([newLink])})});
       setUrl("");setLabel("");setAdding(false)}
     function removeLink(lid){upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).filter(function(l){return l.id!==lid})})})}
@@ -1075,6 +1129,9 @@ function TrackerApp(props){
     useEffect(function(){setLd(true);
       fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
     var moat=calcMoatFromData(data);
+    // Cache moat for PDF export (only if changed)
+    useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score});
+      if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null]);
     var cLabel=!moat?"Insufficient Data":moatLabel(moat.composite);
     var cColor=!moat?K.dim:moatColor(moat.composite);
     return<div style={{padding:"0 32px 60px",maxWidth:900}}>
@@ -1250,8 +1307,35 @@ function TrackerApp(props){
                 {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
             </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
         {/* Thesis */}
-        {c.thesisNote?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={S.sec}>Investment Thesis</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>{c.thesisNote}</div></div>
-          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"18px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}><div style={{fontSize:12,color:K.dim}}>Click to write your investment thesis</div></div>}
+        {c.thesisNote?function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis</div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.core}</div>
+            {hasSections&&<div style={{marginTop:14,display:"grid",gap:10}}>
+              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.grn}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.grn,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="castle" size={10} color={K.grn}/>Moat</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.moat}</div></div>}
+              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.amb}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.amb,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="alert" size={10} color={K.amb}/>Risks</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.risks}</div></div>}
+              {sec.sell&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.red}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.red,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="target" size={10} color={K.red}/>Sell Criteria</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
+            </div>}
+          </div>}()
+          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"24px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={{marginBottom:6}}><IC name="lightbulb" size={18} color={K.dim}/></div>
+            <div style={{fontSize:13,color:K.mid,marginBottom:4}}>Write your investment thesis</div>
+            <div style={{fontSize:11,color:K.dim}}>Why do you own this? What's the moat? When would you sell?</div></div>}
+        {/* Thesis staleness check */}
+        {function(){var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
+          var daysSince=lastReview?Math.floor((Date.now()-lastReview)/864e5):null;
+          var hasThesis=!!c.thesisNote;
+          if(hasThesis&&(daysSince===null||daysSince>90))return<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={function(){setDetailTab("analysis")}}>
+            <IC name="clock" size={14} color={K.amb}/>
+            <div style={{flex:1}}><div style={{fontSize:11,color:K.amb,fontWeight:600}}>{daysSince===null?"No thesis review on record":"Last reviewed "+daysSince+" days ago"}</div>
+              <div style={{fontSize:11,color:K.dim}}>Munger reviews his thesis every quarter. Is yours still intact?</div></div>
+            <span style={{fontSize:10,color:K.amb,fontFamily:fm}}>Review {"\u2192"}</span></div>;return null}()}
         {/* Earnings */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
@@ -1551,9 +1635,9 @@ function TrackerApp(props){
         <button onClick={toggleAutoNotify} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {autoNotify?"Auto-check ON":"Auto-check"}</button>
-        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Email notifications ON — opens mailto when earnings drop":"Click to also get email when earnings drop"}>
+        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Will draft an email summary when earnings are found":"Click to get email drafts when earnings drop"}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
-          {emailNotify?"Email ON":"+ Email"}</button>}
+          {emailNotify?"Email Draft ON":"+ Email Draft"}</button>}
         <button style={S.btnChk} onClick={checkAll}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
@@ -1666,7 +1750,8 @@ export default function App(){
     return function(){sub.data.subscription.unsubscribe()}},[]);
   function onAuth(u){setUser(u)}
   async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
-  if(!ready)return<div style={{background:"#1a1a1a",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid #333",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:"#777",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>;
+  if(!ready){var _ltheme="dark";try{_ltheme=localStorage.getItem("ta-theme")||"dark"}catch(e){}var _ldark=_ltheme==="dark";
+    return<div style={{background:_ldark?"#1a1a1a":"#f7f7f7",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid "+(_ldark?"#333":"#ddd"),borderTopColor:_ldark?"#fff":"#1a1a1a",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:_ldark?"#777":"#888",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>}
   if(!user)return<LoginPage onAuth={onAuth}/>;
   return<TrackerApp user={user.email||""} userId={user.id} onLogout={onLogout}/>;
 }
