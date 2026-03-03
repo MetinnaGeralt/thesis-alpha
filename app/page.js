@@ -696,7 +696,12 @@ function TrackerApp(props){
       {sections.map(function(sec){return<div key={sec.key} style={{marginBottom:16}}>
         <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}><IC name={sec.icon} size={12} color={K.dim}/>{sec.label}</label>
         <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>})}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{thesisNote:joinThesis(f)});setModal(null)}}>Save Thesis</button></div></Modal>}
+      {sel.thesisVersions&&sel.thesisVersions.length>0&&<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
+        <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
+        <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
+          return<div key={i} style={{fontSize:11,color:K.mid,marginBottom:4,paddingLeft:8,borderLeft:"2px solid "+K.bdr}}>
+          <span style={{fontFamily:fm,color:K.dim,fontSize:10}}>{v.date}</span> {"\u2014"} {v.summary||"Updated"}</div>})}</div></div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30)});setModal(null)}}>Save & Snapshot</button></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -2238,6 +2243,19 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
     {/* Analytics quick link */}
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){var os=calcOwnerScore(cos);var bd=os.breakdown;
+      var cats=[{label:"Thesis",pts:bd.thesis,max:20,color:K.acc},{label:"KPIs",pts:bd.kpi,max:20,color:K.blue},{label:"Journal",pts:bd.journal,max:20,color:K.grn},{label:"Conviction",pts:bd.conviction,max:15,color:K.amb},{label:"Moat",pts:bd.moat,max:10,color:"#9333EA"},{label:"Balance",pts:bd.balance,max:15,color:K.mid}];
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20,marginBottom:14}}>
+          <div style={{position:"relative",width:isMobile?56:68,height:isMobile?56:68,flexShrink:0}}>
+            <svg width={isMobile?56:68} height={isMobile?56:68} viewBox="0 0 68 68"><circle cx="34" cy="34" r="28" fill="none" stroke={K.bdr} strokeWidth="5"/><circle cx="34" cy="34" r="28" fill="none" stroke={os.total>=75?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red} strokeWidth="5" strokeDasharray={Math.round(os.total/100*176)+" 176"} strokeLinecap="round" transform="rotate(-90 34 34)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:isMobile?16:20,fontWeight:700,color:os.total>=75?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div></div></div>
+          <div style={{flex:1}}><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:3,fontFamily:fm}}>Owner{"\u2019"}s Score</div>
+            <div style={{fontSize:13,color:K.txt,fontWeight:500}}>{os.total>=80?"Exceptional discipline":os.total>=60?"Strong foundation":os.total>=40?"Building momentum":"Getting started"}</div></div></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat("+(isMobile?3:6)+",1fr)",gap:isMobile?6:8}}>{cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;return<div key={cat.label} style={{textAlign:"center"}}>
+          <div style={{height:4,borderRadius:2,background:K.bdr,marginBottom:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{cat.label}</div>
+          <div style={{fontSize:10,fontWeight:600,color:pct>=80?cat.color:pct>=40?K.mid:K.dim,fontFamily:fm}}>{cat.pts}/{cat.max}</div></div>})}</div></div>})()}
     {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
       <IC name="bar" size={18} color={K.acc}/>
       <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
