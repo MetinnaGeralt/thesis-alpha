@@ -2035,16 +2035,49 @@ function TrackerApp(props){
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
-    // Gather all docs from all companies
+    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var watchlist=cos.filter(function(c){return c.status==="watchlist"});
+    var os=calcOwnerScore(cos);var bd=os.breakdown;
+    // Decision stats
+    var allDecs=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){allDecs.push(Object.assign({},d,{ticker:c.ticker}))})});
+    var scored=allDecs.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
+    var dqPct=scored.length>0?Math.round(rights/scored.length*100):0;
+    // Streak: consecutive days with any activity (decision, thesis edit, kpi check)
+    var activityDates={};allDecs.forEach(function(d){if(d.date)activityDates[d.date.substring(0,10)]=true});
+    cos.forEach(function(c){if(c.thesisUpdatedAt)activityDates[c.thesisUpdatedAt.substring(0,10)]=true;
+      (c.earningsHistory||[]).forEach(function(h){if(h.checkedAt)activityDates[h.checkedAt.substring(0,10)]=true})});
+    var streak=0;var d2=new Date();for(var si=0;si<365;si++){var dk=d2.toISOString().slice(0,10);if(activityDates[dk])streak++;else if(si>0)break;d2=new Date(d2.getTime()-864e5)}
+    // Thesis health
+    var withThesis=portfolio.filter(function(c){return c.thesisNote});
+    var staleTheses=withThesis.filter(function(c){var lastTouch=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
+      var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
+      var latest=lastTouch&&lastReview?(lastTouch>lastReview?lastTouch:lastReview):lastTouch||lastReview;
+      return!latest||Math.ceil((new Date()-latest)/864e5)>90});
+    // Upcoming earnings
+    var upcoming=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+    // Build smart actions
+    var actions=[];
+    if(upcoming.length>0){var uc=upcoming[0];actions.push({icon:"target",color:K.amb,title:uc.ticker+" earnings in "+dU(uc.earningsDate)+"d",desc:"Review your "+uc.kpis.length+" KPIs and thesis before results drop",action:"Prepare",onClick:function(){setSelId(uc.id);setDetailTab("overview");setPage("dashboard")}})}
+    var noThesis=portfolio.filter(function(c){return!c.thesisNote});
+    if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.grn,title:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",desc:"Every position needs a written reason to own it",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
+    if(staleTheses.length>0)actions.push({icon:"clock",color:K.amb,title:staleTheses.length+" thesis"+(staleTheses.length>1?" reviews":"")+" overdue",desc:"Quarterly review keeps your thinking sharp",action:"Review",onClick:function(){setSelId(staleTheses[0].id);setModal({type:"thesis"})}});
+    var noKpi=portfolio.filter(function(c){return c.kpis.length===0});
+    if(noKpi.length>0)actions.push({icon:"bar",color:K.blue,title:noKpi.length+" holding"+(noKpi.length>1?"s":"")+" with no KPIs",desc:"Define the metrics that prove or disprove your thesis",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard")}});
+    var noConv=portfolio.filter(function(c){return!c.conviction||c.conviction===0});
+    if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1\u201310 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
+    var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
+    if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
+    // Tabs
+    var _ht=useState("command"),ht=_ht[0],setHt=_ht[1];
+    // Document vault (kept from before)
     var allDocs=[];cos.forEach(function(c){(c.docs||[]).forEach(function(d){allDocs.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain}))})});
-    // Also gather thesis notes as virtual docs
-    cos.forEach(function(c){if(c.thesisNote){allDocs.push({id:"thesis-"+c.id,title:"Investment Thesis",content:c.thesisNote,folder:"why-i-own",ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,updatedAt:null,isThesis:true})}});
+    cos.forEach(function(c){if(c.thesisNote){allDocs.push({id:"thesis-"+c.id,title:"Investment Thesis",content:c.thesisNote,folder:"why-i-own",ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,updatedAt:c.thesisUpdatedAt||null,isThesis:true})}});
     allDocs.sort(function(a,b){return(b.updatedAt||"")<(a.updatedAt||"")?-1:1});
     var _hf=useState("all"),hf=_hf[0],setHf=_hf[1];
     var _hc=useState("all"),hc=_hc[0],setHc=_hc[1];
     var _hd=useState(null),hd=_hd[0],setHd=_hd[1];
     var companies=cos.map(function(c){return{ticker:c.ticker,id:c.id}});
-    var filtered=allDocs.filter(function(d){return(hf==="all"||d.folder===hf)&&(hc==="all"||d.companyId===parseInt(hc))});
+    var filteredDocs=allDocs.filter(function(d){return(hf==="all"||d.folder===hf)&&(hc==="all"||d.companyId===parseInt(hc))});
     var selectedDoc=hd?allDocs.find(function(d){return d.id===hd}):null;
     function exportDocPDF(doc){
       var formatted=autoFormat(doc.content);
@@ -2054,59 +2087,199 @@ function TrackerApp(props){
       formatted.split("\n\n").forEach(function(p){html+='<p>'+p+'</p>'});
       html+='<div class="footer">ThesisAlpha \u2022 Owner\'s Hub</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();w.print()}
-    return<div className="ta-page-pad" style={{padding:"0 32px 60px",maxWidth:1000}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{allDocs.length} documents across {companies.length} companies</p></div>
-      {(function(){var os=calcOwnerScore(cos);var allDecs=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){allDecs.push(Object.assign({},d,{ticker:c.ticker}))})});
-        var scored=allDecs.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
-        return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:24}}>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-            <div style={{fontSize:28,fontWeight:700,color:os.total>=75?K.grn:os.total>=50?K.amb:K.red,fontFamily:fm}}>{os.total}</div>
-            <div style={{fontSize:10,color:K.dim}}>Owner\u2019s Score</div></div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-            <div style={{fontSize:28,fontWeight:700,color:scored.length>0?(rights/scored.length>=.7?K.grn:rights/scored.length>=.5?K.amb:K.red):K.dim,fontFamily:fm}}>{scored.length>0?Math.round(rights/scored.length*100)+"%":"\u2014"}</div>
-            <div style={{fontSize:10,color:K.dim}}>{scored.length>0?rights+"/"+scored.length+" right":"Decision Quality"}</div></div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-            <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
-            <div style={{fontSize:10,color:K.dim}}>Total Decisions</div></div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-            <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>{cos.filter(function(c){return(c.thesisVersions||[]).length>0}).length}</div>
-            <div style={{fontSize:10,color:K.dim}}>Versioned Theses</div></div>
-        </div>})()}
-      {/* Filters */}
-      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-        <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:11,fontFamily:fm,outline:"none"}}>
-          <option value="all">All Companies</option>
-          {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
-        <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
-        {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d){return d.folder===fo.id&&(hc==="all"||d.companyId===parseInt(hc))}).length;
-          return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
-      <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
-        {/* Doc list */}
+
+    // Score level names + next milestone
+    var levels=[{min:0,name:"Novice",next:25},{min:25,name:"Apprentice",next:50},{min:50,name:"Practitioner",next:70},{min:70,name:"Disciplined",next:85},{min:85,name:"Master",next:100}];
+    var currentLevel=levels[0];levels.forEach(function(l){if(os.total>=l.min)currentLevel=l});
+    var nextMilestone=currentLevel.next;var pctToNext=nextMilestone>currentLevel.min?Math.round((os.total-currentLevel.min)/(nextMilestone-currentLevel.min)*100):100;
+
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
+      {/* Header with score ring */}
+      <div style={{padding:"28px 0 24px",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?16:24,flexDirection:isMobile?"column":"row"}}>
+        <div style={{display:"flex",alignItems:"center",gap:20,flex:1}}>
+          <div style={{position:"relative",width:80,height:80,flexShrink:0}}>
+            <svg width={80} height={80} viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="5"/>
+              <circle cx="40" cy="40" r="34" fill="none" stroke={os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red} strokeWidth="5" strokeDasharray={Math.round(os.total/100*214)+" 214"} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+              <div style={{fontSize:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
+              <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
+          <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
+            <div style={{fontSize:13,color:K.mid,marginTop:2}}>{currentLevel.name} <span style={{color:K.dim}}>·</span> {os.total<100?<span style={{fontSize:11,color:K.dim}}>{nextMilestone-os.total} pts to {levels.find(function(l){return l.min===nextMilestone})?levels.find(function(l){return l.min===nextMilestone}).name:"Max"}</span>:<span style={{color:"#FFD700",fontSize:11}}>Maximum achieved!</span>}</div>
+            {/* Progress to next level */}
+            <div style={{marginTop:6,width:180,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div></div></div>
+        {/* Quick stats */}
+        <div style={{display:"flex",gap:isMobile?12:16}}>
+          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>day streak</div></div>
+          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"\u2014"}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>batting avg</div></div>
+          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>decisions</div></div></div></div>
+
+      {/* Tab bar */}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {[{id:"command",l:"Command Center",icon:"trending"},{id:"journal",l:"Decision Journal",icon:"book"},{id:"docs",l:"Document Vault",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
+          return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?600:400,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
+            <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
+
+      {/* ═══ COMMAND CENTER TAB ═══ */}
+      {ht==="command"&&<div>
+        {/* Score breakdown with clickable categories */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:20}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Score Breakdown</div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10}}>
+            {[{key:"thesis",label:"Thesis Quality",pts:bd.thesis,max:20,icon:"lightbulb",color:K.acc,tip:"Write all 4 sections, version your thesis, keep it fresh",onClick:function(){var t=portfolio.find(function(c){return!c.thesisNote})||portfolio[0];if(t){setSelId(t.id);setModal({type:"thesis"});setPage("dashboard")}}},
+              {key:"kpi",label:"KPI Discipline",pts:bd.kpi,max:20,icon:"target",color:K.blue,tip:"Track 2+ KPIs per holding, check earnings regularly",onClick:function(){var t=portfolio.find(function(c){return c.kpis.length===0})||portfolio[0];if(t){setSelId(t.id);setDetailTab("overview");setPage("dashboard")}}},
+              {key:"journal",label:"Journal Consistency",pts:bd.journal,max:20,icon:"book",color:K.grn,tip:"Log every buy/sell with reasoning, tag outcomes later",onClick:function(){setHt("journal")}},
+              {key:"conviction",label:"Conviction Hygiene",pts:bd.conviction,max:15,icon:"trending",color:K.amb,tip:"Rate conviction 1\u201310, update quarterly, run bias checks",onClick:function(){var t=portfolio.find(function(c){return!c.conviction})||portfolio[0];if(t){setSelId(t.id);setModal({type:"conviction"});setPage("dashboard")}}},
+              {key:"moat",label:"Moat Vigilance",pts:bd.moat,max:10,icon:"castle",color:"#9333EA",tip:"Classify moat types, add Morningstar reference, track trend",onClick:function(){var t=portfolio[0];if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}},
+              {key:"balance",label:"Portfolio Balance",pts:bd.balance,max:15,icon:"bar",color:K.mid,tip:"3+ holdings, sector diversification <40%, 2+ investment styles"}
+            ].map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;var full=pct>=80;
+              return<div key={cat.key} className="ta-card" style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:full?cat.color+"06":"transparent",border:"1px solid "+(full?cat.color+"20":K.bdr),borderRadius:8,cursor:cat.onClick?"pointer":"default"}} onClick={cat.onClick||undefined}>
+                <IC name={cat.icon} size={14} color={full?cat.color:K.dim}/>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,fontWeight:600,color:full?cat.color:K.txt,fontFamily:fm}}>{cat.label}</span><span style={{fontSize:10,color:full?cat.color:K.dim,fontFamily:fm,fontWeight:600}}>{cat.pts}/{cat.max}</span></div>
+                  <div style={{height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color,transition:"width .3s"}}/></div>
+                  <div style={{fontSize:10,color:K.dim,marginTop:3}}>{cat.tip}</div></div>
+                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"\u2192"}</span>}
+                {full&&<span style={{fontSize:12}}>{"✓"}</span>}
+              </div>})}
+          </div></div>
+
+        {/* What to do today */}
+        {actions.length>0&&<div style={{marginBottom:20}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>What To Do Today</div>
+          <div style={{display:"grid",gap:8}}>
+            {actions.slice(0,4).map(function(a,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:14,padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,cursor:"pointer"}} onClick={a.onClick}>
+              <div style={{width:36,height:36,borderRadius:8,background:a.color+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={a.icon} size={16} color={a.color}/></div>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>{a.title}</div>
+                <div style={{fontSize:11,color:K.dim,marginTop:1}}>{a.desc}</div></div>
+              <span style={{fontSize:11,color:a.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>{a.action} {"\u2192"}</span></div>})}</div></div>}
+        {actions.length===0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px 20px",textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:18,marginBottom:4}}>{"🎯"}</div>
+          <div style={{fontSize:14,fontWeight:500,color:K.grn}}>All caught up!</div>
+          <div style={{fontSize:12,color:K.dim,marginTop:4}}>Every holding has a thesis, KPIs, conviction rating, and moat classification. You're running a disciplined process.</div></div>}
+
+        {/* Upcoming earnings */}
+        {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm}}>Earnings This Fortnight</div>
+          {upcoming.map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+            <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
+            <span style={{fontSize:11,color:K.dim,flex:1}}>{c.name}</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.kpis.length} KPIs</span>
+            <span style={{fontSize:12,fontWeight:700,color:d3<=3?K.red:K.amb,fontFamily:fm,minWidth:40,textAlign:"right"}}>{d3===0?"Today":d3===1?"1d":d3+"d"}</span></div>})}</div>}
+
+        {/* Recent decisions (last 5) */}
+        {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Recent Decisions</div>
+            <button onClick={function(){setHt("journal")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>View all {"\u2192"}</button></div>
+          {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).slice(0,5).map(function(dec,i){
+            var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<4?"1px solid "+K.bdr:"none"}}>
+              <span style={{fontSize:9,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:3,fontFamily:fm,minWidth:36,textAlign:"center"}}>{dec.action}</span>
+              <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
+              <span style={{fontSize:11,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dec.reasoning?dec.reasoning.substring(0,60)+"...":""}</span>
+              {dec.outcome&&<span style={{fontSize:9,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,fontFamily:fm,fontWeight:600}}>{dec.outcome}</span>}
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>})}</div>}
+      </div>}
+
+      {/* ═══ DECISION JOURNAL TAB ═══ */}
+      {ht==="journal"&&<div>
+        {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
+          <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No decisions logged yet</div>
+          <div style={{fontSize:12,color:K.dim}}>Open any company and use the Decision Journal tab to log BUY/SELL/HOLD decisions with reasoning.</div></div>:
         <div>
-          {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:32,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:12,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
-          {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});var isActive=hd===d.id;
-            return<div key={d.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d.id)}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                <CoLogo domain={d.domain} ticker={d.ticker} size={18}/>
-                <span style={{fontSize:10,fontWeight:600,color:K.mid,fontFamily:fm}}>{d.ticker}</span>
-                <IC name={fo?fo.icon:"file"} size={12} color={K.dim}/>
+          <div style={{fontSize:12,color:K.dim,marginBottom:16}}>
+            {allDecs.length} decision{allDecs.length>1?"s":""} logged · {scored.length} scored · {rights} right · batting avg: {scored.length>0?dqPct+"%":"N/A"}</div>
+          {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).map(function(dec,i){
+            var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
+            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:8,borderLeft:"3px solid "+clr}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 10px",borderRadius:4,fontFamily:fm}}>{dec.action}</span>
+                <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
+                {dec.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>@ ${dec.price}</span>}
                 <span style={{flex:1}}/>
-                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
-              <div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d.title}</div>
-              {!selectedDoc&&d.content&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.substring(0,200)}</div>}
-            </div>})}</div>
-        {/* Doc detail / reader */}
-        {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-            <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
-            <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
-              <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" \u2022 "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
-            <button onClick={function(){exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>PDF</button>
-            {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Edit</button>}
-          </div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
+                {dec.outcome&&<span style={{fontSize:10,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb)+"12",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{dec.outcome}</span>}
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>
+              {dec.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{dec.reasoning}</div>}
+              {dec.invalidation&&<div style={{fontSize:11,color:K.amb,marginTop:6,fontStyle:"italic"}}>{"Invalidation: "+dec.invalidation}</div>}
+            </div>})}
         </div>}
-      </div></div>}
+      </div>}
+
+      {/* ═══ DOCUMENT VAULT TAB ═══ */}
+      {ht==="docs"&&<div>
+        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+          <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:11,fontFamily:fm,outline:"none"}}>
+            <option value="all">All Companies</option>
+            {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
+          <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
+          {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d2){return d2.folder===fo.id&&(hc==="all"||d2.companyId===parseInt(hc))}).length;
+            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:11,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
+        <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
+          <div>
+            {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:32,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:12,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
+            {filteredDocs.map(function(d3){var fo=FOLDERS.find(function(f){return f.id===d3.folder});var isActive=hd===d3.id;
+              return<div key={d3.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d3.id)}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <CoLogo domain={d3.domain} ticker={d3.ticker} size={18}/>
+                  <span style={{fontSize:10,fontWeight:600,color:K.mid,fontFamily:fm}}>{d3.ticker}</span>
+                  <IC name={fo?fo.icon:"file"} size={12} color={K.dim}/>
+                  <span style={{flex:1}}/>
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d3.updatedAt?new Date(d3.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
+                <div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d3.title}</div>
+                {!selectedDoc&&d3.content&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d3.content.substring(0,200)}</div>}
+              </div>})}</div>
+          {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
+              <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
+                <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" \u2022 "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
+              <button onClick={function(){exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>PDF</button>
+              {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Edit</button>}
+            </div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
+          </div>}
+        </div>
+      </div>}
+
+      {/* ═══ HOW IT WORKS TAB ═══ */}
+      {ht==="guide"&&<div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
+          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>ThesisAlpha tracks how well you follow a disciplined investment process \u2014 not whether your stocks go up. The Owner's Score measures the quality of your process across 6 dimensions. Research shows that investors who maintain a written thesis, track KPIs, and review regularly outperform those who don't.</div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality (20 pts)",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh \u2014 stale theses lose points."},
+              {icon:"target",color:K.blue,title:"KPI Discipline (20 pts)",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
+              {icon:"book",color:K.grn,title:"Journal Consistency (20 pts)",desc:"Log every BUY, SELL, ADD, TRIM with written reasoning. Tag outcomes later (right/wrong/mixed). This is how you learn from mistakes."},
+              {icon:"trending",color:K.amb,title:"Conviction Hygiene (15 pts)",desc:"Rate conviction 1\u201310 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
+              {icon:"castle",color:"#9333EA",title:"Moat Vigilance (10 pts)",desc:"Classify moat types (brand, switching costs, network effects, etc). Add Morningstar's rating for reference. Track whether the moat is strengthening or eroding."},
+              {icon:"bar",color:K.mid,title:"Portfolio Balance (15 pts)",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns \u2014 it's about thoughtful construction."}
+            ].map(function(item){return<div key={item.title} style={{padding:"14px 16px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><IC name={item.icon} size={14} color={item.color}/>
+                <span style={{fontSize:12,fontWeight:600,color:item.color,fontFamily:fm}}>{item.title}</span></div>
+              <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{item.desc}</div></div>})}
+          </div>
+        </div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px"}}>
+          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>Level System</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Your Owner's Score determines your level. Each level represents a milestone in building investment discipline.</div>
+          <div style={{display:"grid",gap:8}}>
+            {levels.map(function(l){var isCurrentLevel=currentLevel.min===l.min;
+              return<div key={l.min} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:isCurrentLevel?K.acc+"08":"transparent",border:"1px solid "+(isCurrentLevel?K.acc+"30":K.bdr),borderRadius:8}}>
+                <div style={{width:32,textAlign:"center",fontSize:14,fontWeight:700,color:isCurrentLevel?K.acc:K.dim,fontFamily:fm}}>{l.min}</div>
+                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:isCurrentLevel?600:400,color:isCurrentLevel?K.acc:K.txt,fontFamily:fm}}>{l.name}</div></div>
+                {isCurrentLevel&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{"← You are here"}</span>}
+              </div>})}
+          </div></div>
+      </div>}
+    </div>}
+
 
   // ── Portfolio Analytics ─────────────────────────────────
   // ── Portfolio Analytics (Munger-focused) ─────────────────
