@@ -501,7 +501,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{}};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -708,6 +708,14 @@ function TrackerApp(props){
       if(mc.composite!=null){html+='<h2>Moat Durability \u2014 '+moatLabel(mc.composite)+' ('+mc.composite.toFixed(1)+'/10)</h2>';
         dims.forEach(function(d){if(mc[d]!=null){var v=mc[d];var clr=v>=8?"#16a34a":v>=6?"#555":v>=4?"#d97706":"#dc2626";
           html+='<div class="bar-row"><span class="bar-label">'+dimLabels[d]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+v*10+'%;background:'+clr+'"></div></div><span class="bar-val" style="color:'+clr+'">'+v.toFixed(1)+'</span></div>'}})}}
+    // Moat type classification
+    if(c.moatTypes){var activeMoats=MOAT_TYPES.filter(function(t){return c.moatTypes[t.id]&&c.moatTypes[t.id].active});
+      if(activeMoats.length>0){html+='<h2>Moat Sources</h2><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+        activeMoats.forEach(function(t){var d=c.moatTypes[t.id];var str=d.strength||3;var strLabel=str>=5?"Dominant":str>=4?"Strong":str>=3?"Moderate":str>=2?"Weak":"Fragile";
+          html+='<div class="card" style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="font-size:10px;color:#888">('+strLabel+')</span></div>';
+          if(d.note)html+='<p style="font-size:12px;color:#555;margin:0">'+d.note+'</p>';
+          html+='</div>'});
+        html+='</div>'}}}
     // KPIs
     if(c.kpis.length){html+='<h2>Key Metrics</h2>';c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";
       html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+k.name+'</strong><br/><span style="color:#888;font-size:11px">Target: '+k.target+'</span></div><div style="text-align:right"><div class="val '+(st==="met"?"grn":st==="missed"?"red":"")+'" style="font-size:16px">'+(k.lastResult?k.lastResult.actual+(k.unit||""):"Pending")+'</div><div style="font-size:10px;color:#888">'+st.toUpperCase()+'</div></div></div>'})}
@@ -1122,6 +1130,65 @@ function TrackerApp(props){
   function moatLabel(score){return score>=8?"Wide Moat":score>=6?"Narrow Moat":score>=4?"Weak Moat":"No Moat"}
   function moatColor(score){return score>=8?K.grn:score>=6?K.amb:K.red}
 
+  // ── Moat Type Classification System ──────────────────────
+  var MOAT_TYPES=[
+    {id:"brand",label:"Brand Power",icon:"shield",color:"#8B5CF6",
+      desc:"Customers pay a premium for the name. Think Apple, Hermès, Coca-Cola.",
+      signals:["Consumer-facing","High gross margins","Premium pricing"],
+      sectors:["Consumer Cyclical","Consumer Defensive","Communication Services"]},
+    {id:"switching",label:"Switching Costs",icon:"link",color:"#3B82F6",
+      desc:"Painful or expensive for customers to leave. Think SAP, Oracle, Adobe.",
+      signals:["Enterprise SaaS","Data lock-in","Workflow integration","Training costs"],
+      sectors:["Technology","Industrials","Healthcare"]},
+    {id:"network",label:"Network Effects",icon:"users",color:"#10B981",
+      desc:"Each new user makes the product more valuable. Think Visa, Meta, Uber.",
+      signals:["Platform/marketplace","User-generated content","Payment rails"],
+      sectors:["Technology","Communication Services","Financial Services"]},
+    {id:"cost",label:"Cost Advantage",icon:"dollar",color:"#F59E0B",
+      desc:"Structurally lower costs than competitors. Think Costco, GEICO, Ryanair.",
+      signals:["Scale economies","Process innovation","Geographic advantage"],
+      sectors:["Consumer Defensive","Industrials","Basic Materials","Utilities"]},
+    {id:"ip",label:"IP & Patents",icon:"flask",color:"#EC4899",
+      desc:"Legal barriers protect the product. Think pharma patents, semiconductor IP.",
+      signals:["High R&D spend","Patent portfolio","Regulatory approval required"],
+      sectors:["Healthcare","Technology","Industrials"]},
+    {id:"regulatory",label:"Regulatory Barrier",icon:"castle",color:"#6366F1",
+      desc:"Government licenses or regulations limit competition. Think utilities, banks, defense.",
+      signals:["Licensed industry","Government contracts","Capital requirements"],
+      sectors:["Financial Services","Utilities","Industrials","Energy"]},
+    {id:"mission",label:"Mission Critical",icon:"target",color:"#EF4444",
+      desc:"Failure is catastrophic — customers can't risk switching. Think ASML, Palantir, Veeva.",
+      signals:["Deep workflow integration","Compliance dependency","No viable alternatives"],
+      sectors:["Technology","Healthcare","Industrials","Energy"]}
+  ];
+
+  function suggestMoatTypes(company,moatData){
+    var suggestions=[];var sec=(company.sector||"").toLowerCase();var ind=(company.industry||"").toLowerCase();
+    var gm=null,rd=null,opM=null;
+    if(moatData&&moatData.metrics){moatData.metrics.forEach(function(m){
+      if(m.id==="grossMargin")gm=m.score;
+      if(m.id==="rdIntensity")rd=m.score;
+      if(m.id==="opLeverage")opM=m.score})}
+    MOAT_TYPES.forEach(function(mt){var score=0;var reasons=[];
+      // Sector match
+      var secMatch=mt.sectors.some(function(s){return sec.indexOf(s.toLowerCase())>=0});
+      if(secMatch){score+=2;reasons.push("Sector match")}
+      // Financial signal matching
+      if(mt.id==="brand"&&gm&&gm>=7){score+=3;reasons.push("High gross margins ("+gm+"/10)")}
+      if(mt.id==="brand"&&(sec.indexOf("consumer")>=0||ind.indexOf("luxury")>=0||ind.indexOf("apparel")>=0||ind.indexOf("beverage")>=0)){score+=2;reasons.push("Consumer-facing industry")}
+      if(mt.id==="switching"&&(ind.indexOf("software")>=0||ind.indexOf("saas")>=0||ind.indexOf("cloud")>=0||ind.indexOf("enterprise")>=0)){score+=3;reasons.push("Software/SaaS industry")}
+      if(mt.id==="switching"&&opM&&opM>=7){score+=1;reasons.push("Strong operating margins suggest sticky customers")}
+      if(mt.id==="network"&&(ind.indexOf("platform")>=0||ind.indexOf("marketplace")>=0||ind.indexOf("social")>=0||ind.indexOf("payment")>=0||ind.indexOf("exchange")>=0)){score+=4;reasons.push("Platform/marketplace business")}
+      if(mt.id==="cost"&&gm&&gm<5&&opM&&opM>=5){score+=3;reasons.push("Low margins but efficient operations")}
+      if(mt.id==="cost"&&(ind.indexOf("retail")>=0||ind.indexOf("discount")>=0||ind.indexOf("warehouse")>=0)){score+=2;reasons.push("Scale-driven retail")}
+      if(mt.id==="ip"&&rd&&rd>=6){score+=3;reasons.push("High R&D investment ("+rd+"/10)")}
+      if(mt.id==="ip"&&(ind.indexOf("pharma")>=0||ind.indexOf("biotech")>=0||ind.indexOf("semiconductor")>=0)){score+=3;reasons.push("Patent-heavy industry")}
+      if(mt.id==="regulatory"&&(ind.indexOf("bank")>=0||ind.indexOf("insurance")>=0||ind.indexOf("utilit")>=0||ind.indexOf("defense")>=0||ind.indexOf("aerospace")>=0)){score+=3;reasons.push("Regulated industry")}
+      if(mt.id==="mission"&&(ind.indexOf("medical")>=0||ind.indexOf("defense")>=0||ind.indexOf("infrastructure")>=0||ind.indexOf("cybersec")>=0)){score+=3;reasons.push("Mission-critical industry")}
+      if(mt.id==="mission"&&opM&&opM>=8&&gm&&gm>=8){score+=2;reasons.push("Very high margins suggest irreplaceability")}
+      if(score>=3)suggestions.push({id:mt.id,score:score,reasons:reasons})});
+    return suggestions.sort(function(a,b){return b.score-a.score}).slice(0,4)}
+
   // ── Moat Durability Tracker ─────────────────────────────
   function MoatTracker(p){var c=p.company;
     var _data=useState(null),data=_data[0],setData=_data[1];
@@ -1157,6 +1224,57 @@ function TrackerApp(props){
           <div style={{fontSize:20,fontWeight:500,color:cColor,fontFamily:fh,marginBottom:4}}>{cLabel}</div>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{moat.composite>=8?"This company shows strong competitive advantages across multiple dimensions. Durable moats deserve premium conviction.":moat.composite>=6?"Some competitive advantages are visible, but not all dimensions are strong. Monitor for moat erosion.":moat.composite>=4?"Limited competitive advantages detected. This company may be vulnerable to competition.":"No clear competitive moat identified. High conviction requires a special thesis."}</div>
           <div style={{fontSize:10,color:K.dim,marginTop:8,fontFamily:fm}}>Based on {moat.years} years of SEC EDGAR data · {moat.metrics.length} dimensions analyzed</div></div></div>
+      {/* Moat Type Classification */}
+      {function(){var mt=c.moatTypes||{};var suggestions=suggestMoatTypes(c,moat);
+        var hasSuggestions=suggestions.length>0;
+        var classified=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
+        var unclassified=MOAT_TYPES.filter(function(t){return!mt[t.id]||!mt[t.id].active});
+        function toggleType(tid){var prev=c.moatTypes||{};var cur=prev[tid]||{};var next=Object.assign({},prev);
+          next[tid]=Object.assign({},cur,{active:!cur.active,strength:cur.strength||3,note:cur.note||""});
+          upd(c.id,{moatTypes:next})}
+        function setStrength(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
+          next[tid]=Object.assign({},prev[tid]||{},  {strength:val});upd(c.id,{moatTypes:next})}
+        function setNote(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
+          next[tid]=Object.assign({},prev[tid]||{},{note:val});upd(c.id,{moatTypes:next})}
+        return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={S.sec}><IC name="castle" size={14} color={K.dim}/>Moat Classification</div></div>
+          {/* Active moat types */}
+          {classified.length>0&&<div style={{marginBottom:16}}>
+            {classified.map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
+              return<div key={t.id} style={{background:K.card,border:"1px solid "+t.color+"40",borderLeft:"4px solid "+t.color,borderRadius:12,padding:"16px 20px",marginBottom:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  <IC name={t.icon} size={16} color={t.color}/>
+                  <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt}}>{t.label}</div>
+                    <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{t.desc}</div></div>
+                  <button onClick={function(){toggleType(t.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:4,opacity:.5}} title="Remove">{"\u2715"}</button></div>
+                {/* Strength rating */}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:70}}>STRENGTH</span>
+                  <div style={{display:"flex",gap:3}}>
+                    {[1,2,3,4,5].map(function(v){return<button key={v} onClick={function(){setStrength(t.id,v)}} style={{width:28,height:24,borderRadius:4,border:"1px solid "+(v<=d.strength?t.color+"60":K.bdr),background:v<=d.strength?t.color+"20":"transparent",color:v<=d.strength?t.color:K.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
+                  <span style={{fontSize:10,color:t.color,fontFamily:fm,marginLeft:4}}>{d.strength>=5?"Dominant":d.strength>=4?"Strong":d.strength>=3?"Moderate":d.strength>=2?"Weak":"Fragile"}</span></div>
+                {/* Note */}
+                <textarea value={d.note||""} onChange={function(e){setNote(t.id,e.target.value)}} placeholder={"Why does "+c.ticker+" have "+t.label.toLowerCase()+"? Be specific..."} rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+                {sug&&sug.reasons.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:8}}>
+                  {sug.reasons.map(function(r,ri){return<span key={ri} style={{fontSize:9,color:t.color,background:t.color+"10",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{r}</span>})}</div>}
+              </div>})}</div>}
+          {/* Suggestions + unclassified */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+            {classified.length===0&&<div style={{fontSize:12,color:K.mid,marginBottom:12,lineHeight:1.6}}>What type of competitive advantage does {c.ticker} have? Select the moat sources that apply. {hasSuggestions?"We've highlighted likely matches based on "+c.ticker+"'s sector and financials.":""}</div>}
+            {classified.length>0&&<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add more moat sources:</div>}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {unclassified.map(function(t){var sug=suggestions.find(function(s){return s.id===t.id});var isSuggested=!!sug;
+                return<button key={t.id} onClick={function(){toggleType(t.id)}} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",borderRadius:8,cursor:"pointer",textAlign:"left",background:isSuggested?t.color+"08":"transparent",border:"1px solid "+(isSuggested?t.color+"35":K.bdr),transition:"all .15s"}}>
+                  <div style={{width:28,height:28,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",background:t.color+"15",flexShrink:0,marginTop:1}}>
+                    <IC name={t.icon} size={14} color={t.color}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:600,color:isSuggested?K.txt:K.mid,display:"flex",alignItems:"center",gap:5}}>{t.label}
+                      {isSuggested&&<span style={{fontSize:8,fontWeight:700,color:t.color,background:t.color+"15",padding:"1px 5px",borderRadius:3,fontFamily:fm}}>LIKELY</span>}</div>
+                    <div style={{fontSize:10,color:K.dim,lineHeight:1.4,marginTop:2}}>{t.desc.split(".")[0]+"."}</div>
+                    {isSuggested&&<div style={{fontSize:9,color:t.color,marginTop:3,fontFamily:fm}}>{sug.reasons[0]}</div>}
+                  </div></button>})}</div></div>
+        </div>}()}
       {/* Individual Metrics */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         {moat.metrics.map(function(m){
@@ -1285,6 +1403,16 @@ function TrackerApp(props){
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"edit"})}}>Settings</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
+      {/* Moat type badges */}
+      {function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
+        if(active.length===0)return null;
+        return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8,paddingBottom:8}}>
+          {active.map(function(t){var d=mt[t.id];var dots=d.strength||3;
+            return<div key={t.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:t.color+"12",border:"1px solid "+t.color+"30",cursor:"pointer"}} onClick={function(){setDetailTab("analysis");setSubPage("moat")}}>
+              <IC name={t.icon} size={10} color={t.color}/>
+              <span style={{fontSize:10,fontWeight:600,color:t.color,fontFamily:fm}}>{t.label}</span>
+              <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"\u2022".repeat(dots)}{"\u00B7".repeat(5-dots)}</span>
+            </div>})}</div>}()}
       {/* Tab Navigation */}
       <div style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
         {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){setDetailTab(t.id)}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}</button>})}</div>
@@ -1359,7 +1487,11 @@ function TrackerApp(props){
       {detailTab==="analysis"&&<div className="ta-fade">
         {/* Moat Tracker link */}
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
-          <div><div style={S.sec}><IC name="moat" size={14} color={K.dim}/>Moat Durability</div><div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring — margin stability, ROIC, FCF quality, financial fortress</div></div>
+          <div><div style={S.sec}><IC name="moat" size={14} color={K.dim}/>Moat Durability & Classification</div>
+            <div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring, moat type analysis — brand, switching costs, network effects & more</div>
+            {function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
+              if(active.length===0)return<div style={{fontSize:10,color:K.amb,marginTop:4,fontFamily:fm}}>No moat sources classified yet</div>;
+              return<div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>{active.map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:t.color,background:t.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={t.icon} size={8} color={t.color}/>{t.label}</span>})}</div>}()}</div>
           <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
         {/* Financials link */}
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
@@ -1613,6 +1745,36 @@ function TrackerApp(props){
               <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
               {[q.fortress,q.pricing,q.roic,q.fcf].map(function(v,vi){return<td key={vi} style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:v?cellClr(v):K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{v||"\u2014"}</td>})}</tr>})}</tbody></table></div></div>}
 
+      {/* ── Moat Source Map ── */}
+      {function(){var typeCounts={};var typeCompanies={};
+        portCos.forEach(function(co){var mt=co.moatTypes||{};
+          MOAT_TYPES.forEach(function(t){if(mt[t.id]&&mt[t.id].active){typeCounts[t.id]=(typeCounts[t.id]||0)+1;
+            if(!typeCompanies[t.id])typeCompanies[t.id]=[];
+            typeCompanies[t.id].push({ticker:co.ticker,strength:mt[t.id].strength||3})}})});
+        var activeTypes=MOAT_TYPES.filter(function(t){return typeCounts[t.id]});
+        if(activeTypes.length===0)return null;
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+          <div style={secStyle}><IC name="castle" size={14} color={K.dim}/>Moat Source Map</div>
+          <div style={{fontSize:12,color:K.dim,marginBottom:16}}>What protects your portfolio? Distribution of competitive advantages across holdings.</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            {activeTypes.map(function(t){var cos2=typeCompanies[t.id]||[];var avgStr=cos2.length?Math.round(cos2.reduce(function(s,x){return s+x.strength},0)/cos2.length*10)/10:0;
+              return<div key={t.id} style={{padding:"14px 16px",borderRadius:8,background:t.color+"08",border:"1px solid "+t.color+"25"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{width:24,height:24,borderRadius:5,background:t.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}><IC name={t.icon} size={12} color={t.color}/></div>
+                  <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</div></div>
+                  <span style={{fontSize:18,fontWeight:700,color:t.color,fontFamily:fm}}>{cos2.length}</span></div>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {cos2.sort(function(a,b){return b.strength-a.strength}).map(function(x){
+                    return<span key={x.ticker} style={{fontSize:10,fontWeight:600,color:t.color,background:t.color+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{x.ticker} {"\u2022".repeat(x.strength)}</span>})}</div>
+                <div style={{fontSize:10,color:K.dim,marginTop:6,fontFamily:fm}}>Avg strength: {avgStr}/5</div></div>})}</div>
+          {/* Unclassified holdings warning */}
+          {function(){var unclass=portCos.filter(function(co){var mt=co.moatTypes||{};return!MOAT_TYPES.some(function(t){return mt[t.id]&&mt[t.id].active})});
+            if(unclass.length===0)return null;
+            return<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8}}>
+              <div style={{fontSize:11,color:K.amb,fontWeight:600}}>Unclassified: {unclass.map(function(c2){return c2.ticker}).join(", ")}</div>
+              <div style={{fontSize:10,color:K.dim,marginTop:2}}>Visit the Moat Tracker for each company to classify their competitive advantages.</div></div>}()}
+        </div>}()}
+
       {/* ── Munger Quote ── */}
       {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic",fontFamily:fh}}>{"\"Over the long term, it\u2019s hard for a stock to earn a much better return than the business which underlies it earns. If the business earns 6% on capital over 40 years and you hold it for that 40 years, you\u2019re not going to make much different than a 6% return.\""}</div>
@@ -1682,6 +1844,12 @@ function TrackerApp(props){
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>${(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
+          {/* Moat type micro-badges */}
+          {function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
+            if(active.length===0)return null;
+            return<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
+              {active.slice(0,4).map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:t.color,background:t.color+"10",padding:"1px 6px",borderRadius:3,fontFamily:fm}}>
+                <IC name={t.icon} size={8} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</span>
