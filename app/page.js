@@ -332,6 +332,8 @@ function TrackerApp(props){
   var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:true,showSectors:true,showDividends:true,showAnalyst:true,showBuyZone:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
+  var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
+  var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   // ── Inject global CSS for animations & polish ──
   useEffect(function(){
@@ -394,6 +396,7 @@ function TrackerApp(props){
         cloudSave(props.userId,local);
         setLoaded(true);return}
       // Brand new user — use sample data
+      try{if(!localStorage.getItem("ta-onboarded"))setObStep(1)}catch(e){setObStep(1)}
       setLoaded(true)}
     loadData()},[]);
   // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
@@ -744,8 +747,150 @@ function TrackerApp(props){
         <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
         <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
           <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
-      <div style={{marginTop:20,textAlign:"right"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
+      <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
+        <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal};var C=map[modal.type];return C?<C/>:null}
+
+  // ── Onboarding Flow ──────────────────────────────────────
+  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}}
+  function OnboardingFlow(){
+    var _ot=useState(""),oTicker=_ot[0],setOTicker=_ot[1];
+    var _on=useState(""),oName=_on[0],setOName=_on[1];
+    var _os=useState(""),oSector=_os[0],setOSector=_os[1];
+    var _ol=useState("idle"),oLook=_ol[0],setOLook=_ol[1];
+    var _od=useState(""),oDomain=_od[0],setODomain=_od[1];
+    var _oi=useState(""),oIndustry=_oi[0],setOIndustry=_oi[1];
+    var _op=useState(0),oPrice=_op[0],setOPrice=_op[1];
+    var oTmr=useRef(null);
+    function onTickerChange(v){setOTicker(v);if(oTmr.current)clearTimeout(oTmr.current);
+      var t=v.toUpperCase().trim();
+      if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setOLook("loading");
+        oTmr.current=setTimeout(function(){lookupTicker(t).then(function(r){
+          if(r&&r.name){setOName(r.name||"");setOSector(r.sector||"");setODomain(r.domain||"");setOIndustry(r.industry||"");setOPrice(r.price||0);setOLook("done")}
+          else{setOLook("error")}
+        }).catch(function(){setOLook("error")})},800)}
+      else{setOLook("idle")}}
+    function addOnboardingCompany(){
+      if(!oTicker.trim()||!oName.trim())return;
+      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{}};
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setObStep(4)}
+    var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
+    var card={background:K.card,border:"1px solid "+K.bdr,borderRadius:16,width:520,maxWidth:"90vw",maxHeight:"90vh",overflowY:"auto",padding:"36px 40px",position:"relative"};
+    var stepDots=function(){return<div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:28}}>
+      {[1,2,3,4].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>};
+    // Step 1: Welcome
+    if(obStep===1)return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <TLogo size={36} dark={isDark}/>
+        <h1 style={{fontSize:28,fontWeight:400,color:K.txt,fontFamily:fh,margin:"16px 0 8px"}}>Think like an owner</h1>
+        <p style={{fontSize:14,color:K.mid,lineHeight:1.7,margin:0,maxWidth:380,marginLeft:"auto",marginRight:"auto"}}>ThesisAlpha helps you invest with discipline. Write a thesis for every holding, track what matters, and review when earnings drop.</p></div>
+      <div style={{background:K.bg,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{display:"flex",gap:16}}>
+          {[{icon:"lightbulb",label:"Thesis First",desc:"Every position starts with a written reason to own it"},
+            {icon:"target",label:"Track KPIs",desc:"Define the metrics that prove or disprove your thesis"},
+            {icon:"bar",label:"Earnings Check",desc:"When results drop, see instantly if your thesis holds"},
+            {icon:"castle",label:"Moat Analysis",desc:"Score competitive advantages with real financial data"}
+          ].map(function(item){return<div key={item.label} style={{flex:1,textAlign:"center"}}>
+            <div style={{width:36,height:36,borderRadius:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 8px"}}><IC name={item.icon} size={16} color={K.acc}/></div>
+            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.label}</div>
+            <div style={{fontSize:10,color:K.dim,lineHeight:1.4}}>{item.desc}</div></div>})}</div></div>
+      <div style={{display:"flex",gap:12,justifyContent:"center"}}>
+        <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Start Fresh</button>
+        <button onClick={function(){setObPath("demo");setObStep(2)}} style={Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})}>Explore with Demo Data</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    // Step 2: Path-dependent
+    if(obStep===2&&obPath==="fresh")return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px",textAlign:"center"}}>Add your first company</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px"}}>Type a ticker and we'll auto-fill the details</p>
+      <div style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker</label>
+        <div style={{display:"flex",gap:12,alignItems:"center"}}>
+          <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 120px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1}} spellCheck={false} autoFocus/>
+          {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
+          {oLook==="done"&&<span style={{fontSize:12,color:K.grn,fontFamily:fm}}>{"\u2713"} Found</span>}
+          {oLook==="error"&&<span style={{fontSize:12,color:K.amb}}>Not found — type name below</span>}
+        </div></div>
+      {(oLook==="done"||oLook==="error")&&<div style={{marginBottom:16}}>
+        <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Company Name</label>
+        <input value={oName} onChange={function(e){setOName(e.target.value)}} placeholder="Apple Inc." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none"}}/>
+      </div>}
+      {oLook==="done"&&oSector&&<div style={{display:"flex",gap:8,marginBottom:20}}>
+        <span style={{fontSize:11,color:K.mid,background:K.bg,padding:"4px 10px",borderRadius:6,fontFamily:fm}}>{oSector}</span>
+        {oDomain&&<span style={{fontSize:11,color:K.dim,background:K.bg,padding:"4px 10px",borderRadius:6,fontFamily:fm}}>{oDomain}</span>}
+      </div>}
+      <div style={{display:"flex",gap:12,justifyContent:"space-between",marginTop:8}}>
+        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={function(){setObStep(3)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 12px"}}>Skip for now</button>
+          <button onClick={addOnboardingCompany} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12,opacity:oTicker.trim()&&oName.trim()?1:.4})} disabled={!oTicker.trim()||!oName.trim()}>Add & Continue</button></div></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    if(obStep===2&&obPath==="demo")return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px",textAlign:"center"}}>Meet your demo portfolio</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px"}}>We've loaded two companies so you can explore every feature</p>
+      <div style={{display:"grid",gap:12,marginBottom:24}}>
+        {cos.filter(function(c){return c.status==="portfolio"}).map(function(c){return<div key={c.id} style={{display:"flex",alignItems:"center",gap:14,background:K.bg,borderRadius:10,padding:"14px 18px",border:"1px solid "+K.bdr}}>
+          <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:12,color:K.dim}}>{c.name}</div></div>
+          <div style={{textAlign:"right"}}><div style={{fontSize:11,color:K.mid,fontFamily:fm}}>{c.kpis.length} KPIs tracked</div>
+            {c.thesisNote&&<div style={{fontSize:10,color:K.grn,fontFamily:fm}}>Thesis written</div>}</div></div>})}
+        {cos.filter(function(c){return c.status==="watchlist"}).length>0&&<div style={{fontSize:11,color:K.dim,textAlign:"center"}}>+ {cos.filter(function(c){return c.status==="watchlist"}).length} on watchlist</div>}
+      </div>
+      <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"25",borderRadius:8,padding:"12px 16px",marginBottom:20}}>
+        <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Try this</div>
+        <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>Click on NVDA to see a fully built-out thesis, KPI tracking, and conviction history. Edit anything to make it yours.</div></div>
+      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
+        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"\u2192"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    // Step 3: The Owner's Loop
+    if(obStep===3)return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px",textAlign:"center"}}>The Owner's Loop</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 28px"}}>Every great investor follows this cycle. ThesisAlpha makes it effortless.</p>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
+        {[{num:"1",icon:"lightbulb",title:"Write Your Thesis",desc:"Why do you own this? What's the moat? When would you sell? Write it down before you buy.",color:K.grn},
+          {num:"2",icon:"target",title:"Define KPIs",desc:"Pick 2-3 metrics that prove your thesis. Revenue growth, margins, retention \u2014 whatever matters most.",color:K.blue},
+          {num:"3",icon:"bar",title:"Check Earnings",desc:"When results drop, we auto-check your KPIs against real data. See instantly if your thesis holds.",color:K.amb},
+          {num:"4",icon:"castle",title:"Review & Decide",desc:"Score the moat, update conviction, log your decision. The Decision Journal keeps you honest.",color:K.acc}
+        ].map(function(step){return<div key={step.num} style={{background:K.bg,borderRadius:10,padding:"18px 20px",border:"1px solid "+K.bdr,position:"relative"}}>
+          <div style={{position:"absolute",top:12,right:14,fontSize:24,fontWeight:700,color:step.color+"20",fontFamily:fm}}>{step.num}</div>
+          <div style={{width:32,height:32,borderRadius:7,background:step.color+"15",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><IC name={step.icon} size={15} color={step.color}/></div>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{step.title}</div>
+          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{step.desc}</div></div>})}</div>
+      <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"\u201C"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"\u201D"} {"\u2014"} Warren Buffett</div>
+      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
+        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
+        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Almost done {"\u2192"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    // Step 4: You're ready
+    if(obStep===4)return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:36,marginBottom:12}}>{"\u2713"}</div>
+        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You're all set</h2>
+        <p style={{fontSize:13,color:K.dim,margin:0}}>Here's how to get the most out of ThesisAlpha</p></div>
+      <div style={{display:"grid",gap:10,marginBottom:24}}>
+        {[{action:"Write a thesis",where:"Click any company \u2192 Overview \u2192 Investment Thesis",icon:"lightbulb",color:K.grn},
+          {action:"Track a KPI",where:"Click any company \u2192 scroll to Key Metrics \u2192 + Track Metric",icon:"target",color:K.blue},
+          {action:"Analyze the moat",where:"Click any company \u2192 Analysis \u2192 Moat Durability",icon:"castle",color:K.acc},
+          {action:"Log a decision",where:"Owner's Hub (sidebar) \u2192 Decision Journal",icon:"book",color:K.amb}
+        ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"12px 16px",border:"1px solid "+K.bdr}}>
+          <div style={{width:28,height:28,borderRadius:6,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={13} color={hint.color}/></div>
+          <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
+            <div style={{fontSize:11,color:K.dim}}>{hint.where}</div></div></div>})}</div>
+      <div style={{textAlign:"center"}}>
+        <button onClick={function(){finishOnboarding();if(selId){setDetailTab("overview")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    return null}
 
   // ── Sidebar + TopBar ──────────────────────────────────────
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
@@ -1833,7 +1978,31 @@ function TrackerApp(props){
       <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
       <span style={{fontSize:16,color:K.acc}}>{"\u2192"}</span></div>}
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
+    {/* Quick-start nudge for incomplete holdings */}
+    {sideTab==="portfolio"&&filtered.length>0&&function(){var noThesis=filtered.filter(function(c){return!c.thesisNote});var noKpi=filtered.filter(function(c){return c.kpis.length===0});
+      if(noThesis.length===0&&noKpi.length===0)return null;
+      var nudges=[];if(noThesis.length>0)nudges.push({icon:"lightbulb",color:K.grn,msg:noThesis.length===1?noThesis[0].ticker+" needs a thesis":noThesis.length+" holdings need a thesis",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview")}});
+      if(noKpi.length>0)nudges.push({icon:"target",color:K.blue,msg:noKpi.length===1?noKpi[0].ticker+" has no KPIs tracked":noKpi.length+" holdings have no KPIs",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview")}});
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Quick Start</div>
+        <div style={{display:"flex",gap:12}}>
+          {nudges.map(function(n){return<div key={n.msg} className="ta-card" style={{flex:1,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:n.color+"06",border:"1px solid "+n.color+"20",borderRadius:8,cursor:"pointer"}} onClick={n.onClick}>
+            <IC name={n.icon} size={14} color={n.color}/>
+            <div style={{flex:1}}><div style={{fontSize:12,color:K.mid}}>{n.msg}</div></div>
+            <span style={{fontSize:10,color:n.color,fontFamily:fm,whiteSpace:"nowrap"}}>{n.action} {"\u2192"}</span></div>})}</div></div>}()}
+    {/* Enhanced empty state */}
+    {filtered.length===0&&<div className="ta-fade" style={{padding:"60px 20px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
+      <div style={{width:56,height:56,borderRadius:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name={sideTab==="portfolio"?"trending":sideTab==="watchlist"?"search":"alert"} size={24} color={K.acc}/></div>
+      <h3 style={{fontSize:20,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{sideTab==="portfolio"?"Your portfolio is empty":sideTab==="watchlist"?"Nothing on your watchlist yet":"Too-Hard Pile is empty"}</h3>
+      <p style={{fontSize:13,color:K.dim,lineHeight:1.7,margin:"0 0 24px"}}>{sideTab==="portfolio"?"Add the companies you own. Write a thesis for each one, track the KPIs that matter, and check them when earnings drop.":sideTab==="watchlist"?"Add companies you're researching but haven't bought yet. When your thesis is clear and the price is right, promote them to your portfolio.":"Companies you've decided are outside your circle of competence. It takes wisdom to know what you don't know."}</p>
+      <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>+ Add Your First Company</button>
+      {sideTab==="portfolio"&&<div style={{marginTop:32,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,textAlign:"left"}}>
+        {[{icon:"lightbulb",title:"Thesis-driven",desc:"Every position needs a written reason to own it"},{icon:"target",title:"KPI tracking",desc:"Define metrics that prove or disprove your thesis"},{icon:"bar",title:"Earnings autopilot",desc:"Auto-check results against your KPIs"},{icon:"castle",title:"Moat analysis",desc:"Score competitive advantages with real data"}].map(function(f){return<div key={f.title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
+          <IC name={f.icon} size={14} color={K.acc} style={{marginTop:2,flexShrink:0}}/>
+          <div><div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{f.title}</div>
+            <div style={{fontSize:10,color:K.dim,lineHeight:1.4,marginTop:2}}>{f.desc}</div></div></div>})}</div>}
+    </div>}
+    {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("overview")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
@@ -1852,7 +2021,7 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</span>
               {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:9,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div>}
     {sideTab==="portfolio"&&filtered.length>0&&(dashSet.showHeatmap||dashSet.showSectors||dashSet.showDividends)&&<div style={{marginBottom:28}}>
       {/* Portfolio Heatmap */}
       {dashSet.showHeatmap&&function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
@@ -1904,7 +2073,7 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/><div key={contentKey} className="ta-fade">{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}<Sidebar/><div style={{flex:1,overflowY:"auto"}}><TopBar/><div key={contentKey} className="ta-fade">{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
