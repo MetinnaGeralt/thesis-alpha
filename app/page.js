@@ -215,7 +215,7 @@ async function fetchFilings(ticker){try{var r=await finnhub("stock/filings?symbo
 async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-target?symbol="+ticker);return r&&r.targetMean?r:null}catch(e){return null}}
 
 // ═══ THEME SYSTEM ═══
-var DARK={bg:"#121217",side:"#0c0c14",card:"#1c1c28",bdr:"#2a2a3a",bdr2:"#363648",txt:"#f0f0f5",mid:"#b0b0c0",dim:"#6e6e82",blue:"#5b9bf6",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#818CF8",prim:"#F6C244",primTxt:"#1A1A1A"};
+var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
 var LIGHT={bg:"#F5F0FA",side:"#FFFFFF",card:"#FFFFFF",bdr:"#E2D8EE",bdr2:"#D0C4DE",txt:"#1A1128",mid:"#4A3D5C",dim:"#8878A0",blue:"#5B3E96",grn:"#16A34A",red:"#DC2626",amb:"#D97706",acc:"#5B3E96",prim:"#5B3E96",primTxt:"#FFFFFF"};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
@@ -230,9 +230,9 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"\u2265":r==="lte"?"\u2264":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"#2a2a3a",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"#2a2a3a",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
-  return<div style={{width:sz,height:sz,borderRadius:4,background:"#2a2a3a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"#6e6e82",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
+  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"#333",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"#333",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
+  return<div style={{width:sz,height:sz,borderRadius:4,background:"#333",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"#777",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
   var paths={
@@ -343,22 +343,22 @@ function TrackerApp(props){
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
       ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease}",
-      ".ta-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(-1px)}",
+      ".ta-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.2);transform:translateY(-1px)}",
       ".ta-btn{transition:all .15s ease}",
       ".ta-btn:hover{filter:brightness(1.15)}",
       ".ta-btn:active{transform:translateY(0.5px)}",
       ".ta-skel{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.04) 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:6px}",
       "::-webkit-scrollbar{width:6px;height:6px}",
       "::-webkit-scrollbar-track{background:transparent}",
-      "::-webkit-scrollbar-thumb{background:rgba(120,120,160,.2);border-radius:3px}",
-      "::-webkit-scrollbar-thumb:hover{background:rgba(120,120,160,.35)}",
-      "input:focus,textarea:focus,select:focus{border-color:rgba(129,140,248,.5)!important;box-shadow:0 0 0 3px rgba(129,140,248,.1)!important;transition:all .15s ease}",
+      "::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}",
+      "::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}",
+      "input:focus,textarea:focus,select:focus{border-color:rgba(255,255,255,.25)!important;box-shadow:0 0 0 3px rgba(255,255,255,.06)!important;transition:all .15s ease}",
       "button{transition:all .12s ease}",
       "select{transition:border-color .15s ease}",
       ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
-      ".ta-side-item:hover{background:rgba(129,140,248,.06)}",
+      ".ta-side-item:hover{background:rgba(255,255,255,.04)}",
       ".ta-tab{transition:all .15s ease;position:relative}",
-      ".ta-tab:hover{color:#f0f0f5}",
+      ".ta-tab:hover{color:#eeeeee}",
     ].join("\n");
     document.head.appendChild(style);
     return function(){var el=document.getElementById(id);if(el)el.remove()}},[]);
@@ -1641,7 +1641,7 @@ export default function App(){
     return function(){sub.data.subscription.unsubscribe()}},[]);
   function onAuth(u){setUser(u)}
   async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
-  if(!ready)return<div style={{background:"#121217",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid #2a2a3a",borderTopColor:"#818CF8",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:"#6e6e82",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>;
+  if(!ready)return<div style={{background:"#1a1a1a",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid #333",borderTopColor:"#fff",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:"#777",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>;
   if(!user)return<LoginPage onAuth={onAuth}/>;
   return<TrackerApp user={user.email||""} userId={user.id} onLogout={onLogout}/>;
 }
