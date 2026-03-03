@@ -1435,7 +1435,7 @@ function TrackerApp(props){
                 {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>{c.convictionHistory.length} updates</div>}</div>
             </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
         {/* Thesis */}
-        {c.thesisNote?function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
+        {c.thesisNote&&function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
             <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis</div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.core}</div>
@@ -1450,8 +1450,8 @@ function TrackerApp(props){
                 <div style={{fontSize:10,fontWeight:600,color:K.red,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="target" size={10} color={K.red}/>Sell Criteria</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
             </div>}
-          </div>}()
-          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"24px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
+          </div>}()}
+        {!c.thesisNote&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"24px 20px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
             <div style={{marginBottom:6}}><IC name="lightbulb" size={18} color={K.dim}/></div>
             <div style={{fontSize:13,color:K.mid,marginBottom:4}}>Write your investment thesis</div>
             <div style={{fontSize:11,color:K.dim}}>Why do you own this? What's the moat? When would you sell?</div></div>}
