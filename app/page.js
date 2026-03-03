@@ -137,8 +137,10 @@ function calcOwnerScore(cos){
   if(portfolio.length===0)return{total:0,breakdown:{thesis:0,kpi:0,journal:0,conviction:0,moat:0,balance:0},max:100};
   // 1. Thesis completeness (20 pts)
   var thesisP=0;portfolio.forEach(function(c){var score=0;
-    if(c.thesisNote&&c.thesisNote.length>20)score+=2;var sec=parseThesis(c.thesisNote);
-    if(sec.core)score+=1;if(sec.moat)score+=1;if(sec.risks)score+=1;if(sec.sell)score+=1;
+    if(c.thesisNote&&c.thesisNote.length>20)score+=2;
+    if(c.thesisNote&&c.thesisNote.indexOf("## MOAT")>=0)score+=1;
+    if(c.thesisNote&&c.thesisNote.indexOf("## RISKS")>=0)score+=1;
+    if(c.thesisNote&&c.thesisNote.indexOf("## SELL")>=0)score+=1;
     if(c.thesisVersions&&c.thesisVersions.length>1)score+=1;
     thesisP+=Math.min(score,5)});
   thesisP=Math.round(thesisP/portfolio.length/5*20);
