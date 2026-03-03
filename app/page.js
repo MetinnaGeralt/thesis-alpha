@@ -867,49 +867,172 @@ function TrackerApp(props){
           <input type="number" value={kr[k.id]||""} onChange={function(e){setKr(function(p){var n=Object.assign({},p);n[k.id]=e.target.value;return n})}} placeholder="Actual" style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>})}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.quarter.trim()&&f.summary.trim()?1:.4})} onClick={doSave}>Save Earnings</button></div></Modal>}
   function exportPDF(){if(!sel)return;var c=sel;var h=gH(c.kpis);var pos=c.position||{};var sec=parseThesis(c.thesisNote);
-    var html='<!DOCTYPE html><html><head><title>'+c.ticker+' \u2014 ThesisAlpha</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1a1a;padding:40px 48px;max-width:780px;margin:0 auto;font-size:13px;line-height:1.7}h1{font-size:24px;font-weight:600;margin-bottom:2px;letter-spacing:-.5px}h2{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#888;margin:32px 0 12px;padding-bottom:6px;border-bottom:1px solid #e0e0e0;font-weight:600}.meta{color:#666;font-size:12px;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #1a1a1a}.card{border:1px solid #e0e0e0;border-radius:8px;padding:14px 18px;margin-bottom:10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}.stat{padding:12px 16px;border:1px solid #e0e0e0;border-radius:8px}.stat .label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.stat .val{font-size:18px;font-weight:600}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.sec-block{padding:10px 14px;border-radius:6px;margin-bottom:8px;border-left:3px solid #ddd;background:#fafafa}.sec-block.moat{border-left-color:#16a34a}.sec-block.risk{border-left-color:#d97706}.sec-block.sell{border-left-color:#dc2626}.sec-block .sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}.sec-block.moat .sec-title{color:#16a34a}.sec-block.risk .sec-title{color:#d97706}.sec-block.sell .sec-title{color:#dc2626}.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}.bar-label{font-size:11px;color:#666;width:120px}.bar-track{flex:1;height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden}.bar-fill{height:100%;border-radius:3px}.bar-val{font-size:11px;font-weight:600;width:32px;text-align:right}@media print{body{padding:24px}}</style></head><body>';
-    html+='<h1>'+c.ticker+' \u2014 '+c.name+'</h1>';
-    html+='<div class="meta">'+c.sector+(c.industry?" \u2022 "+c.industry:"")+(c.investStyle&&STYLE_MAP[c.investStyle]?" \u2022 "+STYLE_MAP[c.investStyle].label:"")+(c.earningsDate&&c.earningsDate!=="TBD"?" \u2022 Next earnings: "+c.earningsDate:"")+" \u2022 Generated "+new Date().toLocaleDateString()+'</div>';
-    // Position & conviction
-    html+='<div class="grid4">';
-    if(c.conviction)html+='<div class="stat"><div class="label">Conviction</div><div class="val '+(c.conviction>=8?"grn":c.conviction>=5?"":"red")+'">'+c.conviction+'/10</div></div>';
-    if(pos.shares)html+='<div class="stat"><div class="label">Position</div><div class="val">'+pos.shares+' sh</div></div>';
-    if(pos.avgCost)html+='<div class="stat"><div class="label">Avg Cost</div><div class="val">$'+pos.avgCost+'</div></div>';
-    if(pos.currentPrice&&pos.avgCost){var ret=((pos.currentPrice-pos.avgCost)/pos.avgCost*100);html+='<div class="stat"><div class="label">Return</div><div class="val '+(ret>=0?"grn":"red")+'">'+(ret>=0?"+":"")+ret.toFixed(1)+'%</div></div>'}
+    var os=calcOwnerScore([c]);var conv=c.conviction||0;var daysToEarn=c.earningsDate&&c.earningsDate!=="TBD"?dU(c.earningsDate):null;
+    var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
+    var total=c.kpis.filter(function(k){return k.lastResult}).length;
+    var activeMoats=MOAT_TYPES.filter(function(t){return c.moatTypes&&c.moatTypes[t.id]&&c.moatTypes[t.id].active});
+    var style=c.investStyle&&STYLE_MAP[c.investStyle]?STYLE_MAP[c.investStyle]:null;
+    // Conviction chart SVG
+    var convSvg="";
+    if(c.convictionHistory&&c.convictionHistory.length>1){var ch=c.convictionHistory.slice(-12);var cw=320;var chh=60;
+      convSvg='<svg width="'+cw+'" height="'+chh+'" viewBox="0 0 '+cw+' '+chh+'" style="display:block;margin:8px 0">';
+      convSvg+='<line x1="0" y1="'+chh/2+'" x2="'+cw+'" y2="'+chh/2+'" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="3,3"/>';
+      var pts=ch.map(function(p,i){var x=i/(ch.length-1)*cw;var y=chh-4-(p.rating/10)*(chh-8);return{x:x,y:y,r:p.rating}});
+      var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
+      convSvg+='<path d="'+line+'" fill="none" stroke="#2563eb" stroke-width="1.5"/>';
+      pts.forEach(function(p){var cl=p.r>=8?"#16a34a":p.r>=5?"#2563eb":"#dc2626";convSvg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="'+cl+'" stroke="white" stroke-width="1.5"/>'});
+      convSvg+='</svg>'}
+    // Moat bars SVG
+    var moatSvg="";
+    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"profitability",l:"Profitability"},{k:"pricingPower",l:"Pricing Power"},{k:"revenueGrowth",l:"Revenue Growth"},{k:"capitalEfficiency",l:"Capital Efficiency"},{k:"earningsQuality",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"}];
+      moatSvg='<svg width="340" height="'+(dims2.length*26+10)+'" viewBox="0 0 340 '+(dims2.length*26+10)+'" style="display:block;margin:10px 0">';
+      dims2.forEach(function(dm,i){var v=mc[dm.k]!=null?mc[dm.k]:0;var y2=i*26+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
+        moatSvg+='<text x="0" y="'+(y2+11)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
+        moatSvg+='<rect x="120" y="'+y2+'" width="170" height="14" rx="3" fill="#f3f4f6"/>';
+        moatSvg+='<rect x="120" y="'+y2+'" width="'+(v/10*170).toFixed(0)+'" height="14" rx="3" fill="'+cl+'"/>';
+        moatSvg+='<text x="300" y="'+(y2+11)+'" font-size="11" font-weight="600" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
+      moatSvg+='</svg>'}
+    // KPI table rows
+    var kpiRows="";if(c.kpis.length>0){
+      kpiRows='<table class="kpi-table"><thead><tr><th align="left">Metric</th><th align="right">Target</th><th align="right">Actual</th><th align="center">Status</th></tr></thead><tbody>';
+      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stClr=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stIcon=st==="met"?"\u2713":st==="missed"?"\u2717":"\u2022";
+        var mDef=METRIC_MAP[k.metricId||""]||{};var unit=mDef.unit||k.unit||"";
+        kpiRows+='<tr><td>'+((mDef.label||k.name)+(unit?" ("+unit+")":""))+'</td><td align="right" class="mono">'+(k.rule==="gte"?"\u2265":k.rule==="lte"?"\u2264":"=")+' '+k.value+'</td><td align="right" class="mono" style="color:'+stClr+'">'+(k.lastResult?k.lastResult.actual:"—")+'</td><td align="center" style="color:'+stClr+';font-weight:700">'+stIcon+'</td></tr>'});
+      kpiRows+='</tbody></table>'}
+    // Decision table
+    var decRows="";if(c.decisions&&c.decisions.length>0){
+      decRows='<table class="dec-table"><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';
+      c.decisions.slice(0,10).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";
+        decRows+='<tr><td class="mono" style="white-space:nowrap">'+(d.date?d.date.substring(0,10):"")+'</td><td style="color:'+clr+';font-weight:700">'+d.action+'</td><td style="max-width:280px">'+((d.reasoning||"").substring(0,120)+(d.reasoning&&d.reasoning.length>120?"...":""))+'</td><td class="mono" style="color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+(d.outcome||"—")+'</td></tr>'});
+      decRows+='</tbody></table>'}
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note \u2014 ThesisAlpha</title>';
+    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
+    html+='<style>';
+    html+='@page{size:A4;margin:24mm 20mm 20mm 20mm}';
+    html+='*{margin:0;padding:0;box-sizing:border-box}';
+    html+='body{font-family:"Inter",sans-serif;color:#1a1a2e;padding:0;font-size:12px;line-height:1.7;background:#fff}';
+    html+='.page{max-width:680px;margin:0 auto;padding:40px 48px}';
+    // Header
+    html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a1a2e;margin-bottom:24px}';
+    html+='.hdr-left h1{font-family:"Playfair Display",Georgia,serif;font-size:32px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1}';
+    html+='.hdr-left .sub{font-family:"Inter",sans-serif;font-size:13px;color:#6b7280;margin-top:4px}';
+    html+='.hdr-right{text-align:right}';
+    html+='.logo{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+    html+='.logo-sub{font-family:"Inter",sans-serif;font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px}';
+    html+='.date{font-family:"JetBrains Mono",monospace;font-size:10px;color:#6b7280;margin-top:8px}';
+    // Meta strip
+    html+='.meta-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}';
+    html+='.meta-tag{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;padding:3px 10px;border-radius:4px;letter-spacing:.5px}';
+    // Stat cards
+    html+='.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}';
+    html+='.stat{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;text-align:center}';
+    html+='.stat-label{font-family:"JetBrains Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}';
+    html+='.stat-val{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;line-height:1.2}';
+    html+='.stat-sub{font-size:10px;color:#9ca3af;margin-top:2px}';
+    // Section headers
+    html+='.sec-h{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#6b7280;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb}';
+    // Thesis blocks
+    html+='.thesis-core{font-family:"Playfair Display",Georgia,serif;font-size:14px;line-height:1.8;color:#1a1a2e;margin-bottom:16px;padding:16px 20px;background:#fafafa;border-radius:8px;border-left:4px solid #1a1a2e}';
+    html+='.thesis-section{padding:10px 16px;border-radius:6px;margin-bottom:8px;background:#fafafa;font-size:12px;line-height:1.7;color:#374151}';
+    html+='.thesis-section.moat{border-left:3px solid #16a34a}';
+    html+='.thesis-section.risks{border-left:3px solid #d97706}';
+    html+='.thesis-section.sell{border-left:3px solid #dc2626}';
+    html+='.ts-label{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
+    html+='.ts-label.moat{color:#16a34a}.ts-label.risks{color:#d97706}.ts-label.sell{color:#dc2626}';
+    // Tables
+    html+='.kpi-table,.dec-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}';
+    html+='.kpi-table th,.dec-table th{font-family:"JetBrains Mono",monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:600}';
+    html+='.kpi-table td,.dec-table td{padding:8px 10px;border-bottom:1px solid #f3f4f6;vertical-align:top}';
+    html+='.mono{font-family:"JetBrains Mono",monospace}';
+    // Moat badges
+    html+='.moat-badges{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}';
+    html+='.moat-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid #e5e7eb}';
+    html+='.moat-badge .dots{display:flex;gap:2px}';
+    html+='.moat-badge .dot{width:6px;height:6px;border-radius:50%}';
+    // Footer
+    html+='.footer{margin-top:36px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}';
+    html+='.footer-left{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+    html+='.footer-right{font-size:9px;color:#9ca3af;text-align:right}';
+    html+='.footer-disc{font-size:8px;color:#9ca3af;margin-top:8px;line-height:1.4;font-style:italic}';
+    html+='.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.blue{color:#2563eb}';
+    html+='@media print{.page{padding:0}.no-print{display:none}}';
+    html+='</style></head><body><div class="page">';
+
+    // ═══ HEADER ═══
+    html+='<div class="hdr"><div class="hdr-left"><h1>'+c.ticker+'</h1>';
+    html+='<div class="sub">'+c.name+(c.sector?' \u00B7 '+c.sector:'')+(c.industry?' \u00B7 '+c.industry:'')+'</div></div>';
+    html+='<div class="hdr-right"><div class="logo">\u25B3 ThesisAlpha</div>';
+    html+='<div class="logo-sub">Investment Research Note</div>';
+    html+='<div class="date">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+
+    // ═══ META STRIP ═══
+    html+='<div class="meta-strip">';
+    if(style)html+='<span class="meta-tag" style="background:'+style.color+'10;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
+    html+='<span class="meta-tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">'+h.l+'</span>';
+    if(c.morningstarMoat)html+='<span class="meta-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a">M\u2605 '+c.morningstarMoat+(c.moatTrend?' \u00B7 '+c.moatTrend:'')+'</span>';
+    if(daysToEarn!==null&&daysToEarn>=0)html+='<span class="meta-tag" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a">Earnings: '+daysToEarn+'d \u2014 '+c.earningsDate+'</span>';
     html+='</div>';
-    // Thesis sections
-    if(sec.core||sec.moat||sec.risks||sec.sell){html+='<h2>Investment Thesis</h2>';
-      if(sec.core)html+='<div class="card"><p>'+sec.core.replace(/\n/g,"<br/>")+'</p></div>';
-      if(sec.moat)html+='<div class="sec-block moat"><div class="sec-title">Competitive Moat</div><p>'+sec.moat.replace(/\n/g,"<br/>")+'</p></div>';
-      if(sec.risks)html+='<div class="sec-block risk"><div class="sec-title">Key Risks</div><p>'+sec.risks.replace(/\n/g,"<br/>")+'</p></div>';
-      if(sec.sell)html+='<div class="sec-block sell"><div class="sec-title">Sell Criteria</div><p>'+sec.sell.replace(/\n/g,"<br/>")+'</p></div>'}
-    // Moat scores if available
-    if(c._moatCache){var mc=c._moatCache;var dims=["pricingPower","revenueGrowth","opLeverage","capitalEfficiency","earningsQuality","fortress","rdMoat","profitability"];
-      var dimLabels={pricingPower:"Pricing Power",revenueGrowth:"Revenue Growth",opLeverage:"Operating Leverage",capitalEfficiency:"Capital Efficiency",earningsQuality:"Earnings Quality",fortress:"Financial Strength",rdMoat:"R&D Moat",profitability:"Profitability"};
-      if(mc.composite!=null){html+='<h2>Moat Durability \u2014 '+moatLabel(mc.composite)+' ('+mc.composite.toFixed(1)+'/10)</h2>';
-        dims.forEach(function(d){if(mc[d]!=null){var v=mc[d];var clr=v>=8?"#16a34a":v>=6?"#555":v>=4?"#d97706":"#dc2626";
-          html+='<div class="bar-row"><span class="bar-label">'+dimLabels[d]+'</span><div class="bar-track"><div class="bar-fill" style="width:'+v*10+'%;background:'+clr+'"></div></div><span class="bar-val" style="color:'+clr+'">'+v.toFixed(1)+'</span></div>'}})}}
-    // Moat type classification
-    if(c.morningstarMoat)html+='<div class="card"><strong>Morningstar:</strong> '+c.morningstarMoat+" Moat"+(c.moatTrend?" · Trend: "+c.moatTrend:"")+"</div>";
-    if(c.moatTypes){var activeMoats=MOAT_TYPES.filter(function(t){return c.moatTypes[t.id]&&c.moatTypes[t.id].active});
-      if(activeMoats.length>0){html+='<h2>Moat Sources</h2><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-        activeMoats.forEach(function(t){var d=c.moatTypes[t.id];var str=d.strength||3;var strLabel=str>=5?"Dominant":str>=4?"Strong":str>=3?"Moderate":str>=2?"Weak":"Fragile";
-          html+='<div class="card" style="flex:1;min-width:200px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="font-size:10px;color:#888">('+strLabel+')</span></div>';
-          if(d.note)html+='<p style="font-size:12px;color:#555;margin:0">'+d.note+'</p>';
-          html+='</div>'});
-        html+='</div>'}}
-    // KPIs
-    if(c.kpis.length){html+='<h2>Key Metrics</h2>';c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";
-      html+='<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><strong>'+k.name+'</strong><br/><span style="color:#888;font-size:11px">Target: '+k.target+'</span></div><div style="text-align:right"><div class="val '+(st==="met"?"grn":st==="missed"?"red":"")+'" style="font-size:16px">'+(k.lastResult?k.lastResult.actual+(k.unit||""):"Pending")+'</div><div style="font-size:10px;color:#888">'+st.toUpperCase()+'</div></div></div>'})}
-    // Decisions
-    if(c.decisions&&c.decisions.length){html+='<h2>Decision Ledger</h2>';c.decisions.slice(0,8).forEach(function(d){
-      html+='<div class="card"><strong class="'+(d.action==="BUY"||d.action==="ADD"?"grn":"red")+'">'+d.action+'</strong> \u2014 '+new Date(d.date).toLocaleDateString()+(d.convictionAtTime?" (Conviction: "+d.convictionAtTime+")":"")+(d.outcome?' \u2014 <strong class="'+(d.outcome==="right"?"grn":"red")+'">'+d.outcome.toUpperCase()+'</strong>':'')+'<p style="margin-top:6px">'+d.reasoning+'</p>'+(d.invalidator?'<p style="color:#dc2626;margin-top:4px;font-size:12px">\u26A0 Kill thesis if: '+d.invalidator+'</p>':'')+'</div>'})}
-    // Conviction history
-    if(c.convictionHistory&&c.convictionHistory.length>1){html+='<h2>Conviction History</h2><div class="card">';c.convictionHistory.forEach(function(ch){html+='<div style="margin-bottom:4px"><strong>'+ch.date+':</strong> '+ch.rating+'/10'+(ch.note?" \u2014 "+ch.note:"")+(ch.biasFlags&&ch.biasFlags.length?' <span class="amb">['+ch.biasFlags.join(", ")+']</span>':'')+'</div>'});html+='</div>'}
-    // Earnings history
-    if(c.earningsHistory&&c.earningsHistory.length){html+='<h2>Earnings History</h2>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<div class="card"><strong>'+e.quarter+'</strong><p>'+e.summary+'</p></div>'})}
-    html+='<div style="margin-top:36px;padding-top:14px;border-top:1px solid #e0e0e0;font-size:10px;color:#aaa;display:flex;justify-content:space-between"><span>ThesisAlpha</span><span>thesisalpha.io</span></div></body></html>';
-    var w=window.open("","_blank");w.document.write(html);w.document.close();w.print()}
+
+    // ═══ KEY METRICS STRIP ═══
+    html+='<div class="stats">';
+    html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'\u2014')+'</div></div>';
+    if(pos.currentPrice>0)html+='<div class="stat"><div class="stat-label">Price</div><div class="stat-val">$'+pos.currentPrice.toFixed(2)+'</div>'+(pos.avgCost>0?'<div class="stat-sub '+(pos.currentPrice>=pos.avgCost?"grn":"red")+'">'+(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'% return</div>':'')+'</div>';
+    if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares \u00B7 $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+    html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+met+'/'+total+'</div><div class="stat-sub">met</div></div>';
+    html+='</div>';
+
+    // ═══ INVESTMENT THESIS ═══
+    if(sec.core||sec.moat||sec.risks||sec.sell){
+      html+='<div class="sec-h">Investment Thesis</div>';
+      if(sec.core)html+='<div class="thesis-core">'+sec.core.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.moat)html+='<div class="thesis-section moat"><div class="ts-label moat">\u25B2 Competitive Moat</div>'+sec.moat.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.risks)html+='<div class="thesis-section risks"><div class="ts-label risks">\u26A0 Key Risks</div>'+sec.risks.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.sell)html+='<div class="thesis-section sell"><div class="ts-label sell">\u2717 Sell Criteria</div>'+sec.sell.replace(/\n/g,"<br/>")+'</div>'}
+
+    // ═══ MOAT CLASSIFICATION ═══
+    if(activeMoats.length>0){html+='<div class="sec-h">Moat Classification</div>';
+      html+='<div class="moat-badges">';
+      activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;
+        html+='<div class="moat-badge" style="border-color:'+t.color+'30;background:'+t.color+'08"><span style="color:'+t.color+';font-weight:700">'+t.label+'</span><span class="dots">';
+        for(var di=0;di<5;di++){html+='<span class="dot" style="background:'+(di<str?t.color:"#e5e7eb")+'"></span>'}
+        html+='</span></div>'});html+='</div>'}
+
+    // ═══ MOAT DURABILITY SCORES ═══
+    if(moatSvg){html+='<div class="sec-h">Moat Durability Analysis'+(c._moatCache?' \u2014 '+c._moatCache.composite.toFixed(1)+'/10':'')+'</div>';html+=moatSvg}
+
+    // ═══ KEY PERFORMANCE INDICATORS ═══
+    if(kpiRows){html+='<div class="sec-h">Key Performance Indicators</div>';html+=kpiRows}
+
+    // ═══ CONVICTION HISTORY ═══
+    if(convSvg){html+='<div class="sec-h">Conviction History</div>';html+=convSvg;
+      html+='<div style="display:flex;gap:16px;font-size:10px;color:#9ca3af;margin-top:4px">';
+      if(c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];
+        html+='<span>'+first.date.substring(0,10)+': '+first.rating+'/10</span><span>\u2192</span><span>'+last.date.substring(0,10)+': '+last.rating+'/10</span>'}
+      html+='</div>'}
+
+    // ═══ DECISION LEDGER ═══
+    if(decRows){html+='<div class="sec-h">Decision Ledger</div>';html+=decRows}
+
+    // ═══ EARNINGS HISTORY ═══
+    if(c.earningsHistory&&c.earningsHistory.length){html+='<div class="sec-h">Earnings History</div>';
+      c.earningsHistory.slice(0,4).forEach(function(e){
+        html+='<div style="padding:8px 14px;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px"><span class="mono" style="font-size:11px;font-weight:700;color:#1a1a2e">'+e.quarter+'</span>';
+        html+='<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5">'+((e.summary||"").substring(0,200))+'</div></div>'})}
+
+    // ═══ FINANCIAL SNAPSHOT ═══
+    if(c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0){html+='<div class="sec-h">Financial Snapshot</div>';
+      html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+      var snap=c.financialSnapshot;Object.keys(snap).forEach(function(k){var s=snap[k];if(!s||!s.value)return;
+        html+='<div style="padding:6px 10px;border:1px solid #f3f4f6;border-radius:4px"><div style="font-size:9px;color:#9ca3af;font-family:JetBrains Mono,monospace;letter-spacing:.5px">'+s.label+'</div><div class="mono" style="font-size:13px;font-weight:600;color:#1a1a2e">'+s.value+'</div></div>'});
+      html+='</div>'}
+
+    // ═══ FOOTER ═══
+    html+='<div class="footer"><div class="footer-left">\u25B3 ThesisAlpha</div>';
+    html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+c.ticker+' \u00B7 '+c.name+'</div>';
+    html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+    html+='<div class="footer-disc">This document was generated by ThesisAlpha for personal investment research purposes. It does not constitute financial advice. All data is sourced from third-party providers and may contain errors. Past performance does not indicate future results.</div>';
+    html+='</div></body></html>';
+    var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
   function exportCSV(list){
     var rows=[["Ticker","Company","Sector","Status","Shares","Avg Cost","Current Price","Return %","Market Value","Conviction","Earnings Date","KPIs Met","Target Price","Thesis"]];
     list.forEach(function(c){var pos=c.position||{};var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(2):"";
@@ -2081,12 +2204,33 @@ function TrackerApp(props){
     var selectedDoc=hd?allDocs.find(function(d){return d.id===hd}):null;
     function exportDocPDF(doc){
       var formatted=autoFormat(doc.content);
-      var html='<!DOCTYPE html><html><head><title>'+doc.ticker+' \u2014 '+doc.title+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;color:#1a1a1a;padding:48px;max-width:700px;margin:0 auto;line-height:1.8}h1{font-size:22px;margin-bottom:4px}h2{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#888;margin-bottom:24px}p{margin-bottom:16px;font-size:14px}.footer{margin-top:40px;padding-top:16px;border-top:1px solid #ddd;font-size:11px;color:#aaa}@media print{body{padding:24px}}</style></head><body>';
-      html+='<h1>'+doc.ticker+' \u2014 '+doc.title+'</h1>';
-      html+='<h2>'+doc.companyName+(doc.updatedAt?' \u2022 '+new Date(doc.updatedAt).toLocaleDateString():'')+'</h2>';
-      formatted.split("\n\n").forEach(function(p){html+='<p>'+p+'</p>'});
-      html+='<div class="footer">ThesisAlpha \u2022 Owner\'s Hub</div></body></html>';
-      var w=window.open("","_blank");w.document.write(html);w.document.close();w.print()}
+      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+doc.ticker+' \u2014 '+doc.title+'</title>';
+      html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
+      html+='<style>@page{size:A4;margin:24mm 20mm 20mm 20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Inter",sans-serif;color:#1a1a2e;padding:0;background:#fff}.page{max-width:680px;margin:0 auto;padding:40px 48px}';
+      html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a1a2e;margin-bottom:28px}';
+      html+='.hdr h1{font-family:"Playfair Display",Georgia,serif;font-size:28px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1}';
+      html+='.hdr .sub{font-size:13px;color:#6b7280;margin-top:4px}.hdr .logo{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase;text-align:right}';
+      html+='.hdr .logo-sub{font-family:"Inter",sans-serif;font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px;text-align:right}';
+      html+='.hdr .date{font-family:"JetBrains Mono",monospace;font-size:10px;color:#6b7280;margin-top:8px;text-align:right}';
+      html+='.content{font-family:"Playfair Display",Georgia,serif;font-size:14px;line-height:1.9;color:#1a1a2e}';
+      html+='.content p{margin-bottom:18px}';
+      html+='.footer{margin-top:40px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}';
+      html+='.footer-l{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+      html+='.footer-r{font-size:9px;color:#9ca3af;text-align:right}';
+      html+='@media print{.page{padding:0}}</style></head><body><div class="page">';
+      html+='<div class="hdr"><div><h1>'+doc.ticker+' \u2014 '+doc.title+'</h1>';
+      html+='<div class="sub">'+doc.companyName+'</div></div>';
+      html+='<div><div class="logo">\u25B3 ThesisAlpha</div>';
+      html+='<div class="logo-sub">Owner\u2019s Hub</div>';
+      html+='<div class="date">'+(doc.updatedAt?new Date(doc.updatedAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}))+'</div></div></div>';
+      html+='<div class="content">';
+      formatted.split("\n\n").forEach(function(p){if(p.trim())html+='<p>'+p.replace(/\n/g,"<br/>")+'</p>'});
+      html+='</div>';
+      html+='<div class="footer"><div class="footer-l">\u25B3 ThesisAlpha</div>';
+      html+='<div class="footer-r"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+doc.ticker+' \u00B7 '+doc.companyName+'</div>';
+      html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+      html+='</div></body></html>';
+      var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
 
     // Score level names + next milestone
     var levels=[{min:0,name:"Novice",next:25},{min:25,name:"Apprentice",next:50},{min:50,name:"Practitioner",next:70},{min:70,name:"Disciplined",next:85},{min:85,name:"Master",next:100}];
