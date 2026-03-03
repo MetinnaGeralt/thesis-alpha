@@ -1367,12 +1367,12 @@ function TrackerApp(props){
       </div></div>}
 
   // ── Portfolio Analytics ─────────────────────────────────
+  // ── Portfolio Analytics (Munger-focused) ─────────────────
   function PortfolioAnalytics(){
     var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var _moats=useState({}),moats=_moats[0],setMoats=_moats[1];
     var _ldM=useState(true),ldM=_ldM[0],setLdM=_ldM[1];
     var _prog=useState(0),prog=_prog[0],setProg=_prog[1];
-    // Fetch moat data for all portfolio companies
     useEffect(function(){if(portCos.length===0){setLdM(false);return}
       var done=0;var results={};
       portCos.forEach(function(c){
@@ -1381,143 +1381,129 @@ function TrackerApp(props){
           if(done>=portCos.length){setMoats(results);setLdM(false)}
         }).catch(function(){done++;setProg(done);if(done>=portCos.length){setMoats(results);setLdM(false)}})})
     },[cos.length]);
-    // Helpers
-    var held=portCos.filter(function(c){var p=c.position||{};return p.shares>0&&p.currentPrice>0});
-    var totalVal=held.reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
-    function weight(c2){if(totalVal<=0)return 0;var p=c2.position||{};return(p.shares||0)*(p.currentPrice||0)/totalVal*100}
-    // Sector data
-    var sectorVal={};held.forEach(function(c2){var s=c2.sector||"Other";var w=weight(c2);sectorVal[s]=(sectorVal[s]||0)+w});
-    var sectorList=Object.keys(sectorVal).sort(function(a,b){return sectorVal[b]-sectorVal[a]});
-    var topSectorPct=sectorList.length>0?sectorVal[sectorList[0]]:0;
-    // HHI (Herfindahl)
-    var hhi=held.reduce(function(s,c2){var w=weight(c2);return s+w*w},0);
-    var hhiRating=hhi>2500?"Concentrated":hhi>1500?"Moderate":"Diversified";
-    var hhiColor=hhi>2500?K.amb:hhi>1500?K.acc:K.grn;
-    // Moat-enriched companies
-    var withMoat=portCos.filter(function(c2){return moats[c2.id]}).map(function(c2){return{company:c2,moat:moats[c2.id],conv:c2.conviction||0,w:weight(c2)}});
+
+    // Build enriched holdings with per-dimension scores
+    var withMoat=portCos.filter(function(c2){return moats[c2.id]}).map(function(c2){
+      var m=moats[c2.id];var dims={};m.metrics.forEach(function(met){dims[met.id]=met});
+      return{company:c2,moat:m,dims:dims}});
+
+    // Dimension averages across the portfolio
+    var dimIds=["grossMargin","revGrowth","opLeverage","roic","fcfConversion","fortress","rdIntensity","netMargin"];
+    var dimLabels={grossMargin:"Pricing Power",revGrowth:"Revenue Growth",opLeverage:"Operating Leverage",roic:"Capital Efficiency",fcfConversion:"Earnings Quality",fortress:"Financial Strength",rdIntensity:"R&D Moat",netMargin:"Profitability"};
+    var dimIcons={grossMargin:"shield",revGrowth:"trending",opLeverage:"gear",roic:"target",fcfConversion:"dollar",fortress:"castle",rdIntensity:"flask",netMargin:"bar"};
+    var dimAvgs={};dimIds.forEach(function(d){var scores=withMoat.map(function(x){return x.dims[d]?x.dims[d].score:null}).filter(function(v){return v!=null});dimAvgs[d]=scores.length>0?Math.round(scores.reduce(function(s,v){return s+v},0)/scores.length):null});
+
     var avgMoat=withMoat.length>0?Math.round(withMoat.reduce(function(s,x){return s+x.moat.composite},0)/withMoat.length):0;
-    var weakest=withMoat.slice().sort(function(a,b){return a.moat.composite-b.moat.composite}).slice(0,3);
-    var strongest=withMoat.slice().sort(function(a,b){return b.moat.composite-a.moat.composite}).slice(0,3);
-    // Quality score = conviction * moat / 10
-    var qualityScores=withMoat.map(function(x){var hasConv=x.conv>0;var q=hasConv?Math.round((x.conv+x.moat.composite)/2):x.moat.composite;return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,conv:x.conv,moat:x.moat.composite,quality:q,partial:!hasConv,w:x.w}}).sort(function(a,b){return b.quality-a.quality});
-    var avgQuality=qualityScores.length>0?Math.round(qualityScores.reduce(function(s,x){return s+x.quality},0)/qualityScores.length):0;
+
+    // Munger summary pillars
+    var fortressAvg=dimAvgs.fortress;var pricingAvg=dimAvgs.grossMargin;var roicAvg=dimAvgs.roic;var fcfAvg=dimAvgs.fcfConversion;
+
+    // Strongest / weakest
+    var sorted=withMoat.slice().sort(function(a,b){return b.moat.composite-a.moat.composite});
+    var strongest=sorted.slice(0,3);var weakest=sorted.slice().reverse().slice(0,3);
+
+    // Table data
+    var holdings=withMoat.map(function(x){
+      return{ticker:x.company.ticker,domain:x.company.domain,id:x.company.id,moat:x.moat.composite,
+        fortress:x.dims.fortress?x.dims.fortress.score:null,
+        pricing:x.dims.grossMargin?x.dims.grossMargin.score:null,
+        roic:x.dims.roic?x.dims.roic.score:null,
+        fcf:x.dims.fcfConversion?x.dims.fcfConversion.score:null}
+    }).sort(function(a,b){return b.moat-a.moat});
+
+    // Munger "wonderful at fair price" filter — flag companies with ROIC < 6 or fortress < 4
+    var redFlags=withMoat.filter(function(x){
+      var r=x.dims.roic?x.dims.roic.score:10;var f=x.dims.fortress?x.dims.fortress.score:10;
+      return r<5||f<4});
+
+    var secStyle={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
     return<div style={{padding:"0 32px 60px",maxWidth:1100}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
-        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" · Loading moat data ("+prog+"/"+portCos.length+")...":withMoat.length>0?" · "+withMoat.length+" moat scores loaded":""}</p></div>
+        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" \u2022 Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" \u2022 "+withMoat.length+" analyzed":""}</p></div>
 
-      {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:13,color:K.dim}}>Fetching financial data for {portCos.length} companies...</div>
+      {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:13,color:K.dim}}>Analyzing financial quality of {portCos.length} companies...</div>
         <div style={{height:4,borderRadius:2,background:K.bdr,maxWidth:300,margin:"16px auto"}}><div style={{height:"100%",borderRadius:2,background:K.acc,width:(portCos.length>0?prog/portCos.length*100:0)+"%",transition:"width .3s"}}/></div></div>:
       <div>
-      {/* Top-level summary cards */}
+      {/* ── Munger's 4 Pillars ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Portfolio Quality</div>
-          <div style={{fontSize:28,fontWeight:700,color:avgQuality>=7?K.grn:avgQuality>=5?K.amb:K.red,fontFamily:fm}}>{avgQuality||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
-          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>Avg of conviction + moat</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Avg Moat Score</div>
-          <div style={{fontSize:28,fontWeight:700,color:moatColor(avgMoat),fontFamily:fm}}>{avgMoat||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
-          <div style={{fontSize:10,color:moatColor(avgMoat),marginTop:4,fontFamily:fm}}>{avgMoat>0?moatLabel(avgMoat):""}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Concentration</div>
-          <div style={{fontSize:28,fontWeight:700,color:hhiColor,fontFamily:fm}}>{held.length>0?Math.round(hhi):"\u2014"}</div>
-          <div style={{fontSize:10,color:hhiColor,marginTop:4,fontFamily:fm}}>HHI {"\u2014"} {held.length>0?hhiRating:"Add positions"}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Top Sector</div>
-          <div style={{fontSize:16,fontWeight:600,color:topSectorPct>40?K.amb:K.txt,fontFamily:fm}}>{sectorList[0]||"\u2014"}</div>
-          <div style={{fontSize:10,color:topSectorPct>40?K.amb:K.dim,marginTop:4,fontFamily:fm}}>{topSectorPct>0?topSectorPct.toFixed(0)+"% weight":"No positions"}{topSectorPct>40?" \u26A0 Concentrated":""}</div></div></div>
+        {[{label:"Business Quality",val:avgMoat,sub:avgMoat>0?moatLabel(avgMoat):"",icon:"shield"},
+          {label:"Financial Strength",val:fortressAvg,sub:fortressAvg>=8?"Fortress":fortressAvg>=6?"Solid":fortressAvg>=4?"Adequate":"Fragile",icon:"castle"},
+          {label:"Pricing Power",val:pricingAvg,sub:pricingAvg>=8?"Exceptional":pricingAvg>=6?"Strong":pricingAvg>=4?"Moderate":"Weak",icon:"dollar"},
+          {label:"Capital Efficiency",val:roicAvg,sub:roicAvg>=8?"Outstanding":roicAvg>=6?"Good":roicAvg>=4?"Fair":"Poor",icon:"target"}
+        ].map(function(card){var v=card.val;var clr=v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim;
+          return<div key={card.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name={card.icon} size={14} color={K.dim}/><div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb}}>{card.label}</div></div>
+            <div style={{fontSize:28,fontWeight:700,color:clr,fontFamily:fm}}>{v||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
+            <div style={{fontSize:10,color:clr,marginTop:4,fontFamily:fb}}>{v?card.sub:""}</div></div>})}</div>
 
-      {/* Conviction × Moat Quality Matrix */}
-      {qualityScores.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:16,fontFamily:fm}}>Conviction \u00D7 Moat Quality Matrix</div>
-        <div style={{position:"relative",height:260,border:"1px solid "+K.bdr,borderRadius:8,overflow:"hidden",background:K.bg}}>
-          {/* Quadrant labels */}
-          <div style={{position:"absolute",top:8,left:8,fontSize:9,color:K.dim+"80",fontFamily:fm}}>High Conviction / Weak Moat</div>
-          <div style={{position:"absolute",top:8,right:8,fontSize:9,color:K.grn+"60",fontFamily:fm,fontWeight:600}}>High Conviction / Wide Moat</div>
-          <div style={{position:"absolute",bottom:8,left:8,fontSize:9,color:K.red+"60",fontFamily:fm}}>Low Conviction / Weak Moat</div>
-          <div style={{position:"absolute",bottom:8,right:8,fontSize:9,color:K.dim+"80",fontFamily:fm}}>Low Conviction / Wide Moat</div>
-          {/* Grid lines */}
-          <div style={{position:"absolute",top:"50%",left:0,right:0,height:1,background:K.bdr}}/>
-          <div style={{position:"absolute",left:"50%",top:0,bottom:0,width:1,background:K.bdr}}/>
-          {/* Axis labels */}
-          <div style={{position:"absolute",left:"50%",bottom:2,transform:"translateX(-50%)",fontSize:8,color:K.dim,fontFamily:fm}}>MOAT SCORE \u2192</div>
-          <div style={{position:"absolute",top:"50%",left:2,transform:"rotate(-90deg) translateX(-50%)",transformOrigin:"top left",fontSize:8,color:K.dim,fontFamily:fm}}>CONVICTION \u2192</div>
-          {/* Plot dots */}
-          {qualityScores.map(function(q){
-            var hasConv=q.conv>0;
-            var x=Math.max(5,Math.min(95,q.moat*10));var y=hasConv?Math.max(5,Math.min(95,100-q.conv*10)):50;
-            var dotColor=q.quality>=7?K.grn:q.quality>=5?K.amb:K.red;
-            var dotSize=Math.max(8,Math.min(28,q.w/2+8));
-            return<div key={q.id} style={{position:"absolute",left:x+"%",top:y+"%",transform:"translate(-50%,-50%)",width:dotSize,height:dotSize,borderRadius:"50%",background:dotColor+(hasConv?"40":"20"),border:"2px "+(hasConv?"solid":"dashed")+" "+dotColor+(hasConv?"":"60"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:10}} onClick={function(){setSelId(q.id);setPage("dashboard")}} title={q.ticker+": Conv "+(hasConv?q.conv:"not set")+", Moat "+q.moat+", Quality "+q.quality}>
-              <span style={{fontSize:Math.max(7,dotSize/3),fontWeight:700,color:dotColor+(hasConv?"":"90"),fontFamily:fm}}>{q.ticker}</span></div>})}</div>
-        <div style={{marginTop:10,fontSize:10,color:K.dim,fontFamily:fm}}>Dot size = portfolio weight. Dashed dots = conviction not yet set (centered vertically). Top-right quadrant = highest quality holdings.</div></div>}
+      {/* ── Portfolio Quality Profile (all 8 dimensions) ── */}
+      {withMoat.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={secStyle}><IC name="bar" size={14} color={K.dim}/>Portfolio Quality Profile</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          {dimIds.map(function(d){var avg2=dimAvgs[d];if(avg2===null)return null;
+            var clr=avg2>=8?K.grn:avg2>=6?K.acc:avg2>=4?K.amb:K.red;
+            return<div key={d} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0"}}>
+              <IC name={dimIcons[d]} size={14} color={K.dim}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                  <span style={{fontSize:12,color:K.mid,fontFamily:fb}}>{dimLabels[d]}</span>
+                  <span style={{fontSize:12,fontWeight:600,color:clr,fontFamily:fm}}>{avg2}</span></div>
+                <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:avg2*10+"%",borderRadius:2,background:clr,transition:"width .5s"}}/></div></div></div>})}
+        </div>
+        <div style={{marginTop:14,fontSize:11,color:K.dim,lineHeight:1.6,fontFamily:fb}}>Average scores across {withMoat.length} companies. Dimensions below 6 are portfolio-wide vulnerabilities.</div></div>}
 
-      {/* Portfolio Moat Summary */}
+      {/* ── Red Flags: Munger "avoid losers" ── */}
+      {redFlags.length>0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={secStyle}><IC name="alert" size={14} color={K.red}/>Needs Attention</div>
+        <div style={{fontSize:12,color:K.mid,marginBottom:14,lineHeight:1.6,fontFamily:fb}}>These holdings have weak capital efficiency or fragile balance sheets. Munger would ask: why do I own this?</div>
+        {redFlags.map(function(x){var issues=[];
+          if(x.dims.roic&&x.dims.roic.score<5)issues.push("Low ROIC ("+x.dims.roic.value+")");
+          if(x.dims.fortress&&x.dims.fortress.score<4)issues.push("Weak balance sheet ("+x.dims.fortress.value+")");
+          if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
+          if(x.dims.grossMargin&&x.dims.grossMargin.score<4)issues.push("Weak margins ("+x.dims.grossMargin.value+")");
+          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("analysis");setPage("dashboard")}}>
+            <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
+              <div style={{fontSize:10,color:K.red,fontFamily:fb}}>{issues.join(" \u2022 ")}</div></div>
+            <div style={{fontSize:16,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>}
+
+      {/* ── Strongest / Weakest ── */}
       {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Strongest Moats</div>
-          {strongest.map(function(x){return<div key={x.company.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+          <div style={secStyle}><IC name="trending" size={14} color={K.grn}/>Strongest Businesses</div>
+          {strongest.map(function(x){return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Weakest Moats {"\u26A0"}</div>
-          {weakest.map(function(x){return<div key={x.company.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+          <div style={secStyle}><IC name="alert" size={14} color={K.amb}/>Weakest Links</div>
+          {weakest.map(function(x){return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:10,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div></div>}
 
-      {/* Concentration Risk */}
-      {held.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Position Sizing & Concentration</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
-          {held.sort(function(a,b){return weight(b)-weight(a)}).map(function(c2){var w=weight(c2);
-            var barColor=w>25?K.red:w>15?K.amb:K.acc;
-            return<div key={c2.id} style={{background:barColor+"12",border:"1px solid "+barColor+"30",borderRadius:8,padding:"10px 14px",minWidth:80,flex:"0 1 auto",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setPage("dashboard")}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span></div>
-              <div style={{fontSize:16,fontWeight:700,color:barColor,fontFamily:fm}}>{w.toFixed(1)}%</div>
-              <div style={{height:3,borderRadius:2,background:K.bdr,marginTop:4}}><div style={{height:"100%",width:Math.min(100,w*2)+"%",borderRadius:2,background:barColor}}/></div>
-              {w>25&&<div style={{fontSize:9,color:K.red,marginTop:4,fontFamily:fm}}>{"\u26A0"} {">"} 25% single position</div>}</div>})}</div>
-        <div style={{display:"flex",gap:16,fontSize:11,color:K.dim,fontFamily:fm}}>
-          <span>HHI: <b style={{color:hhiColor}}>{Math.round(hhi)}</b> ({hhiRating})</span>
-          <span>Top 3: <b style={{color:K.txt}}>{held.sort(function(a,b){return weight(b)-weight(a)}).slice(0,3).reduce(function(s,c2){return s+weight(c2)},0).toFixed(0)}%</b></span>
-          <span>{held.length} positions</span></div></div>}
-
-      {/* Sector Allocation */}
-      {sectorList.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Sector Allocation</div>
-        {/* Visual bar chart */}
-        <div style={{display:"flex",gap:4,height:32,marginBottom:16,borderRadius:6,overflow:"hidden"}}>
-          {sectorList.map(function(s,i){var pct=sectorVal[s];var colors=[K.acc,K.grn,K.amb,K.blue,K.red,"#9C27B0","#FF9800","#00BCD4"];var c2=colors[i%colors.length];
-            return<div key={s} style={{flex:pct,background:c2+"50",display:"flex",alignItems:"center",justifyContent:"center",minWidth:pct>5?40:0,overflow:"hidden"}} title={s+": "+pct.toFixed(1)+"%"}>
-              {pct>8&&<span style={{fontSize:9,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.length>10?s.substring(0,8)+"..":s}</span>}</div>})}</div>
-        {sectorList.map(function(s,i){var pct=sectorVal[s];var warn=pct>40;var colors=[K.acc,K.grn,K.amb,K.blue,K.red,"#9C27B0","#FF9800","#00BCD4"];var c2=colors[i%colors.length];
-          return<div key={s} style={{marginBottom:8}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:2,background:c2+"50"}}/><span style={{fontSize:12,color:K.mid}}>{s}</span></div>
-              <span style={{fontSize:11,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct.toFixed(1)}%{warn?" \u26A0 Drift warning":""}</span></div>
-            <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:c2+"80"}}/></div></div>})}
-        {topSectorPct>40&&<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"10",border:"1px solid "+K.amb+"20",borderRadius:6,fontSize:11,color:K.amb}}>
-          {"\u26A0"} Sector drift alert: {sectorList[0]} represents {topSectorPct.toFixed(0)}% of your portfolio. Consider diversification.</div>}
-      </div>}
-
-      {/* Quality Ranking Table */}
-      {qualityScores.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Holdings Quality Ranking</div>
-        <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr>{["","Company","Conviction","Moat","Quality","Weight"].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:10,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fm,fontWeight:500}}>{h}</th>})}</tr></thead>
-          <tbody>{qualityScores.map(function(q,i){var qColor=q.quality>=7?K.grn:q.quality>=5?K.amb:K.red;
-            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setPage("dashboard")}}>
+      {/* ── Holdings Quality Table ── */}
+      {holdings.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={secStyle}><IC name="overview" size={14} color={K.dim}/>Holdings Quality</div>
+        <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead><tr>{["","Company","Moat","Fortress","Pricing","ROIC","Earnings Q."].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:10,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fb,fontWeight:600,whiteSpace:"nowrap"}}>{h}</th>})}</tr></thead>
+          <tbody>{holdings.map(function(q,i){
+            function cellClr(v){return v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim}
+            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("analysis");setPage("dashboard")}}>
               <td style={{padding:"10px 10px",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
-              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:q.conv>=8?K.grn:q.conv>=5?K.amb:q.conv>0?K.red:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.conv||"\u2014"}</td>
-              <td style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:moatColor(q.moat),fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.moat}</td>
-              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:qColor,fontFamily:fm,background:qColor+"15",padding:"3px 10px",borderRadius:4}}>{q.quality}</span>{q.partial&&<span style={{fontSize:8,color:K.amb,marginLeft:4,fontFamily:fm}} title="Set conviction to get full quality score">{"\u26A0"}</span>}</td>
-              <td style={{padding:"10px 10px",textAlign:"center",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{q.w>0?q.w.toFixed(1)+"%":"\u2014"}</td></tr>})}</tbody></table></div>}
+              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
+              {[q.fortress,q.pricing,q.roic,q.fcf].map(function(v,vi){return<td key={vi} style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:v?cellClr(v):K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{v||"\u2014"}</td>})}</tr>})}</tbody></table></div></div>}
+
+      {/* ── Munger Quote ── */}
+      {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic",fontFamily:fh}}>{"\"Over the long term, it\u2019s hard for a stock to earn a much better return than the business which underlies it earns. If the business earns 6% on capital over 40 years and you hold it for that 40 years, you\u2019re not going to make much different than a 6% return.\""}</div>
+        <div style={{fontSize:11,color:K.dim,marginTop:8,fontFamily:fb}}>{"\u2014"} Charlie Munger</div></div>}
 
       {portCos.length===0&&<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim}}>No portfolio companies yet. Add companies and set their status to Portfolio.</div></div>}
       </div>}</div>}
+
 
   function Dashboard(){var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
@@ -1567,7 +1553,7 @@ function TrackerApp(props){
     {/* Analytics quick link */}
     {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
       <IC name="bar" size={18} color={K.acc}/>
-      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Conviction \u00D7 moat matrix, concentration risk, sector allocation & quality ranking</div></div>
+      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
       <span style={{fontSize:16,color:K.acc}}>{"\u2192"}</span></div>}
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
