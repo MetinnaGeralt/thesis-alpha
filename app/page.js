@@ -457,6 +457,26 @@ function TrackerApp(props){
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
+  var LEVELS=[{min:0,name:"Novice",next:25,icon:"\uD83C\uDF31"},{min:25,name:"Apprentice",next:50,icon:"\uD83D\uDCDA"},{min:50,name:"Practitioner",next:70,icon:"\uD83D\uDD2D"},{min:70,name:"Disciplined",next:85,icon:"\u2B50"},{min:85,name:"Master",next:100,icon:"\uD83C\uDFC6"}];
+  function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
+  // Toast system for celebrations
+  var _toast=useState(null),toast=_toast[0],setToast=_toast[1];
+  var toastTimer=useRef(null);
+  function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
+  // Owner's Score expanded state on dashboard
+  var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
+  // Track score for milestone detection
+  var prevScoreLevel=useRef(null);
+  useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
+    var os=calcOwnerScore(cos);var lv=getLevel(os.total);
+    if(prevScoreLevel.current!==null&&prevScoreLevel.current!==lv.name){
+      // Level changed!
+      var prevIdx=LEVELS.findIndex(function(l){return l.name===prevScoreLevel.current});
+      var newIdx=LEVELS.findIndex(function(l){return l.name===lv.name});
+      if(newIdx>prevIdx){
+        showToast(lv.icon+" Level up! You're now "+lv.name+" ("+os.total+"/100)","levelup",8000);
+        setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Level up! You reached "+lv.name+" ("+os.total+" pts)",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
+    prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
@@ -1244,7 +1264,7 @@ function TrackerApp(props){
     {showNotifs&&<div className="ta-notif-panel" style={{position:"absolute",top:48,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":380,maxHeight:isMobile?"70vh":420,overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:10})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:12,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
+        <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
     <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
     <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
@@ -2232,9 +2252,8 @@ function TrackerApp(props){
       html+='</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
 
-    // Score level names + next milestone
-    var levels=[{min:0,name:"Novice",next:25},{min:25,name:"Apprentice",next:50},{min:50,name:"Practitioner",next:70},{min:70,name:"Disciplined",next:85},{min:85,name:"Master",next:100}];
-    var currentLevel=levels[0];levels.forEach(function(l){if(os.total>=l.min)currentLevel=l});
+    // Score level names + next milestone (uses shared LEVELS)
+    var currentLevel=getLevel(os.total);
     var nextMilestone=currentLevel.next;var pctToNext=nextMilestone>currentLevel.min?Math.round((os.total-currentLevel.min)/(nextMilestone-currentLevel.min)*100):100;
 
     return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
@@ -2248,7 +2267,7 @@ function TrackerApp(props){
               <div style={{fontSize:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
-            <div style={{fontSize:13,color:K.mid,marginTop:2}}>{currentLevel.name} <span style={{color:K.dim}}>·</span> {os.total<100?<span style={{fontSize:11,color:K.dim}}>{nextMilestone-os.total} pts to {levels.find(function(l){return l.min===nextMilestone})?levels.find(function(l){return l.min===nextMilestone}).name:"Max"}</span>:<span style={{color:"#FFD700",fontSize:11}}>Maximum achieved!</span>}</div>
+            <div style={{fontSize:13,color:K.mid,marginTop:2}}>{currentLevel.name} <span style={{color:K.dim}}>·</span> {os.total<100?<span style={{fontSize:11,color:K.dim}}>{nextMilestone-os.total} pts to {LEVELS.find(function(l){return l.min===nextMilestone})?LEVELS.find(function(l){return l.min===nextMilestone}).name:"Max"}</span>:<span style={{color:"#FFD700",fontSize:11}}>Maximum achieved!</span>}</div>
             {/* Progress to next level */}
             <div style={{marginTop:6,width:180,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div></div></div>
         {/* Quick stats */}
@@ -2414,7 +2433,7 @@ function TrackerApp(props){
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>Level System</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Your Owner's Score determines your level. Each level represents a milestone in building investment discipline.</div>
           <div style={{display:"grid",gap:8}}>
-            {levels.map(function(l){var isCurrentLevel=currentLevel.min===l.min;
+            {LEVELS.map(function(l){var isCurrentLevel=currentLevel.min===l.min;
               return<div key={l.min} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:isCurrentLevel?K.acc+"08":"transparent",border:"1px solid "+(isCurrentLevel?K.acc+"30":K.bdr),borderRadius:8}}>
                 <div style={{width:32,textAlign:"center",fontSize:14,fontWeight:700,color:isCurrentLevel?K.acc:K.dim,fontFamily:fm}}>{l.min}</div>
                 <div style={{flex:1}}><div style={{fontSize:12,fontWeight:isCurrentLevel?600:400,color:isCurrentLevel?K.acc:K.txt,fontFamily:fm}}>{l.name}</div></div>
@@ -2764,18 +2783,70 @@ function TrackerApp(props){
       </div>}()}
     {/* Analytics quick link */}
     {sideTab==="portfolio"&&filtered.length>0&&dashSet.showOwnerScore&&(function(){var os=calcOwnerScore(cos);var bd=os.breakdown;
-      var cats=[{label:"Thesis",pts:bd.thesis,max:20,color:K.acc},{label:"KPIs",pts:bd.kpi,max:20,color:K.blue},{label:"Journal",pts:bd.journal,max:20,color:K.grn},{label:"Conviction",pts:bd.conviction,max:15,color:K.amb},{label:"Moat",pts:bd.moat,max:10,color:"#9333EA"},{label:"Balance",pts:bd.balance,max:15,color:K.mid}];
+      var lv=getLevel(os.total);var nextLv=LEVELS.find(function(l){return l.min===lv.next});var pctToNext=lv.next>lv.min?Math.round((os.total-lv.min)/(lv.next-lv.min)*100):100;
+      var scoreColor=os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red;
+      var cats=[
+        {key:"thesis",label:"Thesis",pts:bd.thesis,max:20,color:K.acc,icon:"lightbulb",tip:"Write 4 sections, version it, keep fresh (<90d)",onClick:function(){var t=filtered.find(function(c2){return!c2.thesisNote})||filtered[0];if(t){setSelId(t.id);setModal({type:"thesis"})}}},
+        {key:"kpi",label:"KPIs",pts:bd.kpi,max:20,color:K.blue,icon:"target",tip:"Track 2+ KPIs per holding, check earnings",onClick:function(){var t=filtered.find(function(c2){return c2.kpis.length===0})||filtered[0];if(t){setSelId(t.id);setDetailTab("overview")}}},
+        {key:"journal",label:"Journal",pts:bd.journal,max:20,color:K.grn,icon:"book",tip:"Log BUY/SELL with reasoning, tag outcomes",onClick:function(){setPage("hub")}},
+        {key:"conviction",label:"Conviction",pts:bd.conviction,max:15,color:K.amb,icon:"trending",tip:"Rate 1\u201310, update quarterly, run bias checks",onClick:function(){var t=filtered.find(function(c2){return!c2.conviction})||filtered[0];if(t){setSelId(t.id);setModal({type:"conviction"})}}},
+        {key:"moat",label:"Moat",pts:bd.moat,max:10,color:"#9333EA",icon:"castle",tip:"Classify types, add Morningstar, track trend",onClick:function(){var t=filtered[0];if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}},
+        {key:"balance",label:"Balance",pts:bd.balance,max:15,color:K.mid,icon:"bar",tip:"3+ holdings, <40% sector conc., 2+ styles"}];
+      // Find the lowest-scoring category to highlight
+      var lowest=cats.slice().sort(function(a,b){return(a.pts/a.max)-(b.pts/b.max)})[0];
+      var lowestPct=lowest.max>0?Math.round(lowest.pts/lowest.max*100):100;
       return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20,marginBottom:14}}>
+        {/* Main row: ring + level + expand toggle */}
+        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20,cursor:"pointer"}} onClick={function(){setOsExpanded(!osExpanded)}}>
           <div style={{position:"relative",width:isMobile?56:68,height:isMobile?56:68,flexShrink:0}}>
-            <svg width={isMobile?56:68} height={isMobile?56:68} viewBox="0 0 68 68"><circle cx="34" cy="34" r="28" fill="none" stroke={K.bdr} strokeWidth="5"/><circle cx="34" cy="34" r="28" fill="none" stroke={os.total>=75?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red} strokeWidth="5" strokeDasharray={Math.round(os.total/100*176)+" 176"} strokeLinecap="round" transform="rotate(-90 34 34)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:isMobile?16:20,fontWeight:700,color:os.total>=75?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div></div></div>
-          <div style={{flex:1}}><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:3,fontFamily:fm}}>Owner{"\u2019"}s Score</div>
-            <div style={{fontSize:13,color:K.txt,fontWeight:500}}>{os.total>=80?"Exceptional discipline":os.total>=60?"Strong foundation":os.total>=40?"Building momentum":"Getting started"}</div></div></div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat("+(isMobile?3:6)+",1fr)",gap:isMobile?6:8}}>{cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;return<div key={cat.label} style={{textAlign:"center"}}>
+            <svg width={isMobile?56:68} height={isMobile?56:68} viewBox="0 0 68 68"><circle cx="34" cy="34" r="28" fill="none" stroke={K.bdr} strokeWidth="5"/><circle cx="34" cy="34" r="28" fill="none" stroke={scoreColor} strokeWidth="5" strokeDasharray={Math.round(os.total/100*176)+" 176"} strokeLinecap="round" transform="rotate(-90 34 34)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+              <div style={{fontSize:isMobile?16:20,fontWeight:700,color:scoreColor,fontFamily:fm,lineHeight:1}}>{os.total}</div>
+              <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner{"\u2019"}s Score</div>
+              <span style={{fontSize:11}}>{lv.icon}</span></div>
+            <div style={{fontSize:13,color:K.txt,fontWeight:600,marginTop:1}}>{lv.name}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+              <div style={{flex:1,maxWidth:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:scoreColor,transition:"width .3s"}}/></div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{os.total<100?(lv.next-os.total)+" pts to "+(nextLv?nextLv.name:"Max"):"Max!"}</span></div></div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {!osExpanded&&lowestPct<80&&<span style={{fontSize:10,color:lowest.color,fontFamily:fm,whiteSpace:"nowrap"}}>{"Improve: "+lowest.label}</span>}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" style={{transform:osExpanded?"rotate(180deg)":"rotate(0)",transition:"transform .2s"}}><polyline points="6,9 12,15 18,9"/></svg></div></div>
+        {/* Collapsed: mini bars */}
+        {!osExpanded&&<div style={{display:"grid",gridTemplateColumns:"repeat("+(isMobile?3:6)+",1fr)",gap:isMobile?6:8,marginTop:12}}>{cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;return<div key={cat.key} style={{textAlign:"center"}}>
           <div style={{height:4,borderRadius:2,background:K.bdr,marginBottom:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
           <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{cat.label}</div>
-          <div style={{fontSize:10,fontWeight:600,color:pct>=80?cat.color:pct>=40?K.mid:K.dim,fontFamily:fm}}>{cat.pts}/{cat.max}</div></div>})}</div></div>})()}
+          <div style={{fontSize:10,fontWeight:600,color:pct>=80?cat.color:pct>=40?K.mid:K.dim,fontFamily:fm}}>{cat.pts}/{cat.max}</div></div>})}</div>}
+        {/* Expanded: full interactive breakdown */}
+        {osExpanded&&<div style={{marginTop:14}}>
+          <div style={{display:"grid",gap:8}}>
+            {cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;var full=pct>=80;
+              return<div key={cat.key} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:full?cat.color+"06":"transparent",border:"1px solid "+(full?cat.color+"20":K.bdr),borderRadius:8,cursor:cat.onClick?"pointer":"default"}} onClick={cat.onClick||undefined}>
+                <IC name={cat.icon} size={13} color={full?cat.color:K.dim}/>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+                    <span style={{fontSize:11,fontWeight:600,color:full?cat.color:K.txt,fontFamily:fm}}>{cat.label}</span>
+                    <span style={{fontSize:10,color:full?cat.color:K.dim,fontFamily:fm,fontWeight:600}}>{cat.pts}/{cat.max}</span></div>
+                  <div style={{height:3,borderRadius:2,background:K.bdr,overflow:"hidden",marginBottom:3}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
+                  <div style={{fontSize:10,color:K.dim}}>{full?"\u2713 Strong":cat.tip}</div></div>
+                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"\u2192"}</span>}
+                {full&&<span style={{fontSize:12,color:cat.color}}>{"\u2713"}</span>}
+              </div>})}</div>
+          {/* Level roadmap */}
+          <div style={{marginTop:12,padding:"10px 14px",background:K.bg,borderRadius:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              {LEVELS.map(function(l2){var isAt=lv.name===l2.name;var isPast=os.total>=l2.min;
+                return<div key={l2.name} style={{flex:1,textAlign:"center"}}>
+                  <div style={{fontSize:13,marginBottom:2}}>{l2.icon}</div>
+                  <div style={{height:3,borderRadius:2,background:isPast?scoreColor:K.bdr,transition:"background .3s"}}/>
+                  <div style={{fontSize:8,color:isAt?scoreColor:isPast?K.mid:K.dim,fontWeight:isAt?700:400,fontFamily:fm,marginTop:2}}>{l2.name}</div></div>})}</div></div>
+          {/* Link to guide */}
+          <div style={{marginTop:8,textAlign:"center"}}>
+            <button onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>How does scoring work? {"\u2192"}</button></div>
+        </div>}
+      </div>})()}
     {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
       <IC name="bar" size={18} color={K.acc}/>
       <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
@@ -2881,7 +2952,12 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}<Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}
+    {toast&&<div className="ta-fade" style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:toast.type==="levelup"?"14px 28px":"10px 24px",borderRadius:12,background:toast.type==="levelup"?"linear-gradient(135deg, #FFD700 0%, #FFA500 100%)":K.card,border:"1px solid "+(toast.type==="levelup"?"#FFD700":K.bdr),boxShadow:"0 8px 32px rgba(0,0,0,.25)",display:"flex",alignItems:"center",gap:12,cursor:"pointer",maxWidth:420}} onClick={function(){setToast(null)}}>
+      <div style={{fontSize:toast.type==="levelup"?14:12,fontWeight:toast.type==="levelup"?700:500,color:toast.type==="levelup"?"#1a1a2e":K.txt,fontFamily:fm}}>{toast.msg}</div>
+      {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:10,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
+    </div>}
+    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
