@@ -2774,6 +2774,37 @@ function TrackerApp(props){
     // Tabs
     var _ht=useState("command"),ht=_ht[0],setHt=_ht[1];
     var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
+    var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
+    var _lensLoading=useState(false),lensLoading=_lensLoading[0],setLensLoading=_lensLoading[1];
+    // Auto-fetch financial metrics when Lenses tab is opened
+    useEffect(function(){
+      if(ht!=="lenses")return;
+      var portCos2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+      var needsFetch=portCos2.filter(function(c){return!lensData[c.ticker]});
+      if(needsFetch.length===0)return;
+      setLensLoading(true);
+      var fetchAll=async function(){
+        var data=Object.assign({},lensData);
+        for(var i=0;i<needsFetch.length;i++){
+          var c=needsFetch[i];
+          try{
+            var fin=await fetchFinancialStatements(c.ticker,"annual");
+            if(fin){
+              var moatResult=calcMoatFromData(fin);
+              if(moatResult&&moatResult.metrics){
+                var vals={};
+                moatResult.metrics.forEach(function(m){
+                  var num=parseFloat(String(m.value).replace(/[^0-9.\-]/g,""));
+                  vals[m.id]={score:m.score,value:m.value,num:isNaN(num)?null:num};
+                });
+                data[c.ticker]=vals;
+              }
+            }
+          }catch(e){console.warn("[Lenses] fetch error for",c.ticker,e)}
+        }
+        setLensData(data);setLensLoading(false);
+      };fetchAll();
+    },[ht,cos.length]);
     // Document vault (kept from before)
     var allDocs=[];cos.forEach(function(c){(c.docs||[]).forEach(function(d){allDocs.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain}))})});
     cos.forEach(function(c){if(c.thesisNote){allDocs.push({id:"thesis-"+c.id,title:"Investment Thesis",content:c.thesisNote,folder:"why-i-own",ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,updatedAt:c.thesisUpdatedAt||null,isThesis:true})}});
@@ -2950,20 +2981,22 @@ function TrackerApp(props){
               ]}
           ];
           var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
-          var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&c._moatCache});
+          var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
           var portMetrics=lens.metrics.map(function(m){
             var weightedVal=0;var weightSum=0;var holdingData=[];
             portCos.forEach(function(c){
-              var mc=c._moatCache;var rawVal=mc[m.id+"_val"];var numVal=parseVal(rawVal);
+              var td=lensData[c.ticker];if(!td)return;
+              var metricData=td[m.id];if(!metricData)return;
+              var numVal=metricData.num;var rawVal=metricData.value||"";
               // For fortress (Net Debt/EBITDA), value is like "1.5x" or "Net Cash"
-              if(m.id==="fortress"&&rawVal==="Net Cash")numVal=-0.5;
+              if(m.id==="fortress"&&String(rawVal).indexOf("Net Cash")>=0)numVal=-0.5;
               if(numVal!=null){
                 var pos=c.position||{};var val=(pos.shares||0)*(pos.currentPrice||0);
                 var w=totalVal>0?val/totalVal:1/portCos.length;
                 weightedVal+=numVal*w;weightSum+=w;
-                holdingData.push({ticker:c.ticker,value:numVal,raw:rawVal||"",weight:Math.round(w*100)})}});
+                holdingData.push({ticker:c.ticker,value:numVal,raw:rawVal,weight:Math.round(w*100)})}});
             var avgVal=weightSum>0?weightedVal/weightSum:null;
             var delta=avgVal!=null?(m.invert?m.sp500-avgVal:avgVal-m.sp500):null;
             return{id:m.id,label:m.label,unit:m.unit,weight:m.weight,desc:m.desc,invert:m.invert,portfolioVal:avgVal,sp500:m.sp500,delta:delta,holdings:holdingData}});
@@ -2990,10 +3023,13 @@ function TrackerApp(props){
               <div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.6}}>“{lens.quote}”</div>
             </div>
             {/* Metrics table with actual values */}
-            {portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
-              <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No moat data yet</div>
-              <div style={{fontSize:12,color:K.dim}}>Open a company and visit the Moat Durability page to generate financial metrics. The lens will populate automatically.</div></div>}
-            {portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+            {lensLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
+              <div style={{display:"inline-block",width:20,height:20,border:"2px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .8s linear infinite",marginBottom:12}}/>
+              <div style={{fontSize:13,color:K.dim}}>Fetching financial data for your holdings…</div></div>}
+            {!lensLoading&&portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
+              <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No financial data yet</div>
+              <div style={{fontSize:12,color:K.dim}}>Add portfolio companies with position data. Financial metrics are fetched automatically from FMP.</div></div>}
+            {!lensLoading&&portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                 <thead><tr style={{borderBottom:"2px solid "+K.bdr}}>
                   <th style={{textAlign:"left",padding:"12px 14px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Metric</th>
@@ -3020,7 +3056,7 @@ function TrackerApp(props){
                   </tr>})}</tbody>
               </table>
               <div style={{padding:"12px 14px",borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                <div style={{fontSize:10,color:K.dim}}>Weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have data. Visit Moat Durability to generate missing data.</div>
+                <div style={{fontSize:10,color:K.dim}}>Weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have data. Financial metrics via FMP.</div>
                 <div style={{display:"flex",gap:8,fontSize:9,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
             </div>}
           </div>})()}
