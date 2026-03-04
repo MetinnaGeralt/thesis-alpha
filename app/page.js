@@ -527,10 +527,16 @@ function TrackerApp(props){
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
-  function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}return n})}
+  function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
+    if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
+    return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
   var currentWeekReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
   var reviewStreak=function(){var s=0;var wk=new Date();for(var i=0;i<weeklyReviews.length;i++){var rid=weeklyReviews[i].weekId;var expect=new Date(wk);expect.setDate(expect.getDate()-expect.getDay()+(expect.getDay()===0?-6:1)-s*7);var expId=expect.toISOString().split('T')[0];if(rid===expId)s++;else break}return s}();
+  useEffect(function(){if(reviewStreak>0&&_prevStreak.current>0){
+    if(reviewStreak>=4&&_prevStreak.current<4)checkMilestone("streak4",String.fromCodePoint(0x1F525)+" 4-week streak! Your discipline is becoming a habit.");
+    if(reviewStreak>=8&&_prevStreak.current<8){checkMilestone("streak8",String.fromCodePoint(0x1F3C6)+" 8-week streak! Master-level consistency.");showCelebration(String.fromCodePoint(0x1F525)+" 8 Week Streak","Two months of consistent weekly reviews. This is what separates great investors.",null,"#FF6B6B")}
+    }_prevStreak.current=reviewStreak},[reviewStreak]);
 
   var ASSET_CLASSES=[
     {id:"stocks",label:"Stocks",color:"#F59E0B",icon:"trending"},
@@ -556,7 +562,17 @@ function TrackerApp(props){
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
   // Toast system for celebrations
   var _toast=useState(null),toast=_toast[0],setToast=_toast[1];
+  var _confetti=useState(false),showConfetti=_confetti[0],setConfetti=_confetti[1];
+  function launchConfetti(duration){setConfetti(true);setTimeout(function(){setConfetti(false)},duration||3000)}
+  function celebrate(msg,type,duration){showToast(msg,type||"levelup",duration||6000);launchConfetti(duration||3000)}
+  // Celebration overlay for big moments
+  var _celebOverlay=useState(null),celebOverlay=_celebOverlay[0],setCelebOverlay=_celebOverlay[1];
+  function showCelebration(title,subtitle,icon,color){setCelebOverlay({title:title,subtitle:subtitle,icon:icon,color:color||K.acc});setTimeout(function(){setCelebOverlay(null)},4500)}
+  // Track milestones for first-time celebrations
+  var _milestones=useState(function(){try{var s=localStorage.getItem('ta-milestones');return s?JSON.parse(s):{}}catch(e){return{}}}),milestones=_milestones[0],setMilestones=_milestones[1];
+  function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}celebrate(msg,"milestone",5000);return true}return false}
   var toastTimer=useRef(null);
+  var _prevStreak=useRef(0);
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
   // Owner's Score expanded state on dashboard
   var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
@@ -569,7 +585,8 @@ function TrackerApp(props){
       var prevIdx=LEVELS.findIndex(function(l){return l.name===prevScoreLevel.current});
       var newIdx=LEVELS.findIndex(function(l){return l.name===lv.name});
       if(newIdx>prevIdx){
-        showToast(lv.icon+" Level up! You're now "+lv.name+" ("+os.total+"/100)","levelup",8000);
+        celebrate(lv.icon+" Level up! You're now "+lv.name+" ("+os.total+"/100)","levelup",8000);
+        showCelebration(lv.icon+" "+lv.name,"You leveled up to "+lv.name+"! Keep building your process.",lv.icon,lv.min>=85?"#FFD700":lv.min>=70?"#4ade80":lv.min>=50?"#fbbf24":"#60a5fa");
         setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Level up! You reached "+lv.name+" ("+os.total+" pts)",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
@@ -596,6 +613,12 @@ function TrackerApp(props){
       "@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}",
       "@keyframes spin{to{transform:rotate(360deg)}}",
       "@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}",
+      "@keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}",
+      "@keyframes celebratePop{0%{transform:scale(0) rotate(-10deg);opacity:0}50%{transform:scale(1.15) rotate(3deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}",
+      "@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(255,215,0,.3)}50%{box-shadow:0 0 24px rgba(255,215,0,.6)}}",
+      "@keyframes streakFlame{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}",
+      ".ta-celebrate{animation:celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both}",
+      ".ta-glow{animation:glowPulse 2s ease-in-out infinite}",
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
       ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease}",
@@ -859,7 +882,7 @@ function TrackerApp(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});showToast("\u2713 Thesis saved — "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","\u2728 Complete thesis! All 4 sections written.");else showToast("\u2713 Thesis saved \u2014 "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -871,7 +894,9 @@ function TrackerApp(props){
     function doSave(){if(!f.metricId||isNaN(parseFloat(f.value)))return;var met=METRIC_MAP[f.metricId];var nv=parseFloat(f.value);
       var kd={metricId:f.metricId,name:met.label,rule:f.rule,value:nv,unit:met.unit,period:f.period.trim(),target:bT(f.rule,nv,met.unit),notes:""};
       if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});
-      else upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)])})});setModal(null)}
+      else upd(selId,function(c){var newKpis=c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)]);
+        if(newKpis.length===1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+        return Object.assign({},c,{kpis:newKpis})});setModal(null)}
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Metric picker grid */}
       {!ex&&<div style={{marginBottom:20}}>
@@ -1242,7 +1267,7 @@ function TrackerApp(props){
     var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
     var card={background:K.card,border:"1px solid "+K.bdr,borderRadius:isMobile?0:16,width:isMobile?"100%":520,maxWidth:isMobile?"100%":"90vw",maxHeight:isMobile?"100vh":"90vh",height:isMobile?"100vh":"auto",overflowY:"auto",padding:isMobile?"24px 20px":"36px 40px",position:"relative"};
     var stepDots=function(){return<div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:28}}>
-      {[1,2,3,4].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>};
+      {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>};
     // Step 1: Welcome
     if(obStep===1)return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
@@ -1338,25 +1363,48 @@ function TrackerApp(props){
       <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"\u201C"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"\u201D"} {"\u2014"} Warren Buffett</div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
         <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
-        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Almost done {"\u2192"}</button></div>
+        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"\u2192"}</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
     </div></div>;
-    // Step 4: You're ready
+    // Step 4: Your toolkit beyond stocks
     if(obStep===4)return<div style={overlay}><div className="ta-slide" style={card}>
+      {stepDots()}
+      <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px",textAlign:"center"}}>Your Complete Toolkit</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px"}}>ThesisAlpha isn't just stock analysis. It's your investment command center.</p>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
+        {[{icon:"shield",title:"Weekly Review",desc:"3-minute weekly check-in. Confirm conviction across all holdings. Build streaks, build discipline.",color:K.grn},
+          {icon:"trending",title:"Portfolio Timeline",desc:"Every thesis change, every decision, every conviction shift. Your investment memory, forever.",color:K.blue},
+          {icon:"dollar",title:"All Assets",desc:"Track your entire net worth. Stocks, crypto, property, gold. Stacked chart shows the big picture.",color:K.amb},
+          {icon:"users",title:"Community Insights",desc:"See aggregated conviction, moat consensus, and activity from other ThesisAlpha owners.",color:K.acc}
+        ].map(function(f){return<div key={f.title} style={{background:K.bg,borderRadius:10,padding:"16px 18px",border:"1px solid "+K.bdr}}>
+          <div style={{width:28,height:28,borderRadius:7,background:f.color+"15",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}><IC name={f.icon} size={14} color={f.color}/></div>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{f.title}</div>
+          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{f.desc}</div></div>})}</div>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:12,fontWeight:600,color:K.amb,fontFamily:fm,marginBottom:4}}>Owner\u2019s Score</div>
+        <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Everything you do earns points. Write theses, track KPIs, review weekly, classify moats. Level up from Novice to Master. Your score proves your process.</div></div>
+      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
+        <button onClick={function(){setObStep(5)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Let\u2019s go {"\u2192"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+    </div></div>;
+    // Step 5: You're ready
+    if(obStep===5)return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:36,marginBottom:12}}>{"\u2713"}</div>
-        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You're all set</h2>
-        <p style={{fontSize:13,color:K.dim,margin:0}}>Here's how to get the most out of ThesisAlpha</p></div>
+        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You\u2019re all set</h2>
+        <p style={{fontSize:13,color:K.dim,margin:0}}>Here\u2019s how to get started</p></div>
       <div style={{display:"grid",gap:10,marginBottom:24}}>
-        {[{action:"Write a thesis",where:"Click any company \u2192 Overview \u2192 Investment Thesis",icon:"lightbulb",color:K.grn},
-          {action:"Track a KPI",where:"Click any company \u2192 scroll to Key Metrics \u2192 + Track Metric",icon:"target",color:K.blue},
-          {action:"Analyze the moat",where:"Click any company \u2192 Analysis \u2192 Moat Durability",icon:"castle",color:K.acc},
-          {action:"Log a decision",where:"Owner's Hub (sidebar) \u2192 Decision Journal",icon:"book",color:K.amb}
-        ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"12px 16px",border:"1px solid "+K.bdr}}>
-          <div style={{width:28,height:28,borderRadius:6,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={13} color={hint.color}/></div>
+        {[{action:"Write a thesis",where:"Click any company \u2192 Investment Thesis",icon:"lightbulb",color:K.grn},
+          {action:"Track KPIs",where:"Company \u2192 Key Metrics \u2192 + Track Metric",icon:"target",color:K.blue},
+          {action:"Classify the moat",where:"Company \u2192 Analysis \u2192 Moat Durability",icon:"castle",color:K.acc},
+          {action:"Do your first Weekly Review",where:"Sidebar \u2192 Weekly Review",icon:"shield",color:K.amb},
+          {action:"Track all your assets",where:"Sidebar \u2192 All Assets",icon:"dollar",color:"#F59E0B"}
+        ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
+          <div style={{width:26,height:26,borderRadius:6,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={12} color={hint.color}/></div>
           <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
-            <div style={{fontSize:11,color:K.dim}}>{hint.where}</div></div></div>})}</div>
+            <div style={{fontSize:10,color:K.dim}}>{hint.where}</div></div></div>})}</div>
       <div style={{textAlign:"center"}}>
         <button onClick={function(){finishOnboarding();if(selId){setDetailTab("overview")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
@@ -1452,7 +1500,10 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
     function addDecision(){if(!f.reasoning.trim()||!f.invalidator.trim())return;
       var entry={id:Date.now(),action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,date:new Date().toISOString(),priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:"",biasFlags:[]};
-      upd(c.id,function(prev){return Object.assign({},prev,{decisions:[entry].concat(prev.decisions||[]).slice(0,50)})});
+      upd(c.id,function(prev){var newDecs=[entry].concat(prev.decisions||[]).slice(0,50);
+        return Object.assign({},prev,{decisions:newDecs})});
+      var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
+      if(allDecCount===0)setTimeout(function(){checkMilestone("first_decision",String.fromCodePoint(0x1F4DD)+" First decision logged! Your journal has begun.")},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
     var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn,PASS:K.dim};
@@ -1944,8 +1995,11 @@ function TrackerApp(props){
         var classified=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
         var unclassified=MOAT_TYPES.filter(function(t){return!mt[t.id]||!mt[t.id].active});
         function toggleType(tid){var prev=c.moatTypes||{};var cur=prev[tid]||{};var next=Object.assign({},prev);
+          var wasActive=cur.active;
           next[tid]=Object.assign({},cur,{active:!cur.active,strength:cur.strength||3,note:cur.note||""});
-          upd(c.id,{moatTypes:next})}
+          upd(c.id,{moatTypes:next});
+          if(!wasActive){var anyPrevMoats=false;cos.forEach(function(cc){var mt2=cc.moatTypes||{};Object.keys(mt2).forEach(function(k){if(mt2[k]&&mt2[k].active)anyPrevMoats=true})});
+            if(!anyPrevMoats)setTimeout(function(){checkMilestone("first_moat",String.fromCodePoint(0x1F3F0)+" First moat classified! Understanding competitive advantages is key.")},300)}}
         function setStrength(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
           next[tid]=Object.assign({},prev[tid]||{},  {strength:val});upd(c.id,{moatTypes:next})}
         function setNote(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
@@ -3815,8 +3869,20 @@ function TrackerApp(props){
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}
-    {toast&&<div className="ta-fade" style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:toast.type==="levelup"?"14px 28px":"10px 24px",borderRadius:12,background:toast.type==="levelup"?"linear-gradient(135deg, #FFD700 0%, #FFA500 100%)":K.card,border:"1px solid "+(toast.type==="levelup"?"#FFD700":K.bdr),boxShadow:"0 8px 32px rgba(0,0,0,.25)",display:"flex",alignItems:"center",gap:12,cursor:"pointer",maxWidth:420}} onClick={function(){setToast(null)}}>
-      <div style={{fontSize:toast.type==="levelup"?14:12,fontWeight:toast.type==="levelup"?700:500,color:toast.type==="levelup"?"#1a1a2e":K.txt,fontFamily:fm}}>{toast.msg}</div>
+    {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc)+"40",boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"20, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420}}>
+        <div style={{fontSize:56,marginBottom:16,animation:"streakFlame 1s ease infinite"}}>{celebOverlay.icon||String.fromCodePoint(0x1F389)}</div>
+        <div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{celebOverlay.title}</div>
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:20}}>{celebOverlay.subtitle}</div>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>Click anywhere to continue</div>
+      </div></div>}
+    {showConfetti&&<div style={{position:"fixed",inset:0,zIndex:10000,pointerEvents:"none",overflow:"hidden"}}>
+      {Array.from({length:50}).map(function(_,i){
+        var colors=["#FFD700","#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE"];
+        var left=Math.random()*100;var delay=Math.random()*2;var size=Math.random()*8+4;var dur=Math.random()*2+2;
+        return React.createElement("div",{key:i,style:{position:"absolute",left:left+"%",top:-20,width:size,height:size,borderRadius:Math.random()>.5?"50%":"2px",background:colors[i%colors.length],animation:"confettiFall "+dur+"s "+delay+"s ease-in both"}})})}</div>}
+    {toast&&<div className="ta-fade" style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:toast.type==="levelup"?"14px 28px":"10px 24px",borderRadius:12,background:toast.type==="levelup"?"linear-gradient(135deg, #FFD700 0%, #FFA500 100%)":toast.type==="streak"?"linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)":toast.type==="milestone"?"linear-gradient(135deg, #667eea 0%, #764ba2 100%)":K.card,border:"1px solid "+(toast.type==="levelup"?"#FFD700":toast.type==="streak"?"#FF6B6B":toast.type==="milestone"?"#764ba2":K.bdr),boxShadow:"0 8px 32px rgba(0,0,0,.25)",display:"flex",alignItems:"center",gap:12,cursor:"pointer",maxWidth:420}} onClick={function(){setToast(null)}}>
+      <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:10,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
     <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
