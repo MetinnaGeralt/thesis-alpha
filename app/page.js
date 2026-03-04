@@ -4143,70 +4143,43 @@ function TrackerApp(props){
       </div>}()}
     {/* Analytics quick link */}
     {sideTab==="portfolio"&&filtered.length>0&&dashSet.showOwnerScore&&(function(){var os=calcOwnerScore(cos);var bd=os.breakdown;
-      var lv=getLevel(os.total);var nextLv=LEVELS.find(function(l){return l.min===lv.next});var pctToNext=lv.next>lv.min?Math.round((os.total-lv.min)/(lv.next-lv.min)*100):100;
-      var scoreColor=os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red;
-      var cats=[
-        {key:"thesis",label:"Thesis",pts:bd.thesis,max:20,color:K.acc,icon:"lightbulb",tip:"Write 4 sections, version it, keep fresh (<90d)",onClick:function(){var t=filtered.find(function(c2){return!c2.thesisNote})||filtered[0];if(t){setSelId(t.id);setModal({type:"thesis"})}}},
-        {key:"kpi",label:"KPIs",pts:bd.kpi,max:20,color:K.blue,icon:"target",tip:"Track 2+ KPIs per holding, check earnings",onClick:function(){var t=filtered.find(function(c2){return c2.kpis.length===0})||filtered[0];if(t){setSelId(t.id);setDetailTab("overview")}}},
-        {key:"journal",label:"Journal",pts:bd.journal,max:20,color:K.grn,icon:"book",tip:"Log BUY/SELL with reasoning, tag outcomes",onClick:function(){setPage("hub")}},
-        {key:"conviction",label:"Conviction",pts:bd.conviction,max:15,color:K.amb,icon:"trending",tip:"Rate 1–10, update quarterly, run bias checks",onClick:function(){var t=filtered.find(function(c2){return!c2.conviction})||filtered[0];if(t){setSelId(t.id);setModal({type:"conviction"})}}},
-        {key:"moat",label:"Moat",pts:bd.moat,max:10,color:"#9333EA",icon:"castle",tip:"Classify types, add Morningstar, track trend",onClick:function(){var t=filtered[0];if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}},
-        {key:"balance",label:"Balance",pts:bd.balance,max:15,color:K.mid,icon:"bar",tip:"3+ holdings, <40% sector conc., 2+ styles"}];
-      // Find the lowest-scoring category to highlight
-      var lowest=cats.slice().sort(function(a,b){return(a.pts/a.max)-(b.pts/b.max)})[0];
-      var lowestPct=lowest.max>0?Math.round(lowest.pts/lowest.max*100):100;
-      return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:16}}>
-        {/* Main row: ring + level + expand toggle */}
-        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20,cursor:"pointer"}} onClick={function(){setOsExpanded(!osExpanded)}}>
-          <div style={{position:"relative",width:isMobile?56:68,height:isMobile?56:68,flexShrink:0}}>
-            <svg width={isMobile?56:68} height={isMobile?56:68} viewBox="0 0 68 68"><circle cx="34" cy="34" r="28" fill="none" stroke={K.bdr} strokeWidth="5"/><circle cx="34" cy="34" r="28" fill="none" stroke={scoreColor} strokeWidth="5" strokeDasharray={Math.round(os.total/100*176)+" 176"} strokeLinecap="round" transform="rotate(-90 34 34)"/></svg>
+      var lv=getLevel(os.total);var scoreColor=os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red;
+      // Build specific, actionable nudges with company names
+      var nudges=[];
+      var noThesis=filtered.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
+      var noKpi=filtered.filter(function(c2){return c2.kpis.length===0});
+      var noConv=filtered.filter(function(c2){return!c2.conviction||c2.conviction===0});
+      var stale=filtered.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
+      var noMoat=filtered.filter(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
+      function tickers(arr){return arr.slice(0,3).map(function(c2){return c2.ticker}).join(", ")+(arr.length>3?" + "+(arr.length-3)+" more":"")}
+      if(noThesis.length>0)nudges.push({text:tickers(noThesis)+(noThesis.length===1?" is":" are")+" missing a thesis. Write one now.",color:K.acc,icon:"lightbulb",action:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+      if(noKpi.length>0)nudges.push({text:tickers(noKpi)+(noKpi.length===1?" has":" have")+" no KPIs. Define what to track.",color:K.blue,icon:"target",action:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
+      if(noConv.length>0)nudges.push({text:"Rate your conviction for "+tickers(noConv)+".",color:K.amb,icon:"trending",action:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
+      if(stale.length>0)nudges.push({text:tickers(stale)+(stale.length===1?" thesis is":" theses are")+" over 90 days old. Time to review.",color:K.red,icon:"clock",action:function(){setSelId(stale[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+      if(noMoat.length>0&&nudges.length<3)nudges.push({text:"Classify the moat for "+tickers(noMoat)+".",color:"#9333EA",icon:"castle",action:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
+      if(!currentWeekReviewed&&nudges.length<3)nudges.push({text:"Weekly review is due. Confirm your conviction across "+filtered.length+" holdings.",color:K.grn,icon:"shield",action:function(){setPage("review")}});
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"18px 24px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20}}>
+          {/* Score ring */}
+          <div style={{position:"relative",width:56,height:56,flexShrink:0}}>
+            <svg width={56} height={56} viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="none" stroke={K.bdr} strokeWidth="4"/><circle cx="28" cy="28" r="23" fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={Math.round(os.total/100*145)+" 145"} strokeLinecap="round" transform="rotate(-90 28 28)"/></svg>
             <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-              <div style={{fontSize:isMobile?16:20,fontWeight:700,color:scoreColor,fontFamily:fm,lineHeight:1}}>{os.total}</div>
-              <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
+              <div style={{fontSize:16,fontWeight:700,color:scoreColor,fontFamily:fm,lineHeight:1}}>{os.total}</div></div></div>
+          {/* Level + status */}
           <div style={{flex:1}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner{"’"}s Score</div>
-              <span style={{fontSize:11}}>{lv.icon}</span></div>
-            <div style={{fontSize:13,color:K.txt,fontWeight:600,marginTop:1}}>{lv.name}</div>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
-              <div style={{flex:1,maxWidth:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:scoreColor,transition:"width .3s"}}/></div>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{os.total<100?(lv.next-os.total)+" pts to "+(nextLv?nextLv.name:"Max"):"Max!"}</span></div></div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {!osExpanded&&lowestPct<80&&<span style={{fontSize:10,color:lowest.color,fontFamily:fm,whiteSpace:"nowrap"}}>{"Improve: "+lowest.label}</span>}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" style={{transform:osExpanded?"rotate(180deg)":"rotate(0)",transition:"transform .2s"}}><polyline points="6,9 12,15 18,9"/></svg></div></div>
-        {/* Collapsed: mini bars */}
-        {!osExpanded&&<div style={{display:"grid",gridTemplateColumns:"repeat("+(isMobile?3:6)+",1fr)",gap:isMobile?6:8,marginTop:12}}>{cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;return<div key={cat.key} style={{textAlign:"center"}}>
-          <div style={{height:4,borderRadius:2,background:K.bdr,marginBottom:4,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
-          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{cat.label}</div>
-          <div style={{fontSize:10,fontWeight:600,color:pct>=80?cat.color:pct>=40?K.mid:K.dim,fontFamily:fm}}>{cat.pts}/{cat.max}</div></div>})}</div>}
-        {/* Expanded: full interactive breakdown */}
-        {osExpanded&&<div style={{marginTop:14}}>
-          <div style={{display:"grid",gap:8}}>
-            {cats.map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;var full=pct>=80;
-              return<div key={cat.key} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:full?cat.color+"06":"transparent",border:"1px solid "+(full?cat.color+"20":K.bdr),borderRadius:8,cursor:cat.onClick?"pointer":"default"}} onClick={cat.onClick||undefined}>
-                <IC name={cat.icon} size={13} color={full?cat.color:K.dim}/>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-                    <span style={{fontSize:11,fontWeight:600,color:full?cat.color:K.txt,fontFamily:fm}}>{cat.label}</span>
-                    <span style={{fontSize:10,color:full?cat.color:K.dim,fontFamily:fm,fontWeight:600}}>{cat.pts}/{cat.max}</span></div>
-                  <div style={{height:3,borderRadius:2,background:K.bdr,overflow:"hidden",marginBottom:3}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
-                  <div style={{fontSize:10,color:K.dim}}>{full?"✓ Strong":cat.tip}</div></div>
-                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"→"}</span>}
-                {full&&<span style={{fontSize:12,color:cat.color}}>{"✓"}</span>}
-              </div>})}</div>
-          {/* Level roadmap */}
-          <div style={{marginTop:12,padding:"10px 14px",background:K.bg,borderRadius:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-              {LEVELS.map(function(l2){var isAt=lv.name===l2.name;var isPast=os.total>=l2.min;
-                return<div key={l2.name} style={{flex:1,textAlign:"center"}}>
-                  <div style={{fontSize:13,marginBottom:2}}>{l2.icon}</div>
-                  <div style={{height:3,borderRadius:2,background:isPast?scoreColor:K.bdr,transition:"background .3s"}}/>
-                  <div style={{fontSize:8,color:isAt?scoreColor:isPast?K.mid:K.dim,fontWeight:isAt?700:400,fontFamily:fm,marginTop:2}}>{l2.name}</div></div>})}</div></div>
-          {/* Link to guide */}
-          <div style={{marginTop:8,textAlign:"center"}}>
-            <button onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>How does scoring work? {"→"}</button></div>
-        </div>}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner's Score</div>
+            <div style={{fontSize:13,color:K.txt,fontWeight:500}}>{lv.name} {lv.icon}</div>
+            {nudges.length===0&&<div style={{fontSize:11,color:K.grn,marginTop:2}}>All caught up — your process is strong.</div>}
+            {nudges.length>0&&<div style={{fontSize:11,color:K.mid,marginTop:2}}>{nudges.length} thing{nudges.length>1?"s":""} to improve</div>}
+          </div></div>
+        {/* Actionable nudges */}
+        {nudges.length>0&&<div style={{marginTop:12,display:"grid",gap:6}}>
+          {nudges.slice(0,3).map(function(n,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.color+"06",border:"1px solid "+n.color+"15",borderRadius:8,cursor:"pointer"}} onClick={n.action}>
+            <IC name={n.icon} size={13} color={n.color}/>
+            <div style={{flex:1,fontSize:11,color:K.txt}}>{n.text}</div>
+            <span style={{fontSize:11,color:n.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>Fix →</span></div>})}</div>}
       </div>})()}
+
     {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("overview")}}>
@@ -4239,21 +4212,6 @@ function TrackerApp(props){
         <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginTop:4}}>{lnk.label}</div>
         <div style={{fontSize:9,color:K.dim}}>{lnk.desc}</div></div>})}</div>}
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don’t know is the dawning of wisdom.\" Companies here are outside your circle — too complex, too unpredictable, or require expertise you don’t have. That’s not failure. That’s discipline."}</div></div>}
-    {/* Quick-start nudge for incomplete holdings */}
-    {sideTab==="portfolio"&&filtered.length>0&&function(){var noThesis=filtered.filter(function(c){return!c.thesisNote});var noKpi=filtered.filter(function(c){return c.kpis.length===0});var noStyle=filtered.filter(function(c){return!c.investStyle});
-      var stale=filtered.filter(function(c){if(!c.thesisNote||!c.thesisUpdatedAt)return false;var age=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);return age>90});
-      if(noThesis.length===0&&noKpi.length===0&&noStyle.length===0&&stale.length===0)return null;
-      var nudges=[];if(noThesis.length>0)nudges.push({icon:"lightbulb",color:K.grn,msg:noThesis.length===1?noThesis[0].ticker+" needs a thesis":noThesis.length+" holdings need a thesis",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview")}});
-      if(stale.length>0&&nudges.length<3)nudges.push({icon:"alert",color:K.amb,msg:stale.length===1?stale[0].ticker+" thesis is stale (>90d)":stale.length+" theses need review",action:"Review",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
-      if(noKpi.length>0&&nudges.length<3)nudges.push({icon:"target",color:K.blue,msg:noKpi.length===1?noKpi[0].ticker+" has no KPIs tracked":noKpi.length+" holdings have no KPIs",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview")}});
-      if(noStyle.length>0&&nudges.length<3)nudges.push({icon:"bar",color:K.acc,msg:noStyle.length===1?noStyle[0].ticker+" has no investment style":noStyle.length+" holdings need a style",action:"Set style",onClick:function(){setSelId(noStyle[0].id);setDetailTab("overview")}});
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Quick Start</div>
-        <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?8:12}}>
-          {nudges.map(function(n){return<div key={n.msg} className="ta-card" style={{flex:1,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:n.color+"06",border:"1px solid "+n.color+"20",borderRadius:8,cursor:"pointer"}} onClick={n.onClick}>
-            <IC name={n.icon} size={14} color={n.color}/>
-            <div style={{flex:1}}><div style={{fontSize:12,color:K.mid}}>{n.msg}</div></div>
-            <span style={{fontSize:10,color:n.color,fontFamily:fm,whiteSpace:"nowrap"}}>{n.action} {"→"}</span></div>})}</div></div>}()}
     {/* Enhanced empty state */}
     {filtered.length===0&&<div className="ta-fade" style={{padding:"60px 20px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
       <div style={{width:56,height:56,borderRadius:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name={sideTab==="portfolio"?"trending":sideTab==="watchlist"?"search":"alert"} size={24} color={K.acc}/></div>
