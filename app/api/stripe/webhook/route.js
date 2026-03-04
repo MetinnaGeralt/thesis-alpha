@@ -8,9 +8,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Disable body parsing — Stripe needs raw body for signature verification
-export const config = { api: { bodyParser: false } };
-
 export async function POST(request) {
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');
