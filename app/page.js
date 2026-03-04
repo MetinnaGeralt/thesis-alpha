@@ -531,6 +531,22 @@ function TrackerApp(props){
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
   var currentWeekReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
   var reviewStreak=function(){var s=0;var wk=new Date();for(var i=0;i<weeklyReviews.length;i++){var rid=weeklyReviews[i].weekId;var expect=new Date(wk);expect.setDate(expect.getDate()-expect.getDay()+(expect.getDay()===0?-6:1)-s*7);var expId=expect.toISOString().split('T')[0];if(rid===expId)s++;else break}return s}();
+
+  var ASSET_CLASSES=[
+    {id:"stocks",label:"Stocks",color:"#F59E0B",icon:"trending"},
+    {id:"crypto",label:"Crypto",color:"#8B5CF6",icon:"shield"},
+    {id:"bonds",label:"Bonds",color:"#3B82F6",icon:"castle"},
+    {id:"realestate",label:"Real Estate",color:"#10B981",icon:"book"},
+    {id:"gold",label:"Gold",color:"#EAB308",icon:"dollar"},
+    {id:"silver",label:"Silver",color:"#94A3B8",icon:"shield"},
+    {id:"commodities",label:"Commodities",color:"#78716C",icon:"gear"},
+    {id:"cash",label:"Cash & Savings",color:"#6366F1",icon:"dollar"},
+    {id:"pension",label:"Pension / 401k",color:"#EC4899",icon:"castle"},
+    {id:"alternatives",label:"Alternatives",color:"#14B8A6",icon:"flask"},
+    {id:"other",label:"Other",color:"#A1A1AA",icon:"target"}
+  ];
+  var _assets=useState(function(){try{var s=localStorage.getItem('ta-assets');return s?JSON.parse(s):{positions:[],snapshots:[]}}catch(e){return{positions:[],snapshots:[]}}}),assets=_assets[0],setAssets=_assets[1];
+  function saveAssets(fn){setAssets(function(prev){var next=typeof fn==="function"?fn(prev):fn;try{localStorage.setItem('ta-assets',JSON.stringify(next))}catch(e){}return next})}
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
@@ -1362,6 +1378,7 @@ function TrackerApp(props){
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="calendar"?K.amb+"10":"transparent",borderLeft:page==="calendar"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("calendar")})}><span style={{fontSize:12,color:page==="calendar"?K.amb:K.mid,fontWeight:page==="calendar"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="target" size={14} color={page==="calendar"?K.amb:K.mid}/>Earnings Calendar</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:K.mid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:K.mid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="timeline"?K.blue+"10":"transparent",borderLeft:page==="timeline"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("timeline")})}><span style={{fontSize:12,color:page==="timeline"?K.blue:K.mid,fontWeight:page==="timeline"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={page==="timeline"?K.blue:K.mid}/>Timeline</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:K.mid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:K.mid}/>All Assets</span></div>
     <div style={{padding:"10px 16px 6px"}}>
       <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
         <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
@@ -2755,6 +2772,280 @@ function TrackerApp(props){
   // ── Portfolio Analytics ─────────────────────────────────
 
 
+
+  // ── All Assets — Net Worth Tracker ──────────────────────
+  function AllAssets(){
+    var _addOpen=useState(false),addOpen=_addOpen[0],setAddOpen=_addOpen[1];
+    var _editId=useState(null),editId=_editId[0],setEditId=_editId[1];
+    var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:""}),form=_form[0],setForm=_form[1];
+    var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
+    var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
+
+    var positions=assets.positions||[];
+    var snapshots=(assets.snapshots||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date)});
+
+    // Compute stock portfolio value from ThesisAlpha holdings
+    var stockValue=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&c.position&&c.position.shares>0&&c.position.currentPrice>0}).reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
+
+    // Total value per class
+    var classTotals={};positions.forEach(function(p){if(!classTotals[p.classId])classTotals[p.classId]=0;classTotals[p.classId]+=p.value||0});
+    // Auto-include stock portfolio if user hasn't manually added stocks
+    var hasManualStocks=positions.some(function(p){return p.classId==="stocks"});
+    if(!hasManualStocks&&stockValue>0){classTotals["stocks"]=(classTotals["stocks"]||0)+stockValue}
+    var totalValue=Object.values(classTotals).reduce(function(s,v){return s+v},0);
+
+    // Allocation data for pie chart
+    var allocData=ASSET_CLASSES.filter(function(ac){return classTotals[ac.id]>0}).map(function(ac){return{id:ac.id,label:ac.label,value:classTotals[ac.id],color:ac.color,pct:totalValue>0?classTotals[ac.id]/totalValue*100:0}}).sort(function(a,b){return b.value-a.value});
+
+    // Auto-snapshot: once per month
+    useEffect(function(){if(positions.length===0&&stockValue===0)return;
+      var today=new Date().toISOString().split("T")[0].substring(0,7);
+      var lastSnap=snapshots.length>0?snapshots[snapshots.length-1]:null;
+      if(!lastSnap||lastSnap.date.substring(0,7)!==today){
+        var snap={date:new Date().toISOString().split("T")[0],values:Object.assign({},classTotals),total:totalValue};
+        saveAssets(function(prev){return Object.assign({},prev,{snapshots:(prev.snapshots||[]).concat([snap]).slice(-120)})})}},[positions.length,totalValue]);
+
+    // Build stacked chart data
+    var chartData=snapshots.slice();
+    // Add current point
+    if(totalValue>0){var today2=new Date().toISOString().split("T")[0];
+      if(!chartData.length||chartData[chartData.length-1].date!==today2){chartData.push({date:today2,values:Object.assign({},classTotals),total:totalValue})}}
+    // Filter by range
+    if(chartRange!=="ALL"&&chartData.length>0){
+      var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-({M3:3,M6:6,Y1:12,Y2:24,Y5:60}[chartRange]||1200));
+      var cutStr=cutoff.toISOString().split("T")[0];chartData=chartData.filter(function(d){return d.date>=cutStr})}
+
+    // Get unique class IDs across all snapshots
+    var chartClasses=[];var seenClasses={};chartData.forEach(function(d){Object.keys(d.values||{}).forEach(function(k){if(!seenClasses[k]){seenClasses[k]=true;chartClasses.push(k)}})});
+    chartClasses=ASSET_CLASSES.filter(function(ac){return seenClasses[ac.id]});
+
+    // SVG stacked area chart
+    var cW=700,cH=260,padL=60,padR=20,padT=20,padB=30;
+    var plotW=cW-padL-padR,plotH=cH-padT-padB;
+    var maxTotal=Math.max.apply(null,chartData.map(function(d){return d.total||0}).concat([1]));
+
+    function cx(i){return padL+(chartData.length>1?i/(chartData.length-1)*plotW:plotW/2)}
+    function cy(v){return padT+plotH-Math.min(v/maxTotal,1)*plotH}
+
+    // Build stacked paths
+    var stackedPaths=[];
+    if(chartData.length>=2){
+      // Build cumulative layers
+      chartClasses.forEach(function(ac,li){
+        var pts=chartData.map(function(d,di){
+          var below=0;for(var bi=0;bi<li;bi++){below+=(d.values||{})[chartClasses[bi].id]||0}
+          var val=below+((d.values||{})[ac.id]||0);
+          return{x:cx(di),yTop:cy(val),yBot:cy(below)}});
+        var topLine=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.yTop.toFixed(1)}).join(" ");
+        var botLine=pts.slice().reverse().map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.yBot.toFixed(1)}).join(" ");
+        var areaPath=topLine+" "+botLine.replace("M","L")+" Z";
+        stackedPaths.push({path:areaPath,color:ac.color,label:ac.label,id:ac.id})})}
+
+    // Y axis labels
+    var yLabels=[];for(var yi=0;yi<=4;yi++){var yv=maxTotal*yi/4;yLabels.push({v:yv,y:cy(yv),label:yv>=1e6?(yv/1e6).toFixed(1)+"M":yv>=1e3?Math.round(yv/1e3)+"k":""+Math.round(yv)})}
+    // X axis labels
+    var xLabels=[];if(chartData.length>0){var step2=Math.max(1,Math.floor(chartData.length/6));
+      for(var xi=0;xi<chartData.length;xi+=step2){xLabels.push({x:cx(xi),label:chartData[xi].date.substring(0,7)})}}
+
+    // Hovered point data
+    var hovData=hovIdx!==null&&chartData[hovIdx]?chartData[hovIdx]:null;
+
+    // Donut/Pie chart SVG
+    function PieChart(){
+      var r=80,cx2=90,cy2=90,thick=28;
+      var total2=allocData.reduce(function(s,d){return s+d.value},0);
+      var angle=0;
+      var arcs=allocData.map(function(d){
+        var sweep=total2>0?d.value/total2*Math.PI*2:0;
+        var startA=angle;angle+=sweep;
+        var midR=r-thick/2;
+        var x1=cx2+r*Math.cos(startA-Math.PI/2);var y1=cy2+r*Math.sin(startA-Math.PI/2);
+        var x2=cx2+r*Math.cos(startA+sweep-Math.PI/2);var y2=cy2+r*Math.sin(startA+sweep-Math.PI/2);
+        var ix1=cx2+(r-thick)*Math.cos(startA-Math.PI/2);var iy1=cy2+(r-thick)*Math.sin(startA-Math.PI/2);
+        var ix2=cx2+(r-thick)*Math.cos(startA+sweep-Math.PI/2);var iy2=cy2+(r-thick)*Math.sin(startA+sweep-Math.PI/2);
+        var large=sweep>Math.PI?1:0;
+        if(sweep<0.01)return null;
+        var path="M"+x1.toFixed(1)+","+y1.toFixed(1)+" A"+r+","+r+" 0 "+large+" 1 "+x2.toFixed(1)+","+y2.toFixed(1)+" L"+ix2.toFixed(1)+","+iy2.toFixed(1)+" A"+(r-thick)+","+(r-thick)+" 0 "+large+" 0 "+ix1.toFixed(1)+","+iy1.toFixed(1)+" Z";
+        return{path:path,color:d.color,label:d.label,pct:d.pct}}).filter(Boolean);
+
+      return<svg width={180} height={180} viewBox="0 0 180 180">
+        {arcs.map(function(a,i){return<path key={i} d={a.path} fill={a.color} opacity={0.85}><title>{a.label}: {a.pct.toFixed(1)}%</title></path>})}
+        <text x={cx2} y={cy2-6} textAnchor="middle" fill={K.txt} fontSize="14" fontWeight="700" fontFamily="JetBrains Mono">{totalValue>=1e6?(totalValue/1e6).toFixed(1)+"M":totalValue>=1e3?Math.round(totalValue/1e3)+"k":Math.round(totalValue)}</text>
+        <text x={cx2} y={cy2+10} textAnchor="middle" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">TOTAL</text>
+      </svg>}
+
+    function addPosition(){
+      if(!form.name.trim()||!form.value)return;
+      var newPos={id:Date.now(),classId:form.classId,name:form.name.trim(),value:parseFloat(form.value)||0,currency:form.currency||"USD",note:form.note,addedAt:new Date().toISOString()};
+      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).concat([newPos])})});
+      setForm({classId:"stocks",name:"",value:"",currency:"USD",note:""});setAddOpen(false);
+      showToast("\u2713 Asset added","info",2000)}
+
+    function updatePosition(id,updates){
+      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).map(function(p){return p.id===id?Object.assign({},p,updates):p})})})}
+
+    function removePosition(id){
+      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).filter(function(p){return p.id!==id})})})}
+
+    function fmtVal(v){if(v>=1e6)return(v/1e6).toFixed(2)+"M";if(v>=1e3)return(v/1e3).toFixed(1)+"k";return Math.round(v).toLocaleString()}
+
+    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
+      <div style={{padding:"28px 0 20px"}}>
+        <h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>All Assets</h1>
+        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>Your complete net worth — every asset class in one view</p></div>
+
+      {/* Summary Cards */}
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>NET WORTH</div>
+          <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(totalValue)}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{positions.length+(stockValue>0&&!hasManualStocks?1:0)} positions</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>ASSET CLASSES</div>
+          <div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{allocData.length}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>diversified across</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>LARGEST HOLDING</div>
+          <div style={{fontSize:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].label:"\u2014"}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].pct.toFixed(1)+"%":"Add assets"}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>STOCKS</div>
+          <div style={{fontSize:14,fontWeight:700,color:K.grn,fontFamily:fm}}>{stockValue>0?fmtVal(stockValue+(hasManualStocks?0:0)):"\u2014"}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{!hasManualStocks&&stockValue>0?"from ThesisAlpha portfolio":"\u2014"}</div></div>
+      </div>
+
+      {/* Stacked Chart + Pie */}
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 220px",gap:20,marginBottom:24}}>
+        {/* Stacked Area Chart */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={S.sec}><IC name="chart" size={14} color={K.dim}/>Portfolio Value Over Time</div>
+            <div style={{display:"flex",gap:3}}>
+              {["M3","M6","Y1","Y2","Y5","ALL"].map(function(r){return<button key={r} onClick={function(){setChartRange(r)}}
+                style={{padding:"3px 8px",fontSize:9,fontFamily:fm,background:chartRange===r?K.acc+"18":"transparent",color:chartRange===r?K.acc:K.dim,border:"1px solid "+(chartRange===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
+
+          {chartData.length<2?<div style={{padding:"60px 20px",textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:12}}>\u{1F4C8}</div>
+            <div style={{fontSize:13,color:K.dim}}>Add assets below to start tracking your net worth.</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:4}}>The chart builds over time as monthly snapshots are recorded.</div></div>:
+          <div style={{overflowX:"auto"}}>
+            <svg width={cW} height={cH} style={{display:"block"}} onMouseLeave={function(){setHovIdx(null)}}>
+              <defs>{chartClasses.map(function(ac){return<linearGradient key={ac.id} id={"ag-"+ac.id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={ac.color} stopOpacity="0.7"/>
+                <stop offset="100%" stopColor={ac.color} stopOpacity="0.2"/></linearGradient>})}</defs>
+              {/* Grid lines */}
+              {yLabels.map(function(yl,i){return<g key={i}><line x1={padL} y1={yl.y} x2={cW-padR} y2={yl.y} stroke={K.bdr} strokeWidth="0.5"/>
+                <text x={padL-8} y={yl.y+3} textAnchor="end" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">{yl.label}</text></g>})}
+              {/* Stacked areas */}
+              {stackedPaths.map(function(sp,i){return<path key={sp.id} d={sp.path} fill={"url(#ag-"+sp.id+")"} stroke={sp.color} strokeWidth="1.5" strokeLinejoin="round"/>})}
+              {/* Hover detection */}
+              {chartData.map(function(d,i){return<rect key={i} x={cx(i)-Math.max(2,plotW/chartData.length/2)} y={padT} width={Math.max(4,plotW/chartData.length)} height={plotH} fill="transparent"
+                onMouseEnter={function(){setHovIdx(i)}}/>})}
+              {/* Hover line */}
+              {hovIdx!==null&&<line x1={cx(hovIdx)} y1={padT} x2={cx(hovIdx)} y2={padT+plotH} stroke={K.dim} strokeWidth="0.5" strokeDasharray="3,3"/>}
+              {/* X axis labels */}
+              {xLabels.map(function(xl,i){return<text key={i} x={xl.x} y={cH-4} textAnchor="middle" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">{xl.label}</text>})}
+            </svg>
+            {/* Hover tooltip */}
+            {hovData&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginTop:8}}>
+              <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{hovData.date} — Total: {fmtVal(hovData.total)}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                {ASSET_CLASSES.filter(function(ac){return(hovData.values||{})[ac.id]>0}).map(function(ac){return<div key={ac.id} style={{display:"flex",alignItems:"center",gap:4}}>
+                  <div style={{width:8,height:8,borderRadius:2,background:ac.color}}/>
+                  <span style={{fontSize:10,color:K.mid,fontFamily:fm}}>{ac.label}: {fmtVal((hovData.values||{})[ac.id])}</span></div>})}</div></div>}
+          </div>}
+          {/* Legend */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}>
+            {chartClasses.map(function(ac){return<div key={ac.id} style={{display:"flex",alignItems:"center",gap:4}}>
+              <div style={{width:10,height:10,borderRadius:2,background:ac.color}}/>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{ac.label}</span></div>})}</div>
+        </div>
+
+        {/* Pie Chart + Allocation */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+          <div style={Object.assign({},S.sec,{marginBottom:14})}><IC name="target" size={14} color={K.dim}/>Allocation</div>
+          {allocData.length===0?<div style={{padding:"40px 0",textAlign:"center",color:K.dim,fontSize:11}}>No assets yet</div>:
+          <div>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:14}}><PieChart/></div>
+            {allocData.map(function(d){return<div key={d.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"50"}}>
+              <div style={{width:8,height:8,borderRadius:2,background:d.color,flexShrink:0}}/>
+              <div style={{flex:1,fontSize:11,color:K.txt,fontFamily:fm}}>{d.label}</div>
+              <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{d.pct.toFixed(1)}%</div>
+            </div>})}</div>}
+        </div>
+      </div>
+
+      {/* Positions list */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <div style={S.sec}><IC name="dollar" size={14} color={K.dim}/>Your Assets</div>
+        <button onClick={function(){setAddOpen(!addOpen);setEditId(null)}} style={Object.assign({},S.btnP,{fontSize:11,padding:"6px 16px"})}>{addOpen?"Cancel":"+ Add Asset"}</button></div>
+
+      {/* Add form */}
+      {addOpen&&<div style={{background:K.card,border:"1px solid "+K.acc+"40",borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>ASSET CLASS</div>
+            <select value={form.classId} onChange={function(e){setForm(Object.assign({},form,{classId:e.target.value}))}}
+              style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}>
+              {ASSET_CLASSES.map(function(ac){return<option key={ac.id} value={ac.id}>{ac.label}</option>})}</select></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NAME</div>
+            <input value={form.name} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder="e.g. Bitcoin, Gold ETF, Rental property..."
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:12,marginBottom:12}}>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>VALUE</div>
+            <input value={form.value} onChange={function(e){setForm(Object.assign({},form,{value:e.target.value}))}} placeholder="100000" type="number"
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>CURRENCY</div>
+            <select value={form.currency} onChange={function(e){setForm(Object.assign({},form,{currency:e.target.value}))}}
+              style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}>
+              {["USD","EUR","NOK","GBP","SEK","DKK","CHF","JPY","CAD","AUD"].map(function(c2){return<option key={c2} value={c2}>{c2}</option>})}</select></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
+            <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
+        <button onClick={addPosition} style={Object.assign({},S.btnP,{width:"100%"})}>Add Asset</button></div>}
+
+      {/* Auto-synced stocks card */}
+      {!hasManualStocks&&stockValue>0&&<div style={{background:K.card,border:"1px solid "+ASSET_CLASSES[0].color+"30",borderLeft:"4px solid "+ASSET_CLASSES[0].color,borderRadius:12,padding:"14px 20px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:10,height:10,borderRadius:2,background:ASSET_CLASSES[0].color}}/>
+        <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Stocks (ThesisAlpha Portfolio)</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Auto-synced from your {cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.position&&c2.position.shares>0}).length} portfolio holdings</div></div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(stockValue)}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{totalValue>0?(stockValue/totalValue*100).toFixed(1)+"%":""}
+          </div></div></div>}
+
+      {/* Position cards */}
+      {positions.map(function(p){
+        var ac=ASSET_CLASSES.find(function(a){return a.id===p.classId})||ASSET_CLASSES[ASSET_CLASSES.length-1];
+        var isEditing=editId===p.id;
+        return<div key={p.id} style={{background:K.card,border:"1px solid "+(isEditing?K.acc+"40":K.bdr),borderLeft:"4px solid "+ac.color,borderRadius:12,padding:"14px 20px",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:10,height:10,borderRadius:2,background:ac.color}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{p.name}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{ac.label}{p.note?" · "+p.note:""}{p.currency&&p.currency!=="USD"?" · "+p.currency:""}</div></div>
+            <div style={{textAlign:"right",marginRight:8}}>
+              {isEditing?<input value={p.value} onChange={function(e){updatePosition(p.id,{value:parseFloat(e.target.value)||0})}} type="number"
+                style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:14,fontFamily:fm,textAlign:"right",outline:"none"}}/>:
+              <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(p.value)}</div>}
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{totalValue>0?(p.value/totalValue*100).toFixed(1)+"%":""}</div></div>
+            <div style={{display:"flex",gap:4}}>
+              <button onClick={function(){setEditId(isEditing?null:p.id)}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:11,fontFamily:fm,padding:4}}>{isEditing?"Done":"Edit"}</button>
+              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:4,opacity:.5}}>\u2715</button></div>
+          </div></div>})}
+
+      {positions.length===0&&stockValue===0&&<div style={{textAlign:"center",padding:"48px 20px",color:K.dim}}>
+        <div style={{fontSize:36,marginBottom:12}}>\u{1F3E0}</div>
+        <div style={{fontSize:14}}>Track your complete net worth</div>
+        <div style={{fontSize:12,marginTop:4}}>Add all your assets — stocks, crypto, real estate, gold, pension — to see the full picture.</div>
+        <div style={{fontSize:11,marginTop:8,color:K.acc}}>Stock positions from your ThesisAlpha portfolio are included automatically.</div></div>}
+
+      {/* Monthly snapshot prompt */}
+      {positions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginTop:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <IC name="target" size={14} color={K.dim}/>
+          <div style={{flex:1}}><div style={{fontSize:11,color:K.mid,fontFamily:fm}}>Update your asset values monthly to build your net worth chart. Snapshots are saved automatically when values change.</div></div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{snapshots.length} snapshot{snapshots.length!==1?"s":""} recorded</div></div></div>}
+    </div>}
+
   // ── Portfolio Timeline / Memory ──────────────────────────
   function PortfolioTimeline(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"||c.decisions&&c.decisions.length>0});
@@ -3504,7 +3795,7 @@ function TrackerApp(props){
       <div style={{fontSize:toast.type==="levelup"?14:12,fontWeight:toast.type==="levelup"?700:500,color:toast.type==="levelup"?"#1a1a2e":K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:10,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
-    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
