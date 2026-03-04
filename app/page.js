@@ -2773,6 +2773,7 @@ function TrackerApp(props){
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
     var _ht=useState("command"),ht=_ht[0],setHt=_ht[1];
+    var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
     // Document vault (kept from before)
     var allDocs=[];cos.forEach(function(c){(c.docs||[]).forEach(function(d){allDocs.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain}))})});
     cos.forEach(function(c){if(c.thesisNote){allDocs.push({id:"thesis-"+c.id,title:"Investment Thesis",content:c.thesisNote,folder:"why-i-own",ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,updatedAt:c.thesisUpdatedAt||null,isThesis:true})}});
@@ -2948,7 +2949,6 @@ function TrackerApp(props){
           ];
           // Score mapping: moat cache stores 1-10 scores, S&P 500 benchmarks as approximate scores
           var sp500Scores={grossMargin:6,revGrowth:4,opLeverage:5,roic:5,fcfConversion:6,fortress:6,netMargin:5,rdIntensity:4};
-          var _lens=useState("smith"),activeLens=_lens[0],setActiveLens=_lens[1];
           var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
           // Calculate portfolio-weighted scores
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&c._moatCache});
