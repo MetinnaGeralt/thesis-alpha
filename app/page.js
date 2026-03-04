@@ -2925,7 +2925,7 @@ function TrackerApp(props){
                 style={{padding:"3px 8px",fontSize:9,fontFamily:fm,background:chartRange===r?K.acc+"18":"transparent",color:chartRange===r?K.acc:K.dim,border:"1px solid "+(chartRange===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
 
           {chartData.length<2?<div style={{padding:"60px 20px",textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:12}}>\u{1F4C8}</div>
+            <div style={{fontSize:32,marginBottom:12}}>{String.fromCodePoint(0x1F4C8)}</div>
             <div style={{fontSize:13,color:K.dim}}>Add assets below to start tracking your net worth.</div>
             <div style={{fontSize:11,color:K.dim,marginTop:4}}>The chart builds over time as monthly snapshots are recorded.</div></div>:
           <div style={{overflowX:"auto"}}>
@@ -3033,7 +3033,7 @@ function TrackerApp(props){
           </div></div>})}
 
       {positions.length===0&&stockValue===0&&<div style={{textAlign:"center",padding:"48px 20px",color:K.dim}}>
-        <div style={{fontSize:36,marginBottom:12}}>\u{1F3E0}</div>
+        <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F3E0)}</div>
         <div style={{fontSize:14}}>Track your complete net worth</div>
         <div style={{fontSize:12,marginTop:4}}>Add all your assets — stocks, crypto, real estate, gold, pension — to see the full picture.</div>
         <div style={{fontSize:11,marginTop:8,color:K.acc}}>Stock positions from your ThesisAlpha portfolio are included automatically.</div></div>}
@@ -3102,7 +3102,7 @@ function TrackerApp(props){
             fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{f.l} ({f.n})</button>})}</div>
 
       {filtered.length===0&&<div style={{textAlign:"center",padding:60,color:K.dim}}>
-        <div style={{fontSize:36,marginBottom:12}}>\u{1F4AD}</div>
+        <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F4AD)}</div>
         <div style={{fontSize:14}}>No events yet</div>
         <div style={{fontSize:12,marginTop:4}}>Your timeline will fill as you log decisions, update convictions, and check earnings.</div></div>}
 
@@ -3184,7 +3184,7 @@ function TrackerApp(props){
       </div>
 
       {step==="intro"&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"\u2705":"\u{1F4CB}"}</div>
+        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"\u2705":String.fromCodePoint(0x1F4CB)}</div>
         <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week\u2019s review is complete":"Ready for your weekly check-in?"}</div>
         <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
           {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes."}</div>
@@ -3244,7 +3244,7 @@ function TrackerApp(props){
 
       {step==="summary"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"32px"}}>
         <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:8}}>\u{1F4CA}</div>
+          <div style={{fontSize:36,marginBottom:8}}>{String.fromCodePoint(0x1F4CA)}</div>
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>Review Summary</div></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:24}}>
           <div style={{textAlign:"center",padding:16,background:K.bg,borderRadius:8}}><div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div><div style={{fontSize:10,color:K.dim}}>Holdings Reviewed</div></div>
