@@ -1124,14 +1124,15 @@ function TrackerApp(props){
       convSvg+='</svg>'}
     // Moat bars SVG
     var moatSvg="";
-    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"profitability",l:"Profitability"},{k:"pricingPower",l:"Pricing Power"},{k:"revenueGrowth",l:"Revenue Growth"},{k:"capitalEfficiency",l:"Capital Efficiency"},{k:"earningsQuality",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"}];
-      moatSvg='<svg width="340" height="'+(dims2.length*26+10)+'" viewBox="0 0 340 '+(dims2.length*26+10)+'" style="display:block;margin:10px 0">';
-      dims2.forEach(function(dm,i){var v=mc[dm.k]!=null?mc[dm.k]:0;var y2=i*26+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
+    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"grossMargin",l:"Pricing Power"},{k:"revGrowth",l:"Revenue Growth"},{k:"opLeverage",l:"Operating Leverage"},{k:"roic",l:"Capital Efficiency"},{k:"fcfConversion",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"},{k:"netMargin",l:"Profitability"},{k:"rdIntensity",l:"R&D Investment"}];
+      var visibleDims=dims2.filter(function(dm){return mc[dm.k]!=null&&mc[dm.k]>0});
+      if(visibleDims.length>0){moatSvg='<svg width="340" height="'+(visibleDims.length*26+10)+'" viewBox="0 0 340 '+(visibleDims.length*26+10)+'" style="display:block;margin:10px 0">';
+      visibleDims.forEach(function(dm,i){var v=mc[dm.k];var y2=i*26+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
         moatSvg+='<text x="0" y="'+(y2+11)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
         moatSvg+='<rect x="120" y="'+y2+'" width="170" height="14" rx="3" fill="#f3f4f6"/>';
         moatSvg+='<rect x="120" y="'+y2+'" width="'+(v/10*170).toFixed(0)+'" height="14" rx="3" fill="'+cl+'"/>';
         moatSvg+='<text x="300" y="'+(y2+11)+'" font-size="11" font-weight="600" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
-      moatSvg+='</svg>'}
+      moatSvg+='</svg>'}}
     // KPI table rows
     var kpiRows="";if(c.kpis.length>0){
       kpiRows='<table class="kpi-table"><thead><tr><th align="left">Metric</th><th align="right">Target</th><th align="right">Actual</th><th align="center">Status</th></tr></thead><tbody>';
@@ -1218,8 +1219,19 @@ function TrackerApp(props){
     html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'—')+'</div></div>';
     if(pos.currentPrice>0)html+='<div class="stat"><div class="stat-label">Price</div><div class="stat-val">$'+pos.currentPrice.toFixed(2)+'</div>'+(pos.avgCost>0?'<div class="stat-sub '+(pos.currentPrice>=pos.avgCost?"grn":"red")+'">'+(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'% return</div>':'')+'</div>';
     if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares · $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-    html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+met+'/'+total+'</div><div class="stat-sub">met</div></div>';
+    html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+(total>0?met+'/'+total:'—')+'</div><div class="stat-sub">met</div></div>';
+    if(os&&os.total>0)html+='<div class="stat"><div class="stat-label">Owner\'s Score</div><div class="stat-val '+(os.total>=80?"grn":os.total>=50?"amb":"red")+'">'+os.total+'</div><div class="stat-sub">/ 100</div></div>';
     html+='</div>';
+
+    // ═══ POSITION DETAILS ═══
+    if(pos.shares>0||c.purchaseDate){html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:#fafafa;border-radius:8px;border:1px solid #f3f4f6;font-size:11px;color:#6b7280">';
+      if(pos.avgCost>0)html+='<span><strong style="color:#1a1a2e">Avg Cost:</strong> $'+pos.avgCost.toFixed(2)+'</span>';
+      if(pos.shares>0&&pos.currentPrice>0)html+='<span><strong style="color:#1a1a2e">Cost Basis:</strong> $'+(pos.shares*pos.avgCost).toLocaleString(undefined,{maximumFractionDigits:0})+'</span><span><strong style="color:#1a1a2e">Market Value:</strong> $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+      if(c.purchaseDate)html+='<span><strong style="color:#1a1a2e">Owned Since:</strong> '+fD(c.purchaseDate)+'</span>';
+      var dps=c.divPerShare||c.lastDiv||0;if(dps>0){var divMult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var annDiv2=dps*divMult;
+        html+='<span><strong style="color:#16a34a">Dividend:</strong> $'+dps.toFixed(2)+'/'+(c.divFrequency==="monthly"?"mo":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"yr":"qtr")+' ('+((pos.currentPrice>0?(annDiv2/pos.currentPrice*100).toFixed(2):0))+'% yield)</span>';
+        if(pos.shares>0)html+='<span><strong style="color:#16a34a">Annual Income:</strong> $'+(pos.shares*annDiv2).toFixed(0)+'</span>'}
+      html+='</div>'}
 
     // ═══ INVESTMENT THESIS ═══
     if(sec.core||sec.moat||sec.risks||sec.sell){
