@@ -621,7 +621,11 @@ function TrackerApp(props){
   function addXP(amount,label){setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
-  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
+  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
+      // Check for new lens unlocks
+      var newUnlock=null;[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
+      if(newUnlock)setTimeout(function(){celebrate("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
+      return n})}
   // Track score for milestone detection
   var prevScoreLevel=useRef(null);
   useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
@@ -2949,7 +2953,7 @@ function TrackerApp(props){
           function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
           // Lens definitions with ACTUAL S&P 500 benchmarks
           var LENSES=[
-            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",quote:"Only invest in good companies, don’t overpay, do nothing.",
+            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",unlock:0,quote:"Only invest in good companies, don’t overpay, do nothing.",
               metrics:[
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:25,desc:"Pricing power — can the business charge a premium?"},
                 {id:"roic",label:"ROCE / ROIC",sp500:15,unit:"%",weight:25,desc:"Returns on capital — is the business capital-efficient?"},
@@ -2957,7 +2961,7 @@ function TrackerApp(props){
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Earnings quality — does profit turn into real cash?"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Financial strength — lower is better",invert:true}
               ]},
-            {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",
+            {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",unlock:0,quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",
               metrics:[
                 {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Organic demand growth — is the TAM expanding?"},
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:20,desc:"Above 60% signals a capital-light moat"},
@@ -2966,7 +2970,7 @@ function TrackerApp(props){
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — the engine of compounding"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Low debt = low risk of permanent impairment",invert:true}
               ]},
-            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",quote:"A great business at a fair price is superior to a fair business at a great price.",
+            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:4,quote:"A great business at a fair price is superior to a fair business at a great price.",
               metrics:[
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"The single best measure of a moat"},
                 {id:"grossMargin",label:"Pricing Power (Gross Margin)",sp500:45,unit:"%",weight:20,desc:"Can they raise prices without losing customers?"},
@@ -2975,7 +2979,7 @@ function TrackerApp(props){
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
                 {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
               ]},
-            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:8,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
               metrics:[
                 {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
                 {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
@@ -2983,7 +2987,15 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
               ]},
-            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",quote:"Know what you own, and know why you own it.",
+            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:12,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
+              metrics:[
+                {id:"roic",label:"Return on Capital",sp500:15,unit:"%",weight:35,desc:"The first pillar of the Magic Formula — high ROIC = good business"},
+                {id:"netMargin",label:"Earnings Yield",sp500:12,unit:"%",weight:35,desc:"The second pillar — high earnings yield = bargain price"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:10,desc:"Pricing power supporting high returns"},
+                {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
+              ]},
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:16,quote:"Know what you own, and know why you own it.",
               metrics:[
                 {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
@@ -2991,7 +3003,16 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
               ]},
-            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
+            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:20,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
+              metrics:[
+                {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:25,desc:"Growing earnings = rising stock price (first play)"},
+                {id:"netMargin",label:"Net Margin Expansion",sp500:12,unit:"%",weight:20,desc:"Expanding margins = multiple expansion (second play)"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:20,desc:"Capital efficiency sustains compounding"},
+                {id:"fortress",label:"Balance Sheet Strength",sp500:1.5,unit:"x",weight:15,desc:"Survive the bear market to reap the double play",invert:true},
+                {id:"fcfConversion",label:"Cash Generation",sp500:85,unit:"%",weight:10,desc:"Real cash flow backing earnings growth"},
+                {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:10,desc:"Durable margins through cycles"}
+              ]},
+            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:24,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
               metrics:[
                 {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
@@ -3000,7 +3021,7 @@ function TrackerApp(props){
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||(streakData.current||0)>=l.unlock)})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -3032,7 +3053,12 @@ function TrackerApp(props){
           return<div>
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-              {LENSES.map(function(l){var active=l.id===activeLens;return<button key={l.id} onClick={function(){setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+(active?K.acc+"60":K.bdr),background:active?K.acc+"10":"transparent",color:active?K.acc:K.mid,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm}}>{l.name}</button>})}</div>
+              {LENSES.map(function(l){var active=l.id===activeLens;var locked=l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:11,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
+                  {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:10}}>{String.fromCodePoint(0x1F512)}</span>}
+                  {l.name}
+                  {locked&&<span style={{display:"block",fontSize:8,color:K.dim,marginTop:1}}>Week {l.unlock} streak</span>}
+                </button>})}</div>
             {/* Lens header */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
