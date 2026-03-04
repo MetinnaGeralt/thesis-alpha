@@ -2777,7 +2777,7 @@ function TrackerApp(props){
   function AllAssets(){
     var _addOpen=useState(false),addOpen=_addOpen[0],setAddOpen=_addOpen[1];
     var _editId=useState(null),editId=_editId[0],setEditId=_editId[1];
-    var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:""}),form=_form[0],setForm=_form[1];
+    var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""}),form=_form[0],setForm=_form[1];
     var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
     var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
 
@@ -2876,9 +2876,30 @@ function TrackerApp(props){
 
     function addPosition(){
       if(!form.name.trim()||!form.value)return;
-      var newPos={id:Date.now(),classId:form.classId,name:form.name.trim(),value:parseFloat(form.value)||0,currency:form.currency||"USD",note:form.note,addedAt:new Date().toISOString()};
-      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).concat([newPos])})});
-      setForm({classId:"stocks",name:"",value:"",currency:"USD",note:""});setAddOpen(false);
+      var newPos={id:Date.now(),classId:form.classId,name:form.name.trim(),value:parseFloat(form.value)||0,currency:form.currency||"USD",note:form.note,startDate:form.startDate||null,addedAt:new Date().toISOString()};
+      saveAssets(function(prev){
+        var newPositions=(prev.positions||[]).concat([newPos]);
+        var newSnaps=(prev.snapshots||[]).slice();
+        // If startDate provided, backfill monthly snapshots
+        if(form.startDate){
+          var start=new Date(form.startDate+"-01");var now=new Date();
+          var allPos=newPositions;
+          while(start<=now){
+            var mKey=start.toISOString().split("T")[0].substring(0,7)+"-01";
+            var exists=newSnaps.some(function(s){return s.date.substring(0,7)===mKey.substring(0,7)});
+            if(!exists){
+              var snapVals={};allPos.forEach(function(p2){
+                var pStart=p2.startDate?p2.startDate+"-01":p2.addedAt.substring(0,10);
+                if(mKey>=pStart){if(!snapVals[p2.classId])snapVals[p2.classId]=0;snapVals[p2.classId]+=p2.value||0}});
+              // Include auto stocks
+              var hasManual=allPos.some(function(p2){return p2.classId==="stocks"&&(!p2.startDate||mKey>=p2.startDate+"-01")});
+              if(!hasManual&&stockValue>0)snapVals["stocks"]=(snapVals["stocks"]||0)+stockValue;
+              var snapTotal=Object.values(snapVals).reduce(function(s,v){return s+v},0);
+              if(snapTotal>0)newSnaps.push({date:mKey,values:snapVals,total:snapTotal})}
+            start.setMonth(start.getMonth()+1)}}
+        newSnaps.sort(function(a,b){return a.date.localeCompare(b.date)});
+        return Object.assign({},prev,{positions:newPositions,snapshots:newSnaps.slice(-120)})});
+      setForm({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""});setAddOpen(false);
       showToast("\u2713 Asset added","info",2000)}
 
     function updatePosition(id,updates){
@@ -2990,7 +3011,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NAME</div>
             <input value={form.name} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder="e.g. Bitcoin, Gold ETF, Rental property..."
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:12,marginBottom:12}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 2fr",gap:12,marginBottom:12}}>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>VALUE</div>
             <input value={form.value} onChange={function(e){setForm(Object.assign({},form,{value:e.target.value}))}} placeholder="100000" type="number"
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>
@@ -2998,6 +3019,9 @@ function TrackerApp(props){
             <select value={form.currency} onChange={function(e){setForm(Object.assign({},form,{currency:e.target.value}))}}
               style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}>
               {["USD","EUR","NOK","GBP","SEK","DKK","CHF","JPY","CAD","AUD"].map(function(c2){return<option key={c2} value={c2}>{c2}</option>})}</select></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>OWNED SINCE</div>
+            <input value={form.startDate} onChange={function(e){setForm(Object.assign({},form,{startDate:e.target.value}))}} type="month"
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
             <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
@@ -3021,7 +3045,7 @@ function TrackerApp(props){
             <div style={{width:10,height:10,borderRadius:2,background:ac.color}}/>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{p.name}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{ac.label}{p.note?" · "+p.note:""}{p.currency&&p.currency!=="USD"?" · "+p.currency:""}</div></div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{ac.label}{p.startDate?" · Since "+p.startDate:""}{p.note?" · "+p.note:""}{p.currency&&p.currency!=="USD"?" · "+p.currency:""}</div></div>
             <div style={{textAlign:"right",marginRight:8}}>
               {isEditing?<input value={p.value} onChange={function(e){updatePosition(p.id,{value:parseFloat(e.target.value)||0})}} type="number"
                 style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:14,fontFamily:fm,textAlign:"right",outline:"none"}}/>:
@@ -3029,7 +3053,7 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{totalValue>0?(p.value/totalValue*100).toFixed(1)+"%":""}</div></div>
             <div style={{display:"flex",gap:4}}>
               <button onClick={function(){setEditId(isEditing?null:p.id)}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:11,fontFamily:fm,padding:4}}>{isEditing?"Done":"Edit"}</button>
-              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:4,opacity:.5}}>\u2715</button></div>
+              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:4,opacity:.5}}>{"\u2715"}</button></div>
           </div></div>})}
 
       {positions.length===0&&stockValue===0&&<div style={{textAlign:"center",padding:"48px 20px",color:K.dim}}>
