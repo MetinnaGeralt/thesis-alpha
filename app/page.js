@@ -49,7 +49,7 @@ function autoFormat(text){if(!text)return text;
   // Fix spacing after commas
   s=s.replace(/,([^\s])/g,", $1");
   // Clean up dash spacing
-  s=s.replace(/\s*-\s*/g," \u2014 ");
+  s=s.replace(/\s*-\s*/g," — ");
   // Format paragraphs nicely
   var paras=s.split(/\n\n+/);
   return paras.map(function(p){return p.trim()}).filter(function(p){return p}).join("\n\n")}
@@ -420,13 +420,13 @@ var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,ser
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
 var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"lightbulb"},{id:"my-writeups",label:"My Write-Ups",icon:"edit"},{id:"deep-dives",label:"Other Deep Dives",icon:"search"},{id:"reports",label:"Reports & Presentations",icon:"bar"},{id:"notes",label:"Quick Notes",icon:"file"}];
-var SAMPLE=[{id:1,ticker:"NVDA",name:"NVIDIA Corporation",sector:"Semiconductors",domain:"nvidia.com",irUrl:"https://investor.nvidia.com",earningsDate:"2026-02-26",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:"https://investor.nvidia.com",sourceLabel:"Q4 FY26",earningSummary:"Data Center revenue surged 93% YoY to $39.2B.",thesisNote:"AI capex cycle still early innings.\n\n## MOAT\nNVIDIA owns the CUDA ecosystem — switching costs are massive. Every ML framework, every training pipeline, every inference stack is optimized for NVIDIA GPUs. This is a platform moat, not just a hardware moat.\n\n## RISKS\nCustom silicon (Google TPU, Amazon Trainium, AMD MI300) could erode share. Concentration in hyperscaler capex — if AI spending pauses, revenue craters.\n\n## SELL CRITERIA\nData Center growth below 30% YoY for 2 consecutive quarters. Gross margins below 65% sustained. Major customer (MSFT/GOOG/AMZN) publicly shifting >50% of AI training to non-NVIDIA silicon.",investStyle:"growth",position:{shares:50,avgCost:128.5},conviction:9,convictionHistory:[{date:"2025-06-01",rating:8,note:"Strong but expensive"},{date:"2025-11-20",rating:9,note:"Data center demand insatiable"},{date:"2026-01-15",rating:9,note:"AI capex still accelerating"}],status:"portfolio",docs:[{id:1,title:"Core Thesis: AI Infrastructure",folder:"why-i-own",content:"NVIDIA is the picks-and-shovels play on AI. Data center GPU demand is insatiable.",updatedAt:"2026-01-15T10:00:00Z"}],earningsHistory:[{quarter:"Q3 2025",summary:"Revenue $35.1B (+94% YoY). Data Center $30.8B. Gross margin 74.6%.",results:[{kpi_name:"Data Center Revenue",actual_value:30.8,status:"met",excerpt:"Data Center $30.8B"},{kpi_name:"Gross Margin",actual_value:74.6,status:"met",excerpt:"GAAP GM 74.6%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-11-20T18:00:00Z"},{quarter:"Q2 2025",summary:"Revenue $30.0B (+122% YoY). Data Center $26.3B. Gross margin 75.1%.",results:[{kpi_name:"Data Center Revenue",actual_value:26.3,status:"met",excerpt:"Data Center $26.3B"},{kpi_name:"Gross Margin",actual_value:75.1,status:"met",excerpt:"GAAP GM 75.1%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-08-28T18:00:00Z"}],kpis:[{id:1,name:"Data Center Revenue",target:"\u226535B",rule:"gte",value:35,unit:"B",period:"Q4 FY26",notes:"",lastResult:{actual:39.2,status:"met",excerpt:"Data Center revenue was $39.2B."}},{id:2,name:"Gross Margin",target:"\u226573%",rule:"gte",value:73,unit:"%",period:"Q4 FY26",notes:"GAAP",lastResult:{actual:73.5,status:"met",excerpt:"GAAP gross margin was 73.5%."}}]},{id:2,ticker:"CRWD",name:"CrowdStrike",sector:"Cybersecurity",domain:"crowdstrike.com",irUrl:"https://ir.crowdstrike.com",earningsDate:"2026-03-04",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:null,sourceLabel:null,earningSummary:null,thesisNote:"Post-outage recovery.\n\n## MOAT\nFalcon platform has deep endpoint integration — rip-and-replace is painful. Threat intelligence network effect: more endpoints = better detection.\n\n## RISKS\nBrand damage from July 2024 outage may linger. Competitive pressure from SentinelOne, Palo Alto. Government contracts at risk.\n\n## SELL CRITERIA\nGross retention dropping below 95%. Net new ARR below $200M for 2+ quarters. Another major incident.",investStyle:"growth",position:{shares:0,avgCost:0},conviction:6,convictionHistory:[{date:"2025-09-01",rating:5,note:"Outage fallout"},{date:"2026-01-10",rating:6,note:"Recovery underway"}],status:"watchlist",docs:[],earningsHistory:[],kpis:[{id:1,name:"Net New ARR",target:"\u2265220M",rule:"gte",value:220,unit:"M",period:"Q4 FY26",notes:"",lastResult:null},{id:2,name:"Gross Retention",target:"\u226595%",rule:"gte",value:95,unit:"%",period:"Q4 FY26",notes:"",lastResult:null}]}];
+var SAMPLE=[{id:1,ticker:"NVDA",name:"NVIDIA Corporation",sector:"Semiconductors",domain:"nvidia.com",irUrl:"https://investor.nvidia.com",earningsDate:"2026-02-26",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:"https://investor.nvidia.com",sourceLabel:"Q4 FY26",earningSummary:"Data Center revenue surged 93% YoY to $39.2B.",thesisNote:"AI capex cycle still early innings.\n\n## MOAT\nNVIDIA owns the CUDA ecosystem — switching costs are massive. Every ML framework, every training pipeline, every inference stack is optimized for NVIDIA GPUs. This is a platform moat, not just a hardware moat.\n\n## RISKS\nCustom silicon (Google TPU, Amazon Trainium, AMD MI300) could erode share. Concentration in hyperscaler capex — if AI spending pauses, revenue craters.\n\n## SELL CRITERIA\nData Center growth below 30% YoY for 2 consecutive quarters. Gross margins below 65% sustained. Major customer (MSFT/GOOG/AMZN) publicly shifting >50% of AI training to non-NVIDIA silicon.",investStyle:"growth",position:{shares:50,avgCost:128.5},conviction:9,convictionHistory:[{date:"2025-06-01",rating:8,note:"Strong but expensive"},{date:"2025-11-20",rating:9,note:"Data center demand insatiable"},{date:"2026-01-15",rating:9,note:"AI capex still accelerating"}],status:"portfolio",docs:[{id:1,title:"Core Thesis: AI Infrastructure",folder:"why-i-own",content:"NVIDIA is the picks-and-shovels play on AI. Data center GPU demand is insatiable.",updatedAt:"2026-01-15T10:00:00Z"}],earningsHistory:[{quarter:"Q3 2025",summary:"Revenue $35.1B (+94% YoY). Data Center $30.8B. Gross margin 74.6%.",results:[{kpi_name:"Data Center Revenue",actual_value:30.8,status:"met",excerpt:"Data Center $30.8B"},{kpi_name:"Gross Margin",actual_value:74.6,status:"met",excerpt:"GAAP GM 74.6%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-11-20T18:00:00Z"},{quarter:"Q2 2025",summary:"Revenue $30.0B (+122% YoY). Data Center $26.3B. Gross margin 75.1%.",results:[{kpi_name:"Data Center Revenue",actual_value:26.3,status:"met",excerpt:"Data Center $26.3B"},{kpi_name:"Gross Margin",actual_value:75.1,status:"met",excerpt:"GAAP GM 75.1%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-08-28T18:00:00Z"}],kpis:[{id:1,name:"Data Center Revenue",target:"≥35B",rule:"gte",value:35,unit:"B",period:"Q4 FY26",notes:"",lastResult:{actual:39.2,status:"met",excerpt:"Data Center revenue was $39.2B."}},{id:2,name:"Gross Margin",target:"≥73%",rule:"gte",value:73,unit:"%",period:"Q4 FY26",notes:"GAAP",lastResult:{actual:73.5,status:"met",excerpt:"GAAP gross margin was 73.5%."}}]},{id:2,ticker:"CRWD",name:"CrowdStrike",sector:"Cybersecurity",domain:"crowdstrike.com",irUrl:"https://ir.crowdstrike.com",earningsDate:"2026-03-04",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:null,sourceLabel:null,earningSummary:null,thesisNote:"Post-outage recovery.\n\n## MOAT\nFalcon platform has deep endpoint integration — rip-and-replace is painful. Threat intelligence network effect: more endpoints = better detection.\n\n## RISKS\nBrand damage from July 2024 outage may linger. Competitive pressure from SentinelOne, Palo Alto. Government contracts at risk.\n\n## SELL CRITERIA\nGross retention dropping below 95%. Net new ARR below $200M for 2+ quarters. Another major incident.",investStyle:"growth",position:{shares:0,avgCost:0},conviction:6,convictionHistory:[{date:"2025-09-01",rating:5,note:"Outage fallout"},{date:"2026-01-10",rating:6,note:"Recovery underway"}],status:"watchlist",docs:[],earningsHistory:[],kpis:[{id:1,name:"Net New ARR",target:"≥220M",rule:"gte",value:220,unit:"M",period:"Q4 FY26",notes:"",lastResult:null},{id:2,name:"Gross Retention",target:"≥95%",rule:"gte",value:95,unit:"%",period:"Q4 FY26",notes:"",lastResult:null}]}];
 var dU=function(d){if(!d||d==="TBD")return 999;return Math.ceil((new Date(d)-new Date())/864e5)};
 var fD=function(d){try{return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"})}catch(e){return d}};
 var fT=function(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})};
 var nId=function(a){return a.length?Math.max.apply(null,a.map(function(x){return x.id}))+1:1};
 function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.length)return{l:"Pending",c:"#6B7280"};var m=ev.filter(function(k){return k.lastResult.status==="met"}).length;var p=Math.round(m/ev.length*100);return p>=80?{l:"Strong",c:"#22C55E"}:p>=50?{l:"Mixed",c:"#F59E0B"}:{l:"Weak",c:"#EF4444"}}
-var bT=function(r,v,u){return(r==="gte"?"\u2265":r==="lte"?"\u2264":"=")+" "+v+(u||"")};
+var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
   if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
@@ -469,7 +469,7 @@ function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
   return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" style={p.style||{flexShrink:0}}><path d={d}/></svg>}
 
 function mkS(K){return{btn:{background:"transparent",border:"1px solid "+K.bdr,color:K.mid,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnP:{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},btnD:{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnChk:{background:K.blue+"12",border:"1px solid "+K.blue+"40",color:K.blue,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},sec:{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,marginBottom:12,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8},badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:500,color:c,background:c+"15",padding:"3px 10px",borderRadius:6,fontFamily:fm}},dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}}}}
-function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(10px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?"16px 16px 0 0":16,padding:mob?"24px 20px 32px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h2 style={{margin:0,fontSize:mob?15:17,fontWeight:500,color:K.txt,fontFamily:fh}}>{p.title}</h2><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}} onMouseEnter={function(e){e.target.style.color=K.txt}} onMouseLeave={function(e){e.target.style.color=K.dim}}>{"\u2715"}</button></div>{p.children}</div></div>}
+function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(10px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?"16px 16px 0 0":16,padding:mob?"24px 20px 32px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h2 style={{margin:0,fontSize:mob?15:17,fontWeight:500,color:K.txt,fontFamily:fh}}>{p.title}</h2><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}} onMouseEnter={function(e){e.target.style.color=K.txt}} onMouseLeave={function(e){e.target.style.color=K.dim}}>{"✕"}</button></div>{p.children}</div></div>}
 function Inp(p){var K=p.K||DARK;var b={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"};return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}{p.ta?<textarea value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} rows={3} style={Object.assign({},b,{resize:"vertical"})}/>:<input type={p.type||"text"} value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} spellCheck={p.spellCheck!==undefined?p.spellCheck:true} autoCorrect={p.autoCorrect||"on"} autoComplete={p.autoComplete||"on"} style={b}/>}</div>}
 function Sel(p){var K=p.K||DARK;return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}<select value={p.value} onChange={function(e){p.onChange(e.target.value)}} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"}}>{p.options.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>})}</select></div>}
 
@@ -502,7 +502,7 @@ function LoginPage(props){
     <div style={{marginBottom:16}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Email</label>
       <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
     <div style={{marginBottom:24}}><label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
-      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
+      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"••••••••"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
     <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
     <div style={{textAlign:"center",fontSize:13,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
   </div></div>)}
@@ -580,7 +580,7 @@ function TrackerApp(props){
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
-  var LEVELS=[{min:0,name:"Novice",next:25,icon:"\uD83C\uDF31"},{min:25,name:"Apprentice",next:50,icon:"\uD83D\uDCDA"},{min:50,name:"Practitioner",next:70,icon:"\uD83D\uDD2D"},{min:70,name:"Disciplined",next:85,icon:"\u2B50"},{min:85,name:"Master",next:100,icon:"\uD83C\uDFC6"}];
+  var LEVELS=[{min:0,name:"Novice",next:25,icon:"🌱"},{min:25,name:"Apprentice",next:50,icon:"📚"},{min:50,name:"Practitioner",next:70,icon:"🔭"},{min:70,name:"Disciplined",next:85,icon:"⭐"},{min:85,name:"Master",next:100,icon:"🏆"}];
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
   // Toast system for celebrations
   var _toast=useState(null),toast=_toast[0],setToast=_toast[1];
@@ -728,7 +728,7 @@ function TrackerApp(props){
           if(supabase&&props.userId){supabase.from("subscriptions").select("plan,status,stripe_customer_id").eq("user_id",props.userId).single().then(function(res2){
             if(res2.data&&res2.data.plan==="pro"){clearInterval(poll);setPlan("pro");try{localStorage.setItem("ta-plan","pro")}catch(e){}
               if(res2.data.stripe_customer_id)setStripeCustomerId(res2.data.stripe_customer_id);
-              celebrate("\u2728 Welcome to Pro! All data features unlocked.","levelup",6000);showCelebration("\u26A1 Pro Activated","You now have access to earnings data, moat analysis, financial statements, and more. Happy investing!",null,"#4ade80")}})
+              celebrate("✨ Welcome to Pro! All data features unlocked.","levelup",6000);showCelebration("⚡ Pro Activated","You now have access to earnings data, moat analysis, financial statements, and more. Happy investing!",null,"#4ade80")}})
             .catch(function(){})}},2000)}}
     },[]);
   // ── Trial: auto-start for existing users who don't have one ──
@@ -739,7 +739,7 @@ function TrackerApp(props){
     if(completeTheses>=THESIS_UNLOCK){
       saveTrial(Object.assign({},trial,{bonusEarned:true,bonusEarnedAt:new Date().toISOString()}));
       celebrate(String.fromCodePoint(0x1F3C6)+" Discipline recognized! +"+TRIAL_BONUS+" days of full access unlocked.","milestone",8000);
-      showCelebration(String.fromCodePoint(0x1F3C6)+" Skin in the Game","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let\u2019s stress-test the rest of your portfolio.",null,"#4ade80");
+      showCelebration(String.fromCodePoint(0x1F3C6)+" Skin in the Game","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
       setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Trial extended! "+TRIAL_BONUS+" bonus days earned for completing "+THESIS_UNLOCK+" theses",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
@@ -760,7 +760,7 @@ function TrackerApp(props){
           if(emailNotify){setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"email-draft",ticker:c.ticker,msg:"Earnings found — click to draft email summary",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
         })},Math.random()*3000+1000)}// Stagger 1-4s
       else if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"})){
-        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released \u2014 click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
+        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released — click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
     return undefined},[loaded,autoNotify,cos]);
   // Send earnings email via mailto (free, no backend needed)
   function sendEarningsEmail(c){
@@ -801,7 +801,7 @@ function TrackerApp(props){
   // Upcoming earnings notification (no AI — just a reminder)
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
-      setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d \u2014 "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
+      setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d — "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
@@ -834,7 +834,7 @@ function TrackerApp(props){
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
     if(nv){requestPushPermission();
-      setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled \u2014 earnings will be checked and you'll be notified",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
+      setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled — earnings will be checked and you'll be notified",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
   function toggleEmailNotify(){var nv=!emailNotify;setEmailNotify(nv);try{localStorage.setItem("ta-emailnotify",String(nv))}catch(e){}}
 
   // ── Modals ─────────────────────────────────────────────────
@@ -843,7 +843,7 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||""})});setLs("done");setLm("Auto-filled \u2713"+(r.earningsDate&&r.earningsDate!=="TBD"?" (incl. earnings date)":""))}
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||""})});setLs("done");setLm("Auto-filled ✓"+(r.earningsDate&&r.earningsDate!=="TBD"?" (incl. earnings date)":""))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
@@ -854,7 +854,7 @@ function TrackerApp(props){
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
         {ls!=="idle"&&<div style={{fontSize:11,color:ls==="loading"?K.dim:ls==="done"?K.grn:K.amb,marginTop:-10,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-          {ls==="loading"&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}{ls==="loading"?"Looking up\u2026":lm}</div>}</div>
+          {ls==="loading"&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}{ls==="loading"?"Looking up…":lm}</div>}</div>
         <Inp label="Company Name" value={f.name} onChange={function(v){set("name",v)}} placeholder="Apple Inc." K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} placeholder="Technology" K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"}]} K={K}/></div>
       <Inp label="Investment Thesis" value={f.thesis} onChange={function(v){set("thesis",v)}} ta placeholder="Why do you own this?" K={K}/>
@@ -907,7 +907,7 @@ function TrackerApp(props){
     var qualityColor=qualityPct>=100?K.grn:qualityPct>=75?K.acc:qualityPct>=50?K.amb:K.dim;
     var qualityLabel=qualityPct>=100?"Complete thesis":qualityPct>=75?"Almost there":qualityPct>=50?"Good start":"Needs more detail";
     var isChanged=(joinThesis(f)!==sel.thesisNote);
-    return<Modal title={sel.ticker+" \u2014 Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
+    return<Modal title={sel.ticker+" — Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
       {/* Quality meter */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:8}}>
         <div style={{position:"relative",width:40,height:40,flexShrink:0}}>
@@ -931,11 +931,11 @@ function TrackerApp(props){
         <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
         <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
           return<div key={i} style={{fontSize:11,color:K.mid,marginBottom:4,paddingLeft:8,borderLeft:"2px solid "+K.bdr}}>
-          <span style={{fontFamily:fm,color:K.dim,fontSize:10}}>{v.date}</span> {"\u2014"} {v.summary||"Updated"}</div>})}</div></div>}
+          <span style={{fontFamily:fm,color:K.dim,fontSize:10}}>{v.date}</span> {"—"} {v.summary||"Updated"}</div>})}</div></div>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","\u2728 Complete thesis! All 4 sections written.");else showToast("\u2713 Thesis saved \u2014 "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");else showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -953,7 +953,7 @@ function TrackerApp(props){
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Metric picker grid */}
       {!ex&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Choose Metric{sty?" \u2022 "+sty.label+" recommendations highlighted":""}</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
         {sty&&recIds.length>0&&<div style={{marginBottom:12}}>
           <div style={{fontSize:10,color:sty.color,marginBottom:6,fontFamily:fm}}>Recommended for {sty.label}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -967,7 +967,7 @@ function TrackerApp(props){
       {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:11,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
       {f.metricId&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
-          <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"\u2265 At least"},{v:"lte",l:"\u2264 At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
+          <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"≥ At least"},{v:"lte",l:"≤ At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
           <Inp label={"Target"+(selMet?" ("+selMet.unit+")":"")} value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder={selMet&&selMet.unit==="%"?"e.g. 20":"e.g. 5"} K={K}/>
           <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
         <div style={{fontSize:11,color:K.dim,marginTop:4,marginBottom:12}}>Auto-fetched from Finnhub when you click Check Earnings</div></div>}
@@ -999,7 +999,7 @@ function TrackerApp(props){
     var annDiv=parseFloat(f.divPerShare||0)*mult;
     var yld=f.currentPrice?annDiv/parseFloat(f.currentPrice)*100:0;
     var tp=parseFloat(f.targetPrice);var cp=parseFloat(f.currentPrice);var inBuyZone=tp>0&&cp>0&&cp<=tp;
-    return<Modal title={"Position \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={480} K={K}>
+    return<Modal title={"Position — "+sel.ticker} onClose={function(){setModal(null)}} w={480} K={K}>
       <Inp label="Shares Held" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="0" K={K}/>
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Average Cost per Share" value={f.avgCost} onChange={function(v){set("avgCost",v)}} type="number" placeholder="0.00" K={K}/>
       <Inp label="Current Price" value={f.currentPrice} onChange={function(v){set("currentPrice",v)}} type="number" placeholder="0.00" K={K}/></div>
@@ -1013,8 +1013,8 @@ function TrackerApp(props){
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:11,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Price Alert</div></div>
       <Inp label="Buy Below / Target Price" value={f.targetPrice} onChange={function(v){set("targetPrice",v)}} type="number" placeholder="Set a buy target" K={K}/>
       {tp>0&&cp>0&&<div style={{background:inBuyZone?K.grn+"10":K.bg,border:"1px solid "+(inBuyZone?K.grn+"40":K.bdr),borderRadius:8,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:14}}>{inBuyZone?"\u2705":"\u23F3"}</span>
-        <span style={{fontSize:12,color:inBuyZone?K.grn:K.dim,fontWeight:500}}>{inBuyZone?"In the buy zone! Current $"+cp.toFixed(2)+" \u2264 target $"+tp.toFixed(2):"Waiting — current $"+cp.toFixed(2)+" is "+(((cp-tp)/tp*100).toFixed(1))+"% above target $"+tp.toFixed(2)}</span></div>}
+        <span style={{fontSize:14}}>{inBuyZone?"✅":"⏳"}</span>
+        <span style={{fontSize:12,color:inBuyZone?K.grn:K.dim,fontWeight:500}}>{inBuyZone?"In the buy zone! Current $"+cp.toFixed(2)+" ≤ target $"+tp.toFixed(2):"Waiting — current $"+cp.toFixed(2)+" is "+(((cp-tp)/tp*100).toFixed(1))+"% above target $"+tp.toFixed(2)}</span></div>}
       {/* Dividends */}
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:11,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Dividend</div></div>
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Dividend per Payment" value={f.divPerShare} onChange={function(v){set("divPerShare",v)}} type="number" placeholder="0.00" K={K}/>
@@ -1047,8 +1047,8 @@ function TrackerApp(props){
     var delta=prevRating!==null?r-prevRating:null;
     function toggleFlag(id){setFlags(function(p){var n=Object.assign({},p);n[id]=!p[id];return n})}
     function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
-      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("\u2713 "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);setModal(null)}
-    if(step==="checklist")return<Modal title={"\u2708\uFE0F Pre-Flight Checklist \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
+      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);setModal(null)}
+    if(step==="checklist")return<Modal title={"✈️ Pre-Flight Checklist — "+sel.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:16}}>Before updating conviction, pause and honestly assess each bias. Flag any that apply right now.</div>
       <div style={{marginBottom:16}}>
         {BIAS_CHECKS.map(function(b){var flagged=flags[b.id];var answered=flags[b.id]!==undefined;return<div key={b.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",marginBottom:4,borderRadius:8,background:flagged?K.red+"08":answered?K.grn+"06":"transparent",border:"1px solid "+(flagged?K.red+"25":answered?K.grn+"20":K.bdr),cursor:"pointer",transition:"all .15s"}} onClick={function(){toggleFlag(b.id)}}>
@@ -1057,18 +1057,18 @@ function TrackerApp(props){
             <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{b.q}</div></div>
           <div style={{fontSize:9,color:flagged?K.red:answered?K.grn:K.dim,fontFamily:fm,flexShrink:0,paddingTop:4}}>{flagged?"FLAGGED":answered?"CLEAR":"tap"}</div>
         </div>})}</div>
-      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:8,padding:"10px 14px",marginBottom:14}}><div style={{fontSize:12,fontWeight:600,color:K.amb,marginBottom:2}}>{"\u26A0"} {flagCount} biases flagged</div><div style={{fontSize:11,color:K.mid}}>Consider whether this is the right time to act. Munger: {'"'}The big money is not in the buying and selling, but in the waiting.{'"'}</div></div>}
+      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:8,padding:"10px 14px",marginBottom:14}}><div style={{fontSize:12,fontWeight:600,color:K.amb,marginBottom:2}}>{"⚠"} {flagCount} biases flagged</div><div style={{fontSize:11,color:K.mid}}>Consider whether this is the right time to act. Munger: {'"'}The big money is not in the buying and selling, but in the waiting.{'"'}</div></div>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{Object.keys(flags).length}/{BIAS_CHECKS.length} reviewed</div>
         <div style={{display:"flex",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
-        <button style={Object.assign({},S.btnP,{opacity:allAnswered?1:.35})} onClick={function(){if(allAnswered)setStep("rate")}}>Continue to Rating {"\u2192"}</button></div></div></Modal>;
-    return<Modal title={"Conviction Rating \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
-      {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:6,padding:"8px 12px",marginBottom:16,fontSize:11,color:K.amb,fontFamily:fm}}>{"\u26A0"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
+        <button style={Object.assign({},S.btnP,{opacity:allAnswered?1:.35})} onClick={function(){if(allAnswered)setStep("rate")}}>Continue to Rating {"→"}</button></div></div></Modal>;
+    return<Modal title={"Conviction Rating — "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
+      {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:6,padding:"8px 12px",marginBottom:16,fontSize:11,color:K.amb,fontFamily:fm}}>{"⚠"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:48,fontWeight:700,color:r>=8?K.grn:r>=5?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{r}</div>
         <div style={{fontSize:11,color:K.dim}}>out of 10</div>
         {/* Delta from previous */}
         {delta!==null&&delta!==0&&<div style={{fontSize:13,fontWeight:600,color:delta>0?K.grn:K.red,fontFamily:fm,marginTop:4}}>
-          {delta>0?"\u25B2 +"+delta:"\u25BC "+delta} from last ({prevRating}/10)</div>}
+          {delta>0?"▲ +"+delta:"▼ "+delta} from last ({prevRating}/10)</div>}
         {delta===0&&prevRating!==null&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Same as last ({prevRating}/10)</div>}
       </div>
       <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>{[1,2,3,4,5,6,7,8,9,10].map(function(v){return<button key={v} onClick={function(){setR(v)}} style={{width:32,height:32,borderRadius:6,border:"1px solid "+(v===r?K.acc:K.bdr),background:v===r?K.acc+"20":K.bg,color:v===r?K.acc:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
@@ -1084,7 +1084,7 @@ function TrackerApp(props){
         </svg>
         <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{sel.convictionHistory.length} updates over time</div></div>}
       <Inp label="Note (optional)" value={n2} onChange={setN2} placeholder="Why this rating? What changed?" K={K}/>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}><button style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}} onClick={function(){setStep("checklist")}}>{"\u2190"} Back to checklist</button>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}><button style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}} onClick={function(){setStep("checklist")}}>{"←"} Back to checklist</button>
         <div style={{display:"flex",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={saveConviction}>Save</button></div></div></Modal>}
   function ManualEarningsModal(){if(!sel)return null;
     var _f=useState({quarter:"",summary:"",sourceUrl:"",sourceLabel:""}),f=_f[0],setF=_f[1];
@@ -1097,7 +1097,7 @@ function TrackerApp(props){
         if(ex>=0)hist[ex]=entry;else hist.unshift(entry);
         return Object.assign({},c,{earningSummary:entry.summary,sourceUrl:entry.sourceUrl,sourceLabel:entry.sourceLabel,lastChecked:entry.checkedAt,earningsHistory:hist.slice(0,20),
           kpis:c.kpis.map(function(k){var v=kr[k.id];return v!==undefined&&v!==""?Object.assign({},k,{lastResult:{actual:parseFloat(v),status:eS(k.rule,k.value,parseFloat(v)),excerpt:"Manual — "+f.quarter}}):k})})});setModal(null)}
-    return<Modal title={"Enter Earnings \u2014 "+sel.ticker} onClose={function(){setModal(null)}} w={540} K={K}>
+    return<Modal title={"Enter Earnings — "+sel.ticker} onClose={function(){setModal(null)}} w={540} K={K}>
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Quarter" value={f.quarter} onChange={function(v){set("quarter",v)}} placeholder="Q4 2025" K={K}/><Inp label="Source Label" value={f.sourceLabel} onChange={function(v){set("sourceLabel",v)}} placeholder="Press Release" K={K}/></div>
       <Inp label="Source URL" value={f.sourceUrl} onChange={function(v){set("sourceUrl",v)}} placeholder="https://..." K={K}/>
       <Inp label="Summary" value={f.summary} onChange={function(v){set("summary",v)}} ta placeholder="Revenue of $X, up Y% YoY. EPS of $Z..." K={K}/>
@@ -1135,9 +1135,9 @@ function TrackerApp(props){
     // KPI table rows
     var kpiRows="";if(c.kpis.length>0){
       kpiRows='<table class="kpi-table"><thead><tr><th align="left">Metric</th><th align="right">Target</th><th align="right">Actual</th><th align="center">Status</th></tr></thead><tbody>';
-      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stClr=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stIcon=st==="met"?"\u2713":st==="missed"?"\u2717":"\u2022";
+      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stClr=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stIcon=st==="met"?"✓":st==="missed"?"✗":"•";
         var mDef=METRIC_MAP[k.metricId||""]||{};var unit=mDef.unit||k.unit||"";
-        kpiRows+='<tr><td>'+((mDef.label||k.name)+(unit?" ("+unit+")":""))+'</td><td align="right" class="mono">'+(k.rule==="gte"?"\u2265":k.rule==="lte"?"\u2264":"=")+' '+k.value+'</td><td align="right" class="mono" style="color:'+stClr+'">'+(k.lastResult?k.lastResult.actual:"—")+'</td><td align="center" style="color:'+stClr+';font-weight:700">'+stIcon+'</td></tr>'});
+        kpiRows+='<tr><td>'+((mDef.label||k.name)+(unit?" ("+unit+")":""))+'</td><td align="right" class="mono">'+(k.rule==="gte"?"≥":k.rule==="lte"?"≤":"=")+' '+k.value+'</td><td align="right" class="mono" style="color:'+stClr+'">'+(k.lastResult?k.lastResult.actual:"—")+'</td><td align="center" style="color:'+stClr+';font-weight:700">'+stIcon+'</td></tr>'});
       kpiRows+='</tbody></table>'}
     // Decision table
     var decRows="";if(c.decisions&&c.decisions.length>0){
@@ -1145,7 +1145,7 @@ function TrackerApp(props){
       c.decisions.slice(0,10).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";
         decRows+='<tr><td class="mono" style="white-space:nowrap">'+(d.date?d.date.substring(0,10):"")+'</td><td style="color:'+clr+';font-weight:700">'+d.action+'</td><td style="max-width:280px">'+((d.reasoning||"").substring(0,120)+(d.reasoning&&d.reasoning.length>120?"...":""))+'</td><td class="mono" style="color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+(d.outcome||"—")+'</td></tr>'});
       decRows+='</tbody></table>'}
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note \u2014 ThesisAlpha</title>';
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note — ThesisAlpha</title>';
     html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
     html+='<style>';
     html+='@page{size:A4;margin:24mm 20mm 20mm 20mm}';
@@ -1200,8 +1200,8 @@ function TrackerApp(props){
 
     // ═══ HEADER ═══
     html+='<div class="hdr"><div class="hdr-left"><h1>'+c.ticker+'</h1>';
-    html+='<div class="sub">'+c.name+(c.sector?' \u00B7 '+c.sector:'')+(c.industry?' \u00B7 '+c.industry:'')+'</div></div>';
-    html+='<div class="hdr-right"><div class="logo">\u25B3 ThesisAlpha</div>';
+    html+='<div class="sub">'+c.name+(c.sector?' · '+c.sector:'')+(c.industry?' · '+c.industry:'')+'</div></div>';
+    html+='<div class="hdr-right"><div class="logo">△ ThesisAlpha</div>';
     html+='<div class="logo-sub">Investment Research Note</div>';
     html+='<div class="date">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
 
@@ -1209,15 +1209,15 @@ function TrackerApp(props){
     html+='<div class="meta-strip">';
     if(style)html+='<span class="meta-tag" style="background:'+style.color+'10;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
     html+='<span class="meta-tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">'+h.l+'</span>';
-    if(c.morningstarMoat)html+='<span class="meta-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a">M\u2605 '+c.morningstarMoat+(c.moatTrend?' \u00B7 '+c.moatTrend:'')+'</span>';
-    if(daysToEarn!==null&&daysToEarn>=0)html+='<span class="meta-tag" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a">Earnings: '+daysToEarn+'d \u2014 '+c.earningsDate+'</span>';
+    if(c.morningstarMoat)html+='<span class="meta-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a">M★ '+c.morningstarMoat+(c.moatTrend?' · '+c.moatTrend:'')+'</span>';
+    if(daysToEarn!==null&&daysToEarn>=0)html+='<span class="meta-tag" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a">Earnings: '+daysToEarn+'d — '+c.earningsDate+'</span>';
     html+='</div>';
 
     // ═══ KEY METRICS STRIP ═══
     html+='<div class="stats">';
-    html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'\u2014')+'</div></div>';
+    html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'—')+'</div></div>';
     if(pos.currentPrice>0)html+='<div class="stat"><div class="stat-label">Price</div><div class="stat-val">$'+pos.currentPrice.toFixed(2)+'</div>'+(pos.avgCost>0?'<div class="stat-sub '+(pos.currentPrice>=pos.avgCost?"grn":"red")+'">'+(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'% return</div>':'')+'</div>';
-    if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares \u00B7 $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+    if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares · $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
     html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+met+'/'+total+'</div><div class="stat-sub">met</div></div>';
     html+='</div>';
 
@@ -1225,9 +1225,9 @@ function TrackerApp(props){
     if(sec.core||sec.moat||sec.risks||sec.sell){
       html+='<div class="sec-h">Investment Thesis</div>';
       if(sec.core)html+='<div class="thesis-core">'+sec.core.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.moat)html+='<div class="thesis-section moat"><div class="ts-label moat">\u25B2 Competitive Moat</div>'+sec.moat.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.risks)html+='<div class="thesis-section risks"><div class="ts-label risks">\u26A0 Key Risks</div>'+sec.risks.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.sell)html+='<div class="thesis-section sell"><div class="ts-label sell">\u2717 Sell Criteria</div>'+sec.sell.replace(/\n/g,"<br/>")+'</div>'}
+      if(sec.moat)html+='<div class="thesis-section moat"><div class="ts-label moat">▲ Competitive Moat</div>'+sec.moat.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.risks)html+='<div class="thesis-section risks"><div class="ts-label risks">⚠ Key Risks</div>'+sec.risks.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.sell)html+='<div class="thesis-section sell"><div class="ts-label sell">✗ Sell Criteria</div>'+sec.sell.replace(/\n/g,"<br/>")+'</div>'}
 
     // ═══ MOAT CLASSIFICATION ═══
     if(activeMoats.length>0){html+='<div class="sec-h">Moat Classification</div>';
@@ -1238,7 +1238,7 @@ function TrackerApp(props){
         html+='</span></div>'});html+='</div>'}
 
     // ═══ MOAT DURABILITY SCORES ═══
-    if(moatSvg){html+='<div class="sec-h">Moat Durability Analysis'+(c._moatCache?' \u2014 '+c._moatCache.composite.toFixed(1)+'/10':'')+'</div>';html+=moatSvg}
+    if(moatSvg){html+='<div class="sec-h">Moat Durability Analysis'+(c._moatCache?' — '+c._moatCache.composite.toFixed(1)+'/10':'')+'</div>';html+=moatSvg}
 
     // ═══ KEY PERFORMANCE INDICATORS ═══
     if(kpiRows){html+='<div class="sec-h">Key Performance Indicators</div>';html+=kpiRows}
@@ -1247,7 +1247,7 @@ function TrackerApp(props){
     if(convSvg){html+='<div class="sec-h">Conviction History</div>';html+=convSvg;
       html+='<div style="display:flex;gap:16px;font-size:10px;color:#9ca3af;margin-top:4px">';
       if(c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];
-        html+='<span>'+first.date.substring(0,10)+': '+first.rating+'/10</span><span>\u2192</span><span>'+last.date.substring(0,10)+': '+last.rating+'/10</span>'}
+        html+='<span>'+first.date.substring(0,10)+': '+first.rating+'/10</span><span>→</span><span>'+last.date.substring(0,10)+': '+last.rating+'/10</span>'}
       html+='</div>'}
 
     // ═══ DECISION LEDGER ═══
@@ -1267,8 +1267,8 @@ function TrackerApp(props){
       html+='</div>'}
 
     // ═══ FOOTER ═══
-    html+='<div class="footer"><div class="footer-left">\u25B3 ThesisAlpha</div>';
-    html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+c.ticker+' \u00B7 '+c.name+'</div>';
+    html+='<div class="footer"><div class="footer-left">△ ThesisAlpha</div>';
+    html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+c.ticker+' · '+c.name+'</div>';
     html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
     html+='<div class="footer-disc">This document was generated by ThesisAlpha for personal investment research purposes. It does not constitute financial advice. All data is sourced from third-party providers and may contain errors. Past performance does not indicate future results.</div>';
     html+='</div></body></html>';
@@ -1278,7 +1278,7 @@ function TrackerApp(props){
   function exportResearch(cid){var c=cos.find(function(x){return x.id===cid});if(!c)return;
     var sec=parseThesis(c.thesisNote);var pos=c.position||{};
     var lines=[];
-    lines.push("# "+c.ticker+" \u2014 "+c.name);
+    lines.push("# "+c.ticker+" — "+c.name);
     lines.push("Sector: "+c.sector+(c.industry?" / "+c.industry:""));
     lines.push("Status: "+(c.status||"portfolio")+(c.investStyle?" | Style: "+c.investStyle:""));
     lines.push("Generated: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}));
@@ -1296,7 +1296,7 @@ function TrackerApp(props){
     if(sec.sell){lines.push("### Sell Criteria");lines.push(sec.sell);lines.push("")}
     // Conviction
     lines.push("## Conviction: "+(c.conviction||0)+"/10");
-    if(c.convictionHistory&&c.convictionHistory.length>0){lines.push("History:");c.convictionHistory.forEach(function(ch){lines.push("- "+ch.date.substring(0,10)+": "+ch.rating+"/10"+(ch.note?" \u2014 "+ch.note:""))});lines.push("")}
+    if(c.convictionHistory&&c.convictionHistory.length>0){lines.push("History:");c.convictionHistory.forEach(function(ch){lines.push("- "+ch.date.substring(0,10)+": "+ch.rating+"/10"+(ch.note?" — "+ch.note:""))});lines.push("")}
     // KPIs
     if(c.kpis&&c.kpis.length>0){lines.push("## KPI Tracking");c.kpis.forEach(function(k){var status=k.lastResult?k.lastResult.status:"pending";var actual=k.lastResult?"Last: "+k.lastResult.actual+(k.unit||""):"No data yet";
       lines.push("- "+k.name+": Target "+k.target+" | "+actual+" | Status: "+status)});lines.push("")}
@@ -1307,9 +1307,9 @@ function TrackerApp(props){
     if(c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0){lines.push("## Financial Snapshot (Latest)");Object.keys(c.financialSnapshot).forEach(function(k){var s=c.financialSnapshot[k];if(s&&s.value)lines.push("- "+s.label+": "+s.value)});lines.push("")}
     // Moat types
     var mt=c.moatTypes||{};var activeMoats=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
-    if(activeMoats.length>0){lines.push("## Moat Classification");activeMoats.forEach(function(t){var d=mt[t.id];lines.push("- "+t.label+" (strength: "+((d.strength||3))+"/5)"+(d.notes?" \u2014 "+d.notes:""))});lines.push("")}
+    if(activeMoats.length>0){lines.push("## Moat Classification");activeMoats.forEach(function(t){var d=mt[t.id];lines.push("- "+t.label+" (strength: "+((d.strength||3))+"/5)"+(d.notes?" — "+d.notes:""))});lines.push("")}
     // Decisions
-    if(c.decisions&&c.decisions.length>0){lines.push("## Decision Journal");c.decisions.slice(0,10).forEach(function(d){lines.push("- "+d.date.substring(0,10)+" "+d.action+(d.price?" @ $"+d.price:"")+(d.shares?" ("+d.shares+" shares)":""));if(d.reasoning)lines.push("  Reasoning: "+d.reasoning);if(d.outcome)lines.push("  Outcome: "+d.outcome+(d.outcomeNote?" \u2014 "+d.outcomeNote:""))});lines.push("")}
+    if(c.decisions&&c.decisions.length>0){lines.push("## Decision Journal");c.decisions.slice(0,10).forEach(function(d){lines.push("- "+d.date.substring(0,10)+" "+d.action+(d.price?" @ $"+d.price:"")+(d.shares?" ("+d.shares+" shares)":""));if(d.reasoning)lines.push("  Reasoning: "+d.reasoning);if(d.outcome)lines.push("  Outcome: "+d.outcome+(d.outcomeNote?" — "+d.outcomeNote:""))});lines.push("")}
     // Dividends
     var dps=c.divPerShare||c.lastDiv||0;
     if(dps>0){var mult2=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
@@ -1317,7 +1317,7 @@ function TrackerApp(props){
       if(pos.currentPrice>0)lines.push("Yield: "+((dps*mult2)/pos.currentPrice*100).toFixed(2)+"%");lines.push("")}
     lines.push("---");lines.push("Exported from ThesisAlpha | "+c.ticker+" | "+new Date().toISOString().substring(0,10));
     var txt=lines.join("\n");
-    navigator.clipboard.writeText(txt).then(function(){showToast("Research pack copied \u2014 paste into NotebookLM, ChatGPT, or any AI tool","milestone",4000)}).catch(function(){
+    navigator.clipboard.writeText(txt).then(function(){showToast("Research pack copied — paste into NotebookLM, ChatGPT, or any AI tool","milestone",4000)}).catch(function(){
       var blob=new Blob([txt],{type:"text/markdown"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=c.ticker+"_research_export.md";a.click();URL.revokeObjectURL(url);showToast("Downloaded "+c.ticker+"_research_export.md","milestone",3000)})}
   function exportCSV(list){
     var rows=[["Ticker","Company","Sector","Status","Shares","Avg Cost","Current Price","Return %","Market Value","Conviction","Earnings Date","KPIs Met","Target Price","Thesis"]];
@@ -1328,7 +1328,7 @@ function TrackerApp(props){
     var csv=rows.map(function(r){return r.join(",")}).join("\n");
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
-    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner\u2019s Score",d:"Process quality score with breakdown across 6 dimensions"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points and conviction markers"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated prep card when earnings are within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price on company cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return % on company cards"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded portfolio performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking and yields"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets, insider trades"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below analyst targets"}];
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score with breakdown across 6 dimensions"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points and conviction markers"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated prep card when earnings are within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price on company cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return % on company cards"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded portfolio performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking and yields"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets, insider trades"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below analyst targets"}];
     return<Modal title="Dashboard Settings" onClose={function(){setModal(null)}} K={K} w={480}>
       <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Customize your dashboard. Toggle features to make it as clean or feature-packed as you want.</div>
       {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
@@ -1341,16 +1341,16 @@ function TrackerApp(props){
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
     var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
-    var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe \u2014 upgrade to continue using data features.",companies:"You've reached the free limit of "+FREE_LIMIT+" companies.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
+    var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe — upgrade to continue using data features.",companies:"You've reached the free limit of "+FREE_LIMIT+" companies.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
     function startCheckout(priceId){setLoading(priceId);
-      fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error \u2014 please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
-    return<Modal title="Upgrade to Owner\u2019s Plan" onClose={function(){setShowUpgrade(false)}} w={520} K={K}>
+      fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error — please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
+    return<Modal title="Upgrade to Owner’s Plan" onClose={function(){setShowUpgrade(false)}} w={520} K={K}>
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{ctxMsg}</div>
         <div style={{fontSize:12,color:K.dim,marginTop:4}}>Your process tools stay free forever. Add real-time data to supercharge them.</div></div>
       {/* Feature list */}
       <div style={{background:K.bg,borderRadius:10,padding:"16px 20px",marginBottom:24}}>
-        {[{t:"Auto earnings check + notifications",i:"\u26A1"},{t:"Financial statements (10yr history)",i:"\uD83D\uDCCA"},{t:"Data-driven moat analysis (8 metrics)",i:"\uD83C\uDFF0"},{t:"Analyst targets + insider trades",i:"\uD83D\uDCCB"},{t:"Price charts with conviction markers",i:"\uD83D\uDCC8"},{t:"Unlimited companies",i:"\u221E"},{t:"Premium PDF export",i:"\uD83D\uDCC4"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
+        {[{t:"Auto earnings check + notifications",i:"⚡"},{t:"Financial statements (10yr history)",i:"📊"},{t:"Data-driven moat analysis (8 metrics)",i:"🏰"},{t:"Analyst targets + insider trades",i:"📋"},{t:"Price charts with conviction markers",i:"📈"},{t:"Unlimited companies",i:"∞"},{t:"Premium PDF export",i:"📄"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
           <span style={{fontSize:14,width:20,textAlign:"center"}}>{f.i}</span>
           <span style={{fontSize:12,color:K.txt,fontFamily:fm}}>{f.t}</span></div>})}</div>
       {/* Pricing cards */}
@@ -1359,13 +1359,13 @@ function TrackerApp(props){
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$9<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/mo</span></div>
           <div style={{fontSize:10,color:K.dim,marginBottom:14}}>Cancel anytime</div>
-          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_MONTHLY||"price_monthly")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting\u2026":"Start Monthly"}</button></div>
+          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_MONTHLY||"price_monthly")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
         <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
           <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$79<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
-          <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 27% \u2014 $6.58/mo</div>
-          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting\u2026":"Start Annual"}</button></div></div>
+          <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 27% — $6.58/mo</div>
+          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: {FREE_LIMIT} companies, thesis editor, conviction tracking, weekly reviews, decision journal, Owner's Score</div>
     </Modal>}
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
@@ -1418,7 +1418,7 @@ function TrackerApp(props){
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
         <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Start Fresh</button>
         <button onClick={function(){setObPath("demo");setObStep(2)}} style={Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})}>Explore with Demo Data</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 2: Path-dependent
     if(obStep===2&&obPath==="fresh")return<div style={overlay}><div className="ta-slide" style={card}>
@@ -1430,7 +1430,7 @@ function TrackerApp(props){
         <div style={{display:"flex",gap:12,alignItems:"center"}}>
           <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 120px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1}} spellCheck={false} autoFocus/>
           {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
-          {oLook==="done"&&<span style={{fontSize:12,color:K.grn,fontFamily:fm}}>{"\u2713"} Found</span>}
+          {oLook==="done"&&<span style={{fontSize:12,color:K.grn,fontFamily:fm}}>{"✓"} Found</span>}
           {oLook==="error"&&<span style={{fontSize:12,color:K.amb}}>Not found — type name below</span>}
         </div></div>
       {(oLook==="done"||oLook==="error")&&<div style={{marginBottom:16}}>
@@ -1449,11 +1449,11 @@ function TrackerApp(props){
         {oStyle&&STYLE_MAP[oStyle]&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>{STYLE_MAP[oStyle].desc}</div>}
       </div>}
       <div style={{display:"flex",gap:12,justifyContent:"space-between",marginTop:8}}>
-        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
+        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <div style={{display:"flex",gap:10}}>
           <button onClick={function(){setObStep(3)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 12px"}}>Skip for now</button>
           <button onClick={addOnboardingCompany} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12,opacity:oTicker.trim()&&oName.trim()?1:.4})} disabled={!oTicker.trim()||!oName.trim()}>Add & Continue</button></div></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     if(obStep===2&&obPath==="demo")return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
@@ -1471,9 +1471,9 @@ function TrackerApp(props){
         <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Try this</div>
         <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>Click on NVDA to see a fully built-out thesis, KPI tracking, and conviction history. Edit anything to make it yours.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
-        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"\u2192"}</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 3: The Owner's Loop
     if(obStep===3)return<div style={overlay}><div className="ta-slide" style={card}>
@@ -1482,7 +1482,7 @@ function TrackerApp(props){
       <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 28px"}}>Every great investor follows this cycle. ThesisAlpha makes it effortless.</p>
       <div className="ta-onboard-steps" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         {[{num:"1",icon:"lightbulb",title:"Write Your Thesis",desc:"Why do you own this? What's the moat? When would you sell? Write it down before you buy.",color:K.grn},
-          {num:"2",icon:"target",title:"Define KPIs",desc:"Pick 2-3 metrics that prove your thesis. Revenue growth, margins, retention \u2014 whatever matters most.",color:K.blue},
+          {num:"2",icon:"target",title:"Define KPIs",desc:"Pick 2-3 metrics that prove your thesis. Revenue growth, margins, retention — whatever matters most.",color:K.blue},
           {num:"3",icon:"bar",title:"Check Earnings",desc:"When results drop, we auto-check your KPIs against real data. See instantly if your thesis holds.",color:K.amb},
           {num:"4",icon:"castle",title:"Review & Decide",desc:"Score the moat, update conviction, log your decision. The Decision Journal keeps you honest.",color:K.acc}
         ].map(function(step){return<div key={step.num} style={{background:K.bg,borderRadius:10,padding:"18px 20px",border:"1px solid "+K.bdr,position:"relative"}}>
@@ -1490,11 +1490,11 @@ function TrackerApp(props){
           <div style={{width:32,height:32,borderRadius:7,background:step.color+"15",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><IC name={step.icon} size={15} color={step.color}/></div>
           <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{step.title}</div>
           <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{step.desc}</div></div>})}</div>
-      <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"\u201C"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"\u201D"} {"\u2014"} Warren Buffett</div>
+      <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"“"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"”"} {"—"} Warren Buffett</div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
-        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"\u2192"}</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 4: Your toolkit beyond stocks
     if(obStep===4)return<div style={overlay}><div className="ta-slide" style={card}>
@@ -1511,33 +1511,33 @@ function TrackerApp(props){
           <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{f.title}</div>
           <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{f.desc}</div></div>})}</div>
       <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",textAlign:"center",marginBottom:20}}>
-        <div style={{fontSize:12,fontWeight:600,color:K.amb,fontFamily:fm,marginBottom:4}}>Owner\u2019s Score</div>
+        <div style={{fontSize:12,fontWeight:600,color:K.amb,fontFamily:fm,marginBottom:4}}>Owner’s Score</div>
         <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Everything you do earns points. Write theses, track KPIs, review weekly, classify moats. Level up from Novice to Master. Your score proves your process.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"\u2190"} Back</button>
-        <button onClick={function(){setObStep(5)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Let\u2019s go {"\u2192"}</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(5)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Let’s go {"→"}</button></div>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 5: You're ready
     if(obStep===5)return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
       <div style={{textAlign:"center",marginBottom:20}}>
-        <div style={{fontSize:36,marginBottom:12}}>{"\u2713"}</div>
-        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You\u2019re all set</h2>
-        <p style={{fontSize:13,color:K.dim,margin:0}}>Here\u2019s how to get started</p></div>
+        <div style={{fontSize:36,marginBottom:12}}>{"✓"}</div>
+        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You’re all set</h2>
+        <p style={{fontSize:13,color:K.dim,margin:0}}>Here’s how to get started</p></div>
       <div style={{display:"grid",gap:10,marginBottom:24}}>
-        {[{action:"Write a thesis",where:"Click any company \u2192 Investment Thesis",icon:"lightbulb",color:K.grn},
-          {action:"Track KPIs",where:"Company \u2192 Key Metrics \u2192 + Track Metric",icon:"target",color:K.blue},
-          {action:"Classify the moat",where:"Company \u2192 Analysis \u2192 Moat Durability",icon:"castle",color:K.acc},
-          {action:"Do your first Weekly Review",where:"Sidebar \u2192 Weekly Review",icon:"shield",color:K.amb},
-          {action:"Track all your assets",where:"Sidebar \u2192 All Assets",icon:"dollar",color:"#F59E0B"}
+        {[{action:"Write a thesis",where:"Click any company → Investment Thesis",icon:"lightbulb",color:K.grn},
+          {action:"Track KPIs",where:"Company → Key Metrics → + Track Metric",icon:"target",color:K.blue},
+          {action:"Classify the moat",where:"Company → Analysis → Moat Durability",icon:"castle",color:K.acc},
+          {action:"Do your first Weekly Review",where:"Sidebar → Weekly Review",icon:"shield",color:K.amb},
+          {action:"Track all your assets",where:"Sidebar → All Assets",icon:"dollar",color:"#F59E0B"}
         ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
           <div style={{width:26,height:26,borderRadius:6,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={12} color={hint.color}/></div>
           <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
             <div style={{fontSize:10,color:K.dim}}>{hint.where}</div></div></div>})}</div>
       <div style={{textAlign:"center"}}>
         <button onClick={function(){finishOnboarding();if(selId){setDetailTab("overview")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"\u2715"}</button>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     return null}
 
@@ -1549,7 +1549,7 @@ function TrackerApp(props){
     function navClick(fn){return function(){fn();if(isMobile)setSideOpen(false)}}
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?280:240,minWidth:isMobile?280:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":"none",transition:"transform .2s ease"}}>
-    <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:4}}>{"\u2715"}</button>}</div>
+    <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm}}>Portfolio Overview</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:K.mid}/>Owner's Hub</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="analytics"?K.acc+"10":"transparent",borderLeft:page==="analytics"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("analytics")})}><span style={{fontSize:12,color:page==="analytics"?K.acc:K.mid,fontWeight:page==="analytics"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="bar" size={14} color={page==="analytics"?K.acc:K.mid}/>Analytics</span></div>
@@ -1569,8 +1569,8 @@ function TrackerApp(props){
           <span style={{fontSize:10,color:trialDaysLeft<=3?K.red:trialDaysLeft<=7?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{trialDaysLeft}d left</span></div>
         {!trialBonusEarned&&<div>
           <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
-          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"\u2192"} +{TRIAL_BONUS} days</div></div>}
-        {trialBonusEarned&&<div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"\u2713"} Bonus earned \u2014 {TRIAL_TOTAL} day trial</div>}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"→"} +{TRIAL_BONUS} days</div></div>}
+        {trialBonusEarned&&<div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}</div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:8,fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
     <div style={{padding:"10px 16px 6px"}}>
@@ -1618,7 +1618,7 @@ function TrackerApp(props){
       var u=url.trim();var autoLabel=u;
       try{var pu=new URL(u.startsWith("http")?u:"https://"+u);var host=pu.hostname.replace("www.","");
         var path=pu.pathname.replace(/^\/|\/$/g,"").replace(/-|_/g," ");
-        if(path&&path.length>3&&path.length<80){var segs=path.split("/");autoLabel=host.split(".")[0]+" \u2014 "+segs[segs.length-1].replace(/\.[^.]+$/,"")}
+        if(path&&path.length>3&&path.length<80){var segs=path.split("/");autoLabel=host.split(".")[0]+" — "+segs[segs.length-1].replace(/\.[^.]+$/,"")}
         else{autoLabel=host}}catch(e){autoLabel=u.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
       var newLink={id:Date.now(),url:u.startsWith("http")?u:"https://"+u,label:label.trim()||autoLabel,category:cat,addedAt:new Date().toISOString()};
       upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).concat([newLink])})});
@@ -1636,7 +1636,7 @@ function TrackerApp(props){
           <IC name={catIcons[l.category]||"link"} size={14} color={K.dim}/>
           <a href={l.url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:12,color:K.blue,textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.label}</a>
           <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{l.category}</span>
-          <button onClick={function(){removeLink(l.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:2,opacity:.5}}>{"\u2715"}</button></div>})}</div>}</div>}
+          <button onClick={function(){removeLink(l.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:2,opacity:.5}}>{"✕"}</button></div>})}</div>}</div>}
 
   // ── Decision Journal (BUY/SELL/HOLD log) ──
   function DecisionJournal(p){var c=p.company;var decisions=c.decisions||[];
@@ -1653,7 +1653,7 @@ function TrackerApp(props){
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
     var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn,PASS:K.dim};
-    var actionIcons={BUY:"\u2191",SELL:"\u2193",ADD:"\u2191",TRIM:"\u2193",HOLD:"\u2014",PASS:"\u2718"};
+    var actionIcons={BUY:"↑",SELL:"↓",ADD:"↑",TRIM:"↓",HOLD:"—",PASS:"✘"};
     var scored=decisions.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
     return<div style={{marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="edit" size={14} color={K.dim}/>Decision Ledger</div>
@@ -1665,10 +1665,10 @@ function TrackerApp(props){
           <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
           <Inp label="Price" value={f.price} onChange={function(v){set("price",v)}} type="number" placeholder="$" K={K}/>
           <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/>
-          <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1\u20133yr"},{v:"long",l:"3\u201310yr"}]} K={K}/></div>
+          <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1–3yr"},{v:"long",l:"3–10yr"}]} K={K}/></div>
         <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:K.txt,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why am I making this decision? *</label>
           <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="Core thesis. What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
-        <div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>{"\u26A0"} What would prove me wrong? *</label>
+        <div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>{"⚠"} What would prove me wrong? *</label>
           <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would kill this thesis" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
         {c.conviction>0&&<div style={{fontSize:11,color:K.dim,marginBottom:12,fontFamily:fm}}>Conviction snapshot: <span style={{color:c.conviction>=8?K.grn:c.conviction>=5?K.amb:K.red,fontWeight:600}}>{c.conviction}/10</span></div>}
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()&&f.invalidator.trim()?1:.3})} onClick={addDecision}>Save to Ledger</button></div></div>}
@@ -1685,7 +1685,7 @@ function TrackerApp(props){
             <span style={{marginLeft:"auto",fontSize:9,color:K.dim,fontFamily:fm}}>{new Date(d.date).toLocaleDateString()}</span></div>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.reasoning}</div>
           {isExp&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
-            {d.invalidator&&<div style={{marginBottom:8}}><div style={{fontSize:9,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:2,fontWeight:600}}>{"\u26A0"} INVALIDATION CRITERIA</div><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.invalidator}</div></div>}
+            {d.invalidator&&<div style={{marginBottom:8}}><div style={{fontSize:9,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:2,fontWeight:600}}>{"⚠"} INVALIDATION CRITERIA</div><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.invalidator}</div></div>}
             {d.priceAtTime&&<div style={{fontSize:10,color:K.dim,marginBottom:6,fontFamily:fm}}>Price at entry: ${d.priceAtTime}</div>}
             {d.biasFlags&&d.biasFlags.length>0&&<div style={{marginBottom:8}}><div style={{fontSize:9,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:2,fontWeight:600}}>BIAS FLAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{d.biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{b}</span>})}</div></div>}
             {!d.outcome&&<div style={{display:"flex",gap:6,marginTop:6}}><span style={{fontSize:10,color:K.dim,fontFamily:fm,lineHeight:"24px"}}>Outcome:</span>
@@ -1710,7 +1710,7 @@ function TrackerApp(props){
           return<a key={i} href={f.filingUrl||f.reportUrl||"#"} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<7?"1px solid "+K.bdr:"none",textDecoration:"none"}}>
             <span style={{background:color+"15",color:color,fontFamily:fm,fontWeight:600,fontSize:10,padding:"3px 8px",borderRadius:4,border:"1px solid "+color+"30",minWidth:36,textAlign:"center"}}>{form}</span>
             <span style={{flex:1,fontSize:11,color:K.mid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.symbol} — filed {f.filedDate||f.acceptedDate||""}</span>
-            <span style={{fontSize:11,color:K.blue}}>{"\u2197"}</span></a>})}</div></div>}
+            <span style={{fontSize:11,color:K.blue}}>{"↗"}</span></a>})}</div></div>}
 
   // ── Thesis Scorecard (quarterly self-review) ──
   function ThesisScorecard(p){var c=p.company;var reviews=c.thesisReviews||[];
@@ -1800,7 +1800,7 @@ function TrackerApp(props){
       <div style={{padding:"16px 24px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>Earnings Report {hasHistory?c.earningsHistory[0].quarter:""}</div>
           {c.lastChecked&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>Updated {fT(c.lastChecked)}</div>}</div>
-        {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>{c.sourceLabel||"Source"} {"\u2197"}</a>}</div>
+        {c.sourceUrl&&<a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>{c.sourceLabel||"Source"} {"↗"}</a>}</div>
       {/* Summary text — always shows if available */}
       {hasSummary&&<div style={{padding:"14px 24px",borderBottom:hasSnap||hasNews?"1px solid "+K.bdr:"none",fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>}
       {/* Financial grid */}
@@ -1917,21 +1917,21 @@ function TrackerApp(props){
     // 1. GROSS MARGIN
     var gm=vals(recent,"grossProfitRatio");
     if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5)))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (\u00B1"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}
+      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5)))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}
     else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
       if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
         if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
-          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5)))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (\u00B1"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
+          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5)))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
     // 2. REVENUE GROWTH
     var revs=vals(recent,"revenue");
     if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
       var grAvg=avg(growths);var grStd=stdDev(growths);
-      metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (\u00B1"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"trending",desc:"Consistent growth signals durable demand"})}
+      metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (±"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"trending",desc:"Consistent growth signals durable demand"})}
     // 3. OPERATING LEVERAGE
     var om=vals(recent,"operatingIncomeRatio");
     if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
     if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;var expanding=omLast>omFirst;
-      metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"\u2191 Expanding":"\u2193 Contracting")+" ("+omFirst.toFixed(1)+"% \u2192 "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"gear",desc:"Expanding operating margins signal scale advantages"})}
+      metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"↑ Expanding":"↓ Contracting")+" ("+omFirst.toFixed(1)+"% → "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"gear",desc:"Expanding operating margins signal scale advantages"})}
     // 4. ROIC — proper invested capital = equity + total debt - cash (excludes excess cash sitting on balance sheet)
     if(recent.length>=2&&recentBal.length>=2){var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){
       var opInc=recent[ri].operatingIncome!=null?recent[ri].operatingIncome:recent[ri].netIncome;
@@ -1957,7 +1957,7 @@ function TrackerApp(props){
     var nm=vals(recent,"netIncomeRatio");
     if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
     if(nm.length>=2){var nmF=nm[0]*100;var nmL=nm[nm.length-1]*100;var nmA=avg(nm)*100;var imp=nmL>nmF;
-      metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"\u2191":"\u2193")+" "+nmF.toFixed(1)+"% \u2192 "+nmL.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"bar",desc:"Improving profitability = strengthening position"})}
+      metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"↑":"↓")+" "+nmF.toFixed(1)+"% → "+nmL.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"bar",desc:"Improving profitability = strengthening position"})}
     if(metrics.length===0)return null;
     var composite=Math.round(avg(metrics.map(function(m){return m.score})));
     return{metrics:metrics,composite:composite,years:recent.length}}
@@ -2125,7 +2125,7 @@ function TrackerApp(props){
     var cColor=!moat?K.dim:moatColor(adjComposite);
     return<div className="ta-page-pad" style={{padding:"0 32px 60px",maxWidth:900}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
-        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Moat Analysis</span></div>
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div></div>
@@ -2170,17 +2170,17 @@ function TrackerApp(props){
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MORNINGSTAR RATING</div>
               <select value={c.morningstarMoat||""} onChange={function(e){upd(c.id,{morningstarMoat:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
-                <option value="">Not Set</option><option value="Wide">\u2605 Wide Moat</option><option value="Narrow">\u2605 Narrow Moat</option><option value="None">No Moat</option><option value="Not Rated">Not Rated</option></select></div>
+                <option value="">Not Set</option><option value="Wide">★ Wide Moat</option><option value="Narrow">★ Narrow Moat</option><option value="None">No Moat</option><option value="Not Rated">Not Rated</option></select></div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MOAT TREND</div>
               <select value={c.moatTrend||""} onChange={function(e){upd(c.id,{moatTrend:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
-                <option value="">Not Set</option><option value="Strengthening">\u25B2 Strengthening</option><option value="Stable">\u2500 Stable</option><option value="Eroding">\u25BC Eroding</option></select></div>
+                <option value="">Not Set</option><option value="Strengthening">▲ Strengthening</option><option value="Stable">─ Stable</option><option value="Eroding">▼ Eroding</option></select></div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>YOUR vs M\u2605</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>YOUR vs M★</div>
               {(function(){var yourWidth=classified.length>=3?"Wide":classified.length>=1?"Narrow":"None";var mstar=c.morningstarMoat||"";
                 var agree=mstar&&yourWidth===mstar;var disagree=mstar&&mstar!=="Not Rated"&&yourWidth!==mstar;
                 return<div style={{fontSize:12,color:agree?K.grn:disagree?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>
-                  {!mstar?"Set Morningstar rating":agree?"\u2713 Aligned":disagree?"\u26A0 Divergent":"\u2014"}</div>})()}</div></div>
+                  {!mstar?"Set Morningstar rating":agree?"✓ Aligned":disagree?"⚠ Divergent":"—"}</div>})()}</div></div>
           {/* Active moat types */}
           {classified.length>0&&<div style={{marginBottom:16}}>
             {classified.map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
@@ -2189,7 +2189,7 @@ function TrackerApp(props){
                   <IC name={t.icon} size={16} color={t.color}/>
                   <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt}}>{t.label}</div>
                     <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{t.desc}</div></div>
-                  <button onClick={function(){toggleType(t.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:4,opacity:.5}} title="Remove">{"\u2715"}</button></div>
+                  <button onClick={function(){toggleType(t.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:4,opacity:.5}} title="Remove">{"✕"}</button></div>
                 {/* Strength rating */}
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                   <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:70}}>STRENGTH</span>
@@ -2253,7 +2253,7 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1}}>DATA SCORE</div>
-                <div style={{fontSize:16,fontWeight:700,color:gmScore?scoreColor:K.dim,fontFamily:fm}}>{gmScore||"\u2014"}<span style={{fontSize:10,fontWeight:400,color:K.dim}}>/10</span></div>
+                <div style={{fontSize:16,fontWeight:700,color:gmScore?scoreColor:K.dim,fontFamily:fm}}>{gmScore||"—"}<span style={{fontSize:10,fontWeight:400,color:K.dim}}>/10</span></div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Gross margin: {gmVal}</div>
               </div>
               {finalScore!=null&&<div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2300,7 +2300,7 @@ function TrackerApp(props){
             </div>}
             {/* Note */}
             <textarea value={pp.note||""} onChange={function(e){setNote(e.target.value)}}
-              placeholder={"Why does "+c.ticker+" have "+(finalScore>=7?"strong":"weak")+" pricing power? What\u2019s the structural reason?"}
+              placeholder={"Why does "+c.ticker+" have "+(finalScore>=7?"strong":"weak")+" pricing power? What’s the structural reason?"}
               rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5,marginTop:12}}/>
           </div>
         </div>}()}
@@ -2328,8 +2328,8 @@ function TrackerApp(props){
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
       {/* Munger quote */}
       <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
-        <div style={{fontSize:12,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"\u201C"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"\u201D"}</div>
-        <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>{"\u2014"} Warren Buffett (Munger's partner)</div></div>
+        <div style={{fontSize:12,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"“"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"”"}</div>
+        <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>{"—"} Warren Buffett (Munger's partner)</div></div>
       </div>}</div>}
 
   // ── Financial Statements — Full Page (Morningstar-style) ──
@@ -2337,13 +2337,13 @@ function TrackerApp(props){
   var BS_ITEMS=[{k:"cashAndCashEquivalents",l:"Cash & Equivalents"},{k:"shortTermInvestments",l:"Short-term Investments"},{k:"netReceivables",l:"Receivables"},{k:"inventory",l:"Inventory"},{k:"totalCurrentAssets",l:"Total Current Assets",b:1},{},{k:"propertyPlantEquipmentNet",l:"PP&E (Net)"},{k:"goodwillAndIntangibleAssets",l:"Goodwill & Intangibles"},{k:"longTermInvestments",l:"Long-term Investments"},{k:"totalNonCurrentAssets",l:"Total Non-Current Assets"},{k:"totalAssets",l:"Total Assets",b:1},{},{k:"accountPayables",l:"Accounts Payable"},{k:"shortTermDebt",l:"Short-term Debt"},{k:"totalCurrentLiabilities",l:"Total Current Liabilities",b:1},{k:"longTermDebt",l:"Long-term Debt"},{k:"totalNonCurrentLiabilities",l:"Total Non-Current Liabilities"},{k:"totalLiabilities",l:"Total Liabilities",b:1},{},{k:"retainedEarnings",l:"Retained Earnings"},{k:"totalStockholdersEquity",l:"Stockholders' Equity",b:1},{},{k:"totalDebt",l:"Total Debt"},{k:"netDebt",l:"Net Debt"}];
   var CF_ITEMS=[{k:"netIncome",l:"Net Income"},{k:"depreciationAndAmortization",l:"D&A"},{k:"stockBasedCompensation",l:"Stock-Based Compensation"},{k:"changeInWorkingCapital",l:"Changes in Working Capital"},{k:"operatingCashFlow",l:"Operating Cash Flow",b:1},{},{k:"capitalExpenditure",l:"Capital Expenditures"},{k:"acquisitionsNet",l:"Acquisitions"},{k:"purchasesOfInvestments",l:"Purchases of Investments"},{k:"salesMaturitiesOfInvestments",l:"Sales of Investments"},{k:"netCashUsedForInvestingActivites",l:"Investing Cash Flow",b:1},{},{k:"debtRepayment",l:"Debt Repayment"},{k:"commonStockRepurchased",l:"Share Buybacks"},{k:"dividendsPaid",l:"Dividends Paid"},{k:"netCashUsedProvidedByFinancingActivities",l:"Financing Cash Flow",b:1},{},{k:"freeCashFlow",l:"Free Cash Flow",b:1}];
   var STMT_TABS=[{id:"income",l:"Income Statement",items:IS_ITEMS},{id:"balance",l:"Balance Sheet",items:BS_ITEMS},{id:"cashflow",l:"Cash Flow",items:CF_ITEMS}];
-  function fmtBig(v,pct){if(v==null||isNaN(v))return"\u2014";if(pct)return(v*100).toFixed(1)+"%";
+  function fmtBig(v,pct){if(v==null||isNaN(v))return"—";if(pct)return(v*100).toFixed(1)+"%";
     var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(2)+"B";else if(a>=1e6)s=(a/1e6).toFixed(1)+"M";else if(a>=1e3)s=(a/1e3).toFixed(1)+"K";else s=Math.abs(v)<100?v.toFixed(2):a.toFixed(0);return(neg?"-":"")+"$"+s}
-  function fmtCell(v,item){if(v==null||v===undefined)return"\u2014";var n=Number(v);if(isNaN(n))return"\u2014";if(item.p)return(n*100).toFixed(1)+"%";if(item.sm)return"$"+n.toFixed(2);return fmtBig(n)}
+  function fmtCell(v,item){if(v==null||v===undefined)return"—";var n=Number(v);if(isNaN(n))return"—";if(item.p)return(n*100).toFixed(1)+"%";if(item.sm)return"$"+n.toFixed(2);return fmtBig(n)}
   function FinancialsPage(p){var c=p.company;
     if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
-        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div></div></div>
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginTop:16}}>
@@ -2380,7 +2380,7 @@ function TrackerApp(props){
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
-        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div>
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}{data&&data.source?<span style={{marginLeft:8,fontSize:9,padding:"2px 6px",borderRadius:3,background:data.source==="sec-edgar"?K.grn+"15":K.acc+"15",color:data.source==="sec-edgar"?K.grn:K.acc}}>{"Source: "+(data.source==="sec-edgar"?"SEC EDGAR":"FMP")}</span>:""}</div></div>
@@ -2444,9 +2444,9 @@ function TrackerApp(props){
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
-            <span style={{fontSize:11,color:K.dim}}>{"\u2022"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
-            <span style={{fontSize:11,color:K.dim}}>{"\u2022"}</span><button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"40":c.status==="toohard"?K.red+"40":K.amb+"40"),borderRadius:4,padding:"1px 8px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button></div></div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={Object.assign({},S.btn,{display:"inline-flex",alignItems:"center",gap:5,textDecoration:"none",padding:"5px 12px",fontSize:11})}>IR{"\u2197"}</a>}
+            <span style={{fontSize:11,color:K.dim}}>{"•"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
+            <span style={{fontSize:11,color:K.dim}}>{"•"}</span><button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"40":c.status==="toohard"?K.red+"40":K.amb+"40"),borderRadius:4,padding:"1px 8px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button></div></div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={Object.assign({},S.btn,{display:"inline-flex",alignItems:"center",gap:5,textDecoration:"none",padding:"5px 12px",fontSize:11})}>IR{"↗"}</a>}
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"edit"})}}>Settings</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportResearch(c.id)}} title="Copy thesis + KPIs + history as structured text for NotebookLM or ChatGPT">Export AI</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
@@ -2459,7 +2459,7 @@ function TrackerApp(props){
             return<div key={t.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:t.color+"12",border:"1px solid "+t.color+"30",cursor:"pointer"}} onClick={function(){setDetailTab("analysis");setSubPage("moat")}}>
               <IC name={t.icon} size={10} color={t.color}/>
               <span style={{fontSize:10,fontWeight:600,color:t.color,fontFamily:fm}}>{t.label}</span>
-              <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"\u2022".repeat(dots)}{"\u00B7".repeat(5-dots)}</span>
+              <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"•".repeat(dots)}{"·".repeat(5-dots)}</span>
             </div>})}</div>}()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
@@ -2470,10 +2470,10 @@ function TrackerApp(props){
         {dashSet.showPreEarnings&&c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:13,fontWeight:600,color:K.amb}}>Earnings Prep Briefing</span><span style={{fontSize:10,color:K.amb,fontFamily:fm,marginLeft:"auto",background:K.amb+"15",padding:"2px 10px",borderRadius:4}}>{dU(c.earningsDate)}d until {fD(c.earningsDate)} {c.earningsTime}</span></div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:12}}>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>CONVICTION</div><div style={{fontSize:18,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv||"\u2014"}/10</div></div>
+            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>CONVICTION</div><div style={{fontSize:18,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv||"—"}/10</div></div>
             <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>KPIS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.kpis.length}</div></div>
             <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>QUARTERS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{(c.earningsHistory||[]).length}</div></div>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MOAT TREND</div><div style={{fontSize:14,fontWeight:700,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend||"\u2014"}</div></div></div>
+            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MOAT TREND</div><div style={{fontSize:14,fontWeight:700,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend||"—"}</div></div></div>
           {/* Metrics to Watch with historical trend */}
           {c.kpis.length>0&&<div style={{marginBottom:12}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>METRICS TO WATCH</div>{c.kpis.map(function(k){
             // Build historical trend from earnings history
@@ -2497,13 +2497,13 @@ function TrackerApp(props){
               return<div key={k.id} style={{fontSize:11,color:K.mid,lineHeight:1.6,paddingLeft:8,borderLeft:"2px solid "+K.amb+"30",marginBottom:4}}>
                 {trend==="met"?"Is "+k.name+" guidance maintained or raised? Any headwinds mentioned?":trend==="missed"?"What is management's plan to recover "+k.name+"? Was the miss structural or one-time?":"What is the outlook for "+k.name+"? How does management define success?"}</div>})}
           </div>}
-          {c.moatTrend==="Eroding"&&<div style={{marginTop:4,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding \u2014 watch for further deterioration signals.</div>}
+          {c.moatTrend==="Eroding"&&<div style={{marginTop:4,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding — watch for further deterioration signals.</div>}
           {/* Export prep for Quartr / NotebookLM */}
           <div style={{display:"flex",gap:8,marginTop:8}}>
             <button onClick={function(){exportResearch(c.id)}} style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",color:K.amb,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
               <IC name="doc" size={10} color={K.amb}/>Export for AI Analysis</button>
             {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.acc+"10",border:"1px solid "+K.acc+"25",color:K.acc,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>
-              <IC name="trending" size={10} color={K.acc}/>Investor Relations{"\u2197"}</a>}
+              <IC name="trending" size={10} color={K.acc}/>Investor Relations{"↗"}</a>}
           </div>
         </div>}
         {/* Price Chart */}
@@ -2527,7 +2527,7 @@ function TrackerApp(props){
                   <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
                     {c.convictionHistory&&c.convictionHistory.length>=2&&function(){var prev=c.convictionHistory[c.convictionHistory.length-2].rating;var d5=conv-prev;
-                      return<span style={{fontSize:10,color:d5>0?K.grn:d5<0?K.red:K.dim,fontFamily:fm,fontWeight:600}}>{d5>0?"\u25B2 +"+d5:d5<0?"\u25BC "+d5:"\u2014 same"}</span>}()}
+                      return<span style={{fontSize:10,color:d5>0?K.grn:d5<0?K.red:K.dim,fontFamily:fm,fontWeight:600}}>{d5>0?"▲ +"+d5:d5<0?"▼ "+d5:"— same"}</span>}()}
                     {c.convictionHistory&&c.convictionHistory.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.convictionHistory[c.convictionHistory.length-1].date)}</span>}
                   </div></div></div>
               {/* Mini sparkline */}
@@ -2590,7 +2590,7 @@ function TrackerApp(props){
             <div style={{marginBottom:8}}><IC name="lightbulb" size={22} color={K.acc}/></div>
             <div style={{fontSize:15,fontWeight:600,color:K.txt,marginBottom:4}}>Write your investment thesis</div>
             <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:360,margin:"0 auto"}}>Every position needs a written reason. Define why you own it, the moat, risks, and when you'd sell. This is your decision anchor.</div>
-            <div style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:6,padding:"6px 16px",background:K.acc+"15",borderRadius:6,fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>Write thesis {"\u2192"}</div></div>}
+            <div style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:6,padding:"6px 16px",background:K.acc+"15",borderRadius:6,fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>Write thesis {"→"}</div></div>}
         {/* Thesis staleness check */}
         {function(){var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
           var lastEdit=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
@@ -2606,13 +2606,13 @@ function TrackerApp(props){
               <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="14" fill="none" stroke={bgColor} strokeWidth="3" strokeDasharray={Math.round(freshPct/100*88)+" 88"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
               <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="clock" size={12} color={bgColor}/></div></div>
             <div style={{flex:1}}>
-              <div style={{fontSize:12,color:bgColor,fontWeight:600}}>{daysSince===null?"Thesis never reviewed":urgency==="critical"?"Thesis urgently needs review \u2014 "+daysSince+"d stale":"Thesis review overdue \u2014 "+daysSince+"d since last update"}</div>
+              <div style={{fontSize:12,color:bgColor,fontWeight:600}}>{daysSince===null?"Thesis never reviewed":urgency==="critical"?"Thesis urgently needs review — "+daysSince+"d stale":"Thesis review overdue — "+daysSince+"d since last update"}</div>
               <div style={{fontSize:11,color:K.dim}}>{urgency==="critical"?"Your score is losing 2 points from thesis decay. Is your thesis still intact?":"Your score is losing 1 point from staleness. A quick review keeps your thinking sharp."}</div></div>
-            <span style={{fontSize:10,color:bgColor,fontFamily:fm,fontWeight:600,flexShrink:0}}>Review {"\u2192"}</span></div>}return null}()}
+            <span style={{fontSize:10,color:bgColor,fontFamily:fm,fontWeight:600,flexShrink:0}}>Review {"→"}</span></div>}return null}()}
         {/* Earnings */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":isPro?"Check Earnings":"\u26A1 Check Earnings"}</button></div>
+          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":isPro?"Check Earnings":"⚡ Check Earnings"}</button></div>
         <EarningsReportCard company={c}/>
         <EarningsTimeline company={c}/>
         {/* KPIs */}
@@ -2620,7 +2620,7 @@ function TrackerApp(props){
           {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet. Track what matters.</div>}
           {c.kpis.map(function(k){return<div key={k.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}><div style={S.dot(k.lastResult?k.lastResult.status:null)}/>
-              <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" \u2022 "+k.period:""}</div></div>
+              <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" • "+k.period:""}</div></div>
               {k.lastResult&&<div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{k.unit||""}</div><div style={{fontSize:10,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.status.toUpperCase()}</div></div>}
               {!k.lastResult&&<span style={{fontSize:11,color:K.dim}}>Pending</span>}</div>
             {expKpi===k.id&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",gap:8}}>
@@ -2671,7 +2671,7 @@ function TrackerApp(props){
                 <div style={{background:K.bg,borderRadius:8,padding:"10px 14px"}}>
                   <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>COMMUNITY ACTIVITY</div>
                   <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>
-                    Conviction trend: <strong style={{color:convTrend==="up"?K.grn:K.mid}}>{convTrend==="up"?"\u2191 Rising":"\u2500 Stable"}</strong><br/>
+                    Conviction trend: <strong style={{color:convTrend==="up"?K.grn:K.mid}}>{convTrend==="up"?"↑ Rising":"─ Stable"}</strong><br/>
                     Most common action: <strong style={{color:topAction==="ADD"?K.grn:K.mid}}>{topAction}</strong><br/>
                     {r(5,25)}% updated thesis this month</div></div>
               </div>
@@ -2683,14 +2683,14 @@ function TrackerApp(props){
             <div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring, moat type analysis — brand, switching costs, network effects & more</div>
             {(function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
               if(active.length===0)return<div style={{fontSize:10,color:K.amb,marginTop:4,fontFamily:fm}}>No moat sources classified yet</div>;
-              var mstarBadge=c.morningstarMoat?<span style={{fontSize:9,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim,background:(c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim)+"12",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}>M\u2605 {c.morningstarMoat}</span>:null;
-              var trendBadge=c.moatTrend?<span style={{fontSize:9,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend==="Strengthening"?"\u25B2":c.moatTrend==="Eroding"?"\u25BC":"\u2500"} {c.moatTrend}</span>:null;
+              var mstarBadge=c.morningstarMoat?<span style={{fontSize:9,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim,background:(c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim)+"12",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}>M★ {c.morningstarMoat}</span>:null;
+              var trendBadge=c.moatTrend?<span style={{fontSize:9,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend==="Strengthening"?"▲":c.moatTrend==="Eroding"?"▼":"─"} {c.moatTrend}</span>:null;
               return<div style={{marginTop:6}}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{active.map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:t.color,background:t.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={t.icon} size={8} color={t.color}/>{t.label}</span>})}{mstarBadge}{trendBadge}</div></div>})()}</div>
-          <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
+          <span style={{fontSize:18,color:K.acc}}>{"→"}</span></div>
         {/* Financials link */}
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
           <div><div style={S.sec}><IC name="chart" size={14} color={K.dim}/>Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
-          <span style={{fontSize:18,color:K.acc}}>{"\u2192"}</span></div>
+          <span style={{fontSize:18,color:K.acc}}>{"→"}</span></div>
         {/* Analyst & Insider */}
         {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
         {/* SEC Filings */}
@@ -2698,7 +2698,7 @@ function TrackerApp(props){
         {/* Thesis Scorecard */}
         <ThesisScorecard company={c}/>
         {/* Attribution */}
-        <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"\u2139\uFE0F"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
+        <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
       </div>}
       {/* ═══ JOURNAL TAB ═══ */}
       {detailTab==="journal"&&<div className="ta-fade">
@@ -2741,7 +2741,7 @@ function TrackerApp(props){
               {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:8,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
             </div>
             {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
-            {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"\u26A0"} {b}</span>})}</div>}
+            {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"⚠"} {b}</span>})}</div>}
           </div></div>}
         {/* Empty state — only when truly empty */}
         {(!c.convictionHistory||c.convictionHistory.length<=1)&&(!c.decisions||c.decisions.length===0)&&(!c.researchLinks||c.researchLinks.length===0)&&(!c.docs||c.docs.length===0)&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 20px",textAlign:"center"}}>
@@ -2782,7 +2782,7 @@ function TrackerApp(props){
     if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,title:"Weekly review due",desc:"Confirm conviction across "+portfolio.length+" holdings — takes 3 minutes",action:"Start Review",onClick:function(){setPage("review")}});
     if(noKpi.length>0)actions.push({icon:"bar",color:K.blue,title:noKpi.length+" holding"+(noKpi.length>1?"s":"")+" with no KPIs",desc:"Define the metrics that prove or disprove your thesis",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard")}});
     var noConv=portfolio.filter(function(c){return!c.conviction||c.conviction===0});
-    if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1\u201310 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
+    if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1–10 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
     var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
@@ -2799,7 +2799,7 @@ function TrackerApp(props){
     var selectedDoc=hd?allDocs.find(function(d){return d.id===hd}):null;
     function exportDocPDF(doc){
       var formatted=autoFormat(doc.content);
-      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+doc.ticker+' \u2014 '+doc.title+'</title>';
+      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+doc.ticker+' — '+doc.title+'</title>';
       html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
       html+='<style>@page{size:A4;margin:24mm 20mm 20mm 20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Inter",sans-serif;color:#1a1a2e;padding:0;background:#fff}.page{max-width:680px;margin:0 auto;padding:40px 48px}';
       html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a1a2e;margin-bottom:28px}';
@@ -2813,16 +2813,16 @@ function TrackerApp(props){
       html+='.footer-l{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
       html+='.footer-r{font-size:9px;color:#9ca3af;text-align:right}';
       html+='@media print{.page{padding:0}}</style></head><body><div class="page">';
-      html+='<div class="hdr"><div><h1>'+doc.ticker+' \u2014 '+doc.title+'</h1>';
+      html+='<div class="hdr"><div><h1>'+doc.ticker+' — '+doc.title+'</h1>';
       html+='<div class="sub">'+doc.companyName+'</div></div>';
-      html+='<div><div class="logo">\u25B3 ThesisAlpha</div>';
-      html+='<div class="logo-sub">Owner\u2019s Hub</div>';
+      html+='<div><div class="logo">△ ThesisAlpha</div>';
+      html+='<div class="logo-sub">Owner’s Hub</div>';
       html+='<div class="date">'+(doc.updatedAt?new Date(doc.updatedAt).toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}):new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}))+'</div></div></div>';
       html+='<div class="content">';
       formatted.split("\n\n").forEach(function(p){if(p.trim())html+='<p>'+p.replace(/\n/g,"<br/>")+'</p>'});
       html+='</div>';
-      html+='<div class="footer"><div class="footer-l">\u25B3 ThesisAlpha</div>';
-      html+='<div class="footer-r"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+doc.ticker+' \u00B7 '+doc.companyName+'</div>';
+      html+='<div class="footer"><div class="footer-l">△ ThesisAlpha</div>';
+      html+='<div class="footer-r"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+doc.ticker+' · '+doc.companyName+'</div>';
       html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
       html+='</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
@@ -2851,7 +2851,7 @@ function TrackerApp(props){
             <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>day streak</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"\u2014"}</div>
+            <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"—"}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>batting avg</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
@@ -2872,7 +2872,7 @@ function TrackerApp(props){
             {[{key:"thesis",label:"Thesis Quality",pts:bd.thesis,max:20,icon:"lightbulb",color:K.acc,tip:"Write all 4 sections, version your thesis, keep it fresh",onClick:function(){var t=portfolio.find(function(c){return!c.thesisNote})||portfolio[0];if(t){setSelId(t.id);setModal({type:"thesis"});setPage("dashboard")}}},
               {key:"kpi",label:"KPI Discipline",pts:bd.kpi,max:20,icon:"target",color:K.blue,tip:"Track 2+ KPIs per holding, check earnings regularly",onClick:function(){var t=portfolio.find(function(c){return c.kpis.length===0})||portfolio[0];if(t){setSelId(t.id);setDetailTab("overview");setPage("dashboard")}}},
               {key:"journal",label:"Journal Consistency",pts:bd.journal,max:20,icon:"book",color:K.grn,tip:"Log every buy/sell with reasoning, tag outcomes later",onClick:function(){setHt("journal")}},
-              {key:"conviction",label:"Conviction Hygiene",pts:bd.conviction,max:15,icon:"trending",color:K.amb,tip:"Rate conviction 1\u201310, update quarterly, run bias checks",onClick:function(){var t=portfolio.find(function(c){return!c.conviction})||portfolio[0];if(t){setSelId(t.id);setModal({type:"conviction"});setPage("dashboard")}}},
+              {key:"conviction",label:"Conviction Hygiene",pts:bd.conviction,max:15,icon:"trending",color:K.amb,tip:"Rate conviction 1–10, update quarterly, run bias checks",onClick:function(){var t=portfolio.find(function(c){return!c.conviction})||portfolio[0];if(t){setSelId(t.id);setModal({type:"conviction"});setPage("dashboard")}}},
               {key:"moat",label:"Moat Vigilance",pts:bd.moat,max:10,icon:"castle",color:"#9333EA",tip:"Classify moat types, add Morningstar reference, track trend",onClick:function(){var t=portfolio[0];if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}},
               {key:"balance",label:"Portfolio Balance",pts:bd.balance,max:15,icon:"bar",color:K.mid,tip:"3+ holdings, sector diversification <40%, 2+ investment styles"}
             ].map(function(cat){var pct=cat.max>0?Math.round(cat.pts/cat.max*100):0;var full=pct>=80;
@@ -2882,7 +2882,7 @@ function TrackerApp(props){
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,fontWeight:600,color:full?cat.color:K.txt,fontFamily:fm}}>{cat.label}</span><span style={{fontSize:10,color:full?cat.color:K.dim,fontFamily:fm,fontWeight:600}}>{cat.pts}/{cat.max}</span></div>
                   <div style={{height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color,transition:"width .3s"}}/></div>
                   <div style={{fontSize:10,color:K.dim,marginTop:3}}>{cat.tip}</div></div>
-                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"\u2192"}</span>}
+                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"→"}</span>}
                 {full&&<span style={{fontSize:12}}>{"✓"}</span>}
               </div>})}
           </div></div>
@@ -2895,7 +2895,7 @@ function TrackerApp(props){
               <div style={{width:36,height:36,borderRadius:8,background:a.color+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={a.icon} size={16} color={a.color}/></div>
               <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>{a.title}</div>
                 <div style={{fontSize:11,color:K.dim,marginTop:1}}>{a.desc}</div></div>
-              <span style={{fontSize:11,color:a.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>{a.action} {"\u2192"}</span></div>})}</div></div>}
+              <span style={{fontSize:11,color:a.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>{a.action} {"→"}</span></div>})}</div></div>}
         {actions.length===0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px 20px",textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:18,marginBottom:4}}>{"🎯"}</div>
           <div style={{fontSize:14,fontWeight:500,color:K.grn}}>All caught up!</div>
@@ -2915,7 +2915,7 @@ function TrackerApp(props){
         {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Recent Decisions</div>
-            <button onClick={function(){setHt("journal")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>View all {"\u2192"}</button></div>
+            <button onClick={function(){setHt("journal")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>View all {"→"}</button></div>
           {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).slice(0,5).map(function(dec,i){
             var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
             return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<4?"1px solid "+K.bdr:"none"}}>
@@ -2977,8 +2977,8 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
               <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
               <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
-                <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" \u2022 "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
-              <button onClick={function(){if(requirePro("export"))exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>{isPro?"PDF":"\u26A1 PDF"}</button>
+                <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" • "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
+              <button onClick={function(){if(requirePro("export"))exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>{isPro?"PDF":"⚡ PDF"}</button>
               {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Edit</button>}
             </div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
@@ -2990,14 +2990,14 @@ function TrackerApp(props){
       {ht==="guide"&&<div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>ThesisAlpha tracks how well you follow a disciplined investment process \u2014 not whether your stocks go up. The Owner's Score measures the quality of your process across 6 dimensions. Research shows that investors who maintain a written thesis, track KPIs, and review regularly outperform those who don't.</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>ThesisAlpha tracks how well you follow a disciplined investment process — not whether your stocks go up. The Owner's Score measures the quality of your process across 6 dimensions. Research shows that investors who maintain a written thesis, track KPIs, and review regularly outperform those who don't.</div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality (20 pts)",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh \u2014 stale theses lose points."},
+            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality (20 pts)",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh — stale theses lose points."},
               {icon:"target",color:K.blue,title:"KPI Discipline (20 pts)",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
               {icon:"book",color:K.grn,title:"Journal Consistency (20 pts)",desc:"Log every BUY, SELL, ADD, TRIM with written reasoning. Tag outcomes later (right/wrong/mixed). This is how you learn from mistakes."},
-              {icon:"trending",color:K.amb,title:"Conviction Hygiene (15 pts)",desc:"Rate conviction 1\u201310 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
+              {icon:"trending",color:K.amb,title:"Conviction Hygiene (15 pts)",desc:"Rate conviction 1–10 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
               {icon:"castle",color:"#9333EA",title:"Moat Vigilance (10 pts)",desc:"Classify moat types (brand, switching costs, network effects, etc). Add Morningstar's rating for reference. Track whether the moat is strengthening or eroding."},
-              {icon:"bar",color:K.mid,title:"Portfolio Balance (15 pts)",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns \u2014 it's about thoughtful construction."}
+              {icon:"bar",color:K.mid,title:"Portfolio Balance (15 pts)",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns — it's about thoughtful construction."}
             ].map(function(item){return<div key={item.title} style={{padding:"14px 16px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><IC name={item.icon} size={14} color={item.color}/>
                 <span style={{fontSize:12,fontWeight:600,color:item.color,fontFamily:fm}}>{item.title}</span></div>
@@ -3150,7 +3150,7 @@ function TrackerApp(props){
         newSnaps.sort(function(a,b){return a.date.localeCompare(b.date)});
         return Object.assign({},prev,{positions:newPositions,snapshots:newSnaps.slice(-120)})});
       setForm({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""});setAddOpen(false);
-      showToast("\u2713 Asset added","info",2000)}
+      showToast("✓ Asset added","info",2000)}
 
     function updatePosition(id,updates){
       saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).map(function(p){return p.id===id?Object.assign({},p,updates):p})})})}
@@ -3177,12 +3177,12 @@ function TrackerApp(props){
           <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>diversified across</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>LARGEST HOLDING</div>
-          <div style={{fontSize:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].label:"\u2014"}</div>
+          <div style={{fontSize:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].label:"—"}</div>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].pct.toFixed(1)+"%":"Add assets"}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>STOCKS</div>
-          <div style={{fontSize:14,fontWeight:700,color:K.grn,fontFamily:fm}}>{stockValue>0?fmtVal(stockValue+(hasManualStocks?0:0)):"\u2014"}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{!hasManualStocks&&stockValue>0?"from ThesisAlpha portfolio":"\u2014"}</div></div>
+          <div style={{fontSize:14,fontWeight:700,color:K.grn,fontFamily:fm}}>{stockValue>0?fmtVal(stockValue+(hasManualStocks?0:0)):"—"}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{!hasManualStocks&&stockValue>0?"from ThesisAlpha portfolio":"—"}</div></div>
       </div>
 
       {/* Stacked Chart + Pie */}
@@ -3303,7 +3303,7 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{totalValue>0?(p.value/totalValue*100).toFixed(1)+"%":""}</div></div>
             <div style={{display:"flex",gap:4}}>
               <button onClick={function(){setEditId(isEditing?null:p.id)}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:11,fontFamily:fm,padding:4}}>{isEditing?"Done":"Edit"}</button>
-              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:4,opacity:.5}}>{"\u2715"}</button></div>
+              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:4,opacity:.5}}>{"✕"}</button></div>
           </div></div>})}
 
       {positions.length===0&&stockValue===0&&<div style={{textAlign:"center",padding:"48px 20px",color:K.dim}}>
@@ -3333,7 +3333,7 @@ function TrackerApp(props){
         title:"Thesis updated",detail:v.summary||"Updated thesis",icon:"lightbulb",color:K.acc})});
       // Conviction changes
       (c.convictionHistory||[]).forEach(function(v){events.push({type:"conviction",date:v.date,ticker:c.ticker,domain:c.domain,id:c.id,
-        title:"Conviction \u2192 "+v.rating+"/10",detail:v.note||"",icon:"trending",color:v.rating>=7?K.grn:v.rating>=4?K.amb:K.red,rating:v.rating})});
+        title:"Conviction → "+v.rating+"/10",detail:v.note||"",icon:"trending",color:v.rating>=7?K.grn:v.rating>=4?K.amb:K.red,rating:v.rating})});
       // Decisions
       (c.decisions||[]).forEach(function(d){events.push({type:"decision",date:d.date,ticker:c.ticker,domain:c.domain,id:c.id,
         title:d.action+" — "+c.ticker,detail:d.note||"",icon:d.action==="BUY"||d.action==="ADD"?"trending":d.action==="SELL"?"target":"shield",
@@ -3439,13 +3439,13 @@ function TrackerApp(props){
         var hist=(cos.find(function(x){return x.id===e.id})||{}).convictionHistory||[];
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
-      showToast("\u2713 Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
+      showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
       setStep("done")}
 
     var streakColor=reviewStreak>=8?K.grn:reviewStreak>=4?K.amb:K.mid;
 
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:800}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Weekly Owner\u2019s Review</h1>
+      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Weekly Owner’s Review</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>3 minutes to confirm or adjust conviction across your portfolio</p></div>
 
       {/* Streak banner */}
@@ -3458,8 +3458,8 @@ function TrackerApp(props){
       </div>
 
       {step==="intro"&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"\u2705":String.fromCodePoint(0x1F4CB)}</div>
-        <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week\u2019s review is complete":"Ready for your weekly check-in?"}</div>
+        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"✅":String.fromCodePoint(0x1F4CB)}</div>
+        <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week’s review is complete":"Ready for your weekly check-in?"}</div>
         <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
           {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes."}</div>
         <button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>{currentWeekReviewed?"Review Again":"Start Review"}</button>
@@ -3477,7 +3477,7 @@ function TrackerApp(props){
               <div style={{fontSize:11,color:K.dim}}>{c.name}</div></div>
             <div style={{marginLeft:"auto",textAlign:"right"}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>CURRENT CONVICTION</div>
-              <div style={{fontSize:22,fontWeight:700,color:c.conviction>=7?K.grn:c.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c.conviction||"\u2014"}/10</div></div>
+              <div style={{fontSize:22,fontWeight:700,color:c.conviction>=7?K.grn:c.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c.conviction||"—"}/10</div></div>
           </div>
           {/* Quick thesis reminder */}
           {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
@@ -3509,9 +3509,9 @@ function TrackerApp(props){
             style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/>
           {/* Nav */}
           <div style={{display:"flex",gap:12,marginTop:20}}>
-            <button onClick={prevHolding} disabled={idx===0} style={Object.assign({},S.btn,{opacity:idx===0?.3:1})}>\u2190 Prev</button>
+            <button onClick={prevHolding} disabled={idx===0} style={Object.assign({},S.btn,{opacity:idx===0?.3:1})}>← Prev</button>
             <div style={{flex:1}}/>
-            <button onClick={nextHolding} style={S.btnP}>{idx===portfolio.length-1?"Finish \u2192":"Next \u2192"}</button>
+            <button onClick={nextHolding} style={S.btnP}>{idx===portfolio.length-1?"Finish →":"Next →"}</button>
           </div>
         </div>
       </div>}
@@ -3528,13 +3528,13 @@ function TrackerApp(props){
           return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr+"50"}}>
             <CoLogo domain={c2.domain} ticker={c2.ticker} size={24}/>
             <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,width:60}}>{c2.ticker}</div>
-            <div style={{fontSize:12,color:changed?K.acc:K.dim,fontFamily:fm}}>{c2.conviction} {changed?"\u2192 "+newConv:""}</div>
+            <div style={{fontSize:12,color:changed?K.acc:K.dim,fontFamily:fm}}>{c2.conviction} {changed?"→ "+newConv:""}</div>
             {act!=="hold"&&<span style={{fontSize:9,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,background:(act==="add"?K.grn:act==="sell"?K.red:K.amb)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{act}</span>}
             {notes[c2.id]&&<span style={{fontSize:10,color:K.dim,fontStyle:"italic",flex:1,textAlign:"right"}}>{notes[c2.id]}</span>}
           </div>})}
         <div style={{display:"flex",gap:12,marginTop:24,justifyContent:"center"}}>
-          <button onClick={function(){setStep("review");setIdx(0)}} style={S.btn}>\u2190 Edit</button>
-          <button onClick={finishReview} style={S.btnP}>\u2713 Save & Log Convictions</button></div>
+          <button onClick={function(){setStep("review");setIdx(0)}} style={S.btn}>← Edit</button>
+          <button onClick={finishReview} style={S.btnP}>✓ Save & Log Convictions</button></div>
       </div>}
 
       {step==="done"&&<div>
@@ -3549,7 +3549,7 @@ function TrackerApp(props){
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {r.entries.map(function(e){var changed=e.prev!==e.new;
                   return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:4,background:changed?K.acc+"12":K.bg,border:"1px solid "+(changed?K.acc+"30":K.bdr),fontSize:10,fontFamily:fm,color:changed?K.acc:K.dim}}>
-                    {e.ticker} {changed?e.prev+"\u2192"+e.new:e.new}</div>})}</div>
+                    {e.ticker} {changed?e.prev+"→"+e.new:e.new}</div>})}</div>
             </div>})}</div>}
       </div>}
     </div>}
@@ -3610,7 +3610,7 @@ function TrackerApp(props){
 
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
-        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" \u2022 Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" \u2022 "+withMoat.length+" analyzed":""}</p></div>
+        <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" • Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" • "+withMoat.length+" analyzed":""}</p></div>
 
       {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:13,color:K.dim}}>Analyzing financial quality of {portCos.length} companies...</div>
         <div style={{height:4,borderRadius:2,background:K.bdr,maxWidth:300,margin:"16px auto"}}><div style={{height:"100%",borderRadius:2,background:K.acc,width:(portCos.length>0?prog/portCos.length*100:0)+"%",transition:"width .3s"}}/></div></div>:
@@ -3624,7 +3624,7 @@ function TrackerApp(props){
         ].map(function(card){var v=card.val;var clr=v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim;
           return<div key={card.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name={card.icon} size={14} color={K.dim}/><div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb}}>{card.label}</div></div>
-            <div style={{fontSize:28,fontWeight:700,color:clr,fontFamily:fm}}>{v||"\u2014"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
+            <div style={{fontSize:28,fontWeight:700,color:clr,fontFamily:fm}}>{v||"—"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
             <div style={{fontSize:10,color:clr,marginTop:4,fontFamily:fb}}>{v?card.sub:""}</div></div>})}</div>
 
       {/* ── Portfolio Quality Profile (all 8 dimensions) ── */}
@@ -3655,7 +3655,7 @@ function TrackerApp(props){
           return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("analysis");setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
-              <div style={{fontSize:10,color:K.red,fontFamily:fb}}>{issues.join(" \u2022 ")}</div></div>
+              <div style={{fontSize:10,color:K.red,fontFamily:fb}}>{issues.join(" • ")}</div></div>
             <div style={{fontSize:16,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>}
 
       {/* ── Strongest / Weakest ── */}
@@ -3684,7 +3684,7 @@ function TrackerApp(props){
               <td style={{padding:"10px 10px",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
               <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
-              {[q.fortress,q.pricing,q.roic,q.fcf].map(function(v,vi){return<td key={vi} style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:v?cellClr(v):K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{v||"\u2014"}</td>})}</tr>})}</tbody></table></div></div>}
+              {[q.fortress,q.pricing,q.roic,q.fcf].map(function(v,vi){return<td key={vi} style={{padding:"10px 10px",textAlign:"center",fontSize:13,fontWeight:600,color:v?cellClr(v):K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{v||"—"}</td>})}</tr>})}</tbody></table></div></div>}
 
       {/* ── Investment Style Distribution ── */}
       {function(){var styleCounts={};portCos.forEach(function(co){var sid=co.investStyle||"unset";styleCounts[sid]=(styleCounts[sid]||0)+1});
@@ -3737,7 +3737,7 @@ function TrackerApp(props){
                   <span style={{fontSize:18,fontWeight:700,color:t.color,fontFamily:fm}}>{cos2.length}</span></div>
                 <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                   {cos2.sort(function(a,b){return b.strength-a.strength}).map(function(x){
-                    return<span key={x.ticker} style={{fontSize:10,fontWeight:600,color:t.color,background:t.color+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{x.ticker} {"\u2022".repeat(x.strength)}</span>})}</div>
+                    return<span key={x.ticker} style={{fontSize:10,fontWeight:600,color:t.color,background:t.color+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{x.ticker} {"•".repeat(x.strength)}</span>})}</div>
                 <div style={{fontSize:10,color:K.dim,marginTop:6,fontFamily:fm}}>Avg strength: {avgStr}/5</div></div>})}</div>
           {unclass.length>0&&<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8}}>
               <div style={{fontSize:11,color:K.amb,fontWeight:600}}>Unclassified: {unclass.map(function(c2){return c2.ticker}).join(", ")}</div>
@@ -3746,8 +3746,8 @@ function TrackerApp(props){
 
       {/* ── Munger Quote ── */}
       {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
-        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic",fontFamily:fh}}>{"\"Over the long term, it\u2019s hard for a stock to earn a much better return than the business which underlies it earns. If the business earns 6% on capital over 40 years and you hold it for that 40 years, you\u2019re not going to make much different than a 6% return.\""}</div>
-        <div style={{fontSize:11,color:K.dim,marginTop:8,fontFamily:fb}}>{"\u2014"} Charlie Munger</div></div>}
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic",fontFamily:fh}}>{"\"Over the long term, it’s hard for a stock to earn a much better return than the business which underlies it earns. If the business earns 6% on capital over 40 years and you hold it for that 40 years, you’re not going to make much different than a 6% return.\""}</div>
+        <div style={{fontSize:11,color:K.dim,marginTop:8,fontFamily:fb}}>{"—"} Charlie Munger</div></div>}
 
       {portCos.length===0&&<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim}}>No portfolio companies yet. Add companies and set their status to Portfolio.</div></div>}
       </div>}</div>}
@@ -3843,7 +3843,7 @@ function TrackerApp(props){
               <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{yld.toFixed(2)}%</td>
               <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${annDps.toFixed(2)}</td>
               <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{pos.shares>0?"$"+annIncome.toFixed(0):<span style={{color:K.dim,fontSize:10}}>Add shares</span>}</td>
-              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",color:K.amb,fontFamily:fm,fontSize:11}}>{c.exDivDate?fD(c.exDivDate):"\u2014"}</td>}
+              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",color:K.amb,fontFamily:fm,fontSize:11}}>{c.exDivDate?fD(c.exDivDate):"—"}</td>}
             </tr>})}</tbody>
         </table></div>
         {/* Total row */}
@@ -3968,7 +3968,7 @@ function TrackerApp(props){
     var divCos=filtered.filter(function(c){return(c.divPerShare||c.lastDiv)>0&&c.divFrequency!=="none"});
     var totalAnnualDiv=divCos.reduce(function(sum,c){var pos=c.position||{};var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return sum+(pos.shares||0)*(c.divPerShare||c.lastDiv||0)*mult},0);
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" \u2022 Outside your circle of competence":priceLoading?" \u2022 Updating prices\u2026":""}</p></div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" • Outside your circle of competence":priceLoading?" • Updating prices…":""}</p></div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -3998,11 +3998,11 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isUp?"+":""}${totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Best Performer</div>
-          <div style={{fontSize:18,fontWeight:600,color:K.grn,fontFamily:fm}}>{best?best.ticker:"\u2014"}</div>
+          <div style={{fontSize:18,fontWeight:600,color:K.grn,fontFamily:fm}}>{best?best.ticker:"—"}</div>
           <div style={{fontSize:11,color:K.grn,marginTop:4,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
           <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Worst Performer</div>
-          <div style={{fontSize:18,fontWeight:600,color:K.red,fontFamily:fm}}>{worst?worst.ticker:"\u2014"}</div>
+          <div style={{fontSize:18,fontWeight:600,color:K.red,fontFamily:fm}}>{worst?worst.ticker:"—"}</div>
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
     {/* Analytics quick link */}
@@ -4013,7 +4013,7 @@ function TrackerApp(props){
         {key:"thesis",label:"Thesis",pts:bd.thesis,max:20,color:K.acc,icon:"lightbulb",tip:"Write 4 sections, version it, keep fresh (<90d)",onClick:function(){var t=filtered.find(function(c2){return!c2.thesisNote})||filtered[0];if(t){setSelId(t.id);setModal({type:"thesis"})}}},
         {key:"kpi",label:"KPIs",pts:bd.kpi,max:20,color:K.blue,icon:"target",tip:"Track 2+ KPIs per holding, check earnings",onClick:function(){var t=filtered.find(function(c2){return c2.kpis.length===0})||filtered[0];if(t){setSelId(t.id);setDetailTab("overview")}}},
         {key:"journal",label:"Journal",pts:bd.journal,max:20,color:K.grn,icon:"book",tip:"Log BUY/SELL with reasoning, tag outcomes",onClick:function(){setPage("hub")}},
-        {key:"conviction",label:"Conviction",pts:bd.conviction,max:15,color:K.amb,icon:"trending",tip:"Rate 1\u201310, update quarterly, run bias checks",onClick:function(){var t=filtered.find(function(c2){return!c2.conviction})||filtered[0];if(t){setSelId(t.id);setModal({type:"conviction"})}}},
+        {key:"conviction",label:"Conviction",pts:bd.conviction,max:15,color:K.amb,icon:"trending",tip:"Rate 1–10, update quarterly, run bias checks",onClick:function(){var t=filtered.find(function(c2){return!c2.conviction})||filtered[0];if(t){setSelId(t.id);setModal({type:"conviction"})}}},
         {key:"moat",label:"Moat",pts:bd.moat,max:10,color:"#9333EA",icon:"castle",tip:"Classify types, add Morningstar, track trend",onClick:function(){var t=filtered[0];if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}},
         {key:"balance",label:"Balance",pts:bd.balance,max:15,color:K.mid,icon:"bar",tip:"3+ holdings, <40% sector conc., 2+ styles"}];
       // Find the lowest-scoring category to highlight
@@ -4029,7 +4029,7 @@ function TrackerApp(props){
               <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner{"\u2019"}s Score</div>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner{"’"}s Score</div>
               <span style={{fontSize:11}}>{lv.icon}</span></div>
             <div style={{fontSize:13,color:K.txt,fontWeight:600,marginTop:1}}>{lv.name}</div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
@@ -4054,9 +4054,9 @@ function TrackerApp(props){
                     <span style={{fontSize:11,fontWeight:600,color:full?cat.color:K.txt,fontFamily:fm}}>{cat.label}</span>
                     <span style={{fontSize:10,color:full?cat.color:K.dim,fontFamily:fm,fontWeight:600}}>{cat.pts}/{cat.max}</span></div>
                   <div style={{height:3,borderRadius:2,background:K.bdr,overflow:"hidden",marginBottom:3}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:cat.color}}/></div>
-                  <div style={{fontSize:10,color:K.dim}}>{full?"\u2713 Strong":cat.tip}</div></div>
-                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"\u2192"}</span>}
-                {full&&<span style={{fontSize:12,color:cat.color}}>{"\u2713"}</span>}
+                  <div style={{fontSize:10,color:K.dim}}>{full?"✓ Strong":cat.tip}</div></div>
+                {cat.onClick&&!full&&<span style={{fontSize:10,color:cat.color,fontFamily:fm,flexShrink:0}}>{"→"}</span>}
+                {full&&<span style={{fontSize:12,color:cat.color}}>{"✓"}</span>}
               </div>})}</div>
           {/* Level roadmap */}
           <div style={{marginTop:12,padding:"10px 14px",background:K.bg,borderRadius:8}}>
@@ -4068,14 +4068,14 @@ function TrackerApp(props){
                   <div style={{fontSize:8,color:isAt?scoreColor:isPast?K.mid:K.dim,fontWeight:isAt?700:400,fontFamily:fm,marginTop:2}}>{l2.name}</div></div>})}</div></div>
           {/* Link to guide */}
           <div style={{marginTop:8,textAlign:"center"}}>
-            <button onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>How does scoring work? {"\u2192"}</button></div>
+            <button onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>How does scoring work? {"→"}</button></div>
         </div>}
       </div>})()}
     {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
       <IC name="bar" size={18} color={K.acc}/>
       <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
-      <span style={{fontSize:16,color:K.acc}}>{"\u2192"}</span></div>}
-    {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don\u2019t know is the dawning of wisdom.\" Companies here are outside your circle \u2014 too complex, too unpredictable, or require expertise you don\u2019t have. That\u2019s not failure. That\u2019s discipline."}</div></div>}
+      <span style={{fontSize:16,color:K.acc}}>{"→"}</span></div>}
+    {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don’t know is the dawning of wisdom.\" Companies here are outside your circle — too complex, too unpredictable, or require expertise you don’t have. That’s not failure. That’s discipline."}</div></div>}
     {/* Quick-start nudge for incomplete holdings */}
     {sideTab==="portfolio"&&filtered.length>0&&function(){var noThesis=filtered.filter(function(c){return!c.thesisNote});var noKpi=filtered.filter(function(c){return c.kpis.length===0});var noStyle=filtered.filter(function(c){return!c.investStyle});
       var stale=filtered.filter(function(c){if(!c.thesisNote||!c.thesisUpdatedAt)return false;var age=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);return age>90});
@@ -4090,7 +4090,7 @@ function TrackerApp(props){
           {nudges.map(function(n){return<div key={n.msg} className="ta-card" style={{flex:1,display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:n.color+"06",border:"1px solid "+n.color+"20",borderRadius:8,cursor:"pointer"}} onClick={n.onClick}>
             <IC name={n.icon} size={14} color={n.color}/>
             <div style={{flex:1}}><div style={{fontSize:12,color:K.mid}}>{n.msg}</div></div>
-            <span style={{fontSize:10,color:n.color,fontFamily:fm,whiteSpace:"nowrap"}}>{n.action} {"\u2192"}</span></div>})}</div></div>}()}
+            <span style={{fontSize:10,color:n.color,fontFamily:fm,whiteSpace:"nowrap"}}>{n.action} {"→"}</span></div>})}</div></div>}()}
     {/* Enhanced empty state */}
     {filtered.length===0&&<div className="ta-fade" style={{padding:"60px 20px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
       <div style={{width:56,height:56,borderRadius:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name={sideTab==="portfolio"?"trending":sideTab==="watchlist"?"search":"alert"} size={24} color={K.acc}/></div>
@@ -4106,7 +4106,7 @@ function TrackerApp(props){
     {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("overview")}}>
-          <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"\u2715"}</button>
+          <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
@@ -4122,9 +4122,9 @@ function TrackerApp(props){
                 <IC name={t.icon} size={8} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d \u2014 "+fD(c.earningsDate))}</span>
+              <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d — "+fD(c.earningsDate))}</span>
               {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:9,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" \u23F3":""}</div></div></div>})}</div>}
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" ⏳":""}</div></div></div>})}</div>}
     {sideTab==="portfolio"&&filtered.length>0&&(dashSet.showHeatmap||dashSet.showSectors||dashSet.showDividends)&&<div style={{marginBottom:28}}>
       {/* Portfolio Heatmap */}
       {dashSet.showHeatmap&&function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
@@ -4152,7 +4152,7 @@ function TrackerApp(props){
             var pct=useValue?Math.round(sectorVal[s]/totalVal*100):Math.round(sectors[s]/filtered.length*100);
             var warn=pct>=50;
             return<div key={s} style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:K.mid}}>{s}</span><span style={{fontSize:11,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct}%{warn?" \u26A0":""}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:K.mid}}>{s}</span><span style={{fontSize:11,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct}%{warn?" ⚠":""}</span></div>
               <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
       {/* Dividends */}
       {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
@@ -4200,7 +4200,7 @@ function TrackerApp(props){
       if(trialActive){return<div style={{padding:isMobile?"10px 14px":"10px 32px",background:barColor+"08",borderBottom:"1px solid "+barColor+"20",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?10:16,flexDirection:isMobile?"column":"row"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
           <div style={{fontSize:11,fontWeight:600,color:barColor,fontFamily:fm}}>{trialDaysLeft}d left</div>
-          <div style={{fontSize:11,color:K.mid}}>{trialBonusEarned?"Full trial \u2014 "+TRIAL_TOTAL+" days earned":"Pro trial \u2014 complete "+THESIS_UNLOCK+" theses to earn +"+TRIAL_BONUS+" more days"}</div></div>
+          <div style={{fontSize:11,color:K.mid}}>{trialBonusEarned?"Full trial — "+TRIAL_TOTAL+" days earned":"Pro trial — complete "+THESIS_UNLOCK+" theses to earn +"+TRIAL_BONUS+" more days"}</div></div>
         {!trialBonusEarned&&<div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{display:"flex",gap:3}}>{[0,1,2].map(function(i){return<div key={i} style={{width:24,height:6,borderRadius:3,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
           <span style={{fontSize:10,color:thesisProgress>=THESIS_UNLOCK?K.grn:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK}</span></div>}
