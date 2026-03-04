@@ -566,6 +566,7 @@ function TrackerApp(props){
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
+    addXP(25,"Weekly review");updateStreak(true);
     if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
     return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
@@ -614,6 +615,13 @@ function TrackerApp(props){
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
   // Owner's Score expanded state on dashboard
   var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
+  // ── XP System ──
+  var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
+  var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
+  function addXP(amount,label){setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
+  // ── Weekly Streak with Freeze ──
+  var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
+  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
   // Track score for milestone detection
   var prevScoreLevel=useRef(null);
   useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
@@ -955,7 +963,7 @@ function TrackerApp(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");else showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -969,6 +977,7 @@ function TrackerApp(props){
       if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});
       else upd(selId,function(c){var newKpis=c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)]);
         if(newKpis.length===1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+        addXP(5,"KPI added");
         if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
         return Object.assign({},c,{kpis:newKpis})});setModal(null)}
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
@@ -1068,7 +1077,7 @@ function TrackerApp(props){
     var delta=prevRating!==null?r-prevRating:null;
     function toggleFlag(id){setFlags(function(p){var n=Object.assign({},p);n[id]=!p[id];return n})}
     function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
-      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);setModal(null)}
+      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);addXP(8,"Conviction rated");setModal(null)}
     if(step==="checklist")return<Modal title={"✈️ Pre-Flight Checklist — "+sel.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:16}}>Before updating conviction, pause and honestly assess each bias. Flag any that apply right now.</div>
       <div style={{marginBottom:16}}>
@@ -4115,6 +4124,54 @@ function TrackerApp(props){
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){if(canAdd){setModal({type:"add"})}else{requirePro("companies")}}}>+ Add</button></div></div>
+    {/* ── XP Float Animation ── */}
+    {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
+      <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount} XP
+        <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
+    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
+    {/* ── Streak + XP bar ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"flex",gap:12,marginBottom:16,alignItems:"stretch"}}>
+      {/* Weekly Streak */}
+      <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
+        <div style={{fontSize:32,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
+        <div>
+          <div style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
+          <div style={{fontSize:10,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best+" weeks":currentWeekReviewed?"Reviewed this week ✓":"Do your weekly review"}</div></div>
+        {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,background:K.blue+"10",border:"1px solid "+K.blue+"25",borderRadius:6,padding:"4px 10px"}}>
+          <span style={{fontSize:14}}>{"🛡️"}</span>
+          <div style={{fontSize:10,color:K.blue,fontFamily:fm}}>{streakData.freezes} freeze{streakData.freezes>1?"s":""}</div></div>}
+      </div>
+      {/* XP counter */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,minWidth:isMobile?100:140}}>
+        <div>
+          <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{xp.total}</div>
+          <div style={{fontSize:10,color:K.dim}}>Total XP</div></div></div>
+    </div>}
+    {/* ── Daily Focus Card ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){
+      var focus=null;
+      var portfolio=filtered;
+      // Priority 1: Earnings within 3 days
+      var urgent=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=3}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+      if(urgent.length>0){var uc=urgent[0];focus={color:K.amb,icon:"target",title:uc.ticker+" reports "+(dU(uc.earningsDate)===0?"today":dU(uc.earningsDate)===1?"tomorrow":"in "+dU(uc.earningsDate)+"d"),desc:"Review your thesis and "+uc.kpis.length+" KPIs before results drop",btn:"Prepare now",onClick:function(){setSelId(uc.id);setDetailTab("overview");setPage("dashboard")}}}
+      // Priority 2: Weekly review not done
+      if(!focus&&!currentWeekReviewed){focus={color:K.grn,icon:"shield",title:"Weekly review time",desc:"Confirm your conviction across "+portfolio.length+" holdings. Takes 3 minutes.",btn:"Start review",onClick:function(){setPage("review")}}}
+      // Priority 3: Thesis missing
+      if(!focus){var noT=portfolio.filter(function(c){return!c.thesisNote||c.thesisNote.trim().length<20});if(noT.length>0)focus={color:K.acc,icon:"lightbulb",title:"Write your thesis for "+noT[0].ticker,desc:"Why do you own it? What's the moat? When would you sell?",btn:"Write thesis",onClick:function(){setSelId(noT[0].id);setPage("dashboard");setModal({type:"thesis"})}}}
+      // Priority 4: Stale thesis
+      if(!focus){var staleT=portfolio.filter(function(c){return c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)>90}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)});if(staleT.length>0)focus={color:K.red,icon:"clock",title:staleT[0].ticker+" thesis is getting stale",desc:"Last updated "+(Math.ceil((new Date()-new Date(staleT[0].thesisUpdatedAt))/864e5))+" days ago. Still accurate?",btn:"Review thesis",onClick:function(){setSelId(staleT[0].id);setPage("dashboard");setModal({type:"thesis"})}}}
+      // Priority 5: Missing conviction
+      if(!focus){var noC=portfolio.filter(function(c){return!c.conviction});if(noC.length>0)focus={color:K.amb,icon:"trending",title:"Rate your conviction for "+noC[0].ticker,desc:"How confident are you in this position? 1-10.",btn:"Rate now",onClick:function(){setSelId(noC[0].id);setPage("dashboard");setModal({type:"conviction"})}}}
+      // All done!
+      if(!focus)focus={color:K.grn,icon:"shield",title:"All caught up",desc:"Your process is strong. Come back next week for your review.",btn:null,onClick:null};
+      return<div style={{background:focus.color+"08",border:"1px solid "+focus.color+"25",borderRadius:12,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:44,height:44,borderRadius:10,background:focus.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={focus.icon} size={20} color={focus.color}/></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:focus.color,fontFamily:fm,marginBottom:2}}>Today's Focus</div>
+          <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{focus.title}</div>
+          <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
+        {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
+      </div>})()}
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
       var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
       if(held.length===0)return null;
@@ -4197,6 +4254,21 @@ function TrackerApp(props){
             return<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
               {active.slice(0,4).map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:t.color,background:t.color+"10",padding:"1px 6px",borderRadius:3,fontFamily:fm}}>
                 <IC name={t.icon} size={8} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
+          {/* Progress Path — Owner's Loop */}
+          {(function(){var sec=parseThesis(c.thesisNote);var steps=[
+            {id:"thesis",label:"Thesis",done:c.thesisNote&&c.thesisNote.trim().length>20,color:K.grn},
+            {id:"kpis",label:"KPIs",done:c.kpis.length>=2,color:K.blue},
+            {id:"conviction",label:"Conviction",done:c.conviction>0,color:K.amb},
+            {id:"moat",label:"Moat",done:(function(){var mt=c.moatTypes||{};return Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})})(),color:"#9333EA"},
+            {id:"earnings",label:"Checked",done:c.lastChecked!=null,color:K.acc}];
+            var completed=steps.filter(function(s){return s.done}).length;
+            if(completed===5)return null; // Don't show if all complete
+            return<div style={{display:"flex",alignItems:"center",gap:3,marginBottom:10}}>
+              {steps.map(function(s,i){return React.createElement(React.Fragment,{key:s.id},
+                <div style={{display:"flex",alignItems:"center",gap:3}} title={s.label+(s.done?" ✓":" — not done")}>
+                  <div style={{width:16,height:16,borderRadius:"50%",background:s.done?s.color:K.bdr,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:s.done?"#fff":K.dim,fontWeight:700}}>{s.done?"✓":(i+1)}</div>
+                  <span style={{fontSize:8,color:s.done?s.color:K.dim,fontFamily:fm}}>{s.label}</span></div>,
+                i<4&&<div style={{width:8,height:1,background:s.done?s.color:K.bdr}}/>)})}</div>})()}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d — "+fD(c.earningsDate))}</span>
