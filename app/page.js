@@ -523,6 +523,28 @@ function TrackerApp(props){
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
+  // ── Subscription / Tier ──
+  var FREE_LIMIT=3;var TRIAL_BASE=14;var TRIAL_BONUS=16;var TRIAL_TOTAL=TRIAL_BASE+TRIAL_BONUS;var THESIS_UNLOCK=3;
+  var _plan=useState(function(){try{return localStorage.getItem("ta-plan")||"free"}catch(e){return"free"}}),plan=_plan[0],setPlan=_plan[1];
+  var _stripeCustomer=useState(null),stripeCustomerId=_stripeCustomer[0],setStripeCustomerId=_stripeCustomer[1];
+  var _showUpgrade=useState(false),showUpgrade=_showUpgrade[0],setShowUpgrade=_showUpgrade[1];
+  var _upgradeCtx=useState(""),upgradeCtx=_upgradeCtx[0],setUpgradeCtx=_upgradeCtx[1];
+  // ── Trial State ──
+  var _trial=useState(function(){try{var t=localStorage.getItem("ta-trial");return t?JSON.parse(t):null}catch(e){return null}}),trial=_trial[0],setTrial=_trial[1];
+  function saveTrial(t){setTrial(t);try{localStorage.setItem("ta-trial",JSON.stringify(t))}catch(e){}}
+  // Trial computations
+  var trialDaysLeft=trial&&trial.start?Math.max(0,Math.ceil(((trial.bonusEarned?TRIAL_TOTAL:TRIAL_BASE)*864e5+new Date(trial.start).getTime()-Date.now())/864e5)):0;
+  var trialActive=trial&&trial.start&&trialDaysLeft>0;
+  var trialExpired=trial&&trial.start&&trialDaysLeft<=0&&plan!=="pro";
+  var trialBonusEarned=trial&&trial.bonusEarned;
+  // Count complete theses (all 4 sections filled with >15 chars each)
+  var completeTheses=cos.filter(function(c){if(!c.thesisNote)return false;var p=parseThesis(c.thesisNote);return p.core&&p.core.trim().length>15&&p.moat&&p.moat.trim().length>15&&p.risks&&p.risks.trim().length>15&&p.sell&&p.sell.trim().length>15}).length;
+  var thesisProgress=Math.min(completeTheses,THESIS_UNLOCK);
+  // isPro = paid subscriber OR active trial
+  var isPro=plan==="pro"||trialActive;
+  var canAdd=isPro||cos.filter(function(c){return c.status!=="toohard"}).length<FREE_LIMIT;
+  function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
+  function openManage(){if(!stripeCustomerId)return;fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e)})}
   var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:true,showSectors:true,showDividends:true,showAnalyst:true,showBuyZone:true,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -673,28 +695,58 @@ function TrackerApp(props){
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
+        if(cloudData.trial){saveTrial(cloudData.trial)}
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
       // Fallback to localStorage
       var local=await ldS("ta-data");
       if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""},c)}));
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(local.notifs)setNotifs(local.notifs);
+        if(local.trial){saveTrial(local.trial)}
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
         setLoaded(true);return}
       // Brand new user — use sample data
       try{if(!localStorage.getItem("ta-onboarded"))setObStep(1)}catch(e){setObStep(1)}
+      // Start trial for new users
+      if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}
       setLoaded(true)}
-    loadData()},[]);
-  // Auto-refresh prices on load (FMP profile is free, ~1 req per company)
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
+    loadData();
+    // Load subscription status
+    if(supabase&&props.userId){supabase.from("subscriptions").select("plan,status,stripe_customer_id,current_period_end").eq("user_id",props.userId).single().then(function(res){
+      if(res.data&&res.data.plan){var isActive=res.data.status==="active"||res.data.status==="trialing";var notExpired=!res.data.current_period_end||new Date(res.data.current_period_end)>new Date();
+        var p=(isActive&&notExpired&&res.data.plan==="pro")?"pro":"free";setPlan(p);try{localStorage.setItem("ta-plan",p)}catch(e){}
+        if(res.data.stripe_customer_id)setStripeCustomerId(res.data.stripe_customer_id)}}).catch(function(){})}
+    // Handle Stripe redirect (?upgraded=true)
+    if(typeof window!=="undefined"){var sp=new URLSearchParams(window.location.search);
+      if(sp.get("upgraded")==="true"){window.history.replaceState({},"",window.location.pathname);
+        // Poll for webhook to complete (Stripe webhook may arrive within seconds)
+        var attempts=0;var poll=setInterval(function(){attempts++;if(attempts>10){clearInterval(poll);return}
+          if(supabase&&props.userId){supabase.from("subscriptions").select("plan,status,stripe_customer_id").eq("user_id",props.userId).single().then(function(res2){
+            if(res2.data&&res2.data.plan==="pro"){clearInterval(poll);setPlan("pro");try{localStorage.setItem("ta-plan","pro")}catch(e){}
+              if(res2.data.stripe_customer_id)setStripeCustomerId(res2.data.stripe_customer_id);
+              celebrate("\u2728 Welcome to Pro! All data features unlocked.","levelup",6000);showCelebration("\u26A1 Pro Activated","You now have access to earnings data, moat analysis, financial statements, and more. Happy investing!",null,"#4ade80")}})
+            .catch(function(){})}},2000)}}
+    },[]);
+  // ── Trial: auto-start for existing users who don't have one ──
+  useEffect(function(){if(!loaded||plan==="pro")return;
+    if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}},[loaded,plan]);
+  // ── Trial: watch for thesis unlock bonus ──
+  useEffect(function(){if(!loaded||!trial||!trial.start||trial.bonusEarned||plan==="pro")return;
+    if(completeTheses>=THESIS_UNLOCK){
+      saveTrial(Object.assign({},trial,{bonusEarned:true,bonusEarnedAt:new Date().toISOString()}));
+      celebrate(String.fromCodePoint(0x1F3C6)+" Discipline recognized! +"+TRIAL_BONUS+" days of full access unlocked.","milestone",8000);
+      showCelebration(String.fromCodePoint(0x1F3C6)+" Skin in the Game","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let\u2019s stress-test the rest of your portfolio.",null,"#4ade80");
+      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Trial extended! "+TRIAL_BONUS+" bonus days earned for completing "+THESIS_UNLOCK+" theses",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
+  // Auto-refresh prices on load — PRO only (uses FMP API)
+  useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
+    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
   // Auto-notify: when earnings date has passed, automatically check them
   var autoCheckDone=useRef({});
-  useEffect(function(){if(!loaded||!autoNotify)return;
+  useEffect(function(){if(!loaded||!autoNotify||!isPro)return;
     cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
       // Auto-check if not already checked and not already in progress
       var key=c.ticker+"-"+c.earningsDate;
@@ -724,12 +776,12 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,loaded]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -786,7 +838,7 @@ function TrackerApp(props){
   function toggleEmailNotify(){var nv=!emailNotify;setEmailNotify(nv);try{localStorage.setItem("ta-emailnotify",String(nv))}catch(e){}}
 
   // ── Modals ─────────────────────────────────────────────────
-  function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:"portfolio",investStyle:""}),f=_f[0],setF=_f[1];
+  function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:"portfolio",investStyle:"",purchaseDate:""}),f=_f[0],setF=_f[1];
     var _ls=useState("idle"),ls=_ls[0],setLs=_ls[1];var _lm=useState(""),lm=_lm[0],setLm=_lm[1];var tmr=useRef(null);
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
@@ -796,7 +848,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||""};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -814,6 +866,7 @@ function TrackerApp(props){
         {f.investStyle&&STYLE_MAP[f.investStyle]&&<div style={{fontSize:10,color:K.dim,marginTop:6,lineHeight:1.4}}>{STYLE_MAP[f.investStyle].desc}</div>}
       </div>
       <Sel label="Add to" value={f.status} onChange={function(v){set("status",v)}} options={[{v:"portfolio",l:"Portfolio (I own this)"},{v:"watchlist",l:"Watchlist (Researching)"},{v:"toohard",l:"Too Hard (Outside circle)"}]} K={K}/>
+      {f.status==="portfolio"&&<Inp label="Purchase Date" value={f.purchaseDate} onChange={function(v){set("purchaseDate",v)}} type="date" K={K}/>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()}>Add Company</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
@@ -940,7 +993,7 @@ function TrackerApp(props){
         <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>Save</button></div></Modal>}
   function PositionModal(){if(!sel)return null;var pos=sel.position||{shares:0,avgCost:0};
-    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||"")}),f=_f[0],setF=_f[1];
+    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||""),purchaseDate:sel.purchaseDate||""}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var mult=f.divFrequency==="monthly"?12:f.divFrequency==="quarterly"?4:f.divFrequency==="semi"?2:1;
     var annDiv=parseFloat(f.divPerShare||0)*mult;
@@ -950,6 +1003,7 @@ function TrackerApp(props){
       <Inp label="Shares Held" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="0" K={K}/>
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Average Cost per Share" value={f.avgCost} onChange={function(v){set("avgCost",v)}} type="number" placeholder="0.00" K={K}/>
       <Inp label="Current Price" value={f.currentPrice} onChange={function(v){set("currentPrice",v)}} type="number" placeholder="0.00" K={K}/></div>
+      <Inp label="Purchase Date" value={f.purchaseDate} onChange={function(v){set("purchaseDate",v)}} type="date" K={K}/>
       {f.shares&&f.avgCost&&f.currentPrice&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:14,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>COST BASIS</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>${(parseFloat(f.shares)*parseFloat(f.avgCost)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
@@ -971,7 +1025,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ANNUAL DIV</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${annDiv.toFixed(2)}</div></div>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>YIELD</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}%</div></div>
           {f.shares&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ANNUAL INCOME</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${(parseFloat(f.shares)*annDiv).toFixed(0)}</div></div>}</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0,purchaseDate:f.purchaseDate||""});setModal(null)}}>Save</button></div></Modal>}
   var BIAS_CHECKS=[
     {id:"confirmation",label:"Confirmation Bias",q:"Am I only seeking information that confirms my existing belief?",icon:"search"},
     {id:"anchoring",label:"Anchoring",q:"Am I anchored to a specific price, target, or past event?",icon:"target"},
@@ -1219,6 +1273,52 @@ function TrackerApp(props){
     html+='<div class="footer-disc">This document was generated by ThesisAlpha for personal investment research purposes. It does not constitute financial advice. All data is sourced from third-party providers and may contain errors. Past performance does not indicate future results.</div>';
     html+='</div></body></html>';
     var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
+
+  // ── Research Export Pack (for NotebookLM, ChatGPT, etc.) ──
+  function exportResearch(cid){var c=cos.find(function(x){return x.id===cid});if(!c)return;
+    var sec=parseThesis(c.thesisNote);var pos=c.position||{};
+    var lines=[];
+    lines.push("# "+c.ticker+" \u2014 "+c.name);
+    lines.push("Sector: "+c.sector+(c.industry?" / "+c.industry:""));
+    lines.push("Status: "+(c.status||"portfolio")+(c.investStyle?" | Style: "+c.investStyle:""));
+    lines.push("Generated: "+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"}));
+    if(c.purchaseDate)lines.push("Owned since: "+c.purchaseDate);
+    lines.push("");
+    // Position
+    if(pos.shares>0){lines.push("## Position");lines.push("Shares: "+pos.shares+" | Avg Cost: $"+pos.avgCost+" | Current: $"+(pos.currentPrice||0));
+      var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"N/A";
+      lines.push("Return: "+ret+" | Market Value: $"+(pos.shares*(pos.currentPrice||0)).toLocaleString());lines.push("")}
+    // Thesis
+    lines.push("## Investment Thesis");
+    if(sec.core){lines.push("### Core Thesis");lines.push(sec.core);lines.push("")}
+    if(sec.moat){lines.push("### Moat Analysis");lines.push(sec.moat);lines.push("")}
+    if(sec.risks){lines.push("### Key Risks");lines.push(sec.risks);lines.push("")}
+    if(sec.sell){lines.push("### Sell Criteria");lines.push(sec.sell);lines.push("")}
+    // Conviction
+    lines.push("## Conviction: "+(c.conviction||0)+"/10");
+    if(c.convictionHistory&&c.convictionHistory.length>0){lines.push("History:");c.convictionHistory.forEach(function(ch){lines.push("- "+ch.date.substring(0,10)+": "+ch.rating+"/10"+(ch.note?" \u2014 "+ch.note:""))});lines.push("")}
+    // KPIs
+    if(c.kpis&&c.kpis.length>0){lines.push("## KPI Tracking");c.kpis.forEach(function(k){var status=k.lastResult?k.lastResult.status:"pending";var actual=k.lastResult?"Last: "+k.lastResult.actual+(k.unit||""):"No data yet";
+      lines.push("- "+k.name+": Target "+k.target+" | "+actual+" | Status: "+status)});lines.push("")}
+    // Earnings History
+    if(c.earningsHistory&&c.earningsHistory.length>0){lines.push("## Earnings History");c.earningsHistory.forEach(function(e){lines.push("### "+e.quarter);if(e.summary)lines.push(e.summary);
+      if(e.results&&e.results.length>0){e.results.forEach(function(r){lines.push("- "+r.kpi_name+": "+r.actual_value+" ("+r.status+")")})}lines.push("")})}
+    // Financial Snapshot
+    if(c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0){lines.push("## Financial Snapshot (Latest)");Object.keys(c.financialSnapshot).forEach(function(k){var s=c.financialSnapshot[k];if(s&&s.value)lines.push("- "+s.label+": "+s.value)});lines.push("")}
+    // Moat types
+    var mt=c.moatTypes||{};var activeMoats=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
+    if(activeMoats.length>0){lines.push("## Moat Classification");activeMoats.forEach(function(t){var d=mt[t.id];lines.push("- "+t.label+" (strength: "+((d.strength||3))+"/5)"+(d.notes?" \u2014 "+d.notes:""))});lines.push("")}
+    // Decisions
+    if(c.decisions&&c.decisions.length>0){lines.push("## Decision Journal");c.decisions.slice(0,10).forEach(function(d){lines.push("- "+d.date.substring(0,10)+" "+d.action+(d.price?" @ $"+d.price:"")+(d.shares?" ("+d.shares+" shares)":""));if(d.reasoning)lines.push("  Reasoning: "+d.reasoning);if(d.outcome)lines.push("  Outcome: "+d.outcome+(d.outcomeNote?" \u2014 "+d.outcomeNote:""))});lines.push("")}
+    // Dividends
+    var dps=c.divPerShare||c.lastDiv||0;
+    if(dps>0){var mult2=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+      lines.push("## Dividend");lines.push("Per payment: $"+dps.toFixed(2)+" ("+c.divFrequency+") | Annual: $"+(dps*mult2).toFixed(2));
+      if(pos.currentPrice>0)lines.push("Yield: "+((dps*mult2)/pos.currentPrice*100).toFixed(2)+"%");lines.push("")}
+    lines.push("---");lines.push("Exported from ThesisAlpha | "+c.ticker+" | "+new Date().toISOString().substring(0,10));
+    var txt=lines.join("\n");
+    navigator.clipboard.writeText(txt).then(function(){showToast("Research pack copied \u2014 paste into NotebookLM, ChatGPT, or any AI tool","milestone",4000)}).catch(function(){
+      var blob=new Blob([txt],{type:"text/markdown"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=c.ticker+"_research_export.md";a.click();URL.revokeObjectURL(url);showToast("Downloaded "+c.ticker+"_research_export.md","milestone",3000)})}
   function exportCSV(list){
     var rows=[["Ticker","Company","Sector","Status","Shares","Avg Cost","Current Price","Return %","Market Value","Conviction","Earnings Date","KPIs Met","Target Price","Thesis"]];
     list.forEach(function(c){var pos=c.position||{};var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(2):"";
@@ -1238,6 +1338,36 @@ function TrackerApp(props){
       <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
         <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
+  // ── Upgrade Modal ──────────────────────────────────────────
+  function UpgradeModal(){
+    var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
+    var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe \u2014 upgrade to continue using data features.",companies:"You've reached the free limit of "+FREE_LIMIT+" companies.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
+    function startCheckout(priceId){setLoading(priceId);
+      fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error \u2014 please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
+    return<Modal title="Upgrade to Owner\u2019s Plan" onClose={function(){setShowUpgrade(false)}} w={520} K={K}>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{ctxMsg}</div>
+        <div style={{fontSize:12,color:K.dim,marginTop:4}}>Your process tools stay free forever. Add real-time data to supercharge them.</div></div>
+      {/* Feature list */}
+      <div style={{background:K.bg,borderRadius:10,padding:"16px 20px",marginBottom:24}}>
+        {[{t:"Auto earnings check + notifications",i:"\u26A1"},{t:"Financial statements (10yr history)",i:"\uD83D\uDCCA"},{t:"Data-driven moat analysis (8 metrics)",i:"\uD83C\uDFF0"},{t:"Analyst targets + insider trades",i:"\uD83D\uDCCB"},{t:"Price charts with conviction markers",i:"\uD83D\uDCC8"},{t:"Unlimited companies",i:"\u221E"},{t:"Premium PDF export",i:"\uD83D\uDCC4"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
+          <span style={{fontSize:14,width:20,textAlign:"center"}}>{f.i}</span>
+          <span style={{fontSize:12,color:K.txt,fontFamily:fm}}>{f.t}</span></div>})}</div>
+      {/* Pricing cards */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 16px",textAlign:"center"}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$9<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/mo</span></div>
+          <div style={{fontSize:10,color:K.dim,marginBottom:14}}>Cancel anytime</div>
+          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_MONTHLY||"price_monthly")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting\u2026":"Start Monthly"}</button></div>
+        <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
+          <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$79<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
+          <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 27% \u2014 $6.58/mo</div>
+          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting\u2026":"Start Annual"}</button></div></div>
+      <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: {FREE_LIMIT} companies, thesis editor, conviction tracking, weekly reviews, decision journal, Owner's Score</div>
+    </Modal>}
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
@@ -1424,9 +1554,25 @@ function TrackerApp(props){
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:K.mid}/>Owner's Hub</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="analytics"?K.acc+"10":"transparent",borderLeft:page==="analytics"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("analytics")})}><span style={{fontSize:12,color:page==="analytics"?K.acc:K.mid,fontWeight:page==="analytics"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="bar" size={14} color={page==="analytics"?K.acc:K.mid}/>Analytics</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="calendar"?K.amb+"10":"transparent",borderLeft:page==="calendar"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("calendar")})}><span style={{fontSize:12,color:page==="calendar"?K.amb:K.mid,fontWeight:page==="calendar"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="target" size={14} color={page==="calendar"?K.amb:K.mid}/>Earnings Calendar</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="dividends"?K.grn+"10":"transparent",borderLeft:page==="dividends"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dividends")})}><span style={{fontSize:12,color:page==="dividends"?K.grn:K.mid,fontWeight:page==="dividends"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="dividends"?K.grn:K.mid}/>Dividend Hub</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:K.mid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:K.mid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="timeline"?K.blue+"10":"transparent",borderLeft:page==="timeline"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("timeline")})}><span style={{fontSize:12,color:page==="timeline"?K.blue:K.mid,fontWeight:page==="timeline"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={page==="timeline"?K.blue:K.mid}/>Timeline</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:K.mid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:K.mid}/>All Assets</span></div>
+    {/* Plan badge */}
+    <div style={{padding:"10px 20px"}}>
+      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:"pointer"}} onClick={openManage}>
+        <span style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
+        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
+      :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1}}>TRIAL</span>
+          <span style={{fontSize:10,color:trialDaysLeft<=3?K.red:trialDaysLeft<=7?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{trialDaysLeft}d left</span></div>
+        {!trialBonusEarned&&<div>
+          <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"\u2192"} +{TRIAL_BONUS} days</div></div>}
+        {trialBonusEarned&&<div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"\u2713"} Bonus earned \u2014 {TRIAL_TOTAL} day trial</div>}</div>
+      :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:8,fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
     <div style={{padding:"10px 16px 6px"}}>
       <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
         <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
@@ -1442,8 +1588,8 @@ function TrackerApp(props){
           {d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6}}>
-      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
-      <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}} title="Bulk import tickers">Import</button></div></div></div>}
+      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){if(canAdd){setModal({type:"add"});if(isMobile)setSideOpen(false)}else{requirePro("companies")}}}>+ Add</button>
+      <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div>}
   function TopBar(){
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:isMobile?"10px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,gap:isMobile?8:12}}>
     {isMobile&&<button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,marginRight:"auto"}}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>}
@@ -1676,6 +1822,12 @@ function TrackerApp(props){
 
   // ── Analyst & Insider Section (all FREE endpoints) ──
   function AnalystInsiders(p){var c=p.company;
+    if(!isPro){return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:16}}>
+      <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Analyst Targets & Insider Activity</div>
+      <div style={{background:K.bg,borderRadius:8,padding:"24px 20px",textAlign:"center"}}>
+        <div style={{fontSize:12,color:K.mid,marginBottom:8}}>Analyst price targets, recommendations, insider transactions, SEC filings & company news</div>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("analysts")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 16px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Upgrade to Unlock</button>
+      </div></div>}
     var _recs=useState(null),recs=_recs[0],setRecs=_recs[1];
     var _eps=useState(null),eps=_eps[0],setEps=_eps[1];
     var _txns=useState(null),txns=_txns[0],setTxns=_txns[1];
@@ -1874,6 +2026,12 @@ function TrackerApp(props){
 
   // ── Price Chart with Entry Points + Conviction Markers ──
   function PriceChart(p){var c=p.company;
+    if(!isPro){return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}>
+      <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
+      <div style={{background:K.bg,borderRadius:8,padding:"28px 20px",textAlign:"center"}}>
+        <div style={{fontSize:13,color:K.mid,marginBottom:8}}>Price charts with entry points, conviction markers & earnings dates</div>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("charts")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 16px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Upgrade to Unlock</button>
+      </div></div>}
     var _pts=useState(null),pts=_pts[0],setPts=_pts[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _range=useState("1Y"),range=_range[0],setRange=_range[1];
@@ -1954,9 +2112,9 @@ function TrackerApp(props){
   // ── Moat Durability Tracker ─────────────────────────────
   function MoatTracker(p){var c=p.company;
     var _data=useState(null),data=_data[0],setData=_data[1];
-    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
-    useEffect(function(){setLd(true);
-      fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
+    var _ld=useState(!isPro),ld=_ld[0],setLd=_ld[1];
+    useEffect(function(){if(!isPro){setLd(false);return}setLd(true);
+      fetchFinancialStatements(c.ticker,"annual").then(function(r){setData(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,isPro]);
     var moat=calcMoatFromData(data);
     var adjComposite=moat?moat.composite:null;
     if(moat&&c.pricingPower&&c.pricingPower.score!=null){var gmOrig=moat.metrics.find(function(m){return m.id==="grossMargin"});if(gmOrig){var total=moat.metrics.reduce(function(s,m){return s+m.score},0);var adjTotal=total-gmOrig.score+c.pricingPower.score;adjComposite=Math.round(adjTotal/moat.metrics.length)}}
@@ -2183,6 +2341,17 @@ function TrackerApp(props){
     var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(2)+"B";else if(a>=1e6)s=(a/1e6).toFixed(1)+"M";else if(a>=1e3)s=(a/1e3).toFixed(1)+"K";else s=Math.abs(v)<100?v.toFixed(2):a.toFixed(0);return(neg?"-":"")+"$"+s}
   function fmtCell(v,item){if(v==null||v===undefined)return"\u2014";var n=Number(v);if(isNaN(n))return"\u2014";if(item.p)return(n*100).toFixed(1)+"%";if(item.sm)return"$"+n.toFixed(2);return fmtBig(n)}
   function FinancialsPage(p){var c=p.company;
+    if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
+        <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"\u2190"} Back</button>
+        <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+        <div><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div></div></div>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginTop:16}}>
+        <div style={{fontSize:36,marginBottom:16}}>📊</div>
+        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>10-Year Financial Statements</div>
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,maxWidth:420,margin:"0 auto 24px"}}>Income statements, balance sheets, cash flow — annual and quarterly. Powered by FMP with SEC EDGAR fallback.</div>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("financials")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:13})}>Upgrade to Unlock</button>
+      </div></div>}
     var _data=useState(null),data=_data[0],setData=_data[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
@@ -2279,6 +2448,7 @@ function TrackerApp(props){
             <span style={{fontSize:11,color:K.dim}}>{"\u2022"}</span><button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"40":c.status==="toohard"?K.red+"40":K.amb+"40"),borderRadius:4,padding:"1px 8px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button></div></div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={Object.assign({},S.btn,{display:"inline-flex",alignItems:"center",gap:5,textDecoration:"none",padding:"5px 12px",fontSize:11})}>IR{"\u2197"}</a>}
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"edit"})}}>Settings</button>
+          <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportResearch(c.id)}} title="Copy thesis + KPIs + history as structured text for NotebookLM or ChatGPT">Export AI</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
       {/* Moat type badges */}
@@ -2298,18 +2468,43 @@ function TrackerApp(props){
       {detailTab==="overview"&&<div className="ta-fade">
         {/* Pre-Earnings Briefing */}
         {dashSet.showPreEarnings&&c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:13,fontWeight:600,color:K.amb}}>Pre-Earnings Briefing</span><span style={{fontSize:10,color:K.amb,fontFamily:fm,marginLeft:"auto",background:K.amb+"15",padding:"2px 10px",borderRadius:4}}>{dU(c.earningsDate)}d until {fD(c.earningsDate)} {c.earningsTime}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:13,fontWeight:600,color:K.amb}}>Earnings Prep Briefing</span><span style={{fontSize:10,color:K.amb,fontFamily:fm,marginLeft:"auto",background:K.amb+"15",padding:"2px 10px",borderRadius:4}}>{dU(c.earningsDate)}d until {fD(c.earningsDate)} {c.earningsTime}</span></div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:12}}>
             <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>CONVICTION</div><div style={{fontSize:18,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv||"\u2014"}/10</div></div>
             <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>KPIS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.kpis.length}</div></div>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>DECISIONS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{(c.decisions||[]).length}</div></div>
+            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>QUARTERS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{(c.earningsHistory||[]).length}</div></div>
             <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MOAT TREND</div><div style={{fontSize:14,fontWeight:700,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend||"\u2014"}</div></div></div>
-          {c.kpis.length>0&&<div style={{marginBottom:10}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>METRICS TO WATCH</div>{c.kpis.map(function(k){return<div key={k.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.amb+"15"}}>
-            <div style={S.dot(k.lastResult?k.lastResult.status:null)}/><span style={{fontSize:12,color:K.txt,flex:1}}>{k.name}</span>
-            <span style={{fontSize:11,color:K.amb,fontFamily:fm}}>Target: {k.target}</span>
-            {k.lastResult&&<span style={{fontSize:11,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>Last: {k.lastResult.actual}{k.unit||""}</span>}</div>})}</div>}
-          {(function(){var sec2=parseThesis(c.thesisNote);return sec2.core?<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.card,borderRadius:8}}><strong style={{color:K.txt,fontSize:11}}>Thesis:</strong> {sec2.core.substring(0,200)}{sec2.core.length>200?"...":""}</div>:null})()}
-          {c.moatTrend==="Eroding"&&<div style={{marginTop:8,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding \u2014 watch for further deterioration signals.</div>}
+          {/* Metrics to Watch with historical trend */}
+          {c.kpis.length>0&&<div style={{marginBottom:12}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>METRICS TO WATCH</div>{c.kpis.map(function(k){
+            // Build historical trend from earnings history
+            var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var match=e.results.find(function(r){return r.kpi_name===k.name});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
+            return<div key={k.id} style={{padding:"8px 12px",background:K.card,borderRadius:8,marginBottom:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={S.dot(k.lastResult?k.lastResult.status:null)}/><span style={{fontSize:12,color:K.txt,flex:1,fontWeight:500}}>{k.name}</span>
+              <span style={{fontSize:11,color:K.amb,fontFamily:fm}}>Target: {k.target}</span>
+              {k.lastResult&&<span style={{fontSize:11,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>Last: {k.lastResult.actual}{k.unit||""}</span>}</div>
+            {hist.length>=2&&<div style={{display:"flex",gap:6,marginTop:4,paddingLeft:22}}>{hist.slice(0,4).reverse().map(function(h,i){return<span key={i} style={{fontSize:9,color:h.s==="met"?K.grn:K.red,fontFamily:fm,background:h.s==="met"?K.grn+"10":K.red+"10",padding:"1px 6px",borderRadius:3}}>{h.q}: {h.v}</span>})}</div>}
+            </div>})}</div>}
+          {/* Sell criteria - what would make you act */}
+          {(function(){var sec2=parseThesis(c.thesisNote);
+            return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
+              {sec2.core&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.card,borderRadius:8}}><strong style={{color:K.txt,fontSize:10,letterSpacing:1}}>THESIS</strong><div style={{marginTop:4}}>{sec2.core.substring(0,180)}{sec2.core.length>180?"...":""}</div></div>}
+              {sec2.sell&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.red+"06",border:"1px solid "+K.red+"15",borderRadius:8}}><strong style={{color:K.red,fontSize:10,letterSpacing:1}}>SELL CRITERIA</strong><div style={{marginTop:4}}>{sec2.sell.substring(0,180)}{sec2.sell.length>180?"...":""}</div></div>}
+            </div>})()}
+          {/* Questions to listen for */}
+          {c.kpis.length>0&&<div style={{padding:"10px 14px",background:K.card,borderRadius:8,marginBottom:8}}><div style={{fontSize:10,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:6}}>QUESTIONS TO LISTEN FOR ON THE CALL</div>
+            {c.kpis.slice(0,4).map(function(k,i){var trend=k.lastResult?k.lastResult.status:"unknown";
+              return<div key={k.id} style={{fontSize:11,color:K.mid,lineHeight:1.6,paddingLeft:8,borderLeft:"2px solid "+K.amb+"30",marginBottom:4}}>
+                {trend==="met"?"Is "+k.name+" guidance maintained or raised? Any headwinds mentioned?":trend==="missed"?"What is management's plan to recover "+k.name+"? Was the miss structural or one-time?":"What is the outlook for "+k.name+"? How does management define success?"}</div>})}
+          </div>}
+          {c.moatTrend==="Eroding"&&<div style={{marginTop:4,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding \u2014 watch for further deterioration signals.</div>}
+          {/* Export prep for Quartr / NotebookLM */}
+          <div style={{display:"flex",gap:8,marginTop:8}}>
+            <button onClick={function(){exportResearch(c.id)}} style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",color:K.amb,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+              <IC name="doc" size={10} color={K.amb}/>Export for AI Analysis</button>
+            {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.acc+"10",border:"1px solid "+K.acc+"25",color:K.acc,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>
+              <IC name="trending" size={10} color={K.acc}/>Investor Relations{"\u2197"}</a>}
+          </div>
         </div>}
         {/* Price Chart */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
@@ -2321,6 +2516,7 @@ function TrackerApp(props){
               <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>SHARES</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>{pos.shares}</div></div>
               <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>AVG COST</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>${pos.avgCost}</div></div>
               {pos.currentPrice>0&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>RETURN</div><div style={{fontSize:16,fontWeight:600,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</div></div>}
+              {c.purchaseDate&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>OWNED SINCE</div><div style={{fontSize:13,fontWeight:500,color:K.mid,fontFamily:fm}}>{fD(c.purchaseDate)}</div></div>}
             </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
             <div style={S.sec}>Conviction</div>
@@ -2416,7 +2612,7 @@ function TrackerApp(props){
         {/* Earnings */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":"Check Earnings"}</button></div>
+          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking\u2026":cs==="found"?"\u2713 Found":cs==="not-yet"?"Not Yet":cs==="error"?"\u2718 Error":isPro?"Check Earnings":"\u26A1 Check Earnings"}</button></div>
         <EarningsReportCard company={c}/>
         <EarningsTimeline company={c}/>
         {/* KPIs */}
@@ -2782,7 +2978,7 @@ function TrackerApp(props){
               <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
               <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
                 <div style={{fontSize:11,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" \u2022 "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
-              <button onClick={function(){exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>PDF</button>
+              <button onClick={function(){if(requirePro("export"))exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>{isPro?"PDF":"\u26A1 PDF"}</button>
               {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Edit</button>}
             </div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
@@ -3364,7 +3560,7 @@ function TrackerApp(props){
     var _moats=useState({}),moats=_moats[0],setMoats=_moats[1];
     var _ldM=useState(true),ldM=_ldM[0],setLdM=_ldM[1];
     var _prog=useState(0),prog=_prog[0],setProg=_prog[1];
-    useEffect(function(){if(portCos.length===0){setLdM(false);return}
+    useEffect(function(){if(portCos.length===0||!isPro){setLdM(false);return}
       var done=0;var results={};
       portCos.forEach(function(c){
         fetchFinancialStatements(c.ticker,"annual").then(function(r){
@@ -3557,6 +3753,118 @@ function TrackerApp(props){
       </div>}</div>}
 
 
+  // ── Dividend Hub ──────────────────────────────────────
+  function DividendHub(){
+    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var divPayers=portfolio.filter(function(c){var dps=c.divPerShare||c.lastDiv||0;return dps>0});
+    var nonPayers=portfolio.filter(function(c){var dps=c.divPerShare||c.lastDiv||0;return dps<=0});
+    // Sort by annual yield desc
+    divPayers.sort(function(a,b){
+      var aPos=a.position||{};var bPos=b.position||{};
+      var aDps=a.divPerShare||a.lastDiv||0;var bDps=b.divPerShare||b.lastDiv||0;
+      var aMult=a.divFrequency==="monthly"?12:a.divFrequency==="semi"?2:a.divFrequency==="annual"?1:4;
+      var bMult=b.divFrequency==="monthly"?12:b.divFrequency==="semi"?2:b.divFrequency==="annual"?1:4;
+      var aYld=aPos.currentPrice?aDps*aMult/aPos.currentPrice:0;var bYld=bPos.currentPrice?bDps*bMult/bPos.currentPrice:0;
+      return bYld-aYld});
+    var totalAnnual=0;var totalValue=0;
+    divPayers.forEach(function(c){var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+      totalAnnual+=(pos.shares||0)*dps*mult;totalValue+=(pos.shares||0)*(pos.currentPrice||0)});
+    var portfolioYield=totalValue>0?(totalAnnual/totalValue*100):0;
+    var monthlyIncome=totalAnnual/12;
+    // Estimate next payout based on ex-div dates
+    var freqLabel=function(f){return f==="monthly"?"Monthly":f==="semi"?"Semi-Annual":f==="annual"?"Annual":"Quarterly"};
+    // Approximate next payment months based on frequency
+    function estimatePayMonths(c){
+      var freq=c.divFrequency||"quarterly";
+      if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
+      if(freq==="annual")return c.exDivDate?[new Date(c.exDivDate).getMonth()]:[5];
+      if(freq==="semi")return c.exDivDate?[new Date(c.exDivDate).getMonth(),(new Date(c.exDivDate).getMonth()+6)%12]:[2,8];
+      // Quarterly: if we have ex-div date, estimate 4 quarters from it
+      if(c.exDivDate){var m=new Date(c.exDivDate).getMonth();return[m,(m+3)%12,(m+6)%12,(m+9)%12]}
+      return[2,5,8,11]}
+    var monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    // Build monthly income calendar
+    var monthlyBreakdown=monthNames.map(function(mn,mi){
+      var income=0;var payers=[];
+      divPayers.forEach(function(c){var months=estimatePayMonths(c);if(months.indexOf(mi)===-1)return;
+        var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var payout=(pos.shares||0)*dps;
+        if(payout>0){income+=payout;payers.push({ticker:c.ticker,amount:payout})}});
+      return{month:mn,income:income,payers:payers}});
+    var maxMonthly=Math.max.apply(null,monthlyBreakdown.map(function(m){return m.income}))||1;
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:960}}>
+      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Dividend Hub</h1>
+        <p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>Track income from your dividend-paying holdings</p></div>
+      {/* Summary cards */}
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>ANNUAL INCOME</div><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnual.toFixed(0)}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MONTHLY AVG</div><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${monthlyIncome.toFixed(0)}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>PORTFOLIO YIELD</div><div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{portfolioYield.toFixed(2)}%</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>PAYERS</div><div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{divPayers.length}<span style={{fontSize:13,color:K.dim,fontWeight:400}}>/{portfolio.length}</span></div></div>
+      </div>
+      {/* Monthly income calendar */}
+      {totalAnnual>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Monthly Income Calendar</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(12, 1fr)",gap:isMobile?4:8}}>
+          {monthlyBreakdown.map(function(m,i){var h=m.income>0?Math.max(8,Math.round(m.income/maxMonthly*60)):4;var isNow=new Date().getMonth()===i;
+            return<div key={i} style={{textAlign:"center"}}>
+              <div style={{height:80,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center"}}>
+                {m.income>0&&<div style={{fontSize:isMobile?7:9,color:K.grn,fontFamily:fm,marginBottom:2}}>${m.income.toFixed(0)}</div>}
+                <div style={{width:"100%",height:h,background:m.income>0?K.grn:K.bdr,borderRadius:3,opacity:m.income>0?0.7:0.3}}/>
+              </div>
+              <div style={{fontSize:isMobile?8:10,color:isNow?K.acc:K.dim,fontWeight:isNow?700:400,fontFamily:fm,marginTop:4}}>{m.month}</div>
+            </div>})}
+        </div>
+      </div>}
+      {/* Payers table */}
+      {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Payers</div>
+        <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead><tr style={{borderBottom:"1px solid "+K.bdr}}>
+            <th style={{textAlign:"left",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Company</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Per Payment</th>
+            <th style={{textAlign:"center",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Frequency</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Yield</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Annual/Share</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Annual Income</th>
+            {!isMobile&&<th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Ex-Div Date</th>}
+          </tr></thead>
+          <tbody>{divPayers.map(function(c){
+            var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
+            var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+            var annDps=dps*mult;var yld=pos.currentPrice?annDps/pos.currentPrice*100:0;
+            var annIncome=(pos.shares||0)*annDps;
+            return<tr key={c.id} style={{borderBottom:"1px solid "+K.bdr+"60",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}>
+              <td style={{padding:"10px 10px",display:"flex",alignItems:"center",gap:8}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+                <div><div style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim}}>{c.name}</div></div></td>
+              <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${dps.toFixed(2)}</td>
+              <td style={{textAlign:"center",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:11}}>{freqLabel(c.divFrequency)}</td>
+              <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{yld.toFixed(2)}%</td>
+              <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${annDps.toFixed(2)}</td>
+              <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{pos.shares>0?"$"+annIncome.toFixed(0):<span style={{color:K.dim,fontSize:10}}>Add shares</span>}</td>
+              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",color:K.amb,fontFamily:fm,fontSize:11}}>{c.exDivDate?fD(c.exDivDate):"\u2014"}</td>}
+            </tr>})}</tbody>
+        </table></div>
+        {/* Total row */}
+        <div style={{display:"flex",justifyContent:"space-between",padding:"12px 10px 0",borderTop:"2px solid "+K.bdr,marginTop:4}}>
+          <span style={{fontSize:13,color:K.mid,fontWeight:500}}>Total Annual Income</span>
+          <span style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnual.toFixed(0)}</span></div>
+      </div>}
+      {/* Non-payers */}
+      {nonPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Non-Dividend Holdings ({nonPayers.length})</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{nonPayers.map(function(c){
+          return<div key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",background:K.bg,borderRadius:6,cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}>
+            <CoLogo domain={c.domain} ticker={c.ticker} size={16}/><span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{c.ticker}</span></div>})}</div>
+      </div>}
+      {divPayers.length===0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
+        <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F4B0)}</div>
+        <div style={{fontSize:14,marginBottom:6}}>No dividend data yet</div>
+        <div style={{fontSize:12}}>Set dividends for your holdings in Position settings</div>
+      </div>}
+    </div>}
+
   // ── Earnings Calendar ──────────────────────────────────────
   function EarningsCalendar(){
     var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});
@@ -3662,15 +3970,15 @@ function TrackerApp(props){
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" \u2022 Outside your circle of competence":priceLoading?" \u2022 Updating prices\u2026":""}</p></div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        <button onClick={toggleAutoNotify} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
+        <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {autoNotify?"Auto-check ON":"Auto-check"}</button>
         {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Will draft an email summary when earnings are found":"Click to get email drafts when earnings drop"}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
           {emailNotify?"Email Draft ON":"+ Email Draft"}</button>}
-        <button style={S.btnChk} onClick={checkAll}>Check All</button>
+        <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
-        <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
+        <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){if(canAdd){setModal({type:"add"})}else{requirePro("companies")}}}>+ Add</button></div></div>
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
       var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
       if(held.length===0)return null;
@@ -3868,7 +4176,7 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{obStep>0&&<OnboardingFlow/>}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
       <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc)+"40",boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"20, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420}}>
         <div style={{fontSize:56,marginBottom:16,animation:"streakFlame 1s ease infinite"}}>{celebOverlay.icon||String.fromCodePoint(0x1F389)}</div>
@@ -3885,7 +4193,25 @@ function TrackerApp(props){
       <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:10,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
-    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/><div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/>{trial&&trial.start&&plan!=="pro"&&function(){
+      var urgent=trialDaysLeft<=3;var warn=trialDaysLeft<=7&&!urgent;
+      var barColor=urgent?K.red:warn?K.amb:K.acc;
+      // Active trial banner
+      if(trialActive){return<div style={{padding:isMobile?"10px 14px":"10px 32px",background:barColor+"08",borderBottom:"1px solid "+barColor+"20",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?10:16,flexDirection:isMobile?"column":"row"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+          <div style={{fontSize:11,fontWeight:600,color:barColor,fontFamily:fm}}>{trialDaysLeft}d left</div>
+          <div style={{fontSize:11,color:K.mid}}>{trialBonusEarned?"Full trial \u2014 "+TRIAL_TOTAL+" days earned":"Pro trial \u2014 complete "+THESIS_UNLOCK+" theses to earn +"+TRIAL_BONUS+" more days"}</div></div>
+        {!trialBonusEarned&&<div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{display:"flex",gap:3}}>{[0,1,2].map(function(i){return<div key={i} style={{width:24,height:6,borderRadius:3,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          <span style={{fontSize:10,color:thesisProgress>=THESIS_UNLOCK?K.grn:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK}</span></div>}
+        {urgent&&<button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{padding:"5px 14px",fontSize:10,fontWeight:600,background:K.red+"15",border:"1px solid "+K.red+"40",color:K.red,borderRadius:6,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Upgrade Now</button>}
+      </div>}
+      // Expired trial banner
+      if(trialExpired){return<div style={{padding:isMobile?"12px 14px":"12px 32px",background:K.amb+"10",borderBottom:"1px solid "+K.amb+"25",display:"flex",alignItems:"center",gap:16}}>
+        <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
+          <div style={{fontSize:11,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:11,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
+      return null}()}<div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
