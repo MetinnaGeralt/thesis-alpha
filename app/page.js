@@ -2892,19 +2892,30 @@ function TrackerApp(props){
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
       {ht==="command"&&<div>
-        {/* What to do today — actions first */}
-        {actions.length>0&&<div style={{marginBottom:20}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>What To Do Today</div>
-          <div style={{display:"grid",gap:8}}>
-            {actions.slice(0,4).map(function(a,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:14,padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,cursor:"pointer"}} onClick={a.onClick}>
-              <div style={{width:36,height:36,borderRadius:8,background:a.color+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={a.icon} size={16} color={a.color}/></div>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>{a.title}</div>
-                <div style={{fontSize:11,color:K.dim,marginTop:1}}>{a.desc}</div></div>
-              <span style={{fontSize:11,color:a.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>{a.action} {"→"}</span></div>})}</div></div>}
-        {actions.length===0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px 20px",textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:18,marginBottom:4}}>{"🎯"}</div>
-          <div style={{fontSize:14,fontWeight:500,color:K.grn}}>All caught up!</div>
-          <div style={{fontSize:12,color:K.dim,marginTop:4}}>Every holding has a thesis, KPIs, conviction rating, and moat classification. You're running a disciplined process.</div></div>}
+        {/* Owner's Process Check */}
+        {(function(){
+          var nudges=[];
+          var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
+          var noKpi=portfolio.filter(function(c2){return c2.kpis.length===0});
+          var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
+          var staleT=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
+          var noMoat=portfolio.filter(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
+          function tks(arr){return arr.slice(0,3).map(function(c2){return c2.ticker}).join(", ")+(arr.length>3?" + "+(arr.length-3)+" more":"")}
+          if(noThesis.length>0)nudges.push({text:tks(noThesis)+(noThesis.length===1?" is":" are")+" missing a thesis",color:K.acc,icon:"lightbulb",btn:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+          if(noKpi.length>0)nudges.push({text:tks(noKpi)+(noKpi.length===1?" has":" have")+" no KPIs tracked",color:K.blue,icon:"target",btn:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
+          if(noConv.length>0)nudges.push({text:tks(noConv)+(noConv.length===1?" needs":" need")+" a conviction rating",color:K.amb,icon:"trending",btn:"Rate now",onClick:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
+          if(staleT.length>0)nudges.push({text:tks(staleT)+(staleT.length===1?" thesis is":" theses are")+" over 90 days old",color:K.red,icon:"clock",btn:"Review",onClick:function(){setSelId(staleT[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+          if(noMoat.length>0&&nudges.length<4)nudges.push({text:"Classify the moat for "+tks(noMoat),color:"#9333EA",icon:"castle",btn:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
+          if(!currentWeekReviewed&&nudges.length<4)nudges.push({text:"Weekly review due — "+portfolio.length+" holdings to check",color:K.grn,icon:"shield",btn:"Start review",onClick:function(){setPage("review")}});
+          if(nudges.length===0)return<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px 20px",textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:14,fontWeight:500,color:K.grn}}>All caught up!</div>
+            <div style={{fontSize:12,color:K.dim,marginTop:4}}>Every holding has a thesis, KPIs, conviction, and moat. Your process is strong.</div></div>;
+          return<div style={{marginBottom:20}}>
+            <div style={{display:"grid",gap:8}}>
+              {nudges.map(function(n,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",background:n.color+"06",border:"1px solid "+n.color+"20",borderRadius:10,cursor:"pointer"}} onClick={n.onClick}>
+                <div style={{width:36,height:36,borderRadius:8,background:n.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={n.icon} size={16} color={n.color}/></div>
+                <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{n.text}</div></div>
+                <button onClick={function(e){e.stopPropagation();n.onClick()}} style={{background:n.color,color:"#fff",border:"none",borderRadius:6,padding:"7px 16px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{n.btn}</button></div>})}</div></div>})()}
 
         {/* Upcoming earnings */}
         {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
@@ -4199,43 +4210,6 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
     {/* Analytics quick link */}
-    {sideTab==="portfolio"&&filtered.length>0&&dashSet.showOwnerScore&&(function(){var os=calcOwnerScore(cos);var bd=os.breakdown;
-      var lv=getLevel(os.total);var scoreColor=os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red;
-      // Build specific, actionable nudges with company names
-      var nudges=[];
-      var noThesis=filtered.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
-      var noKpi=filtered.filter(function(c2){return c2.kpis.length===0});
-      var noConv=filtered.filter(function(c2){return!c2.conviction||c2.conviction===0});
-      var stale=filtered.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
-      var noMoat=filtered.filter(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
-      function tickers(arr){return arr.slice(0,3).map(function(c2){return c2.ticker}).join(", ")+(arr.length>3?" + "+(arr.length-3)+" more":"")}
-      if(noThesis.length>0)nudges.push({text:tickers(noThesis)+(noThesis.length===1?" is":" are")+" missing a thesis. Write one now.",color:K.acc,icon:"lightbulb",action:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
-      if(noKpi.length>0)nudges.push({text:tickers(noKpi)+(noKpi.length===1?" has":" have")+" no KPIs. Define what to track.",color:K.blue,icon:"target",action:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
-      if(noConv.length>0)nudges.push({text:"Rate your conviction for "+tickers(noConv)+".",color:K.amb,icon:"trending",action:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
-      if(stale.length>0)nudges.push({text:tickers(stale)+(stale.length===1?" thesis is":" theses are")+" over 90 days old. Time to review.",color:K.red,icon:"clock",action:function(){setSelId(stale[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
-      if(noMoat.length>0&&nudges.length<3)nudges.push({text:"Classify the moat for "+tickers(noMoat)+".",color:"#9333EA",icon:"castle",action:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
-      if(!currentWeekReviewed&&nudges.length<3)nudges.push({text:"Weekly review is due. Confirm your conviction across "+filtered.length+" holdings.",color:K.grn,icon:"shield",action:function(){setPage("review")}});
-      return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"16px":"18px 24px",marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:isMobile?12:20}}>
-          {/* Score ring */}
-          <div style={{position:"relative",width:56,height:56,flexShrink:0}}>
-            <svg width={56} height={56} viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="none" stroke={K.bdr} strokeWidth="4"/><circle cx="28" cy="28" r="23" fill="none" stroke={scoreColor} strokeWidth="4" strokeDasharray={Math.round(os.total/100*145)+" 145"} strokeLinecap="round" transform="rotate(-90 28 28)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-              <div style={{fontSize:16,fontWeight:700,color:scoreColor,fontFamily:fm,lineHeight:1}}>{os.total}</div></div></div>
-          {/* Level + status */}
-          <div style={{flex:1}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner's Score</div>
-            <div style={{fontSize:13,color:K.txt,fontWeight:500}}>{lv.name} {lv.icon}</div>
-            {nudges.length===0&&<div style={{fontSize:11,color:K.grn,marginTop:2}}>All caught up — your process is strong.</div>}
-            {nudges.length>0&&<div style={{fontSize:11,color:K.mid,marginTop:2}}>{nudges.length} thing{nudges.length>1?"s":""} to improve</div>}
-          </div></div>
-        {/* Actionable nudges */}
-        {nudges.length>0&&<div style={{marginTop:12,display:"grid",gap:6}}>
-          {nudges.slice(0,3).map(function(n,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:n.color+"06",border:"1px solid "+n.color+"15",borderRadius:8,cursor:"pointer"}} onClick={n.action}>
-            <IC name={n.icon} size={13} color={n.color}/>
-            <div style={{flex:1,fontSize:11,color:K.txt}}>{n.text}</div>
-            <span style={{fontSize:11,color:n.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>Fix →</span></div>})}</div>}
-      </div>})()}
 
     {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
