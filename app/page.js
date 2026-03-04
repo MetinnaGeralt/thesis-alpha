@@ -212,6 +212,22 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
+// Fetch dividend details from FMP
+async function fetchDividendInfo(ticker){try{
+  var hist=await fmp("historical-price-full/stock_dividend/"+ticker);
+  if(!hist||!hist.historical||!hist.historical.length)return null;
+  var divs=hist.historical.slice(0,12); // last 12 dividends
+  var latest=divs[0];
+  // Determine frequency from gaps between payments
+  var freq="quarterly";
+  if(divs.length>=3){
+    var gaps=[];for(var i=1;i<Math.min(divs.length,6);i++){
+      var d1=new Date(divs[i-1].date);var d2=new Date(divs[i].date);
+      gaps.push(Math.round((d1-d2)/(1000*60*60*24)))}
+    var avgGap=gaps.reduce(function(s,v){return s+v},0)/gaps.length;
+    if(avgGap<45)freq="monthly";else if(avgGap<120)freq="quarterly";else if(avgGap<240)freq="semi";else freq="annual"}
+  return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDividend||0}
+}catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
 // FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
@@ -545,7 +561,7 @@ function TrackerApp(props){
   var canAdd=isPro||cos.filter(function(c){return c.status!=="toohard"}).length<FREE_LIMIT;
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId)return;fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e)})}
-  var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:true,showSectors:true,showDividends:true,showAnalyst:true,showBuyZone:true,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
+  var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
@@ -830,7 +846,10 @@ function TrackerApp(props){
       if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
         // Auto-populate dividend from FMP if user hasn't manually set one
         if(r.lastDiv>0&&!prev.divPerShare){updates.divPerShare=r.lastDiv;updates.lastDiv=r.lastDiv}
-        return Object.assign({},prev,updates)})}}catch(e){}
+        return Object.assign({},prev,updates)});
+        // Fetch detailed dividend info if we have a lastDiv but no exDivDate
+        if(r.lastDiv>0&&(!c.exDivDate||c.exDivDate==="")){fetchDividendInfo(c.ticker).then(function(dInfo){if(dInfo&&dInfo.divPerShare>0){upd(c.id,function(prev){var du={};if(!prev.divPerShare||prev.divPerShare===0)du.divPerShare=dInfo.divPerShare;if(!prev.divFrequency||prev.divFrequency==="quarterly")du.divFrequency=dInfo.divFrequency;if(!prev.exDivDate)du.exDivDate=dInfo.exDivDate;if(!prev.lastDiv)du.lastDiv=dInfo.lastDiv;return Object.keys(du).length>0?Object.assign({},prev,du):prev})}}).catch(function(){})}
+      }}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
     if(nv){requestPushPermission();
@@ -936,7 +955,7 @@ function TrackerApp(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");else showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4)checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");else showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -950,6 +969,7 @@ function TrackerApp(props){
       if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});
       else upd(selId,function(c){var newKpis=c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)]);
         if(newKpis.length===1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+        if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
         return Object.assign({},c,{kpis:newKpis})});setModal(null)}
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Metric picker grid */}
@@ -1509,45 +1529,41 @@ function TrackerApp(props){
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
-    // Step 4: Your toolkit beyond stocks
-    if(obStep===4)return<div style={overlay}><div className="ta-slide" style={card}>
+    // Step 4: Guide to write thesis for the company they just added
+    if(obStep===4){var firstCo=cos.find(function(c){return c.id===selId})||cos[cos.length-1];
+      return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
-      <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px",textAlign:"center"}}>Your Complete Toolkit</h2>
-      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px"}}>ThesisAlpha isn't just stock analysis. It's your investment command center.</p>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
-        {[{icon:"shield",title:"Weekly Review",desc:"3-minute weekly check-in. Confirm conviction across all holdings. Build streaks, build discipline.",color:K.grn},
-          {icon:"trending",title:"Portfolio Timeline",desc:"Every thesis change, every decision, every conviction shift. Your investment memory, forever.",color:K.blue},
-          {icon:"dollar",title:"All Assets",desc:"Track your entire net worth. Stocks, crypto, property, gold. Stacked chart shows the big picture.",color:K.amb},
-          {icon:"users",title:"Community Insights",desc:"See aggregated conviction, moat consensus, and activity from other ThesisAlpha owners.",color:K.acc}
-        ].map(function(f){return<div key={f.title} style={{background:K.bg,borderRadius:10,padding:"16px 18px",border:"1px solid "+K.bdr}}>
-          <div style={{width:28,height:28,borderRadius:7,background:f.color+"15",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:8}}><IC name={f.icon} size={14} color={f.color}/></div>
-          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{f.title}</div>
-          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{f.desc}</div></div>})}</div>
-      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",textAlign:"center",marginBottom:20}}>
-        <div style={{fontSize:12,fontWeight:600,color:K.amb,fontFamily:fm,marginBottom:4}}>Owner’s Score</div>
-        <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Everything you do earns points. Write theses, track KPIs, review weekly, classify moats. Level up from Novice to Master. Your score proves your process.</div></div>
-      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
-        <button onClick={function(){setObStep(5)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Let’s go {"→"}</button></div>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:36,marginBottom:12}}>{"✍️"}</div>
+        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>Now write your thesis</h2>
+        <p style={{fontSize:13,color:K.dim,margin:0}}>Why do you own <strong style={{color:K.txt}}>{firstCo?firstCo.ticker:"this company"}</strong>? This is the foundation of owner-operator investing.</p></div>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 20px",marginBottom:20}}>
+        <div style={{fontSize:12,color:K.mid,lineHeight:1.8}}>
+          A complete thesis has 4 sections:<br/>
+          <strong style={{color:K.grn}}>1. Core Thesis</strong> — Why you own it<br/>
+          <strong style={{color:K.blue}}>2. Moat</strong> — What protects the business<br/>
+          <strong style={{color:K.amb}}>3. Risks</strong> — What could go wrong<br/>
+          <strong style={{color:K.red}}>4. Sell Criteria</strong> — When you'd walk away</div></div>
+      <div style={{display:"flex",gap:12,justifyContent:"center"}}>
+        <button onClick={function(){finishOnboarding();if(firstCo){setSelId(firstCo.id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}}} style={Object.assign({},S.btnP,{padding:"12px 28px",fontSize:14})}>Write Thesis {"→"}</button></div>
+      <button onClick={function(){finishOnboarding()}} style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer"}}>Skip — I'll do this later</button>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
-    </div></div>;
-    // Step 5: You're ready
+    </div></div>}
+    // Step 5: Quick start tips (shown if they skip thesis)
     if(obStep===5)return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:36,marginBottom:12}}>{"✓"}</div>
-        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You’re all set</h2>
-        <p style={{fontSize:13,color:K.dim,margin:0}}>Here’s how to get started</p></div>
+        <h2 style={{fontSize:22,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>You're all set</h2>
+        <p style={{fontSize:13,color:K.dim,margin:0}}>Three things that matter most</p></div>
       <div style={{display:"grid",gap:10,marginBottom:24}}>
-        {[{action:"Write a thesis",where:"Click any company → Investment Thesis",icon:"lightbulb",color:K.grn},
-          {action:"Track KPIs",where:"Company → Key Metrics → + Track Metric",icon:"target",color:K.blue},
-          {action:"Classify the moat",where:"Company → Analysis → Moat Durability",icon:"castle",color:K.acc},
-          {action:"Do your first Weekly Review",where:"Sidebar → Weekly Review",icon:"shield",color:K.amb},
-          {action:"Track all your assets",where:"Sidebar → All Assets",icon:"dollar",color:"#F59E0B"}
-        ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
-          <div style={{width:26,height:26,borderRadius:6,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={12} color={hint.color}/></div>
+        {[{action:"Write a thesis for every holding",desc:"The discipline of writing forces clarity",icon:"lightbulb",color:K.grn},
+          {action:"Track 2-3 KPIs per company",desc:"Define what 'working' looks like in numbers",icon:"target",color:K.blue},
+          {action:"Do your Weekly Review every Sunday",desc:"3 minutes that compound over years",icon:"shield",color:K.amb}
+        ].map(function(hint){return<div key={hint.action} style={{display:"flex",alignItems:"center",gap:12,background:K.bg,borderRadius:8,padding:"12px 16px",border:"1px solid "+K.bdr}}>
+          <div style={{width:32,height:32,borderRadius:7,background:hint.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={hint.icon} size={14} color={hint.color}/></div>
           <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
-            <div style={{fontSize:10,color:K.dim}}>{hint.where}</div></div></div>})}</div>
+            <div style={{fontSize:10,color:K.dim}}>{hint.desc}</div></div></div>})}</div>
       <div style={{textAlign:"center"}}>
         <button onClick={function(){finishOnboarding();if(selId){setDetailTab("overview")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
@@ -1565,12 +1581,9 @@ function TrackerApp(props){
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={isDark}/><span style={{fontSize:13,fontWeight:600,color:K.txt,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:K.mid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:K.mid}/>Portfolio Overview</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:K.mid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:K.mid}/>Owner's Hub</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="analytics"?K.acc+"10":"transparent",borderLeft:page==="analytics"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("analytics")})}><span style={{fontSize:12,color:page==="analytics"?K.acc:K.mid,fontWeight:page==="analytics"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="bar" size={14} color={page==="analytics"?K.acc:K.mid}/>Analytics</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="calendar"?K.amb+"10":"transparent",borderLeft:page==="calendar"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("calendar")})}><span style={{fontSize:12,color:page==="calendar"?K.amb:K.mid,fontWeight:page==="calendar"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="target" size={14} color={page==="calendar"?K.amb:K.mid}/>Earnings Calendar</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="dividends"?K.grn+"10":"transparent",borderLeft:page==="dividends"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dividends")})}><span style={{fontSize:12,color:page==="dividends"?K.grn:K.mid,fontWeight:page==="dividends"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="dividends"?K.grn:K.mid}/>Dividend Hub</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:K.mid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:K.mid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="timeline"?K.blue+"10":"transparent",borderLeft:page==="timeline"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("timeline")})}><span style={{fontSize:12,color:page==="timeline"?K.blue:K.mid,fontWeight:page==="timeline"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={page==="timeline"?K.blue:K.mid}/>Timeline</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:K.mid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:K.mid}/>All Assets</span></div>
+    {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
       {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:"pointer"}} onClick={openManage}>
@@ -2448,6 +2461,7 @@ function TrackerApp(props){
       </div>}
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
+    var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
     var TABS=[{id:"overview",label:"Overview",icon:"overview"},{id:"analysis",label:"Analysis",icon:"analysis"},{id:"journal",label:"Journal",icon:"journal"}];
     return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
@@ -2520,6 +2534,10 @@ function TrackerApp(props){
           </div>
         </div>}
         {/* Price Chart */}
+        {/* Toggle for charts & position details */}
+        <button onClick={function(){setShowMore(!showMore)}} style={{display:"flex",alignItems:"center",gap:6,width:"100%",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 16px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm,marginBottom:showMore?12:20,justifyContent:"center"}}>
+          <IC name={showMore?"overview":"bar"} size={12} color={K.dim}/>{showMore?"Hide charts & position":"Show charts & position"}{pos.shares>0?" · "+pos.shares+" shares"+(pos.currentPrice>0?" · $"+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0}):"")+""+(conv>0?" · Conviction "+conv+"/10":""):conv>0?" · Conviction "+conv+"/10":""}</button>
+        {showMore&&<div>
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
         {/* Position + Conviction */}
         <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
@@ -2566,6 +2584,7 @@ function TrackerApp(props){
           <span style={{fontSize:11,fontWeight:600,color:STYLE_MAP[c.investStyle].color,fontFamily:fm}}>{STYLE_MAP[c.investStyle].label}</span>
           <span style={{fontSize:10,color:K.dim,flex:1}}>{STYLE_MAP[c.investStyle].desc.split(".")[0]+"."}</span>
           <button onClick={function(){setModal({type:"edit"})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm}}>Change</button></div>}
+        </div>}
         {/* Thesis */}
         {c.thesisNote&&function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
           var sectionsFilled=[sec.core,sec.moat,sec.risks,sec.sell].filter(function(s){return s&&s.trim().length>15}).length;
@@ -2645,52 +2664,6 @@ function TrackerApp(props){
       {detailTab==="analysis"&&<div className="ta-fade">
         {/* Moat Tracker link */}
 
-        {/* ── Community Insights (Aggregated) ── */}
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px",marginBottom:12}}>
-          <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community Insights</div>
-          {(function(){
-            // Simulated community data derived from company characteristics
-            var seed=c.ticker.split("").reduce(function(s,ch){return s+ch.charCodeAt(0)},0);
-            var r=function(min,max){seed=(seed*9301+49297)%233280;return min+Math.floor(seed/233280*(max-min+1))};
-            var owners=r(12,340);var avgConv=r(55,85)/10;var moatRating=r(55,90);
-            var wideP=moatRating>70?r(40,65):r(10,30);var narrowP=r(20,40);var noneP=100-wideP-narrowP;
-            var topMoat=wideP>50?"Switching Costs":narrowP>30?"Brand Power":"Cost Advantage";
-            var topAction=r(1,10)>7?"ADD":"HOLD";
-            var convTrend=r(1,10)>5?"up":"stable";
-            var kpiTrack=r(2,6);
-
-            return<div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
-                <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
-                  <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{owners}</div>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>ThesisAlpha owners</div></div>
-                <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
-                  <div style={{fontSize:18,fontWeight:700,color:avgConv>=7?K.grn:avgConv>=5?K.amb:K.red,fontFamily:fm}}>{avgConv.toFixed(1)}</div>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>avg conviction</div></div>
-                <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
-                  <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{kpiTrack}</div>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>avg KPIs tracked</div></div>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <div style={{background:K.bg,borderRadius:8,padding:"10px 14px"}}>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MOAT CONSENSUS</div>
-                  <div style={{display:"flex",gap:2,height:6,borderRadius:3,overflow:"hidden",marginBottom:6}}>
-                    <div style={{width:wideP+"%",background:K.grn}}/>
-                    <div style={{width:narrowP+"%",background:K.amb}}/>
-                    <div style={{width:noneP+"%",background:K.red}}/></div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:K.dim,fontFamily:fm}}>
-                    <span style={{color:K.grn}}>Wide {wideP}%</span><span style={{color:K.amb}}>Narrow {narrowP}%</span><span style={{color:K.red}}>None {noneP}%</span></div>
-                  <div style={{fontSize:10,color:K.mid,marginTop:6}}>Top moat: <strong style={{color:K.txt}}>{topMoat}</strong></div></div>
-                <div style={{background:K.bg,borderRadius:8,padding:"10px 14px"}}>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>COMMUNITY ACTIVITY</div>
-                  <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>
-                    Conviction trend: <strong style={{color:convTrend==="up"?K.grn:K.mid}}>{convTrend==="up"?"↑ Rising":"─ Stable"}</strong><br/>
-                    Most common action: <strong style={{color:topAction==="ADD"?K.grn:K.mid}}>{topAction}</strong><br/>
-                    {r(5,25)}% updated thesis this month</div></div>
-              </div>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:10,fontStyle:"italic"}}>Aggregated from ThesisAlpha community. Data anonymized.</div>
-            </div>})()}
-        </div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
           <div><div style={S.sec}><IC name="moat" size={14} color={K.dim}/>Moat Durability & Classification</div>
             <div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring, moat type analysis — brand, switching costs, network effects & more</div>
@@ -4062,10 +4035,15 @@ function TrackerApp(props){
             <button onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>How does scoring work? {"→"}</button></div>
         </div>}
       </div>})()}
-    {sideTab==="portfolio"&&filtered.length>=2&&<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:16}} onClick={function(){setPage("analytics")}}>
-      <IC name="bar" size={18} color={K.acc}/>
-      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Portfolio Analytics</div><div style={{fontSize:11,color:K.dim}}>Business quality, financial strength, pricing power & capital efficiency across your holdings</div></div>
-      <span style={{fontSize:16,color:K.acc}}>{"→"}</span></div>}
+    {sideTab==="portfolio"&&filtered.length>=2&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>
+      {[{label:"Analytics",icon:"bar",color:K.acc,pg:"analytics",desc:"Moat scores & quality"},
+        {label:"Earnings",icon:"target",color:K.amb,pg:"calendar",desc:"Upcoming & recent"},
+        {label:"Dividends",icon:"dollar",color:K.grn,pg:"dividends",desc:"Income tracking"},
+        {label:"Timeline",icon:"trending",color:K.blue,pg:"timeline",desc:"Your history"}
+      ].map(function(lnk){return<div key={lnk.label} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"center"}} onClick={function(){setSelId(null);setPage(lnk.pg)}}>
+        <IC name={lnk.icon} size={16} color={lnk.color}/>
+        <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginTop:4}}>{lnk.label}</div>
+        <div style={{fontSize:9,color:K.dim}}>{lnk.desc}</div></div>})}</div>}
     {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don’t know is the dawning of wisdom.\" Companies here are outside your circle — too complex, too unpredictable, or require expertise you don’t have. That’s not failure. That’s discipline."}</div></div>}
     {/* Quick-start nudge for incomplete holdings */}
     {sideTab==="portfolio"&&filtered.length>0&&function(){var noThesis=filtered.filter(function(c){return!c.thesisNote});var noKpi=filtered.filter(function(c){return c.kpis.length===0});var noStyle=filtered.filter(function(c){return!c.investStyle});
