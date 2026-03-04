@@ -2145,7 +2145,7 @@ function TrackerApp(props){
     var adjComposite=moat?moat.composite:null;
     if(moat&&c.pricingPower&&c.pricingPower.score!=null){var gmOrig=moat.metrics.find(function(m){return m.id==="grossMargin"});if(gmOrig){var total=moat.metrics.reduce(function(s,m){return s+m.score},0);var adjTotal=total-gmOrig.score+c.pricingPower.score;adjComposite=Math.round(adjTotal/moat.metrics.length)}}
     // Cache moat for PDF export (only if changed)
-    useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:adjComposite||moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score});if(c.pricingPower&&c.pricingPower.score!=null)cache.grossMargin=c.pricingPower.score;
+    useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:adjComposite||moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score;cache[m.id+"_val"]=m.value});if(c.pricingPower&&c.pricingPower.score!=null)cache.grossMargin=c.pricingPower.score;
       if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null,c.pricingPower?c.pricingPower.score:null]);
     var cLabel=!moat?"Insufficient Data":moatLabel(adjComposite);
     var cColor=!moat?K.dim:moatColor(adjComposite);
@@ -2894,137 +2894,134 @@ function TrackerApp(props){
       {/* ═══ INVESTOR LENSES TAB ═══ */}
       {ht==="lenses"&&<div>
         {(function(){
-          // Lens definitions with metrics, S&P 500 benchmarks, and weights
+          // Parse numeric value from moat cache strings like "45.2%", "+12.3%", "Net Cash", "1.5x"
+          function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
+          // Lens definitions with ACTUAL S&P 500 benchmarks
           var LENSES=[
-            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",quote:"Only invest in good companies, don't overpay, do nothing.",
+            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",quote:"Only invest in good companies, don’t overpay, do nothing.",
               metrics:[
-                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:25,good:"above",desc:"Pricing power — can the business charge a premium?"},
-                {id:"roic",label:"ROCE / ROIC",sp500:12,unit:"%",weight:25,good:"above",desc:"Returns on capital — is the business capital-efficient?"},
-                {id:"opLeverage",label:"Operating Margin",sp500:15,unit:"%",weight:20,good:"above",desc:"Operational efficiency — does scale create profit?"},
-                {id:"fcfConversion",label:"Cash Conversion",sp500:80,unit:"%",weight:20,good:"above",desc:"Earnings quality — does profit turn into real cash?"},
-                {id:"fortress",label:"Interest Cover",sp500:6,unit:"x",weight:10,good:"above",desc:"Financial strength — can the business service its debt?"}
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:25,desc:"Pricing power — can the business charge a premium?"},
+                {id:"roic",label:"ROCE / ROIC",sp500:15,unit:"%",weight:25,desc:"Returns on capital — is the business capital-efficient?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:20,desc:"Operational efficiency — does scale create profit?"},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Earnings quality — does profit turn into real cash?"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Financial strength — lower is better",invert:true}
               ]},
             {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",
               metrics:[
-                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,good:"above",desc:"Organic demand growth — is the TAM expanding?"},
-                {id:"grossMargin",label:"Gross Margins",sp500:45,unit:"%",weight:20,good:"above",desc:"Above 60% signals a capital-light model"},
-                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,good:"above",desc:"Bottom-line profitability after all costs"},
-                {id:"fcfConversion",label:"FCF Margin",sp500:15,unit:"%",weight:20,good:"above",desc:"Free cash flow as % of revenue — the real yield"},
-                {id:"roic",label:"ROIC",sp500:12,unit:"%",weight:15,good:"above",desc:"Capital efficiency — the engine of compounding"},
-                {id:"fortress",label:"Balance Sheet",sp500:6,unit:"score",weight:10,good:"above",desc:"Low debt = low risk of permanent impairment"}
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Organic demand growth — is the TAM expanding?"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:20,desc:"Above 60% signals a capital-light moat"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Bottom-line profitability after all costs"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:20,desc:"Free cash flow quality — the real yield"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — the engine of compounding"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Low debt = low risk of permanent impairment",invert:true}
               ]},
             {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",quote:"A great business at a fair price is superior to a fair business at a great price.",
               metrics:[
-                {id:"roic",label:"ROIC",sp500:12,unit:"%",weight:25,good:"above",desc:"The single best measure of a moat — Munger's favorite"},
-                {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:20,good:"above",desc:"Can they raise prices without losing customers?"},
-                {id:"opLeverage",label:"Operating Leverage",sp500:15,unit:"%",weight:15,good:"above",desc:"Do margins expand as revenue grows?"},
-                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:15,good:"above",desc:"Sustainable growth within circle of competence"},
-                {id:"netMargin",label:"Profitability",sp500:12,unit:"%",weight:15,good:"above",desc:"Net margins trending up = strengthening position"},
-                {id:"rdIntensity",label:"R&D Investment",sp500:3,unit:"%",weight:10,good:"above",desc:"Reinvesting to widen the moat"}
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"The single best measure of a moat"},
+                {id:"grossMargin",label:"Pricing Power (Gross Margin)",sp500:45,unit:"%",weight:20,desc:"Can they raise prices without losing customers?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:15,desc:"Do margins expand as revenue grows?"},
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:15,desc:"Sustainable growth within circle of competence"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
+                {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
               ]},
-            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",quote:"It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
               metrics:[
-                {id:"netMargin",label:"Owner Earnings",sp500:12,unit:"%",weight:20,good:"above",desc:"Net income + D&A - maintenance capex"},
-                {id:"roic",label:"Return on Equity",sp500:12,unit:"%",weight:20,good:"above",desc:"How much profit per dollar of equity?"},
-                {id:"fortress",label:"Debt / Equity",sp500:6,unit:"score",weight:20,good:"above",desc:"Conservative balance sheet = margin of safety"},
-                {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,good:"above",desc:"Stable margins = durable competitive advantage"},
-                {id:"fcfConversion",label:"Earnings Predictability",sp500:80,unit:"%",weight:20,good:"above",desc:"Consistent cash generation year after year"}
+                {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
+                {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:20,desc:"Conservative balance sheet = margin of safety",invert:true},
+                {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
               ]},
             {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",quote:"Know what you own, and know why you own it.",
               metrics:[
-                {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:30,good:"above",desc:"The engine — is the company growing fast enough?"},
-                {id:"fortress",label:"Debt Level",sp500:6,unit:"score",weight:20,good:"above",desc:"Low debt = can survive a downturn"},
-                {id:"fcfConversion",label:"Cash Position",sp500:80,unit:"%",weight:20,good:"above",desc:"Strong cash flow funds future growth"},
-                {id:"grossMargin",label:"Margins",sp500:45,unit:"%",weight:15,good:"above",desc:"Are margins expanding as the company scales?"},
-                {id:"netMargin",label:"Profitability",sp500:12,unit:"%",weight:15,good:"above",desc:"Is growth translating to bottom line?"}
+                {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
+                {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Strong cash flow funds future growth"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
               ]},
             {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
               metrics:[
-                {id:"fcfConversion",label:"FCF Yield",sp500:80,unit:"%",weight:30,good:"above",desc:"Free cash flow relative to earnings — the real return"},
-                {id:"netMargin",label:"Margin Expansion",sp500:12,unit:"%",weight:20,good:"above",desc:"Is management improving profitability?"},
-                {id:"fortress",label:"Capital Returns",sp500:6,unit:"score",weight:20,good:"above",desc:"Buybacks + dividends — returning cash to owners"},
-                {id:"roic",label:"Capital Efficiency",sp500:12,unit:"%",weight:15,good:"above",desc:"Are they allocating capital wisely?"},
-                {id:"opLeverage",label:"Operating Improvement",sp500:15,unit:"%",weight:15,good:"above",desc:"Operational efficiency gains over time"}
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — allocating capital wisely?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:20,desc:"Operational efficiency gains over time"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
               ]}
           ];
-          // Score mapping: moat cache stores 1-10 scores, S&P 500 benchmarks as approximate scores
-          var sp500Scores={grossMargin:6,revGrowth:4,opLeverage:5,roic:5,fcfConversion:6,fortress:6,netMargin:5,rdIntensity:4};
           var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
-          // Calculate portfolio-weighted scores
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&c._moatCache});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
-          // Weighted score for each metric
+          // Build actual values per holding per metric
           var portMetrics=lens.metrics.map(function(m){
-            var weightedScore=0;var weightSum=0;var holdingScores=[];
+            var weightedVal=0;var weightSum=0;var holdingData=[];
             portCos.forEach(function(c){
-              var mc=c._moatCache;var score=mc[m.id];
-              if(score!=null&&score>0){
+              var mc=c._moatCache;var rawVal=mc[m.id+"_val"];var numVal=parseVal(rawVal);
+              // For fortress (Net Debt/EBITDA), value is like "1.5x" or "Net Cash"
+              if(m.id==="fortress"&&rawVal==="Net Cash")numVal=-0.5;
+              if(numVal!=null){
                 var pos=c.position||{};var val=(pos.shares||0)*(pos.currentPrice||0);
                 var w=totalVal>0?val/totalVal:1/portCos.length;
-                weightedScore+=score*w;weightSum+=w;
-                holdingScores.push({ticker:c.ticker,score:score,weight:Math.round(w*100)})}});
-            var avgScore=weightSum>0?weightedScore/weightSum:0;
-            var spScore=sp500Scores[m.id]||5;
-            return{id:m.id,label:m.label,unit:m.unit,weight:m.weight,desc:m.desc,portfolioScore:avgScore,sp500Score:spScore,delta:avgScore-spScore,holdings:holdingScores}});
-          // Overall portfolio score for this lens
-          var totalWeight=lens.metrics.reduce(function(s,m){return s+m.weight},0);
-          var portfolioTotal=portMetrics.reduce(function(s,m){return s+m.portfolioScore*(m.weight/totalWeight)},0);
-          var sp500Total=portMetrics.reduce(function(s,m){return s+m.sp500Score*(m.weight/totalWeight)},0);
-          var clr=function(v,sp){return v>=sp+2?K.grn:v>=sp-1?K.amb:K.red};
+                weightedVal+=numVal*w;weightSum+=w;
+                holdingData.push({ticker:c.ticker,value:numVal,raw:rawVal||"",weight:Math.round(w*100)})}});
+            var avgVal=weightSum>0?weightedVal/weightSum:null;
+            var delta=avgVal!=null?(m.invert?m.sp500-avgVal:avgVal-m.sp500):null;
+            return{id:m.id,label:m.label,unit:m.unit,weight:m.weight,desc:m.desc,invert:m.invert,portfolioVal:avgVal,sp500:m.sp500,delta:delta,holdings:holdingData}});
+          // Weighted composite: percentage of metrics beating S&P
+          var beating=portMetrics.filter(function(m){return m.delta!=null&&m.delta>0}).length;
+          var measured=portMetrics.filter(function(m){return m.portfolioVal!=null}).length;
+          var beatPct=measured>0?Math.round(beating/measured*100):0;
+          var fmtVal=function(v,unit,invert){
+            if(v==null)return"—";
+            if(unit==="x")return(v<0?"Net Cash":v.toFixed(1)+"x");
+            return v.toFixed(1)+unit};
+          var clr=function(delta){if(delta==null)return K.dim;return delta>0?K.grn:delta<-2?K.red:K.amb};
           return<div>
-            {/* Lens selector */}
+            {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
               {LENSES.map(function(l){var active=l.id===activeLens;return<button key={l.id} onClick={function(){setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+(active?K.acc+"60":K.bdr),background:active?K.acc+"10":"transparent",color:active?K.acc:K.mid,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm}}>{l.name}</button>})}</div>
             {/* Lens header */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                <div><div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{lens.name}</div>
-                  <div style={{fontSize:12,color:K.dim}}>{lens.subtitle}</div></div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div><div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{lens.name} <span style={{fontWeight:300,color:K.dim,fontSize:14}}>{lens.subtitle}</span></div></div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:28,fontWeight:700,color:clr(portfolioTotal,sp500Total),fontFamily:fm}}>{portfolioTotal.toFixed(1)}</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>vs S&P {sp500Total.toFixed(1)}</div></div></div>
-              {/* Score comparison bar */}
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:60}}>Your Portfolio</span>
-                <div style={{flex:1,height:8,borderRadius:4,background:K.bdr,overflow:"hidden",position:"relative"}}>
-                  <div style={{height:"100%",width:Math.min(portfolioTotal/10*100,100)+"%",borderRadius:4,background:clr(portfolioTotal,sp500Total)}}/>
-                  <div style={{position:"absolute",top:0,left:Math.min(sp500Total/10*100,100)+"%",width:2,height:8,background:K.txt,opacity:.5}} title={"S&P 500: "+sp500Total.toFixed(1)}/></div>
-                <span style={{fontSize:10,fontWeight:600,color:clr(portfolioTotal,sp500Total),fontFamily:fm,width:40,textAlign:"right"}}>{portfolioTotal>sp500Total?"+"+(portfolioTotal-sp500Total).toFixed(1):""+(portfolioTotal-sp500Total).toFixed(1)}</span></div>
-              <div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.6}}>"{lens.quote}"</div>
+                  <div style={{fontSize:24,fontWeight:700,color:beatPct>=70?K.grn:beatPct>=40?K.amb:K.red,fontFamily:fm}}>{beatPct}%</div>
+                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>metrics above S&P 500</div></div></div>
+              <div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.6}}>“{lens.quote}”</div>
             </div>
-            {/* Metrics table */}
+            {/* Metrics table with actual values */}
             {portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
               <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No moat data yet</div>
-              <div style={{fontSize:12,color:K.dim}}>Open a company and visit the Moat Durability page to generate scores. The lens will populate automatically.</div></div>}
+              <div style={{fontSize:12,color:K.dim}}>Open a company and visit the Moat Durability page to generate financial metrics. The lens will populate automatically.</div></div>}
             {portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                 <thead><tr style={{borderBottom:"2px solid "+K.bdr}}>
-                  <th style={{textAlign:"left",padding:"10px 14px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Metric</th>
-                  <th style={{textAlign:"center",padding:"10px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600,width:50}}>Weight</th>
-                  <th style={{textAlign:"center",padding:"10px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Your Portfolio</th>
-                  <th style={{textAlign:"center",padding:"10px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>S&P 500</th>
-                  <th style={{textAlign:"center",padding:"10px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Delta</th>
-                  <th style={{textAlign:"left",padding:"10px 14px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Breakdown</th>
+                  <th style={{textAlign:"left",padding:"12px 14px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Metric</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600,width:50}}>Weight</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Your Portfolio</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>S&P 500</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>vs Benchmark</th>
+                  <th style={{textAlign:"left",padding:"12px 14px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>By Holding</th>
                 </tr></thead>
                 <tbody>{portMetrics.map(function(m){
                   return<tr key={m.id} style={{borderBottom:"1px solid "+K.bdr+"60"}}>
-                    <td style={{padding:"10px 14px"}}><div style={{fontWeight:500,color:K.txt}}>{m.label}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>{m.desc}</div></td>
-                    <td style={{textAlign:"center",padding:"10px 8px",fontSize:11,color:K.dim,fontFamily:fm}}>{m.weight}%</td>
-                    <td style={{textAlign:"center",padding:"10px 8px"}}>
-                      <div style={{fontSize:16,fontWeight:700,color:clr(m.portfolioScore,m.sp500Score),fontFamily:fm}}>{m.portfolioScore.toFixed(1)}</div></td>
-                    <td style={{textAlign:"center",padding:"10px 8px"}}>
-                      <div style={{fontSize:14,color:K.dim,fontFamily:fm}}>{m.sp500Score.toFixed(1)}</div></td>
-                    <td style={{textAlign:"center",padding:"10px 8px"}}>
-                      <span style={{fontSize:12,fontWeight:600,color:m.delta>=0?K.grn:K.red,fontFamily:fm,background:(m.delta>=0?K.grn:K.red)+"10",padding:"2px 8px",borderRadius:4}}>{m.delta>=0?"+":""}{m.delta.toFixed(1)}</span></td>
-                    <td style={{padding:"10px 14px"}}>
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{m.holdings.slice(0,6).map(function(h){
-                        return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,padding:"2px 6px",borderRadius:3,background:h.score>=8?K.grn+"12":h.score>=5?K.amb+"12":K.red+"12",color:h.score>=8?K.grn:h.score>=5?K.amb:K.red}}>{h.ticker} {h.score}</span>})}</div></td>
+                    <td style={{padding:"12px 14px"}}><div style={{fontWeight:500,color:K.txt}}>{m.label}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>{m.desc}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm}}>{m.weight}%</td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      <div style={{fontSize:18,fontWeight:700,color:m.portfolioVal!=null?clr(m.delta):K.dim,fontFamily:fm}}>{fmtVal(m.portfolioVal,m.unit,m.invert)}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      <div style={{fontSize:14,color:K.dim,fontFamily:fm}}>{fmtVal(m.sp500,m.unit)}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      {m.delta!=null?<span style={{fontSize:12,fontWeight:600,color:clr(m.delta),fontFamily:fm,background:clr(m.delta)+"10",padding:"3px 10px",borderRadius:4}}>{m.delta>=0?"+":""}{m.delta.toFixed(1)}{m.unit==="x"?"x":m.unit}</span>:<span style={{color:K.dim}}>—</span>}</td>
+                    <td style={{padding:"12px 14px"}}>
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{m.holdings.slice(0,8).map(function(h){
+                        var hDelta=m.invert?m.sp500-h.value:h.value-m.sp500;
+                        return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,padding:"2px 6px",borderRadius:3,background:hDelta>0?K.grn+"12":hDelta>-2?K.amb+"12":K.red+"12",color:hDelta>0?K.grn:hDelta>-2?K.amb:K.red}} title={h.raw}>{h.ticker} {h.raw||fmtVal(h.value,m.unit)}</span>})}</div></td>
                   </tr>})}</tbody>
               </table>
-              {/* Legend */}
-              <div style={{padding:"10px 14px",borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontSize:10,color:K.dim}}>Scores: 1-10 scale. Portfolio scores weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have moat data.</div>
-                <div style={{display:"flex",gap:8,fontSize:9,color:K.dim}}><span style={{color:K.grn}}>● Above benchmark</span><span style={{color:K.amb}}>● Near benchmark</span><span style={{color:K.red}}>● Below benchmark</span></div></div>
+              <div style={{padding:"12px 14px",borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{fontSize:10,color:K.dim}}>Weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have data. Visit Moat Durability to generate missing data.</div>
+                <div style={{display:"flex",gap:8,fontSize:9,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
             </div>}
           </div>})()}
       </div>}
