@@ -435,7 +435,8 @@ var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d
 var FOREST={bg:"#f0f9f0",side:"#1b5e20",card:"#ffffff",bdr:"#c8e6c9",bdr2:"#a5d6a7",txt:"#1a3a1a",mid:"#3d6b3d",dim:"#7aab7a",blue:"#2563eb",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff"};
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
-var THEMES={dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,bloomberg:BLOOMBERG};
+var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
+var THEMES={dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
@@ -531,11 +532,11 @@ function LoginPage(props){
 function TrackerApp(props){
   var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"dark"}catch(e){return"dark"}}),theme=_th[0],setTheme=_th[1];
   var K=THEMES[theme]||DARK;var S=mkS(K);var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg";
-  var sideDark=isDark||theme==="forest"; // Forest has dark sidebar on light bg
+  var sideDark=isDark||theme==="forest"||theme==="paypal"; // Forest and PayPal have dark sidebar on light bg
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
   // Bloomberg Terminal overrides fonts via CSS injection (see global CSS useEffect)
   var bm=theme==="bloomberg";
-  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){cycleTheme()}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
@@ -666,6 +667,7 @@ function TrackerApp(props){
       // Early streak rewards
       if(n.current>=1&&(p.current||0)<1)setTimeout(function(){showToast("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=2&&(p.current||0)<2)setTimeout(function(){showToast("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
+      if(n.current>=3&&(p.current||0)<3)setTimeout(function(){showToast("Week 3 streak! PayPal Blue theme unlocked. The crisp, professional blue look.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=5&&(p.current||0)<5)setTimeout(function(){showToast("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
       return n})}
   // Track score for milestone detection
@@ -1446,6 +1448,7 @@ function TrackerApp(props){
         <div style={{display:"grid",gap:6}}>
           {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes for your workspace"},
             {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for NotebookLM, ChatGPT, and AI tools"},
+            {w:3,icon:String.fromCodePoint(0x1F4B3),label:"PayPal Blue theme",desc:"Crisp professional blue with dark sidebar"},
             {w:4,icon:String.fromCodePoint(0x1F9D0),label:"Charlie Munger lens",desc:"Quality at Scale \u2014 see your portfolio through Munger\u2019s eyes"},
             {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange look"},
             {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings \u2014 think like a business owner"},
@@ -4265,7 +4268,7 @@ function TrackerApp(props){
         <div>
           <div style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
           <div style={{fontSize:10,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best+" weeks":currentWeekReviewed?"Reviewed this week ✓":"Do your weekly review"}</div>
-          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
+          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
             return next?<div style={{fontSize:9,color:K.acc,fontFamily:fm,marginTop:2}}>Next: {next.r} at week {next.w}</div>:null})()}</div>
         {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,background:K.blue+"10",border:"1px solid "+K.blue+"25",borderRadius:6,padding:"4px 10px"}}>
           <span style={{fontSize:14}}>{"🛡️"}</span>
