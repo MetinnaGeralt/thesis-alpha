@@ -1555,16 +1555,17 @@ function TrackerApp(props){
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated when earnings within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return %"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below targets"}];
     var allThemes=[{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo green",color:"#f0f9f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
+      {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {/* ── Widgets Tab ── */}
       {sTab==="widgets"&&<div>
-      <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
-      {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
-        <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
-        <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
-          <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
-      <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
+        {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
+          <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
+            <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
       </div>}
-      {/* Themes tab */}
+      {/* ── Themes Tab ── */}
       {sTab==="themes"&&<div>
         <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Unlock new themes by building your weekly streak.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -1579,33 +1580,32 @@ function TrackerApp(props){
               {active&&<div style={{fontSize:9,color:K.acc,fontFamily:fm,fontWeight:600}}>Active</div>}
             </div>})}</div>
       </div>}
+      {/* ── Rewards Tab ── */}
       {sTab==="rewards"&&<div>
-        <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
-        <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
-      {/* Streak Rewards Roadmap */}
-      <div style={{marginTop:24,paddingTop:20,borderTop:"1px solid "+K.bdr}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Streak Rewards</div>
-        <div style={{fontSize:11,color:K.mid,marginBottom:14,lineHeight:1.6}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
+        <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
         <div style={{display:"grid",gap:6}}>
-          {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes for your workspace"},
-            {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for NotebookLM, ChatGPT, and AI tools"},
-            {w:3,icon:String.fromCodePoint(0x1F4B3),label:"PayPal Blue theme",desc:"Crisp professional blue with dark sidebar"},
-            {w:4,icon:String.fromCodePoint(0x1F9D0),label:"Charlie Munger lens",desc:"Quality at Scale \u2014 see your portfolio through Munger\u2019s eyes"},
-            {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange look"},
-            {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings \u2014 think like a business owner"},
-            {w:12,icon:String.fromCodePoint(0x2728),label:"Joel Greenblatt lens",desc:"Magic Formula \u2014 high returns at bargain prices"},
-            {w:16,icon:String.fromCodePoint(0x1F4DA),label:"Peter Lynch lens",desc:"Growth at a Price \u2014 know what you own"},
-            {w:20,icon:String.fromCodePoint(0x1F4C8),label:"Shelby Cullom Davis lens",desc:"Davis Double Play \u2014 earnings + multiple expansion"},
-            {w:24,icon:String.fromCodePoint(0x1F3AF),label:"Chris Hohn lens",desc:"Activist Value \u2014 FCF and capital allocation"}
+          {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes"},
+            {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for AI tools"},
+            {w:3,icon:String.fromCodePoint(0x1F4B3),label:"PayPal Blue theme",desc:"Crisp professional blue"},
+            {w:4,icon:String.fromCodePoint(0x1F9D0),label:"Charlie Munger lens",desc:"Quality at Scale"},
+            {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange"},
+            {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings"},
+            {w:12,icon:String.fromCodePoint(0x2728),label:"Joel Greenblatt lens",desc:"Magic Formula"},
+            {w:16,icon:String.fromCodePoint(0x1F4DA),label:"Peter Lynch lens",desc:"Growth at a Price"},
+            {w:20,icon:String.fromCodePoint(0x1F4C8),label:"Shelby Cullom Davis lens",desc:"Davis Double Play"},
+            {w:24,icon:String.fromCodePoint(0x1F3AF),label:"Chris Hohn lens",desc:"Activist Value"}
           ].map(function(r){var unlocked=(streakData.current||0)>=r.w;return<div key={r.w} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:8,opacity:unlocked?1:.7}}>
             <span style={{fontSize:16,flexShrink:0}}>{r.icon}</span>
             <div style={{flex:1}}>
               <div style={{fontSize:12,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
               <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
-            <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"\u2713":"Wk "+r.w}</div></div>})}</div>
-        <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" streak freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
+            <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"✓":"Wk "+r.w}</div></div>})}</div>
+        <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
+        <div style={{marginTop:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
+          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
-      </div></Modal>}
+    </Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
     var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
