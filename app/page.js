@@ -772,7 +772,7 @@ function TrackerApp(props){
       var consecutive=p.lastDate===yesterday?(p.current||0)+1:1;
       var n={current:consecutive,best:Math.max(consecutive,p.best||0),lastDate:todayStr};
       try{localStorage.setItem("ta-daily",JSON.stringify(n))}catch(e){}
-      if(consecutive>1&&consecutive>(p.current||0))showToast(String.fromCodePoint(0x1F525)+" "+consecutive+" day streak!","info",2500);
+      if(consecutive>1&&consecutive>(p.current||0))showToast(consecutive+" day streak! Keep building the habit.","info",2500);
       return n})}
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
@@ -886,7 +886,7 @@ function TrackerApp(props){
           if(cloudData.profile.milestones){setMilestones(cloudData.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(cloudData.profile.milestones))}catch(e){}}
           if(cloudData.profile.weeklyReviews){setWeeklyReviews(cloudData.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(cloudData.profile.weeklyReviews))}catch(e){}}
           if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
-          if(cloudData.profile.theme){setTheme(cloudData.profile.theme);try{localStorage.setItem("ta-theme",cloudData.profile.theme)}catch(e){}}
+          if(cloudData.profile.theme&&!localStorage.getItem("ta-theme")){setTheme(cloudData.profile.theme);try{localStorage.setItem("ta-theme",cloudData.profile.theme)}catch(e){}}
           if(cloudData.profile.chest){setChestRewards(cloudData.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(cloudData.profile.chest))}catch(e){}}
           if(cloudData.profile.doubleXP){setDoubleXP(cloudData.profile.doubleXP);try{localStorage.setItem("ta-doublexp",cloudData.profile.doubleXP)}catch(e){}}
         }
@@ -907,7 +907,7 @@ function TrackerApp(props){
           if(local.profile.milestones){setMilestones(local.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(local.profile.milestones))}catch(e){}}
           if(local.profile.weeklyReviews){setWeeklyReviews(local.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(local.profile.weeklyReviews))}catch(e){}}
           if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
-          if(local.profile.theme){setTheme(local.profile.theme);try{localStorage.setItem("ta-theme",local.profile.theme)}catch(e){}}
+          if(local.profile.theme&&!localStorage.getItem("ta-theme")){setTheme(local.profile.theme);try{localStorage.setItem("ta-theme",local.profile.theme)}catch(e){}}
           if(local.profile.chest){setChestRewards(local.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(local.profile.chest))}catch(e){}}
           if(local.profile.doubleXP){setDoubleXP(local.profile.doubleXP);try{localStorage.setItem("ta-doublexp",local.profile.doubleXP)}catch(e){}}
         }
@@ -4465,19 +4465,23 @@ function TrackerApp(props){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount} XP
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
-    {/* ── Streak at risk warning ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&!didActivityToday&&dailyStreak.current>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-      <span style={{fontSize:16}}>{String.fromCodePoint(0x26A0)}</span>
-      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your {dailyStreak.current}-day streak is at risk!</div>
-        <div style={{fontSize:10,color:K.dim}}>Do anything today to keep it alive — add a KPI, update a thesis, rate conviction.</div></div></div>}
+    {/* ── Streak at risk / daily nudge ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&!didActivityToday&&<div style={{background:dailyStreak.current>0?K.amb+"08":K.acc+"06",border:"1px solid "+(dailyStreak.current>0?K.amb:K.acc)+"25",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+      <div style={{width:32,height:32,borderRadius:8,background:(dailyStreak.current>0?K.amb:K.acc)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={dailyStreak.current>0?"alert":"trending"} size={14} color={dailyStreak.current>0?K.amb:K.acc}/></div>
+      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:dailyStreak.current>0?K.amb:K.acc}}>{dailyStreak.current>0?"Your "+dailyStreak.current+"-day streak expires tonight!":"Start a daily streak"}</div>
+        <div style={{fontSize:10,color:K.dim}}>{dailyStreak.current>0?"Do any action to keep it alive — write a thesis, add a KPI, rate conviction, anything.":"Any action counts — add a company, update a thesis, track a KPI. Build the habit."}</div></div></div>}
     {/* ── Streak + XP bar ── */}
     {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"flex",gap:12,marginBottom:16,alignItems:"stretch"}}>
-      {/* Daily Streak */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110}}>
+      {/* Daily Streak - hidden when active today */}
+      {!didActivityToday&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110}}>
         <div>
-          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.amb:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}{String.fromCodePoint(0x1F525)}</div>
-          <div style={{fontSize:9,color:dailyStreak.current>0?K.amb:K.dim,fontFamily:fm}}>Day Streak</div>
-          {didActivityToday&&<div style={{fontSize:8,color:K.grn,fontFamily:fm}}>{"\u2713"} Active today</div>}</div></div>
+          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}</div>
+          <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div>
+          <div style={{width:24,height:3,borderRadius:2,background:K.bdr,marginTop:3,overflow:"hidden"}}><div style={{width:"0%",height:"100%",background:K.amb,borderRadius:2}}/></div></div></div>}
+      {didActivityToday&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,minWidth:isMobile?70:90}}>
+        <IC name="check" size={14} color={K.grn}/>
+        <div><div style={{fontSize:16,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}</div>
+          <div style={{fontSize:8,color:K.grn,fontFamily:fm}}>Active</div></div></div>}
       {/* Weekly Streak */}
       <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{fontSize:24,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
