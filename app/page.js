@@ -682,6 +682,42 @@ function TrackerApp(props){
   var _doubleXP=useState(function(){try{var d=localStorage.getItem("ta-doublexp");return d&&new Date(d)>new Date()?d:null}catch(e){return null}}),doubleXP=_doubleXP[0],setDoubleXP=_doubleXP[1];
   var _chestOverlay=useState(null),chestOverlay=_chestOverlay[0],setChestOverlay=_chestOverlay[1];
   var isDoubleXP=doubleXP&&new Date(doubleXP)>new Date();
+  // ── 7-Day Quest System ──
+  var _questData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-quests"))||{weekId:null,completed:[]}}catch(e){return{weekId:null,completed:[]}}}),questData=_questData[0],setQuestData=_questData[1];
+  function completeQuest(qid){
+    setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),completed:(p.completed||[]).concat([qid])});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});
+    addXP(8,"Quest completed")}
+  function openQuestChest(){
+    // Guaranteed uncommon or better
+    var roll=Math.random();var reward;
+    if(roll<0.15){
+      var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
+      var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
+      if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
+      else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP for quest mastery",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+    }else if(roll<0.5){
+      reward={type:"doublexp",tier:"uncommon",label:"Double XP!",desc:"All actions give 2\u00d7 XP for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}
+    }else if(roll<0.75){
+      var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
+      if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
+        reward={type:"badge",tier:"uncommon",label:"New Badge!",desc:badge.label+" \u2014 "+badge.desc,icon:badge.icon,xp:15,badge:badge}}
+      else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+25 bonus XP",icon:String.fromCodePoint(0x2728),xp:25}}
+    }else{
+      var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
+      if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
+        reward={type:"quote",tier:"uncommon",label:"Rare Wisdom!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:10,quote:quote}}
+      else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+20 bonus XP",icon:String.fromCodePoint(0x2728),xp:20}}}
+    // Apply
+    setChestRewards(function(p){
+      var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
+      if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
+      if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
+      try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
+    if(reward.xp>0)addXP(reward.xp,"Quest chest: "+reward.label);
+    if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
+    if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
+    if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
+    setChestOverlay(reward)}
   function rollChestReward(){
     var roll=Math.random();var reward;
     if(roll<0.05){
@@ -888,6 +924,7 @@ function TrackerApp(props){
           if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
           if(cloudData.profile.theme&&!localStorage.getItem("ta-theme")){setTheme(cloudData.profile.theme);try{localStorage.setItem("ta-theme",cloudData.profile.theme)}catch(e){}}
           if(cloudData.profile.chest){setChestRewards(cloudData.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(cloudData.profile.chest))}catch(e){}}
+          if(cloudData.profile.quests){setQuestData(cloudData.profile.quests);try{localStorage.setItem("ta-quests",JSON.stringify(cloudData.profile.quests))}catch(e){}}
           if(cloudData.profile.doubleXP){setDoubleXP(cloudData.profile.doubleXP);try{localStorage.setItem("ta-doublexp",cloudData.profile.doubleXP)}catch(e){}}
         }
         svS("ta-data",cloudData);// cache locally
@@ -909,6 +946,7 @@ function TrackerApp(props){
           if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
           if(local.profile.theme&&!localStorage.getItem("ta-theme")){setTheme(local.profile.theme);try{localStorage.setItem("ta-theme",local.profile.theme)}catch(e){}}
           if(local.profile.chest){setChestRewards(local.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(local.profile.chest))}catch(e){}}
+          if(local.profile.quests){setQuestData(local.profile.quests);try{localStorage.setItem("ta-quests",JSON.stringify(local.profile.quests))}catch(e){}}
           if(local.profile.doubleXP){setDoubleXP(local.profile.doubleXP);try{localStorage.setItem("ta-doublexp",local.profile.doubleXP)}catch(e){}}
         }
         // First login on this account — push local data to cloud
@@ -981,12 +1019,12 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP,questData]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -3126,30 +3164,92 @@ function TrackerApp(props){
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
       {ht==="command"&&<div>
-        {/* Owner's Process Check */}
+        {/* ═══ 7-DAY QUEST ═══ */}
         {(function(){
-          var nudges=[];
+          var wk=getWeekId();
+          var qCompleted=questData.weekId===wk?(questData.completed||[]):[];
+          // Generate quests: mix of portfolio-gap fixes + rotating challenges
+          var quests=[];
           var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
           var noKpi=portfolio.filter(function(c2){return c2.kpis.length===0});
           var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
-          var staleT=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
           var noMoat=portfolio.filter(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
-          function tks(arr){return arr.slice(0,3).map(function(c2){return c2.ticker}).join(", ")+(arr.length>3?" + "+(arr.length-3)+" more":"")}
-          if(noThesis.length>0)nudges.push({text:tks(noThesis)+(noThesis.length===1?" is":" are")+" missing a thesis",color:K.acc,icon:"lightbulb",btn:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
-          if(noKpi.length>0)nudges.push({text:tks(noKpi)+(noKpi.length===1?" has":" have")+" no KPIs tracked",color:K.blue,icon:"target",btn:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
-          if(noConv.length>0)nudges.push({text:tks(noConv)+(noConv.length===1?" needs":" need")+" a conviction rating",color:K.amb,icon:"trending",btn:"Rate now",onClick:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
-          if(staleT.length>0)nudges.push({text:tks(staleT)+(staleT.length===1?" thesis is":" theses are")+" over 90 days old",color:K.red,icon:"clock",btn:"Review",onClick:function(){setSelId(staleT[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
-          if(noMoat.length>0&&nudges.length<4)nudges.push({text:"Classify the moat for "+tks(noMoat),color:"#9333EA",icon:"castle",btn:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
-          if(!currentWeekReviewed&&nudges.length<4)nudges.push({text:"Weekly review due — "+portfolio.length+" holdings to check",color:K.grn,icon:"shield",btn:"Start review",onClick:function(){setPage("review")}});
-          if(nudges.length===0)return<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px 20px",textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:14,fontWeight:500,color:K.grn}}>All caught up!</div>
-            <div style={{fontSize:12,color:K.dim,marginTop:4}}>Every holding has a thesis, KPIs, conviction, and moat. Your process is strong.</div></div>;
+          var staleT=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
+          function tks(arr){return arr.slice(0,2).map(function(c2){return c2.ticker}).join(", ")+(arr.length>2?" + "+(arr.length-2):"");}
+          // Fixed quests from portfolio gaps
+          if(noThesis.length>0)quests.push({id:"thesis",text:"Write a thesis for "+tks(noThesis),icon:"lightbulb",color:K.acc,done:false,onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+          if(noKpi.length>0)quests.push({id:"kpi",text:"Add KPIs for "+tks(noKpi),icon:"target",color:K.blue,done:false,onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
+          if(noConv.length>0)quests.push({id:"conv",text:"Rate conviction for "+tks(noConv),icon:"trending",color:K.amb,done:false,onClick:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
+          if(staleT.length>0)quests.push({id:"stale",text:"Review stale thesis for "+tks(staleT),icon:"clock",color:K.red,done:false,onClick:function(){setSelId(staleT[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+          if(noMoat.length>0&&quests.length<4)quests.push({id:"moat",text:"Classify moat for "+tks(noMoat),icon:"castle",color:"#9333EA",done:false,onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
+          if(!currentWeekReviewed)quests.push({id:"review",text:"Complete your Weekly Review",icon:"shield",color:K.grn,done:false,onClick:function(){setPage("review")}});
+          // Rotating challenges based on week seed
+          var weekNum=parseInt(wk.replace(/\D/g,""))||0;
+          var rotating=[
+            {id:"r_oldest",text:"Review your oldest thesis",icon:"book",color:K.blue,done:false,check:function(){return portfolio.length>0&&portfolio.every(function(c2){return!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<7})},onClick:function(){var oldest=portfolio.filter(function(c2){return c2.thesisNote}).sort(function(a,b){return(a.thesisUpdatedAt||"")>(b.thesisUpdatedAt||"")?1:-1})[0];if(oldest){setSelId(oldest.id);setPage("dashboard");setModal({type:"thesis"})}}},
+            {id:"r_kpiall",text:"Ensure every holding has 2+ KPIs",icon:"target",color:K.blue,done:false,check:function(){return portfolio.every(function(c2){return c2.kpis.length>=2})},onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2});if(t){setSelId(t.id);setDetailTab("overview");setPage("dashboard")}}},
+            {id:"r_convall",text:"Rate conviction for all holdings",icon:"trending",color:K.amb,done:false,check:function(){return portfolio.every(function(c2){return c2.conviction>0})},onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction});if(t){setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}}},
+            {id:"r_decision",text:"Log a BUY, SELL, or HOLD decision",icon:"edit",color:K.acc,done:false,check:function(){var recent=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-604800000))recent.push(d)})});return recent.length>0},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("journal");setPage("dashboard")}}},
+            {id:"r_export",text:"Export a research note",icon:"file",color:K.mid,done:false,check:function(){return false},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("overview");setPage("dashboard")}}},
+            {id:"r_moatall",text:"Classify moats for all holdings",icon:"castle",color:"#9333EA",done:false,check:function(){return portfolio.every(function(c2){var mt=c2.moatTypes||{};return Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})})},onClick:function(){var t=portfolio.find(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}}
+          ];
+          // Pick 2 rotating based on week seed
+          var available2=rotating.filter(function(r){return!quests.find(function(q){return q.id===r.id.replace("r_","")})});
+          var pick1=available2[weekNum%available2.length];
+          var pick2=available2[(weekNum+3)%available2.length];
+          if(pick1&&pick2&&pick1.id===pick2.id)pick2=available2[(weekNum+1)%available2.length];
+          if(pick1)quests.push(pick1);
+          if(pick2&&pick2.id!==pick1.id)quests.push(pick2);
+          // Limit to 5 quests max
+          quests=quests.slice(0,5);
+          // Mark completed
+          quests.forEach(function(q){
+            if(qCompleted.indexOf(q.id)>=0)q.done=true;
+            // Auto-detect completion for fixed quests
+            if(q.id==="thesis"&&noThesis.length===0)q.done=true;
+            if(q.id==="kpi"&&noKpi.length===0)q.done=true;
+            if(q.id==="conv"&&noConv.length===0)q.done=true;
+            if(q.id==="stale"&&staleT.length===0)q.done=true;
+            if(q.id==="moat"&&noMoat.length===0)q.done=true;
+            if(q.id==="review"&&currentWeekReviewed)q.done=true;
+            if(q.check&&q.check())q.done=true});
+          var doneCount=quests.filter(function(q){return q.done}).length;
+          var allDone2=doneCount===quests.length&&quests.length>0;
+          var questPct=quests.length>0?Math.round(doneCount/quests.length*100):0;
+          // Check if quest chest already claimed this week
+          var questChestClaimed=questData.weekId===wk&&(questData.chestClaimed||false);
           return<div style={{marginBottom:20}}>
-            <div style={{display:"grid",gap:8}}>
-              {nudges.map(function(n,i){return<div key={i} className="ta-card" style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",background:n.color+"06",border:"1px solid "+n.color+"20",borderRadius:10,cursor:"pointer"}} onClick={n.onClick}>
-                <div style={{width:36,height:36,borderRadius:8,background:n.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={n.icon} size={16} color={n.color}/></div>
-                <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{n.text}</div></div>
-                <button onClick={function(e){e.stopPropagation();n.onClick()}} style={{background:n.color,color:"#fff",border:"none",borderRadius:6,padding:"7px 16px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{n.btn}</button></div>})}</div></div>})()}
+            {/* Quest header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:600,color:K.txt}}>7-Day Quest</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Resets every Monday · {doneCount}/{quests.length} complete</div></div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:80,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:questPct+"%",borderRadius:3,background:allDone2?K.grn:K.acc,transition:"width .5s"}}/></div>
+                <span style={{fontSize:11,fontWeight:600,color:allDone2?K.grn:K.acc,fontFamily:fm}}>{questPct}%</span></div></div>
+            {/* Quest list */}
+            <div style={{display:"grid",gap:6}}>
+              {quests.map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
+                <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {q.done?<IC name="check" size={12} color="#fff" strokeWidth={3}/>:<IC name={q.icon} size={10} color={q.color}/>}</div>
+                <div style={{flex:1,fontSize:12,color:q.done?K.dim:K.txt,textDecoration:q.done?"line-through":"none"}}>{q.text}</div>
+                {!q.done&&<span style={{fontSize:10,color:q.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>+8 XP</span>}
+                {q.done&&<span style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"}</span>}
+              </div>})}</div>
+            {/* Quest reward preview */}
+            {!allDone2&&<div style={{marginTop:12,padding:"10px 16px",background:K.bg,borderRadius:8,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:16}}>{String.fromCodePoint(0x1F381)}</span>
+              <div style={{fontSize:11,color:K.dim}}>Complete all quests to unlock a <strong style={{color:"#a78bfa"}}>guaranteed Uncommon+</strong> chest reward</div></div>}
+            {/* Quest complete + claim */}
+            {allDone2&&!questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"20px",background:"linear-gradient(135deg,"+K.acc+"08,#a78bfa08)",border:"1px solid #a78bfa30",borderRadius:12}}>
+              <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
+              <div style={{fontSize:11,color:K.dim,marginBottom:12}}>You've earned a guaranteed Uncommon or Rare chest</div>
+              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Open Quest Chest</button></div>}
+            {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
+              <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest chest claimed this week ✓</div>
+              <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
+          </div>})()}
 
         {/* Upcoming earnings */}
         {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
