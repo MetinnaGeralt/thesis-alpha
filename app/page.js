@@ -633,7 +633,6 @@ function TrackerApp(props){
       // Early streak rewards
       if(n.current>=1&&(p.current||0)<1)setTimeout(function(){celebrate("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=2&&(p.current||0)<2)setTimeout(function(){celebrate("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=3&&(p.current||0)<3)setTimeout(function(){celebrate("Week 3 streak! Dashboard customization unlocked. Use the settings gear to toggle widgets.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=5&&(p.current||0)<5)setTimeout(function(){celebrate("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
       return n})}
   // Track score for milestone detection
@@ -1393,7 +1392,29 @@ function TrackerApp(props){
           <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
       <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
-        <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div></Modal>}
+        <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
+      {/* Streak Rewards Roadmap */}
+      <div style={{marginTop:24,paddingTop:20,borderTop:"1px solid "+K.bdr}}>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Streak Rewards</div>
+        <div style={{fontSize:11,color:K.mid,marginBottom:14,lineHeight:1.6}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
+        <div style={{display:"grid",gap:6}}>
+          {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes for your workspace"},
+            {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for NotebookLM, ChatGPT, and AI tools"},
+            {w:4,icon:String.fromCodePoint(0x1F9D0),label:"Charlie Munger lens",desc:"Quality at Scale \u2014 see your portfolio through Munger\u2019s eyes"},
+            {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange look"},
+            {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings \u2014 think like a business owner"},
+            {w:12,icon:String.fromCodePoint(0x2728),label:"Joel Greenblatt lens",desc:"Magic Formula \u2014 high returns at bargain prices"},
+            {w:16,icon:String.fromCodePoint(0x1F4DA),label:"Peter Lynch lens",desc:"Growth at a Price \u2014 know what you own"},
+            {w:20,icon:String.fromCodePoint(0x1F4C8),label:"Shelby Cullom Davis lens",desc:"Davis Double Play \u2014 earnings + multiple expansion"},
+            {w:24,icon:String.fromCodePoint(0x1F3AF),label:"Chris Hohn lens",desc:"Activist Value \u2014 FCF and capital allocation"}
+          ].map(function(r){var unlocked=(streakData.current||0)>=r.w;return<div key={r.w} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:8,opacity:unlocked?1:.7}}>
+            <span style={{fontSize:16,flexShrink:0}}>{r.icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
+              <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
+            <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"\u2713":"Wk "+r.w}</div></div>})}</div>
+        <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" streak freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
+      </div></Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
     var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
@@ -1652,7 +1673,7 @@ function TrackerApp(props){
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:10})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:12,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-draft"?"pointer":"default"}} onClick={function(){if(n.type==="email-draft"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-draft"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-draft"&&<span style={{fontSize:10,color:K.blue,marginLeft:6}}>Click to open</span>}</div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
-    <button onClick={function(){if((streakData.current||0)<3){showToast("Dashboard customization unlocks at week 3 streak. "+(3-(streakData.current||0))+" week"+(3-(streakData.current||0)>1?"s":"")+" to go!","info",4000);return}setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,opacity:(streakData.current||0)>=3?1:.4}} title={(streakData.current||0)>=3?"Dashboard Settings":"Unlocks at week 3 streak"}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
     <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
 
@@ -4184,7 +4205,7 @@ function TrackerApp(props){
         <div>
           <div style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
           <div style={{fontSize:10,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best+" weeks":currentWeekReviewed?"Reviewed this week ✓":"Do your weekly review"}</div>
-          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"Dashboard"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
+          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
             return next?<div style={{fontSize:9,color:K.acc,fontFamily:fm,marginTop:2}}>Next: {next.r} at week {next.w}</div>:null})()}</div>
         {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,background:K.blue+"10",border:"1px solid "+K.blue+"25",borderRadius:6,padding:"4px 10px"}}>
           <span style={{fontSize:14}}>{"🛡️"}</span>
