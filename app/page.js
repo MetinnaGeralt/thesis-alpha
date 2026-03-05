@@ -434,7 +434,8 @@ var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444
 var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
 var FOREST={bg:"#0f1f13",side:"#0a1a0e",card:"#162b1a",bdr:"#264d2e",bdr2:"#357a3f",txt:"#e8f5e8",mid:"#9ecda4",dim:"#5a8a60",blue:"#6ea8fe",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#0a1a0e"};
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
-var THEMES={dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE};
+var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
+var THEMES={dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
@@ -529,8 +530,8 @@ function LoginPage(props){
 // ═══ TRACKER APP ═══
 function TrackerApp(props){
   var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"dark"}catch(e){return"dark"}}),theme=_th[0],setTheme=_th[1];
-  var K=THEMES[theme]||DARK;var S=mkS(K);var isDark=theme==="dark"||theme==="forest"||theme==="purple";
-  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  var K=THEMES[theme]||DARK;var S=mkS(K);var isDark=theme==="dark"||theme==="forest"||theme==="purple"||theme==="bloomberg";
+  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){cycleTheme()}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
@@ -633,6 +634,7 @@ function TrackerApp(props){
       if(n.current>=1&&(p.current||0)<1)setTimeout(function(){celebrate("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=2&&(p.current||0)<2)setTimeout(function(){celebrate("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
       if(n.current>=3&&(p.current||0)<3)setTimeout(function(){celebrate("Week 3 streak! Dashboard customization unlocked. Use the settings gear to toggle widgets.","milestone",5000)},newUnlock?7500:1000);
+      if(n.current>=5&&(p.current||0)<5)setTimeout(function(){celebrate("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
       return n})}
   // Track score for milestone detection
   var prevScoreLevel=useRef(null);
@@ -4182,7 +4184,7 @@ function TrackerApp(props){
         <div>
           <div style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
           <div style={{fontSize:10,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best+" weeks":currentWeekReviewed?"Reviewed this week ✓":"Do your weekly review"}</div>
-          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"Dashboard"},{w:4,r:"Munger"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
+          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"Dashboard"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
             return next?<div style={{fontSize:9,color:K.acc,fontFamily:fm,marginTop:2}}>Next: {next.r} at week {next.w}</div>:null})()}</div>
         {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,background:K.blue+"10",border:"1px solid "+K.blue+"25",borderRadius:6,padding:"4px 10px"}}>
           <span style={{fontSize:14}}>{"🛡️"}</span>
