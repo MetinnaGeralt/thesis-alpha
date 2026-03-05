@@ -634,7 +634,18 @@ function TrackerApp(props){
   var _editingName=useState(false),editingName=_editingName[0],setEditingName=_editingName[1];
   var _nameInput=useState(""),nameInput=_nameInput[0],setNameInput=_nameInput[1];
   function saveUsername(){var n=nameInput.trim();if(!n)return;setUsername(n);try{localStorage.setItem("ta-username",n)}catch(e){}setEditingName(false);showToast("Username set to "+n,"info",3000)}
-  function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(f)}
+  function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;
+    // Compress avatar to max 128x128 to keep cloud payload small
+    var reader=new FileReader();reader.onload=function(ev){
+      var img=new Image();img.onload=function(){
+        var canvas=document.createElement("canvas");var sz=128;canvas.width=sz;canvas.height=sz;
+        var ctx=canvas.getContext("2d");
+        // Crop to square center
+        var s=Math.min(img.width,img.height);var sx=(img.width-s)/2;var sy=(img.height-s)/2;
+        ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz);
+        var url=canvas.toDataURL("image/jpeg",0.8);
+        setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}
+      };img.src=ev.target.result};reader.readAsDataURL(f)}
   // ── XP Level Curve (Pokemon Go-inspired exponential) ──
   var XP_LEVELS=[0,50,120,200,300,500,750,1050,1400,1800,2300,2900,3600,4500,5600,7000,8700,10800,13500,17000,21000,26000,32000,39000,47000,56000,66000,78000,92000,108000,126000,147000,171000,198000,229000,264000,303000,347000,396000,451000,500000];
   function getXPLevel(totalXP){for(var i=XP_LEVELS.length-1;i>=0;i--){if(totalXP>=XP_LEVELS[i])return{level:i+1,xpForLevel:XP_LEVELS[i],xpForNext:i<XP_LEVELS.length-1?XP_LEVELS[i+1]:XP_LEVELS[i]*1.2,current:totalXP}}return{level:1,xpForLevel:0,xpForNext:50,current:0}}
@@ -758,6 +769,16 @@ function TrackerApp(props){
         setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         if(cloudData.trial){saveTrial(cloudData.trial)}
+        if(cloudData.profile){
+          if(cloudData.profile.username){setUsername(cloudData.profile.username);try{localStorage.setItem("ta-username",cloudData.profile.username)}catch(e){}}
+          if(cloudData.profile.avatar){setAvatarUrl(cloudData.profile.avatar);try{localStorage.setItem("ta-avatar",cloudData.profile.avatar)}catch(e){}}
+          if(cloudData.profile.xp){setXp(cloudData.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(cloudData.profile.xp))}catch(e){}}
+          if(cloudData.profile.streak){setStreakData(cloudData.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(cloudData.profile.streak))}catch(e){}}
+          if(cloudData.profile.milestones){setMilestones(cloudData.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(cloudData.profile.milestones))}catch(e){}}
+          if(cloudData.profile.weeklyReviews){setWeeklyReviews(cloudData.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(cloudData.profile.weeklyReviews))}catch(e){}}
+          if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
+          if(cloudData.profile.theme){setTheme(cloudData.profile.theme);try{localStorage.setItem("ta-theme",cloudData.profile.theme)}catch(e){}}
+        }
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
       // Fallback to localStorage
@@ -766,6 +787,16 @@ function TrackerApp(props){
         setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(local.notifs)setNotifs(local.notifs);
         if(local.trial){saveTrial(local.trial)}
+        if(local.profile){
+          if(local.profile.username){setUsername(local.profile.username);try{localStorage.setItem("ta-username",local.profile.username)}catch(e){}}
+          if(local.profile.avatar){setAvatarUrl(local.profile.avatar);try{localStorage.setItem("ta-avatar",local.profile.avatar)}catch(e){}}
+          if(local.profile.xp){setXp(local.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(local.profile.xp))}catch(e){}}
+          if(local.profile.streak){setStreakData(local.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(local.profile.streak))}catch(e){}}
+          if(local.profile.milestones){setMilestones(local.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(local.profile.milestones))}catch(e){}}
+          if(local.profile.weeklyReviews){setWeeklyReviews(local.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(local.profile.weeklyReviews))}catch(e){}}
+          if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
+          if(local.profile.theme){setTheme(local.profile.theme);try{localStorage.setItem("ta-theme",local.profile.theme)}catch(e){}}
+        }
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
         setLoaded(true);return}
@@ -836,12 +867,12 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,milestones,weeklyReviews,dashSet]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
