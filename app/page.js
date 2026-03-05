@@ -754,12 +754,26 @@ function TrackerApp(props){
   function addXP(amount,label){
     var actualAmount=isDoubleXP?amount*2:amount;
     var prevLevel=getXPLevel(xp.total).level;
+    trackDailyActivity();
     setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2\u00d7)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
       if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
       return n});setXpFloat({amount:actualAmount,label:label+(isDoubleXP?" 2\u00d7":""),id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
+  // ── Daily Activity Streak ──
+  var _dailyStreak=useState(function(){try{return JSON.parse(localStorage.getItem("ta-daily"))||{current:0,best:0,lastDate:null}}catch(e){return{current:0,best:0,lastDate:null}}}),dailyStreak=_dailyStreak[0],setDailyStreak=_dailyStreak[1];
+  var todayStr=new Date().toISOString().slice(0,10);
+  var didActivityToday=dailyStreak.lastDate===todayStr;
+  function trackDailyActivity(){
+    setDailyStreak(function(p){
+      if(p.lastDate===todayStr)return p; // Already tracked today
+      var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      var consecutive=p.lastDate===yesterday?(p.current||0)+1:1;
+      var n={current:consecutive,best:Math.max(consecutive,p.best||0),lastDate:todayStr};
+      try{localStorage.setItem("ta-daily",JSON.stringify(n))}catch(e){}
+      if(consecutive>1&&consecutive>(p.current||0))showToast(String.fromCodePoint(0x1F525)+" "+consecutive+" day streak!","info",2500);
+      return n})}
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
       var newUnlock=null;[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
@@ -868,6 +882,7 @@ function TrackerApp(props){
           if(cloudData.profile.avatar){setAvatarUrl(cloudData.profile.avatar);try{localStorage.setItem("ta-avatar",cloudData.profile.avatar)}catch(e){}}
           if(cloudData.profile.xp){setXp(cloudData.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(cloudData.profile.xp))}catch(e){}}
           if(cloudData.profile.streak){setStreakData(cloudData.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(cloudData.profile.streak))}catch(e){}}
+          if(cloudData.profile.dailyStreak){setDailyStreak(cloudData.profile.dailyStreak);try{localStorage.setItem("ta-daily",JSON.stringify(cloudData.profile.dailyStreak))}catch(e){}}
           if(cloudData.profile.milestones){setMilestones(cloudData.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(cloudData.profile.milestones))}catch(e){}}
           if(cloudData.profile.weeklyReviews){setWeeklyReviews(cloudData.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(cloudData.profile.weeklyReviews))}catch(e){}}
           if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
@@ -888,6 +903,7 @@ function TrackerApp(props){
           if(local.profile.avatar){setAvatarUrl(local.profile.avatar);try{localStorage.setItem("ta-avatar",local.profile.avatar)}catch(e){}}
           if(local.profile.xp){setXp(local.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(local.profile.xp))}catch(e){}}
           if(local.profile.streak){setStreakData(local.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(local.profile.streak))}catch(e){}}
+          if(local.profile.dailyStreak){setDailyStreak(local.profile.dailyStreak);try{localStorage.setItem("ta-daily",JSON.stringify(local.profile.dailyStreak))}catch(e){}}
           if(local.profile.milestones){setMilestones(local.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(local.profile.milestones))}catch(e){}}
           if(local.profile.weeklyReviews){setWeeklyReviews(local.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(local.profile.weeklyReviews))}catch(e){}}
           if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
@@ -965,12 +981,12 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,milestones,weeklyReviews,dashSet,chestRewards,doubleXP]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -1535,14 +1551,35 @@ function TrackerApp(props){
     var csv=rows.map(function(r){return r.join(",")}).join("\n");
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
-    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score with breakdown across 6 dimensions"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points and conviction markers"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated prep card when earnings are within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price on company cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return % on company cards"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded portfolio performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking and yields"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets, insider trades"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below analyst targets"}];
-    return<Modal title="Dashboard Settings" onClose={function(){setModal(null)}} K={K} w={480}>
-      <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Customize your dashboard. Toggle features to make it as clean or feature-packed as you want.</div>
+    var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated when earnings within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return %"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below targets"}];
+    var allThemes=[{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo green",color:"#f0f9f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
+    return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {sTab==="widgets"&&<div>
+      <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
       {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
         <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
         <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
           <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
       <div style={{marginTop:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      </div>}
+      {/* Themes tab */}
+      {sTab==="themes"&&<div>
+        <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Unlock new themes by building your weekly streak.</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          {allThemes.map(function(t){var unlocked=(streakData.current||0)>=t.unlock;var active=theme===t.id;
+            return<div key={t.id} style={{borderRadius:10,border:"2px solid "+(active?K.acc:unlocked?K.bdr:"transparent"),background:unlocked?K.card:K.bg,padding:"14px 16px",cursor:unlocked?"pointer":"default",opacity:unlocked?1:.5,position:"relative"}} onClick={function(){if(unlocked){setTheme(t.id);try{localStorage.setItem("ta-theme",t.id)}catch(e){}}}}>
+              {!unlocked&&<div style={{position:"absolute",top:8,right:8,fontSize:12}}>{String.fromCodePoint(0x1F512)}</div>}
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <div style={{width:28,height:28,borderRadius:6,background:t.color,border:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:10,height:10,borderRadius:2,background:t.accent}}/></div>
+                <div><div style={{fontSize:12,fontWeight:600,color:unlocked?K.txt:K.dim}}>{t.name}</div>
+                  <div style={{fontSize:9,color:K.dim}}>{t.desc}</div></div></div>
+              {!unlocked&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Week {t.unlock} streak</div>}
+              {active&&<div style={{fontSize:9,color:K.acc,fontFamily:fm,fontWeight:600}}>Active</div>}
+            </div>})}</div>
+      </div>}
+      {sTab==="rewards"&&<div>
         <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
         <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       {/* Streak Rewards Roadmap */}
@@ -1567,6 +1604,7 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
             <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"\u2713":"Wk "+r.w}</div></div>})}</div>
         <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" streak freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
+      </div>}
       </div></Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
@@ -1721,6 +1759,9 @@ function TrackerApp(props){
           <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{step.title}</div>
           <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{step.desc}</div></div>})}</div>
       <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"“"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"”"} {"—"} Warren Buffett</div>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"left"}}>
+        <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>How you level up</div>
+        <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action earns <strong style={{color:K.grn}}>XP</strong> — writing theses, tracking KPIs, rating conviction, completing weekly reviews. Your <strong>XP Level</strong> (shown on your avatar) is your permanent identity as an owner. Your <strong>Process Health</strong> score measures how complete your portfolio work is right now. Build daily streaks, earn weekly rewards, and unlock investor lenses as you go.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
         <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
@@ -3846,12 +3887,13 @@ function TrackerApp(props){
       </div>
 
       {step!=="review"&&(function(){
-        // Seeded random for chest preview (stable per week)
-        var weekSeed=parseInt(getWeekId().replace(/\D/g,""))||0;
-        var r1=(weekSeed*9301+49297)%233280;var r2=(r1*9301+49297)%233280;var r3=(r2*9301+49297)%233280;
-        var tiers=[r1/233280<0.05?"rare":r1/233280<0.30?"uncommon":"common",r2/233280<0.05?"rare":r2/233280<0.30?"uncommon":"common",r3/233280<0.05?"rare":r3/233280<0.30?"uncommon":"common"];
+        // Chest preview - always show one of each tier to build curiosity
+        var previewTiers=["common","uncommon","rare"];
         var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
         var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
+        var tierIcons={rare:String.fromCodePoint(0x1F48E),uncommon:String.fromCodePoint(0x2728),common:String.fromCodePoint(0x1F381)};
+        var tierOdds={rare:"5%",uncommon:"25%",common:"70%"};
+        var tierHints={rare:"Early lens unlock, profile badge",uncommon:"2\u00d7 XP power-up, rare quote",common:"Bonus XP, streak freeze, wisdom"};
 
         return<div style={{padding:"48px 20px"}}>
         {/* ── LOCKED STATE: Countdown + Preview ── */}
@@ -3869,11 +3911,12 @@ function TrackerApp(props){
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>This Week's Chest Contains…</div>
             <div style={{display:"flex",justifyContent:"center",gap:16}}>
-              {tiers.map(function(tier,i){return<div key={i} style={{width:90,height:120,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+              {previewTiers.map(function(tier,i){return<div key={i} style={{width:100,height:130,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
                 <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:tierColors[tier]}}/>
-                <div style={{fontSize:28,marginBottom:6,opacity:.4}}>{"?"}</div>
+                <div style={{fontSize:24,marginBottom:4}}>{tierIcons[tier]}</div>
                 <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier].toUpperCase()}</div>
-                <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tier==="rare"?"5% chance":tier==="uncommon"?"25% chance":"70% chance"}</div></div>})}</div>
+                <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tierOdds[tier]} chance</div>
+                <div style={{fontSize:7,color:K.dim,marginTop:4,padding:"0 8px",textAlign:"center",lineHeight:1.3}}>{tierHints[tier]}</div></div>})}</div>
             <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Bonus XP, streak freezes, investor wisdom, 2× XP power-ups, badges, or a rare early lens unlock.</div></div>
           <button disabled style={{background:K.prim,color:K.primTxt,border:"none",borderRadius:8,padding:"12px 32px",fontSize:14,fontWeight:600,fontFamily:fm,opacity:.35,cursor:"not-allowed"}}>Available Friday</button>
         </div>}
@@ -4422,28 +4465,38 @@ function TrackerApp(props){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount} XP
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
+    {/* ── Streak at risk warning ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&!didActivityToday&&dailyStreak.current>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+      <span style={{fontSize:16}}>{String.fromCodePoint(0x26A0)}</span>
+      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your {dailyStreak.current}-day streak is at risk!</div>
+        <div style={{fontSize:10,color:K.dim}}>Do anything today to keep it alive — add a KPI, update a thesis, rate conviction.</div></div></div>}
     {/* ── Streak + XP bar ── */}
     {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"flex",gap:12,marginBottom:16,alignItems:"stretch"}}>
-      {/* Weekly Streak */}
-      <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
-        <div style={{fontSize:32,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
+      {/* Daily Streak */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110}}>
         <div>
-          <div style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
-          <div style={{fontSize:10,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best+" weeks":currentWeekReviewed?"Reviewed this week ✓":"Do your weekly review"}</div>
+          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.amb:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}{String.fromCodePoint(0x1F525)}</div>
+          <div style={{fontSize:9,color:dailyStreak.current>0?K.amb:K.dim,fontFamily:fm}}>Day Streak</div>
+          {didActivityToday&&<div style={{fontSize:8,color:K.grn,fontFamily:fm}}>{"\u2713"} Active today</div>}</div></div>
+      {/* Weekly Streak */}
+      <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{fontSize:24,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
+        <div>
+          <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
+          <div style={{fontSize:9,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed \u2713":"Review due"}</div>
           {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-            return next?<div style={{fontSize:9,color:K.acc,fontFamily:fm,marginTop:2}}>Next: {next.r} at week {next.w}</div>:null})()}</div>
-        {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4,background:K.blue+"10",border:"1px solid "+K.blue+"25",borderRadius:6,padding:"4px 10px"}}>
-          <span style={{fontSize:14}}>{"🛡️"}</span>
-          <div style={{fontSize:10,color:K.blue,fontFamily:fm}}>{streakData.freezes} freeze{streakData.freezes>1?"s":""}</div></div>}
-      </div>
+            return next?<div style={{fontSize:8,color:K.acc,fontFamily:fm}}>Next: {next.r} wk {next.w}</div>:null})()}</div>
+        {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"3px 8px"}}>
+          <span style={{fontSize:11}}>{"🛡️"}</span>
+          <span style={{fontSize:9,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
       {/* XP + Level counter */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,minWidth:isMobile?100:160}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:140}}>
         <div style={{position:"relative",width:36,height:36,flexShrink:0}}>
           <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="15" fill="none" stroke={K.acc} strokeWidth="3" strokeDasharray={Math.round(xpPct/100*94)+" 94"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
         <div>
           <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
-          <div style={{fontSize:9,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2\u00d7 XP Active":"Level "+xpLevel.level}</div></div></div>
+          <div style={{fontSize:9,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2\u00d7 XP":"Lvl. "+xpLevel.level}</div></div></div>
     </div>}
     {/* ── Daily Focus Card ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
