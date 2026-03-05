@@ -627,7 +627,21 @@ function TrackerApp(props){
   // ── XP System ──
   var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
   var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
-  function addXP(amount,label){setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
+  var _showProfile=useState(false),showProfile=_showProfile[0],setShowProfile=_showProfile[1];
+  var _avatarUrl=useState(function(){try{return localStorage.getItem("ta-avatar")||""}catch(e){return""}}),avatarUrl=_avatarUrl[0],setAvatarUrl=_avatarUrl[1];
+  var avatarFileRef=useRef(null);
+  function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(f)}
+  // ── XP Level Curve (Pokemon Go-inspired exponential) ──
+  var XP_LEVELS=[0,50,120,200,300,500,750,1050,1400,1800,2300,2900,3600,4500,5600,7000,8700,10800,13500,17000,21000,26000,32000,39000,47000,56000,66000,78000,92000,108000,126000,147000,171000,198000,229000,264000,303000,347000,396000,451000,500000];
+  function getXPLevel(totalXP){for(var i=XP_LEVELS.length-1;i>=0;i--){if(totalXP>=XP_LEVELS[i])return{level:i+1,xpForLevel:XP_LEVELS[i],xpForNext:i<XP_LEVELS.length-1?XP_LEVELS[i+1]:XP_LEVELS[i]*1.2,current:totalXP}}return{level:1,xpForLevel:0,xpForNext:50,current:0}}
+  var xpLevel=getXPLevel(xp.total);
+  var xpPct=xpLevel.xpForNext>xpLevel.xpForLevel?Math.round((xp.total-xpLevel.xpForLevel)/(xpLevel.xpForNext-xpLevel.xpForLevel)*100):100;
+  function addXP(amount,label){
+    var prevLevel=getXPLevel(xp.total).level;
+    setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
+      var newLevel=getXPLevel(n.total).level;
+      if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+"! You're growing as an owner-operator.","levelup",5000)},2500);
+      return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
@@ -1680,7 +1694,12 @@ function TrackerApp(props){
         <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-draft"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-draft"&&<span style={{fontSize:10,color:K.blue,marginLeft:6}}>Click to open</span>}</div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
     <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
-    <div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:K.acc,fontWeight:600,fontFamily:fm}}>{(props.user||"U")[0].toUpperCase()}</div></div>}
+    {/* Avatar + Level Badge */}
+    <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
+      {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
+        :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(props.user||"U")[0].toUpperCase()}</div>}
+      <div style={{position:"absolute",bottom:-4,right:-4,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,width:18,height:18,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1}}>{xpLevel.level}</div>
+    </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
   // ── Research Links (paste URLs per holding) ──
@@ -4216,11 +4235,14 @@ function TrackerApp(props){
           <span style={{fontSize:14}}>{"🛡️"}</span>
           <div style={{fontSize:10,color:K.blue,fontFamily:fm}}>{streakData.freezes} freeze{streakData.freezes>1?"s":""}</div></div>}
       </div>
-      {/* XP counter */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,minWidth:isMobile?100:140}}>
+      {/* XP + Level counter */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,minWidth:isMobile?100:160}}>
+        <div style={{position:"relative",width:36,height:36,flexShrink:0}}>
+          <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="15" fill="none" stroke={K.acc} strokeWidth="3" strokeDasharray={Math.round(xpPct/100*94)+" 94"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
         <div>
-          <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{xp.total}</div>
-          <div style={{fontSize:10,color:K.dim}}>Total XP</div></div></div>
+          <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
+          <div style={{fontSize:9,color:K.dim}}>Level {xpLevel.level}</div></div></div>
     </div>}
     {/* ── Daily Focus Card ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
@@ -4402,7 +4424,69 @@ function TrackerApp(props){
       <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:10,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
-    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/>{trial&&trial.start&&plan!=="pro"&&function(){
+    <Sidebar/><div style={{flex:1,overflowY:"auto",width:isMobile?"100%":"auto"}}><TopBar/>
+    {/* ── Profile Panel ── */}
+    {showProfile&&<div style={{position:"fixed",inset:0,zIndex:199}} onClick={function(){setShowProfile(false)}}/>}
+    {showProfile&&(function(){
+      var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+      var withThesis=portfolio.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>20}).length;
+      var totalKpis=portfolio.reduce(function(s,c){return s+c.kpis.length},0);
+      var totalDecisions=0;cos.forEach(function(c){totalDecisions+=(c.decisions||[]).length});
+      var reviewCount=weeklyReviews.length;
+      var xpToNext=xpLevel.xpForNext-xp.total;
+      return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":360,maxHeight:"80vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"24px"}} onClick={function(e){e.stopPropagation()}}>
+        {/* Avatar + Level */}
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
+          <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
+            {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
+              :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(props.user||"U")[0].toUpperCase()}</div>}
+            <div style={{position:"absolute",bottom:-2,right:-2,background:K.prim,color:K.primTxt,fontSize:11,fontWeight:800,fontFamily:fm,width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card}}>{xpLevel.level}</div>
+            <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
+            <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
+          </div>
+          <div>
+            <div style={{fontSize:16,fontWeight:600,color:K.txt}}>{props.user||"Investor"}</div>
+            <div style={{fontSize:12,color:K.acc,fontWeight:600,fontFamily:fm}}>Level {xpLevel.level}</div>
+            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{xp.total.toLocaleString()} XP total</div></div></div>
+        {/* XP Progress to next level */}
+        <div style={{marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>
+            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" XP to Level "+(xpLevel.level+1):"Max level!"}</span></div>
+          <div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
+            <div style={{height:"100%",width:xpPct+"%",borderRadius:4,background:K.acc,transition:"width .3s"}}/></div></div>
+        {/* Stats grid */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
+          {[{label:"Streak",value:streakData.current||0,sub:"weeks",color:K.grn},
+            {label:"Reviews",value:reviewCount,sub:"completed",color:K.blue},
+            {label:"Decisions",value:totalDecisions,sub:"logged",color:K.amb}
+          ].map(function(s){return<div key={s.label} style={{background:K.bg,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+            <div style={{fontSize:18,fontWeight:700,color:s.color,fontFamily:fm}}>{s.value}</div>
+            <div style={{fontSize:9,color:K.dim}}>{s.sub}</div></div>})}</div>
+        {/* Portfolio stats */}
+        <div style={{background:K.bg,borderRadius:8,padding:"14px 16px",marginBottom:20}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Portfolio Activity</div>
+          <div style={{display:"grid",gap:6}}>
+            {[{label:"Companies tracked",value:portfolio.length,icon:"overview"},
+              {label:"Theses written",value:withThesis,icon:"lightbulb"},
+              {label:"KPIs tracked",value:totalKpis,icon:"target"},
+              {label:"Best streak",value:(streakData.best||0)+" weeks",icon:"shield"}
+            ].map(function(s){return<div key={s.label} style={{display:"flex",alignItems:"center",gap:8}}>
+              <IC name={s.icon} size={12} color={K.dim}/>
+              <span style={{fontSize:11,color:K.mid,flex:1}}>{s.label}</span>
+              <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
+        {/* Recent XP history */}
+        {xp.history.length>0&&<div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Recent XP</div>
+          <div style={{maxHeight:140,overflowY:"auto"}}>
+            {xp.history.slice(0,10).map(function(h,i){return<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+              <span style={{fontSize:11,color:K.mid}}>{h.label}</span>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{h.amount}</span>
+                <span style={{fontSize:9,color:K.dim}}>{fD(h.date)}</span></div></div>})}</div></div>}
+        <div style={{marginTop:16,textAlign:"center"}}>
+          <button onClick={function(){setShowProfile(false)}} style={S.btn}>Close</button></div>
+      </div>})()}
+    {trial&&trial.start&&plan!=="pro"&&function(){
       var urgent=trialDaysLeft<=3;var warn=trialDaysLeft<=7&&!urgent;
       var barColor=urgent?K.red:warn?K.amb:K.acc;
       // Active trial banner
