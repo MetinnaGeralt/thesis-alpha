@@ -630,6 +630,10 @@ function TrackerApp(props){
   var _showProfile=useState(false),showProfile=_showProfile[0],setShowProfile=_showProfile[1];
   var _avatarUrl=useState(function(){try{return localStorage.getItem("ta-avatar")||""}catch(e){return""}}),avatarUrl=_avatarUrl[0],setAvatarUrl=_avatarUrl[1];
   var avatarFileRef=useRef(null);
+  var _username=useState(function(){try{return localStorage.getItem("ta-username")||""}catch(e){return""}}),username=_username[0],setUsername=_username[1];
+  var _editingName=useState(false),editingName=_editingName[0],setEditingName=_editingName[1];
+  var _nameInput=useState(""),nameInput=_nameInput[0],setNameInput=_nameInput[1];
+  function saveUsername(){var n=nameInput.trim();if(!n)return;setUsername(n);try{localStorage.setItem("ta-username",n)}catch(e){}setEditingName(false);showToast("Username set to "+n,"info",3000)}
   function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(f)}
   // ── XP Level Curve (Pokemon Go-inspired exponential) ──
   var XP_LEVELS=[0,50,120,200,300,500,750,1050,1400,1800,2300,2900,3600,4500,5600,7000,8700,10800,13500,17000,21000,26000,32000,39000,47000,56000,66000,78000,92000,108000,126000,147000,171000,198000,229000,264000,303000,347000,396000,451000,500000];
@@ -1697,7 +1701,7 @@ function TrackerApp(props){
     {/* Avatar + Level Badge */}
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
-        :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(props.user||"U")[0].toUpperCase()}</div>}
+        :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
       <div style={{position:"absolute",bottom:-4,right:-4,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,width:18,height:18,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1}}>{xpLevel.level}</div>
     </div></div>}
 
@@ -4439,13 +4443,16 @@ function TrackerApp(props){
         <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
-              :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(props.user||"U")[0].toUpperCase()}</div>}
+              :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
             <div style={{position:"absolute",bottom:-2,right:-2,background:K.prim,color:K.primTxt,fontSize:11,fontWeight:800,fontFamily:fm,width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card}}>{xpLevel.level}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
           <div>
-            <div style={{fontSize:16,fontWeight:600,color:K.txt}}>{props.user||"Investor"}</div>
+            <div style={{fontSize:16,fontWeight:600,color:K.txt}}>{username||props.user||"Investor"}</div>
+            {!username&&!editingName&&<button onClick={function(){setEditingName(true);setNameInput("")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,padding:0}}>Set username</button>}
+            {editingName&&<div style={{display:"flex",gap:6,marginTop:4}}><input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Choose a username" maxLength={20} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:11,fontFamily:fm,width:140,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername()}} autoFocus/><button onClick={saveUsername} style={{background:K.acc,color:K.primTxt,border:"none",borderRadius:4,padding:"4px 10px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save</button></div>}
+            {username&&<div style={{fontSize:10,color:K.dim}}>{props.user}</div>}
             <div style={{fontSize:12,color:K.acc,fontWeight:600,fontFamily:fm}}>Level {xpLevel.level}</div>
             <div style={{fontSize:10,color:K.dim,marginTop:2}}>{xp.total.toLocaleString()} XP total</div></div></div>
         {/* XP Progress to next level */}
