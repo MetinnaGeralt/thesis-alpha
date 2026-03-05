@@ -618,7 +618,7 @@ function TrackerApp(props){
   function showCelebration(title,subtitle,icon,color){setCelebOverlay({title:title,subtitle:subtitle,icon:icon,color:color||K.acc});setTimeout(function(){setCelebOverlay(null)},4500)}
   // Track milestones for first-time celebrations
   var _milestones=useState(function(){try{var s=localStorage.getItem('ta-milestones');return s?JSON.parse(s):{}}catch(e){return{}}}),milestones=_milestones[0],setMilestones=_milestones[1];
-  function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}celebrate(msg,"milestone",5000);return true}return false}
+  function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}showToast(msg,"milestone",5000);return true}return false}
   var toastTimer=useRef(null);
   var _prevStreak=useRef(0);
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
@@ -655,31 +655,23 @@ function TrackerApp(props){
     var prevLevel=getXPLevel(xp.total).level;
     setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
-      if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+"! You're growing as an owner-operator.","levelup",5000)},2500);
+      if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
       return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
       var newUnlock=null;[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
-      if(newUnlock)setTimeout(function(){celebrate("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
+      if(newUnlock)setTimeout(function(){showToast("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
       // Early streak rewards
-      if(n.current>=1&&(p.current||0)<1)setTimeout(function(){celebrate("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=2&&(p.current||0)<2)setTimeout(function(){celebrate("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=5&&(p.current||0)<5)setTimeout(function(){celebrate("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
+      if(n.current>=1&&(p.current||0)<1)setTimeout(function(){showToast("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
+      if(n.current>=2&&(p.current||0)<2)setTimeout(function(){showToast("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
+      if(n.current>=5&&(p.current||0)<5)setTimeout(function(){showToast("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
       return n})}
   // Track score for milestone detection
   var prevScoreLevel=useRef(null);
   useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
-    if(prevScoreLevel.current!==null&&prevScoreLevel.current!==lv.name){
-      // Level changed!
-      var prevIdx=LEVELS.findIndex(function(l){return l.name===prevScoreLevel.current});
-      var newIdx=LEVELS.findIndex(function(l){return l.name===lv.name});
-      if(newIdx>prevIdx){
-        celebrate(lv.icon+" Level up! You're now "+lv.name+" ("+os.total+"/100)","levelup",8000);
-        showCelebration(lv.icon+" "+lv.name,"You leveled up to "+lv.name+"! Keep building your process.",lv.icon,lv.min>=85?"#FFD700":lv.min>=70?"#4ade80":lv.min>=50?"#fbbf24":"#60a5fa");
-        setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Level up! You reached "+lv.name+" ("+os.total+" pts)",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
     function check(){setIsMobile(window.innerWidth<768)}
@@ -1733,7 +1725,7 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-4,right:-4,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,width:18,height:18,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1}}>{xpLevel.level}</div>
+      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{"Lvl."+xpLevel.level}</div>
     </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
@@ -2744,12 +2736,6 @@ function TrackerApp(props){
               <div style={{fontSize:12,color:bgColor,fontWeight:600}}>{daysSince===null?"Thesis never reviewed":urgency==="critical"?"Thesis urgently needs review — "+daysSince+"d stale":"Thesis review overdue — "+daysSince+"d since last update"}</div>
               <div style={{fontSize:11,color:K.dim}}>{urgency==="critical"?"Your score is losing 2 points from thesis decay. Is your thesis still intact?":"Your score is losing 1 point from staleness. A quick review keeps your thinking sharp."}</div></div>
             <span style={{fontSize:10,color:bgColor,fontFamily:fm,fontWeight:600,flexShrink:0}}>Review {"→"}</span></div>}return null}()}
-        {/* Earnings */}
-        <div style={{display:"flex",gap:8,marginBottom:20}}>
-          <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":isPro?"Check Earnings":"⚡ Check Earnings"}</button></div>
-        <EarningsReportCard company={c}/>
-        <EarningsTimeline company={c}/>
         {/* KPIs */}
         <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
           {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet. Track what matters.</div>}
@@ -2763,6 +2749,12 @@ function TrackerApp(props){
               <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"kpi",data:k.id})}}>Edit</button>
               {k.lastResult&&k.lastResult.excerpt&&<div style={{flex:1,fontSize:11,color:K.dim,fontStyle:"italic",paddingLeft:8}}>"{k.lastResult.excerpt}"</div>}</div>}</div>})}</div>
       </div>}
+        {/* Earnings */}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
+          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":isPro?"Check Earnings":"⚡ Check Earnings"}</button></div>
+        <EarningsReportCard company={c}/>
+        <EarningsTimeline company={c}/>
       {/* ═══ ANALYSIS TAB ═══ */}
       {detailTab==="analysis"&&<div className="ta-fade">
         {/* Moat Tracker link */}
@@ -2963,7 +2955,7 @@ function TrackerApp(props){
               <div style={{fontSize:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
-            <div style={{fontSize:13,color:K.mid,marginTop:2}}>{currentLevel.name} <span style={{color:K.dim}}>·</span> {os.total<100?<span style={{fontSize:11,color:K.dim}}>{nextMilestone-os.total} pts to {LEVELS.find(function(l){return l.min===nextMilestone})?LEVELS.find(function(l){return l.min===nextMilestone}).name:"Max"}</span>:<span style={{color:"#FFD700",fontSize:11}}>Maximum achieved!</span>}</div>
+            <div style={{fontSize:13,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:11,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
             {/* Progress to next level */}
             <div style={{marginTop:6,width:180,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div></div></div>
         {/* Quick stats */}
@@ -3277,16 +3269,18 @@ function TrackerApp(props){
           </div>
         </div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px"}}>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>Level System</div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Your Owner's Score determines your level. Each level represents a milestone in building investment discipline.</div>
-          <div style={{display:"grid",gap:8}}>
-            {LEVELS.map(function(l){var isCurrentLevel=currentLevel.min===l.min;
-              return<div key={l.min} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:isCurrentLevel?K.acc+"08":"transparent",border:"1px solid "+(isCurrentLevel?K.acc+"30":K.bdr),borderRadius:8}}>
-                <div style={{width:32,textAlign:"center",fontSize:14,fontWeight:700,color:isCurrentLevel?K.acc:K.dim,fontFamily:fm}}>{l.min}</div>
-                <div style={{flex:1}}><div style={{fontSize:12,fontWeight:isCurrentLevel?600:400,color:isCurrentLevel?K.acc:K.txt,fontFamily:fm}}>{l.name}</div></div>
-                {isCurrentLevel&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{"← You are here"}</span>}
-              </div>})}
-          </div></div>
+          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>XP Level System</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Earn XP by writing theses, tracking KPIs, rating conviction, and completing weekly reviews. Level up by showing up consistently.</div>
+          <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"08",border:"1px solid "+K.acc+"30",borderRadius:10,marginBottom:12}}>
+            <div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm}}>{"Lvl. "+xpLevel.level}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{xp.total.toLocaleString()} / {xpLevel.xpForNext.toLocaleString()} XP</div>
+              <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:xpPct+"%",borderRadius:3,background:K.acc}}/></div></div></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {[{label:"Write thesis",xp:"+10 XP",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"+5 XP",sub:""},{label:"Rate conviction",xp:"+8 XP",sub:""},{label:"Weekly review",xp:"+25 XP",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,color:K.mid}}>{r.label}</span><span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{r.xp}</span></div>
+              {r.sub&&<div style={{fontSize:9,color:K.dim}}>{r.sub}</div>}</div>})}</div>
+        </div>
       </div>}
     </div>}
 
@@ -3686,6 +3680,10 @@ function TrackerApp(props){
   function WeeklyReview(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
+    var today=new Date().getDay(); // 0=Sun,1=Mon,...5=Fri,6=Sat
+    var isReviewDay=today===0||today===5||today===6; // Fri, Sat, Sun
+    var dayNames=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    var nextReviewDay=today<5?"Friday":(today===5||today===6)?"today":"Friday";
     var _step=useState(alreadyDone?"done":"intro"),step=_step[0],setStep=_step[1];
     var _idx=useState(0),idx=_idx[0],setIdx=_idx[1];
     var _revs=useState({}),revs=_revs[0],setRevs=_revs[1];
@@ -3730,11 +3728,14 @@ function TrackerApp(props){
       </div>
 
       {step==="intro"&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"✅":String.fromCodePoint(0x1F4CB)}</div>
-        <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week’s review is complete":"Ready for your weekly check-in?"}</div>
+        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"✅":isReviewDay?String.fromCodePoint(0x1F4CB):String.fromCodePoint(0x1F512)}</div>
+        <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week’s review is complete":isReviewDay?"Ready for your weekly check-in?":"Review opens on Friday"}</div>
         <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
-          {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes."}</div>
-        <button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>{currentWeekReviewed?"Review Again":"Start Review"}</button>
+          {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":isReviewDay?"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes.":"Weekly reviews are available Friday through Sunday. Today is "+dayNames[today]+". Come back "+nextReviewDay+"!"}</div>
+        {isReviewDay&&!currentWeekReviewed&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:8,padding:"10px 16px",marginBottom:20,display:"inline-block"}}>
+          <span style={{fontSize:12,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 XP</span>
+          <span style={{fontSize:11,color:K.mid,marginLeft:8}}>Complete your review to earn bonus XP and extend your streak</span></div>}
+        <br/><button onClick={startReview} disabled={!isReviewDay&&!currentWeekReviewed} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px",opacity:isReviewDay||currentWeekReviewed?1:.4})}>{currentWeekReviewed?"Review Again":isReviewDay?"Start Review":"Available "+nextReviewDay}</button>
       </div>}
 
       {step==="review"&&c&&<div>
@@ -4444,7 +4445,7 @@ function TrackerApp(props){
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
-      <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc)+"40",boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"20, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc),boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"30, 0 0 40px "+(celebOverlay.color||K.acc)+"15, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420,animation:"celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both, glowPulse 2s ease-in-out infinite"}}>
         <div style={{fontSize:56,marginBottom:16,animation:"streakFlame 1s ease infinite"}}>{celebOverlay.icon||String.fromCodePoint(0x1F389)}</div>
         <div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{celebOverlay.title}</div>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:20}}>{celebOverlay.subtitle}</div>
@@ -4475,7 +4476,7 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-2,right:-2,background:K.prim,color:K.primTxt,fontSize:11,fontWeight:800,fontFamily:fm,width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card}}>{xpLevel.level}</div>
+            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{"Lvl. "+xpLevel.level}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
