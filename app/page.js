@@ -635,6 +635,105 @@ function TrackerApp(props){
   var _editingName=useState(false),editingName=_editingName[0],setEditingName=_editingName[1];
   var _nameInput=useState(""),nameInput=_nameInput[0],setNameInput=_nameInput[1];
   function saveUsername(){var n=nameInput.trim();if(!n)return;setUsername(n);try{localStorage.setItem("ta-username",n)}catch(e){}setEditingName(false);showToast("Username set to "+n,"info",3000)}
+  // ── Owner's Chest System ──
+  var INVESTOR_QUOTES=[
+    {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
+    {q:"In the short run, the market is a voting machine but in the long run, it is a weighing machine.",a:"Benjamin Graham"},
+    {q:"The best investment you can make is in yourself.",a:"Warren Buffett"},
+    {q:"Risk comes from not knowing what you are doing.",a:"Warren Buffett"},
+    {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
+    {q:"It is remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid, instead of trying to be very intelligent.",a:"Charlie Munger"},
+    {q:"Spend each day trying to be a little wiser than you were when you woke up.",a:"Charlie Munger"},
+    {q:"The big money is not in the buying and selling, but in the waiting.",a:"Charlie Munger"},
+    {q:"Knowing what you don't know is more useful than being brilliant.",a:"Charlie Munger"},
+    {q:"Go to bed smarter than when you woke up.",a:"Charlie Munger"},
+    {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
+    {q:"The person that turns over the most rocks wins the game.",a:"Peter Lynch"},
+    {q:"Never invest in any idea you can't illustrate with a crayon.",a:"Peter Lynch"},
+    {q:"Behind every stock is a company. Find out what it's doing.",a:"Peter Lynch"},
+    {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
+    {q:"The four most dangerous words in investing are: this time it's different.",a:"John Templeton"},
+    {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+    {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
+    {q:"Only buy something that you'd be perfectly happy to hold if the market shut down for 10 years.",a:"Warren Buffett"},
+    {q:"The goal of each investor should be to create a portfolio of look-through earnings that delivers the highest possible total a decade from now.",a:"Warren Buffett"},
+    {q:"You make most of your money in a bear market, you just don't realize it at the time.",a:"Shelby Cullom Davis"},
+    {q:"Investing without research is like playing stud poker and never looking at the cards.",a:"Peter Lynch"},
+    {q:"Compound interest is the eighth wonder of the world.",a:"Albert Einstein"},
+    {q:"The market is not a casino. Stocks represent fractional ownership of real businesses.",a:"Joel Greenblatt"},
+    {q:"Buying good businesses at bargain prices is the secret to making lots of money.",a:"Joel Greenblatt"},
+    {q:"We look for businesses that can compound at 15%+ with minimal risk.",a:"Dev Kantesaria"},
+    {q:"Only invest in good companies, don't overpay, do nothing.",a:"Terry Smith"},
+    {q:"We invest in quality businesses with strong free cash flow.",a:"Chris Hohn"},
+    {q:"The trick is not to pick the right company. The trick is to essentially buy the whole stock market.",a:"John Bogle"},
+    {q:"Do not take yearly results too seriously. Instead, focus on four or five year averages.",a:"Warren Buffett"}
+  ];
+  var BADGE_POOL=[
+    {id:"disciplined_owner",label:"Disciplined Owner",icon:String.fromCodePoint(0x1F3AF),desc:"Completed 4+ weekly reviews"},
+    {id:"consistent_compounder",label:"Consistent Compounder",icon:String.fromCodePoint(0x1F4C8),desc:"Maintained a 4+ week streak"},
+    {id:"thesis_architect",label:"Thesis Architect",icon:String.fromCodePoint(0x1F4DD),desc:"Written theses for 5+ holdings"},
+    {id:"conviction_caller",label:"Conviction Caller",icon:String.fromCodePoint(0x1F525),desc:"Rated conviction on all holdings"},
+    {id:"process_master",label:"Process Master",icon:String.fromCodePoint(0x2B50),desc:"Reached level 10+"},
+    {id:"iron_hand",label:"Iron Hand",icon:String.fromCodePoint(0x1F91D),desc:"8+ week streak without a freeze"},
+    {id:"early_bird",label:"Early Bird",icon:String.fromCodePoint(0x1F426),desc:"Reviewed on Friday before market close"},
+    {id:"deep_diver",label:"Deep Diver",icon:String.fromCodePoint(0x1F30A),desc:"Tracked 20+ KPIs across portfolio"}
+  ];
+  var _chestRewards=useState(function(){try{return JSON.parse(localStorage.getItem("ta-chest"))||{quotes:[],badges:[],history:[]}}catch(e){return{quotes:[],badges:[],history:[]}}}),chestRewards=_chestRewards[0],setChestRewards=_chestRewards[1];
+  var _doubleXP=useState(function(){try{var d=localStorage.getItem("ta-doublexp");return d&&new Date(d)>new Date()?d:null}catch(e){return null}}),doubleXP=_doubleXP[0],setDoubleXP=_doubleXP[1];
+  var _chestOverlay=useState(null),chestOverlay=_chestOverlay[0],setChestOverlay=_chestOverlay[1];
+  var isDoubleXP=doubleXP&&new Date(doubleXP)>new Date();
+  function rollChestReward(){
+    var roll=Math.random();var reward;
+    if(roll<0.05){
+      // RARE: Early lens unlock or badge
+      if(Math.random()<0.5){
+        // Early lens unlock
+        var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
+        var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
+        if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:0,lensWeek:nextLens.w}}
+        else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+      }else{
+        // Badge
+        var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
+        if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
+          reward={type:"badge",tier:"rare",label:"New Badge!",desc:badge.label+" \u2014 "+badge.desc,icon:badge.icon,xp:10,badge:badge}}
+        else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
+    }else if(roll<0.30){
+      // UNCOMMON: Double XP or insight quote
+      if(Math.random()<0.6){
+        reward={type:"doublexp",tier:"uncommon",label:"Double XP!",desc:"All actions give 2\u00d7 XP for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}}
+      else{
+        var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
+        if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
+          reward={type:"quote",tier:"uncommon",label:"Rare Quote!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:5,quote:quote}}
+        else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+15 bonus XP",icon:String.fromCodePoint(0x2728),xp:15}}}
+    }else{
+      // COMMON: Bonus XP or streak freeze or quote
+      var r2=Math.random();
+      if(r2<0.4){
+        var bonusXP=[10,12,15,18,20][Math.floor(Math.random()*5)];
+        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus XP",desc:"Extra experience for your dedication",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
+      else if(r2<0.65){
+        reward={type:"freeze",tier:"common",label:"Streak Freeze!",desc:"Protection against missing one week",icon:String.fromCodePoint(0x1F6E1),xp:0}}
+      else{
+        var available2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
+        if(available2.length>0){var quote2=available2[Math.floor(Math.random()*available2.length)];
+          reward={type:"quote",tier:"common",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4D6),xp:0,quote:quote2}}
+        else{reward={type:"xp",tier:"common",label:"+15 Bonus XP",desc:"Extra experience",icon:String.fromCodePoint(0x2B50),xp:15}}}}
+    return reward}
+  function openChest(){
+    var reward=rollChestReward();
+    // Apply reward
+    setChestRewards(function(p){
+      var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
+      if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
+      if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
+      try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
+    if(reward.xp>0)addXP(reward.xp,"Chest: "+reward.label);
+    if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
+    if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
+    if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
+    setChestOverlay(reward)}
   function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;
     // Compress avatar to max 128x128 to keep cloud payload small
     var reader=new FileReader();reader.onload=function(ev){
@@ -653,11 +752,12 @@ function TrackerApp(props){
   var xpLevel=getXPLevel(xp.total);
   var xpPct=xpLevel.xpForNext>xpLevel.xpForLevel?Math.round((xp.total-xpLevel.xpForLevel)/(xpLevel.xpForNext-xpLevel.xpForLevel)*100):100;
   function addXP(amount,label){
+    var actualAmount=isDoubleXP?amount*2:amount;
     var prevLevel=getXPLevel(xp.total).level;
-    setXp(function(p){var n={total:p.total+amount,history:[{amount:amount,label:label,date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
+    setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2\u00d7)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
       if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
-      return n});setXpFloat({amount:amount,label:label,id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
+      return n});setXpFloat({amount:actualAmount,label:label+(isDoubleXP?" 2\u00d7":""),id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
@@ -772,6 +872,8 @@ function TrackerApp(props){
           if(cloudData.profile.weeklyReviews){setWeeklyReviews(cloudData.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(cloudData.profile.weeklyReviews))}catch(e){}}
           if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
           if(cloudData.profile.theme){setTheme(cloudData.profile.theme);try{localStorage.setItem("ta-theme",cloudData.profile.theme)}catch(e){}}
+          if(cloudData.profile.chest){setChestRewards(cloudData.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(cloudData.profile.chest))}catch(e){}}
+          if(cloudData.profile.doubleXP){setDoubleXP(cloudData.profile.doubleXP);try{localStorage.setItem("ta-doublexp",cloudData.profile.doubleXP)}catch(e){}}
         }
         svS("ta-data",cloudData);// cache locally
         setLoaded(true);return}
@@ -790,6 +892,8 @@ function TrackerApp(props){
           if(local.profile.weeklyReviews){setWeeklyReviews(local.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(local.profile.weeklyReviews))}catch(e){}}
           if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
           if(local.profile.theme){setTheme(local.profile.theme);try{localStorage.setItem("ta-theme",local.profile.theme)}catch(e){}}
+          if(local.profile.chest){setChestRewards(local.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(local.profile.chest))}catch(e){}}
+          if(local.profile.doubleXP){setDoubleXP(local.profile.doubleXP);try{localStorage.setItem("ta-doublexp",local.profile.doubleXP)}catch(e){}}
         }
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
@@ -861,12 +965,12 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,milestones,weeklyReviews,dashSet]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,milestones,weeklyReviews,dashSet,chestRewards,doubleXP]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -3713,6 +3817,8 @@ function TrackerApp(props){
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
       showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
+      // Open Owner's Chest after a brief delay
+      setTimeout(function(){openChest()},1500);
       setStep("done")}
 
     var streakColor=reviewStreak>=8?K.grn:reviewStreak>=4?K.amb:K.mid;
@@ -3735,9 +3841,11 @@ function TrackerApp(props){
         <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week’s review is complete":isReviewDay?"Ready for your weekly check-in?":"Review opens on Friday"}</div>
         <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
           {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":isReviewDay?"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes.":"Weekly reviews are available Friday through Sunday. Today is "+dayNames[today]+". Come back "+nextReviewDay+"!"}</div>
-        {isReviewDay&&!currentWeekReviewed&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:8,padding:"10px 16px",marginBottom:20,display:"inline-block"}}>
-          <span style={{fontSize:12,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 XP</span>
-          <span style={{fontSize:11,color:K.mid,marginLeft:8}}>Complete your review to earn bonus XP and extend your streak</span></div>}
+        {isReviewDay&&!currentWeekReviewed&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"14px 18px",marginBottom:20,display:"inline-block",textAlign:"left"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+            <span style={{fontSize:20}}>{String.fromCodePoint(0x1F381)}</span>
+            <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Owner's Chest awaits</span></div>
+          <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 XP</strong> and open a chest with bonus rewards. Could be extra XP, a streak freeze, investor wisdom, 2\u00d7 XP power-up, or even a rare lens unlock.</div></div>}
         <br/><button onClick={startReview} disabled={!isReviewDay&&!currentWeekReviewed} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px",opacity:isReviewDay||currentWeekReviewed?1:.4})}>{currentWeekReviewed?"Review Again":isReviewDay?"Start Review":"Available "+nextReviewDay}</button>
       </div>}
 
@@ -4281,7 +4389,7 @@ function TrackerApp(props){
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
         <div>
           <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
-          <div style={{fontSize:9,color:K.dim}}>Level {xpLevel.level}</div></div></div>
+          <div style={{fontSize:9,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2\u00d7 XP Active":"Level "+xpLevel.level}</div></div></div>
     </div>}
     {/* ── Daily Focus Card ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
@@ -4447,6 +4555,25 @@ function TrackerApp(props){
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
+    {/* ── Owner's Chest Overlay ── */}
+    {chestOverlay&&<div style={{position:"fixed",inset:0,zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",animation:"fadeInFast .3s ease"}} onClick={function(){setChestOverlay(null)}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"2px solid "+(chestOverlay.tier==="rare"?"#FFD700":chestOverlay.tier==="uncommon"?"#a78bfa":K.acc),boxShadow:"0 0 60px "+(chestOverlay.tier==="rare"?"rgba(255,215,0,.4)":chestOverlay.tier==="uncommon"?"rgba(167,139,250,.3)":"rgba(0,0,0,.3)")+", 0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
+        {/* Tier glow bar */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:chestOverlay.tier==="rare"?"linear-gradient(90deg,#FFD700,#FF8C00,#FFD700)":chestOverlay.tier==="uncommon"?"linear-gradient(90deg,#a78bfa,#818cf8,#a78bfa)":K.acc}}/>
+        {/* Tier label */}
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:chestOverlay.tier==="rare"?"#FFD700":chestOverlay.tier==="uncommon"?"#a78bfa":K.dim,fontFamily:fm,marginBottom:8}}>{chestOverlay.tier==="rare"?"Rare Find!":chestOverlay.tier==="uncommon"?"Uncommon":"Reward"}</div>
+        {/* Icon */}
+        <div style={{fontSize:56,marginBottom:12,animation:"streakFlame 1s ease infinite"}}>{chestOverlay.icon}</div>
+        {/* Title */}
+        <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>{chestOverlay.label}</div>
+        {/* Description */}
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:chestOverlay.author?4:16}}>{chestOverlay.desc}</div>
+        {chestOverlay.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:16}}>{"\u2014 "+chestOverlay.author}</div>}
+        {/* XP earned */}
+        {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"4px 12px",marginBottom:12}}>
+          <span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>+{chestOverlay.xp} XP</span></div>}
+        <div><button onClick={function(){setChestOverlay(null)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:12})}>Collect</button></div>
+      </div></div>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
       <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc),boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"30, 0 0 40px "+(celebOverlay.color||K.acc)+"15, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420,animation:"celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both, glowPulse 2s ease-in-out infinite"}}>
         <div style={{fontSize:56,marginBottom:16,animation:"streakFlame 1s ease infinite"}}>{celebOverlay.icon||String.fromCodePoint(0x1F389)}</div>
@@ -4516,6 +4643,25 @@ function TrackerApp(props){
               <IC name={s.icon} size={12} color={K.dim}/>
               <span style={{fontSize:11,color:K.mid,flex:1}}>{s.label}</span>
               <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
+        {/* Double XP indicator */}
+        {isDoubleXP&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:14}}>{String.fromCodePoint(0x26A1)}</span>
+          <div><div style={{fontSize:11,fontWeight:600,color:K.amb}}>2\u00d7 XP Active</div>
+            <div style={{fontSize:9,color:K.dim}}>Expires {new Date(doubleXP).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}</div></div></div>}
+        {/* Badges */}
+        {(chestRewards.badges||[]).length>0&&<div style={{marginBottom:16}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {(chestRewards.badges||[]).map(function(b){return<div key={b.id} title={b.desc} style={{display:"flex",alignItems:"center",gap:4,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 10px"}}>
+              <span style={{fontSize:14}}>{b.icon}</span>
+              <span style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{b.label}</span></div>})}</div></div>}
+        {/* Collected Quotes */}
+        {(chestRewards.quotes||[]).length>0&&<div style={{marginBottom:16}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({(chestRewards.quotes||[]).length})</div>
+          <div style={{maxHeight:120,overflowY:"auto"}}>
+            {(chestRewards.quotes||[]).slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+              <div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{"\u201c"+q.q+"\u201d"}</div>
+              <div style={{fontSize:9,color:K.dim,textAlign:"right"}}>{"\u2014 "+q.a}</div></div>})}</div></div>}
         {/* Recent XP history */}
         {xp.history.length>0&&<div>
           <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Recent XP</div>
