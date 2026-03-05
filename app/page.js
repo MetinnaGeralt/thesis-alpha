@@ -3798,6 +3798,15 @@ function TrackerApp(props){
     var _actions=useState({}),actions=_actions[0],setActions=_actions[1];
     var c=portfolio[idx];
     var prevReview=alreadyDone?weeklyReviews[0]:null;
+    // Countdown timer to next Friday
+    var _ct=useState(null),countdownStr=_ct[0],setCountdownStr=_ct[1];
+    useEffect(function(){
+      if(isReviewDay)return;
+      function tick(){var now=new Date();var fri=new Date(now);var daysUntil=(5-now.getDay()+7)%7;if(daysUntil===0)daysUntil=7;fri.setDate(now.getDate()+daysUntil);fri.setHours(0,0,0,0);
+        var diff=fri-now;if(diff<=0){setCountdownStr(null);return}
+        var d2=Math.floor(diff/86400000);var h=Math.floor((diff%86400000)/3600000);var m=Math.floor((diff%3600000)/60000);var s=Math.floor((diff%60000)/1000);
+        setCountdownStr((d2>0?d2+"d ":"")+h+"h "+m+"m "+s+"s")}
+      tick();var iv=setInterval(tick,1000);return function(){clearInterval(iv)}},[isReviewDay]);
 
     function startReview(){setStep("review");setIdx(0);setRevs({});setNotes({});setActions({})}
     function setConv(id,val){setRevs(function(p){var n=Object.assign({},p);n[id]=val;return n})}
@@ -3836,18 +3845,63 @@ function TrackerApp(props){
           {[0,1,2,3,4,5,6,7].map(function(i){return<div key={i} style={{width:8,height:24,borderRadius:2,background:i<reviewStreak?streakColor:K.bdr}}/>})}</div>
       </div>
 
-      {step==="intro"&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{currentWeekReviewed?"✅":isReviewDay?String.fromCodePoint(0x1F4CB):String.fromCodePoint(0x1F512)}</div>
-        <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>{currentWeekReviewed?"This week’s review is complete":isReviewDay?"Ready for your weekly check-in?":"Review opens on Friday"}</div>
-        <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
-          {currentWeekReviewed?"You reviewed "+portfolio.length+" holdings. Come back next week.":isReviewDay?"Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes.":"Weekly reviews are available Friday through Sunday. Today is "+dayNames[today]+". Come back "+nextReviewDay+"!"}</div>
-        {isReviewDay&&!currentWeekReviewed&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"14px 18px",marginBottom:20,display:"inline-block",textAlign:"left"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-            <span style={{fontSize:20}}>{String.fromCodePoint(0x1F381)}</span>
-            <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Owner's Chest awaits</span></div>
-          <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 XP</strong> and open a chest with bonus rewards. Could be extra XP, a streak freeze, investor wisdom, 2\u00d7 XP power-up, or even a rare lens unlock.</div></div>}
-        <br/><button onClick={startReview} disabled={!isReviewDay&&!currentWeekReviewed} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px",opacity:isReviewDay||currentWeekReviewed?1:.4})}>{currentWeekReviewed?"Review Again":isReviewDay?"Start Review":"Available "+nextReviewDay}</button>
-      </div>}
+      {step!=="review"&&(function(){
+        // Seeded random for chest preview (stable per week)
+        var weekSeed=parseInt(getWeekId().replace(/\D/g,""))||0;
+        var r1=(weekSeed*9301+49297)%233280;var r2=(r1*9301+49297)%233280;var r3=(r2*9301+49297)%233280;
+        var tiers=[r1/233280<0.05?"rare":r1/233280<0.30?"uncommon":"common",r2/233280<0.05?"rare":r2/233280<0.30?"uncommon":"common",r3/233280<0.05?"rare":r3/233280<0.30?"uncommon":"common"];
+        var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
+        var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
+
+        return<div style={{padding:"48px 20px"}}>
+        {/* ── LOCKED STATE: Countdown + Preview ── */}
+        {!isReviewDay&&!currentWeekReviewed&&<div>
+          <div style={{textAlign:"center",marginBottom:32}}>
+            <div style={{fontSize:48,marginBottom:12}}>{String.fromCodePoint(0x1F512)}</div>
+            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:4}}>Weekly Review</div>
+            <div style={{fontSize:13,color:K.dim}}>Opens every Friday through Sunday</div></div>
+          {/* Countdown */}
+          {countdownStr&&<div style={{textAlign:"center",marginBottom:28}}>
+            <div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 36px"}}>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Opens In</div>
+              <div style={{fontSize:32,fontWeight:800,color:K.acc,fontFamily:fm,letterSpacing:2}}>{countdownStr}</div></div></div>}
+          {/* Chest Preview */}
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>This Week's Chest Contains…</div>
+            <div style={{display:"flex",justifyContent:"center",gap:16}}>
+              {tiers.map(function(tier,i){return<div key={i} style={{width:90,height:120,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:tierColors[tier]}}/>
+                <div style={{fontSize:28,marginBottom:6,opacity:.4}}>{"?"}</div>
+                <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier].toUpperCase()}</div>
+                <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tier==="rare"?"5% chance":tier==="uncommon"?"25% chance":"70% chance"}</div></div>})}</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Bonus XP, streak freezes, investor wisdom, 2× XP power-ups, badges, or a rare early lens unlock.</div></div>
+          <button disabled style={{background:K.prim,color:K.primTxt,border:"none",borderRadius:8,padding:"12px 32px",fontSize:14,fontWeight:600,fontFamily:fm,opacity:.35,cursor:"not-allowed"}}>Available Friday</button>
+        </div>}
+
+        {/* ── REVIEW DAY: Ready to go ── */}
+        {isReviewDay&&!currentWeekReviewed&&<div style={{textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:16}}>{String.fromCodePoint(0x1F4CB)}</div>
+          <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>Ready for your weekly check-in?</div>
+          <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes.</div>
+          <div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"14px 18px",marginBottom:20,display:"inline-block",textAlign:"left"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+              <span style={{fontSize:20}}>{String.fromCodePoint(0x1F381)}</span>
+              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Owner's Chest awaits</span></div>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 XP</strong> and open a chest with bonus rewards. Could be extra XP, a streak freeze, investor wisdom, 2× XP power-up, or even a rare lens unlock.</div></div>
+          <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Start Review</button>
+        </div>}
+
+        {/* ── DONE STATE ── */}
+        {currentWeekReviewed&&<div style={{textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:16}}>{"✅"}</div>
+          <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>This week’s review is complete</div>
+          <div style={{fontSize:13,color:K.dim,marginBottom:20,maxWidth:400,margin:"0 auto 20px",lineHeight:1.7}}>You reviewed {portfolio.length} holdings. Come back next Friday for your next chest.</div>
+          {countdownStr&&!isReviewDay&&<div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 24px",marginBottom:20}}>
+            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Next Review In</div>
+            <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{countdownStr}</div></div>}
+          <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Review Again</button>
+        </div>}
+      </div>})()}
 
       {step==="review"&&c&&<div>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
