@@ -678,6 +678,7 @@ function TrackerApp(props){
   var _chestRewards=useState(function(){try{return JSON.parse(localStorage.getItem("ta-chest"))||{quotes:[],badges:[],history:[]}}catch(e){return{quotes:[],badges:[],history:[]}}}),chestRewards=_chestRewards[0],setChestRewards=_chestRewards[1];
   var _doubleXP=useState(function(){try{var d=localStorage.getItem("ta-doublexp");return d&&new Date(d)>new Date()?d:null}catch(e){return null}}),doubleXP=_doubleXP[0],setDoubleXP=_doubleXP[1];
   var _chestOverlay=useState(null),chestOverlay=_chestOverlay[0],setChestOverlay=_chestOverlay[1];
+  var _latestWeeklyReward=useState(null),latestWeeklyReward=_latestWeeklyReward[0],setLatestWeeklyReward=_latestWeeklyReward[1];
   var isDoubleXP=doubleXP&&new Date(doubleXP)>new Date();
   // ── 7-Day Quest System ──
   var _questData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-quests"))||{weekId:null,completed:[]}}catch(e){return{weekId:null,completed:[]}}}),questData=_questData[0],setQuestData=_questData[1];
@@ -766,7 +767,7 @@ function TrackerApp(props){
     if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
     if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
     if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
-    setChestOverlay(reward)}
+    setChestOverlay(reward);setLatestWeeklyReward(reward)}
   function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;
     // Compress avatar to max 128x128 to keep cloud payload small
     var reader=new FileReader();reader.onload=function(ev){
@@ -4032,14 +4033,52 @@ function TrackerApp(props){
         </div>}
 
         {/* ── DONE STATE ── */}
-        {currentWeekReviewed&&<div style={{textAlign:"center"}}>
-          <div style={{fontSize:48,marginBottom:16}}>{"✅"}</div>
-          <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>This week’s review is complete</div>
-          <div style={{fontSize:13,color:K.dim,marginBottom:20,maxWidth:400,margin:"0 auto 20px",lineHeight:1.7}}>You reviewed {portfolio.length} holdings. Come back next Friday for your next chest.</div>
-          {countdownStr&&!isReviewDay&&<div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 24px",marginBottom:20}}>
-            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Next Review In</div>
-            <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{countdownStr}</div></div>}
-          <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Review Again</button>
+        {currentWeekReviewed&&<div>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:48,marginBottom:12}}>{"\u2705"}</div>
+            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>This week\u2019s review is complete</div>
+            <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.7}}>Come back next week to keep your streak alive and earn another chest.</div>
+          </div>
+          {/* Countdown */}
+          {countdownStr&&!isReviewDay&&<div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 24px"}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Next Review In</div>
+              <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{countdownStr}</div></div></div>}
+          {/* This week's reward */}
+          {(function(){
+            var reward=latestWeeklyReward;
+            var histEntry=chestRewards.history&&chestRewards.history.length>0?chestRewards.history[0]:null;
+            var tierColors2={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
+            var tierLabels2={rare:"Rare",uncommon:"Uncommon",common:"Common"};
+            if(reward)return<div style={{textAlign:"center",padding:"20px 16px",background:K.card,borderRadius:12,border:"1px solid "+(tierColors2[reward.tier]||K.bdr)+"40",marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK\u2019S REWARD \u2014 "+tierLabels2[reward.tier||"common"]}</div>
+              <div style={{fontSize:32,marginBottom:4}}>{reward.icon}</div>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{reward.label}</div>
+              <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{reward.desc}</div>
+              {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"\u2014 "+reward.author}</div>}
+              {reward.xp>0&&<div style={{marginTop:6}}><span style={{fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} XP</span></div>}
+            </div>;
+            if(histEntry)return<div style={{textAlign:"center",padding:"14px 16px",background:K.card,borderRadius:12,border:"1px solid "+K.bdr,marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD \u2014 "+tierLabels2[histEntry.tier||"common"]}</div>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{histEntry.reward}</div>
+            </div>;
+            return null})()}
+          {/* Reward history */}
+          {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"0 auto 20px",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>PAST REWARDS</div>
+            <div style={{maxHeight:140,overflow:"auto"}}>
+            {chestRewards.history.slice(1,15).map(function(h,hi){
+              var tc2=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
+              var d2=h.date?new Date(h.date):null;
+              var ds2=d2?d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+              return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(chestRewards.history.length-1,14)-1?"1px solid "+K.bdr+"30":"none"}}>
+                <div style={{width:5,height:5,borderRadius:"50%",background:tc2,flexShrink:0}}/>
+                <div style={{fontSize:10,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
+                <div style={{fontSize:8,color:tc2,fontWeight:600,fontFamily:fm}}>{h.tier}</div>
+                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{ds2}</div>
+              </div>})}</div>
+          </div>}
+          <div style={{textAlign:"center"}}><button onClick={startReview} style={Object.assign({},S.btn,{fontSize:12,padding:"8px 20px"})}>Review Again</button></div>
         </div>}
       </div>})()}
 
@@ -4094,28 +4133,80 @@ function TrackerApp(props){
         </div>
       </div>}
 
-      {step==="summary"&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"32px"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:36,marginBottom:8}}>{String.fromCodePoint(0x1F4CA)}</div>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>Review Summary</div></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:24}}>
-          <div style={{textAlign:"center",padding:16,background:K.bg,borderRadius:8}}><div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div><div style={{fontSize:10,color:K.dim}}>Holdings Reviewed</div></div>
-          <div style={{textAlign:"center",padding:16,background:K.bg,borderRadius:8}}><div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction}).length}</div><div style={{fontSize:10,color:K.dim}}>Conviction Changes</div></div>
-          <div style={{textAlign:"center",padding:16,background:K.bg,borderRadius:8}}><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>{Object.values(actions).filter(function(a){return a!=="hold"}).length}</div><div style={{fontSize:10,color:K.dim}}>Actions Flagged</div></div></div>
-        {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var changed=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
-          return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr+"50"}}>
-            <CoLogo domain={c2.domain} ticker={c2.ticker} size={24}/>
-            <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,width:60}}>{c2.ticker}</div>
-            <div style={{fontSize:12,color:changed?K.acc:K.dim,fontFamily:fm}}>{c2.conviction} {changed?"→ "+newConv:""}</div>
-            {act!=="hold"&&<span style={{fontSize:9,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,background:(act==="add"?K.grn:act==="sell"?K.red:K.amb)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{act}</span>}
-            {notes[c2.id]&&<span style={{fontSize:10,color:K.dim,fontStyle:"italic",flex:1,textAlign:"right"}}>{notes[c2.id]}</span>}
-          </div>})}
-        <div style={{display:"flex",gap:12,marginTop:24,justifyContent:"center"}}>
-          <button onClick={function(){setStep("review");setIdx(0)}} style={S.btn}>← Edit</button>
-          <button onClick={finishReview} style={S.btnP}>✓ Save & Log Convictions</button></div>
+      {step==="summary"&&<div>
+        {/* Progress bar showing completion */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <div style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>Final Step</div>
+          <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:"100%",borderRadius:2,background:K.grn,transition:"width .3s"}}/></div>
+        </div>
+        <div style={{background:K.card,border:"2px solid "+K.grn+"40",borderRadius:14,padding:"32px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+")"}}/>
+          {/* Big CTA at top */}
+          <div style={{textAlign:"center",marginBottom:28}}>
+            <div style={{fontSize:36,marginBottom:8}}>{String.fromCodePoint(0x2705)}</div>
+            <div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>Ready to log convictions</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:360,margin:"0 auto"}}>Review your changes below, then confirm to save everything and earn your weekly reward.</div>
+          </div>
+          {/* Compact stats */}
+          <div style={{display:"flex",justifyContent:"center",gap:20,marginBottom:20}}>
+            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div><div style={{fontSize:9,color:K.dim}}>Reviewed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction}).length}</div><div style={{fontSize:9,color:K.dim}}>Changed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.grn,fontFamily:fm}}>{Object.values(actions).filter(function(a){return a!=="hold"}).length}</div><div style={{fontSize:9,color:K.dim}}>Actions</div></div>
+          </div>
+          {/* Compact holdings list */}
+          <div style={{maxHeight:200,overflow:"auto",marginBottom:24,borderRadius:8,border:"1px solid "+K.bdr}}>
+          {portfolio.map(function(c2,ci){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var changed=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
+            return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:ci<portfolio.length-1?"1px solid "+K.bdr+"50":"none",background:changed?K.acc+"06":"transparent"}}>
+              <CoLogo domain={c2.domain} ticker={c2.ticker} size={22}/>
+              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:55}}>{c2.ticker}</div>
+              <div style={{fontSize:12,color:changed?K.acc:K.dim,fontFamily:fm,flex:1}}>{changed?c2.conviction+" → "+newConv:newConv+"/10"}</div>
+              {act!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,background:(act==="add"?K.grn:act==="sell"?K.red:K.amb)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{act}</span>}
+            </div>})}</div>
+          {/* Primary CTA + edit link */}
+          <div style={{textAlign:"center"}}>
+            <button onClick={finishReview} style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 40px",borderRadius:10,width:"100%",maxWidth:340})}>
+              {String.fromCodePoint(0x2705)+" Complete Review & Open Chest"}</button>
+            <div style={{marginTop:10}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,textDecoration:"underline"}}>← Go back and edit</button></div>
+          </div>
+        </div>
       </div>}
 
       {step==="done"&&<div>
+        {/* ── This week's reward ── */}
+        {(latestWeeklyReward||chestRewards.history.length>0)&&(function(){
+          var reward=latestWeeklyReward;
+          var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
+          var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"28px 24px",marginBottom:20}}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>{String.fromCodePoint(0x2705)} THIS WEEK'S REVIEW COMPLETE</div>
+              <div style={{fontSize:12,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
+            {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK\u2019S REWARD \u2014 "+tierLabels[reward.tier||"common"]}</div>
+              <div style={{fontSize:36,marginBottom:6}}>{reward.icon}</div>
+              <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>{reward.label}</div>
+              <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
+              {reward.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginTop:4}}>{"— "+reward.author}</div>}
+              {reward.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"3px 10px",marginTop:8}}>
+                <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} XP</span></div>}
+            </div>}
+            {/* Previously earned rewards */}
+            {chestRewards.history.length>0&&<div>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>REWARD HISTORY</div>
+              <div style={{maxHeight:180,overflow:"auto"}}>
+              {chestRewards.history.slice(0,20).map(function(h,hi){
+                var tc=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
+                var d=h.date?new Date(h.date):null;
+                var dateStr=d?d.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+                return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:hi<Math.min(chestRewards.history.length,20)-1?"1px solid "+K.bdr+"30":"none"}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:tc,flexShrink:0}}/>
+                  <div style={{fontSize:11,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
+                  <div style={{fontSize:9,color:tc,fontWeight:600,fontFamily:fm,textTransform:"uppercase"}}>{h.tier}</div>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{dateStr}</div>
+                </div>})}</div>
+            </div>}
+          </div>})()}
+
         {/* Past reviews */}
         {weeklyReviews.length>0&&<div style={{marginTop:12}}>
           <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Review History</div>
