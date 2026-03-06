@@ -604,6 +604,8 @@ function TrackerApp(props){
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
+  var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
+  function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
   var LEVELS=[{min:0,name:"Novice",next:25,icon:"🌱"},{min:25,name:"Apprentice",next:50,icon:"📚"},{min:50,name:"Practitioner",next:70,icon:"🔭"},{min:70,name:"Disciplined",next:85,icon:"⭐"},{min:85,name:"Master",next:100,icon:"🏆"}];
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
   // Toast system for celebrations
@@ -2767,6 +2769,20 @@ function TrackerApp(props){
               <span style={{fontSize:10,fontWeight:600,color:t.color,fontFamily:fm}}>{t.label}</span>
               <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"•".repeat(dots)}{"·".repeat(5-dots)}</span>
             </div>})}</div>}()}
+      {/* Process indicators — compact badges showing key scores */}
+      {(function(){var os2=calcOwnerScore([c]);var conv2=c.conviction||0;
+        var mt=c.moatTypes||{};var activeMoats=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active}).length;
+        var hasKpis=c.kpis.length>0;var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
+        var items=[];
+        if(conv2>0)items.push({label:"Conviction",value:conv2+"/10",color:conv2>=7?K.grn:conv2>=4?K.amb:K.red});
+        if(hasKpis){var kh=gH(c.kpis);items.push({label:"KPIs",value:kh.l,color:kh.c})}
+        if(activeMoats>0)items.push({label:"Moat",value:activeMoats+" type"+(activeMoats>1?"s":""),color:"#9333EA"});
+        if(os2.total>0)items.push({label:"Process",value:os2.total+"/100",color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red});
+        if(items.length===0)return null;
+        return<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingBottom:6}}>
+          {items.map(function(it,ii){return<div key={ii} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:it.color+"08",border:"1px solid "+it.color+"20"}}>
+            <span style={{fontSize:9,color:it.color,fontFamily:fm,fontWeight:600}}>{it.label}</span>
+            <span style={{fontSize:10,color:it.color,fontWeight:700,fontFamily:fm}}>{it.value}</span></div>})}</div>})()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
         {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){setDetailTab(t.id)}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}</button>})}</div>
@@ -2871,9 +2887,9 @@ function TrackerApp(props){
           var ageDays=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):null;
           var ageColor=ageDays===null?K.dim:ageDays>180?K.red:ageDays>90?K.amb:K.grn;
           var ageLabel=ageDays===null?"Never edited":ageDays===0?"Today":ageDays===1?"Yesterday":ageDays+"d ago";
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+          return<div className="ta-thesis-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setModal({type:"thesis"})}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis</div>
+              <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis <IC name="edit" size={11} color={K.dim} style={{marginLeft:4,opacity:.5}}/></div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 {/* Section completion dots */}
                 <div style={{display:"flex",gap:3}} title={sectionsFilled+"/4 sections"}>
@@ -3129,7 +3145,7 @@ function TrackerApp(props){
     var nextMilestone=currentLevel.next;var pctToNext=nextMilestone>currentLevel.min?Math.round((os.total-currentLevel.min)/(nextMilestone-currentLevel.min)*100):100;
 
     return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
-      {/* Header with score ring */}
+      {/* Header with score ring + unified progress */}
       <div style={{padding:"28px 0 24px",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?16:24,flexDirection:isMobile?"column":"row"}}>
         <div style={{display:"flex",alignItems:"center",gap:20,flex:1}}>
           <div style={{position:"relative",width:80,height:80,flexShrink:0}}>
@@ -3140,9 +3156,17 @@ function TrackerApp(props){
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
             <div style={{fontSize:13,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:11,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
-            {/* Progress to next level */}
-            <div style={{marginTop:6,width:180,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div></div></div>
-        {/* Quick stats */}
+            {/* Unified progress — Owner's Score + XP Level on one line */}
+            <div style={{display:"flex",alignItems:"center",gap:12,marginTop:8}}>
+              <div style={{width:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
+              <div style={{display:"flex",alignItems:"center",gap:5}}>
+                <div style={{position:"relative",width:18,height:18}}>
+                  <svg width={18} height={18} viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke={K.bdr} strokeWidth="1.5"/><circle cx="9" cy="9" r="7" fill="none" stroke={K.acc} strokeWidth="1.5" strokeDasharray={Math.round(xpPct/100*44)+" 44"} strokeLinecap="round" transform="rotate(-90 9 9)"/></svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} XP</span>
+                {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)}</span>}
+              </div></div></div></div>
+        {/* Quick stats — consolidated */}
         <div style={{display:"flex",gap:isMobile?12:16}}>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak>0?String.fromCodePoint(0x1F525)+" ":""}{streak}</div>
@@ -4653,43 +4677,7 @@ function TrackerApp(props){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount} XP
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
-    {/* ── Streak at risk / daily nudge ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&!didActivityToday&&<div style={{background:dailyStreak.current>0?K.amb+"08":K.acc+"06",border:"1px solid "+(dailyStreak.current>0?K.amb:K.acc)+"25",borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-      <div style={{width:32,height:32,borderRadius:8,background:(dailyStreak.current>0?K.amb:K.acc)+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={dailyStreak.current>0?"alert":"trending"} size={14} color={dailyStreak.current>0?K.amb:K.acc}/></div>
-      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:dailyStreak.current>0?K.amb:K.acc}}>{dailyStreak.current>0?"Your "+dailyStreak.current+"-day streak expires tonight!":"Start a daily streak"}</div>
-        <div style={{fontSize:10,color:K.dim}}>{dailyStreak.current>0?"Do any action to keep it alive — write a thesis, add a KPI, rate conviction, anything.":"Any action counts — add a company, update a thesis, track a KPI. Build the habit."}</div></div></div>}
-    {/* ── Streak + XP bar ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"flex",gap:12,marginBottom:16,alignItems:"stretch"}}>
-      {/* Daily Streak - fire emoji, clickable to Owner's Hub */}
-      {!didActivityToday&&<div onClick={function(){setPage("hub")}} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110,cursor:"pointer"}}>
-        <div>
-          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
-          <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div>
-          <div style={{width:24,height:3,borderRadius:2,background:K.bdr,marginTop:3,overflow:"hidden"}}><div style={{width:"0%",height:"100%",background:K.amb,borderRadius:2}}/></div></div></div>}
-      {didActivityToday&&<div onClick={function(){setPage("hub")}} style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,minWidth:isMobile?70:90,cursor:"pointer"}}>
-        <div><div style={{fontSize:16,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{String.fromCodePoint(0x1F525)+" "}{dailyStreak.current}</div>
-          <div style={{fontSize:8,color:K.grn,fontFamily:fm}}>Day Streak</div></div></div>}
-      {/* Weekly Streak */}
-      <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{fontSize:24,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
-        <div>
-          <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
-          <div style={{fontSize:9,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed ✓":"Review due"}</div>
-          {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-            return next?<div style={{fontSize:8,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
-        {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"3px 8px"}}>
-          <span style={{fontSize:11}}>{"🛡️"}</span>
-          <span style={{fontSize:9,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
-      {/* XP + Level counter */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:140}}>
-        <div style={{position:"relative",width:36,height:36,flexShrink:0}}>
-          <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="15" fill="none" stroke={K.acc} strokeWidth="3" strokeDasharray={Math.round(xpPct/100*94)+" 94"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
-        <div>
-          <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
-          <div style={{fontSize:9,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2× XP":"Lvl. "+xpLevel.level}</div></div></div>
-    </div>}
-    {/* ── Daily Focus Card ── */}
+    {/* ── Today's Focus Card (hero element, always first) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var focus=null;
       var portfolio=filtered;
@@ -4720,6 +4708,90 @@ function TrackerApp(props){
           <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{focus.title}</div>
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
+      </div>})()}
+    {/* ── Compact Streak/XP bar (collapsible) ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&<div style={{marginBottom:16}}>
+      {/* Compact summary line — always visible */}
+      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+          <span style={{fontSize:12}}>{String.fromCodePoint(0x1F525)}</span>
+          <span style={{fontSize:11,fontWeight:600,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>{dailyStreak.current}d</span>
+          <span style={{width:1,height:12,background:K.bdr}}/>
+          <span style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim,fontFamily:fm}}>{streakData.current}w</span>
+          {!didActivityToday&&dailyStreak.current>0&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>streak expires tonight</span>}
+          {didActivityToday&&<span style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓ active"}</span>}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{position:"relative",width:22,height:22,flexShrink:0}}>
+            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={K.acc} strokeWidth="2" strokeDasharray={Math.round(xpPct/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} XP</span>
+          {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)+" 2×"}</span>}
+          <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
+        </div>
+      </div>
+      {/* Expanded detail — full streak/XP cards */}
+      {dashGameExpanded&&<div style={{display:"flex",gap:12,padding:"12px 14px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
+        {/* Daily Streak */}
+        <div onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:1}}>
+          <div>
+            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
+            <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div></div></div>
+        {/* Weekly Streak */}
+        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:2}}>
+          <div style={{fontSize:20,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
+          <div>
+            <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
+            <div style={{fontSize:8,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed "+String.fromCodePoint(0x2713):"Review due"}</div>
+            {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
+              return next?<div style={{fontSize:7,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
+          {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"2px 6px"}}>
+            <span style={{fontSize:10}}>{"🛡️"}</span>
+            <span style={{fontSize:8,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
+        {/* XP + Level */}
+        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1}}>
+          <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
+            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={K.acc} strokeWidth="2.5" strokeDasharray={Math.round(xpPct/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
+          <div>
+            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
+            <div style={{fontSize:8,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2× XP":"Lvl. "+xpLevel.level}</div></div></div>
+      </div>}
+    </div>}
+    {/* ── Getting Started Quest (persistent onboarding) ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
+      var portfolio=filtered;
+      var hasThesis=portfolio.some(function(c){return c.thesisNote&&c.thesisNote.trim().length>20});
+      var hasKpi=portfolio.some(function(c){return c.kpis.length>=2});
+      var hasConviction=portfolio.some(function(c){return c.conviction>0});
+      var hasReview=weeklyReviews.length>0;
+      var steps=[
+        {done:hasThesis,label:"Write a thesis",icon:"lightbulb",color:K.grn,onClick:function(){var t=portfolio.find(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"thesis"})}},
+        {done:hasKpi,label:"Add 2+ KPIs",icon:"target",color:K.blue,onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2})||portfolio[0];setSelId(t.id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}},
+        {done:hasConviction,label:"Rate conviction",icon:"trending",color:K.amb,onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}},
+        {done:hasReview,label:"Weekly review",icon:"shield",color:"#9333EA",onClick:function(){setPage("review")}}
+      ];
+      var completed=steps.filter(function(s){return s.done}).length;
+      if(completed>=4){
+        // Auto-dismiss when all done (celebrate)
+        if(!milestones.onboard_complete){checkMilestone("onboard_complete",String.fromCodePoint(0x1F389)+" Owner's Loop complete! You've built the foundation of a disciplined investor.");
+          showCelebration(String.fromCodePoint(0x1F389)+" Owner's Loop Complete","You've written a thesis, tracked KPIs, rated conviction, and completed a review. The foundation is set.",null,K.grn);
+          var nm2=Object.assign({},milestones);nm2.onboard_dismissed=true;setMilestones(nm2);try{localStorage.setItem("ta-milestones",JSON.stringify(nm2))}catch(e){}}
+        return null}
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:13}}>{"🎯"}</span>
+            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Getting Started</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{completed}/4</span></div>
+          <button onClick={function(){var nm3=Object.assign({},milestones);nm3.onboard_dismissed=true;setMilestones(nm3);try{localStorage.setItem("ta-milestones",JSON.stringify(nm3))}catch(e){}}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:2}}>{"✕"}</button></div>
+        {/* Progress bar */}
+        <div style={{display:"flex",gap:3,marginBottom:12}}>
+          {steps.map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+        {/* Step buttons */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:10,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
+            {s.done?<IC name="check" size={9} color={K.grn}/>:<IC name={s.icon} size={9} color={s.color}/>}{s.label}</button>})}</div>
       </div>})()}
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
       var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
