@@ -432,7 +432,7 @@ async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-tar
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
 var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
-var FOREST={bg:"#f0f0f0",side:"#58cc02",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4d4",txt:"#4b4b4b",mid:"#6f6f6f",dim:"#afafaf",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
+var FOREST={bg:"#f0f0f0",side:"#235a00",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4d4",txt:"#4b4b4b",mid:"#6f6f6f",dim:"#afafaf",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
 var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
@@ -4166,41 +4166,38 @@ function TrackerApp(props){
         </div>
       </div>}
 
-      {step==="summary"&&<div>
-        {/* Progress bar showing completion */}
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-          <div style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>Final Step</div>
-          <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:"100%",borderRadius:2,background:K.grn,transition:"width .3s"}}/></div>
-        </div>
-        <div style={{background:K.card,border:"2px solid "+K.grn+"40",borderRadius:14,padding:"32px",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+")"}}/>
-          {/* Big CTA at top */}
-          <div style={{textAlign:"center",marginBottom:28}}>
-            <div style={{fontSize:36,marginBottom:8}}>{String.fromCodePoint(0x2705)}</div>
-            <div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>Ready to log convictions</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:360,margin:"0 auto"}}>Review your changes below, then confirm to save everything and earn your weekly reward.</div>
+      {step==="summary"&&<div style={{position:"fixed",inset:0,zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",animation:"fadeInFast .2s ease"}}>
+        <div className="ta-celebrate" style={{background:K.card,borderRadius:20,padding:isMobile?"24px 20px":"36px 40px",width:isMobile?"94vw":460,maxWidth:"94vw",maxHeight:"90vh",overflow:"auto",position:"relative",border:"2px solid "+K.grn+"40",boxShadow:"0 0 60px "+K.grn+"15, 0 20px 60px rgba(0,0,0,.3)"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+","+K.grn+")",backgroundSize:"200% 100%"}}/>
+          {/* Header */}
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:48,marginBottom:8,animation:"streakFlame 1s ease infinite"}}>{String.fromCodePoint(0x1F3C6)}</div>
+            <div style={{fontSize:22,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Review Complete</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Confirm to save convictions and open your weekly chest.</div>
           </div>
-          {/* Compact stats */}
-          <div style={{display:"flex",justifyContent:"center",gap:20,marginBottom:20}}>
-            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div><div style={{fontSize:9,color:K.dim}}>Reviewed</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction}).length}</div><div style={{fontSize:9,color:K.dim}}>Changed</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:K.grn,fontFamily:fm}}>{Object.values(actions).filter(function(a){return a!=="hold"}).length}</div><div style={{fontSize:9,color:K.dim}}>Actions</div></div>
+          {/* Stats row */}
+          <div style={{display:"flex",justifyContent:"center",gap:24,marginBottom:20}}>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{portfolio.length}</div><div style={{fontSize:9,color:K.dim,marginTop:2}}>Reviewed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm,lineHeight:1}}>{Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction}).length}</div><div style={{fontSize:9,color:K.dim,marginTop:2}}>Changed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{Object.values(actions).filter(function(a){return a!=="hold"}).length}</div><div style={{fontSize:9,color:K.dim,marginTop:2}}>Actions</div></div>
           </div>
-          {/* Compact holdings list */}
-          <div style={{maxHeight:200,overflow:"auto",marginBottom:24,borderRadius:8,border:"1px solid "+K.bdr}}>
-          {portfolio.map(function(c2,ci){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var changed=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
-            return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:ci<portfolio.length-1?"1px solid "+K.bdr+"50":"none",background:changed?K.acc+"06":"transparent"}}>
-              <CoLogo domain={c2.domain} ticker={c2.ticker} size={22}/>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:55}}>{c2.ticker}</div>
-              <div style={{fontSize:12,color:changed?K.acc:K.dim,fontFamily:fm,flex:1}}>{changed?c2.conviction+" → "+newConv:newConv+"/10"}</div>
-              {act!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,background:(act==="add"?K.grn:act==="sell"?K.red:K.amb)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{act}</span>}
-            </div>})}</div>
-          {/* Primary CTA + edit link */}
-          <div style={{textAlign:"center"}}>
-            <button onClick={finishReview} style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 40px",borderRadius:10,width:"100%",maxWidth:340})}>
-              {String.fromCodePoint(0x2705)+" Complete Review & Open Chest"}</button>
-            <div style={{marginTop:10}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,textDecoration:"underline"}}>← Go back and edit</button></div>
-          </div>
+          {/* Compact holdings — horizontal wrap pills */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:24,maxHeight:120,overflow:"auto"}}>
+            {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var changed=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
+              return<div key={c2.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:changed?K.acc+"10":K.bg,border:"1px solid "+(changed?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm}}>
+                <span style={{fontWeight:600,color:K.txt}}>{c2.ticker}</span>
+                {changed?<span style={{color:K.acc,fontWeight:600}}>{c2.conviction+"→"+newConv}</span>:<span style={{color:K.dim}}>{newConv}</span>}
+                {act!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,textTransform:"uppercase"}}>{act}</span>}
+              </div>})}</div>
+          {/* Chest preview */}
+          <div style={{textAlign:"center",marginBottom:20}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"8px 16px"}}>
+              <span style={{fontSize:18,animation:"glowPulse 2s ease-in-out infinite"}}>{String.fromCodePoint(0x1F381)}</span>
+              <span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 XP & Owner's Chest awaits</span></div></div>
+          {/* CTA */}
+          <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:16,padding:"16px 0",borderRadius:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
+            {String.fromCodePoint(0x2705)+" Complete Review & Open Chest"}</button>
+          <div style={{textAlign:"center",marginTop:12}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>← Go back and edit</button></div>
         </div>
       </div>}
 
