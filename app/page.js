@@ -546,7 +546,7 @@ function TrackerApp(props){
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
-  var _dt=useState("overview"),detailTab=_dt[0],setDetailTab=_dt[1];
+  var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
@@ -1957,7 +1957,7 @@ function TrackerApp(props){
           <strong style={{color:K.amb}}>3. Risks</strong> — What could go wrong<br/>
           <strong style={{color:K.red}}>4. Sell Criteria</strong> — When you'd walk away</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
-        <button onClick={function(){finishOnboarding();if(firstCo){setSelId(firstCo.id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}}} style={Object.assign({},S.btnP,{padding:"12px 28px",fontSize:14})}>Write Thesis {"→"}</button></div>
+        <button onClick={function(){finishOnboarding();if(firstCo){setSelId(firstCo.id);setDetailTab("dossier");setPage("dashboard");setModal({type:"thesis"})}}} style={Object.assign({},S.btnP,{padding:"12px 28px",fontSize:14})}>Write Thesis {"→"}</button></div>
       <button onClick={function(){finishOnboarding()}} style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer"}}>Skip — I'll do this later</button>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>}
@@ -1977,7 +1977,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
             <div style={{fontSize:10,color:K.dim}}>{hint.desc}</div></div></div>})}</div>
       <div style={{textAlign:"center"}}>
-        <button onClick={function(){finishOnboarding();if(selId){setDetailTab("overview")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
+        <button onClick={function(){finishOnboarding();if(selId){setDetailTab("dossier")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     return null}
@@ -2019,7 +2019,7 @@ function TrackerApp(props){
       </select>
       {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 10px",fontSize:11,fontFamily:fm,outline:"none"}}/>}</div>
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("overview");setPage("dashboard")})}>
+      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:sideDim2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}><div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/>
@@ -3039,7 +3039,7 @@ function TrackerApp(props){
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
-    var TABS=[{id:"overview",label:"Overview",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"analysis",label:"Analysis",icon:"analysis"},{id:"journal",label:"Journal",icon:"journal"}];
+    var TABS=[{id:"dossier",label:"Dossier",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"research",label:"Research",icon:"book"}];
     return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
@@ -3060,7 +3060,7 @@ function TrackerApp(props){
         if(active.length===0)return null;
         return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8,paddingBottom:8}}>
           {active.map(function(t){var d=mt[t.id];var dots=d.strength||3;
-            return<div key={t.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:t.color+"12",border:"1px solid "+t.color+"30",cursor:"pointer"}} onClick={function(){setDetailTab("analysis");setSubPage("moat")}}>
+            return<div key={t.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:t.color+"12",border:"1px solid "+t.color+"30",cursor:"pointer"}} onClick={function(){setDetailTab("research");setSubPage("moat")}}>
               <IC name={t.icon} size={10} color={t.color}/>
               <span style={{fontSize:10,fontWeight:600,color:t.color,fontFamily:fm}}>{t.label}</span>
               <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"•".repeat(dots)}{"·".repeat(5-dots)}</span>
@@ -3093,268 +3093,174 @@ function TrackerApp(props){
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
         {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
       {/* ═══ OVERVIEW TAB ═══ */}
-      {detailTab==="overview"&&<div className="ta-fade">
+      {/* ═══ DOSSIER TAB — Munger's pinned sheet ═══ */}
+      {detailTab==="dossier"&&<div className="ta-fade">
         {/* Pre-Earnings Briefing */}
         {dashSet.showPreEarnings&&c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:13,fontWeight:600,color:K.amb}}>Earnings Prep Briefing</span><span style={{fontSize:10,color:K.amb,fontFamily:fm,marginLeft:"auto",background:K.amb+"15",padding:"2px 10px",borderRadius:4}}>{dU(c.earningsDate)}d until {fD(c.earningsDate)} {c.earningsTime}</span></div>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:12}}>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>CONVICTION</div><div style={{fontSize:18,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv||"—"}/10</div></div>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>KPIS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.kpis.length}</div></div>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>QUARTERS</div><div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{(c.earningsHistory||[]).length}</div></div>
-            <div style={{background:K.card,borderRadius:8,padding:"10px 14px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MOAT TREND</div><div style={{fontSize:14,fontWeight:700,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend||"—"}</div></div></div>
-          {/* Metrics to Watch with historical trend */}
-          {c.kpis.length>0&&<div style={{marginBottom:12}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>METRICS TO WATCH</div>{c.kpis.map(function(k){
-            // Build historical trend from earnings history
-            var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var match=e.results.find(function(r){return r.kpi_name===k.name});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
-            return<div key={k.id} style={{padding:"8px 12px",background:K.card,borderRadius:8,marginBottom:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={S.dot(k.lastResult?k.lastResult.status:null)}/><span style={{fontSize:12,color:K.txt,flex:1,fontWeight:500}}>{k.name}</span>
-              <span style={{fontSize:11,color:K.amb,fontFamily:fm}}>Target: {k.target}</span>
-              {k.lastResult&&<span style={{fontSize:11,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>Last: {k.lastResult.actual}{k.unit||""}</span>}</div>
-            {hist.length>=2&&<div style={{display:"flex",gap:6,marginTop:4,paddingLeft:22}}>{hist.slice(0,4).reverse().map(function(h,i){return<span key={i} style={{fontSize:9,color:h.s==="met"?K.grn:K.red,fontFamily:fm,background:h.s==="met"?K.grn+"10":K.red+"10",padding:"1px 6px",borderRadius:3}}>{h.q}: {h.v}</span>})}</div>}
-            </div>})}</div>}
-          {/* Sell criteria - what would make you act */}
-          {(function(){var sec2=parseThesis(c.thesisNote);
-            return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
-              {sec2.core&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.card,borderRadius:8}}><strong style={{color:K.txt,fontSize:10,letterSpacing:1}}>THESIS</strong><div style={{marginTop:4}}>{sec2.core.substring(0,180)}{sec2.core.length>180?"...":""}</div></div>}
-              {sec2.sell&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 14px",background:K.red+"06",border:"1px solid "+K.red+"15",borderRadius:8}}><strong style={{color:K.red,fontSize:10,letterSpacing:1}}>SELL CRITERIA</strong><div style={{marginTop:4}}>{sec2.sell.substring(0,180)}{sec2.sell.length>180?"...":""}</div></div>}
-            </div>})()}
-          {/* Questions to listen for */}
-          {c.kpis.length>0&&<div style={{padding:"10px 14px",background:K.card,borderRadius:8,marginBottom:8}}><div style={{fontSize:10,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:6}}>QUESTIONS TO LISTEN FOR ON THE CALL</div>
-            {c.kpis.slice(0,4).map(function(k,i){var trend=k.lastResult?k.lastResult.status:"unknown";
-              return<div key={k.id} style={{fontSize:11,color:K.mid,lineHeight:1.6,paddingLeft:8,borderLeft:"2px solid "+K.amb+"30",marginBottom:4}}>
-                {trend==="met"?"Is "+k.name+" guidance maintained or raised? Any headwinds mentioned?":trend==="missed"?"What is management's plan to recover "+k.name+"? Was the miss structural or one-time?":"What is the outlook for "+k.name+"? How does management define success?"}</div>})}
-          </div>}
-          {c.moatTrend==="Eroding"&&<div style={{marginTop:4,fontSize:11,color:K.red,display:"flex",alignItems:"center",gap:6}}><IC name="target" size={12} color={K.red}/>Moat trend is Eroding — watch for further deterioration signals.</div>}
-          {/* Export prep for Quartr / NotebookLM */}
-          <div style={{display:"flex",gap:8,marginTop:8}}>
-            <button onClick={function(){exportResearch(c.id)}} style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",color:K.amb,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
-              <IC name="doc" size={10} color={K.amb}/>Export for AI Analysis</button>
-            {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.acc+"10",border:"1px solid "+K.acc+"25",color:K.acc,padding:"5px 12px",borderRadius:6,fontSize:10,cursor:"pointer",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:5}}>
-              <IC name="trending" size={10} color={K.acc}/>Investor Relations{"↗"}</a>}
-          </div>
-        </div>}
-        {/* Price Chart */}
-        {/* Toggle for charts & position details */}
-        <button onClick={function(){setShowMore(!showMore)}} style={{display:"flex",alignItems:"center",gap:6,width:"100%",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 16px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm,marginBottom:showMore?12:20,justifyContent:"center"}}>
-          <IC name={showMore?"overview":"bar"} size={12} color={K.dim}/>{showMore?"Hide charts & position":"Show charts & position"}{pos.shares>0?" · "+pos.shares+" shares"+(pos.currentPrice>0?" · $"+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0}):"")+""+(conv>0?" · Conviction "+conv+"/10":""):conv>0?" · Conviction "+conv+"/10":""}</button>
-        {showMore&&<div>
-        {dashSet.showPriceChart&&<PriceChart company={c}/>}
-        {/* Position + Conviction */}
-        <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:20}}>
-          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 16px":"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
-            <div style={S.sec}>Position</div>
-            {pos.shares>0?<div style={{display:"flex",gap:16}}>
-              <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>SHARES</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>{pos.shares}</div></div>
-              <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>AVG COST</div><div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fm}}>${pos.avgCost}</div></div>
-              {pos.currentPrice>0&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>RETURN</div><div style={{fontSize:16,fontWeight:600,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</div></div>}
-              {c.purchaseDate&&<div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>OWNED SINCE</div><div style={{fontSize:13,fontWeight:500,color:K.mid,fontFamily:fm}}>{fD(c.purchaseDate)}</div></div>}
-            </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}</div>
-          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
-            <div style={S.sec}>Conviction</div>
-            {conv>0?<div>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{fontSize:28,fontWeight:700,color:conv>=8?K.grn:conv>=5?K.amb:K.red,fontFamily:fm}}>{conv}</div>
-                <div style={{flex:1}}>
-                  <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:conv*10+"%",borderRadius:3,background:conv>=8?K.grn:conv>=5?K.amb:K.red}}/></div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                    {c.convictionHistory&&c.convictionHistory.length>=2&&function(){var prev=c.convictionHistory[c.convictionHistory.length-2].rating;var d5=conv-prev;
-                      return<span style={{fontSize:10,color:d5>0?K.grn:d5<0?K.red:K.dim,fontFamily:fm,fontWeight:600}}>{d5>0?"▲ +"+d5:d5<0?"▼ "+d5:"— same"}</span>}()}
-                    {c.convictionHistory&&c.convictionHistory.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.convictionHistory[c.convictionHistory.length-1].date)}</span>}
-                  </div></div></div>
-              {/* Mini sparkline */}
-              {c.convictionHistory&&c.convictionHistory.length>2&&<div style={{marginTop:8}}>
-                <svg width="100%" height={24} viewBox={"0 0 200 24"} preserveAspectRatio="none">
-                  {(function(){var ch2=c.convictionHistory.slice(-10);
-                    var pts=ch2.map(function(p,i){return{x:ch2.length>1?i/(ch2.length-1)*200:100,y:22-(p.rating/10)*20}});
-                    var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
-                    return React.createElement(React.Fragment,null,
-                      React.createElement("path",{d:line,fill:"none",stroke:K.bdr,strokeWidth:1}),
-                      pts.map(function(p,i){var cl=ch2[i].rating>=8?K.grn:ch2[i].rating>=5?K.amb:K.red;return React.createElement("circle",{key:i,cx:p.x.toFixed(1),cy:p.y.toFixed(1),r:2.5,fill:cl})}))})()}
-                </svg></div>}
-            </div>:<div style={{fontSize:12,color:K.dim}}>Click to rate conviction</div>}</div></div>
-        {/* Investment style inline selector */}
-        {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:12,padding:"14px 20px",marginBottom:16}}>
-          <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:8,fontFamily:fm}}>What type of investment is {c.ticker}?</div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+st.color+"40",background:st.color+"08",color:st.color,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s"}}>
-              <IC name={st.icon} size={9} color={st.color}/>{st.label}</button>})}</div>
-          <div style={{fontSize:10,color:K.dim,marginTop:6}}>This adjusts thesis prompts, KPI recommendations, and analytics grouping for {c.ticker}.</div></div>}
-        {c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"8px 14px",background:STYLE_MAP[c.investStyle].color+"06",border:"1px solid "+STYLE_MAP[c.investStyle].color+"20",borderRadius:8}}>
-          <IC name={STYLE_MAP[c.investStyle].icon} size={12} color={STYLE_MAP[c.investStyle].color}/>
-          <span style={{fontSize:11,fontWeight:600,color:STYLE_MAP[c.investStyle].color,fontFamily:fm}}>{STYLE_MAP[c.investStyle].label}</span>
-          <span style={{fontSize:10,color:K.dim,flex:1}}>{STYLE_MAP[c.investStyle].desc.split(".")[0]+"."}</span>
-          <button onClick={function(){setModal({type:"edit"})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm}}>Change</button></div>}
-        </div>}
-        {/* Thesis */}
-        {/* Latest journal entry */}
-        {(c.decisions||[]).length>0&&(function(){var latest=(c.decisions||[]).find(function(d2){return d2.cardType});
-          if(!latest)latest=(c.decisions||[])[0];
-          if(!latest)return null;
-          return<div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Latest Journal Entry</div>
-              <button onClick={function(){setDetailTab("journal")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>View all {"\u2192"}</button></div>
-            <JournalCard entry={latest}/></div>})()}
-        {/* Quick access: Financial Statements */}
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"12px 18px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
-          <div style={{width:38,height:38,borderRadius:8,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="chart" size={18} color={K.blue}/></div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Financial Statements</div>
-            <div style={{fontSize:11,color:K.dim}}>Income, balance sheet & cash flow — interactive charts</div></div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            {!isPro&&<span style={{fontSize:9,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 6px",borderRadius:3}}>PRO</span>}
-            <span style={{fontSize:16,color:K.acc}}>{"→"}</span></div>
-        </div>
-        {c.thesisNote&&function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
-          var sectionsFilled=[sec.core,sec.moat,sec.risks,sec.sell].filter(function(s){return s&&s.trim().length>15}).length;
-          var versionCount=(c.thesisVersions||[]).length;
-          var ageDays=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):null;
-          var ageColor=ageDays===null?K.dim:ageDays>180?K.red:ageDays>90?K.amb:K.grn;
-          var ageLabel=ageDays===null?"Never edited":ageDays===0?"Today":ageDays===1?"Yesterday":ageDays+"d ago";
-          return<div className="ta-thesis-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setModal({type:"thesis"})}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={S.sec}><IC name="lightbulb" size={14} color={K.dim}/>Investment Thesis <IC name="edit" size={11} color={K.dim} style={{marginLeft:4,opacity:.5}}/></div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {/* Section completion dots */}
-                <div style={{display:"flex",gap:3}} title={sectionsFilled+"/4 sections"}>
-                  {[{k:"core",c:K.acc},{k:"moat",c:K.grn},{k:"risks",c:K.amb},{k:"sell",c:K.red}].map(function(d){var done=sec[d.k]&&sec[d.k].trim().length>15;
-                    return<div key={d.k} style={{width:8,height:8,borderRadius:"50%",background:done?d.c:K.bdr}}/>})}</div>
-                {/* Freshness */}
-                <span style={{fontSize:9,color:ageColor,fontFamily:fm,fontWeight:500}}>{ageLabel}</span>
-                {/* Version count */}
-                {versionCount>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>v{versionCount+1}</span>}
-              </div></div>
-            <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.core}</div>
-            {hasSections&&<div style={{marginTop:14,display:"grid",gap:10}}>
-              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.grn}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.grn,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="castle" size={10} color={K.grn}/>Moat</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:13,fontWeight:600,color:K.amb}}>Earnings in {dU(c.earningsDate)}d</span><span style={{fontSize:10,color:K.amb,fontFamily:fm,marginLeft:"auto"}}>{fD(c.earningsDate)} {c.earningsTime}</span></div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {c.kpis.map(function(k){return<div key={k.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:10,fontFamily:fm}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim}}/>{k.name} <span style={{color:K.dim}}>Target: {k.target}</span></div>})}
+          </div></div>}
+
+        {/* ── 1. THE STORY ── */}
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE STORY</div>
+            <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit thesis</button></div>
+          {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+              <div style={{fontSize:14,color:K.txt,lineHeight:1.8,marginBottom:sec.moat||sec.risks||sec.sell?16:0}}>{sec.core}</div>
+              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.grn,marginBottom:8}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:3}}>MOAT</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.moat}</div></div>}
-              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.amb}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.amb,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="alert" size={10} color={K.amb}/>Risks</div>
+              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.amb,marginBottom:8}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:3}}>RISKS</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.risks}</div></div>}
               {sec.sell&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.red}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.red,marginBottom:4,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5,display:"flex",alignItems:"center",gap:5}}><IC name="target" size={10} color={K.red}/>Sell Criteria</div>
+                <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:3}}>SELL CRITERIA</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
-            </div>}
-          </div>}()}
-        {!c.thesisNote&&<div style={{background:"linear-gradient(135deg, "+K.acc+"08 0%, "+K.grn+"06 100%)",border:"1px dashed "+K.acc+"40",borderRadius:12,padding:"28px 24px",marginBottom:20,cursor:"pointer",textAlign:"center"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={{marginBottom:8}}><IC name="lightbulb" size={22} color={K.acc}/></div>
-            <div style={{fontSize:15,fontWeight:600,color:K.txt,marginBottom:4}}>Write your investment thesis</div>
-            <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:360,margin:"0 auto"}}>Every position needs a written reason. Define why you own it, the moat, risks, and when you'd sell. This is your decision anchor.</div>
-            <div style={{marginTop:12,display:"inline-flex",alignItems:"center",gap:6,padding:"6px 16px",background:K.acc+"15",borderRadius:6,fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>Write thesis {"→"}</div></div>}
-        {/* Thesis staleness check */}
-        {function(){var reviews=c.thesisReviews||[];var lastReview=reviews.length>0?new Date(reviews[0].date):null;
-          var lastEdit=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
-          var lastTouch=lastReview&&lastEdit?(lastReview>lastEdit?lastReview:lastEdit):lastReview||lastEdit;
-          var daysSince=lastTouch?Math.floor((Date.now()-lastTouch)/864e5):null;
-          var hasThesis=!!c.thesisNote;
-          if(hasThesis&&(daysSince===null||daysSince>90)){
-            var urgency=daysSince===null?"unknown":daysSince>180?"critical":"stale";
-            var freshPct=daysSince===null?0:Math.max(0,Math.round((1-daysSince/365)*100));
-            var bgColor=urgency==="critical"?K.red:K.amb;
-            return<div style={{background:bgColor+"08",border:"1px solid "+bgColor+"25",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={{position:"relative",width:36,height:36,flexShrink:0}}>
-              <svg width={36} height={36} viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="18" cy="18" r="14" fill="none" stroke={bgColor} strokeWidth="3" strokeDasharray={Math.round(freshPct/100*88)+" 88"} strokeLinecap="round" transform="rotate(-90 18 18)"/></svg>
-              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="clock" size={12} color={bgColor}/></div></div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,color:bgColor,fontWeight:600}}>{daysSince===null?"Thesis never reviewed":urgency==="critical"?"Thesis urgently needs review — "+daysSince+"d stale":"Thesis review overdue — "+daysSince+"d since last update"}</div>
-              <div style={{fontSize:11,color:K.dim}}>{urgency==="critical"?"Your score is losing 2 points from thesis decay. Is your thesis still intact?":"Your score is losing 1 point from staleness. A quick review keeps your thinking sharp."}</div></div>
-            <span style={{fontSize:10,color:bgColor,fontFamily:fm,fontWeight:600,flexShrink:0}}>Review {"→"}</span></div>}return null}()}
-        {/* KPIs */}
-        <div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}>Key Metrics</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"kpi"})}}>+ Add</button></div>
-          {c.kpis.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center",fontSize:12,color:K.dim}}>No metrics yet. Track what matters.</div>}
-          {c.kpis.map(function(k){return<div key={k.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setExpKpi(expKpi===k.id?null:k.id)}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}><div style={S.dot(k.lastResult?k.lastResult.status:null)}/>
-              <div style={{flex:1}}><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{k.name}</div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}{k.period?" • "+k.period:""}</div></div>
-              {k.lastResult&&<div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{k.unit||""}</div><div style={{fontSize:10,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.status.toUpperCase()}</div></div>}
-              {!k.lastResult&&<span style={{fontSize:11,color:K.dim}}>Pending</span>}</div>
-            {expKpi===k.id&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",gap:8}}>
-              <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"result",data:k.id})}}>Enter Result</button>
-              <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:10})} onClick={function(e){e.stopPropagation();setModal({type:"kpi",data:k.id})}}>Edit</button>
-              {k.lastResult&&k.lastResult.excerpt&&<div style={{flex:1,fontSize:11,color:K.dim,fontStyle:"italic",paddingLeft:8}}>"{k.lastResult.excerpt}"</div>}</div>}</div>})}</div>
-      </div>}
-        {/* Earnings */}
-        <div style={{display:"flex",gap:8,marginBottom:20}}>
-          <button style={Object.assign({},S.btnP,{padding:"7px 16px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Earnings</button>
-          <button style={Object.assign({},S.btnChk,{padding:"7px 16px",fontSize:11,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":isPro?"Check Earnings":"⚡ Check Earnings"}</button></div>
-        <EarningsReportCard company={c}/>
-        <EarningsTimeline company={c}/>
-      {/* ═══ ANALYSIS TAB ═══ */}
-      {detailTab==="analysis"&&<div className="ta-fade">
-        {/* Moat Tracker link */}
+            </div>})()
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Write your thesis</div>
+            <div style={{fontSize:11,color:K.dim}}>Why do you own {c.ticker}? What’s the moat? When would you sell?</div></div>}
+        </div>
 
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("moat")}}>
-          <div><div style={S.sec}><IC name="moat" size={14} color={K.dim}/>Moat Durability & Classification</div>
-            <div style={{fontSize:12,color:K.mid}}>Competitive advantage scoring, moat type analysis — brand, switching costs, network effects & more</div>
-            {(function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
-              if(active.length===0)return<div style={{fontSize:10,color:K.amb,marginTop:4,fontFamily:fm}}>No moat sources classified yet</div>;
-              var mstarBadge=c.morningstarMoat?<span style={{fontSize:9,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim,background:(c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.dim)+"12",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}>M★ {c.morningstarMoat}</span>:null;
-              var trendBadge=c.moatTrend?<span style={{fontSize:9,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.mid,fontFamily:fm}}>{c.moatTrend==="Strengthening"?"▲":c.moatTrend==="Eroding"?"▼":"─"} {c.moatTrend}</span>:null;
-              return<div style={{marginTop:6}}><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{active.map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,color:t.color,background:t.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={t.icon} size={8} color={t.color}/>{t.label}</span>})}{mstarBadge}{trendBadge}</div></div>})()}</div>
-          <span style={{fontSize:18,color:K.acc}}>{"→"}</span></div>
-        {/* Financials link */}
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={function(){setSubPage("financials")}}>
-          <div><div style={S.sec}><IC name="chart" size={14} color={K.dim}/>Financial Statements</div><div style={{fontSize:12,color:K.mid}}>Income statement, balance sheet & cash flow — interactive charts and full data tables</div></div>
-          <span style={{fontSize:18,color:K.acc}}>{"→"}</span></div>
-        {/* Analyst & Insider */}
+        {/* Investment style */}
+        {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+          <div style={{fontSize:10,fontWeight:600,color:K.acc,marginBottom:6,fontFamily:fm}}>What type of investment is {c.ticker}?</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:5,border:"1px solid "+st.color+"30",background:st.color+"08",color:st.color,fontSize:9,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+              <IC name={st.icon} size={8} color={st.color}/>{st.label}</button>})}</div></div>}
+
+        {/* ── 2. THE EVIDENCE ── */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
+          {/* KPI Scorecard */}
+          {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <span style={{fontSize:12,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
+              <span style={S.badge(h.c)}>{h.l}</span></div>
+            {c.kpis.map(function(k){
+              var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var match=e.results.find(function(r){return r.kpi_name===k.name});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
+              return<div key={k.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+                <div style={{width:7,height:7,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim,flexShrink:0}}/>
+                <span style={{fontSize:11,color:K.txt,flex:1}}>{k.name}</span>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{k.target}</span>
+                {k.lastResult&&<span style={{fontSize:10,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:""}</span>}
+                {hist.length>=2&&<div style={{display:"flex",gap:2}}>{hist.slice(0,4).reverse().map(function(hh,hi){return<div key={hi} style={{width:4,height:12,borderRadius:1,background:hh.s==="met"?K.grn:K.red}}/>})}</div>}
+              </div>})}
+            <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,marginTop:8,padding:0}}>+ Add KPI</button>
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center",marginBottom:12}}>
+            <div style={{fontSize:12,color:K.dim,marginBottom:6}}>No KPIs tracked yet</div>
+            <button onClick={function(){setModal({type:"kpi"})}} style={Object.assign({},S.btn,{fontSize:10,padding:"5px 12px"})}>+ Add KPIs</button></div>}
+          {/* Earnings check */}
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:11,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
+            <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
+          {/* Latest earnings card from journal */}
+          {(function(){var latestEarnings=(c.decisions||[]).find(function(d2){return d2.cardType==="earnings_review"});
+            if(latestEarnings)return<JournalCard entry={latestEarnings}/>;return null})()}
+        </div>
+
+        {/* ── 3. THE LEDGER ── */}
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE LEDGER</div>
+            <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
+          {/* Conviction + Position row */}
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>CONVICTION</span>
+                <span style={{fontSize:24,fontWeight:800,color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,fontFamily:fm}}>{conv||"—"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></span></div>
+              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:8}}>
+                {c.convictionHistory.slice(-12).map(function(ch,i){return<div key={i} style={{flex:1,height:Math.max(4,ch.rating*4),borderRadius:2,background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.7}}/>})}</div>}
+            </div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>POSITION</div>
+              {pos.shares>0?<div>
+                <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.shares} shares @ ${pos.avgCost}</div>
+                {pos.currentPrice>0&&<div style={{fontSize:12,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm,marginTop:2}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}% (${((pos.currentPrice-pos.avgCost)*pos.shares).toFixed(0)})</div>}
+              </div>:<div style={{fontSize:12,color:K.dim}}>Click to add position</div>}
+            </div></div>
+          {/* Recent decisions */}
+          {(function(){var recent=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)}).slice(0,2);
+            if(recent.length===0)return null;
+            return<div>{recent.map(function(d2){return<JournalCard key={d2.id} entry={d2}/>})}</div>})()}
+        </div>
+
+        {/* ── 4. QUICK ACCESS ── */}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:20}}>
+          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
+            <IC name="chart" size={16} color={K.blue}/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Financials</div>
+              <div style={{fontSize:9,color:K.dim}}>Interactive charts & data</div></div>
+            {!isPro&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 5px",borderRadius:3}}>PRO</span>}
+            <span style={{color:K.acc}}>{"→"}</span></div>
+          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){setSubPage("moat")}}>
+            <IC name="castle" size={16} color="#9333EA"/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Moat Analysis</div>
+              <div style={{fontSize:9,color:K.dim}}>{(function(){var mt2=c.moatTypes||{};var active2=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return active2.length>0?active2.length+" moat types classified":"Not classified yet"})()}</div></div>
+            <span style={{color:K.acc}}>{"→"}</span></div>
+        </div>
+        {/* Research preview */}
+        {(c.decisions||[]).length+(c.docs||[]).length>0&&<div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>RESEARCH TRAIL</div>
+            <button onClick={function(){setDetailTab("research")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>View all {"→"}</button></div>
+          {(c.decisions||[]).concat((c.docs||[]).map(function(d2){return Object.assign({},d2,{cardType:d2.isClip?"clip":d2.isMemo?"memo":d2.isIR?"ir":"doc",date:d2.updatedAt})})).sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,3).map(function(d2,di){
+            return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:6,fontSize:11,color:K.mid}}>
+              <span style={{fontWeight:600,color:K.txt}}>{d2.title||d2.ticker||""}</span> {d2.content?d2.content.substring(0,80)+"...":d2.reasoning?d2.reasoning.substring(0,80)+"...":""}</div>})}</div>}
+
+        {/* Charts & analyst data (collapsible) */}
+        {dashSet.showPriceChart&&<PriceChart company={c}/>}
         {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
+      </div>}
+
+      {/* ═══ RESEARCH TAB — chronological timeline ═══ */}
+      {detailTab==="research"&&<div className="ta-fade">
+        {/* Create buttons */}
+        <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+          <button style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
+          <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip Research</button>
+          <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"irentry"})}}>+ IR Link</button>
+          <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button></div>
+        {/* Inline decision form */}
+        <DecisionJournal company={c}/>
+        {/* Documents — memos, clips, notes */}
+        <ThesisVault company={c}/>
+        {/* Research links */}
+        <ResearchLinks company={c}/>
+        {/* Stats */}
+        {function(){var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;var nConv=(c.convictionHistory||[]).length;
+          var hasData=nDec>0||nDoc>0||nConv>1;
+          return hasData?<div style={{display:"flex",gap:12,marginBottom:16}}>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{nDec} entries</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{nDoc} docs</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{nConv} conviction updates</span>
+          </div>:null}()}
         {/* SEC Filings */}
         <SECFilings company={c}/>
         {/* Thesis Scorecard */}
         <ThesisScorecard company={c}/>
-        {/* Attribution */}
-        <div style={{padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Powered by <a href="https://data.sec.gov" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>SEC EDGAR</a> + <a href="https://site.financialmodelingprep.com" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>FMP</a> + <a href="https://finnhub.io" target="_blank" rel="noopener noreferrer" style={{color:K.blue,textDecoration:"none"}}>Finnhub</a></div></div>
-      </div>}
-      {/* ═══ JOURNAL TAB ═══ */}
-      {detailTab==="journal"&&<div className="ta-fade">
-        {/* Journal Stats Banner */}
-        {function(){var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;var nLink=(c.researchLinks||[]).length;var nConv=(c.convictionHistory||[]).length;
-          var firstDate=null;if(c.convictionHistory&&c.convictionHistory.length>0)firstDate=c.convictionHistory[0].date;
-          if(c.decisions&&c.decisions.length>0){var dd=c.decisions[c.decisions.length-1].date;if(!firstDate||dd<firstDate)firstDate=dd}
-          var daysTracking=firstDate?Math.max(1,Math.ceil((new Date()-new Date(firstDate))/864e5)):0;
-          var hasData=nDec>0||nDoc>0||nLink>0||nConv>1;
-          return hasData?<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:10,marginBottom:24}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nDec}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Decisions</div></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nDoc}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Documents</div></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{nLink}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Sources</div></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{daysTracking}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Days Tracking</div></div>
-          </div>:null}()}
-        {/* Decision Ledger — the core */}
-        <DecisionJournal company={c}/>
-        {/* Thesis Vault (docs) */}
-        <ThesisVault company={c}/>
-        {/* Research Links */}
-        <ResearchLinks company={c}/>
-        {/* Conviction History — at bottom */}
-        {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:28}}>
-          <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction History</div>
+        {/* Conviction History */}
+        {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:20}}>
+          <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction Over Time</div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-            <div style={{display:"flex",alignItems:"flex-end",gap:2,height:60,marginBottom:8}}>
+            <div style={{display:"flex",alignItems:"flex-end",gap:2,height:50,marginBottom:6}}>
               {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                <div style={{fontSize:9,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
-                <div style={{width:"100%",maxWidth:24,height:pct+"%",minHeight:3,borderRadius:3,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
+                <div style={{fontSize:8,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
+                <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
             </div>
             <div style={{display:"flex",gap:2}}>
-              {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:8,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
-            </div>
-            {c.convictionHistory.length>0&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Latest: {c.convictionHistory[c.convictionHistory.length-1].note||"No note"}</div>}
-            {c.convictionHistory.length>0&&c.convictionHistory[c.convictionHistory.length-1].biasFlags&&c.convictionHistory[c.convictionHistory.length-1].biasFlags.length>0&&<div style={{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}}>{c.convictionHistory[c.convictionHistory.length-1].biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{"⚠"} {b}</span>})}</div>}
-          </div></div>}
-        {/* Empty state — only when truly empty */}
-        {(!c.convictionHistory||c.convictionHistory.length<=1)&&(!c.decisions||c.decisions.length===0)&&(!c.researchLinks||c.researchLinks.length===0)&&(!c.docs||c.docs.length===0)&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 20px",textAlign:"center"}}>
-          <div style={{marginBottom:8}}><IC name="journal" size={24} color={K.dim}/></div>
-          <div style={{fontSize:13,color:K.mid,marginBottom:6}}>Start building your investment journal</div>
-          <div style={{fontSize:11,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>Every great investor keeps a record. Log your buy/sell decisions, write thesis documents, save research sources, and track how your conviction evolves. Over time, this becomes your most valuable asset.</div></div>}
+              {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
+            </div></div></div>}
+        {/* Attribution */}
+        <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
       </div>}
+
     </div>}
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
@@ -3380,13 +3286,13 @@ function TrackerApp(props){
     var upcoming=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
     // Build smart actions
     var actions=[];
-    if(upcoming.length>0){var uc=upcoming[0];actions.push({icon:"target",color:K.amb,title:uc.ticker+" earnings in "+dU(uc.earningsDate)+"d",desc:"Review your "+uc.kpis.length+" KPIs and thesis before results drop",action:"Prepare",onClick:function(){setSelId(uc.id);setDetailTab("overview");setPage("dashboard")}})}
+    if(upcoming.length>0){var uc=upcoming[0];actions.push({icon:"target",color:K.amb,title:uc.ticker+" earnings in "+dU(uc.earningsDate)+"d",desc:"Review your "+uc.kpis.length+" KPIs and thesis before results drop",action:"Prepare",onClick:function(){setSelId(uc.id);setDetailTab("dossier");setPage("dashboard")}})}
     var noThesis=portfolio.filter(function(c){return!c.thesisNote});
     if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.grn,title:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",desc:"Every position needs a written reason to own it",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
     if(staleTheses.length>0)actions.push({icon:"clock",color:K.amb,title:staleTheses.length+" thesis"+(staleTheses.length>1?" reviews":"")+" overdue",desc:"Quarterly review keeps your thinking sharp",action:"Review",onClick:function(){setSelId(staleTheses[0].id);setModal({type:"thesis"})}});
     var noKpi=portfolio.filter(function(c){return c.kpis.length===0});
     if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,title:"Weekly review due",desc:"Confirm conviction across "+portfolio.length+" holdings — takes 3 minutes",action:"Start Review",onClick:function(){setPage("review")}});
-    if(noKpi.length>0)actions.push({icon:"bar",color:K.blue,title:noKpi.length+" holding"+(noKpi.length>1?"s":"")+" with no KPIs",desc:"Define the metrics that prove or disprove your thesis",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard")}});
+    if(noKpi.length>0)actions.push({icon:"bar",color:K.blue,title:noKpi.length+" holding"+(noKpi.length>1?"s":"")+" with no KPIs",desc:"Define the metrics that prove or disprove your thesis",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("dossier");setPage("dashboard")}});
     var noConv=portfolio.filter(function(c){return!c.conviction||c.conviction===0});
     if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1–10 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
     var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
@@ -3523,20 +3429,20 @@ function TrackerApp(props){
           var staleT=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return false;return Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
           function tks(arr){return arr.slice(0,2).map(function(c2){return c2.ticker}).join(", ")+(arr.length>2?" + "+(arr.length-2):"");}
           // Fixed quests from portfolio gaps
-          if(noThesis.length>0)quests.push({id:"thesis",text:"Write a thesis for "+tks(noThesis),icon:"lightbulb",color:K.acc,done:false,onClick:function(){setSelId(noThesis[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
-          if(noKpi.length>0)quests.push({id:"kpi",text:"Add KPIs for "+tks(noKpi),icon:"target",color:K.blue,done:false,onClick:function(){setSelId(noKpi[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
+          if(noThesis.length>0)quests.push({id:"thesis",text:"Write a thesis for "+tks(noThesis),icon:"lightbulb",color:K.acc,done:false,onClick:function(){setSelId(noThesis[0].id);setDetailTab("dossier");setPage("dashboard");setModal({type:"thesis"})}});
+          if(noKpi.length>0)quests.push({id:"kpi",text:"Add KPIs for "+tks(noKpi),icon:"target",color:K.blue,done:false,onClick:function(){setSelId(noKpi[0].id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}});
           if(noConv.length>0)quests.push({id:"conv",text:"Rate conviction for "+tks(noConv),icon:"trending",color:K.amb,done:false,onClick:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
-          if(staleT.length>0)quests.push({id:"stale",text:"Review stale thesis for "+tks(staleT),icon:"clock",color:K.red,done:false,onClick:function(){setSelId(staleT[0].id);setDetailTab("overview");setPage("dashboard");setModal({type:"thesis"})}});
+          if(staleT.length>0)quests.push({id:"stale",text:"Review stale thesis for "+tks(staleT),icon:"clock",color:K.red,done:false,onClick:function(){setSelId(staleT[0].id);setDetailTab("dossier");setPage("dashboard");setModal({type:"thesis"})}});
           if(noMoat.length>0&&quests.length<4)quests.push({id:"moat",text:"Classify moat for "+tks(noMoat),icon:"castle",color:"#9333EA",done:false,onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
           if(!currentWeekReviewed)quests.push({id:"review",text:"Complete your Weekly Review",icon:"shield",color:K.grn,done:false,onClick:function(){setPage("review")}});
           // Rotating challenges based on week seed
           var weekNum=parseInt(wk.replace(/\D/g,""))||0;
           var rotating=[
             {id:"r_oldest",text:"Review your oldest thesis",icon:"book",color:K.blue,done:false,check:function(){return portfolio.length>0&&portfolio.every(function(c2){return!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<7})},onClick:function(){var oldest=portfolio.filter(function(c2){return c2.thesisNote}).sort(function(a,b){return(a.thesisUpdatedAt||"")>(b.thesisUpdatedAt||"")?1:-1})[0];if(oldest){setSelId(oldest.id);setPage("dashboard");setModal({type:"thesis"})}}},
-            {id:"r_kpiall",text:"Ensure every holding has 2+ KPIs",icon:"target",color:K.blue,done:false,check:function(){return portfolio.every(function(c2){return c2.kpis.length>=2})},onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2});if(t){setSelId(t.id);setDetailTab("overview");setPage("dashboard")}}},
+            {id:"r_kpiall",text:"Ensure every holding has 2+ KPIs",icon:"target",color:K.blue,done:false,check:function(){return portfolio.every(function(c2){return c2.kpis.length>=2})},onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2});if(t){setSelId(t.id);setDetailTab("dossier");setPage("dashboard")}}},
             {id:"r_convall",text:"Rate conviction for all holdings",icon:"trending",color:K.amb,done:false,check:function(){return portfolio.every(function(c2){return c2.conviction>0})},onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction});if(t){setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}}},
-            {id:"r_decision",text:"Log a BUY, SELL, or HOLD decision",icon:"edit",color:K.acc,done:false,check:function(){var recent=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-604800000))recent.push(d)})});return recent.length>0},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("journal");setPage("dashboard")}}},
-            {id:"r_export",text:"Export a research note",icon:"file",color:K.mid,done:false,check:function(){return false},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("overview");setPage("dashboard")}}},
+            {id:"r_decision",text:"Log a BUY, SELL, or HOLD decision",icon:"edit",color:K.acc,done:false,check:function(){var recent=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-604800000))recent.push(d)})});return recent.length>0},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("research");setPage("dashboard")}}},
+            {id:"r_export",text:"Export a research note",icon:"file",color:K.mid,done:false,check:function(){return false},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("dossier");setPage("dashboard")}}},
             {id:"r_moatall",text:"Classify moats for all holdings",icon:"castle",color:"#9333EA",done:false,check:function(){return portfolio.every(function(c2){var mt=c2.moatTypes||{};return Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})})},onClick:function(){var t=portfolio.find(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}}
           ];
           // Pick 2 rotating based on week seed
@@ -3600,7 +3506,7 @@ function TrackerApp(props){
         {/* Upcoming earnings */}
         {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm}}>Earnings This Fortnight</div>
-          {upcoming.map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+          {upcoming.map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
             <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
             <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
             <span style={{fontSize:11,color:K.dim,flex:1}}>{c.name}</span>
@@ -4568,6 +4474,11 @@ function TrackerApp(props){
           {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
             <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR THESIS</div>
             <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{c.thesisNote.split("\n")[0].substring(0,200)}</div></div>}
+          {/* Munger reflection prompt */}
+          {(function(){var prompts=["If you couldn\u2019t look at the stock price for 5 years, would you still own this?","What do you understand about this business that the market doesn\u2019t?","Would you be comfortable if this was your only holding?","Is this business better or worse than when you first bought it?","Are you holding because of conviction or because selling feels like admitting a mistake?","What would a smart skeptic say about your thesis?","Has anything structurally changed, or is this just noise?","Would you buy more at today\u2019s price?"];
+            var pi=(idx+c.id)%prompts.length;
+            return<div style={{background:K.bg,borderRadius:8,padding:"10px 14px",marginBottom:16,borderLeft:"2px solid "+K.acc}}>
+              <div style={{fontSize:11,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{prompts[pi]}</div></div>})()}
           {/* Conviction adjustment */}
           <div style={{marginBottom:16}}>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>ADJUST CONVICTION</div>
@@ -4787,7 +4698,7 @@ function TrackerApp(props){
           if(x.dims.fortress&&x.dims.fortress.score<4)issues.push("Weak balance sheet ("+x.dims.fortress.value+")");
           if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
           if(x.dims.grossMargin){var ppOver=(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:x.dims.grossMargin.score;if(ppOver<4)issues.push("Weak pricing power ("+ppOver+"/10)")};
-          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("analysis");setPage("dashboard")}}>
+          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("research");setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
               <div style={{fontSize:10,color:K.red,fontFamily:fb}}>{issues.join(" • ")}</div></div>
@@ -4815,7 +4726,7 @@ function TrackerApp(props){
           <thead><tr>{["","Company","Moat","Fortress","Pricing","ROIC","Earnings Q."].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:10,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fb,fontWeight:600,whiteSpace:"nowrap"}}>{h}</th>})}</tr></thead>
           <tbody>{holdings.map(function(q,i){
             function cellClr(v){return v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim}
-            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("analysis");setPage("dashboard")}}>
+            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("research");setPage("dashboard")}}>
               <td style={{padding:"10px 10px",fontSize:11,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
               <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:13,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
@@ -5015,7 +4926,7 @@ function TrackerApp(props){
         return<div style={{marginBottom:24}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm,fontWeight:600}}>This Week</div>
           {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
-            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
               <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
                 <div style={{fontSize:11,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
@@ -5029,7 +4940,7 @@ function TrackerApp(props){
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
             {later.map(function(c,i){var d=dU(c.earningsDate);
-              return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+              return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
                 <div style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:11,color:K.dim}}>{c.name}</span></div>
                 <span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</span>
@@ -5039,7 +4950,7 @@ function TrackerApp(props){
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
           {recent.map(function(c,i){var h=gH(c.kpis);
-            return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("overview");setPage("dashboard")}}>
+            return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
               <div style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:11,color:K.dim}}>{c.name}</span></div>
               <span style={S.badge(h.c)}>{h.l}</span>
@@ -5125,7 +5036,7 @@ function TrackerApp(props){
       var portfolio=filtered;
       // Priority 1: Earnings within 3 days
       var urgent=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=3}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
-      if(urgent.length>0){var uc=urgent[0];focus={color:K.amb,icon:"target",title:uc.ticker+" reports "+(dU(uc.earningsDate)===0?"today":dU(uc.earningsDate)===1?"tomorrow":"in "+dU(uc.earningsDate)+"d"),desc:"Review your thesis and "+uc.kpis.length+" KPIs before results drop",btn:"Prepare now",onClick:function(){setSelId(uc.id);setDetailTab("overview");setPage("dashboard")}}}
+      if(urgent.length>0){var uc=urgent[0];focus={color:K.amb,icon:"target",title:uc.ticker+" reports "+(dU(uc.earningsDate)===0?"today":dU(uc.earningsDate)===1?"tomorrow":"in "+dU(uc.earningsDate)+"d"),desc:"Review your thesis and "+uc.kpis.length+" KPIs before results drop",btn:"Prepare now",onClick:function(){setSelId(uc.id);setDetailTab("dossier");setPage("dashboard")}}}
       // Priority 2: Weekly review not done
       if(!focus&&!currentWeekReviewed){focus={color:K.grn,icon:"shield",title:"Weekly review time",desc:"Confirm your conviction across "+portfolio.length+" holdings. Takes 3 minutes.",btn:"Start review",onClick:function(){setPage("review")}}}
       // Priority 3: Thesis missing
@@ -5135,7 +5046,7 @@ function TrackerApp(props){
       // Priority 5: Missing conviction
       if(!focus){var noC=portfolio.filter(function(c){return!c.conviction});if(noC.length>0)focus={color:K.amb,icon:"trending",title:"Rate your conviction for "+noC[0].ticker,desc:"How confident are you in this position? 1-10.",btn:"Rate now",onClick:function(){setSelId(noC[0].id);setPage("dashboard");setModal({type:"conviction"})}}}
       // Priority 6: Missing KPIs
-      if(!focus){var noK=portfolio.filter(function(c){return c.kpis.length===0});if(noK.length>0)focus={color:K.blue||K.acc,icon:"bar",title:"Add KPIs for "+noK[0].ticker,desc:"Define the metrics that prove or disprove your thesis — revenue, margins, retention.",btn:"Add KPIs",onClick:function(){setSelId(noK[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}}}
+      if(!focus){var noK=portfolio.filter(function(c){return c.kpis.length===0});if(noK.length>0)focus={color:K.blue||K.acc,icon:"bar",title:"Add KPIs for "+noK[0].ticker,desc:"Define the metrics that prove or disprove your thesis — revenue, margins, retention.",btn:"Add KPIs",onClick:function(){setSelId(noK[0].id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}}}
       // Priority 7: Missing moat classification
       if(!focus){var noM=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(noM.length>0)focus={color:"#9333EA",icon:"castle",title:"Classify the moat for "+noM[0].ticker,desc:"What gives this company its competitive advantage? Network effects, switching costs, brand?",btn:"Classify moat",onClick:function(){setSelId(noM[0].id);setSubPage("moat");setPage("dashboard")}}}
       // Priority 8: Missing position data
@@ -5209,7 +5120,7 @@ function TrackerApp(props){
       var hasReview=weeklyReviews.length>0;
       var steps=[
         {done:hasThesis,label:"Write a thesis",icon:"lightbulb",color:K.grn,onClick:function(){var t=portfolio.find(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"thesis"})}},
-        {done:hasKpi,label:"Add 2+ KPIs",icon:"target",color:K.blue,onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2})||portfolio[0];setSelId(t.id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}},
+        {done:hasKpi,label:"Add 2+ KPIs",icon:"target",color:K.blue,onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2})||portfolio[0];setSelId(t.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}},
         {done:hasConviction,label:"Rate conviction",icon:"trending",color:K.amb,onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}},
         {done:hasReview,label:"Weekly review",icon:"shield",color:"#9333EA",onClick:function(){setPage("review")}}
       ];
@@ -5265,7 +5176,7 @@ function TrackerApp(props){
 
     {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
-        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("overview")}}>
+        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
