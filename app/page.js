@@ -2729,51 +2729,52 @@ function TrackerApp(props){
               {isOn&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:col,marginRight:4}}/>}{ci.l}</button>})}</div>
         {hasPctMix&&<div style={{fontSize:9,color:K.amb,fontFamily:fm,marginBottom:8}}>{"⚠"} Mixing % and $ metrics — values share the Y-axis</div>}
         {chartSeries.length>0&&dates.length>0?(function(){
-          // Per-series normalization for multi-metric
-          function buildPath(series){
-            var pts=series.pts;if(pts.length<2)return null;
-            var sVals=pts.map(function(p){return p.val});var sMx=Math.max.apply(null,sVals);var sMn=Math.min.apply(null,sVals);var sRange=sMx-sMn||1;
-            var points=pts.map(function(p,i){
-              var dateIdx=dates.indexOf(p.date);if(dateIdx<0)return null;
-              var x=pad.l+dateIdx/(Math.max(dates.length-1,1))*plotW;
-              var y=pad.t+(1-(p.val-sMn)/sRange)*plotH;
-              return{x:x,y:y,val:p.val,date:p.date}}).filter(Boolean);
-            if(points.length<2)return null;
-            // Smooth curve
-            var d="M"+points[0].x.toFixed(1)+","+points[0].y.toFixed(1);
-            for(var i=1;i<points.length;i++){var cx=(points[i-1].x+points[i].x)/2;d+=" C"+cx.toFixed(1)+","+points[i-1].y.toFixed(1)+" "+cx.toFixed(1)+","+points[i].y.toFixed(1)+" "+points[i].x.toFixed(1)+","+points[i].y.toFixed(1)}
-            return{d:d,points:points}}
-          var paths=chartSeries.map(function(s){return{series:s,path:buildPath(s)}}).filter(function(p){return p.path});
+          var numSeries=chartSeries.length;var numDates=dates.length;
+          var groupW=Math.max(30,plotW/numDates-8);var barW2=Math.max(8,Math.min(28,(groupW-4)/numSeries));
+          var groupGap=(plotW-groupW*numDates)/Math.max(numDates-1,1);
+          // Per-series: compute min/max for shared axis
+          var allV=[];chartSeries.forEach(function(s){s.pts.forEach(function(p){allV.push(p.val)})});
+          var gMx=Math.max.apply(null,allV.concat([0]));var gMn=Math.min.apply(null,allV.concat([0]));var gRange=gMx-gMn||1;
+          var zeroY=gMn>=0?pad.t+plotH:pad.t+(gMx/gRange)*plotH;
+          // Y-axis labels
+          var ySteps=[gMn,gMn+(gRange*0.25),gMn+(gRange*0.5),gMn+(gRange*0.75),gMx];
           return<div style={{overflowX:"auto",position:"relative"}}>
             <svg width={cW} height={cH} style={{display:"block"}}>
-              {/* Grid lines */}
-              {[0,0.25,0.5,0.75,1].map(function(f,i){var y=pad.t+f*plotH;
-                return<line key={i} x1={pad.l} y1={y} x2={cW-pad.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray={i===4?"0":"3,3"}/>})}
-              {/* Date labels */}
-              {dates.map(function(dt,i){var x=pad.l+i/(Math.max(dates.length-1,1))*plotW;
-                return<text key={i} x={x} y={cH-4} textAnchor="middle" fill={K.dim} fontSize={per==="quarter"?7:9} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[i]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>})}
-              {/* Lines + gradient fills */}
-              {paths.map(function(p,pi){var s=p.series;var pathD=p.path;
-                var fillD=pathD.d+" L"+pathD.points[pathD.points.length-1].x.toFixed(1)+","+(pad.t+plotH)+" L"+pathD.points[0].x.toFixed(1)+","+(pad.t+plotH)+" Z";
-                return<g key={s.key}>
-                  <defs><linearGradient id={"fg-"+s.key+"-"+pi} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={s.color} stopOpacity="0.15"/><stop offset="100%" stopColor={s.color} stopOpacity="0"/></linearGradient></defs>
-                  <path d={fillD} fill={"url(#fg-"+s.key+"-"+pi+")"} style={{animation:"fadeInFast .5s ease both",animationDelay:pi*100+"ms"}}/>
-                  <path d={pathD.d} fill="none" stroke={s.color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{animation:"fadeInFast .4s ease both",animationDelay:pi*80+"ms"}}/>
-                  {pathD.points.map(function(pt,pti){return<circle key={pti} cx={pt.x.toFixed(1)} cy={pt.y.toFixed(1)} r={hov===pt.date?5:3} fill={hov===pt.date?"#fff":s.color} stroke={s.color} strokeWidth={hov===pt.date?2.5:0} style={{transition:"r .15s,fill .15s"}}/>})}
+              {/* Grid lines + Y labels */}
+              {ySteps.map(function(v,i){var y=pad.t+(1-(v-gMn)/gRange)*plotH;
+                return<g key={i}><line x1={pad.l} y1={y} x2={cW-pad.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray={i===0?"0":"3,3"}/>
+                  <text x={pad.l-6} y={y+3} textAnchor="end" fill={K.dim} fontSize={8} fontFamily="JetBrains Mono,monospace">{chartSeries.length===1&&chartSeries[0].def.p?(v*100).toFixed(0)+"%":fmtBig(v)}</text></g>})}
+              {/* Zero line if needed */}
+              {gMn<0&&<line x1={pad.l} y1={zeroY} x2={cW-pad.r} y2={zeroY} stroke={K.txt+"40"} strokeWidth={1.5}/>}
+              {/* Grouped bars */}
+              {dates.map(function(dt,di){
+                var groupX=pad.l+di*(groupW+(numDates>1?groupGap:0));
+                return<g key={di}>
+                  {chartSeries.map(function(s,si){
+                    var pt=s.pts.find(function(p){return p.date===dt});if(!pt)return null;
+                    var val=pt.val;var barH=Math.abs(val-Math.max(gMn,0))/gRange*plotH;
+                    if(gMn<0){barH=Math.abs(val)/gRange*plotH}
+                    var y=val>=0?zeroY-barH:zeroY;
+                    var bx=groupX+(si*(barW2+1));
+                    var isHov2=hov===dt;
+                    return<rect key={s.key} x={bx} y={val>=0?zeroY-(val-Math.max(gMn,0))/gRange*plotH:zeroY} width={barW2} height={Math.max(Math.abs(val-(gMn>=0?gMn:0))/gRange*plotH,2)} rx={2} fill={isHov2?s.color:s.color+"90"} style={{transition:"fill .15s",animation:"fadeInFast .3s ease both",animationDelay:(di*30+si*60)+"ms"}}/>})}
+                  {/* Date label */}
+                  <text x={groupX+groupW/2} y={cH-4} textAnchor="middle" fill={hov===dt?K.txt:K.dim} fontSize={per==="quarter"?7:9} fontWeight={hov===dt?600:400} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[di]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>
+                  {/* Hover zone */}
+                  <rect x={groupX-2} y={pad.t} width={groupW+4} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}} onMouseLeave={function(){setHov(null)}}/>
                 </g>})}
-              {/* Hover columns */}
-              {dates.map(function(dt,i){var x=pad.l+i/(Math.max(dates.length-1,1))*plotW;
-                return<rect key={i} x={x-plotW/(dates.length*2)} y={pad.t} width={plotW/dates.length} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}} onMouseLeave={function(){setHov(null)}}/>})}
             </svg>
             {/* Hover tooltip */}
-            {hov&&(function(){var hi=dates.indexOf(hov);if(hi<0)return null;var tx=pad.l+hi/(Math.max(dates.length-1,1))*plotW;
-              return<div style={{position:"absolute",left:Math.min(tx,cW-160),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:120}}>
+            {hov&&(function(){var hi=dates.indexOf(hov);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
+              return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
                 <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hov:hov.substring(0,4)}</div>
                 {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hov});if(!pt)return null;
-                  return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                    <span style={{width:6,height:6,borderRadius:"50%",background:s.color,flexShrink:0}}/>
+                  var prev=s.pts[s.pts.indexOf(pt)-1];var yoy=prev&&prev.val!==0?((pt.val-prev.val)/Math.abs(prev.val)*100):null;
+                  return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                    <span style={{width:6,height:6,borderRadius:2,background:s.color,flexShrink:0}}/>
                     <span style={{fontSize:10,color:K.mid,fontFamily:fm,flex:1}}>{s.def.l}</span>
-                    <span style={{fontSize:10,fontWeight:700,color:s.color,fontFamily:fm}}>{s.def.p?(pt.val*100).toFixed(1)+"%":s.def.sm?"$"+pt.val.toFixed(2):fmtBig(pt.val)}</span></div>})}</div>})()}
+                    <span style={{fontSize:10,fontWeight:700,color:s.color,fontFamily:fm}}>{s.def.p?(pt.val*100).toFixed(1)+"%":s.def.sm?"$"+pt.val.toFixed(2):fmtBig(pt.val)}</span>
+                    {yoy!=null&&<span style={{fontSize:8,color:yoy>=0?K.grn:K.red,fontFamily:fm}}>{yoy>=0?"+":""}{yoy.toFixed(0)}%</span>}</div>})}</div>})()}
           </div>})():<div style={{padding:20,textAlign:"center",fontSize:11,color:K.dim}}>Click metrics above to chart them</div>}
         {/* Legend */}
         {chartSeries.length>0&&<div style={{display:"flex",gap:12,marginTop:10,flexWrap:"wrap"}}>
@@ -2804,7 +2805,7 @@ function TrackerApp(props){
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
-    var TABS=[{id:"overview",label:"Overview",icon:"overview"},{id:"analysis",label:"Analysis",icon:"analysis"},{id:"journal",label:"Journal",icon:"journal"}];
+    var TABS=[{id:"overview",label:"Overview",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"analysis",label:"Analysis",icon:"analysis"},{id:"journal",label:"Journal",icon:"journal"}];
     return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
@@ -2856,7 +2857,7 @@ function TrackerApp(props){
         </div>})()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
-        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){setDetailTab(t.id)}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}</button>})}</div>
+        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
       {/* ═══ OVERVIEW TAB ═══ */}
       {detailTab==="overview"&&<div className="ta-fade">
         {/* Pre-Earnings Briefing */}
@@ -2952,6 +2953,16 @@ function TrackerApp(props){
           <button onClick={function(){setModal({type:"edit"})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm}}>Change</button></div>}
         </div>}
         {/* Thesis */}
+        {/* Quick access: Financial Statements */}
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"12px 18px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
+          <div style={{width:38,height:38,borderRadius:8,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="chart" size={18} color={K.blue}/></div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Financial Statements</div>
+            <div style={{fontSize:11,color:K.dim}}>Income, balance sheet & cash flow — interactive charts</div></div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            {!isPro&&<span style={{fontSize:9,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 6px",borderRadius:3}}>PRO</span>}
+            <span style={{fontSize:16,color:K.acc}}>{"→"}</span></div>
+        </div>
         {c.thesisNote&&function(){var sec=parseThesis(c.thesisNote);var hasSections=sec.moat||sec.risks||sec.sell;
           var sectionsFilled=[sec.core,sec.moat,sec.risks,sec.sell].filter(function(s){return s&&s.trim().length>15}).length;
           var versionCount=(c.thesisVersions||[]).length;
