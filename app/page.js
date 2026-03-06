@@ -3028,7 +3028,7 @@ function TrackerApp(props){
     var activityDates={};allDecs.forEach(function(d){if(d.date)activityDates[d.date.substring(0,10)]=true});
     cos.forEach(function(c){if(c.thesisUpdatedAt)activityDates[c.thesisUpdatedAt.substring(0,10)]=true;
       (c.earningsHistory||[]).forEach(function(h){if(h.checkedAt)activityDates[h.checkedAt.substring(0,10)]=true})});
-    var streak=0;var d2=new Date();for(var si=0;si<365;si++){var dk=d2.toISOString().slice(0,10);if(activityDates[dk])streak++;else if(si>0)break;d2=new Date(d2.getTime()-864e5)}
+    var streak=dailyStreak.current||0;
     // Thesis health
     var withThesis=portfolio.filter(function(c){return c.thesisNote});
     var staleTheses=withThesis.filter(function(c){var lastTouch=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
@@ -3145,7 +3145,7 @@ function TrackerApp(props){
         {/* Quick stats */}
         <div style={{display:"flex",gap:isMobile?12:16}}>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak}</div>
+            <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak>0?String.fromCodePoint(0x1F525)+" ":""}{streak}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>day streak</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"—"}</div>
@@ -4660,16 +4660,15 @@ function TrackerApp(props){
         <div style={{fontSize:10,color:K.dim}}>{dailyStreak.current>0?"Do any action to keep it alive — write a thesis, add a KPI, rate conviction, anything.":"Any action counts — add a company, update a thesis, track a KPI. Build the habit."}</div></div></div>}
     {/* ── Streak + XP bar ── */}
     {sideTab==="portfolio"&&filtered.length>0&&<div style={{display:"flex",gap:12,marginBottom:16,alignItems:"stretch"}}>
-      {/* Daily Streak - hidden when active today */}
-      {!didActivityToday&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110}}>
+      {/* Daily Streak - fire emoji, clickable to Owner's Hub */}
+      {!didActivityToday&&<div onClick={function(){setPage("hub")}} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,minWidth:isMobile?90:110,cursor:"pointer"}}>
         <div>
-          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}</div>
+          <div style={{fontSize:24,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
           <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div>
           <div style={{width:24,height:3,borderRadius:2,background:K.bdr,marginTop:3,overflow:"hidden"}}><div style={{width:"0%",height:"100%",background:K.amb,borderRadius:2}}/></div></div></div>}
-      {didActivityToday&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,minWidth:isMobile?70:90}}>
-        <IC name="check" size={14} color={K.grn}/>
-        <div><div style={{fontSize:16,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{dailyStreak.current}</div>
-          <div style={{fontSize:8,color:K.grn,fontFamily:fm}}>Active</div></div></div>}
+      {didActivityToday&&<div onClick={function(){setPage("hub")}} style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,minWidth:isMobile?70:90,cursor:"pointer"}}>
+        <div><div style={{fontSize:16,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{String.fromCodePoint(0x1F525)+" "}{dailyStreak.current}</div>
+          <div style={{fontSize:8,color:K.grn,fontFamily:fm}}>Day Streak</div></div></div>}
       {/* Weekly Streak */}
       <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
         <div style={{fontSize:24,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
@@ -4677,7 +4676,7 @@ function TrackerApp(props){
           <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
           <div style={{fontSize:9,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed ✓":"Review due"}</div>
           {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-            return next?<div style={{fontSize:8,color:K.acc,fontFamily:fm}}>Next: {next.r} wk {next.w}</div>:null})()}</div>
+            return next?<div style={{fontSize:8,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
         {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"3px 8px"}}>
           <span style={{fontSize:11}}>{"🛡️"}</span>
           <span style={{fontSize:9,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
@@ -4705,8 +4704,15 @@ function TrackerApp(props){
       if(!focus){var staleT=portfolio.filter(function(c){return c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)>90}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)});if(staleT.length>0)focus={color:K.red,icon:"clock",title:staleT[0].ticker+" thesis is getting stale",desc:"Last updated "+(Math.ceil((new Date()-new Date(staleT[0].thesisUpdatedAt))/864e5))+" days ago. Still accurate?",btn:"Review thesis",onClick:function(){setSelId(staleT[0].id);setPage("dashboard");setModal({type:"thesis"})}}}
       // Priority 5: Missing conviction
       if(!focus){var noC=portfolio.filter(function(c){return!c.conviction});if(noC.length>0)focus={color:K.amb,icon:"trending",title:"Rate your conviction for "+noC[0].ticker,desc:"How confident are you in this position? 1-10.",btn:"Rate now",onClick:function(){setSelId(noC[0].id);setPage("dashboard");setModal({type:"conviction"})}}}
-      // All done!
-      if(!focus)focus={color:K.grn,icon:"shield",title:"All caught up",desc:"Your process is strong. Come back next week for your review.",btn:null,onClick:null};
+      // Priority 6: Missing KPIs
+      if(!focus){var noK=portfolio.filter(function(c){return c.kpis.length===0});if(noK.length>0)focus={color:K.blue||K.acc,icon:"bar",title:"Add KPIs for "+noK[0].ticker,desc:"Define the metrics that prove or disprove your thesis — revenue, margins, retention.",btn:"Add KPIs",onClick:function(){setSelId(noK[0].id);setDetailTab("overview");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}}}
+      // Priority 7: Missing moat classification
+      if(!focus){var noM=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(noM.length>0)focus={color:"#9333EA",icon:"castle",title:"Classify the moat for "+noM[0].ticker,desc:"What gives this company its competitive advantage? Network effects, switching costs, brand?",btn:"Classify moat",onClick:function(){setSelId(noM[0].id);setSubPage("moat");setPage("dashboard")}}}
+      // Priority 8: Missing position data
+      if(!focus){var noPos=portfolio.filter(function(c){var p=c.position||{};return!p.shares||p.shares===0});if(noPos.length>0)focus={color:K.mid,icon:"trending",title:"Log your position in "+noPos[0].ticker,desc:"Add your shares and average cost to track performance.",btn:"Add position",onClick:function(){setSelId(noPos[0].id);setPage("dashboard")}}}
+      // Did something today? Show encouragement, else generic prompt
+      if(!focus&&didActivityToday)focus={color:K.grn,icon:"check",title:"Done for today",desc:"You showed up. Come back tomorrow to keep your streak alive.",btn:null,onClick:null};
+      if(!focus)focus={color:K.acc,icon:"lightbulb",title:"Explore your portfolio",desc:"Open any holding to deepen your thesis, review KPIs, or check earnings history.",btn:null,onClick:null};
       return<div style={{background:focus.color+"08",border:"1px solid "+focus.color+"25",borderRadius:12,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:44,height:44,borderRadius:10,background:focus.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={focus.icon} size={20} color={focus.color}/></div>
         <div style={{flex:1}}>
