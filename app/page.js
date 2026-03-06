@@ -3042,6 +3042,7 @@ function TrackerApp(props){
     // Moat data for dossier display
     var _moatD=useState(null),dossierMoat=_moatD[0],setDossierMoat=_moatD[1];
     var _keyFin=useState(null),keyFin=_keyFin[0],setKeyFin=_keyFin[1];
+    var _hovD=useState(null),hovD=_hovD[0],setHovD=_hovD[1];
     useEffect(function(){
       // Backfill description from FMP profile if missing (free for all users)
       if(!c.description){fmp("profile/"+c.ticker).then(function(p){
@@ -3276,7 +3277,6 @@ function TrackerApp(props){
               var gW=Math.max(30,plotW3/nD-8);var bW=Math.max(6,Math.min(16,(gW-4)/nS));
               var gG=nD>1?(plotW3-gW*nD)/(nD-1):0;
               var zY=gMn2>=0?pad3.t+plotH3:pad3.t+(gMx2/gRange2)*plotH3;
-              var _h3=useState(null),hovD=_h3[0],setHovD=_h3[1];
               return<div style={{overflowX:"auto",position:"relative"}}>
                 <svg width={cW3} height={cH3} style={{display:"block"}}>
                   {[0,0.25,0.5,0.75,1].map(function(f,fi){var y=pad3.t+f*plotH3;var val=gMx2-(f*gRange2);
