@@ -3039,6 +3039,17 @@ function TrackerApp(props){
     </div>}
   function DetailView(){if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
+    // Moat data for dossier display
+    var _moatD=useState(null),dossierMoat=_moatD[0],setDossierMoat=_moatD[1];
+    var _keyFin=useState(null),keyFin=_keyFin[0],setKeyFin=_keyFin[1];
+    useEffect(function(){if(!isPro)return;
+      fetchFinancialStatements(c.ticker,"annual").then(function(r){
+        if(r){setDossierMoat(calcMoatFromData(r));
+          // Extract key metrics: revenue, netIncome, freeCashFlow, stockBasedCompensation
+          var inc=r.income||[];var cf=r.cashflow||[];
+          var pts=inc.map(function(row,i){var cfRow=cf[i]||{};return{date:row.date,revenue:row.revenue,netIncome:row.netIncome,fcf:cfRow.freeCashFlow||cfRow.operatingCashFlow,sbc:cfRow.stockBasedCompensation||row.stockBasedCompensation}}).filter(function(p){return p.revenue!=null});
+          if(pts.length>0)setKeyFin(pts)}
+      }).catch(function(){})},[c.ticker,isPro]);
     var TABS=[{id:"dossier",label:"Dossier",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"research",label:"Research",icon:"book"}];
     return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
@@ -3191,19 +3202,107 @@ function TrackerApp(props){
             return<div>{recent.map(function(d2){return<JournalCard key={d2.id} entry={d2}/>})}</div>})()}
         </div>
 
-        {/* ── 4. QUICK ACCESS ── */}
+        {/* ── 4. THE MOAT ── */}
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE MOAT</div>
+            <button onClick={function(){setSubPage("moat")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Full analysis {"→"}</button></div>
+          {dossierMoat?(function(){
+            var comp=dossierMoat.composite;var mColor=comp>=8?K.grn:comp>=6?K.amb:K.red;
+            var mLabel=comp>=8?"Wide Moat":comp>=6?"Narrow Moat":comp>=4?"Weak Moat":"No Moat";
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
+                <div style={{width:56,height:56,borderRadius:"50%",border:"3px solid "+mColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <div style={{fontSize:22,fontWeight:800,color:mColor,fontFamily:fm,lineHeight:1}}>{comp}</div>
+                  <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/10</div></div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15,fontWeight:600,color:mColor,fontFamily:fh}}>{mLabel}</div>
+                  <div style={{fontSize:10,color:K.dim}}>{dossierMoat.years}yr data · {dossierMoat.metrics.length} dimensions</div></div>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                  {(function(){var mt2=c.moatTypes||{};return MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active}).map(function(t2){
+                    return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})})()}</div></div>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"4px 16px"}}>
+                {dossierMoat.metrics.slice(0,8).map(function(m){var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
+                  return<div key={m.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
+                    <span style={{fontSize:9,color:K.mid,fontFamily:fm,width:isMobile?90:110,flexShrink:0}}>{m.name.length>18?m.name.substring(0,18)+"…":m.name}</span>
+                    <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:(m.score*10)+"%",borderRadius:3,background:barColor,transition:"width .4s"}}/></div>
+                    <span style={{fontSize:9,fontWeight:700,color:barColor,fontFamily:fm,width:20,textAlign:"right"}}>{m.score.toFixed(0)}</span></div>})}</div>
+            </div>})()
+          :!isPro?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
+            <div style={{fontSize:12,color:K.dim,marginBottom:8}}>Moat analysis powered by financial data</div>
+            <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("financials")}} style={Object.assign({},S.btn,{fontSize:10,padding:"5px 14px"})}>Upgrade to unlock</button></div>
+          :<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px",textAlign:"center"}}>
+            <div className="ta-skel" style={{height:10,width:"60%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
+            <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div>}
+        </div>
+
+        {/* ── 5. KEY METRICS CHART ── */}
+        {keyFin&&keyFin.length>=2&&<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
+            <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials")}}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Full financials {"→"}</button></div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+            <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+              {[{k:"revenue",l:"Revenue",c:"#1cb0f6"},{k:"netIncome",l:"Net Income",c:"#58cc02"},{k:"fcf",l:"Free Cash Flow",c:"#ff9600"},{k:"sbc",l:"Stock-Based Comp",c:"#ce82ff"}].map(function(m){
+                return<div key={m.k} style={{display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{width:8,height:8,borderRadius:2,background:m.c}}/>
+                  <span style={{fontSize:9,color:K.mid,fontFamily:fm}}>{m.l}</span></div>})}</div>
+            {(function(){
+              var MK=[{k:"revenue",c:"#1cb0f6"},{k:"netIncome",c:"#58cc02"},{k:"fcf",c:"#ff9600"},{k:"sbc",c:"#ce82ff"}];
+              var allV2=[];keyFin.forEach(function(p2){MK.forEach(function(m){if(p2[m.k]!=null)allV2.push(p2[m.k])})});
+              if(allV2.length===0)return null;
+              var gMx2=Math.max.apply(null,allV2.concat([0]));var gMn2=Math.min.apply(null,allV2.concat([0]));var gRange2=gMx2-gMn2||1;
+              var cW3=Math.max(400,keyFin.length*80);var cH3=180;var pad3={l:50,r:10,t:16,b:26};
+              var plotW3=cW3-pad3.l-pad3.r;var plotH3=cH3-pad3.t-pad3.b;
+              var nD=keyFin.length;var nS=4;
+              var gW=Math.max(30,plotW3/nD-8);var bW=Math.max(6,Math.min(16,(gW-4)/nS));
+              var gG=nD>1?(plotW3-gW*nD)/(nD-1):0;
+              var zY=gMn2>=0?pad3.t+plotH3:pad3.t+(gMx2/gRange2)*plotH3;
+              var _h3=useState(null),hovD=_h3[0],setHovD=_h3[1];
+              return<div style={{overflowX:"auto",position:"relative"}}>
+                <svg width={cW3} height={cH3} style={{display:"block"}}>
+                  {[0,0.25,0.5,0.75,1].map(function(f,fi){var y=pad3.t+f*plotH3;var val=gMx2-(f*gRange2);
+                    return<g key={fi}><line x1={pad3.l} y1={y} x2={cW3-pad3.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray="3,3"/>
+                      <text x={pad3.l-6} y={y+3} textAnchor="end" fill={K.dim} fontSize={8} fontFamily="JetBrains Mono,monospace">{fmtBig(val)}</text></g>})}
+                  {gMn2<0&&<line x1={pad3.l} y1={zY} x2={cW3-pad3.r} y2={zY} stroke={K.txt+"40"} strokeWidth={1.5}/>}
+                  {keyFin.map(function(pt,di){
+                    var gX=pad3.l+di*(gW+(nD>1?gG:0));
+                    return<g key={di}>
+                      {MK.map(function(m,si){
+                        var val=pt[m.k];if(val==null)return null;
+                        var barH2=Math.abs(val)/gRange2*plotH3;
+                        var y2=val>=0?zY-barH2:zY;
+                        if(gMn2>=0){y2=pad3.t+plotH3-(val-gMn2)/gRange2*plotH3;barH2=(val-gMn2)/gRange2*plotH3}
+                        return<rect key={m.k} x={gX+(si*(bW+1))} y={y2} width={bW} height={Math.max(barH2,2)} rx={2} fill={hovD===pt.date?m.c:m.c+"90"} style={{transition:"fill .15s",animation:"fadeInFast .3s ease both",animationDelay:(di*30+si*50)+"ms"}}/>})}
+                      <text x={gX+gW/2} y={cH3-4} textAnchor="middle" fill={K.dim} fontSize={9} fontFamily="JetBrains Mono,monospace">{pt.date?pt.date.substring(0,4):""}</text>
+                      <rect x={gX-2} y={pad3.t} width={gW+4} height={plotH3} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHovD(pt.date)}} onMouseLeave={function(){setHovD(null)}}/>
+                    </g>})}
+                </svg>
+                {hovD&&(function(){var hi=keyFin.findIndex(function(p2){return p2.date===hovD});if(hi<0)return null;var pt=keyFin[hi];
+                  var tx=pad3.l+hi*(gW+(nD>1?gG:0));
+                  return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW3-160),top:4,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{pt.date?pt.date.substring(0,4):""}</div>
+                    {MK.map(function(m){return pt[m.k]!=null?<div key={m.k} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                      <span style={{width:6,height:6,borderRadius:2,background:m.c,flexShrink:0}}/>
+                      <span style={{fontSize:9,color:K.mid,fontFamily:fm,flex:1}}>{m.k==="revenue"?"Revenue":m.k==="netIncome"?"Net Income":m.k==="fcf"?"FCF":"SBC"}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:m.c,fontFamily:fm}}>{fmtBig(pt[m.k])}</span></div>:null})}</div>})()}
+              </div>})()}
+          </div>
+        </div>}
+
+        {/* ── LINKS ── */}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:20}}>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
             <IC name="chart" size={16} color={K.blue}/>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Financials</div>
-              <div style={{fontSize:9,color:K.dim}}>Interactive charts & data</div></div>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Full Financials</div>
+              <div style={{fontSize:9,color:K.dim}}>Income, balance, cash flow</div></div>
             {!isPro&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 5px",borderRadius:3}}>PRO</span>}
             <span style={{color:K.acc}}>{"→"}</span></div>
-          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){setSubPage("moat")}}>
-            <IC name="castle" size={16} color="#9333EA"/>
-            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Moat Analysis</div>
-              <div style={{fontSize:9,color:K.dim}}>{(function(){var mt2=c.moatTypes||{};var active2=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return active2.length>0?active2.length+" moat types classified":"Not classified yet"})()}</div></div>
-            <span style={{color:K.acc}}>{"→"}</span></div>
+          {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
+            <IC name="link" size={16} color={K.mid}/>
+            <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Investor Relations</div>
+              <div style={{fontSize:9,color:K.dim}}>{c.domain||"IR page"}</div></div>
+            <span style={{color:K.acc}}>{"↗"}</span></a>}
         </div>
         {/* Research preview */}
         {(c.decisions||[]).length+(c.docs||[]).length>0&&<div>
