@@ -573,7 +573,7 @@ function TrackerApp(props){
   var thesisProgress=Math.min(completeTheses,THESIS_UNLOCK);
   // isPro = paid subscriber OR active trial
   var isPro=plan==="pro"||trialActive;
-  var canAdd=isPro||cos.filter(function(c){return c.status!=="toohard"}).length<FREE_LIMIT;
+  var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId)return;fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e)})}
   var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
@@ -699,26 +699,26 @@ function TrackerApp(props){
       var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
       var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
       if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
-      else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP for quest mastery",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+      else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus points for quest mastery",icon:String.fromCodePoint(0x1F4B0),xp:50}}
     }else if(roll<0.5){
-      reward={type:"doublexp",tier:"uncommon",label:"Double XP!",desc:"All actions give 2× XP for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}
+      reward={type:"doublexp",tier:"uncommon",label:"Double Points!",desc:"All actions give 2× points for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}
     }else if(roll<0.75){
       var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
       if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
         reward={type:"badge",tier:"uncommon",label:"New Badge!",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:15,badge:badge}}
-      else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+25 bonus XP",icon:String.fromCodePoint(0x2728),xp:25}}
+      else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+25 process points",icon:String.fromCodePoint(0x2728),xp:25}}
     }else{
       var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
       if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
         reward={type:"quote",tier:"uncommon",label:"Rare Wisdom!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:10,quote:quote}}
-      else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+20 bonus XP",icon:String.fromCodePoint(0x2728),xp:20}}}
+      else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+20 process points",icon:String.fromCodePoint(0x2728),xp:20}}}
     // Apply
     setChestRewards(function(p){
       var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
       if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
       if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
       try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
-    if(reward.xp>0)addXP(reward.xp,"Quest chest: "+reward.label);
+    if(reward.xp>0)addXP(reward.xp,"Quest reward: "+reward.label);
     if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
     if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
     if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
@@ -732,35 +732,35 @@ function TrackerApp(props){
         var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
         var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
         if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:0,lensWeek:nextLens.w}}
-        else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+        else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus process points",icon:String.fromCodePoint(0x1F4B0),xp:50}}
       }else{
         // Badge
         var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
         if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
           reward={type:"badge",tier:"rare",label:"New Badge!",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:10,badge:badge}}
-        else{reward={type:"xp",tier:"rare",label:"Jackpot XP!",desc:"+50 bonus XP",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
+        else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus process points",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
     }else if(roll<0.30){
-      // UNCOMMON: Double XP or insight quote
+      // UNCOMMON: Double points or insight quote
       if(Math.random()<0.6){
-        reward={type:"doublexp",tier:"uncommon",label:"Double XP!",desc:"All actions give 2× XP for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}}
+        reward={type:"doublexp",tier:"uncommon",label:"Double Points!",desc:"All actions give 2× points for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}}
       else{
         var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
         if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
           reward={type:"quote",tier:"uncommon",label:"Rare Quote!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:5,quote:quote}}
-        else{reward={type:"xp",tier:"uncommon",label:"Bonus XP!",desc:"+15 bonus XP",icon:String.fromCodePoint(0x2728),xp:15}}}
+        else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+15 process points",icon:String.fromCodePoint(0x2728),xp:15}}}
     }else{
-      // COMMON: Bonus XP or streak freeze or quote
+      // COMMON: Bonus points or streak freeze or quote
       var r2=Math.random();
       if(r2<0.4){
         var bonusXP=[10,12,15,18,20][Math.floor(Math.random()*5)];
-        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus XP",desc:"Extra experience for your dedication",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
+        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus",desc:"Extra process points for your dedication",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
       else if(r2<0.65){
         reward={type:"freeze",tier:"common",label:"Streak Freeze!",desc:"Protection against missing one week",icon:String.fromCodePoint(0x1F6E1),xp:0}}
       else{
         var available2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
         if(available2.length>0){var quote2=available2[Math.floor(Math.random()*available2.length)];
           reward={type:"quote",tier:"common",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4D6),xp:0,quote:quote2}}
-        else{reward={type:"xp",tier:"common",label:"+15 Bonus XP",desc:"Extra experience",icon:String.fromCodePoint(0x2B50),xp:15}}}}
+        else{reward={type:"xp",tier:"common",label:"+15 Bonus",desc:"Extra process points",icon:String.fromCodePoint(0x2B50),xp:15}}}}
     return reward}
   function openChest(){
     var reward=rollChestReward();
@@ -770,7 +770,7 @@ function TrackerApp(props){
       if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
       if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
       try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
-    if(reward.xp>0)addXP(reward.xp,"Chest: "+reward.label);
+    if(reward.xp>0)addXP(reward.xp,"Reward: "+reward.label);
     if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
     if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
     if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
@@ -827,6 +827,7 @@ function TrackerApp(props){
       return n})}
   // Track score for milestone detection
   var prevScoreLevel=useRef(null);
+  var globalOS=calcOwnerScore(cos);var currentLevel=getLevel(globalOS.total);
   useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
@@ -1656,7 +1657,7 @@ function TrackerApp(props){
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
     var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
-    var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe — upgrade to continue using data features.",companies:"You've reached the free limit of "+FREE_LIMIT+" companies.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
+    var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe — upgrade to continue using data features.",companies:"Upgrade to unlock data features.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
     function startCheckout(priceId){setLoading(priceId);
       fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error — please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
     return<Modal title="Upgrade to Owner’s Plan" onClose={function(){setShowUpgrade(false)}} w={520} K={K}>
@@ -1665,7 +1666,7 @@ function TrackerApp(props){
         <div style={{fontSize:12,color:K.dim,marginTop:4}}>Your process tools stay free forever. Add real-time data to supercharge them.</div></div>
       {/* Feature list */}
       <div style={{background:K.bg,borderRadius:10,padding:"16px 20px",marginBottom:24}}>
-        {[{t:"Auto earnings check + notifications",i:"⚡"},{t:"Financial statements (10yr history)",i:"📊"},{t:"Data-driven moat analysis (8 metrics)",i:"🏰"},{t:"Analyst targets + insider trades",i:"📋"},{t:"Price charts with conviction markers",i:"📈"},{t:"Unlimited companies",i:"∞"},{t:"Premium PDF export",i:"📄"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
+        {[{t:"Auto earnings check + notifications",i:"⚡"},{t:"Financial statements (10yr history)",i:"📊"},{t:"Data-driven moat analysis (8 metrics)",i:"🏰"},{t:"Analyst targets + insider trades",i:"📋"},{t:"Price charts with conviction markers",i:"📈"},{t:"Community benchmarks & consensus",i:"👥"},{t:"Premium PDF export",i:"📄"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
           <span style={{fontSize:14,width:20,textAlign:"center"}}>{f.i}</span>
           <span style={{fontSize:12,color:K.txt,fontFamily:fm}}>{f.t}</span></div>})}</div>
       {/* Pricing cards */}
@@ -1681,7 +1682,7 @@ function TrackerApp(props){
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$79<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
           <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 27% — $6.58/mo</div>
           <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
-      <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: {FREE_LIMIT} companies, thesis editor, conviction tracking, weekly reviews, decision journal, Owner's Score</div>
+      <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
@@ -1807,8 +1808,8 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{step.desc}</div></div>})}</div>
       <div style={{textAlign:"center",fontSize:12,color:K.mid,fontStyle:"italic",marginBottom:20,fontFamily:fh,lineHeight:1.6}}>{"“"}The goal of each investor should be to create a portfolio that will deliver him or her the highest possible look-through earnings a decade or so from now.{"”"} {"—"} Warren Buffett</div>
       <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"left"}}>
-        <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>How you level up</div>
-        <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action earns <strong style={{color:K.grn}}>XP</strong> — writing theses, tracking KPIs, rating conviction, completing weekly reviews. Your <strong>XP Level</strong> (shown on your avatar) is your permanent identity as an owner. Your <strong>Process Health</strong> score measures how complete your portfolio work is right now. Build daily streaks, earn weekly rewards, and unlock investor lenses as you go.</div></div>
+        <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>Your process builds over time</div>
+        <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action — writing a thesis, tracking KPIs, reviewing conviction — builds your <strong>Owner’s Score</strong>. The score measures how disciplined your process is, not whether your stocks go up. Show up consistently, and you’ll unlock investor lenses, themes, and insights along the way.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
         <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
@@ -1899,7 +1900,7 @@ function TrackerApp(props){
           {d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {c.earningsDate==="TBD"&&<div style={{fontSize:9,color:sideDim2,fontFamily:fm}}>TBD</div>}</div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6}}>
-      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){if(canAdd){setModal({type:"add"});if(isMobile)setSideOpen(false)}else{requirePro("companies")}}}>+ Add</button>
+      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
       <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div>}
   function TopBar(){
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:isMobile?"10px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,gap:isMobile?8:12}}>
@@ -1920,7 +1921,7 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{"Lvl."+xpLevel.level}</div>
+      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{globalOS.total}</div>
     </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
@@ -2792,6 +2793,16 @@ function TrackerApp(props){
           {items.map(function(it,ii){return<div key={ii} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:it.color+"08",border:"1px solid "+it.color+"20"}}>
             <span style={{fontSize:9,color:it.color,fontFamily:fm,fontWeight:600}}>{it.label}</span>
             <span style={{fontSize:10,color:it.color,fontWeight:700,fontFamily:fm}}>{it.value}</span></div>})}</div>})()}
+      {/* Community conviction consensus */}
+      {conv>0&&(function(){
+        var portOwners=cos.filter(function(x){return(x.status||"portfolio")==="portfolio"}).length;
+        var hist=c.convictionHistory||[];var avgConv=hist.length>0?Math.round(hist.reduce(function(s,h){return s+h.rating},0)/hist.length*10)/10:conv;
+        return<div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.bg,borderRadius:8,marginBottom:8}}>
+          <IC name="users" size={14} color={K.dim}/>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,color:K.mid}}><span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{conv}/10</span> conviction · {hist.length} rating{hist.length!==1?"s":""} over time{hist.length>=3?" · avg "+avgConv:""}</div>
+            <div style={{fontSize:9,color:K.dim,marginTop:1}}>Community consensus coming as more owners join ThesisAlpha</div></div>
+        </div>})()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
         {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){setDetailTab(t.id)}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}</button>})}</div>
@@ -3165,16 +3176,12 @@ function TrackerApp(props){
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
             <div style={{fontSize:13,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:11,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
-            {/* Unified progress — Owner's Score + XP Level on one line */}
-            <div style={{display:"flex",alignItems:"center",gap:12,marginTop:8}}>
+            {/* Progress bar + level name */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
               <div style={{width:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
-              <div style={{display:"flex",alignItems:"center",gap:5}}>
-                <div style={{position:"relative",width:18,height:18}}>
-                  <svg width={18} height={18} viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke={K.bdr} strokeWidth="1.5"/><circle cx="9" cy="9" r="7" fill="none" stroke={K.acc} strokeWidth="1.5" strokeDasharray={Math.round(xpPct/100*44)+" 44"} strokeLinecap="round" transform="rotate(-90 9 9)"/></svg>
-                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
-                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} XP</span>
-                {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)}</span>}
-              </div></div></div></div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} pts</span>
+            </div></div></div>
         {/* Quick stats — consolidated */}
         <div style={{display:"flex",gap:isMobile?12:16}}>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
@@ -3189,7 +3196,7 @@ function TrackerApp(props){
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Decision Journal",icon:"book"},{id:"docs",l:"Document Vault",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
+        {[{id:"command",l:"Command Center",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Decision Journal",icon:"book"},{id:"docs",l:"Document Vault",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
           return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?600:400,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
 
@@ -3264,7 +3271,7 @@ function TrackerApp(props){
                 <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {q.done?<IC name="check" size={12} color="#fff" strokeWidth={3}/>:<IC name={q.icon} size={10} color={q.color}/>}</div>
                 <div style={{flex:1,fontSize:12,color:q.done?K.dim:K.txt,textDecoration:q.done?"line-through":"none"}}>{q.text}</div>
-                {!q.done&&<span style={{fontSize:10,color:q.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>+8 XP</span>}
+                {!q.done&&<span style={{fontSize:10,color:q.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>+8 pts</span>}
                 {q.done&&<span style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"}</span>}
               </div>})}</div>
             {/* Quest reward preview */}
@@ -3276,9 +3283,9 @@ function TrackerApp(props){
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
               <div style={{fontSize:11,color:K.dim,marginBottom:12}}>You've earned a guaranteed Uncommon or Rare chest</div>
-              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Open Quest Chest</button></div>}
+              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Open Quest Reward</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
-              <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest chest claimed this week ✓</div>
+              <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest reward claimed this week ✓</div>
               <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
           </div>})()}
 
@@ -3305,6 +3312,124 @@ function TrackerApp(props){
               <span style={{fontSize:11,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dec.reasoning?dec.reasoning.substring(0,60)+"...":""}</span>
               {dec.outcome&&<span style={{fontSize:9,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,fontFamily:fm,fontWeight:600}}>{dec.outcome}</span>}
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>})}</div>}
+        {/* ═══ COMMUNITY BENCHMARK ═══ */}
+        <div style={{marginTop:24}}>
+          <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community</div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+            <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",gap:16,flexDirection:isMobile?"column":"row"}}>
+              {/* Your score */}
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>YOUR PROCESS SCORE</div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{fontSize:36,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.red,fontFamily:fm}}>{globalOS.total}</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{currentLevel.icon} {currentLevel.name}</div>
+                    <div style={{fontSize:11,color:K.dim}}>Top investors maintain 70+ process scores</div></div></div>
+              </div>
+              {/* Benchmark */}
+              <div style={{flex:1,padding:"16px 20px",background:K.bg,borderRadius:10,textAlign:"center"}}>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>COMMUNITY BENCHMARK</div>
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:8}}>ThesisAlpha is in early access. As more owners join, you'll see how your process compares.</div>
+                <div style={{display:"flex",justifyContent:"center",gap:12}}>
+                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
+                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
+                    <div style={{fontSize:8,color:K.dim}}>Your holdings</div></div>
+                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
+                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{weeklyReviews.length}</div>
+                    <div style={{fontSize:8,color:K.dim}}>Reviews done</div></div>
+                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
+                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
+                    <div style={{fontSize:8,color:K.dim}}>Decisions logged</div></div></div>
+                <div style={{fontSize:9,color:K.acc,marginTop:10,fontFamily:fm}}>{"🌱"} You're among the first owners. Early adopters shape the community.</div>
+              </div></div>
+          </div>
+        </div>
+      </div>}
+
+      {/* ═══ COMMUNITY TAB ═══ */}
+      {ht==="community"&&<div>
+        {/* Community header */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>Community Benchmarks</div>
+          <div style={{fontSize:12,color:K.dim,lineHeight:1.7}}>See how your process compares to other ThesisAlpha owners. All data is anonymous — only aggregate scores are shared.</div></div>
+
+        {/* ── Process Score Benchmark ── */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <IC name="bar" size={16} color={K.acc}/>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Process Score Ranking</div></div>
+          {/* Your score */}
+          <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:10,marginBottom:16}}>
+            <div style={{position:"relative",width:48,height:48,flexShrink:0}}>
+              <svg width={48} height={48} viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="24" cy="24" r="20" fill="none" stroke={os.total>=70?K.grn:os.total>=40?K.amb:K.acc} strokeWidth="3" strokeDasharray={Math.round(os.total/100*126)+" 126"} strokeLinecap="round" transform="rotate(-90 24 24)"/></svg>
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:os.total>=70?K.grn:os.total>=40?K.amb:K.acc,fontFamily:fm}}>{os.total}</div></div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Your Process Score</div>
+              <div style={{fontSize:11,color:K.dim}}>{currentLevel.name} — {os.total>=80?"Top-tier discipline":os.total>=50?"Building strong habits":"Room to grow"}</div></div></div>
+          {/* Benchmark placeholder — honest pre-launch state */}
+          <div style={{background:K.bg,borderRadius:10,padding:"24px 20px",textAlign:"center",border:"1px dashed "+K.bdr}}>
+            <div style={{fontSize:28,marginBottom:8,opacity:.6}}>{String.fromCodePoint(0x1F4CA)}</div>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt,marginBottom:4}}>Benchmarks coming soon</div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.6,maxWidth:340,margin:"0 auto"}}>Once more owners join ThesisAlpha, you'll see how your process score ranks against the community — percentile, average, and distribution.</div></div>
+        </div>
+
+        {/* ── Conviction Consensus ── */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <IC name="trending" size={16} color={K.grn}/>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Conviction Consensus</div></div>
+          <div style={{fontSize:11,color:K.dim,marginBottom:16,lineHeight:1.6}}>See how other owners rate their conviction on the same companies you hold. Are you more bullish or cautious than the crowd?</div>
+          {/* Per-holding conviction comparison */}
+          {portfolio.length>0?<div>
+            {portfolio.map(function(c2){var conv2=c2.conviction||0;
+              return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+K.bdr+"30"}}>
+                <CoLogo domain={c2.domain} ticker={c2.ticker} size={24}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</div>
+                  <div style={{fontSize:10,color:K.dim}}>{c2.name}</div></div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:14,fontWeight:700,color:conv2>=7?K.grn:conv2>=4?K.amb:K.red,fontFamily:fm}}>{conv2>0?conv2+"/10":"—"}</div>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Your rating</div></div>
+                <div style={{textAlign:"right",minWidth:60}}>
+                  <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>—</div>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Community</div></div>
+              </div>})}
+            <div style={{textAlign:"center",padding:"12px 0",fontSize:10,color:K.dim,fontStyle:"italic"}}>Community averages will appear as more owners rate these companies.</div>
+          </div>:<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:12}}>Add companies to your portfolio to see conviction comparisons.</div>}
+        </div>
+
+        {/* ── Community Activity ── */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <IC name="users" size={16} color={K.blue}/>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Community Activity</div></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
+            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
+              <div style={{fontSize:9,color:K.dim,marginTop:4}}>Active Owners</div></div>
+            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
+              <div style={{fontSize:9,color:K.dim,marginTop:4}}>Reviews This Week</div></div>
+            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
+              <div style={{fontSize:9,color:K.dim,marginTop:4}}>Theses Written</div></div>
+          </div>
+          <div style={{background:K.acc+"06",border:"1px solid "+K.acc+"15",borderRadius:8,padding:"12px 16px",textAlign:"center"}}>
+            <div style={{fontSize:11,color:K.acc,fontWeight:600,marginBottom:2}}>You're an early adopter</div>
+            <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Community features are building as more investors join. Your early activity helps shape how benchmarks work for everyone.</div></div>
+        </div>
+
+        {/* ── Shared Thesis Library (future) ── */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <IC name="book" size={16} color={"#9333EA"}/>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Thesis Library</div>
+            <span style={{fontSize:9,color:"#9333EA",background:"#9333EA15",padding:"2px 8px",borderRadius:4,fontFamily:fm,fontWeight:600}}>COMING SOON</span></div>
+          <div style={{fontSize:12,color:K.dim,lineHeight:1.7,marginBottom:12}}>Read how other owners think about the companies you hold. No price targets — just investment reasoning, moat analysis, and sell criteria shared by real owners.</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            {["Share your thesis","Read others' reasoning","Learn new frameworks"].map(function(f2){return<div key={f2} style={{padding:"10px 12px",background:K.bg,borderRadius:6,textAlign:"center"}}>
+              <div style={{fontSize:10,color:K.mid,lineHeight:1.5}}>{f2}</div></div>})}</div>
+        </div>
       </div>}
 
       {/* ═══ INVESTOR LENSES TAB ═══ */}
@@ -3548,15 +3673,15 @@ function TrackerApp(props){
           </div>
         </div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px"}}>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>XP Level System</div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Earn XP by writing theses, tracking KPIs, rating conviction, and completing weekly reviews. Level up by showing up consistently.</div>
+          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>Process Level System</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Every action builds your process score — writing theses, tracking KPIs, rating conviction, completing weekly reviews. Show up consistently and watch your score grow.</div>
           <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"08",border:"1px solid "+K.acc+"30",borderRadius:10,marginBottom:12}}>
-            <div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm}}>{"Lvl. "+xpLevel.level}</div>
+            <div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm}}>{currentLevel.icon+" "+currentLevel.name}</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{xp.total.toLocaleString()} / {xpLevel.xpForNext.toLocaleString()} XP</div>
+              <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{xp.total.toLocaleString()} / {xpLevel.xpForNext.toLocaleString()} pts</div>
               <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:xpPct+"%",borderRadius:3,background:K.acc}}/></div></div></div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{label:"Write thesis",xp:"+10 XP",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"+5 XP",sub:""},{label:"Rate conviction",xp:"+8 XP",sub:""},{label:"Weekly review",xp:"+25 XP",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
+            {[{label:"Write thesis",xp:"+10 pts",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"+5 pts",sub:""},{label:"Rate conviction",xp:"+8 pts",sub:""},{label:"Weekly review",xp:"+25 pts",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
               <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,color:K.mid}}>{r.label}</span><span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{r.xp}</span></div>
               {r.sub&&<div style={{fontSize:9,color:K.dim}}>{r.sub}</div>}</div>})}</div>
         </div>
@@ -3998,7 +4123,7 @@ function TrackerApp(props){
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
       showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
-      // Open Owner's Chest after a brief delay
+      // Open Weekly Insight after a brief delay
       setTimeout(function(){openChest()},1500);
       setStep("done")}
 
@@ -4024,7 +4149,7 @@ function TrackerApp(props){
         var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
         var tierIcons={rare:String.fromCodePoint(0x1F48E),uncommon:String.fromCodePoint(0x2728),common:String.fromCodePoint(0x2B50)};
         var tierOdds={rare:"5%",uncommon:"25%",common:"70%"};
-        var tierHints={rare:"Early lens unlock, profile badge",uncommon:"2× XP power-up, rare quote",common:"Bonus XP, streak freeze, wisdom"};
+        var tierHints={rare:"Early lens unlock, profile badge",uncommon:"2× points boost, rare quote",common:"Bonus points, streak freeze, wisdom"};
 
         return<div style={{padding:"48px 20px"}}>
         {/* ── LOCKED STATE: Countdown + Preview ── */}
@@ -4040,7 +4165,7 @@ function TrackerApp(props){
               <div style={{fontSize:32,fontWeight:800,color:K.acc,fontFamily:fm,letterSpacing:2}}>{countdownStr}</div></div></div>}
           {/* Chest Preview */}
           <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>This Week's Chest Contains…</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>This Week's Insight Contains…</div>
             <div style={{display:"flex",justifyContent:"center",gap:16}}>
               {previewTiers.map(function(tier,i){return<div key={i} style={{width:100,height:130,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
                 <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:tierColors[tier]}}/>
@@ -4048,7 +4173,7 @@ function TrackerApp(props){
                 <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier].toUpperCase()}</div>
                 <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tierOdds[tier]} chance</div>
                 <div style={{fontSize:7,color:K.dim,marginTop:4,padding:"0 8px",textAlign:"center",lineHeight:1.3}}>{tierHints[tier]}</div></div>})}</div>
-            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Bonus XP, streak freezes, investor wisdom, 2× XP power-ups, badges, or a rare early lens unlock.</div></div>
+            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Bonus points, streak freezes, investor wisdom, 2× point boosts, badges, or a rare early lens unlock.</div></div>
           <button disabled style={{background:K.prim,color:K.primTxt,border:"none",borderRadius:8,padding:"12px 32px",fontSize:14,fontWeight:600,fontFamily:fm,opacity:.35,cursor:"not-allowed"}}>Available Friday</button>
         </div>}
 
@@ -4060,17 +4185,17 @@ function TrackerApp(props){
           <div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"14px 18px",marginBottom:20,display:"inline-block",textAlign:"left"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={16} color="#a78bfa"/></div>
-              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Owner's Chest awaits</span></div>
-            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 XP</strong> and open a chest with bonus rewards. Could be extra XP, a streak freeze, investor wisdom, 2× XP power-up, or even a rare lens unlock.</div></div>
+              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Weekly Insight awaits</span></div>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 pts</strong> and claim a weekly insight. Could be bonus points, a streak freeze, investor wisdom, 2× points, or even a rare lens unlock.</div></div>
           <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Start Review</button>
         </div>}
 
         {/* ── DONE STATE ── */}
         {currentWeekReviewed&&<div>
           <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:48,marginBottom:12}}>{"\u2705"}</div>
+            <div style={{fontSize:56,marginBottom:12,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 12px rgba(255,215,0,.4))"}}>{String.fromCodePoint(0x1F3C6)}</div>
             <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>This week’s review is complete</div>
-            <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.7}}>Come back next week to keep your streak alive and earn another chest.</div>
+            <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.7}}>Come back next week to keep your streak alive and earn your next weekly insight.</div>
           </div>
           {/* Countdown */}
           {countdownStr&&!isReviewDay&&<div style={{textAlign:"center",marginBottom:20}}>
@@ -4089,7 +4214,7 @@ function TrackerApp(props){
               <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{reward.label}</div>
               <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{reward.desc}</div>
               {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"— "+reward.author}</div>}
-              {reward.xp>0&&<div style={{marginTop:6}}><span style={{fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} XP</span></div>}
+              {reward.xp>0&&<div style={{marginTop:6}}><span style={{fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} pts</span></div>}
             </div>;
             if(histEntry)return<div style={{textAlign:"center",padding:"14px 16px",background:K.card,borderRadius:12,border:"1px solid "+K.bdr,marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
               <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD — "+tierLabels2[histEntry.tier||"common"]}</div>
@@ -4111,7 +4236,6 @@ function TrackerApp(props){
                 <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{ds2}</div>
               </div>})}</div>
           </div>}
-          <div style={{textAlign:"center"}}><button onClick={startReview} style={Object.assign({},S.btn,{fontSize:12,padding:"8px 20px"})}>Review Again</button></div>
         </div>}
       </div>})()}
 
@@ -4171,7 +4295,7 @@ function TrackerApp(props){
           <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+","+K.grn+")",backgroundSize:"200% 100%"}}/>
           {/* Header */}
           <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:48,marginBottom:8,animation:"streakFlame 1s ease infinite"}}>{String.fromCodePoint(0x1F3C6)}</div>
+            <div style={{fontSize:56,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 16px rgba(255,215,0,.5))"}}>{String.fromCodePoint(0x1F3C6)}</div>
             <div style={{fontSize:22,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Review Complete</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Confirm to save convictions and open your weekly chest.</div>
           </div>
@@ -4193,10 +4317,10 @@ function TrackerApp(props){
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{display:"inline-flex",alignItems:"center",gap:8,background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"8px 16px"}}>
               <span style={{fontSize:18,animation:"glowPulse 2s ease-in-out infinite"}}>{String.fromCodePoint(0x1F381)}</span>
-              <span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 XP & Owner's Chest awaits</span></div></div>
+              <span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 pts & Weekly Insight awaits</span></div></div>
           {/* CTA */}
           <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:16,padding:"16px 0",borderRadius:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
-            {String.fromCodePoint(0x2705)+" Complete Review & Open Chest"}</button>
+            {String.fromCodePoint(0x2705)+" Complete Review & Claim Insight"}</button>
           <div style={{textAlign:"center",marginTop:12}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>← Go back and edit</button></div>
         </div>
       </div>}
@@ -4209,7 +4333,8 @@ function TrackerApp(props){
           var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"28px 24px",marginBottom:20}}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>{String.fromCodePoint(0x2705)} THIS WEEK'S REVIEW COMPLETE</div>
+              <div style={{fontSize:48,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 12px rgba(255,215,0,.4))"}}>{String.fromCodePoint(0x1F3C6)}</div>
+              <div style={{fontSize:14,fontWeight:600,color:"#FFD700",fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
               <div style={{fontSize:12,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
             {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
               <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK’S REWARD — "+tierLabels[reward.tier||"common"]}</div>
@@ -4218,7 +4343,7 @@ function TrackerApp(props){
               <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
               {reward.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginTop:4}}>{"— "+reward.author}</div>}
               {reward.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"3px 10px",marginTop:8}}>
-                <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} XP</span></div>}
+                <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} pts</span></div>}
             </div>}
             {/* Previously earned rewards */}
             {chestRewards.history.length>0&&<div>
@@ -4677,10 +4802,10 @@ function TrackerApp(props){
           {emailNotify?"Email Alert ON":"+ Email Alert"}</button>}
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
-        <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){if(canAdd){setModal({type:"add"})}else{requirePro("companies")}}}>+ Add</button></div></div>
+        <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
     {/* ── XP Float Animation ── */}
     {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
-      <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount} XP
+      <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
     {/* ── Today's Focus Card (hero element, always first) ── */}
@@ -4715,8 +4840,8 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
       </div>})()}
-    {/* ── Compact Streak/XP bar (collapsible) ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&<div style={{marginBottom:16}}>
+    {/* ── Compact Streak/Process bar (collapsible, hidden until first action) ── */}
+    {sideTab==="portfolio"&&filtered.length>0&&xp.total>0&&<div style={{marginBottom:16}}>
       {/* Compact summary line — always visible */}
       <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
@@ -4729,9 +4854,9 @@ function TrackerApp(props){
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <div style={{position:"relative",width:22,height:22,flexShrink:0}}>
-            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={K.acc} strokeWidth="2" strokeDasharray={Math.round(xpPct/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} XP</span>
+            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2" strokeDasharray={Math.round(globalOS.total/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
           {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)+" 2×"}</span>}
           <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
         </div>
@@ -4754,14 +4879,14 @@ function TrackerApp(props){
           {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"2px 6px"}}>
             <span style={{fontSize:10}}>{"🛡️"}</span>
             <span style={{fontSize:8,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
-        {/* XP + Level */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1}}>
+        {/* Process Score */}
+        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("hub")}}>
           <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
-            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={K.acc} strokeWidth="2.5" strokeDasharray={Math.round(xpPct/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:K.acc,fontFamily:fm}}>{xpLevel.level}</div></div>
+            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
+            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
           <div>
-            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{xp.total.toLocaleString()} XP</div>
-            <div style={{fontSize:8,color:isDoubleXP?K.amb:K.dim}}>{isDoubleXP?String.fromCodePoint(0x26A1)+" 2× XP":"Lvl. "+xpLevel.level}</div></div></div>
+            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Process</div>
+            <div style={{fontSize:8,color:K.dim}}>{currentLevel.icon} {currentLevel.name}</div></div></div>
       </div>}
     </div>}
     {/* ── Getting Started Quest (persistent onboarding) ── */}
@@ -4938,7 +5063,7 @@ function TrackerApp(props){
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
-    {/* ── Owner's Chest Overlay ── */}
+    {/* ── Weekly Insight Overlay ── */}
     {chestOverlay&&<div style={{position:"fixed",inset:0,zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",animation:"fadeInFast .3s ease"}} onClick={function(){setChestOverlay(null)}}>
       <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"2px solid "+(chestOverlay.tier==="rare"?"#FFD700":chestOverlay.tier==="uncommon"?"#a78bfa":K.acc),boxShadow:"0 0 60px "+(chestOverlay.tier==="rare"?"rgba(255,215,0,.4)":chestOverlay.tier==="uncommon"?"rgba(167,139,250,.3)":"rgba(0,0,0,.3)")+", 0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
         {/* Tier glow bar */}
@@ -4954,7 +5079,7 @@ function TrackerApp(props){
         {chestOverlay.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:16}}>{"— "+chestOverlay.author}</div>}
         {/* XP earned */}
         {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"4px 12px",marginBottom:12}}>
-          <span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>+{chestOverlay.xp} XP</span></div>}
+          <span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>+{chestOverlay.xp} pts</span></div>}
         <div><button onClick={function(){setChestOverlay(null)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:12})}>Collect</button></div>
       </div></div>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
@@ -4989,7 +5114,7 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{"Lvl. "+xpLevel.level}</div>
+            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{globalOS.total}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
@@ -4999,11 +5124,11 @@ function TrackerApp(props){
             {editingName&&<div style={{display:"flex",gap:6,marginTop:4}}><input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Choose a username" maxLength={20} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:11,fontFamily:fm,width:140,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername()}} autoFocus/><button onClick={saveUsername} style={{background:K.acc,color:K.primTxt,border:"none",borderRadius:4,padding:"4px 10px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save</button></div>}
             {username&&<div style={{fontSize:10,color:K.dim}}>{props.user}</div>}
             <div style={{fontSize:12,color:K.acc,fontWeight:600,fontFamily:fm}}>Level {xpLevel.level}</div>
-            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{xp.total.toLocaleString()} XP total</div></div></div>
+            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{xp.total.toLocaleString()} pts total</div></div></div>
         {/* XP Progress to next level */}
         <div style={{marginBottom:20}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>
-            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" XP to Level "+(xpLevel.level+1):"Max level!"}</span></div>
+            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" pts to Level "+(xpLevel.level+1):"Max level!"}</span></div>
           <div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
             <div style={{height:"100%",width:xpPct+"%",borderRadius:4,background:K.acc,transition:"width .3s"}}/></div></div>
         {/* Stats grid */}
@@ -5029,7 +5154,7 @@ function TrackerApp(props){
         {/* Double XP indicator */}
         {isDoubleXP&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:14}}>{String.fromCodePoint(0x26A1)}</span>
-          <div><div style={{fontSize:11,fontWeight:600,color:K.amb}}>2× XP Active</div>
+          <div><div style={{fontSize:11,fontWeight:600,color:K.amb}}>2× Points Active</div>
             <div style={{fontSize:9,color:K.dim}}>Expires {new Date(doubleXP).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}</div></div></div>}
         {/* Badges */}
         {(chestRewards.badges||[]).length>0&&<div style={{marginBottom:16}}>
@@ -5045,9 +5170,9 @@ function TrackerApp(props){
             {(chestRewards.quotes||[]).slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
               <div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{"“"+q.q+"”"}</div>
               <div style={{fontSize:9,color:K.dim,textAlign:"right"}}>{"— "+q.a}</div></div>})}</div></div>}
-        {/* Recent XP history */}
+        {/* Recent Activity history */}
         {xp.history.length>0&&<div>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Recent XP</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Recent Activity</div>
           <div style={{maxHeight:140,overflowY:"auto"}}>
             {xp.history.slice(0,10).map(function(h,i){return<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
               <span style={{fontSize:11,color:K.mid}}>{h.label}</span>
