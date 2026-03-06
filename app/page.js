@@ -1059,6 +1059,12 @@ function TrackerApp(props){
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
   var upd=function(id,fn){setCos(function(p){return p.map(function(c){return c.id===id?(typeof fn==="function"?fn(c):Object.assign({},c,fn)):c})})};
+  // ── Structured Journal Entry System ──
+  function logJournalEntry(companyId,entry){
+    var base={id:Date.now()+Math.random(),date:new Date().toISOString(),cardType:entry.cardType||"note"};
+    var full=Object.assign(base,entry);
+    upd(companyId,function(prev){return Object.assign({},prev,{decisions:[full].concat(prev.decisions||[]).slice(0,80)})});
+    return full}
   var delCo=function(id){setCos(function(p){return p.filter(function(c){return c.id!==id})});setSelId(null);setModal(null)};
   var unread=notifs.filter(function(n){return!n.read}).length;
   async function checkOne(cid){var co=cos.find(function(c){return c.id===cid});if(!co)return;
@@ -1073,6 +1079,9 @@ function TrackerApp(props){
         if(exists>=0){earningsHistory=earningsHistory.slice();earningsHistory[exists]=newEntry}else{earningsHistory=[newEntry].concat(earningsHistory)}
         return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var mid=resolveMetricId(k);var m=r.results.find(function(x){return x.kpi_name===mid||x.kpi_name===(k.metricId||k.name)});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
         setCheckSt(function(p){var n=Object.assign({},p);n[cid]="found";return n});
+        // Auto-log earnings review journal entry
+        var kpiResults=(r.results||[]);var metCount=kpiResults.filter(function(x){return x.status==="met"}).length;var totalKpis=kpiResults.length;
+        logJournalEntry(cid,{cardType:"earnings_review",ticker:co.ticker,quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),kpisMet:metCount,kpisTotal:totalKpis,kpiDetails:kpiResults.map(function(x){return{name:x.kpi_name,actual:x.actual_value,status:x.status}}),priceAtTime:co.position&&co.position.currentPrice?co.position.currentPrice:null,convictionAtTime:co.conviction||0,action:"",trigger:"",thesisImpact:"",userNote:""});
         setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n})}}
     catch(e){console.warn("checkOne error:",e);setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
@@ -1192,7 +1201,9 @@ function TrackerApp(props){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
+              // Auto-log thesis snapshot
+              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
@@ -1580,7 +1591,7 @@ function TrackerApp(props){
     var mt=c.moatTypes||{};var activeMoats=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
     if(activeMoats.length>0){lines.push("## Moat Classification");activeMoats.forEach(function(t){var d=mt[t.id];lines.push("- "+t.label+" (strength: "+((d.strength||3))+"/5)"+(d.notes?" — "+d.notes:""))});lines.push("")}
     // Decisions
-    if(c.decisions&&c.decisions.length>0){lines.push("## Decision Journal");c.decisions.slice(0,10).forEach(function(d){lines.push("- "+d.date.substring(0,10)+" "+d.action+(d.price?" @ $"+d.price:"")+(d.shares?" ("+d.shares+" shares)":""));if(d.reasoning)lines.push("  Reasoning: "+d.reasoning);if(d.outcome)lines.push("  Outcome: "+d.outcome+(d.outcomeNote?" — "+d.outcomeNote:""))});lines.push("")}
+    if(c.decisions&&c.decisions.length>0){lines.push("## Research Journal");c.decisions.slice(0,10).forEach(function(d){lines.push("- "+d.date.substring(0,10)+" "+d.action+(d.price?" @ $"+d.price:"")+(d.shares?" ("+d.shares+" shares)":""));if(d.reasoning)lines.push("  Reasoning: "+d.reasoning);if(d.outcome)lines.push("  Outcome: "+d.outcome+(d.outcomeNote?" — "+d.outcomeNote:""))});lines.push("")}
     // Dividends
     var dps=c.divPerShare||c.lastDiv||0;
     if(dps>0){var mult2=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
@@ -1800,7 +1811,7 @@ function TrackerApp(props){
         {[{num:"1",icon:"lightbulb",title:"Write Your Thesis",desc:"Why do you own this? What's the moat? When would you sell? Write it down before you buy.",color:K.grn},
           {num:"2",icon:"target",title:"Define KPIs",desc:"Pick 2-3 metrics that prove your thesis. Revenue growth, margins, retention — whatever matters most.",color:K.blue},
           {num:"3",icon:"bar",title:"Check Earnings",desc:"When results drop, we auto-check your KPIs against real data. See instantly if your thesis holds.",color:K.amb},
-          {num:"4",icon:"castle",title:"Review & Decide",desc:"Score the moat, update conviction, log your decision. The Decision Journal keeps you honest.",color:K.acc}
+          {num:"4",icon:"castle",title:"Review & Decide",desc:"Score the moat, update conviction, log your decision. The Research Journal keeps you honest.",color:K.acc}
         ].map(function(step){return<div key={step.num} style={{background:K.bg,borderRadius:10,padding:"18px 20px",border:"1px solid "+K.bdr,position:"relative"}}>
           <div style={{position:"absolute",top:12,right:14,fontSize:24,fontWeight:700,color:step.color+"20",fontFamily:fm}}>{step.num}</div>
           <div style={{width:32,height:32,borderRadius:7,background:step.color+"15",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:10}}><IC name={step.icon} size={15} color={step.color}/></div>
@@ -1955,62 +1966,115 @@ function TrackerApp(props){
           <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{l.category}</span>
           <button onClick={function(){removeLink(l.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:2,opacity:.5}}>{"✕"}</button></div>})}</div>}</div>}
 
-  // ── Decision Journal (BUY/SELL/HOLD log) ──
+  // ── Research Journal (structured card system) ──
+  var CARD_STYLES={decision:{icon:"edit",color:"#3B82F6",label:"Decision"},earnings_review:{icon:"bar",color:"#F59E0B",label:"Earnings Review"},thesis_snapshot:{icon:"lightbulb",color:"#8B5CF6",label:"Thesis Update"},conviction_shift:{icon:"trending",color:"#EC4899",label:"Conviction Shift"},note:{icon:"file",color:"#6B7280",label:"Note"}};
+  function JournalCard(p){var d=p.entry;var ct=CARD_STYLES[d.cardType]||CARD_STYLES.note;var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn,PASS:K.dim};
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+ct.color,borderRadius:10,padding:"14px 18px",marginBottom:10}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+        <div style={{width:24,height:24,borderRadius:6,background:ct.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={ct.icon} size={12} color={ct.color}/></div>
+        <span style={{fontSize:10,fontWeight:700,color:ct.color,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{ct.label}</span>
+        {d.ticker&&<span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{d.ticker}</span>}
+        {d.action&&d.cardType==="decision"&&<span style={{fontSize:9,fontWeight:700,color:actionColors[d.action]||K.txt,background:(actionColors[d.action]||K.dim)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{d.action}</span>}
+        {d.outcome&&<span style={{fontSize:9,fontWeight:600,color:d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:3}}>{d.outcome}</span>}
+        <span style={{marginLeft:"auto",fontSize:9,color:K.dim,fontFamily:fm}}>{d.date?new Date(d.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</span></div>
+      {/* ── DECISION CARD ── */}
+      {d.cardType==="decision"&&<div>
+        {/* Auto-context row */}
+        {(d.priceAtTime||d.convictionAtTime>0)&&<div style={{display:"flex",gap:12,marginBottom:8,padding:"6px 10px",background:K.bg,borderRadius:6,fontSize:10,color:K.dim,fontFamily:fm}}>
+          {d.priceAtTime>0&&<span>Price: ${d.priceAtTime}</span>}
+          {d.convictionAtTime>0&&<span>Conviction: {d.convictionAtTime}/10</span>}
+          {d.timeHorizon&&<span>{d.timeHorizon==="short"?"<1yr":d.timeHorizon==="medium"?"1-3yr":"3-10yr"}</span>}
+          {d.shares&&<span>{d.shares} shares</span>}</div>}
+        {d.reasoning&&<div style={{marginBottom:6}}><div style={{fontSize:9,color:ct.color,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:3}}>REASONING</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{d.reasoning}</div></div>}
+        {d.invalidator&&<div style={{padding:"8px 10px",background:K.red+"06",borderRadius:6,border:"1px solid "+K.red+"15",marginBottom:6}}>
+          <div style={{fontSize:9,color:K.red,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:2}}>WHAT WOULD PROVE ME WRONG</div>
+          <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.invalidator}</div></div>}
+      </div>}
+      {/* ── EARNINGS REVIEW CARD ── */}
+      {d.cardType==="earnings_review"&&<div>
+        {d.quarter&&<div style={{fontSize:12,fontWeight:600,color:K.txt,marginBottom:6}}>{d.quarter}</div>}
+        {d.kpisTotal>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+          {(d.kpiDetails||[]).map(function(k,ki){return<div key={ki} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:4,background:(k.status==="met"?K.grn:K.red)+"10",border:"1px solid "+(k.status==="met"?K.grn:K.red)+"20",fontSize:10,fontFamily:fm}}>
+            <span style={{color:k.status==="met"?K.grn:K.red,fontWeight:600}}>{k.status==="met"?"✓":"✗"}</span>
+            <span style={{color:K.mid}}>{k.name}</span>
+            {k.actual!=null&&<span style={{color:k.status==="met"?K.grn:K.red,fontWeight:600}}>{k.actual}</span>}</div>})}</div>}
+        {d.kpisTotal>0&&<div style={{fontSize:11,fontWeight:600,color:d.kpisMet===d.kpisTotal?K.grn:d.kpisMet>0?K.amb:K.red,fontFamily:fm,marginBottom:6}}>{d.kpisMet}/{d.kpisTotal} KPIs met</div>}
+        {d.summary&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5,marginBottom:6}}>{d.summary.substring(0,200)}</div>}
+        {d.userNote&&<div style={{padding:"6px 10px",background:K.bg,borderRadius:6,marginTop:4}}>
+          <div style={{fontSize:9,color:ct.color,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:2}}>MY TAKE</div>
+          <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.userNote}</div></div>}
+      </div>}
+      {/* ── THESIS SNAPSHOT CARD ── */}
+      {d.cardType==="thesis_snapshot"&&<div>
+        <div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginBottom:8}}>{d.isNew?"Initial thesis written":"Thesis updated to v"+d.version}</div>
+        {d.core&&<div style={{padding:"8px 12px",background:K.bg,borderRadius:6,borderLeft:"2px solid "+ct.color,fontSize:11,color:K.mid,lineHeight:1.5,fontStyle:"italic",marginBottom:6}}>{"“"}{d.core}...{"”"}</div>}
+        <div style={{display:"flex",gap:3}}>
+          {[{k:"core",c:K.acc,l:"Core"},{k:"hasMoat",c:K.grn,l:"Moat"},{k:"hasRisks",c:K.amb,l:"Risks"},{k:"hasSell",c:K.red,l:"Sell"}].map(function(s){var done=s.k==="core"?d.sectionsFilled>=1:d[s.k];
+            return<span key={s.k} style={{fontSize:9,padding:"2px 6px",borderRadius:3,background:done?s.c+"15":"transparent",color:done?s.c:K.dim,fontFamily:fm,border:"1px solid "+(done?s.c+"25":K.bdr)}}>{done?"●":"○"} {s.l}</span>})}</div>
+      </div>}
+      {/* ── CONVICTION SHIFT CARD ── */}
+      {d.cardType==="conviction_shift"&&<div>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:22,fontWeight:800,color:d.prevConviction>=7?K.grn:d.prevConviction>=4?K.amb:K.red,fontFamily:fm}}>{d.prevConviction}</span>
+            <span style={{fontSize:14,color:K.dim}}>{"→"}</span>
+            <span style={{fontSize:22,fontWeight:800,color:d.newConviction>=7?K.grn:d.newConviction>=4?K.amb:K.red,fontFamily:fm}}>{d.newConviction}</span>
+            <span style={{fontSize:11,fontWeight:600,color:d.delta>0?K.grn:K.red,fontFamily:fm}}>{d.delta>0?"+":""}{d.delta}</span></div>
+          {d.action&&d.action!=="hold"&&<span style={{fontSize:9,fontWeight:700,color:d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb,background:(d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb)+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{d.action}</span>}</div>
+        {d.note&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.note}</div>}
+      </div>}
+      {/* ── LEGACY/NOTE CARD ── */}
+      {(!d.cardType||d.cardType==="note")&&d.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{d.reasoning}</div>}
+    </div>}
   function DecisionJournal(p){var c=p.company;var decisions=c.decisions||[];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
-    var _exp2=useState(null),expDec=_exp2[0],setExpDec=_exp2[1];
     var _f=useState({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
-    function addDecision(){if(!f.reasoning.trim()||!f.invalidator.trim())return;
-      var entry={id:Date.now(),action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,date:new Date().toISOString(),priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:"",biasFlags:[]};
-      upd(c.id,function(prev){var newDecs=[entry].concat(prev.decisions||[]).slice(0,50);
-        return Object.assign({},prev,{decisions:newDecs})});
+    function addDecision(){if(!f.reasoning.trim())return;
+      logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
+      addXP(8,"Decision logged");
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
-      if(allDecCount===0)setTimeout(function(){checkMilestone("first_decision",String.fromCodePoint(0x1F4DD)+" First decision logged! Your journal has begun.")},300);
+      if(allDecCount<=1)setTimeout(function(){checkMilestone("first_decision",String.fromCodePoint(0x1F4DD)+" First decision logged! Your journal has begun.")},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
-    var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn,PASS:K.dim};
-    var actionIcons={BUY:"↑",SELL:"↓",ADD:"↑",TRIM:"↓",HOLD:"—",PASS:"✘"};
     var scored=decisions.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
     return<div style={{marginBottom:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="edit" size={14} color={K.dim}/>Decision Ledger</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="book" size={14} color={K.dim}/>Research Journal</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>{scored.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{rights}/{scored.length} right ({Math.round(rights/scored.length*100)}%)</span>}
         <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setAdding(!adding)}}>+ Log Decision</button></div></div>
       {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:12,padding:"20px 24px",marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION ENTRY</div>
+        <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION</div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
           <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
           <Inp label="Price" value={f.price} onChange={function(v){set("price",v)}} type="number" placeholder="$" K={K}/>
           <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/>
-          <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1–3yr"},{v:"long",l:"3–10yr"}]} K={K}/></div>
+          <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1-3yr"},{v:"long",l:"3-10yr"}]} K={K}/></div>
         <div style={{marginBottom:12}}><label style={{display:"block",fontSize:11,color:K.txt,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why am I making this decision? *</label>
-          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="Core thesis. What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
-        <div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>{"⚠"} What would prove me wrong? *</label>
-          <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would kill this thesis" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
-        {c.conviction>0&&<div style={{fontSize:11,color:K.dim,marginBottom:12,fontFamily:fm}}>Conviction snapshot: <span style={{color:c.conviction>=8?K.grn:c.conviction>=5?K.amb:K.red,fontWeight:600}}>{c.conviction}/10</span></div>}
-        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()&&f.invalidator.trim()?1:.3})} onClick={addDecision}>Save to Ledger</button></div></div>}
-      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center"}}><div style={{fontSize:13,color:K.dim,marginBottom:4}}>No decisions logged yet</div><div style={{fontSize:11,color:K.dim}}>Record every BUY, SELL, or PASS with your reasoning and invalidation criteria.</div></div>}
-      {decisions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
-        {decisions.slice(0,10).map(function(d,i){var isExp=expDec===d.id;return<div key={d.id} style={{padding:"12px 16px",borderBottom:i<Math.min(decisions.length,10)-1?"1px solid "+K.bdr:"none",cursor:"pointer",background:isExp?K.acc+"06":"transparent"}} onClick={function(){setExpDec(isExp?null:d.id)}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-            <span style={{fontWeight:700,fontSize:11,color:actionColors[d.action]||K.txt,fontFamily:fm,letterSpacing:1}}>{actionIcons[d.action]||""} {d.action}</span>
-            {d.convictionAtTime>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,background:K.bdr,padding:"1px 5px",borderRadius:3}}>C:{d.convictionAtTime}</span>}
-            {d.timeHorizon&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,padding:"1px 5px",borderRadius:3}}>{d.timeHorizon==="short"?"<1y":d.timeHorizon==="medium"?"1-3y":"3-10y"}</span>}
-            {d.outcome&&<span style={{fontSize:9,fontWeight:600,color:d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:d.outcome==="lucky"?"#9333EA":K.amb,fontFamily:fm,padding:"1px 6px",borderRadius:3,background:(d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:d.outcome==="lucky"?"#9333EA":K.amb)+"15"}}>{d.outcome.toUpperCase()}</span>}
-            {d.shares&&<span style={{fontSize:10,color:K.mid,fontFamily:fm}}>{d.shares} sh</span>}
-            {d.price&&<span style={{fontSize:10,color:K.mid,fontFamily:fm}}>@${d.price}</span>}
-            <span style={{marginLeft:"auto",fontSize:9,color:K.dim,fontFamily:fm}}>{new Date(d.date).toLocaleDateString()}</span></div>
-          <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.reasoning}</div>
-          {isExp&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
-            {d.invalidator&&<div style={{marginBottom:8}}><div style={{fontSize:9,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:2,fontWeight:600}}>{"⚠"} INVALIDATION CRITERIA</div><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{d.invalidator}</div></div>}
-            {d.priceAtTime&&<div style={{fontSize:10,color:K.dim,marginBottom:6,fontFamily:fm}}>Price at entry: ${d.priceAtTime}</div>}
-            {d.biasFlags&&d.biasFlags.length>0&&<div style={{marginBottom:8}}><div style={{fontSize:9,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:2,fontWeight:600}}>BIAS FLAGS</div><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{d.biasFlags.map(function(b,bi){return<span key={bi} style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{b}</span>})}</div></div>}
-            {!d.outcome&&<div style={{display:"flex",gap:6,marginTop:6}}><span style={{fontSize:10,color:K.dim,fontFamily:fm,lineHeight:"24px"}}>Outcome:</span>
-              <button style={{fontSize:10,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(e){e.stopPropagation();markOutcome(d.id,"right")}}>Right</button>
-              <button style={{fontSize:10,color:K.red,background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(e){e.stopPropagation();markOutcome(d.id,"wrong")}}>Wrong</button>
-              <button style={{fontSize:10,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(e){e.stopPropagation();markOutcome(d.id,"mixed")}}>Mixed</button>
-              <button style={{fontSize:10,color:"#9333EA",background:"#9333EA12",border:"1px solid #9333EA30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(e){e.stopPropagation();markOutcome(d.id,"lucky")}}>Lucky</button></div>}
-          </div>}</div>})}</div>}</div>}
+          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
+          <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would invalidate this" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:6,color:K.txt,padding:"12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        {/* Auto-context preview */}
+        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+          {c.conviction>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>Conviction: {c.conviction}/10</span>}
+          {c.position&&c.position.currentPrice>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>Price: ${c.position.currentPrice}</span>}
+          {c.kpis.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>{c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length}/{c.kpis.filter(function(k){return k.lastResult}).length} KPIs met</span>}
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.3})} onClick={addDecision}>Save to Journal</button></div></div>}
+      {/* Journal entries — beautiful cards */}
+      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center"}}><div style={{fontSize:36,marginBottom:8}}>{"📖"}</div><div style={{fontSize:13,color:K.dim,marginBottom:4}}>Your research journal is empty</div><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Entries appear automatically as you check earnings, update your thesis, and adjust conviction. You can also log decisions manually.</div></div>}
+      {decisions.length>0&&<div>
+        {decisions.slice(0,15).map(function(d){return<div key={d.id}>
+          <JournalCard entry={d}/>
+          {/* Outcome scoring for decisions */}
+          {d.cardType==="decision"&&!d.outcome&&<div style={{display:"flex",gap:6,padding:"0 18px 10px",marginTop:-6}}>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm,lineHeight:"24px"}}>Score:</span>
+            <button style={{fontSize:10,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"right")}}>Right</button>
+            <button style={{fontSize:10,color:K.red,background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"wrong")}}>Wrong</button>
+            <button style={{fontSize:10,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"mixed")}}>Mixed</button></div>}
+        </div>})}</div>}
+    </div>}
 
   // ── SEC Filings (Finnhub FREE) ──
   function SECFilings(p){var c=p.company;
@@ -2658,6 +2722,55 @@ function TrackerApp(props){
     var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(2)+"B";else if(a>=1e6)s=(a/1e6).toFixed(1)+"M";else if(a>=1e3)s=(a/1e3).toFixed(1)+"K";else s=Math.abs(v)<100?v.toFixed(2):a.toFixed(0);return(neg?"-":"")+"$"+s}
   function fmtCell(v,item){if(v==null||v===undefined)return"—";var n=Number(v);if(isNaN(n))return"—";if(item.p)return(n*100).toFixed(1)+"%";if(item.sm)return"$"+n.toFixed(2);return fmtBig(n)}
   function FinancialsPage(p){var c=p.company;
+    function exportFinancialsPDF(){
+      if(!data||!rows||rows.length===0)return;
+      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Financial Statements — ThesisAlpha</title>';
+      html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
+      html+='<style>@page{size:A4 landscape;margin:16mm 14mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Inter",sans-serif;color:#1a1a2e;font-size:10px;line-height:1.5;background:#fff}';
+      html+='.page{max-width:1100px;margin:0 auto;padding:32px 36px}';
+      html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;border-bottom:3px solid #1a1a2e;margin-bottom:20px}';
+      html+='.hdr h1{font-family:"Playfair Display",Georgia,serif;font-size:28px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1}';
+      html+='.hdr .sub{font-size:11px;color:#6b7280;margin-top:3px}';
+      html+='.logo{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+      html+='.logo-sub{font-size:8px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px}';
+      html+='table{width:100%;border-collapse:collapse;font-size:9.5px;font-family:"JetBrains Mono","SF Mono",monospace}';
+      html+='th{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;padding:6px 8px;border-bottom:2px solid #e5e7eb;font-weight:600;white-space:nowrap}';
+      html+='td{padding:5px 8px;border-bottom:1px solid #f3f4f6;white-space:nowrap}';
+      html+='tr.bold td{font-weight:700;color:#1a1a2e;border-bottom:1px solid #e5e7eb}';
+      html+='tr.spacer td{height:6px;border:none;background:#fafafa}';
+      html+='.dim{color:#9ca3af}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}';
+      html+='.yoy{font-size:8px;margin-top:1px}';
+      html+='.footer{margin-top:24px;padding-top:10px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}';
+      html+='.footer-left{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+      html+='.footer-right{font-size:8px;color:#9ca3af;text-align:right}';
+      html+='.disc{font-size:7px;color:#9ca3af;margin-top:6px;font-style:italic;line-height:1.4}';
+      html+='@media print{.page{padding:0}.no-print{display:none}}</style></head><body><div class="page">';
+      // Header
+      html+='<div class="hdr"><div><h1>'+c.ticker+'</h1><div class="sub">'+c.name+' · '+c.sector+' · '+(stab.l)+' ('+(per==="quarter"?"Quarterly":"Annual")+')</div></div>';
+      html+='<div style="text-align:right"><div class="logo">ThesisAlpha</div><div class="logo-sub">Financial Statements</div>';
+      html+='<div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280;margin-top:6px">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+      // Table
+      html+='<table><thead><tr><th align="left" style="min-width:160px;position:sticky;left:0;background:#fff">'+stab.l+'</th>';
+      rows.forEach(function(r){html+='<th align="right">'+(per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4))+'</th>'});
+      html+='</tr></thead><tbody>';
+      stab.items.forEach(function(item){
+        if(!item.k){html+='<tr class="spacer"><td colspan="'+(rows.length+1)+'"></td></tr>';return}
+        html+='<tr'+(item.b?' class="bold"':'')+'><td'+(item.d?' class="dim"':'')+'>'+(item.l)+'</td>';
+        rows.forEach(function(r,ci){var v=r[item.k];var yoy=null;
+          if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
+          var vStr=fmtCell(v,item);var clr=v!=null&&Number(v)<0?' class="red"':(item.d?' class="dim"':'');
+          html+='<td align="right"'+clr+'>'+vStr;
+          if(yoy!=null&&!isNaN(yoy))html+='<div class="yoy '+(yoy>=0?"grn":"red")+'">'+(yoy>=0?"+":"")+yoy.toFixed(1)+'%</div>';
+          html+='</td>'});
+        html+='</tr>'});
+      html+='</tbody></table>';
+      // Footer
+      html+='<div class="footer"><div class="footer-left">ThesisAlpha</div>';
+      html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280">'+c.ticker+' · '+c.name+'</div>';
+      html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+      html+='<div class="disc">Source: '+(data.source==="sec-edgar"?"SEC EDGAR":"Financial Modeling Prep")+' · Generated by ThesisAlpha · For personal research only. Not financial advice. Verify all data before making investment decisions.</div>';
+      html+='</div></body></html>';
+      var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
     if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
@@ -2685,6 +2798,7 @@ function TrackerApp(props){
       }).catch(function(e){setLd(false);setDiag("Fetch error: "+e.message)})},[c.ticker,per]);
     var stab=STMT_TABS.find(function(t){return t.id===tab})||STMT_TABS[0];
     var rows=data?data[tab]:[];if(!rows)rows=[];
+
     // Chart data
     var chartItems=[{k:"revenue",l:"Revenue"},{k:"grossProfit",l:"Gross Profit"},{k:"operatingIncome",l:"Op. Income"},{k:"netIncome",l:"Net Income"},{k:"ebitda",l:"EBITDA"},{k:"eps",l:"EPS",sm:1},{k:"freeCashFlow",l:"Free Cash Flow"},{k:"operatingCashFlow",l:"Op. Cash Flow"},{k:"totalAssets",l:"Total Assets"},{k:"totalDebt",l:"Total Debt"},{k:"totalStockholdersEquity",l:"Equity"},{k:"grossProfitRatio",l:"Gross Margin",p:1},{k:"operatingIncomeRatio",l:"Op. Margin",p:1},{k:"netIncomeRatio",l:"Net Margin",p:1}];
     function toggleChartMetric(key){setChartSel(function(prev){return prev.indexOf(key)>=0?prev.filter(function(k){return k!==key}):[].concat(prev,[key]).slice(-6)})}
@@ -2705,7 +2819,8 @@ function TrackerApp(props){
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div>
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}{data&&data.source?<span style={{marginLeft:8,fontSize:9,padding:"2px 6px",borderRadius:3,background:data.source==="sec-edgar"?K.grn+"15":K.acc+"15",color:data.source==="sec-edgar"?K.grn:K.acc}}>{"Source: "+(data.source==="sec-edgar"?"SEC EDGAR":"FMP")}</span>:""}</div></div>
-        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:11,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}</div></div>
+        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:11,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}
+          <button onClick={exportFinancialsPDF} disabled={!data||ld} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,opacity:data&&!ld?1:.4,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>PDF</button></div></div>
       {/* Statement Tabs */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
@@ -2953,6 +3068,15 @@ function TrackerApp(props){
           <button onClick={function(){setModal({type:"edit"})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm}}>Change</button></div>}
         </div>}
         {/* Thesis */}
+        {/* Latest journal entry */}
+        {(c.decisions||[]).length>0&&(function(){var latest=(c.decisions||[]).find(function(d2){return d2.cardType});
+          if(!latest)latest=(c.decisions||[])[0];
+          if(!latest)return null;
+          return<div style={{marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Latest Journal Entry</div>
+              <button onClick={function(){setDetailTab("journal")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>View all {"\u2192"}</button></div>
+            <JournalCard entry={latest}/></div>})()}
         {/* Quick access: Financial Statements */}
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"12px 18px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
           <div style={{width:38,height:38,borderRadius:8,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="chart" size={18} color={K.blue}/></div>
@@ -3258,7 +3382,7 @@ function TrackerApp(props){
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"command",l:"Command Center",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Decision Journal",icon:"book"},{id:"docs",l:"Document Vault",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
+        {[{id:"command",l:"Command Center",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
           return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?600:400,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
 
@@ -3660,7 +3784,7 @@ function TrackerApp(props){
       {ht==="journal"&&<div>
         {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
           <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No decisions logged yet</div>
-          <div style={{fontSize:12,color:K.dim}}>Open any company and use the Decision Journal tab to log BUY/SELL/HOLD decisions with reasoning.</div></div>:
+          <div style={{fontSize:12,color:K.dim}}>Entries appear automatically as you check earnings, update theses, and adjust conviction during weekly reviews.</div></div>:
         <div>
           <div style={{fontSize:12,color:K.dim,marginBottom:16}}>
             {allDecs.length} decision{allDecs.length>1?"s":""} logged · {scored.length} scored · {rights} right · batting avg: {scored.length>0?dqPct+"%":"N/A"}</div>
@@ -4184,6 +4308,9 @@ function TrackerApp(props){
         var hist=(cos.find(function(x){return x.id===e.id})||{}).convictionHistory||[];
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
+      // Auto-log conviction shifts for significant changes
+      entries.forEach(function(e2){if(Math.abs(e2.new-e2.prev)>=2){
+        logJournalEntry(e2.id,{cardType:"conviction_shift",ticker:e2.ticker,prevConviction:e2.prev,newConviction:e2.new,delta:e2.new-e2.prev,note:e2.note||"",action:e2.action||"hold",weekId:weekId})}});
       showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
       // Open Weekly Insight after a brief delay
       setTimeout(function(){openChest()},1500);
