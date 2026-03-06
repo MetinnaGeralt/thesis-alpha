@@ -432,7 +432,7 @@ async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-tar
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
 var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
-var FOREST={bg:"#f0f9f0",side:"#1b5e20",card:"#ffffff",bdr:"#c8e6c9",bdr2:"#a5d6a7",txt:"#1a3a1a",mid:"#3d6b3d",dim:"#7aab7a",blue:"#2563eb",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff"};
+var FOREST={bg:"#f0f0f0",side:"#58cc02",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4d4",txt:"#4b4b4b",mid:"#6f6f6f",dim:"#afafaf",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
 var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
@@ -532,6 +532,11 @@ function LoginPage(props){
 function TrackerApp(props){
   var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"dark"}catch(e){return"dark"}}),theme=_th[0],setTheme=_th[1];
   var K=THEMES[theme]||DARK;var S=mkS(K);var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg";
+  // Per-theme font overrides — Forest uses Duolingo-style rounded fonts
+  var isForest=theme==="forest";
+  if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
+  else if(theme==="bloomberg"){fm="'Consolas','Courier New',monospace";fh="'Consolas','Courier New',monospace";fb="'Consolas','Courier New',monospace";S=mkS(K)}
+  else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
   var sideDark=isDark||theme==="forest"||theme==="paypal"; // Forest and PayPal have dark sidebar on light bg
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
   // Bloomberg Terminal overrides fonts via CSS injection (see global CSS useEffect)
@@ -901,9 +906,13 @@ function TrackerApp(props){
       "  .ta-style-wrap{flex-wrap:wrap!important}",
       "}",
       bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
+      isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
     ].join("\n");
     document.head.appendChild(style);
-    return function(){var el=document.getElementById(id);if(el)el.remove()}},[isDark,theme]);
+    // Load theme-specific fonts via link tag
+    var fontId="ta-theme-font";var prevFont=document.getElementById(fontId);if(prevFont)prevFont.remove();
+    if(isForest){var link=document.createElement("link");link.id=fontId;link.rel="stylesheet";link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(link)}
+    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove()}},[isDark,theme]);
   // ── Load data ──
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
@@ -1591,7 +1600,7 @@ function TrackerApp(props){
   function SettingsModal(){
     var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated when earnings within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return %"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below targets"}];
-    var allThemes=[{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo green",color:"#f0f9f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
+    var allThemes=[{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
@@ -4060,7 +4069,7 @@ function TrackerApp(props){
         {currentWeekReviewed&&<div>
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:48,marginBottom:12}}>{"\u2705"}</div>
-            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>This week\u2019s review is complete</div>
+            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>This week’s review is complete</div>
             <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.7}}>Come back next week to keep your streak alive and earn another chest.</div>
           </div>
           {/* Countdown */}
@@ -4075,15 +4084,15 @@ function TrackerApp(props){
             var tierColors2={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
             var tierLabels2={rare:"Rare",uncommon:"Uncommon",common:"Common"};
             if(reward)return<div style={{textAlign:"center",padding:"20px 16px",background:K.card,borderRadius:12,border:"1px solid "+(tierColors2[reward.tier]||K.bdr)+"40",marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK\u2019S REWARD \u2014 "+tierLabels2[reward.tier||"common"]}</div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK’S REWARD — "+tierLabels2[reward.tier||"common"]}</div>
               <div style={{fontSize:32,marginBottom:4}}>{reward.icon}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{reward.label}</div>
               <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{reward.desc}</div>
-              {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"\u2014 "+reward.author}</div>}
+              {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"— "+reward.author}</div>}
               {reward.xp>0&&<div style={{marginTop:6}}><span style={{fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} XP</span></div>}
             </div>;
             if(histEntry)return<div style={{textAlign:"center",padding:"14px 16px",background:K.card,borderRadius:12,border:"1px solid "+K.bdr,marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD \u2014 "+tierLabels2[histEntry.tier||"common"]}</div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD — "+tierLabels2[histEntry.tier||"common"]}</div>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{histEntry.reward}</div>
             </div>;
             return null})()}
@@ -4206,7 +4215,7 @@ function TrackerApp(props){
               <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>{String.fromCodePoint(0x2705)} THIS WEEK'S REVIEW COMPLETE</div>
               <div style={{fontSize:12,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
             {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK\u2019S REWARD \u2014 "+tierLabels[reward.tier||"common"]}</div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK’S REWARD — "+tierLabels[reward.tier||"common"]}</div>
               <div style={{fontSize:36,marginBottom:6}}>{reward.icon}</div>
               <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>{reward.label}</div>
               <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
