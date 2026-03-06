@@ -2673,9 +2673,10 @@ function TrackerApp(props){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
-    var _chart=useState("revenue"),chart=_chart[0],setChart=_chart[1];
+    var _chart=useState(["revenue"]),chartSel=_chart[0],setChartSel=_chart[1];
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
+    var CHART_COLORS=["#1cb0f6","#58cc02","#ff9600","#ce82ff","#ff4b4b","#ffc800","#3B82F6","#EC4899","#14B8A6","#8B5CF6","#EF4444","#F59E0B","#6366F1","#10B981"];
     useEffect(function(){setLd(true);setDiag("");
       fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){
         setData(r);setLd(false);
@@ -2686,14 +2687,17 @@ function TrackerApp(props){
     var rows=data?data[tab]:[];if(!rows)rows=[];
     // Chart data
     var chartItems=[{k:"revenue",l:"Revenue"},{k:"grossProfit",l:"Gross Profit"},{k:"operatingIncome",l:"Op. Income"},{k:"netIncome",l:"Net Income"},{k:"ebitda",l:"EBITDA"},{k:"eps",l:"EPS",sm:1},{k:"freeCashFlow",l:"Free Cash Flow"},{k:"operatingCashFlow",l:"Op. Cash Flow"},{k:"totalAssets",l:"Total Assets"},{k:"totalDebt",l:"Total Debt"},{k:"totalStockholdersEquity",l:"Equity"},{k:"grossProfitRatio",l:"Gross Margin",p:1},{k:"operatingIncomeRatio",l:"Op. Margin",p:1},{k:"netIncomeRatio",l:"Net Margin",p:1}];
-    var cDef=chartItems.find(function(ci){return ci.k===chart})||chartItems[0];
-    // Build chart points from whichever statement has the data
-    var allRows=[].concat(data?data.income:[],data?data.balance:[],data?data.cashflow:[]);
-    var dateMap={};rows.forEach(function(r){dateMap[r.date]=r});
-    // For chart, find data across all statements
-    var chartRows=rows.map(function(r){var v=r[cDef.k];if(v==null&&data){var inc=(data.income||[]).find(function(x){return x.date===r.date});var bal=(data.balance||[]).find(function(x){return x.date===r.date});var cf=(data.cashflow||[]).find(function(x){return x.date===r.date});if(inc&&inc[cDef.k]!=null)v=inc[cDef.k];else if(bal&&bal[cDef.k]!=null)v=bal[cDef.k];else if(cf&&cf[cDef.k]!=null)v=cf[cDef.k]}return{date:r.date,period:r.period||"FY",val:v!=null?Number(v):null}}).filter(function(pt){return pt.val!=null});
-    var vals=chartRows.map(function(pt){return pt.val});var mx=Math.max.apply(null,vals.concat([0]));var mn=Math.min.apply(null,vals.concat([0]));var range=mx-mn||1;var hasNeg=mn<0;
-    var cW=Math.max(500,chartRows.length*52);var cH=160;var zeroY=hasNeg?10+(mx/range)*140:150;var barW=Math.min(36,Math.max(14,(cW-40)/Math.max(chartRows.length,1)-6));
+    function toggleChartMetric(key){setChartSel(function(prev){return prev.indexOf(key)>=0?prev.filter(function(k){return k!==key}):[].concat(prev,[key]).slice(-6)})}
+    // Build multi-metric chart data
+    var dates=rows.map(function(r){return r.date}).filter(Boolean);
+    var chartSeries=chartSel.map(function(key,si){
+      var def=chartItems.find(function(ci){return ci.k===key})||{k:key,l:key};
+      var pts=dates.map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
+      return{key:key,def:def,pts:pts,color:CHART_COLORS[si%CHART_COLORS.length]}});
+    // Compute shared axes
+    var allVals=[];chartSeries.forEach(function(s){s.pts.forEach(function(p){allVals.push(p.val)})});
+    var hasPctMix=chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return d&&d.p})&&chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return!d||!d.p});
+    var cW=Math.max(500,dates.length*60);var cH=200;var pad={l:60,r:20,t:20,b:30};var plotW=cW-pad.l-pad.r;var plotH=cH-pad.t-pad.b;
     return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
@@ -2717,20 +2721,65 @@ function TrackerApp(props){
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
         <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:11,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
       <div>
-      {/* Chart section */}
+      {/* Interactive multi-metric chart */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
-          {chartItems.map(function(ci){return<button key={ci.k} onClick={function(){setChart(ci.k)}} style={{padding:"3px 10px",fontSize:10,fontFamily:fm,background:chart===ci.k?K.acc+"18":"transparent",color:chart===ci.k?K.acc:K.dim,border:"1px solid "+(chart===ci.k?K.acc+"30":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap"}}>{ci.l}</button>})}</div>
-        {chartRows.length>0?<div style={{overflowX:"auto"}}><svg width={cW} height={cH} style={{display:"block"}}>
-          <line x1={0} y1={zeroY} x2={cW} y2={zeroY} stroke={K.bdr} strokeWidth={1} strokeDasharray={hasNeg?"4,3":"0"}/>
-          {chartRows.map(function(pt,i){var x=20+i*((cW-40)/chartRows.length);var val=pt.val;var barH=Math.abs(val)/range*140;var y=val>=0?zeroY-barH:zeroY;var isHov=hov===i;var col=val>=0?K.acc:K.red;
-            var prev=i>0?chartRows[i-1].val:null;var yoy=prev&&prev!==0?((val-prev)/Math.abs(prev)*100):null;
-            return<g key={i} onMouseEnter={function(){setHov(i)}} onMouseLeave={function(){setHov(null)}} style={{cursor:"pointer"}}>
-              <rect x={x} y={y} width={barW} height={Math.max(barH,2)} rx={3} fill={isHov?col:col+"80"}/>
-              {isHov&&<text x={x+barW/2} y={val>=0?y-6:y+barH+14} textAnchor="middle" fill={K.txt} fontSize={10} fontFamily="JetBrains Mono" fontWeight={600}>{cDef.p?(val*100).toFixed(1)+"%":fmtBig(val)}</text>}
-              {isHov&&yoy!=null&&<text x={x+barW/2} y={val>=0?y-18:y+barH+26} textAnchor="middle" fill={yoy>=0?K.grn:K.red} fontSize={9} fontFamily="JetBrains Mono">{yoy>=0?"+":""}{yoy.toFixed(1)}%</text>}
-              <text x={x+barW/2} y={cH-2} textAnchor="middle" fill={K.dim} fontSize={per==="quarter"?7:9} fontFamily="JetBrains Mono">{per==="quarter"?(pt.period+" '"+pt.date.substring(2,4)):pt.date.substring(0,4)}</text>
-            </g>})}</svg></div>:<div style={{padding:20,textAlign:"center",fontSize:11,color:K.dim}}>No chart data for {cDef.l}</div>}
+          {chartItems.map(function(ci,ci2){var isOn=chartSel.indexOf(ci.k)>=0;var col=isOn?CHART_COLORS[chartSel.indexOf(ci.k)%CHART_COLORS.length]:K.dim;
+            return<button key={ci.k} onClick={function(){toggleChartMetric(ci.k)}} style={{padding:"3px 10px",fontSize:10,fontFamily:fm,background:isOn?col+"18":"transparent",color:isOn?col:K.dim,border:"1px solid "+(isOn?col+"40":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",fontWeight:isOn?600:400}}>
+              {isOn&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:col,marginRight:4}}/>}{ci.l}</button>})}</div>
+        {hasPctMix&&<div style={{fontSize:9,color:K.amb,fontFamily:fm,marginBottom:8}}>{"⚠"} Mixing % and $ metrics — values share the Y-axis</div>}
+        {chartSeries.length>0&&dates.length>0?(function(){
+          // Per-series normalization for multi-metric
+          function buildPath(series){
+            var pts=series.pts;if(pts.length<2)return null;
+            var sVals=pts.map(function(p){return p.val});var sMx=Math.max.apply(null,sVals);var sMn=Math.min.apply(null,sVals);var sRange=sMx-sMn||1;
+            var points=pts.map(function(p,i){
+              var dateIdx=dates.indexOf(p.date);if(dateIdx<0)return null;
+              var x=pad.l+dateIdx/(Math.max(dates.length-1,1))*plotW;
+              var y=pad.t+(1-(p.val-sMn)/sRange)*plotH;
+              return{x:x,y:y,val:p.val,date:p.date}}).filter(Boolean);
+            if(points.length<2)return null;
+            // Smooth curve
+            var d="M"+points[0].x.toFixed(1)+","+points[0].y.toFixed(1);
+            for(var i=1;i<points.length;i++){var cx=(points[i-1].x+points[i].x)/2;d+=" C"+cx.toFixed(1)+","+points[i-1].y.toFixed(1)+" "+cx.toFixed(1)+","+points[i].y.toFixed(1)+" "+points[i].x.toFixed(1)+","+points[i].y.toFixed(1)}
+            return{d:d,points:points}}
+          var paths=chartSeries.map(function(s){return{series:s,path:buildPath(s)}}).filter(function(p){return p.path});
+          return<div style={{overflowX:"auto",position:"relative"}}>
+            <svg width={cW} height={cH} style={{display:"block"}}>
+              {/* Grid lines */}
+              {[0,0.25,0.5,0.75,1].map(function(f,i){var y=pad.t+f*plotH;
+                return<line key={i} x1={pad.l} y1={y} x2={cW-pad.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray={i===4?"0":"3,3"}/>})}
+              {/* Date labels */}
+              {dates.map(function(dt,i){var x=pad.l+i/(Math.max(dates.length-1,1))*plotW;
+                return<text key={i} x={x} y={cH-4} textAnchor="middle" fill={K.dim} fontSize={per==="quarter"?7:9} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[i]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>})}
+              {/* Lines + gradient fills */}
+              {paths.map(function(p,pi){var s=p.series;var pathD=p.path;
+                var fillD=pathD.d+" L"+pathD.points[pathD.points.length-1].x.toFixed(1)+","+(pad.t+plotH)+" L"+pathD.points[0].x.toFixed(1)+","+(pad.t+plotH)+" Z";
+                return<g key={s.key}>
+                  <defs><linearGradient id={"fg-"+s.key+"-"+pi} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={s.color} stopOpacity="0.15"/><stop offset="100%" stopColor={s.color} stopOpacity="0"/></linearGradient></defs>
+                  <path d={fillD} fill={"url(#fg-"+s.key+"-"+pi+")"} style={{animation:"fadeInFast .5s ease both",animationDelay:pi*100+"ms"}}/>
+                  <path d={pathD.d} fill="none" stroke={s.color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{animation:"fadeInFast .4s ease both",animationDelay:pi*80+"ms"}}/>
+                  {pathD.points.map(function(pt,pti){return<circle key={pti} cx={pt.x.toFixed(1)} cy={pt.y.toFixed(1)} r={hov===pt.date?5:3} fill={hov===pt.date?"#fff":s.color} stroke={s.color} strokeWidth={hov===pt.date?2.5:0} style={{transition:"r .15s,fill .15s"}}/>})}
+                </g>})}
+              {/* Hover columns */}
+              {dates.map(function(dt,i){var x=pad.l+i/(Math.max(dates.length-1,1))*plotW;
+                return<rect key={i} x={x-plotW/(dates.length*2)} y={pad.t} width={plotW/dates.length} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}} onMouseLeave={function(){setHov(null)}}/>})}
+            </svg>
+            {/* Hover tooltip */}
+            {hov&&(function(){var hi=dates.indexOf(hov);if(hi<0)return null;var tx=pad.l+hi/(Math.max(dates.length-1,1))*plotW;
+              return<div style={{position:"absolute",left:Math.min(tx,cW-160),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:120}}>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hov:hov.substring(0,4)}</div>
+                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hov});if(!pt)return null;
+                  return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:s.color,flexShrink:0}}/>
+                    <span style={{fontSize:10,color:K.mid,fontFamily:fm,flex:1}}>{s.def.l}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:s.color,fontFamily:fm}}>{s.def.p?(pt.val*100).toFixed(1)+"%":s.def.sm?"$"+pt.val.toFixed(2):fmtBig(pt.val)}</span></div>})}</div>})()}
+          </div>})():<div style={{padding:20,textAlign:"center",fontSize:11,color:K.dim}}>Click metrics above to chart them</div>}
+        {/* Legend */}
+        {chartSeries.length>0&&<div style={{display:"flex",gap:12,marginTop:10,flexWrap:"wrap"}}>
+          {chartSeries.map(function(s){return<div key={s.key} style={{display:"flex",alignItems:"center",gap:4}}>
+            <span style={{width:8,height:3,borderRadius:2,background:s.color}}/>
+            <span style={{fontSize:9,color:s.color,fontFamily:fm,fontWeight:600}}>{s.def.l}</span></div>})}</div>}
       </div>
       {/* Full data table */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
@@ -2740,10 +2789,12 @@ function TrackerApp(props){
             {rows.map(function(r,i){return<th key={i} style={{padding:"10px 12px",textAlign:"right",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>{per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4)}</th>})}</tr></thead>
           <tbody>{stab.items.map(function(item,ri){
             if(!item.k)return<tr key={ri}><td colSpan={rows.length+1} style={{height:8,background:K.bg}}></td></tr>;
-            return<tr key={ri} style={{background:item.b?K.acc+"06":"transparent"}}>
-              <td style={{position:"sticky",left:0,background:item.b?K.acc+"08":K.card,padding:"7px 14px",color:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b?600:400,borderBottom:"1px solid "+K.bdr,fontSize:item.b?11:10.5,zIndex:1}}>{item.l}</td>
+            var isCharted=chartSel.indexOf(item.k)>=0;var chartColor=isCharted?CHART_COLORS[chartSel.indexOf(item.k)%CHART_COLORS.length]:null;
+            return<tr key={ri} style={{background:isCharted?chartColor+"08":item.b?K.acc+"06":"transparent",cursor:"pointer",transition:"background .15s"}} onClick={function(){toggleChartMetric(item.k)}}>
+              <td style={{position:"sticky",left:0,background:isCharted?chartColor+"10":item.b?K.acc+"08":K.card,padding:"7px 14px",color:isCharted?chartColor:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b||isCharted?600:400,borderBottom:"1px solid "+K.bdr,fontSize:item.b?11:10.5,zIndex:1,borderLeft:isCharted?"3px solid "+chartColor:"3px solid transparent"}}>
+                {item.l}</td>
               {rows.map(function(r,ci){var v=r[item.k];var yoy=null;if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
-                return<td key={ci} style={{padding:"7px 12px",textAlign:"right",color:v!=null&&Number(v)<0?K.red:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b?600:400,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap",fontSize:item.b?11:10.5}}>
+                return<td key={ci} style={{padding:"7px 12px",textAlign:"right",color:isCharted?chartColor:v!=null&&Number(v)<0?K.red:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b||isCharted?600:400,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap",fontSize:item.b?11:10.5}}>
                   <div>{fmtCell(v,item)}</div>
                   {yoy!=null&&!isNaN(yoy)&&<div style={{fontSize:9,color:yoy>=0?K.grn:K.red,marginTop:1}}>{yoy>=0?"+":""}{yoy.toFixed(1)}%</div>}
                 </td>})}</tr>})}</tbody>
