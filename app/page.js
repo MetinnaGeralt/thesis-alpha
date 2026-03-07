@@ -1275,7 +1275,7 @@ function TrackerApp(props){
   function toggleEmailNotify(){var nv=!emailNotify;setEmailNotify(nv);try{localStorage.setItem("ta-emailnotify",String(nv))}catch(e){}}
 
   // ── Modals ─────────────────────────────────────────────────
-  function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:"portfolio",investStyle:"",purchaseDate:""}),f=_f[0],setF=_f[1];
+  function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:sideTab==="watchlist"?"watchlist":sideTab==="toohard"?"toohard":"portfolio",investStyle:"",purchaseDate:""}),f=_f[0],setF=_f[1];
     var _ls=useState("idle"),ls=_ls[0],setLs=_ls[1];var _lm=useState(""),lm=_lm[0],setLm=_lm[1];var tmr=useRef(null);
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
@@ -1285,8 +1285,8 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");setGuidedSetup(nc.id);setModal(null)}
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
@@ -1294,19 +1294,21 @@ function TrackerApp(props){
           {ls==="loading"&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}{ls==="loading"?"Looking up…":lm}</div>}</div>
         <Inp label="Company Name" value={f.name} onChange={function(v){set("name",v)}} placeholder="Apple Inc." K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} placeholder="Technology" K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"}]} K={K}/></div>
-      <Inp label="Investment Thesis" value={f.thesis} onChange={function(v){set("thesis",v)}} ta placeholder="Why do you own this?" K={K}/>
-      <div style={{marginBottom:16}}>
+      <Sel label="Add to" value={f.status} onChange={function(v){set("status",v)}} options={[{v:"portfolio",l:"Portfolio (I own this)"},{v:"watchlist",l:"Watchlist (Researching)"},{v:"toohard",l:"Too Hard (Outside circle)"}]} K={K}/>
+      {f.status==="portfolio"&&<Inp label="Investment Thesis" value={f.thesis} onChange={function(v){set("thesis",v)}} ta placeholder="Why do you own this?" K={K}/>}
+      {f.status==="portfolio"&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Investment Style</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div>
         {f.investStyle&&STYLE_MAP[f.investStyle]&&<div style={{fontSize:10,color:K.dim,marginTop:6,lineHeight:1.4}}>{STYLE_MAP[f.investStyle].desc}</div>}
-      </div>
-      <Sel label="Add to" value={f.status} onChange={function(v){set("status",v)}} options={[{v:"portfolio",l:"Portfolio (I own this)"},{v:"watchlist",l:"Watchlist (Researching)"},{v:"toohard",l:"Too Hard (Outside circle)"}]} K={K}/>
+      </div>}
       {f.status==="portfolio"&&<Inp label="Purchase Date *" value={f.purchaseDate} onChange={function(v){set("purchaseDate",v)}} type="date" K={K}/>}
       {f.status==="portfolio"&&!f.purchaseDate&&<div style={{fontSize:10,color:K.amb,marginTop:-8,marginBottom:8}}>When did you first buy this? Helps track your ownership timeline.</div>}
+      {f.status==="watchlist"&&<div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Target Price" value={f._targetPrice||""} onChange={function(v){set("_targetPrice",v)}} type="number" placeholder="0.00" K={K}/><div style={{fontSize:10,color:K.dim,marginTop:24,lineHeight:1.5}}>Get notified when the stock reaches your target buy price.</div></div>}
+      {f.status==="watchlist"&&<Inp label="Why are you watching?" value={f._watchNote||""} onChange={function(v){set("_watchNote",v)}} ta placeholder="What are you waiting for? Earnings, valuation, catalyst..." K={K}/>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}}>Cancel</button>
-        <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>Add Company</button></div></Modal>}
+        <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     return<Modal title="Edit Company" onClose={function(){setModal(null)}} K={K}>
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K}/><Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
@@ -2917,7 +2919,8 @@ function TrackerApp(props){
           next[tid]=Object.assign({},prev[tid]||{},{note:val});upd(c.id,{moatTypes:next})}
         return<div style={{marginBottom:24}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={S.sec}><IC name="castle" size={14} color={K.dim}/>Moat Classification</div></div>
+            <div style={S.sec}><IC name="castle" size={14} color={K.dim}/>Moat Classification</div>
+            {classified.length>0&&<button onClick={function(){setSubPage(null);setDetailTab("dossier");showToast(c.ticker+" moat classified — "+classified.length+" type"+(classified.length>1?"s":"")+" identified","info",3000)}} style={Object.assign({},S.btnP,{padding:"6px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><IC name="shield" size={11} color={"#fff"}/>Done — Back to Dossier</button>}</div>
           {/* Morningstar Reference + Moat Trend */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
@@ -6294,6 +6297,24 @@ function TrackerApp(props){
       // Score decisions
       var scored2=qDecs.filter(function(d2){return d2.outcome});
       var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
+      // ── NEW: Richer data ──
+      // KPI hit rate across portfolio
+      var totalKpis=0;var metKpis=0;var missedKpis=0;
+      portfolio2.forEach(function(c2){c2.kpis.forEach(function(k){if(k.lastResult){totalKpis++;if(k.lastResult.status==="met")metKpis++;else missedKpis++}})});
+      var kpiHitRate=totalKpis>0?Math.round(metKpis/totalKpis*100):0;
+      // Thesis freshness
+      var freshTheses=portfolio2.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<90}).length;
+      var staleTheses=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&(!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>=90)}).length;
+      // Per-holding performance table
+      var holdPerf=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),val:c2.position.shares*c2.position.currentPrice,conv:c2.conviction||0}}).sort(function(a,b){return b.val-a.val});
+      // Streak data
+      var streakWeeks=streakData.current||0;var bestStreak=streakData.best||0;
+      // Moat coverage
+      var moatCount=portfolio2.filter(function(c2){var mt2=c2.moatTypes||{};return Object.keys(mt2).some(function(k){return mt2[k]&&mt2[k].active})}).length;
+      // Journal entries this quarter
+      var qJournalCount=0;cos.forEach(function(c2){(c2.docs||[]).forEach(function(d){if(d.updatedAt&&d.updatedAt>=cut3&&d.updatedAt<=cutEnd)qJournalCount++})});
+      // Avg conviction
+      var avgConv=portfolio2.length>0?Math.round(portfolio2.reduce(function(s,c2){return s+(c2.conviction||0)},0)/portfolio2.length*10)/10:0;
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
       function exportPDF(){
         var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+' - ThesisAlpha</title>';
@@ -6383,10 +6404,50 @@ function TrackerApp(props){
           {/* Decision scorecard */}
           {scored2.length>0&&<div style={{marginBottom:16}}>
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
-            <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter.</div></div>}
+            <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter ({scored2.length>0?Math.round(rights2/scored2.length*100):0}% accuracy).</div></div>}
+          {/* KPI Performance */}
+          {totalKpis>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>KPI Tracking</div>
+            <div style={{display:"flex",gap:10,marginBottom:8}}>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div>
+                <div style={{fontSize:8,color:K.grn}}>Hit Rate</div></div>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{metKpis}</div>
+                <div style={{fontSize:8,color:K.dim}}>Met</div></div>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.red,fontFamily:fm}}>{missedKpis}</div>
+                <div style={{fontSize:8,color:K.dim}}>Missed</div></div></div>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong KPI execution — your thesis assumptions are holding up well.":kpiHitRate>=40?"Mixed results — consider whether missed KPIs warrant thesis revisions.":"Several KPI misses — revisit your assumptions and consider if your theses need updating."}</div></div>}
+          {/* Holdings breakdown */}
+          {holdPerf.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Holdings Snapshot</div>
+            {holdPerf.slice(0,8).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:hi<Math.min(holdPerf.length,8)-1?"1px solid "+K.bdr+"30":"none"}}>
+              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{hp.ticker}</span>
+              <span style={{fontSize:11,fontWeight:600,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:56,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1000?(hp.val/1000).toFixed(1)+"k":hp.val.toFixed(0)}</span>
+              <span style={{fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":""}</span></div>})}</div>}
+          {/* Process & Behavioral Insights */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Process Health</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Weekly Streak</div>
+              <div style={{fontSize:14,fontWeight:700,color:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim,fontFamily:fm}}>{streakWeeks} wk{streakWeeks!==1?"s":""}</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Avg Conviction</div>
+              <div style={{fontSize:14,fontWeight:700,color:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim,fontFamily:fm}}>{avgConv}/10</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Moat Coverage</div>
+              <div style={{fontSize:14,fontWeight:700,color:moatCount>=portfolio2.length?K.grn:K.dim,fontFamily:fm}}>{moatCount}/{portfolio2.length}</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Research Notes</div>
+              <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{qJournalCount}</div></div></div>
+          {/* Thesis health */}
+          {(freshTheses>0||staleTheses>0)&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{freshTheses>0&&<span><strong style={{color:K.grn}}>{freshTheses}</strong> {freshTheses===1?"thesis is":"theses are"} fresh (updated within 90 days). </span>}{staleTheses>0&&<span><strong style={{color:K.amb}}>{staleTheses}</strong> {staleTheses===1?"thesis needs":"theses need"} a review — consider whether your original assumptions still hold.</span>}</div></div>}
           {/* Closing */}
           <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:16,marginBottom:24,lineHeight:1.7}}>
-            Keep investing with discipline. The process compounds just like the returns.</div>
+            {qRevs.length>=8?"An exceptional quarter of discipline. Your consistency is your edge.":qRevs.length>=4?"Solid quarterly discipline. The habit is forming.":qRevs.length>=1?"A start — aim for weekly reviews next quarter to build the compounding habit.":"The process compounds just like the returns. Start your weekly reviews next quarter."}</div>
           {/* Actions */}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
             <button onClick={function(){
