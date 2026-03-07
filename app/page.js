@@ -58,24 +58,28 @@ function autoFormat(text){if(!text)return text;
 // ═══ DATA FUNCTIONS ═══
 // Predefined metrics — each maps to an exact Finnhub field
 var METRICS=[
-  {id:"eps",label:"EPS",unit:"$",cat:"Earnings",fh:"earnings"},
-  {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Margins"},
-  {id:"opMargin",label:"Operating Margin",unit:"%",cat:"Margins"},
-  {id:"netMargin",label:"Net Margin",unit:"%",cat:"Margins"},
-  {id:"roe",label:"ROE",unit:"%",cat:"Returns"},
-  {id:"roa",label:"ROA",unit:"%",cat:"Returns"},
-  {id:"roic",label:"ROIC",unit:"%",cat:"Returns"},
-  {id:"revGrowth",label:"Revenue Growth YoY",unit:"%",cat:"Growth"},
-  {id:"epsGrowth",label:"EPS Growth YoY",unit:"%",cat:"Growth"},
-  {id:"revPerShare",label:"Revenue Per Share",unit:"$",cat:"Revenue"},
-  {id:"fcfPerShare",label:"Free Cash Flow / Share",unit:"$",cat:"Cash Flow"},
-  {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation"},
-  {id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation"},
-  {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health"},
-  {id:"debtEquity",label:"Debt / Equity",unit:"x",cat:"Health"},
-  {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income"},
-  {id:"bvps",label:"Book Value / Share",unit:"$",cat:"Valuation"},
-  {id:"ebitdaPerShare",label:"EBITDA / Share",unit:"$",cat:"Earnings"}
+  // Revenue & Growth
+  {id:"revenue",label:"Revenue",unit:"$B",cat:"Revenue",fh:"revenue"},{id:"revGrowth",label:"Revenue Growth YoY",unit:"%",cat:"Revenue"},{id:"revPerShare",label:"Revenue Per Share",unit:"$",cat:"Revenue"},{id:"orgGrowth",label:"Organic Revenue Growth",unit:"%",cat:"Revenue"},{id:"arr",label:"Annual Recurring Revenue (ARR)",unit:"$M",cat:"Revenue"},{id:"nrr",label:"Net Revenue Retention",unit:"%",cat:"Revenue"},{id:"mrr",label:"Monthly Recurring Revenue (MRR)",unit:"$M",cat:"Revenue"},{id:"arpu",label:"ARPU",unit:"$",cat:"Revenue"},{id:"bookings",label:"Bookings / Backlog",unit:"$B",cat:"Revenue"},
+  // Earnings & Profitability
+  {id:"eps",label:"EPS",unit:"$",cat:"Earnings",fh:"earnings"},{id:"epsGrowth",label:"EPS Growth YoY",unit:"%",cat:"Earnings"},{id:"ebitda",label:"EBITDA",unit:"$B",cat:"Earnings"},{id:"ebitdaPerShare",label:"EBITDA / Share",unit:"$",cat:"Earnings"},{id:"ebitdaMargin",label:"EBITDA Margin",unit:"%",cat:"Earnings"},{id:"netIncome",label:"Net Income",unit:"$B",cat:"Earnings"},{id:"adjEPS",label:"Adjusted EPS",unit:"$",cat:"Earnings"},
+  // Margins
+  {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Margins"},{id:"opMargin",label:"Operating Margin",unit:"%",cat:"Margins"},{id:"netMargin",label:"Net Margin",unit:"%",cat:"Margins"},{id:"fcfMargin",label:"FCF Margin",unit:"%",cat:"Margins"},{id:"rndMargin",label:"R&D / Revenue",unit:"%",cat:"Margins"},{id:"sgaMargin",label:"SG&A / Revenue",unit:"%",cat:"Margins"},
+  // Cash Flow
+  {id:"fcf",label:"Free Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"fcfPerShare",label:"FCF / Share",unit:"$",cat:"Cash Flow"},{id:"ocf",label:"Operating Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"capex",label:"Capital Expenditure",unit:"$B",cat:"Cash Flow"},{id:"fcfConversion",label:"FCF Conversion",unit:"%",cat:"Cash Flow"},{id:"cashFromOps",label:"Cash from Operations",unit:"$B",cat:"Cash Flow"},
+  // Returns
+  {id:"roe",label:"ROE",unit:"%",cat:"Returns"},{id:"roa",label:"ROA",unit:"%",cat:"Returns"},{id:"roic",label:"ROIC",unit:"%",cat:"Returns"},{id:"roce",label:"ROCE",unit:"%",cat:"Returns"},{id:"rotce",label:"ROTCE",unit:"%",cat:"Returns"},
+  // Valuation
+  {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation"},{id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation"},{id:"ps",label:"P/S Ratio",unit:"x",cat:"Valuation"},{id:"evEbitda",label:"EV/EBITDA",unit:"x",cat:"Valuation"},{id:"evRevenue",label:"EV/Revenue",unit:"x",cat:"Valuation"},{id:"evFcf",label:"EV/FCF",unit:"x",cat:"Valuation"},{id:"bvps",label:"Book Value / Share",unit:"$",cat:"Valuation"},{id:"peg",label:"PEG Ratio",unit:"x",cat:"Valuation"},
+  // Health & Balance Sheet
+  {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health"},{id:"debtEquity",label:"Debt / Equity",unit:"x",cat:"Health"},{id:"netDebtEbitda",label:"Net Debt / EBITDA",unit:"x",cat:"Health"},{id:"interestCoverage",label:"Interest Coverage",unit:"x",cat:"Health"},{id:"cashOnHand",label:"Cash on Hand",unit:"$B",cat:"Health"},{id:"totalDebt",label:"Total Debt",unit:"$B",cat:"Health"},{id:"quickRatio",label:"Quick Ratio",unit:"x",cat:"Health"},
+  // Income & Dividends
+  {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income"},{id:"divPerShare",label:"Dividend / Share",unit:"$",cat:"Income"},{id:"payoutRatio",label:"Payout Ratio",unit:"%",cat:"Income"},{id:"divGrowth",label:"Dividend Growth YoY",unit:"%",cat:"Income"},{id:"buybackYield",label:"Buyback Yield",unit:"%",cat:"Income"},{id:"shareholderYield",label:"Shareholder Yield",unit:"%",cat:"Income"},
+  // SaaS / Tech
+  {id:"grossRetention",label:"Gross Retention Rate",unit:"%",cat:"SaaS"},{id:"netRetention",label:"Net Dollar Retention",unit:"%",cat:"SaaS"},{id:"cac",label:"Customer Acquisition Cost",unit:"$",cat:"SaaS"},{id:"ltv",label:"Customer LTV",unit:"$",cat:"SaaS"},{id:"ltvCac",label:"LTV/CAC Ratio",unit:"x",cat:"SaaS"},{id:"churnRate",label:"Churn Rate",unit:"%",cat:"SaaS"},{id:"ruleOf40",label:"Rule of 40",unit:"%",cat:"SaaS"},{id:"magicNumber",label:"Magic Number",unit:"x",cat:"SaaS"},
+  // Users & Engagement
+  {id:"mau",label:"Monthly Active Users (MAU)",unit:"M",cat:"Users"},{id:"dau",label:"Daily Active Users (DAU)",unit:"M",cat:"Users"},{id:"subscribers",label:"Subscribers",unit:"M",cat:"Users"},{id:"customers",label:"Customers",unit:"k",cat:"Users"},{id:"gmv",label:"GMV (Gross Merch Value)",unit:"$B",cat:"Users"},{id:"takeRate",label:"Take Rate",unit:"%",cat:"Users"},
+  // Segment-specific
+  {id:"sameStoreSales",label:"Same-Store Sales Growth",unit:"%",cat:"Retail"},{id:"storeCount",label:"Store Count",unit:"#",cat:"Retail"},{id:"revPerSqFt",label:"Revenue / Sq Ft",unit:"$",cat:"Retail"},{id:"occupancy",label:"Occupancy Rate",unit:"%",cat:"REIT"},{id:"ffo",label:"FFO / Share",unit:"$",cat:"REIT"},{id:"nim",label:"Net Interest Margin",unit:"%",cat:"Banking"},{id:"cet1",label:"CET1 Ratio",unit:"%",cat:"Banking"},{id:"combinedRatio",label:"Combined Ratio",unit:"%",cat:"Insurance"},{id:"ber",label:"Break-Even Ratio",unit:"%",cat:"Insurance"}
 ];
 var METRIC_MAP={};METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
 // ── Investment Style System ──
@@ -1217,12 +1221,16 @@ function TrackerApp(props){
         {!isChanged&&<div/>}
         <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
               // Auto-log thesis snapshot
-              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{showToast("✓ Thesis saved — "+filled+"/4 sections complete","info",3000);addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
+        if(totalKpis>0&&allMet){launchConfetti(3000);showCelebration(co.ticker+" KPIs: All Met!","Every metric hit its target. Your thesis is being confirmed by the numbers.",null,K.grn)}
+        else if(totalKpis>0&&allMiss){showToast(co.ticker+" KPIs need attention - "+metCount+"/"+totalKpis+" met. Review your thesis.","info",6000)}
+        else{showToast(co.ticker+" earnings checked - "+metCount+"/"+totalKpis+" KPIs met","info",4000)}addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
-    var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
+    var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];
+    var _kpiS=useState(""),kpiSearch=_kpiS[0],setKpiSearch=_kpiS[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     // Filter out already-tracked metrics
     var used=sel.kpis.map(function(k){return k.metricId});
-    var avail=METRICS.filter(function(m){return!used.includes(m.id)||m.id===(ex&&ex.metricId)});
+    var avail=METRICS.filter(function(m){return(!used.includes(m.id)||m.id===(ex&&ex.metricId))&&(!kpiSearch||m.label.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.cat.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.id.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0)});
     var sty=STYLE_MAP[sel.investStyle];var recIds=sty?sty.kpis:[];
     var cats={};avail.forEach(function(m){if(!cats[m.cat])cats[m.cat]=[];cats[m.cat].push(m)});
     var selMet=f.metricId?METRIC_MAP[f.metricId]:null;
@@ -1235,20 +1243,24 @@ function TrackerApp(props){
         if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
         return Object.assign({},c,{kpis:newKpis})});setModal(null)}
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
-      {/* Metric picker grid */}
+      {/* Metric picker with search */}
       {!ex&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
+        <input value={kpiSearch} onChange={function(e){setKpiSearch(e.target.value)}} placeholder="Search metrics..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none",marginBottom:12}}/>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
         {sty&&recIds.length>0&&<div style={{marginBottom:12}}>
           <div style={{fontSize:10,color:sty.color,marginBottom:6,fontFamily:fm}}>Recommended for {sty.label}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {recIds.map(function(rid){var m=METRIC_MAP[rid];if(!m||used.includes(m.id))return null;var isSel=f.metricId===m.id;
               return<button key={m.id} onClick={function(){set("metricId",m.id)}} style={{background:isSel?sty.color+"20":sty.color+"08",border:"1px solid "+(isSel?sty.color:sty.color+"40"),borderRadius:6,padding:"6px 12px",fontSize:11,color:isSel?sty.color:K.txt,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{m.label}</button>}).filter(Boolean)}</div></div>}
-        {Object.keys(cats).map(function(cat){return<div key={cat} style={{marginBottom:12}}>
+        <div style={{maxHeight:280,overflowY:"auto"}}>{Object.keys(cats).map(function(cat){return<div key={cat} style={{marginBottom:10}}>
           <div style={{fontSize:10,color:K.dim,marginBottom:6,fontFamily:fm}}>{cat}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {cats[cat].map(function(m){var isSel=f.metricId===m.id;var isRec=recIds.includes(m.id);
-              return<button key={m.id} onClick={function(){set("metricId",m.id);if(!f.value&&m.unit==="%")set("value","");}} style={{background:isSel?K.acc+"20":K.bg,border:"1px solid "+(isSel?K.acc:isRec&&sty?sty.color+"40":K.bdr),borderRadius:6,padding:"6px 12px",fontSize:11,color:isSel?K.acc:K.mid,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400}}>{m.label}</button>})}</div></div>})}</div>}
-      {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:11,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
+              return<button key={m.id} onClick={function(){set("metricId",m.id);if(!f.value&&m.unit==="%")set("value","");setKpiSearch("")}} style={{background:isSel?K.acc+"20":K.bg,border:"1px solid "+(isSel?K.acc:isRec&&sty?sty.color+"40":K.bdr),borderRadius:6,padding:"5px 10px",fontSize:10,color:isSel?K.acc:K.mid,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400}}>{m.label}</button>})}</div></div>})}</div></div>}
+      {!ex&&!f.metricId&&kpiSearch&&avail.length===0&&<div style={{textAlign:"center",padding:"16px",color:K.dim}}>
+        <div style={{fontSize:12,marginBottom:8}}>No matching metrics found</div>
+        <button onClick={function(){set("metricId","custom_"+kpiSearch.toLowerCase().replace(/[^a-z0-9]/g,"_"))}} style={Object.assign({},S.btn,{fontSize:11})}>Create custom: "{kpiSearch}"</button></div>}
+            {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:11,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
       {f.metricId&&<div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
           <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"≥ At least"},{v:"lte",l:"≤ At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
