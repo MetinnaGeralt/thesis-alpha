@@ -3890,6 +3890,8 @@ function TrackerApp(props){
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
       {ht==="command"&&<div>
+        {/* ── Zone 1: Right Now ── */}
+        <div style={{marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:K.acc}}/> Right Now</div></div>
         {/* ═══ 7-DAY QUEST ═══ */}
         {(function(){
           var wk=getWeekId();
@@ -3974,7 +3976,7 @@ function TrackerApp(props){
               <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
               <div style={{fontSize:12,color:K.grn,fontWeight:500}}>All actions complete this week ✓</div>
-              <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
+              <div style={{fontSize:10,color:K.dim}}>New actions every Monday</div></div>}
           </div>})()}
 
         {/* Upcoming earnings */}
@@ -3987,6 +3989,21 @@ function TrackerApp(props){
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.kpis.length} KPIs</span>
             <span style={{fontSize:12,fontWeight:700,color:d3<=3?K.red:K.amb,fontFamily:fm,minWidth:40,textAlign:"right"}}>{d3===0?"Today":d3===1?"1d":d3+"d"}</span></div>})}</div>}
 
+
+        {/* Staleness alerts */}
+        {(function(){var stale=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return c2.thesisNote&&c2.thesisNote.length>20;return Math.ceil((Date.now()-new Date(c2.thesisUpdatedAt))/864e5)>90});
+          var unchecked=portfolio.filter(function(c2){return!c2.lastChecked&&c2.kpis.length>0});
+          if(stale.length===0&&unchecked.length===0)return null;
+          return<div style={{background:K.amb+"06",border:"1px solid "+K.amb+"20",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.amb,fontFamily:fm,marginBottom:8}}>Needs Attention</div>
+            {stale.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:stale.length>0&&unchecked.length>0?6:0}}>
+              <IC name="clock" size={12} color={K.amb}/><div style={{fontSize:11,color:K.mid}}>Thesis refresh: <strong style={{color:K.txt}}>{stale.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
+            {unchecked.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
+              <IC name="target" size={12} color={K.amb}/><div style={{fontSize:11,color:K.mid}}>KPIs unchecked: <strong style={{color:K.txt}}>{unchecked.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
+          </div>})()}
+
+        {/* ── Zone 2: Your Portfolio ── */}
+        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:"#8B5CF6"}}/> Your Portfolio</div></div>
         {/* Recent decisions (last 5) */}
         {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -4107,6 +4124,9 @@ function TrackerApp(props){
               <span>Avg conviction: <strong style={{color:K.txt}}>{avgConv.toFixed(1)}</strong></span>
               <span>{"\u00b7"}</span>
               <span>Top sectors: <strong style={{color:K.txt}}>{topSectors.join(", ")}</strong></span></div></div>})()}
+
+        {/* ── Zone 3: Reflection ── */}
+        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:K.grn}}/> Reflection</div></div>
         {/* === QUARTERLY LETTER === */}
         {weeklyReviews.length>=1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
