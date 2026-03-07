@@ -12,7 +12,7 @@ export async function POST(req) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'ThesisAlpha <alerts@thesisalpha.com>',
+      from: 'ThesisAlpha <alerts@thesisalpha.io>',
       to,
       subject,
       html: html || buildFallbackHTML(subject),
