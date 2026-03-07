@@ -453,6 +453,7 @@ async function lookupNextEarnings(ticker){
   return{earningsDate:"TBD",earningsTime:"TBD"}}
 // Finnhub data — all FREE tier ($0)
 async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,15):[]}catch(e){return[]}}
+async function fetchInstitutionalHolders(ticker){try{var r=await fmp("institutional-holder/"+ticker);if(r&&Array.isArray(r))return r.slice(0,10);return[]}catch(e){return[]}}
 async function fetchRecommendations(ticker){try{var r=await finnhub("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,6)}catch(e){return[]}}
 async function fetchEPSHistory(ticker){try{var r=await finnhub("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
 async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
@@ -3094,6 +3095,10 @@ function TrackerApp(props){
     var _keyFin=useState(null),keyFin=_keyFin[0],setKeyFin=_keyFin[1];
     var _hovD=useState(null),hovD=_hovD[0],setHovD=_hovD[1];
     var _descExp=useState(false),descExpanded=_descExp[0],setDescExpanded=_descExp[1];
+    var _insiderData=useState(null),insiderData=_insiderData[0],setInsiderData=_insiderData[1];
+    useEffect(function(){if(!c||!isPro){setInsiderData(null);return}
+      Promise.all([fetchInsiders(c.ticker).catch(function(){return[]}),fetchInstitutionalHolders(c.ticker).catch(function(){return[]})]).then(function(res){
+        setInsiderData({transactions:res[0],institutions:res[1]})}).catch(function(){setInsiderData(null)})},[c&&c.ticker,isPro]);
     useEffect(function(){
       // Backfill description from FMP profile if missing (free for all users)
       if(!c.description){fmp("profile/"+c.ticker).then(function(p){
@@ -3313,6 +3318,70 @@ function TrackerApp(props){
                   {sec.items.map(function(item,ii){return<div key={ii} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"30"}}>
                     <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.l}</span>
                     <span style={{fontSize:11,fontWeight:600,fontFamily:fm,color:item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt}}>{item.v}</span></div>})}</div></div>})}</div></div>})()}
+
+
+                {/* -- INSIDER ACTIVITY -- */}
+        {isPro&&<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>INSIDER ACTIVITY</div></div>
+          {insiderData?<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+            {/* Insider Transactions */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+              <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:10}}>Recent Transactions</div>
+              {insiderData.transactions&&insiderData.transactions.length>0?
+                <div>{(function(){
+                  var buys=insiderData.transactions.filter(function(t2){return t2.change>0});
+                  var sells=insiderData.transactions.filter(function(t2){return t2.change<0});
+                  var netBuy=buys.length>sells.length;
+                  return<div>
+                    <div style={{display:"flex",gap:8,marginBottom:10}}>
+                      <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
+                        <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{buys.length}</div>
+                        <div style={{fontSize:8,color:K.grn}}>Buys</div></div>
+                      <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.red+"08",border:"1px solid "+K.red+"20",textAlign:"center"}}>
+                        <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{sells.length}</div>
+                        <div style={{fontSize:8,color:K.red}}>Sells</div></div></div>
+                    {netBuy&&<div style={{fontSize:10,color:K.grn,fontFamily:fm,marginBottom:8}}>Net insider buying — typically a bullish signal</div>}
+                    {insiderData.transactions.slice(0,5).map(function(t2,i2){var isBuy2=t2.change>0;
+                      var role=(t2.name||"").toLowerCase();var isExec=role.indexOf("ceo")>=0||role.indexOf("cfo")>=0||role.indexOf("chief")>=0||role.indexOf("president")>=0||role.indexOf("director")>=0;
+                      return<div key={i2} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i2<4?"1px solid "+K.bdr+"30":"none"}}>
+                        <div style={{width:24,height:24,borderRadius:"50%",background:isExec?K.acc+"15":K.bg,border:"1px solid "+(isExec?K.acc+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isExec?K.acc:K.dim} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                        <div style={{flex:1,overflow:"hidden"}}>
+                          <div style={{fontSize:10,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t2.name}</div>
+                          <div style={{fontSize:8,color:K.dim}}>{t2.transactionDate}</div></div>
+                        <div style={{textAlign:"right"}}>
+                          <div style={{fontSize:10,fontWeight:600,color:isBuy2?K.grn:K.red,fontFamily:fm}}>{isBuy2?"BUY":"SELL"}</div>
+                          <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{Math.abs(t2.change).toLocaleString()} sh</div></div></div>})}</div>})()}</div>
+              :<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No recent insider transactions</div>}
+            </div>
+            {/* Top Institutional Holders */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+              <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:10}}>Top Institutional Holders</div>
+              {insiderData.institutions&&insiderData.institutions.length>0?
+                <div>{insiderData.institutions.slice(0,7).map(function(inst,i2){
+                  var isVanguard=(inst.holder||"").indexOf("Vanguard")>=0;var isBlackrock=(inst.holder||"").indexOf("BlackRock")>=0||((inst.holder||"").indexOf("Blackrock")>=0);var isFidelity=(inst.holder||"").indexOf("Fidelity")>=0;
+                  var isPassive=isVanguard||isBlackrock||isFidelity;
+                  return<div key={i2} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i2<6?"1px solid "+K.bdr+"30":"none"}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:isPassive?K.blue+"12":K.acc+"12",border:"1px solid "+(isPassive?K.blue+"25":K.acc+"25"),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isPassive?K.blue:K.acc} strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg></div>
+                    <div style={{flex:1,overflow:"hidden"}}>
+                      <div style={{fontSize:10,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inst.holder}</div>
+                      <div style={{fontSize:8,color:K.dim}}>{inst.dateReported?inst.dateReported.substring(0,10):""}</div></div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{inst.shares?(inst.shares/1e6).toFixed(1)+"M":"?"}</div>
+                      <div style={{fontSize:8,color:K.dim}}>shares</div></div></div>})}</div>
+              :<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No institutional holder data available</div>}
+            </div>
+          </div>
+          :<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
+              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
+              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
+              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
+              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div></div>}
+        </div>}
 
                 {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
