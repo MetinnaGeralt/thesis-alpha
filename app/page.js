@@ -4243,7 +4243,7 @@ function TrackerApp(props){
             if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=4;
             if(gmKpi&&gmKpi.lastResult.status==="met")pred+=3;
             pred=Math.max(15,Math.min(95,pred));
-            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
+            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,buyback:buybackBoost,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
           // Portfolio weighted expected CAGR
           var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
           var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
@@ -4311,8 +4311,9 @@ function TrackerApp(props){
                 <span style={{flex:1}}>Company</span>
                 <span style={{width:50,textAlign:"right"}}>Weight</span>
                 <span style={{width:60,textAlign:"right"}}>Earnings</span>
-                <span style={{width:55,textAlign:"right"}}>Yield</span>
-                <span style={{width:60,textAlign:"right"}}>Multiple</span>
+                <span style={{width:50,textAlign:"right"}}>Div</span>
+                <span style={{width:50,textAlign:"right"}}>Buyback</span>
+                <span style={{width:55,textAlign:"right"}}>Multiple</span>
                 <span style={{width:70,textAlign:"right"}}>Expected</span>
                 <span style={{width:55,textAlign:"right"}}>Contrib.</span></div>
               {holdingReturns.map(function(h2){var contrib=h2.weight/100*h2.expected;
@@ -4321,8 +4322,9 @@ function TrackerApp(props){
                   <span style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
                   <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{h2.weight.toFixed(1)}%</span>
                   <span style={{width:60,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{h2.egSource}</div></span>
-                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.dy>0?K.grn:K.dim,fontFamily:fm}}>{h2.dy>0?"+"+h2.dy.toFixed(1)+"%":"--"}</span>
-                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.multChange>=0?K.grn:K.red,fontFamily:fm}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.dy>0?K.grn:K.dim,fontFamily:fm}}>{h2.dy>0?"+"+h2.dy.toFixed(1)+"%":"--"}</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.buyback>0?K.grn:K.dim,fontFamily:fm}}>{h2.buyback>0?"+"+h2.buyback.toFixed(1)+"%":"--"}</span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.multChange>=0?K.grn:K.red,fontFamily:fm}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%</span>
                   <span style={{width:70,textAlign:"right",fontSize:11,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
                   <span style={{width:55,textAlign:"right",fontSize:10,fontWeight:600,color:contrib>=0?K.grn:K.red,fontFamily:fm}}>{contrib>=0?"+":""}{contrib.toFixed(1)}%</span></div>})}
               {/* Math explanation */}
