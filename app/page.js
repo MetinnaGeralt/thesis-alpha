@@ -1113,16 +1113,64 @@ function TrackerApp(props){
         setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released — click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
     return undefined},[loaded,autoNotify,cos]);
   // Send earnings email via mailto (free, no backend needed)
+  function buildEmailHTML(p){
+    var accent="#6366F1";var bg="#111113";var card="#18181b";var bdr="#2a2a2e";var txt="#e5e7eb";var dim="#9ca3af";var grn="#22c55e";var red="#ef4444";var amb="#f59e0b";
+    var h='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>';
+    h+='<body style="margin:0;padding:0;background:'+bg+';font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif">';
+    h+='<div style="max-width:560px;margin:0 auto;padding:32px 24px">';
+    // Header
+    h+='<div style="margin-bottom:28px"><div style="font-size:13px;font-weight:700;color:'+accent+';letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">ThesisAlpha</div>';
+    h+='<div style="font-size:20px;font-weight:600;color:'+txt+'">'+p.title+'</div>';
+    if(p.subtitle)h+='<div style="font-size:13px;color:'+dim+';margin-top:4px">'+p.subtitle+'</div>';
+    h+='</div>';
+    // Body sections
+    if(p.summary)h+='<div style="background:'+card+';border:1px solid '+bdr+';border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;color:'+txt+';line-height:1.6">'+p.summary+'</div>';
+    // KPI table
+    if(p.kpis&&p.kpis.length>0){
+      h+='<div style="background:'+card+';border:1px solid '+bdr+';border-radius:8px;overflow:hidden;margin-bottom:16px">';
+      h+='<div style="padding:12px 16px;border-bottom:1px solid '+bdr+';font-size:11px;font-weight:600;color:'+dim+';letter-spacing:1px;text-transform:uppercase">KPI Results</div>';
+      p.kpis.forEach(function(k){
+        var sc=k.status==="met"?grn:k.status==="missed"?red:amb;
+        h+='<div style="padding:10px 16px;border-bottom:1px solid '+bdr+';display:flex;justify-content:space-between;align-items:center">';
+        h+='<span style="font-size:13px;color:'+txt+'">'+k.name+'</span>';
+        h+='<span style="font-size:13px;font-weight:600;color:'+sc+'">'+k.actual+(k.unit||"")+" "+(k.status==="met"?String.fromCodePoint(0x2705):k.status==="missed"?String.fromCodePoint(0x274C):String.fromCodePoint(0x23F3))+'</span>';
+        h+='</div>'});
+      h+='<div style="padding:10px 16px;font-size:12px;font-weight:600;color:'+(p.metCount===p.totalCount?grn:p.metCount===0?red:amb)+'">';
+      h+=p.metCount+'/'+p.totalCount+' KPIs met</div></div>'}
+    // Custom HTML block
+    if(p.html)h+=p.html;
+    // CTA
+    h+='<div style="margin-top:24px;text-align:center"><a href="https://thesisalpha.com" style="display:inline-block;background:'+accent+';color:#fff;text-decoration:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:600">Open ThesisAlpha</a></div>';
+    // Footer
+    h+='<div style="margin-top:32px;padding-top:16px;border-top:1px solid '+bdr+';text-align:center">';
+    h+='<div style="font-size:11px;color:#4b5563">ThesisAlpha — invest with conviction, not impulse.</div>';
+    h+='<div style="font-size:10px;color:#374151;margin-top:4px">You received this because you enabled email alerts.</div>';
+    h+='</div></div></body></html>';
+    return h}
   function sendEarningsEmail(c){
-    var sub="ThesisAlpha: "+c.ticker+" earnings released";
     var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
     var total=c.kpis.filter(function(k){return k.lastResult}).length;
-    var body=c.ticker+" ("+c.name+") earnings are out.\n\n";
-    if(c.earningSummary)body+="Summary: "+c.earningSummary+"\n\n";
-    if(total>0)body+="KPIs: "+met+"/"+total+" met\n";
-    c.kpis.forEach(function(k){if(k.lastResult)body+=k.name+": "+k.lastResult.actual+(k.unit||"")+" ("+(k.lastResult.status||"pending")+")\n"});
-    body+="\nOpen ThesisAlpha to review.";
-    window.open("mailto:"+encodeURIComponent(props.user)+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body),"_blank")}
+    var kpiData=c.kpis.filter(function(k){return k.lastResult}).map(function(k){return{name:k.name,actual:k.lastResult.actual,unit:k.unit||"",status:k.lastResult.status||"pending"}});
+    var html=buildEmailHTML({
+      title:c.ticker+" — Earnings Released",
+      subtitle:c.name+(c.sector?" · "+c.sector:"")+" · "+new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+      summary:c.earningSummary||null,
+      kpis:kpiData,
+      metCount:met,
+      totalCount:total
+    });
+    var sub="ThesisAlpha: "+c.ticker+" earnings — "+met+"/"+total+" KPIs met";
+    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:sub,html:html,type:"earnings"})}).then(function(r){return r.json()}).then(function(d){
+      if(d.success)showToast("Earnings summary emailed to "+props.user,"milestone",4000);
+      else showToast("Email failed — "+(d.error||"try again"),"info",4000)
+    }).catch(function(){showToast("Could not send email — check connection","info",4000)})}
+  function sendQuarterlyLetterEmail(htmlContent,qTitle){
+    var sub="ThesisAlpha: Your "+qTitle+" Quarterly Letter";
+    var wrapped=buildEmailHTML({title:qTitle+" — Quarterly Letter",subtitle:"Your ownership process, reviewed.",html:'<div style="background:#18181b;border:1px solid #2a2a2e;border-radius:8px;padding:20px;margin-bottom:16px;font-size:13px;color:#e5e7eb;line-height:1.6">'+htmlContent+'</div>'});
+    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:sub,html:wrapped,type:"quarterly"})}).then(function(r){return r.json()}).then(function(d){
+      if(d.success)showToast("Quarterly letter emailed","milestone",4000);
+      else showToast("Email failed — "+(d.error||"try again"),"info",4000)
+    }).catch(function(){showToast("Could not send email","info",4000)})}
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
@@ -6261,6 +6309,19 @@ function TrackerApp(props){
             Keep investing with discipline. The process compounds just like the returns.</div>
           {/* Actions */}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
+            <button onClick={function(){
+              var eBody='<p>Dear '+(username||"Investor")+',</p>';
+              eBody+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
+              if(buys2.length>0)eBody+='You added to <strong style="color:#22c55e">'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
+              if(sells2.length>0)eBody+='You exited <strong style="color:#ef4444">'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
+              eBody+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
+              eBody+='<p style="margin-top:12px"><strong>Total Return:</strong> <span style="color:'+(totalRet2>=0?"#22c55e":"#ef4444")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</span>';
+              if(best2)eBody+=' &nbsp; <strong>Best:</strong> '+best2.ticker+' ('+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%)';
+              eBody+='</p>';
+              eBody+='<p><strong>Owner\'s Score:</strong> '+os2.total+' &nbsp; <strong>Avg Mastery:</strong> '+avgMast.toFixed(1)+'/6 &nbsp; <strong>Reviews:</strong> '+qRevs.length+'</p>';
+              eBody+='<p style="margin-top:12px;font-style:italic;color:#9ca3af">Keep investing with discipline. The process compounds just like the returns.</p>';
+              sendQuarterlyLetterEmail(eBody,qTitle)
+            }} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12})}>Close</button></div>
         </div></div>})()}
