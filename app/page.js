@@ -3340,10 +3340,12 @@ function TrackerApp(props){
         {/* Expected CAGR contribution */}
         {(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
           var fs=c.financialSnapshot||{};
+          function dpv(field){if(!fs[field])return 0;var v=fs[field].value;if(typeof v==="number")return v;if(typeof v==="string")return parseFloat(v.replace(/[^\d.\-]/g,""))||0;return 0}
           var eg=0;var kpiA=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
           var kpiT=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.value>0});
-          if(fs.revenueGrowth){eg=fs.revenueGrowth}else if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
-          var dy=fs.dividendYield||c.divYield||0;var pe=fs.peRatio||fs.pe||0;
+          var snapG=dpv("revGrowth")||dpv("epsGrowth");
+          if(snapG){eg=snapG}else if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
+          var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
           var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
@@ -4196,18 +4198,20 @@ function TrackerApp(props){
           var holdingReturns=held.map(function(c2){
             var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
             var fs=c2.financialSnapshot||{};
+            function pv(f2){if(!fs[f2])return 0;var v2=fs[f2].value;if(typeof v2==="number")return v2;if(typeof v2==="string")return parseFloat(v2.replace(/[^\d.\-]/g,""))||0;return 0}
             // Growth estimate priority: 1) historical snapshot 2) KPI actual 3) KPI target 4) style
             var eg=0;var egSource="";
+            var snapGrowth=pv("revGrowth")||pv("epsGrowth");
             var kpiGrowth=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth"||k.metricId==="orgGrowth")&&k.value>0});
             var kpiActual=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
-            if(fs.revenueGrowth&&fs.revenueGrowth!==0){eg=fs.revenueGrowth;egSource="historical"}
+            if(snapGrowth&&snapGrowth!==0){eg=snapGrowth;egSource="historical"}
             else if(kpiActual){eg=kpiActual.lastResult.actual;egSource="kpi result"}
             else if(kpiGrowth){eg=kpiGrowth.value;egSource="kpi target"}
             else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="estimate"}
             // Dividend yield
-            var dy=(fs.dividendYield||c2.divYield||0);if(dy>0)dy=Math.min(dy,12);
+            var dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&c2.position.currentPrice>0?(c2.lastDiv*4/c2.position.currentPrice*100):0);if(dy>0)dy=Math.min(dy,12);
             // Multiple change: mean-revert PE with growth-appropriate fair PE
-            var pe=fs.peRatio||fs.pe||0;
+            var pe=pv("pe");
             var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
             var multChange=0;
             if(pe>0&&pe<200){multChange=(Math.pow(fairPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-12,Math.min(12,multChange))}
@@ -4226,11 +4230,11 @@ function TrackerApp(props){
             var expectedReturn=eg+dy+multChange+fcfBoost+marginBoost+roicBoost+buybackBoost;
             // Predictability: higher for stable, proven businesses
             var pred=40;
-            var gm=fs.grossMargin||0;if(gm>60)pred+=10;else if(gm>40)pred+=5;
-            var roic2=fs.roic||fs.roe||0;if(roic2>20)pred+=10;else if(roic2>12)pred+=5;
-            var de=fs.debtEquity||999;if(de<0.5)pred+=8;else if(de<1.5)pred+=3;else if(de>3)pred-=10;
-            var nm=fs.netMargin||0;if(nm>20)pred+=5;else if(nm>10)pred+=2;
-            var fcfConv=fs.fcfConversion||0;if(fcfConv>80)pred+=5;
+            var gm=pv("grossMargin");if(gm>60)pred+=10;else if(gm>40)pred+=5;
+            var roic2=pv("roic")||pv("roe");if(roic2>20)pred+=10;else if(roic2>12)pred+=5;
+            var de=pv("debtEquity")||999;if(de<0.5)pred+=8;else if(de<1.5)pred+=3;else if(de>3)pred-=10;
+            var nm=pv("netMargin");if(nm>20)pred+=5;else if(nm>10)pred+=2;
+            var fcfConv=0;var fcfS=fs.fcf;if(fcfS)fcfConv=50;if(fcfConv>0)pred+=3;
             if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=8;
             if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=12;
             if(c2.conviction>=8)pred+=5;if(c2.conviction>=5)pred+=3;
