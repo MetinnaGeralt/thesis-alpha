@@ -611,6 +611,7 @@ function TrackerApp(props){
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
+  var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
   var LEVELS=[{min:0,name:"Novice",next:25,icon:"🌱"},{min:25,name:"Apprentice",next:50,icon:"📚"},{min:50,name:"Practitioner",next:70,icon:"🔭"},{min:70,name:"Disciplined",next:85,icon:"⭐"},{min:85,name:"Master",next:100,icon:"🏆"}];
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
@@ -5348,40 +5349,56 @@ function TrackerApp(props){
     {/* Nordnet-style list view */}
     {filtered.length>0&&dashSet.portfolioView!=="cards"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+      var listCols=dashSet.listCols||{};
+      function togCol(k){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[k]=!lc[k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
+        {/* Header */}
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
-          <span style={{width:36}}/>
+          <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
-          {!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
-          <span style={{width:60,textAlign:"right"}}>Return</span>
-          {!isMobile&&<span style={{width:80,textAlign:"right"}}>Value</span>}
-          <span style={{width:50,textAlign:"right"}}>Wt%</span>
-          <span style={{width:isMobile?60:120,paddingLeft:6}}>Alloc.</span>
-          <span style={{width:40,textAlign:"center"}}>C</span>
-          {!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
-          {!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}</div>
+          <span style={{width:75,textAlign:"right"}}>Avg Price</span>
+          <span style={{width:65,textAlign:"right"}}>Return</span>
+          {!isMobile&&<span style={{width:85,textAlign:"right"}}>Value</span>}
+          <span style={{width:isMobile?70:150,paddingLeft:8}}>Allocation</span>
+          {listCols.conviction&&<span style={{width:40,textAlign:"center"}}>Conv.</span>}
+          {listCols.kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
+          {listCols.earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
+          {listCols.price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          <span style={{width:28,textAlign:"right",position:"relative"}}>
+            <button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:155,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
+              <div style={{padding:"4px 14px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
+              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings Date"}].map(function(col){return<div key={col.k} onClick={function(){togCol(col.k)}} style={{padding:"6px 14px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{width:14,height:14,borderRadius:3,border:"1.5px solid "+(listCols[col.k]?K.acc:K.bdr),background:listCols[col.k]?K.acc:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {listCols[col.k]&&<svg width="8" height="8" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>}</div>
+                {col.l}</div>})}</div>}
+          </span></div>
+        {/* Rows */}
         {filtered.map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
           var weight=totalVal>0&&val>0?(val/totalVal*100):0;
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
-          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
+          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
+            <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={26}/></span>
             <span style={{flex:1,minWidth:100}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
-              <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
-            {!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
-            <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
-            {!isMobile&&<span style={{width:80,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
-            <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{weight>0?weight.toFixed(1)+"%":"\u2014"}</span>
-            <span style={{width:isMobile?60:120,paddingLeft:6}}>
-              {weight>0?<div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
-                <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:4,background:K.acc,transition:"width .4s"}}/></div>:<div style={{height:8}}/>}
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
+            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{p2.avgCost>0?"$"+p2.avgCost.toFixed(2):"\u2014"}</span>
+            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
+            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
+            <span style={{width:isMobile?70:150,paddingLeft:8}}>
+              {weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>
+                <span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:30,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}
             </span>
-            <span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:11,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>
-            {!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
-            {!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+            {listCols.conviction&&<span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>}
+            {listCols.kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
+            {listCols.earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+            {listCols.price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
+            <span style={{width:28}}/>
           </div>})}
       </div>})()}
     {/* Card view */}
