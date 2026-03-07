@@ -2628,11 +2628,17 @@ function TrackerApp(props){
       {/* Insider Transactions */}
       {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
-        {txns.slice(0,6).map(function(t,i){var isBuy=t.change>0;
+        {txns.slice(0,8).map(function(t,i){
+          // Finnhub transactionType: P=Purchase, S=Sale, A=Award/Grant, M=Option Exercise, etc
+          var txType=t.transactionType||"";
+          var isBuy=txType==="P"||txType==="A"||txType==="M"?true:txType==="S"||txType==="D"||txType==="F"?false:t.change>0;
+          var label=txType==="P"?"BUY":txType==="S"?"SELL":txType==="A"?"GRANT":txType==="M"?"EXER":txType==="F"?"TAX":txType==="D"?"DISP":t.change>0?"BUY":"SELL";
+          var labelColor=txType==="P"?K.grn:txType==="S"||txType==="D"||txType==="F"?K.red:txType==="A"||txType==="M"?K.blue:isBuy?K.grn:K.red;
+          var shares=Math.abs(t.share||t.change||0);
           return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,fontSize:11}}>
-            <span style={{color:isBuy?K.grn:K.red,fontWeight:600,fontFamily:fm,width:36,fontSize:10}}>{isBuy?"BUY":"SELL"}</span>
+            <span style={{color:labelColor,fontWeight:600,fontFamily:fm,width:40,fontSize:9}}>{label}</span>
             <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
-            <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change).toLocaleString()} sh</span>
+            <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change||0).toLocaleString()} sh</span>
             <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
       {/* Peers */}
       {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
@@ -2645,6 +2651,9 @@ function TrackerApp(props){
     if(!finData)return null;
     var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
     if(inc.length<2)return null;
+    // Ensure oldest-first ordering (FMP returns newest-first)
+    function sortOldFirst(arr){if(arr.length<2)return arr;var a=arr.slice();if(a[0].date&&a[1].date&&a[0].date>a[1].date)a.reverse();else if(a[0].calendarYear&&a[1].calendarYear&&parseInt(a[0].calendarYear)>parseInt(a[1].calendarYear))a.reverse();return a}
+    inc=sortOldFirst(inc);bal=sortOldFirst(bal);cf=sortOldFirst(cf);
     function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
     function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
     function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
@@ -3615,19 +3624,22 @@ function TrackerApp(props){
               <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:10}}>Recent Transactions</div>
               {insiderData.transactions&&insiderData.transactions.length>0?
                 <div>{(function(){
-                  var buys=insiderData.transactions.filter(function(t2){return t2.change>0});
-                  var sells=insiderData.transactions.filter(function(t2){return t2.change<0});
+                  var buys=insiderData.transactions.filter(function(t2){return t2.transactionType==="P"||(!t2.transactionType&&t2.change>0)});
+                  var sells=insiderData.transactions.filter(function(t2){return t2.transactionType==="S"||t2.transactionType==="D"||t2.transactionType==="F"||(!t2.transactionType&&t2.change<0)});
                   var netBuy=buys.length>sells.length;
                   return<div>
                     <div style={{display:"flex",gap:8,marginBottom:10}}>
                       <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
                         <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{buys.length}</div>
-                        <div style={{fontSize:8,color:K.grn}}>Buys</div></div>
+                        <div style={{fontSize:8,color:K.grn}}>Purchases</div></div>
                       <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.red+"08",border:"1px solid "+K.red+"20",textAlign:"center"}}>
                         <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{sells.length}</div>
-                        <div style={{fontSize:8,color:K.red}}>Sells</div></div></div>
-                    {netBuy&&<div style={{fontSize:10,color:K.grn,fontFamily:fm,marginBottom:8}}>Net insider buying — typically a bullish signal</div>}
-                    {insiderData.transactions.slice(0,5).map(function(t2,i2){var isBuy2=t2.change>0;
+                        <div style={{fontSize:8,color:K.red}}>Sales</div></div></div>
+                    {netBuy&&buys.length>0&&<div style={{fontSize:10,color:K.grn,fontFamily:fm,marginBottom:8}}>Net insider buying — typically a bullish signal</div>}
+                    {insiderData.transactions.slice(0,5).map(function(t2,i2){
+                      var txT=t2.transactionType||"";
+                      var lbl=txT==="P"?"BUY":txT==="S"?"SELL":txT==="A"?"GRANT":txT==="M"?"EXER":txT==="F"?"TAX":txT==="D"?"DISP":t2.change>0?"BUY":"SELL";
+                      var lclr=txT==="P"?K.grn:txT==="S"||txT==="D"||txT==="F"?K.red:txT==="A"||txT==="M"?K.blue:t2.change>0?K.grn:K.red;
                       var role=(t2.name||"").toLowerCase();var isExec=role.indexOf("ceo")>=0||role.indexOf("cfo")>=0||role.indexOf("chief")>=0||role.indexOf("president")>=0||role.indexOf("director")>=0;
                       return<div key={i2} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i2<4?"1px solid "+K.bdr+"30":"none"}}>
                         <div style={{width:24,height:24,borderRadius:"50%",background:isExec?K.acc+"15":K.bg,border:"1px solid "+(isExec?K.acc+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -3636,8 +3648,8 @@ function TrackerApp(props){
                           <div style={{fontSize:10,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t2.name}</div>
                           <div style={{fontSize:8,color:K.dim}}>{t2.transactionDate}</div></div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:10,fontWeight:600,color:isBuy2?K.grn:K.red,fontFamily:fm}}>{isBuy2?"BUY":"SELL"}</div>
-                          <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{Math.abs(t2.change).toLocaleString()} sh</div></div></div>})}</div>})()}</div>
+                          <div style={{fontSize:10,fontWeight:600,color:lclr,fontFamily:fm}}>{lbl}</div>
+                          <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{Math.abs(t2.change||0).toLocaleString()} sh</div></div></div>})}</div>})()}</div>
               :<div style={{fontSize:11,color:K.dim,padding:"8px 0"}}>No recent insider transactions</div>}
             </div>
             {/* Top Institutional Holders */}
