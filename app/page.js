@@ -1013,7 +1013,7 @@ function TrackerApp(props){
     return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove()}},[isDark,theme]);
   // ── Load data ──
   useEffect(function(){
-    // Load: try cloud first (cross-device), then localStorage (offline cache), then empty + onboarding
+    // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
@@ -1059,7 +1059,7 @@ function TrackerApp(props){
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
         setLoaded(true);return}
-      // Brand new user — show onboarding (empty portfolio until they choose)
+      // Brand new user — use sample data
       try{if(!localStorage.getItem("ta-onboarded"))setObStep(1)}catch(e){setObStep(1)}
       // Start trial for new users
       if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}
@@ -1106,7 +1106,7 @@ function TrackerApp(props){
           // Send browser push if enabled
           if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
             try{new Notification("ThesisAlpha: "+c.ticker,{body:"Earnings results are now available",icon:"/logo.png"})}catch(e){}}
-          // Queue email alert notification only if company has KPIs to report on
+          // Queue email alert notification (non-disruptive — user clicks to open)
           if(emailNotify&&c.kpis.length>0){setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"email-alert",ticker:c.ticker,msg:"KPI results ready — click to email summary",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
         })},Math.random()*3000+1000)}// Stagger 1-4s
       else if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"})){
@@ -1147,8 +1147,7 @@ function TrackerApp(props){
     h+='<div style="font-size:10px;color:#374151;margin-top:4px">You received this because you have KPI alerts enabled for this holding.</div>';
     h+='</div></div></body></html>';
     return h}
-  function sendEarningsEmail(c){
-    if(!c.kpis||c.kpis.length===0){showToast("Add KPIs to "+c.ticker+" first — email alerts track your KPI targets against earnings","info",5000);return}
+  function sendEarningsEmail(c){if(!c.kpis||c.kpis.length===0){showToast("Add KPIs to "+c.ticker+" first — email alerts track your KPI targets against earnings","info",5000);return}
     var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
     var total=c.kpis.filter(function(k){return k.lastResult}).length;
     if(total===0){showToast(c.ticker+" KPIs not yet checked — run an earnings check first","info",4000);return}
@@ -1919,6 +1918,9 @@ function TrackerApp(props){
           <div><div style={{fontSize:13,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{it.d}</div></div>
           <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
             <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
+        <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"7px 14px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
+          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
       {/* ── Themes Tab ── */}
       {sTab==="themes"&&<div>
@@ -1956,10 +1958,12 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
             <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"✓":"Wk "+r.w}</div></div>})}</div>
         <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
-        <div style={{marginTop:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
-          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
+        <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
+      {/* ── Always visible footer ── */}
+      <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.mid,fontSize:11,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
+        <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ThesisAlpha v1.0</div></div>
     </Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
@@ -2041,8 +2045,8 @@ function TrackerApp(props){
             <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.label}</div>
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4}}>{item.desc}</div></div>})}</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
-        {false?<button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Continue Tour {"→"}</button>
-        :<>{React.createElement("button",{onClick:function(){setObPath("fresh");setCos([]);setObStep(2)},style:Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})},"Start Fresh")}{React.createElement("button",{onClick:function(){setObPath("demo");setCos(SAMPLE);setObStep(2)},style:Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})},"Explore with Demo Data")}</>}</div>
+        <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Start Fresh</button>
+        <button onClick={function(){setObPath("demo");setCos(SAMPLE);setObStep(2)}} style={Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})}>Explore with Demo Data</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 2: Path-dependent
@@ -2120,11 +2124,12 @@ function TrackerApp(props){
         <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>Your process builds over time</div>
         <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action — writing a thesis, tracking KPIs, reviewing conviction — builds your <strong>Owner’s Score</strong>. The score measures how disciplined your process is, not whether your stocks go up. Show up consistently, and you’ll unlock investor lenses, themes, and insights along the way.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(false?1:2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
-      <button onClick={function(){finishOnboarding()}} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
+      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 4: Guide to write thesis for the company they just added
+    if(obStep===4){var firstCo=cos.find(function(c){return c.id===selId})||cos[cos.length-1];
       if(!firstCo){setObStep(5);return null}
       return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
@@ -5837,7 +5842,7 @@ function TrackerApp(props){
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {autoNotify?"Auto-check ON":"Auto-check"}</button>
-        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"You will be emailed when KPI results are checked — only for companies with KPIs assigned":"Enable email alerts when your KPI targets are checked against earnings"}>
+        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Get an email summary when earnings are found":"Get email summaries when earnings drop"}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
           {emailNotify?"KPI Email ON":"+ KPI Email"}</button>}
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
