@@ -319,17 +319,17 @@ async function fetchEarnings(co,kpis){
       // Build raw snapshot for display regardless of KPIs
       if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
       if(m["revenuePerShareTTM"])snapshot.revPerShare={label:"Revenue/Share",value:"$"+m["revenuePerShareTTM"].toFixed(2)};
-      if(m["grossMarginTTM"]!=null)snapshot.grossMargin={label:"Gross Margin",value:(m["grossMarginTTM"]).toFixed(1)+"%"};
-      if(m["operatingMarginTTM"]!=null)snapshot.opMargin={label:"Operating Margin",value:(m["operatingMarginTTM"]).toFixed(1)+"%"};
-      if(m["netProfitMarginTTM"]!=null)snapshot.netMargin={label:"Net Margin",value:(m["netProfitMarginTTM"]).toFixed(1)+"%"};
-      if(m["roeTTM"]!=null)snapshot.roe={label:"ROE",value:(m["roeTTM"]).toFixed(1)+"%"};
-      if(m["roicTTM"]!=null)snapshot.roic={label:"ROIC",value:(m["roicTTM"]).toFixed(1)+"%"};
+      if(m["grossMarginTTM"]!=null)snapshot.grossMargin={label:"Gross Margin",numVal:m["grossMarginTTM"],value:(m["grossMarginTTM"]).toFixed(1)+"%"};
+      if(m["operatingMarginTTM"]!=null)snapshot.opMargin={label:"Operating Margin",numVal:m["operatingMarginTTM"],value:(m["operatingMarginTTM"]).toFixed(1)+"%"};
+      if(m["netProfitMarginTTM"]!=null)snapshot.netMargin={label:"Net Margin",numVal:m["netProfitMarginTTM"],value:(m["netProfitMarginTTM"]).toFixed(1)+"%"};
+      if(m["roeTTM"]!=null)snapshot.roe={label:"ROE",numVal:m["roeTTM"],value:(m["roeTTM"]).toFixed(1)+"%"};
+      if(m["roicTTM"]!=null)snapshot.roic={label:"ROIC",numVal:m["roicTTM"],value:(m["roicTTM"]).toFixed(1)+"%"};
       if(m["currentRatioQuarterly"])snapshot.currentRatio={label:"Current Ratio",value:m["currentRatioQuarterly"].toFixed(2)};
-      if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
-      if(m["peTTM"])snapshot.pe={label:"P/E",value:m["peTTM"].toFixed(1)};
+      if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",numVal:m["totalDebt/totalEquityQuarterly"],value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
+      if(m["peTTM"])snapshot.pe={label:"P/E",numVal:m["peTTM"],value:m["peTTM"].toFixed(1)};
       if(m["pbQuarterly"])snapshot.pb={label:"P/B",value:m["pbQuarterly"].toFixed(2)};
       if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
-      if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",value:(m["revenueGrowthTTMYoy"]).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
+      if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",numVal:m["revenueGrowthTTMYoy"],value:(m["revenueGrowthTTMYoy"]).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
       if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
       if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
@@ -415,6 +415,17 @@ async function fetchEarnings(co,kpis){
       if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
       if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
       if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
+      // Dividend yield — ensure it's in snapshot as a number
+      if(km.dividendYieldTTM!=null&&!snapshot.divYield)snapshot.divYield={label:"Dividend Yield",value:(km.dividendYieldTTM*100).toFixed(2)+"%",numVal:km.dividendYieldTTM*100,source:"FMP"};
+      if(!snapshot.divYield&&fhMap.divYield&&fhMap.divYield.v!=null)snapshot.divYield={label:"Dividend Yield",value:fhMap.divYield.v.toFixed(2)+"%",numVal:fhMap.divYield.v,source:"Finnhub"};
+      // Buyback yield — estimate from payout ratio and cash flow data
+      if(ra.payoutRatioTTM!=null&&km.dividendYieldTTM!=null){
+        var totalYield=km.dividendYieldTTM*100;var payoutPct=ra.payoutRatioTTM*100;
+        // If payout ratio < 100%, company retains earnings; estimate buyback from retained
+        // This is approximate — real buyback yield requires cash flow statement
+        if(payoutPct<80&&payoutPct>=0){var retainedPct=1-ra.payoutRatioTTM;var estBuyback=Math.max(0,retainedPct*totalYield*0.5);
+          if(estBuyback>0.2)snapshot.buybackYield={label:"Est. Buyback Yield",value:estBuyback.toFixed(1)+"%",numVal:estBuyback,source:"FMP est."}}
+      }
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
       console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
@@ -4198,7 +4209,7 @@ function TrackerApp(props){
           var holdingReturns=held.map(function(c2){
             var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
             var fs=c2.financialSnapshot||{};
-            function pv(f2){if(!fs[f2])return 0;var v2=fs[f2].value;if(typeof v2==="number")return v2;if(typeof v2==="string")return parseFloat(v2.replace(/[^\d.\-]/g,""))||0;return 0}
+            function pv(f2){if(!fs[f2])return 0;if(fs[f2].numVal!=null)return fs[f2].numVal;var v2=fs[f2].value;if(typeof v2==="number")return v2;if(typeof v2==="string")return parseFloat(v2.replace(/[^\d.\-]/g,""))||0;return 0}
             // Growth estimate priority: 1) historical snapshot 2) KPI actual 3) KPI target 4) style
             var eg=0;var egSource="";
             var snapGrowth=pv("revGrowth")||pv("epsGrowth");
@@ -4208,8 +4219,10 @@ function TrackerApp(props){
             else if(kpiActual){eg=kpiActual.lastResult.actual;egSource="kpi result"}
             else if(kpiGrowth){eg=kpiGrowth.value;egSource="kpi target"}
             else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="estimate"}
-            // Dividend yield
-            var dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&c2.position.currentPrice>0?(c2.lastDiv*4/c2.position.currentPrice*100):0);if(dy>0)dy=Math.min(dy,12);
+            // Dividend yield — from snapshot, company data, or last known div
+            var dy=0;var dySnap=fs.divYield;if(dySnap&&dySnap.numVal)dy=dySnap.numVal;
+            else dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&c2.position.currentPrice>0?(c2.lastDiv*4/c2.position.currentPrice*100):0);
+            if(dy>0)dy=Math.min(dy,12);
             // Multiple change: mean-revert PE with growth-appropriate fair PE
             var pe=pv("pe");
             var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
@@ -4224,9 +4237,17 @@ function TrackerApp(props){
             // ROIC quality signal
             var roicKpi=c2.kpis.find(function(k){return(k.metricId==="roic"||k.metricId==="roce"||k.metricId==="roe")&&k.lastResult});
             var roicBoost=0;if(roicKpi&&roicKpi.lastResult.actual>15)roicBoost=1.5;else if(roicKpi&&roicKpi.lastResult.actual>10)roicBoost=0.5;
-            // Buyback/shareholder yield
-            var buybackKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
-            var buybackBoost=buybackKpi?Math.min(buybackKpi.lastResult.actual||0,5):0;
+            // Buyback/shareholder yield — from snapshot, KPI, or cash flow estimate
+            var buybackBoost=0;
+            var bbSnap=fs.buybackYield;if(bbSnap&&bbSnap.numVal)buybackBoost=Math.min(bbSnap.numVal,8);
+            if(!buybackBoost){var buybackKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
+              if(buybackKpi)buybackBoost=Math.min(buybackKpi.lastResult.actual||0,8)}
+            // Fallback: estimate from cash flow statements if fetched (Pro)
+            if(!buybackBoost&&c2.financialStatements){var cfs=c2.financialStatements;
+              if(cfs&&cfs.cashflow&&cfs.cashflow.length>0){var latest=cfs.cashflow[0];var repurch=Math.abs(latest.commonStockRepurchased||0);
+                var mktCap2=c2.position.currentPrice*((c2.employees||1)*1000);// rough estimate
+                if(repurch>0&&c2.mktCap>0)buybackBoost=Math.min(repurch/c2.mktCap*100,8);
+                else if(repurch>0&&latest.revenue>0)buybackBoost=Math.min(repurch/latest.revenue*3,8)}}
             var expectedReturn=eg+dy+multChange+fcfBoost+marginBoost+roicBoost+buybackBoost;
             // Predictability: higher for stable, proven businesses
             var pred=40;
