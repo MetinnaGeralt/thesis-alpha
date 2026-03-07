@@ -3339,9 +3339,13 @@ function TrackerApp(props){
 
         {/* Expected CAGR contribution */}
         {(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
-          var fs=c.financialSnapshot||{};var eg=fs.revenueGrowth||0;if(!eg){var rg=c.kpis.find(function(k){return k.metricId==="revGrowth"&&k.lastResult});eg=rg?rg.lastResult.actual:0}
-          var dy=fs.dividendYield||c.divYield||0;var pe=fs.peRatio||fs.pe||25;var fairPE=eg>20?30:eg>10?22:eg>5?18:15;
-          var mc=pe>0?Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))*100-100:0;mc=Math.max(-8,Math.min(8,mc));
+          var fs=c.financialSnapshot||{};
+          var eg=0;var kpiA=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
+          var kpiT=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.value>0});
+          if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else if(fs.revenueGrowth){eg=fs.revenueGrowth}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
+          var dy=fs.dividendYield||c.divYield||0;var pe=fs.peRatio||fs.pe||0;
+          var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
+          var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
           var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -4192,32 +4196,48 @@ function TrackerApp(props){
           var holdingReturns=held.map(function(c2){
             var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
             var fs=c2.financialSnapshot||{};
-            // Earnings growth estimate from historical data or KPIs
-            var eg=fs.revenueGrowth||0;if(!eg){var rg=c2.kpis.find(function(k){return k.metricId==="revGrowth"&&k.lastResult});eg=rg?rg.lastResult.actual:8}
+            // Growth estimate priority: 1) KPI target 2) actual snapshot 3) style default
+            var eg=0;var egSource="";
+            var kpiGrowth=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth"||k.metricId==="orgGrowth")&&k.value>0});
+            var kpiActual=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
+            if(kpiActual){eg=kpiActual.lastResult.actual;egSource="actual"}
+            else if(kpiGrowth){eg=kpiGrowth.value;egSource="target"}
+            else if(fs.revenueGrowth&&fs.revenueGrowth!==0){eg=fs.revenueGrowth;egSource="snapshot"}
+            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="style"}
             // Dividend yield
-            var dy=(fs.dividendYield||c2.divYield||0);
-            // Multiple change estimate: mean-revert PE toward 20x over horizon
-            var pe=fs.peRatio||fs.pe||25;var fairPE=eg>20?30:eg>10?22:eg>5?18:15;
-            var multChange=pe>0?Math.pow(fairPE/pe,1/goals.horizon)*100-100:0;multChange=Math.max(-8,Math.min(8,multChange));
+            var dy=(fs.dividendYield||c2.divYield||0);if(dy>0)dy=Math.min(dy,12);
+            // Multiple change: mean-revert PE with growth-appropriate fair PE
+            var pe=fs.peRatio||fs.pe||0;
+            var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
+            var multChange=0;
+            if(pe>0&&pe<200){multChange=(Math.pow(fairPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-12,Math.min(12,multChange))}
             var expectedReturn=eg+dy+multChange;
-            // Predictability score 0-100
-            var pred=50;
-            var gm=fs.grossMargin||50;if(gm>50)pred+=10;if(gm>70)pred+=5;
-            var roic2=fs.roic||fs.roe||10;if(roic2>15)pred+=10;if(roic2>25)pred+=5;
-            var de=fs.debtEquity||0.5;if(de<0.5)pred+=10;if(de>2)pred-=15;
-            if(c2.investStyle==="quality")pred+=5;if(c2.investStyle==="speculative")pred-=15;
-            if(c2.conviction>=8)pred+=5;
-            pred=Math.max(10,Math.min(95,pred));
-            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain}});
+            // Predictability: higher for stable, proven businesses
+            var pred=45;
+            var gm=fs.grossMargin||0;if(gm>60)pred+=12;else if(gm>40)pred+=6;
+            var roic2=fs.roic||fs.roe||0;if(roic2>20)pred+=12;else if(roic2>12)pred+=6;
+            var de=fs.debtEquity||999;if(de<0.5)pred+=8;else if(de<1.5)pred+=3;else if(de>3)pred-=10;
+            if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=8;
+            if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=12;
+            if(c2.conviction>=8)pred+=5;if(c2.conviction>=5)pred+=3;
+            if(egSource==="actual")pred+=8;else if(egSource==="target")pred+=4;
+            if((c2.earningsHistory||[]).length>=2)pred+=5;
+            pred=Math.max(15,Math.min(95,pred));
+            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
           // Portfolio weighted expected CAGR
           var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
           var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
-          // Range: +/- based on predictability
-          var spread=(100-portPred)/100*portCAGR*0.8;
-          var lowCAGR=portCAGR-spread;var highCAGR=portCAGR+spread;
-          // Probability of hitting target
-          var zScore=goals.targetCAGR>0?(portCAGR-goals.targetCAGR)/(spread||1):0;
-          var prob=Math.round(Math.min(95,Math.max(5,50+zScore*30)));
+          // Range based on predictability
+          var uncertainty=(100-portPred)/100;
+          var spread=Math.max(portCAGR*0.3,4)*uncertainty+2;
+          var lowCAGR=portCAGR-spread*1.2;var highCAGR=portCAGR+spread*0.8;
+          // Probability using cumulative normal approximation
+          var diff=portCAGR-goals.targetCAGR;var sigma=spread*0.8||1;
+          var t2=diff/sigma;
+          // Approximation of normal CDF
+          var prob;if(t2>=0){prob=Math.round(Math.min(95,50+50*(1-Math.exp(-0.7*t2-0.35*t2*t2))))}else{prob=Math.round(Math.max(5,50-50*(1-Math.exp(0.7*t2-0.35*t2*t2))))}
+          if(portCAGR>=goals.targetCAGR*1.3)prob=Math.max(prob,75);
+          if(portCAGR>=goals.targetCAGR)prob=Math.max(prob,45);
           // Portfolio character
           var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
           // Sort by contribution
@@ -4280,7 +4300,7 @@ function TrackerApp(props){
                   <span style={{width:36}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={20}/></span>
                   <span style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
                   <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{h2.weight.toFixed(1)}%</span>
-                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%</span>
+                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{h2.egSource}</div></span>
                   <span style={{width:55,textAlign:"right",fontSize:10,color:h2.dy>0?K.grn:K.dim,fontFamily:fm}}>{h2.dy>0?"+"+h2.dy.toFixed(1)+"%":"--"}</span>
                   <span style={{width:60,textAlign:"right",fontSize:10,color:h2.multChange>=0?K.grn:K.red,fontFamily:fm}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%</span>
                   <span style={{width:70,textAlign:"right",fontSize:11,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
@@ -4288,7 +4308,7 @@ function TrackerApp(props){
               {/* Math explanation */}
               <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
                 <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>How this is calculated</div>
-                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change. Earnings growth uses the most recent YoY revenue growth or your KPI targets. Multiple change estimates mean-reversion of P/E toward fair value based on growth rate. Contribution = Weight x Expected Return.</div></div></div>
+                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change. Growth estimate priority: (1) your actual KPI results, (2) your KPI targets, (3) financial snapshot data, (4) style-based estimate. Multiple change estimates P/E mean-reversion toward a growth-appropriate fair value. Predictability scores higher for proven compounders with stable margins, high ROIC, low debt, and verified earnings data.</div></div></div>
             {/* What-if scenarios */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
