@@ -1078,9 +1078,9 @@ function TrackerApp(props){
   useEffect(function(){if(!loaded||!trial||!trial.start||trial.bonusEarned||plan==="pro")return;
     if(completeTheses>=THESIS_UNLOCK){
       saveTrial(Object.assign({},trial,{bonusEarned:true,bonusEarnedAt:new Date().toISOString()}));
-      celebrate(String.fromCodePoint(0x1F3C6)+" Discipline recognized! +"+TRIAL_BONUS+" days of full access unlocked.","milestone",8000);
-      showCelebration(String.fromCodePoint(0x1F3C6)+" Skin in the Game","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
-      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"Trial extended! "+TRIAL_BONUS+" bonus days earned for completing "+THESIS_UNLOCK+" theses",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
+      celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
+      showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
+      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"+TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
@@ -3589,7 +3589,7 @@ function TrackerApp(props){
         </div>
 
         {/* Expected CAGR contribution */}
-        {(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
+        {isPro&&(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
           var fs=c.financialSnapshot||{};
           function dpv(field){if(!fs[field])return 0;var v=fs[field].value;if(typeof v==="number")return v;if(typeof v==="string")return parseFloat(v.replace(/[^\d.\-]/g,""))||0;return 0}
           var eg=0;var kpiA=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
@@ -3603,7 +3603,7 @@ function TrackerApp(props){
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
-              <button onClick={function(){setPage("hub");setHubTab("goals")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
+              <button onClick={function(){if(isPro){setPage("hub");setHubTab("goals")}else{setShowUpgrade(true);setUpgradeCtx("goals")}}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
             <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
               <span style={{fontSize:22,fontWeight:700,color:expected>=0?K.grn:K.red,fontFamily:fm}}>{expected>=0?"+":""}{expected.toFixed(1)}%</span>
               <span style={{fontSize:11,color:K.dim}}>expected annual</span></div>
@@ -4019,7 +4019,7 @@ function TrackerApp(props){
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>})}</div>}
 
         {/* === PERFORMANCE ATTRIBUTION === */}
-        {portfolio.length>0&&(function(){
+        {isPro&&portfolio.length>0&&(function(){
           var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0});
           if(held.length===0)return null;
           var totalCost=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
@@ -4496,7 +4496,13 @@ function TrackerApp(props){
 
       {/* ═══ HOW IT WORKS TAB ═══ */}
       {ht==="goals"&&<div>
-        {/* Disclaimer */}
+        {!isPro&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:32,marginBottom:16}}>{String.fromCodePoint(0x1F4CA)}</div>
+          <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>Performance & Goals</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.7,maxWidth:420,margin:"0 auto 24px"}}>See your expected portfolio CAGR, probability analysis, scenario modeling, and per-holding return attribution.</div>
+          <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("goals")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:13})}>Upgrade to Unlock</button>
+        </div>}
+        {isPro&&<div>{/* Disclaimer */}
         <div style={{background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
           <div style={{fontSize:11,color:K.amb,lineHeight:1.6}}>This is a reasoning framework based on historical fundamentals and current valuations, not a forecast. Past performance does not predict future results. Not financial advice. Verify all assumptions independently.</div></div>
         {/* Goal Setting */}
@@ -4507,8 +4513,9 @@ function TrackerApp(props){
               <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" defaultValue={goals.targetCAGR} onBlur={function(e){var v=parseFloat(e.target.value);if(!isNaN(v)&&v>0)saveGoals(Object.assign({},goals,{targetCAGR:v}))}} onKeyDown={function(e){if(e.key==="Enter"){e.target.blur()}}} style={{width:80,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:16,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/><span style={{fontSize:14,color:K.dim,fontFamily:fm}}>%</span></div></div>
             <div><div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Time Horizon</div>
               <div style={{display:"flex",gap:4}}>{[5,10,15,20].map(function(y){return<button key={y} onClick={function(){saveGoals(Object.assign({},goals,{horizon:y}))}} style={{padding:"8px 14px",borderRadius:6,border:"1px solid "+(goals.horizon===y?K.acc:K.bdr),background:goals.horizon===y?K.acc+"15":"transparent",color:goals.horizon===y?K.acc:K.mid,fontSize:12,fontWeight:goals.horizon===y?700:400,cursor:"pointer",fontFamily:fm}}>{y}y</button>})}</div></div></div></div>
+        </div>}
         {/* Compute portfolio expected returns */}
-        {(function(){
+        {isPro&&(function(){
           var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
           if(held.length===0)return<div style={{textAlign:"center",padding:"40px",color:K.dim}}>Add holdings with position data to see projections</div>;
           var totalVal=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
@@ -6070,14 +6077,15 @@ function TrackerApp(props){
               <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>${monthlyInc.toFixed(0)}</div>
                 <div style={{fontSize:8,color:K.dim}}>Monthly (avg)</div></div></div>
+            {!isPro&&<div style={{fontSize:10,color:K.acc,marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("dividends")}}>Upgrade for monthly income chart, yield on cost, payout safety analysis</div>}
             {/* Monthly income chart */}
-            <div style={{marginBottom:16}}>
+            {isPro&&<div style={{marginBottom:16}}>
               <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:6}}>Monthly Income Estimate</div>
               <div style={{display:"flex",gap:3,alignItems:"flex-end",height:60}}>
                 {monthlyArr.map(function(v2,mi){return<div key={mi} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
                   <div style={{width:"100%",height:Math.max(v2/maxMonth*50,2),borderRadius:3,background:v2>0?K.grn:K.bdr,marginBottom:3}}/>
                   <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{months[mi]}</div>
-                  {v2>0&&<div style={{fontSize:7,color:K.grn,fontFamily:fm}}>${v2.toFixed(0)}</div>}</div>})}</div></div>
+                  {v2>0&&<div style={{fontSize:7,color:K.grn,fontFamily:fm}}>${v2.toFixed(0)}</div>}</div>})}</div></div>}
             {/* Holdings table */}
             <div style={{marginBottom:16}}>
               <div style={{display:"flex",fontSize:9,color:K.dim,fontFamily:fm,padding:"4px 0",borderBottom:"1px solid "+K.bdr,gap:0}}>
@@ -6085,18 +6093,18 @@ function TrackerApp(props){
                 <span style={{flex:1}}>Ticker</span>
                 <span style={{width:55,textAlign:"right"}}>Div/Share</span>
                 <span style={{width:50,textAlign:"right"}}>Yield</span>
-                <span style={{width:50,textAlign:"right"}}>YOC</span>
+                {isPro&&<span style={{width:50,textAlign:"right"}}>YOC</span>}
                 <span style={{width:60,textAlign:"right"}}>Income</span>
-                <span style={{width:50,textAlign:"right"}}>Payout</span></div>
+                {isPro&&<span style={{width:50,textAlign:"right"}}>Payout</span>}</div>
               {holdings.map(function(h2){var safeColor=h2.payout>0?(h2.payout<60?K.grn:h2.payout<80?K.amb:K.red):K.dim;
                 return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+K.bdr+"30",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
                   <span style={{width:28}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={18}/></span>
                   <span style={{flex:1}}><span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
                   <span style={{width:55,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>${h2.dps.toFixed(2)}/{h2.freq==="monthly"?"mo":h2.freq==="semi"?"semi":h2.freq==="annual"?"yr":"q"}</span>
                   <span style={{width:50,textAlign:"right",fontSize:10,color:K.grn,fontFamily:fm}}>{h2.yield.toFixed(1)}%</span>
-                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.yoc>h2.yield?K.grn:K.txt,fontFamily:fm}}>{h2.yoc>0?h2.yoc.toFixed(1)+"%":"--"}</span>
+                  {isPro&&<span style={{width:50,textAlign:"right",fontSize:10,color:h2.yoc>h2.yield?K.grn:K.txt,fontFamily:fm}}>{h2.yoc>0?h2.yoc.toFixed(1)+"%":"--"}</span>}
                   <span style={{width:60,textAlign:"right",fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>{h2.shares>0?"$"+h2.annPay.toFixed(0):"--"}</span>
-                  <span style={{width:50,textAlign:"right",fontSize:10,color:safeColor,fontFamily:fm}}>{h2.payout>0?h2.payout.toFixed(0)+"%":"--"}</span></div>})}</div>
+                  {isPro&&<span style={{width:50,textAlign:"right",fontSize:10,color:safeColor,fontFamily:fm}}>{h2.payout>0?h2.payout.toFixed(0)+"%":"--"}</span>}</div>})}</div>
             {/* Upcoming ex-div dates */}
             {upcoming2.length>0&&<div style={{padding:"10px 12px",background:K.bg,borderRadius:8,marginBottom:8}}>
               <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:6}}>Upcoming Ex-Dividend Dates</div>
