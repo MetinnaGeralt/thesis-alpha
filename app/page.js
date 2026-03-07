@@ -5931,23 +5931,80 @@ function TrackerApp(props){
               <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
       {/* Dividends */}
       {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Overview</div>
-        {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Set dividends in Position settings.</span></div>}
-        {divCos.map(function(c){var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var annDiv=dps*mult;var yld=pos.currentPrice?annDiv/pos.currentPrice*100:0;var annPayout=(pos.shares||0)*annDiv;
-          return<div key={c.id} style={{marginBottom:8,padding:"10px 12px",background:K.bg,borderRadius:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
-              <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
-              <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,flex:1}}>{c.ticker}</span>
-              <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}% yield</span></div>
-            <div style={{display:"flex",gap:12,paddingLeft:30}}>
-              <span style={{fontSize:11,color:K.mid,fontFamily:fm}}>${dps.toFixed(2)}/{c.divFrequency==="monthly"?"mo":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"yr":"qtr"}</span>
-              {pos.shares>0&&<span style={{fontSize:11,color:K.grn,fontFamily:fm}}>${annPayout.toFixed(0)}/yr income</span>}
-              {c.exDivDate&&<span style={{fontSize:11,color:K.amb,fontFamily:fm}}>Ex-div: {fD(c.exDivDate)}</span>}
-              {!pos.shares&&<span style={{fontSize:10,color:K.dim}}>Add shares for income calc</span>}
-            </div></div>})}
-        {divCos.length>0&&totalAnnualDiv>0&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between"}}>
-          <span style={{fontSize:12,color:K.mid}}>Est. Annual Income</span>
-          <span style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</span></div>}
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Dashboard</div>
+        {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Set dividends in Position settings for each holding.</span></div>}
+        {divCos.length>0&&(function(){
+          var totalVal3=divCos.reduce(function(s2,c2){var p2=c2.position||{};return s2+(p2.shares||0)*(p2.currentPrice||0)},0);
+          var portYield=totalVal3>0?totalAnnualDiv/totalVal3*100:0;
+          var monthlyInc=totalAnnualDiv/12;
+          // Per-holding breakdown
+          var holdings=divCos.map(function(c2){var p2=c2.position||{};var dps=c2.divPerShare||c2.lastDiv||0;
+            var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
+            var annDiv2=dps*mult;var yld=p2.currentPrice?annDiv2/p2.currentPrice*100:0;
+            var yoc=p2.avgCost>0?annDiv2/p2.avgCost*100:0;var annPay=(p2.shares||0)*annDiv2;
+            var paySnap=c2.financialSnapshot&&c2.financialSnapshot.payoutRatio;
+            var payoutPct=paySnap?parseFloat((paySnap.value||"0").replace(/[^0-9.]/g,""))||0:0;
+            return{id:c2.id,ticker:c2.ticker,domain:c2.domain,dps:dps,freq:c2.divFrequency,annDiv:annDiv2,yield:yld,yoc:yoc,annPay:annPay,shares:p2.shares||0,exDiv:c2.exDivDate||"",payout:payoutPct}}).sort(function(a,b){return b.annPay-a.annPay});
+          // Monthly income chart (estimate based on frequency)
+          var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+          var monthlyArr=months.map(function(){return 0});
+          holdings.forEach(function(h2){if(h2.shares<=0)return;
+            if(h2.freq==="monthly"){months.forEach(function(m2,mi){monthlyArr[mi]+=h2.dps*h2.shares})}
+            else if(h2.freq==="quarterly"){[0,3,6,9].forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})}
+            else if(h2.freq==="semi"){[0,6].forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})}
+            else{monthlyArr[0]+=h2.dps*h2.shares}});
+          var maxMonth=Math.max.apply(null,monthlyArr)||1;
+          // Upcoming ex-div dates
+          var upcoming2=holdings.filter(function(h2){return h2.exDiv&&new Date(h2.exDiv)>=new Date()}).sort(function(a,b){return a.exDiv>b.exDiv?1:-1});
+          return<div>
+            {/* Summary cards */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</div>
+                <div style={{fontSize:8,color:K.dim}}>Est. Annual Income</div></div>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{portYield.toFixed(2)}%</div>
+                <div style={{fontSize:8,color:K.dim}}>Portfolio Yield</div></div>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+                <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>${monthlyInc.toFixed(0)}</div>
+                <div style={{fontSize:8,color:K.dim}}>Monthly (avg)</div></div></div>
+            {/* Monthly income chart */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:6}}>Monthly Income Estimate</div>
+              <div style={{display:"flex",gap:3,alignItems:"flex-end",height:60}}>
+                {monthlyArr.map(function(v2,mi){return<div key={mi} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
+                  <div style={{width:"100%",height:Math.max(v2/maxMonth*50,2),borderRadius:3,background:v2>0?K.grn:K.bdr,marginBottom:3}}/>
+                  <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{months[mi]}</div>
+                  {v2>0&&<div style={{fontSize:7,color:K.grn,fontFamily:fm}}>${v2.toFixed(0)}</div>}</div>})}</div></div>
+            {/* Holdings table */}
+            <div style={{marginBottom:16}}>
+              <div style={{display:"flex",fontSize:9,color:K.dim,fontFamily:fm,padding:"4px 0",borderBottom:"1px solid "+K.bdr,gap:0}}>
+                <span style={{width:28}}/>
+                <span style={{flex:1}}>Ticker</span>
+                <span style={{width:55,textAlign:"right"}}>Div/Share</span>
+                <span style={{width:50,textAlign:"right"}}>Yield</span>
+                <span style={{width:50,textAlign:"right"}}>YOC</span>
+                <span style={{width:60,textAlign:"right"}}>Income</span>
+                <span style={{width:50,textAlign:"right"}}>Payout</span></div>
+              {holdings.map(function(h2){var safeColor=h2.payout>0?(h2.payout<60?K.grn:h2.payout<80?K.amb:K.red):K.dim;
+                return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+K.bdr+"30",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
+                  <span style={{width:28}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={18}/></span>
+                  <span style={{flex:1}}><span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>${h2.dps.toFixed(2)}/{h2.freq==="monthly"?"mo":h2.freq==="semi"?"semi":h2.freq==="annual"?"yr":"q"}</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:K.grn,fontFamily:fm}}>{h2.yield.toFixed(1)}%</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.yoc>h2.yield?K.grn:K.txt,fontFamily:fm}}>{h2.yoc>0?h2.yoc.toFixed(1)+"%":"--"}</span>
+                  <span style={{width:60,textAlign:"right",fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>{h2.shares>0?"$"+h2.annPay.toFixed(0):"--"}</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:safeColor,fontFamily:fm}}>{h2.payout>0?h2.payout.toFixed(0)+"%":"--"}</span></div>})}</div>
+            {/* Upcoming ex-div dates */}
+            {upcoming2.length>0&&<div style={{padding:"10px 12px",background:K.bg,borderRadius:8,marginBottom:8}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:6}}>Upcoming Ex-Dividend Dates</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {upcoming2.slice(0,5).map(function(h2){var dU2=Math.ceil((new Date(h2.exDiv)-new Date())/864e5);return<div key={h2.ticker} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:4,border:"1px solid "+K.amb+"25",background:K.amb+"06"}}>
+                  <span style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span>
+                  <span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{dU2<=0?"Today":dU2+"d"}</span></div>})}</div></div>}
+            {/* Yield on cost explanation */}
+            <div style={{fontSize:9,color:K.dim,lineHeight:1.5,padding:"6px 0"}}>YOC = Yield on Cost (annual dividend / your purchase price). Higher YOC than current yield means the dividend has grown since you bought. Payout ratio under 60% is generally considered safe.</div>
+          </div>})()}
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
