@@ -3277,16 +3277,16 @@ function TrackerApp(props){
           var thesisScore=th.length<20?0:Math.min(100,thSec*25);
           // 2. KPI coverage (0-100)
           var kpiDefined=c.kpis.length;var kpiMet=c.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
-          var kpiScore=kpiDefined===0?0:Math.min(100,kpiDefined*20+kpiMet*15);
+          var kpiChecked=c.kpis.filter(function(k2){return k2.lastResult}).length;var kpiScore=kpiDefined===0?0:Math.min(100,kpiDefined*15+kpiChecked*10+kpiMet*15);
           // 3. Conviction (0-100)
           var convScore=(c.conviction||0)*10;
           // 4. Fundamentals (0-100) — from snapshot data
           function pv2(k2){if(!fs[k2])return 0;if(fs[k2].numVal!=null)return fs[k2].numVal;var v2=fs[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||0:0}
-          var fundScore=30;var gm2=pv2("grossMargin");if(gm2>60)fundScore+=15;else if(gm2>40)fundScore+=8;
+          var fundScore=25;var gm2=pv2("grossMargin");if(gm2>60)fundScore+=15;else if(gm2>40)fundScore+=8;
           var roic3=pv2("roic")||pv2("roe");if(roic3>20)fundScore+=20;else if(roic3>12)fundScore+=10;
           var de2=pv2("debtEquity");if(de2>0&&de2<1)fundScore+=10;else if(de2>=2)fundScore-=10;
           var rg2=pv2("revGrowth");if(rg2>15)fundScore+=15;else if(rg2>5)fundScore+=8;
-          fundScore=Object.keys(fs).length===0?0:Math.max(0,Math.min(100,fundScore));
+          if(Object.keys(fs).length>=8)fundScore+=15;else if(Object.keys(fs).length>=4)fundScore+=8;fundScore=Object.keys(fs).length===0?0:Math.max(0,Math.min(100,fundScore));
           // 5. Mastery (0-100)
           var mastScore=Math.round(mm.stars/6*100);
           // 6. Monitoring freshness (0-100)
