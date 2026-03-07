@@ -709,6 +709,7 @@ function TrackerApp(props){
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
+  var _obReplay=useState(false),obReplay=_obReplay[0],setObReplay=_obReplay[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
@@ -1106,8 +1107,8 @@ function TrackerApp(props){
           // Send browser push if enabled
           if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
             try{new Notification("ThesisAlpha: "+c.ticker,{body:"Earnings results are now available",icon:"/logo.png"})}catch(e){}}
-          // Queue email alert notification (non-disruptive — user clicks to open)
-          if(emailNotify){setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"email-alert",ticker:c.ticker,msg:"Earnings results available — click to send summary",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
+          // Queue email alert notification only if company has KPIs to report on
+          if(emailNotify&&c.kpis.length>0){setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"email-alert",ticker:c.ticker,msg:"KPI results ready — click to email summary",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
         })},Math.random()*3000+1000)}// Stagger 1-4s
       else if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"})){
         setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released — click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
@@ -1144,22 +1145,24 @@ function TrackerApp(props){
     // Footer
     h+='<div style="margin-top:32px;padding-top:16px;border-top:1px solid '+bdr+';text-align:center">';
     h+='<div style="font-size:11px;color:#4b5563">ThesisAlpha — invest with conviction, not impulse.</div>';
-    h+='<div style="font-size:10px;color:#374151;margin-top:4px">You received this because you enabled email alerts.</div>';
+    h+='<div style="font-size:10px;color:#374151;margin-top:4px">You received this because you have KPI alerts enabled for this holding.</div>';
     h+='</div></div></body></html>';
     return h}
   function sendEarningsEmail(c){
+    if(!c.kpis||c.kpis.length===0){showToast("Add KPIs to "+c.ticker+" first — email alerts track your KPI targets against earnings","info",5000);return}
     var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
     var total=c.kpis.filter(function(k){return k.lastResult}).length;
+    if(total===0){showToast(c.ticker+" KPIs not yet checked — run an earnings check first","info",4000);return}
     var kpiData=c.kpis.filter(function(k){return k.lastResult}).map(function(k){return{name:k.name,actual:k.lastResult.actual,unit:k.unit||"",status:k.lastResult.status||"pending"}});
     var html=buildEmailHTML({
-      title:c.ticker+" — Earnings Released",
+      title:c.ticker+" — KPI Results",
       subtitle:c.name+(c.sector?" · "+c.sector:"")+" · "+new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
       summary:c.earningSummary||null,
       kpis:kpiData,
       metCount:met,
       totalCount:total
     });
-    var sub="ThesisAlpha: "+c.ticker+" earnings — "+met+"/"+total+" KPIs met";
+    var sub="ThesisAlpha: "+c.ticker+" — "+met+"/"+total+" KPIs met";
     fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:sub,html:html,type:"earnings"})}).then(function(r){return r.json()}).then(function(d){
       if(d.success)showToast("Earnings summary emailed to "+props.user,"milestone",4000);
       else showToast("Email failed — "+(d.error||"try again"),"info",4000)
@@ -1954,10 +1957,12 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
             <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"✓":"Wk "+r.w}</div></div>})}</div>
         <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
-        <div style={{marginTop:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
-          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
+        <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
+      {/* ── Always visible footer ── */}
+      <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <button onClick={function(){setModal(null);setObReplay(true);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.mid,fontSize:11,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
+        <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ThesisAlpha v1.0</div></div>
     </Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
@@ -1978,21 +1983,21 @@ function TrackerApp(props){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 16px",textAlign:"center"}}>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
-          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$9<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/mo</span></div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$12.99<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/mo</span></div>
           <div style={{fontSize:10,color:K.dim,marginBottom:14}}>Cancel anytime</div>
-          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_MONTHLY||"price_monthly")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
+          <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_MONTHLY||"price_monthly")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
         <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
           <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
           <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
-          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$79<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
-          <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 27% — $6.58/mo</div>
-          <button onClick={function(){startCheckout(typeof window!=="undefined"&&window.__TA_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$129<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
+          <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 17% — $10.75/mo</div>
+          <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_annual")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
-  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
+  function finishOnboarding(){setObStep(0);setObReplay(false);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
     // Auto-trigger price refresh and earnings check for newly added companies
     setTimeout(function(){refreshPrices()},500)}
   function OnboardingFlow(){
@@ -2039,8 +2044,8 @@ function TrackerApp(props){
             <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.label}</div>
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4}}>{item.desc}</div></div>})}</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
-        <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Start Fresh</button>
-        <button onClick={function(){setObPath("demo");setObStep(2)}} style={Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})}>Explore with Demo Data</button></div>
+        {obReplay?<button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Continue Tour {"→"}</button>
+        :<>{React.createElement("button",{onClick:function(){setObPath("fresh");setCos([]);setObStep(2)},style:Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})},"Start Fresh")}{React.createElement("button",{onClick:function(){setObPath("demo");setObStep(2)},style:Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})},"Explore with Demo Data")}</>}</div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 2: Path-dependent
@@ -2118,12 +2123,11 @@ function TrackerApp(props){
         <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>Your process builds over time</div>
         <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action — writing a thesis, tracking KPIs, reviewing conviction — builds your <strong>Owner’s Score</strong>. The score measures how disciplined your process is, not whether your stocks go up. Show up consistently, and you’ll unlock investor lenses, themes, and insights along the way.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(obReplay?1:2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
-      <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
+      <button onClick={function(){setObReplay(false);finishOnboarding()}} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 4: Guide to write thesis for the company they just added
-    if(obStep===4){var firstCo=cos.find(function(c){return c.id===selId})||cos[cos.length-1];
       if(!firstCo){setObStep(5);return null}
       return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
@@ -5836,9 +5840,9 @@ function TrackerApp(props){
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {autoNotify?"Auto-check ON":"Auto-check"}</button>
-        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"Get an email summary when earnings are found":"Get email summaries when earnings drop"}>
+        {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:11,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}} title={emailNotify?"You will be emailed when KPI results are checked — only for companies with KPIs assigned":"Enable email alerts when your KPI targets are checked against earnings"}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
-          {emailNotify?"Email Alert ON":"+ Email Alert"}</button>}
+          {emailNotify?"KPI Email ON":"+ KPI Email"}</button>}
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
