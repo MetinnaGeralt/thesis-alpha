@@ -4559,10 +4559,9 @@ function TrackerApp(props){
             <div style={{fontSize:12,color:K.dim}}>Come back next week for your next insight</div></div>
           :<div style={{textAlign:"center",marginTop:16}}>
             <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Start Review</button></div>}
-        </div>
           {/* Reward history */}
-          {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"0 auto 20px",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>PAST REWARDS</div>
+          {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>PAST INSIGHTS</div>
             <div style={{maxHeight:140,overflow:"auto"}}>
             {chestRewards.history.slice(1,15).map(function(h,hi){
               var tc2=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
@@ -4571,12 +4570,10 @@ function TrackerApp(props){
               return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(chestRewards.history.length-1,14)-1?"1px solid "+K.bdr+"30":"none"}}>
                 <div style={{width:5,height:5,borderRadius:"50%",background:tc2,flexShrink:0}}/>
                 <div style={{fontSize:10,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
-                <div style={{fontSize:8,color:tc2,fontWeight:600,fontFamily:fm}}>{h.tier}</div>
                 <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{ds2}</div>
               </div>})}</div>
           </div>}
-        </div>}
-      </div>})()}
+        </div>})()}
 
       {step==="review"&&c&&<div>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
