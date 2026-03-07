@@ -626,6 +626,8 @@ function TrackerApp(props){
     {id:"other",label:"Other",color:"#A1A1AA",icon:"target"}
   ];
   var _assets=useState(function(){try{var s=localStorage.getItem('ta-assets');return s?JSON.parse(s):{positions:[],snapshots:[]}}catch(e){return{positions:[],snapshots:[]}}}),assets=_assets[0],setAssets=_assets[1];
+  var _goals=useState(function(){try{var s=localStorage.getItem("ta-goals");return s?JSON.parse(s):{targetCAGR:12,horizon:10}}catch(e){return{targetCAGR:12,horizon:10}}}),goals=_goals[0],setGoals=_goals[1];
+  function saveGoals(g){setGoals(g);try{localStorage.setItem("ta-goals",JSON.stringify(g))}catch(e){}}
   function saveAssets(fn){setAssets(function(prev){var next=typeof fn==="function"?fn(prev):fn;try{localStorage.setItem('ta-assets',JSON.stringify(next))}catch(e){}return next})}
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
@@ -2024,7 +2026,7 @@ function TrackerApp(props){
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
     {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     {/* More pages accessible via links, not sidebar */}
@@ -3335,6 +3337,24 @@ function TrackerApp(props){
             <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div>}
         </div>
 
+        {/* Expected CAGR contribution */}
+        {(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
+          var fs=c.financialSnapshot||{};var eg=fs.revenueGrowth||0;if(!eg){var rg=c.kpis.find(function(k){return k.metricId==="revGrowth"&&k.lastResult});eg=rg?rg.lastResult.actual:0}
+          var dy=fs.dividendYield||c.divYield||0;var pe=fs.peRatio||fs.pe||25;var fairPE=eg>20?30:eg>10?22:eg>5?18:15;
+          var mc=pe>0?Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))*100-100:0;mc=Math.max(-8,Math.min(8,mc));
+          var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
+              <button onClick={function(){setPage("hub");setHubTab("goals")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
+            <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
+              <span style={{fontSize:22,fontWeight:700,color:expected>=0?K.grn:K.red,fontFamily:fm}}>{expected>=0?"+":""}{expected.toFixed(1)}%</span>
+              <span style={{fontSize:11,color:K.dim}}>expected annual</span></div>
+            <div style={{display:"flex",gap:12,fontSize:10,color:K.dim,fontFamily:fm}}>
+              <span>Earnings: {eg>=0?"+":""}{eg.toFixed(1)}%</span>
+              {dy>0&&<span>Yield: +{dy.toFixed(1)}%</span>}
+              <span>Multiple: {mc>=0?"+":""}{mc.toFixed(1)}%</span></div>
+          </div>})()}
         {/* ── 5. KEY METRICS CHART ── */}
         {keyFin&&keyFin.length>=2&&<div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -3607,7 +3627,7 @@ function TrackerApp(props){
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
+        {[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
           return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
 
@@ -4151,6 +4171,137 @@ function TrackerApp(props){
       </div>}
 
       {/* ═══ HOW IT WORKS TAB ═══ */}
+      {ht==="goals"&&<div>
+        {/* Disclaimer */}
+        <div style={{background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+          <div style={{fontSize:11,color:K.amb,lineHeight:1.6}}>This is a reasoning framework based on historical fundamentals and current valuations, not a forecast. Past performance does not predict future results. Not financial advice. Verify all assumptions independently.</div></div>
+        {/* Goal Setting */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+          <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:12}}>Your Portfolio Goal</div>
+          <div style={{display:"flex",gap:16,alignItems:"flex-end"}}>
+            <div><div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Target Annual CAGR</div>
+              <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" value={goals.targetCAGR} onChange={function(e){saveGoals(Object.assign({},goals,{targetCAGR:parseFloat(e.target.value)||0}))}} style={{width:70,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:16,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/><span style={{fontSize:14,color:K.dim,fontFamily:fm}}>%</span></div></div>
+            <div><div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Time Horizon</div>
+              <div style={{display:"flex",gap:4}}>{[5,10,15,20].map(function(y){return<button key={y} onClick={function(){saveGoals(Object.assign({},goals,{horizon:y}))}} style={{padding:"8px 14px",borderRadius:6,border:"1px solid "+(goals.horizon===y?K.acc:K.bdr),background:goals.horizon===y?K.acc+"15":"transparent",color:goals.horizon===y?K.acc:K.mid,fontSize:12,fontWeight:goals.horizon===y?700:400,cursor:"pointer",fontFamily:fm}}>{y}y</button>})}</div></div></div></div>
+        {/* Compute portfolio expected returns */}
+        {(function(){
+          var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
+          if(held.length===0)return<div style={{textAlign:"center",padding:"40px",color:K.dim}}>Add holdings with position data to see projections</div>;
+          var totalVal=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
+          // Per-holding expected return
+          var holdingReturns=held.map(function(c2){
+            var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
+            var fs=c2.financialSnapshot||{};
+            // Earnings growth estimate from historical data or KPIs
+            var eg=fs.revenueGrowth||0;if(!eg){var rg=c2.kpis.find(function(k){return k.metricId==="revGrowth"&&k.lastResult});eg=rg?rg.lastResult.actual:8}
+            // Dividend yield
+            var dy=(fs.dividendYield||c2.divYield||0);
+            // Multiple change estimate: mean-revert PE toward 20x over horizon
+            var pe=fs.peRatio||fs.pe||25;var fairPE=eg>20?30:eg>10?22:eg>5?18:15;
+            var multChange=pe>0?Math.pow(fairPE/pe,1/goals.horizon)*100-100:0;multChange=Math.max(-8,Math.min(8,multChange));
+            var expectedReturn=eg+dy+multChange;
+            // Predictability score 0-100
+            var pred=50;
+            var gm=fs.grossMargin||50;if(gm>50)pred+=10;if(gm>70)pred+=5;
+            var roic2=fs.roic||fs.roe||10;if(roic2>15)pred+=10;if(roic2>25)pred+=5;
+            var de=fs.debtEquity||0.5;if(de<0.5)pred+=10;if(de>2)pred-=15;
+            if(c2.investStyle==="quality")pred+=5;if(c2.investStyle==="speculative")pred-=15;
+            if(c2.conviction>=8)pred+=5;
+            pred=Math.max(10,Math.min(95,pred));
+            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain}});
+          // Portfolio weighted expected CAGR
+          var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
+          var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
+          // Range: +/- based on predictability
+          var spread=(100-portPred)/100*portCAGR*0.8;
+          var lowCAGR=portCAGR-spread;var highCAGR=portCAGR+spread;
+          // Probability of hitting target
+          var zScore=goals.targetCAGR>0?(portCAGR-goals.targetCAGR)/(spread||1):0;
+          var prob=Math.round(Math.min(95,Math.max(5,50+zScore*30)));
+          // Portfolio character
+          var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
+          // Sort by contribution
+          holdingReturns.sort(function(a,b){return(b.weight/100*b.expected)-(a.weight/100*a.expected)});
+          return<div>
+            {/* Main projection card */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
+              <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Expected Portfolio CAGR</div>
+                  <div style={{fontSize:36,fontWeight:800,color:portCAGR>=goals.targetCAGR?K.grn:K.amb,fontFamily:fm}}>{portCAGR>=0?"+":""}{portCAGR.toFixed(1)}%</div>
+                  <div style={{fontSize:12,color:K.dim,marginTop:4}}>Range: {lowCAGR.toFixed(1)}% to {highCAGR.toFixed(1)}%</div></div>
+                <div style={{textAlign:"center"}}>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Probability of {goals.targetCAGR}%+</div>
+                  <div style={{position:"relative",width:80,height:80,margin:"0 auto"}}>
+                    <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="6"/><circle cx="40" cy="40" r="34" fill="none" stroke={prob>=60?K.grn:prob>=40?K.amb:K.red} strokeWidth="6" strokeDasharray={Math.round(prob/100*214)+" 214"} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg>
+                    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:prob>=60?K.grn:prob>=40?K.amb:K.red,fontFamily:fm}}>{prob}%</div></div></div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Portfolio Character</div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{character}</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:4}}>Predictability: {portPred.toFixed(0)}/100</div></div></div>
+              {/* Bell curve visualization */}
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
+                <svg width="100%" viewBox="0 0 500 120" style={{display:"block"}}>
+                  {/* Bell curve */}
+                  {(function(){var pts=[];for(var i=0;i<=100;i++){var x=i/100;var mu=0.5;var sigma=0.15+(1-portPred/100)*0.12;var y=Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI));pts.push({x:30+x*440,y:100-y*sigma*280})}
+                    var path="M"+pts.map(function(p){return p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" L");
+                    var fill=path+" L470,100 L30,100 Z";
+                    // Map CAGR values to x positions
+                    var cagrMin=lowCAGR-spread;var cagrMax=highCAGR+spread;var range2=cagrMax-cagrMin||1;
+                    var targetX=30+Math.max(0,Math.min(1,(goals.targetCAGR-cagrMin)/range2))*440;
+                    var expectedX=30+Math.max(0,Math.min(1,(portCAGR-cagrMin)/range2))*440;
+                    return<g><path d={fill} fill={K.acc+"15"} stroke="none"/><path d={path} fill="none" stroke={K.acc} strokeWidth="2"/>
+                      <line x1={targetX} y1="10" x2={targetX} y2="100" stroke={K.amb} strokeWidth="1.5" strokeDasharray="4 3"/>
+                      <text x={targetX} y="8" fill={K.amb} fontSize="9" fontFamily={fm} textAnchor="middle">Target {goals.targetCAGR}%</text>
+                      <line x1={expectedX} y1="15" x2={expectedX} y2="100" stroke={K.grn} strokeWidth="2"/>
+                      <text x={expectedX} y="8" fill={K.grn} fontSize="9" fontFamily={fm} textAnchor="middle">Expected {portCAGR.toFixed(1)}%</text>
+                      <text x="30" y="115" fill={K.dim} fontSize="8" fontFamily={fm}>{cagrMin.toFixed(0)}%</text>
+                      <text x="470" y="115" fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="end">{cagrMax.toFixed(0)}%</text></g>})()}
+                </svg></div>
+              {/* Goal comparison */}
+              <div style={{padding:"12px 16px",borderRadius:8,background:portCAGR>=goals.targetCAGR?K.grn+"08":K.amb+"08",border:"1px solid "+(portCAGR>=goals.targetCAGR?K.grn:K.amb)+"20"}}>
+                <div style={{fontSize:12,fontWeight:600,color:portCAGR>=goals.targetCAGR?K.grn:K.amb}}>{portCAGR>=goals.targetCAGR?"Your portfolio is on track to meet your "+goals.targetCAGR+"% target":"Your portfolio's expected "+portCAGR.toFixed(1)+"% is below your "+goals.targetCAGR+"% target"}</div>
+                <div style={{fontSize:11,color:K.mid,marginTop:4}}>{portCAGR>=goals.targetCAGR?"Based on current fundamentals, there's a "+prob+"% probability of achieving "+goals.targetCAGR+"%+ over "+goals.horizon+" years.":"Consider whether your target is realistic given current holdings, or whether portfolio changes could improve the outlook."}</div></div></div>
+            {/* Per-holding breakdown */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Return Attribution by Holding</div>
+              <div style={{fontSize:9,display:"flex",color:K.dim,fontFamily:fm,padding:"6px 0",borderBottom:"2px solid "+K.bdr,marginBottom:4,gap:0}}>
+                <span style={{width:36}}/>
+                <span style={{flex:1}}>Company</span>
+                <span style={{width:50,textAlign:"right"}}>Weight</span>
+                <span style={{width:60,textAlign:"right"}}>Earnings</span>
+                <span style={{width:55,textAlign:"right"}}>Yield</span>
+                <span style={{width:60,textAlign:"right"}}>Multiple</span>
+                <span style={{width:70,textAlign:"right"}}>Expected</span>
+                <span style={{width:55,textAlign:"right"}}>Contrib.</span></div>
+              {holdingReturns.map(function(h2){var contrib=h2.weight/100*h2.expected;
+                return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+K.bdr+"40",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
+                  <span style={{width:36}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={20}/></span>
+                  <span style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{h2.weight.toFixed(1)}%</span>
+                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%</span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.dy>0?K.grn:K.dim,fontFamily:fm}}>{h2.dy>0?"+"+h2.dy.toFixed(1)+"%":"--"}</span>
+                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.multChange>=0?K.grn:K.red,fontFamily:fm}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%</span>
+                  <span style={{width:70,textAlign:"right",fontSize:11,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,fontWeight:600,color:contrib>=0?K.grn:K.red,fontFamily:fm}}>{contrib>=0?"+":""}{contrib.toFixed(1)}%</span></div>})}
+              {/* Math explanation */}
+              <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>How this is calculated</div>
+                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change. Earnings growth uses the most recent YoY revenue growth or your KPI targets. Multiple change estimates mean-reversion of P/E toward fair value based on growth rate. Contribution = Weight x Expected Return.</div></div></div>
+            {/* What-if scenarios */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {[{label:"Bull Case",desc:"Growth accelerates 20%",factor:1.2,color:K.grn},{label:"Base Case",desc:"Current trajectory continues",factor:1.0,color:K.acc},{label:"Slowdown",desc:"Growth halves from here",factor:0.5,color:K.amb},{label:"Bear Case",desc:"Growth stalls, margins compress",factor:0.2,color:K.red}].map(function(sc){
+                  var scCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*(h2.eg*sc.factor+h2.dy+h2.multChange*(sc.factor>0.5?1:0.5))},0);
+                  return<div key={sc.label} style={{padding:"12px 14px",borderRadius:8,background:K.bg,border:"1px solid "+K.bdr}}>
+                    <div style={{fontSize:11,fontWeight:600,color:sc.color}}>{sc.label}</div>
+                    <div style={{fontSize:10,color:K.dim,marginTop:2}}>{sc.desc}</div>
+                    <div style={{fontSize:18,fontWeight:700,color:scCAGR>=goals.targetCAGR?K.grn:scCAGR>=0?K.amb:K.red,fontFamily:fm,marginTop:6}}>{scCAGR>=0?"+":""}{scCAGR.toFixed(1)}%</div></div>})}</div></div>
+          </div>})()}
+      </div>}
+
       {ht==="guide"&&<div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
