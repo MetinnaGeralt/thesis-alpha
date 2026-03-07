@@ -630,6 +630,8 @@ function TrackerApp(props){
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
+  var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
+  var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
@@ -1106,7 +1108,19 @@ function TrackerApp(props){
   // Request browser notification permission
   function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
   // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
+
+  // Quarterly letter auto-trigger
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var now=new Date();var qm=Math.floor(now.getMonth()/3);var qy=now.getFullYear();
+    // Trigger in first 14 days of new quarter
+    var prevQ=qm===0?{q:4,y:qy-1}:{q:qm,y:qy};
+    var qKey="Q"+prevQ.q+"-"+prevQ.y;
+    var dayOfQ=now.getDate()+(now.getMonth()%3)*30;
+    if(dayOfQ<=14&&weeklyReviews.length>=1&&!qLetters[qKey]){
+      // Generate and show
+      setTimeout(function(){setShowQLetter(qKey)},3000)}
+  },[loaded,cos.length]);
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
@@ -4014,21 +4028,11 @@ function TrackerApp(props){
               <span>{"\u00b7"}</span>
               <span>Top sectors: <strong style={{color:K.txt}}>{topSectors.join(", ")}</strong></span></div></div>})()}
         {/* === QUARTERLY LETTER === */}
-        {weeklyReviews.length>=2&&(function(){
-          var now2=new Date();var ql="Q"+(Math.floor(now2.getMonth()/3)+1)+" "+now2.getFullYear();
-          var cut=new Date(now2);cut.setMonth(cut.getMonth()-3);var cutS=cut.toISOString();
-          var rRevs=weeklyReviews.filter(function(r2){return r2.date>=cutS});
-          var rDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cutS)rDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
-          var buys=rDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
-          var sells=rDecs.filter(function(d2){return d2.action==="SELL"||d2.action==="TRIM"});
-          if(rRevs.length===0&&rDecs.length===0)return null;
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Quarterly Letter — {ql}</div>
-            <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>
-              {"This quarter you completed "}<strong style={{color:K.txt}}>{rRevs.length}</strong>{" reviews and logged "}<strong style={{color:K.txt}}>{rDecs.length}</strong>{" decisions. "}
-              {buys.length>0&&<span>{"Added: "}<strong style={{color:K.grn}}>{buys.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
-              {sells.length>0&&<span>{"Exited: "}<strong style={{color:K.red}}>{sells.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
-            </div></div>})()}
+        {weeklyReviews.length>=1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Quarterly Letters</div>
+                <div style={{fontSize:12,color:K.mid}}>Your personal investment reflections, generated each quarter.</div></div>
+              <button onClick={function(){var now3=new Date();var pq=Math.floor(now3.getMonth()/3);var py=now3.getFullYear();if(pq===0){pq=4;py--}setShowQLetter("Q"+pq+"-"+py)}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,whiteSpace:"nowrap"})}>View Latest</button></div></div>}
         {/* === BEHAVIORAL PATTERNS === */}
         {allDecs.length>=3&&(function(){
           var pats=[];
@@ -5949,6 +5953,134 @@ function TrackerApp(props){
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
     {/* ── Weekly Insight Overlay ── */}
+
+    {/* === QUARTERLY LETTER POPUP === */}
+    {showQLetter&&(function(){
+      var parts=showQLetter.split("-");var qNum=parseInt(parts[0].replace("Q",""));var qYear=parseInt(parts[1]);
+      var qLabels=["","Jan-Mar","Apr-Jun","Jul-Sep","Oct-Dec"];
+      var qTitle="Q"+qNum+" "+qYear;var qRange=qLabels[qNum]+" "+qYear;
+      var cut3=new Date(qYear,(qNum-1)*3,1).toISOString();var cutEnd=new Date(qYear,qNum*3,0).toISOString();
+      var portfolio2=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"});
+      // Activity
+      var qRevs=weeklyReviews.filter(function(r2){return r2.date>=cut3&&r2.date<=cutEnd});
+      var qDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cut3&&d2.date<=cutEnd)qDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
+      var buys2=qDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
+      var sells2=qDecs.filter(function(d2){return d2.action==="SELL"||d2.action==="TRIM"});
+      var holds2=qDecs.filter(function(d2){return d2.action==="HOLD"});
+      // Performance
+      var held2=portfolio2.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0});
+      var totalCost2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
+      var totalVal2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
+      var totalRet2=totalCost2>0?((totalVal2-totalCost2)/totalCost2*100):0;
+      // Best/worst
+      var perfArr=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100)}}).sort(function(a,b){return b.ret-a.ret});
+      var best2=perfArr[0];var worst2=perfArr[perfArr.length-1];
+      // Conviction shifts
+      var shifts=[];cos.forEach(function(c2){var ch=c2.convictionHistory||[];ch.forEach(function(cv){if(cv.date&&cv.date>=cut3&&cv.date<=cutEnd)shifts.push({ticker:c2.ticker,rating:cv.rating,note:cv.note||""})})});
+      // Mastery progress
+      var avgMast=portfolio2.length>0?portfolio2.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/portfolio2.length:0;
+      var os2=calcOwnerScore(cos);
+      // Score decisions
+      var scored2=qDecs.filter(function(d2){return d2.outcome});
+      var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
+      function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
+      function exportPDF(){
+        var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+' - ThesisAlpha</title>';
+        h+='<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">';
+        h+='<style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7;background:#fff}';
+        h+='.page{max-width:680px;margin:0 auto;padding:40px}.hdr{border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px}';
+        h+='h1{font-family:Playfair Display,serif;font-size:28px;font-weight:700;margin-bottom:4px}';
+        h+='.sub{font-size:12px;color:#6b7280}.sec{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin:20px 0 8px;font-family:JetBrains Mono,monospace}';
+        h+='.stat{display:inline-block;text-align:center;padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;margin-right:8px}';
+        h+='.stat-n{font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace}.stat-l{font-size:8px;color:#9ca3af}';
+        h+='.grn{color:#22C55E}.red{color:#EF4444}.amb{color:#F59E0B}';
+        h+='.footer{margin-top:32px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af}';
+        h+='.footer strong{color:#1a1a2e;font-family:JetBrains Mono,monospace;letter-spacing:2px}</style></head><body><div class="page">';
+        h+='<div class="hdr"><h1>Quarterly Letter</h1><div class="sub">'+qTitle+' ('+qRange+') - '+(username||props.user||"Investor")+'</div></div>';
+        h+='<p style="margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
+        h+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
+        if(buys2.length>0)h+='You added to <span class="grn"><strong>'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
+        if(sells2.length>0)h+='You exited <span class="red"><strong>'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
+        h+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
+        h+='<div class="sec">Performance</div>';
+        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div><div class="stat-l">Total Return</div></div>';
+        if(best2)h+='<div class="stat"><div class="stat-n grn">'+best2.ticker+'</div><div class="stat-l">Best '+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%</div></div>';
+        if(worst2&&worst2.ticker!==best2.ticker)h+='<div class="stat"><div class="stat-n red">'+worst2.ticker+'</div><div class="stat-l">Worst '+(worst2.ret>=0?"+":"")+worst2.ret.toFixed(0)+'%</div></div>';
+        h+='</div>';
+        h+='<div class="sec">Discipline</div>';
+        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n">'+os2.total+'</div><div class="stat-l">Owner's Score</div></div>';
+        h+='<div class="stat"><div class="stat-n">'+avgMast.toFixed(1)+'</div><div class="stat-l">Avg Mastery /6</div></div>';
+        h+='<div class="stat"><div class="stat-n">'+qRevs.length+'</div><div class="stat-l">Reviews</div></div></div>';
+        if(shifts.length>0){h+='<div class="sec">Conviction Changes</div><p>';shifts.slice(0,5).forEach(function(s3){h+=s3.ticker+' ('+s3.rating+'/10'+(s3.note?" - "+s3.note.substring(0,50):"")+'); '});h+='</p>'}
+        if(scored2.length>0){h+='<div class="sec">Decision Scorecard</div><p>'+rights2+' right of '+scored2.length+' scored decisions this quarter.</p>'}
+        h+='<p style="margin-top:20px;font-style:italic;color:#6b7280">Keep investing with discipline. The process compounds just like the returns.</p>';
+        h+='<div class="footer"><div><strong>ThesisAlpha</strong></div><div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div>';
+        h+='</div></body></html>';
+        var w2=window.open("","_blank");w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},600)}
+      return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(6px)"}} onClick={dismiss}>
+        <div style={{background:K.card,borderRadius:16,maxWidth:560,width:"90%",maxHeight:"85vh",overflowY:"auto",padding:"32px 36px",position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
+          {/* Letter header */}
+          <div style={{borderBottom:"3px solid "+K.txt,paddingBottom:14,marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div><div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh}}>Quarterly Letter</div>
+                <div style={{fontSize:12,color:K.dim,marginTop:2}}>{qTitle} ({qRange})</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
+                <div style={{fontSize:9,color:K.dim}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
+          {/* Salutation */}
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
+            {"Dear "+(username||"Investor")+","}</div>
+          {/* Activity summary */}
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
+            {"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews and logged "}
+            <strong style={{color:K.txt}}>{qDecs.length}</strong>{" investment decisions. "}
+            {buys2.length>0&&<span>{"You added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+            {sells2.length>0&&<span>{"You exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+            {"Your portfolio currently holds "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}
+          </div>
+          {/* Performance stats */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Performance</div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div>
+              <div style={{fontSize:8,color:K.dim}}>Total Return</div></div>
+            {best2&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{best2.ticker}</div>
+              <div style={{fontSize:8,color:K.grn}}>Best {best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
+            {worst2&&worst2.ticker!==(best2&&best2.ticker)&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{worst2.ticker}</div>
+              <div style={{fontSize:8,color:K.red}}>Worst {worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>}
+          </div>
+          {/* Discipline metrics */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Discipline</div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red,fontFamily:fm}}>{os2.total}</div>
+              <div style={{fontSize:8,color:K.dim}}>Owner's Score</div></div>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{avgMast.toFixed(1)}</div>
+              <div style={{fontSize:8,color:K.dim}}>Avg Mastery /6</div></div>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{qRevs.length}</div>
+              <div style={{fontSize:8,color:K.dim}}>Weekly Reviews</div></div></div>
+          {/* Conviction shifts */}
+          {shifts.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Notable Conviction Changes</div>
+            {shifts.slice(0,5).map(function(s3,i3){return<div key={i3} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:i3<4?"1px solid "+K.bdr+"30":"none"}}>
+              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{s3.ticker}</span>
+              <span style={{fontSize:11,color:K.acc,fontFamily:fm}}>{s3.rating}/10</span>
+              {s3.note&&<span style={{fontSize:10,color:K.dim,flex:1}}>{s3.note.substring(0,50)}</span>}</div>})}</div>}
+          {/* Decision scorecard */}
+          {scored2.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
+            <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter.</div></div>}
+          {/* Closing */}
+          <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:16,marginBottom:24,lineHeight:1.7}}>
+            Keep investing with discipline. The process compounds just like the returns.</div>
+          {/* Actions */}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
+            <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
+            <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12})}>Close</button></div>
+        </div></div>})()}
     {chestOverlay&&<div style={{position:"fixed",inset:0,zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",animation:"fadeInFast .3s ease"}} onClick={function(){setChestOverlay(null)}}>
       <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"1px solid "+K.bdr,boxShadow:"0 8px 32px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
         {/* Tier glow bar */}
