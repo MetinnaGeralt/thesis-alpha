@@ -4184,7 +4184,7 @@ function TrackerApp(props){
           <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:12}}>Your Portfolio Goal</div>
           <div style={{display:"flex",gap:16,alignItems:"flex-end"}}>
             <div><div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Target Annual CAGR</div>
-              <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" value={goals.targetCAGR} onChange={function(e){saveGoals(Object.assign({},goals,{targetCAGR:parseFloat(e.target.value)||0}))}} style={{width:70,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:16,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/><span style={{fontSize:14,color:K.dim,fontFamily:fm}}>%</span></div></div>
+              <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" defaultValue={goals.targetCAGR} onBlur={function(e){var v=parseFloat(e.target.value);if(!isNaN(v)&&v>0)saveGoals(Object.assign({},goals,{targetCAGR:v}))}} onKeyDown={function(e){if(e.key==="Enter"){e.target.blur()}}} style={{width:80,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:16,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/><span style={{fontSize:14,color:K.dim,fontFamily:fm}}>%</span></div></div>
             <div><div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Time Horizon</div>
               <div style={{display:"flex",gap:4}}>{[5,10,15,20].map(function(y){return<button key={y} onClick={function(){saveGoals(Object.assign({},goals,{horizon:y}))}} style={{padding:"8px 14px",borderRadius:6,border:"1px solid "+(goals.horizon===y?K.acc:K.bdr),background:goals.horizon===y?K.acc+"15":"transparent",color:goals.horizon===y?K.acc:K.mid,fontSize:12,fontWeight:goals.horizon===y?700:400,cursor:"pointer",fontFamily:fm}}>{y}y</button>})}</div></div></div></div>
         {/* Compute portfolio expected returns */}
@@ -4211,17 +4211,33 @@ function TrackerApp(props){
             var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
             var multChange=0;
             if(pe>0&&pe<200){multChange=(Math.pow(fairPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-12,Math.min(12,multChange))}
-            var expectedReturn=eg+dy+multChange;
+            // FCF growth signal
+            var fcfKpi=c2.kpis.find(function(k){return(k.metricId==="fcf"||k.metricId==="fcfPerShare"||k.metricId==="fcfMargin"||k.metricId==="fcfConversion")&&k.lastResult&&k.lastResult.actual});
+            var fcfBoost=0;if(fcfKpi){var fcfSt=fcfKpi.lastResult.status;if(fcfSt==="met")fcfBoost=1.5;else fcfBoost=-1}
+            // Margin trend signal
+            var gmKpi=c2.kpis.find(function(k){return(k.metricId==="grossMargin"||k.metricId==="opMargin"||k.metricId==="netMargin")&&k.lastResult});
+            var marginBoost=0;if(gmKpi){if(gmKpi.lastResult.status==="met")marginBoost=1;else marginBoost=-0.5}
+            // ROIC quality signal
+            var roicKpi=c2.kpis.find(function(k){return(k.metricId==="roic"||k.metricId==="roce"||k.metricId==="roe")&&k.lastResult});
+            var roicBoost=0;if(roicKpi&&roicKpi.lastResult.actual>15)roicBoost=1.5;else if(roicKpi&&roicKpi.lastResult.actual>10)roicBoost=0.5;
+            // Buyback/shareholder yield
+            var buybackKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
+            var buybackBoost=buybackKpi?Math.min(buybackKpi.lastResult.actual||0,5):0;
+            var expectedReturn=eg+dy+multChange+fcfBoost+marginBoost+roicBoost+buybackBoost;
             // Predictability: higher for stable, proven businesses
-            var pred=45;
-            var gm=fs.grossMargin||0;if(gm>60)pred+=12;else if(gm>40)pred+=6;
-            var roic2=fs.roic||fs.roe||0;if(roic2>20)pred+=12;else if(roic2>12)pred+=6;
+            var pred=40;
+            var gm=fs.grossMargin||0;if(gm>60)pred+=10;else if(gm>40)pred+=5;
+            var roic2=fs.roic||fs.roe||0;if(roic2>20)pred+=10;else if(roic2>12)pred+=5;
             var de=fs.debtEquity||999;if(de<0.5)pred+=8;else if(de<1.5)pred+=3;else if(de>3)pred-=10;
+            var nm=fs.netMargin||0;if(nm>20)pred+=5;else if(nm>10)pred+=2;
+            var fcfConv=fs.fcfConversion||0;if(fcfConv>80)pred+=5;
             if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=8;
             if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=12;
             if(c2.conviction>=8)pred+=5;if(c2.conviction>=5)pred+=3;
             if(egSource==="actual")pred+=8;else if(egSource==="target")pred+=4;
-            if((c2.earningsHistory||[]).length>=2)pred+=5;
+            if((c2.earningsHistory||[]).length>=3)pred+=6;else if((c2.earningsHistory||[]).length>=1)pred+=3;
+            if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=4;
+            if(gmKpi&&gmKpi.lastResult.status==="met")pred+=3;
             pred=Math.max(15,Math.min(95,pred));
             return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
           // Portfolio weighted expected CAGR
@@ -4308,7 +4324,7 @@ function TrackerApp(props){
               {/* Math explanation */}
               <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
                 <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>How this is calculated</div>
-                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change. Growth estimate priority: (1) your actual KPI results, (2) your KPI targets, (3) financial snapshot data, (4) style-based estimate. Multiple change estimates P/E mean-reversion toward a growth-appropriate fair value. Predictability scores higher for proven compounders with stable margins, high ROIC, low debt, and verified earnings data.</div></div></div>
+                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change + Quality Signals. Growth uses your KPI results first, then targets, then financial data. Quality signals add/subtract based on: FCF health (are KPIs met?), margin trajectory, ROIC quality, and buyback/shareholder yield. Multiple change estimates P/E mean-reversion toward growth-appropriate fair value. Predictability weighs margin stability, ROIC, leverage, earnings history depth, FCF conversion, and data quality.</div></div></div>
             {/* What-if scenarios */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
