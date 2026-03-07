@@ -3261,6 +3261,65 @@ function TrackerApp(props){
                 <div style={{fontSize:11,color:K.dim,marginTop:2}}>{step.desc}</div></div>
               <button onClick={step.action} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Start</button></div>
           </div>})()}
+        {/* ── OWNERSHIP SNOWFLAKE ── */}
+        {(function(){
+          var mm=calcMastery(c);var fs=c.financialSnapshot||{};
+          // 1. Thesis depth (0-100)
+          var th=c.thesisNote||"";var thSec=1;if(th.indexOf("## MOAT")>=0)thSec++;if(th.indexOf("## RISKS")>=0)thSec++;if(th.indexOf("## SELL")>=0)thSec++;
+          var thesisScore=th.length<20?0:Math.min(100,thSec*25);
+          // 2. KPI coverage (0-100)
+          var kpiDefined=c.kpis.length;var kpiMet=c.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+          var kpiScore=kpiDefined===0?0:Math.min(100,kpiDefined*20+kpiMet*15);
+          // 3. Conviction (0-100)
+          var convScore=(c.conviction||0)*10;
+          // 4. Fundamentals (0-100) — from snapshot data
+          function pv2(k2){if(!fs[k2])return 0;if(fs[k2].numVal!=null)return fs[k2].numVal;var v2=fs[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||0:0}
+          var fundScore=30;var gm2=pv2("grossMargin");if(gm2>60)fundScore+=15;else if(gm2>40)fundScore+=8;
+          var roic3=pv2("roic")||pv2("roe");if(roic3>20)fundScore+=20;else if(roic3>12)fundScore+=10;
+          var de2=pv2("debtEquity");if(de2>0&&de2<1)fundScore+=10;else if(de2>=2)fundScore-=10;
+          var rg2=pv2("revGrowth");if(rg2>15)fundScore+=15;else if(rg2>5)fundScore+=8;
+          fundScore=Object.keys(fs).length===0?0:Math.max(0,Math.min(100,fundScore));
+          // 5. Mastery (0-100)
+          var mastScore=Math.round(mm.stars/6*100);
+          // 6. Monitoring freshness (0-100)
+          var monScore=0;var now3=Date.now();
+          if(c.thesisUpdatedAt){var thAge=Math.ceil((now3-new Date(c.thesisUpdatedAt))/864e5);monScore+=thAge<30?35:thAge<90?25:thAge<180?10:0}
+          if(c.lastChecked){var lc2=Math.ceil((now3-new Date(c.lastChecked))/864e5);monScore+=lc2<30?35:lc2<90?25:lc2<180?10:0}
+          if((c.convictionHistory||[]).length>0){var lastConv=c.convictionHistory[c.convictionHistory.length-1];if(lastConv.date){var cvAge=Math.ceil((now3-new Date(lastConv.date))/864e5);monScore+=cvAge<60?30:cvAge<120?15:0}}
+          monScore=Math.min(100,monScore);
+          var axes=[{label:"Thesis",score:thesisScore,color:"#8B5CF6"},{label:"KPIs",score:kpiScore,color:"#3B82F6"},{label:"Conviction",score:convScore,color:"#F59E0B"},{label:"Fundamentals",score:fundScore,color:"#22C55E"},{label:"Mastery",score:mastScore,color:"#EC4899"},{label:"Monitoring",score:monScore,color:"#14B8A6"}];
+          var avgScore=Math.round(axes.reduce(function(s2,a2){return s2+a2.score},0)/6);
+          // SVG radar
+          var cx=90,cy=90,r=70;var n=6;var angleOff=-Math.PI/2;
+          function pt(i2,val){var ang=angleOff+i2/n*2*Math.PI;return{x:cx+Math.cos(ang)*r*val/100,y:cy+Math.sin(ang)*r*val/100}}
+          var gridLevels=[25,50,75,100];
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <svg width="180" height="180" viewBox="0 0 180 180">
+                {/* Grid rings */}
+                {gridLevels.map(function(gl){var pts2=[];for(var i3=0;i3<n;i3++){var p3=pt(i3,gl);pts2.push(p3.x.toFixed(1)+","+p3.y.toFixed(1))}
+                  return<polygon key={gl} points={pts2.join(" ")} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
+                {/* Axis lines */}
+                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.5"/>})}
+                {/* Filled shape */}
+                {(function(){var pts2=axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));return p3.x.toFixed(1)+","+p3.y.toFixed(1)});
+                  return<polygon points={pts2.join(" ")} fill={K.acc+"20"} stroke={K.acc} strokeWidth="2" strokeLinejoin="round"/>})()}
+                {/* Score dots + labels */}
+                {axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));var lp=pt(i3,118);
+                  return<g key={i3}><circle cx={p3.x} cy={p3.y} r="4" fill={a2.color} stroke={K.card} strokeWidth="1.5"/>
+                    <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle">{a2.label}</text></g>})}
+                {/* Center score */}
+                <text x={cx} y={cy-4} fill={K.txt} fontSize="20" fontWeight="800" fontFamily={fm} textAnchor="middle">{avgScore}</text>
+                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle">OWNERSHIP</text>
+              </svg>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Ownership Depth</div>
+                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:a2.color,flexShrink:0}}/>
+                  <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:70}}>{a2.label}</span>
+                  <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:a2.score+"%",borderRadius:2,background:a2.color,transition:"width .4s"}}/></div>
+                  <span style={{fontSize:10,fontWeight:600,color:a2.score>=70?K.grn:a2.score>=40?K.amb:a2.score>0?K.red:K.dim,fontFamily:fm,width:24,textAlign:"right"}}>{a2.score}</span></div>})}
+              </div></div></div>})()}
         {/* Company Summary — auto-fetched from FMP */}
         {c.description&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:8}}>{descExpanded||c.description.length<=200?c.description:c.description.substring(0,200)+"…"}
