@@ -833,6 +833,10 @@ function TrackerApp(props){
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
+    // Browser back button
+    var _prevNav=useRef(null);
+    useEffect(function(){var key=(page||"")+"/"+(selId||"");if(_prevNav.current!==null&&_prevNav.current!==key){try{window.history.pushState({p:page,s:selId},"",window.location.pathname)}catch(e){}}_prevNav.current=key},[page,selId]);
+    useEffect(function(){function onPop(e){if(e.state){if(e.state.s!=null)setSelId(e.state.s);else setSelId(null);if(e.state.p)setPage(e.state.p)}else{setSelId(null);setPage("dashboard")}}window.addEventListener("popstate",onPop);return function(){window.removeEventListener("popstate",onPop)}},[]);
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
@@ -2054,7 +2058,7 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
+      <div style={{position:"absolute",bottom:-4,right:-6,fontSize:11,lineHeight:1,padding:"1px 2px"}}>{currentLevel.icon}</div>
     </div></div>}
 
   // -- AI Detectors (simplified reference - same logic, theme-aware) --
@@ -4078,6 +4082,7 @@ function TrackerApp(props){
     var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""}),form=_form[0],setForm=_form[1];
     var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
     var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
+    var _histVal=useState(null),histVal=_histVal[0],setHistVal=_histVal[1];
 
     var positions=assets.positions||[];
     var snapshots=(assets.snapshots||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date)});
@@ -4103,8 +4108,19 @@ function TrackerApp(props){
         var snap={date:new Date().toISOString().split("T")[0],values:Object.assign({},classTotals),total:totalValue};
         saveAssets(function(prev){return Object.assign({},prev,{snapshots:(prev.snapshots||[]).concat([snap]).slice(-120)})})}},[positions.length,totalValue]);
 
+    // Fetch historical stock prices for value-over-time
+    useEffect(function(){var holdings=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.position&&c2.position.shares>0&&c2.purchaseDate});
+      if(holdings.length===0){setHistVal(null);return}
+      Promise.all(holdings.map(function(c2){return fetchHistoricalPrice(c2.ticker,"5Y").then(function(pts){return{shares:c2.position.shares,buy:c2.purchaseDate,pts:pts||[]}}).catch(function(){return{shares:0,buy:"",pts:[]}})})).then(function(res){
+        var dm={};res.forEach(function(r){r.pts.forEach(function(pt){if(pt.date>=r.buy){if(!dm[pt.date])dm[pt.date]=0;dm[pt.date]+=r.shares*pt.close}})});
+        var dates=Object.keys(dm).sort();var monthly=[];var lm="";dates.forEach(function(d){var m=d.substring(0,7);if(m!==lm){lm=m;monthly.push({date:d,val:dm[d]})}});
+        if(dates.length>0&&monthly[monthly.length-1].date!==dates[dates.length-1])monthly.push({date:dates[dates.length-1],val:dm[dates[dates.length-1]]});
+        setHistVal(monthly.length>1?monthly:null)}).catch(function(){setHistVal(null)})},[cos.length]);
     // Build stacked chart data
-    var chartData=snapshots.slice();
+    var chartData=[];
+    if(histVal&&histVal.length>1){var manualOther=positions.reduce(function(s2,p3){return p3.classId!=="stocks"?s2+(p3.value||0):s2},0);
+      chartData=histVal.map(function(hp){return{date:hp.date,values:{stocks:hp.val},total:hp.val+manualOther}})}
+    else{chartData=snapshots.slice();}
     // Add current point
     if(totalValue>0){var today2=new Date().toISOString().split("T")[0];
       if(!chartData.length||chartData[chartData.length-1].date!==today2){chartData.push({date:today2,values:Object.assign({},classTotals),total:totalValue})}}
@@ -5542,7 +5558,7 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
+            <div style={{position:"absolute",bottom:-3,right:-8,fontSize:12,lineHeight:1,padding:"1px 2px"}}>{currentLevel.icon}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
