@@ -310,7 +310,15 @@ async function fetchFinancialStatements(ticker,period){
     if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
     if((_is&&_is.length>0)||(_bs&&_bs.length>0)||(_cf&&_cf.length>0)){
       console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
-      var res={income:(_is||[]).reverse(),balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
+      var incRows=(_is||[]).reverse().map(function(row){
+        // Compute grossProfitRatio if missing but grossProfit and revenue exist
+        if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
+        // Compute operatingIncomeRatio if missing
+        if(row.operatingIncomeRatio==null&&row.operatingIncome!=null&&row.revenue!=null&&row.revenue!==0)row.operatingIncomeRatio=row.operatingIncome/row.revenue;
+        // Compute netIncomeRatio if missing
+        if(row.netIncomeRatio==null&&row.netIncome!=null&&row.revenue!=null&&row.revenue!==0)row.netIncomeRatio=row.netIncome/row.revenue;
+        return row});
+      var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
     console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
     // Fallback: SEC EDGAR (free, no API key needed)
@@ -3303,7 +3311,7 @@ function TrackerApp(props){
                 {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.5"/>})}
                 {/* Filled shape */}
                 {(function(){var pts2=axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));return p3.x.toFixed(1)+","+p3.y.toFixed(1)});
-                  return<polygon points={pts2.join(" ")} fill={K.acc+"20"} stroke={K.acc} strokeWidth="2" strokeLinejoin="round"/>})()}
+                  return<polygon points={pts2.join(" ")} fill={"#3B82F620"} stroke={"#3B82F6"} strokeWidth="2" strokeLinejoin="round"/>})()}
                 {/* Score dots + labels */}
                 {axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));var lp=pt(i3,118);
                   return<g key={i3}><circle cx={p3.x} cy={p3.y} r="4" fill={a2.color} stroke={K.card} strokeWidth="1.5"/>
@@ -3438,9 +3446,20 @@ function TrackerApp(props){
           if(snap.pe)valuation.push({l:"P/E",v:snap.pe.value,tip:"Price to earnings"});
           if(snap.pb)valuation.push({l:"P/B",v:snap.pb.value,tip:"Price to book"});
           if(snap.fcf)valuation.push({l:"FCF/Share",v:snap.fcf.value,tip:"Free cash flow per share"});
+          if(snap.evSales)valuation.push({l:"EV/Sales",v:snap.evSales.value});
+          if(snap.evFcf)valuation.push({l:"EV/FCF",v:snap.evFcf.value});
+          // PEG ratio estimate
+          var peVal=snap.pe?parseFloat(String(snap.pe.value).replace(/[^0-9.]/g,""))||0:0;
+          var egVal=snap.revGrowth?Math.abs(parseFloat(String(snap.revGrowth.value).replace(/[^0-9.]/g,""))||0):0;
+          if(peVal>0&&egVal>1){var peg2=peVal/egVal;valuation.push({l:"PEG",v:peg2.toFixed(2),isGood:peg2<1.5,isNeutral:peg2>=1.5&&peg2<3})}
+          // Earnings yield
+          if(peVal>0){var ey2=(1/peVal*100);valuation.push({l:"Earnings Yield",v:ey2.toFixed(1)+"%",isGood:ey2>5})}
+          // FCF yield
+          if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.]/g,""))||0;if(fcfVal2>0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
           if(snap.hi52&&snap.lo52){var cp=pos.currentPrice||0;if(cp>0){var pctOfHi=((cp/parseFloat(snap.hi52.value.replace("$","")))*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}
           if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,tip:"Return on invested capital",isGood:parseFloat(snap.roic.value)>=12});
           if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,tip:"Return on equity",isGood:parseFloat(snap.roe.value)>=15});
+          if(snap.roce&&snap.roce.value)returns.push({l:"ROCE",v:snap.roce.value,isGood:parseFloat(snap.roce.value)>=12});
           if(snap.grossMargin)returns.push({l:"Gross Margin",v:snap.grossMargin.value,tip:"Revenue minus COGS"});
           if(snap.opMargin)returns.push({l:"Op. Margin",v:snap.opMargin.value,tip:"Operating income / revenue"});
           if(snap.netMargin)returns.push({l:"Net Margin",v:snap.netMargin.value,tip:"Net income / revenue"});
@@ -3453,6 +3472,8 @@ function TrackerApp(props){
             if(c.exDivDate)divInfo.push({l:"Ex-Div",v:fD(c.exDivDate)})}
           if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
           if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
+          if(snap.mktCap)health.push({l:"Market Cap",v:snap.mktCap.value});
+          if(snap.buybackYield)health.push({l:"Buyback Yield",v:snap.buybackYield.value,isGood:true});
           var sections=[];
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
           if(returns.length>0)sections.push({title:"RETURNS & GROWTH",items:returns,color:K.grn});
@@ -3941,18 +3962,18 @@ function TrackerApp(props){
                 
                 {q.done&&<span style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"}</span>}
               </div>})}</div>
-            {/* Quest reward preview */}
+            {/* Focus reward preview */}
             {!allDone2&&<div style={{marginTop:12,padding:"10px 16px",background:K.bg,borderRadius:8,display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:28,height:28,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={14} color="#a78bfa"/></div>
               <div style={{fontSize:11,color:K.dim}}>Complete all actions to claim your weekly insight</div></div>}
-            {/* Quest complete + claim */}
+            {/* Focus complete + claim */}
             {allDone2&&!questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"20px",background:"linear-gradient(135deg,"+K.acc+"08,#a78bfa08)",border:"1px solid #a78bfa30",borderRadius:12}}>
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
               <div style={{fontSize:11,color:K.dim,marginBottom:12}}>All actions complete! Claim your weekly insight</div>
               <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
-              <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest reward claimed this week ✓</div>
+              <div style={{fontSize:12,color:K.grn,fontWeight:500}}>All actions complete this week ✓</div>
               <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
           </div>})()}
 
@@ -4418,6 +4439,8 @@ function TrackerApp(props){
       {/* ═══ DOCUMENT VAULT TAB ═══ */}
       {ht==="docs"&&<div>
         <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+          <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"memo"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:11})}>+ Investment Memo</button>
+          <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"doc"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})}>+ Quick Note</button>
           <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:11,fontFamily:fm,outline:"none"}}>
             <option value="all">All Companies</option>
             {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
@@ -4652,7 +4675,7 @@ function TrackerApp(props){
           <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"08",border:"1px solid "+K.acc+"30",borderRadius:10,marginBottom:12}}>
             <div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm}}>{currentLevel.icon+" "+currentLevel.name}</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{xp.total.toLocaleString()} / {xpLevel.xpForNext.toLocaleString()} pts</div>
+              <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{weeklyReviews.length} reviews completed</div>
               <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:xpPct+"%",borderRadius:3,background:K.acc}}/></div></div></div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {[{label:"Write thesis",xp:"",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"Research saved",sub:""},{label:"Rate conviction",xp:"Action logged",sub:""},{label:"Weekly review",xp:"",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
@@ -6257,14 +6280,8 @@ function TrackerApp(props){
             {!username&&!editingName&&<button onClick={function(){setEditingName(true);setNameInput("")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,padding:0}}>Set username</button>}
             {editingName&&<div style={{display:"flex",gap:6,marginTop:4}}><input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Choose a username" maxLength={20} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:11,fontFamily:fm,width:140,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername()}} autoFocus/><button onClick={saveUsername} style={{background:K.acc,color:K.primTxt,border:"none",borderRadius:4,padding:"4px 10px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save</button></div>}
             {username&&<div style={{fontSize:10,color:K.dim}}>{props.user}</div>}
-            <div style={{fontSize:12,color:K.acc,fontWeight:600,fontFamily:fm}}>Level {xpLevel.level}</div>
-            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{currentLevel.name}</div></div></div>
-        {/* XP Progress to next level */}
-        <div style={{marginBottom:20}}>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>
-            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" to "+(xpLevel.level+1):"Max level!"}</span></div>
-          <div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
-            <div style={{height:"100%",width:xpPct+"%",borderRadius:4,background:K.acc,transition:"width .3s"}}/></div></div>
+            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{plan==="pro"?"Pro":"Free"} plan</div></div></div>
+
         {/* Stats grid */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
           {[{label:"Streak",value:streakData.current||0,sub:"weeks",color:K.grn},
