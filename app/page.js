@@ -705,11 +705,11 @@ function TrackerApp(props){
   var _chestOverlay=useState(null),chestOverlay=_chestOverlay[0],setChestOverlay=_chestOverlay[1];
   var _latestWeeklyReward=useState(null),latestWeeklyReward=_latestWeeklyReward[0],setLatestWeeklyReward=_latestWeeklyReward[1];
   var isDoubleXP=doubleXP&&new Date(doubleXP)>new Date();
-  // ── 7-Day Quest System ──
+  // ── Weekly Focus System ──
   var _questData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-quests"))||{weekId:null,completed:[]}}catch(e){return{weekId:null,completed:[]}}}),questData=_questData[0],setQuestData=_questData[1];
   function completeQuest(qid){
     setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),completed:(p.completed||[]).concat([qid])});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});
-    addXP(8,"Step completed")}
+    addXP(8,"Action completed")}
   function openQuestChest(){
     // Guaranteed uncommon or better
     var roll=Math.random();var reward;
@@ -736,7 +736,7 @@ function TrackerApp(props){
       if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
       if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
       try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
-    if(reward.xp>0)addXP(reward.xp,"Quest reward: "+reward.label);
+    if(reward.xp>0)addXP(reward.xp,"Weekly focus: "+reward.label);
     if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
     if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
     if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
@@ -2883,24 +2883,28 @@ function TrackerApp(props){
       html+='.disc{font-size:7px;color:#9ca3af;margin-top:6px;font-style:italic;line-height:1.4}';
       html+='@media print{.page{padding:0}.no-print{display:none}}</style></head><body><div class="page">';
       // Header
-      html+='<div class="hdr"><div><h1>'+c.ticker+'</h1><div class="sub">'+c.name+' · '+c.sector+' · '+(stab.l)+' ('+(per==="quarter"?"Quarterly":"Annual")+')</div></div>';
+      html+='<div class="hdr"><div><h1>'+c.ticker+'</h1><div class="sub">'+c.name+' · '+c.sector+' · Financial Statements ('+(per==="quarter"?"Quarterly":"Annual")+')</div></div>';
       html+='<div style="text-align:right"><div class="logo">ThesisAlpha</div><div class="logo-sub">Financial Statements</div>';
       html+='<div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280;margin-top:6px">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
       // Table
-      html+='<table><thead><tr><th align="left" style="min-width:160px;position:sticky;left:0;background:#fff">'+stab.l+'</th>';
-      rows.forEach(function(r){html+='<th align="right">'+(per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4))+'</th>'});
+      STMT_TABS.forEach(function(stab2){
+      var rows2=stab2.id==="income"?(data.income||[]):stab2.id==="balance"?(data.balance||[]):stab2.id==="cashflow"?(data.cashflow||[]):[];
+      if(rows2.length===0)return;
+      html+='<div style="margin-top:20px;font-family:Playfair Display,Georgia,serif;font-size:16px;font-weight:600;color:#1a1a2e;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin-bottom:8px">'+stab2.l+'</div>';
+      html+='<table><thead><tr><th align="left" style="min-width:160px">Metric</th>';
+      rows2.forEach(function(r){html+='<th align="right">'+(per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4))+'</th>'});
       html+='</tr></thead><tbody>';
-      stab.items.forEach(function(item){
-        if(!item.k){html+='<tr class="spacer"><td colspan="'+(rows.length+1)+'"></td></tr>';return}
+      stab2.items.forEach(function(item){
+        if(!item.k){html+='<tr class="spacer"><td colspan="'+(rows2.length+1)+'"></td></tr>';return}
         html+='<tr'+(item.b?' class="bold"':'')+'><td'+(item.d?' class="dim"':'')+'>'+(item.l)+'</td>';
-        rows.forEach(function(r,ci){var v=r[item.k];var yoy=null;
-          if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
+        rows2.forEach(function(r,ci){var v=r[item.k];var yoy=null;
+          if(ci>0&&rows2[ci-1]){var prev=rows2[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
           var vStr=fmtCell(v,item);var clr=v!=null&&Number(v)<0?' class="red"':(item.d?' class="dim"':'');
           html+='<td align="right"'+clr+'>'+vStr;
           if(yoy!=null&&!isNaN(yoy))html+='<div class="yoy '+(yoy>=0?"grn":"red")+'">'+(yoy>=0?"+":"")+yoy.toFixed(1)+'%</div>';
           html+='</td>'});
         html+='</tr>'});
-      html+='</tbody></table>';
+      html+='</tbody></table>'});
       // Footer
       html+='<div class="footer"><div class="footer-left">ThesisAlpha</div>';
       html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280">'+c.ticker+' · '+c.name+'</div>';
@@ -3580,15 +3584,15 @@ function TrackerApp(props){
             <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>holdings</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"—"}</div>
-            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>batting avg</div></div>
+            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{scored.length}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>scored</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>decisions</div></div></div></div>
 
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"command",l:"Command Center",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
+        {[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
           return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
 
@@ -3652,7 +3656,7 @@ function TrackerApp(props){
             {/* Quest header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
               <div>
-                <div style={{fontSize:14,fontWeight:600,color:K.txt}}>7-Day Quest</div>
+                <div style={{fontSize:14,fontWeight:600,color:K.txt}}>This Week's Focus</div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Resets every Monday · {doneCount}/{quests.length} complete</div></div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:80,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:questPct+"%",borderRadius:3,background:allDone2?K.grn:K.acc,transition:"width .5s"}}/></div>
@@ -3993,7 +3997,7 @@ function TrackerApp(props){
           <div style={{fontSize:12,color:K.dim}}>Entries appear automatically as you check earnings, update theses, and adjust conviction during weekly reviews.</div></div>:
         <div>
           <div style={{fontSize:12,color:K.dim,marginBottom:16}}>
-            {allDecs.length} decision{allDecs.length>1?"s":""} logged · {scored.length} scored · {rights} right · batting avg: {scored.length>0?dqPct+"%":"N/A"}</div>
+            {allDecs.length} decision{allDecs.length>1?"s":""} logged · {scored.length} scored · {rights} right · {rights} right of {scored.length} scored</div>
           {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).map(function(dec,i){
             var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
             return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:8,borderLeft:"3px solid "+clr}}>
@@ -5258,15 +5262,21 @@ function TrackerApp(props){
           <span style={{width:65,textAlign:"right"}}>Return</span>
           {!isMobile&&<span style={{width:85,textAlign:"right"}}>Value</span>}
           <span style={{width:isMobile?70:140,paddingLeft:8}}>Allocation</span>
-          {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>C</span>}
-          {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
-          {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
-          {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
-          {(dashSet.listCols||{}).mastery&&<span style={{width:55,textAlign:"center"}}>Mastery</span>}
+          {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];var hw={conviction:{w:40,a:"center",l:"C"},kpis:{w:55,a:"right",l:"KPIs",d:true},earnings:{w:60,a:"right",l:"Earn.",d:true},price:{w:70,a:"right",l:"Price",d:true},mastery:{w:55,a:"center",l:"Mastery"}};return oo.map(function(k2){var h2=hw[k2];if(!h2)return null;if(!(dashSet.listCols||{})[k2])return null;if(h2.d&&isMobile)return null;return<span key={k2} style={{width:h2.w,textAlign:h2.a}}>{h2.l}</span>})})()}
           <span style={{width:28,position:"relative"}}><button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>
             {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
               <div style={{padding:"4px 12px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
-              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"mastery",l:"Mastery Stars"}].map(function(col){return<div key={col.k} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"6px 12px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><div style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent"}}/>{col.l}</div>})}</div>}</span></div>
+              {(function(){var allCols=[{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"price",l:"Current Price"},{k:"mastery",l:"Mastery Stars"}];
+              var order=dashSet.listColOrder||allCols.map(function(c2){return c2.k});
+              var sorted=order.map(function(k2){return allCols.find(function(c2){return c2.k===k2})}).filter(Boolean);
+              allCols.forEach(function(c2){if(!sorted.find(function(s2){return s2.k===c2.k}))sorted.push(c2)});
+              function moveCol(k2,dir){setDashSet(function(p){var o=p.listColOrder||allCols.map(function(c3){return c3.k});var idx2=o.indexOf(k2);if(idx2<0)return p;var ni=Math.max(0,Math.min(o.length-1,idx2+dir));if(ni===idx2)return p;var no=o.slice();no.splice(idx2,1);no.splice(ni,0,k2);var n=Object.assign({},p,{listColOrder:no});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
+              return sorted.map(function(col){return<div key={col.k} style={{padding:"5px 12px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
+                <div onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent",cursor:"pointer",flexShrink:0}}/>
+                <span style={{flex:1,cursor:"pointer"}} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}}>{col.l}</span>
+                <div style={{display:"flex",gap:2}}>
+                  <button onClick={function(){moveCol(col.k,-1)}} style={{background:"none",border:"none",cursor:"pointer",padding:"0 2px",fontSize:9,color:K.dim}}>{"▲"}</button>
+                  <button onClick={function(){moveCol(col.k,1)}} style={{background:"none",border:"none",cursor:"pointer",padding:"0 2px",fontSize:9,color:K.dim}}>{"▼"}</button></div></div>})})()}</div>}</span></div>
         {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
@@ -5282,11 +5292,13 @@ function TrackerApp(props){
             <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</span>
             {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}
             <span style={{width:isMobile?70:140,paddingLeft:8}}>{weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
-            {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{color:K.dim}}>{"—"}</span>}</span>}
-            {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
-            {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
-            {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>}
-            {(dashSet.listCols||{}).mastery&&(function(){var _ml=calcMastery(cc);return<span style={{width:55,textAlign:"center",display:"flex",justifyContent:"center",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<svg key={s} width="7" height="7" viewBox="0 0 12 12"><polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" fill={s<=_ml.stars?_ml.color:K.bdr}/></svg>})}</span>})()}
+            {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];return oo.map(function(k2){if(!(dashSet.listCols||{})[k2])return null;
+              if(k2==="conviction")return<span key={k2} style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{color:K.dim}}>{"—"}</span>}</span>;
+              if(k2==="kpis"&&!isMobile)return<span key={k2} style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>;
+              if(k2==="earnings"&&!isMobile)return<span key={k2} style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>;
+              if(k2==="price"&&!isMobile)return<span key={k2} style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>;
+              if(k2==="mastery")return<span key={k2} style={{width:55,textAlign:"center",display:"flex",justifyContent:"center",gap:1}}>{(function(){var _ml=calcMastery(cc);return[1,2,3,4,5,6].map(function(s){return<svg key={s} width="7" height="7" viewBox="0 0 12 12"><polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" fill={s<=_ml.stars?_ml.color:K.bdr}/></svg>})})()}</span>;
+              return null})})()}
             <span style={{width:28}}/>
           </div>})}
       </div>})()}
