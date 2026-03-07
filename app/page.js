@@ -294,6 +294,16 @@ async function fetchDividendInfo(ticker){try{
     if(avgGap<45)freq="monthly";else if(avgGap<120)freq="quarterly";else if(avgGap<240)freq="semi";else freq="annual"}
   return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDividend||0}
 }catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
+// Shared: estimate which months a company pays dividends based on frequency + exDivDate
+function estimatePayMonths(c){
+  var freq=c.divFrequency||"quarterly";
+  if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
+  if(freq==="none")return[];
+  if(freq==="annual")return c.exDivDate?[new Date(c.exDivDate).getMonth()]:[5];
+  if(freq==="semi")return c.exDivDate?[new Date(c.exDivDate).getMonth(),(new Date(c.exDivDate).getMonth()+6)%12]:[2,8];
+  // Quarterly: if we have ex-div date, estimate 4 quarters from it
+  if(c.exDivDate){var m=new Date(c.exDivDate).getMonth();return[m,(m+3)%12,(m+6)%12,(m+9)%12]}
+  return[2,5,8,11]}
 // FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
@@ -1150,6 +1160,20 @@ function TrackerApp(props){
         setCos(function(p){return p.map(function(x){return x.id===c.id?Object.assign({},x,{earningsDate:r.earningsDate,earningsTime:r.earningsTime||"TBD"}):x})})}}).catch(function(){})
     },500);// 500ms between calls — Finnhub allows 60/min
     return function(){clearInterval(tmr)}},[loaded]);
+  // Auto-populate financialSnapshot for companies that don't have one yet
+  useEffect(function(){if(!loaded)return;
+    var needSnapshot=cos.filter(function(c){return(!c.financialSnapshot||Object.keys(c.financialSnapshot).length===0)&&c.ticker});
+    if(!needSnapshot.length)return;
+    var i=0;var tmr2=setInterval(function(){if(i>=needSnapshot.length){clearInterval(tmr2);return}
+      var c=needSnapshot[i];i++;
+      fetchEarnings(c,c.kpis||[]).then(function(r){if(r&&r.found&&r.snapshot&&Object.keys(r.snapshot).length>0){
+        setCos(function(prev){return prev.map(function(x){if(x.id!==c.id)return x;
+          // Only set snapshot if still empty (avoid overwriting a manual check)
+          if(x.financialSnapshot&&Object.keys(x.financialSnapshot).length>0)return x;
+          return Object.assign({},x,{financialSnapshot:r.snapshot,earningSummary:r.summary||x.earningSummary,sourceUrl:r.sourceUrl||x.sourceUrl,sourceLabel:r.sourceLabel||x.sourceLabel})})})}
+      }).catch(function(e){console.warn("[ThesisAlpha] Auto-snapshot failed for "+c.ticker+":",e)})
+    },1500);// stagger to respect rate limits
+    return function(){clearInterval(tmr2)}},[loaded,cos.length]);
   // Upcoming earnings notification (no AI — just a reminder)
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
@@ -1920,7 +1944,9 @@ function TrackerApp(props){
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
-  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}}
+  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
+    // Auto-trigger price refresh and earnings check for newly added companies
+    setTimeout(function(){refreshPrices()},500)}
   function OnboardingFlow(){
     var _ot=useState(""),oTicker=_ot[0],setOTicker=_ot[1];
     var _on=useState(""),oName=_on[0],setOName=_on[1];
@@ -1942,7 +1968,7 @@ function TrackerApp(props){
     function addOnboardingCompany(){
       if(!oTicker.trim()||!oName.trim())return;
       var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:oPrice},conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setObStep(4)}
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setObStep(3)}
     var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
     var card={background:K.card,border:"1px solid "+K.bdr,borderRadius:isMobile?0:16,width:isMobile?"100%":520,maxWidth:isMobile?"100%":"90vw",maxHeight:isMobile?"100vh":"90vh",height:isMobile?"100vh":"auto",overflowY:"auto",padding:isMobile?"24px 20px":"36px 40px",position:"relative"};
     var stepDots=function(){return<div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:28}}>
@@ -2050,6 +2076,7 @@ function TrackerApp(props){
     </div></div>;
     // Step 4: Guide to write thesis for the company they just added
     if(obStep===4){var firstCo=cos.find(function(c){return c.id===selId})||cos[cos.length-1];
+      if(!firstCo){setObStep(5);return null}
       return<div style={overlay}><div className="ta-slide" style={card}>
       {stepDots()}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -2064,8 +2091,8 @@ function TrackerApp(props){
           <strong style={{color:K.amb}}>3. Risks</strong> — What could go wrong<br/>
           <strong style={{color:K.red}}>4. Sell Criteria</strong> — When you'd walk away</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
-        <button onClick={function(){finishOnboarding();if(firstCo){setSelId(firstCo.id);setDetailTab("dossier");setPage("dashboard");setModal({type:"thesis"})}}} style={Object.assign({},S.btnP,{padding:"12px 28px",fontSize:14})}>Write Thesis {"→"}</button></div>
-      <button onClick={function(){finishOnboarding()}} style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer"}}>Skip — I'll do this later</button>
+        <button onClick={function(){finishOnboarding();if(firstCo){setSelId(firstCo.id);setDetailTab("dossier");setPage("dashboard");setGuidedSetup(firstCo.id);setModal({type:"thesis"})}}} style={Object.assign({},S.btnP,{padding:"12px 28px",fontSize:14})}>Write Thesis {"→"}</button></div>
+      <button onClick={function(){setObStep(5)}} style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer"}}>Skip — I'll do this later</button>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>}
     // Step 5: Quick start tips (shown if they skip thesis)
@@ -2084,7 +2111,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{hint.action}</div>
             <div style={{fontSize:10,color:K.dim}}>{hint.desc}</div></div></div>})}</div>
       <div style={{textAlign:"center"}}>
-        <button onClick={function(){finishOnboarding();if(selId){setDetailTab("dossier")}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
+        <button onClick={function(){finishOnboarding();if(selId){setDetailTab("dossier");setGuidedSetup(selId)}}} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>Start Investing</button></div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     return null}
@@ -5570,15 +5597,7 @@ function TrackerApp(props){
     var monthlyIncome=totalAnnual/12;
     // Estimate next payout based on ex-div dates
     var freqLabel=function(f){return f==="monthly"?"Monthly":f==="semi"?"Semi-Annual":f==="annual"?"Annual":"Quarterly"};
-    // Approximate next payment months based on frequency
-    function estimatePayMonths(c){
-      var freq=c.divFrequency||"quarterly";
-      if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
-      if(freq==="annual")return c.exDivDate?[new Date(c.exDivDate).getMonth()]:[5];
-      if(freq==="semi")return c.exDivDate?[new Date(c.exDivDate).getMonth(),(new Date(c.exDivDate).getMonth()+6)%12]:[2,8];
-      // Quarterly: if we have ex-div date, estimate 4 quarters from it
-      if(c.exDivDate){var m=new Date(c.exDivDate).getMonth();return[m,(m+3)%12,(m+6)%12,(m+9)%12]}
-      return[2,5,8,11]}
+    // estimatePayMonths is now a shared function at module scope
     var monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     // Build monthly income calendar
     var monthlyBreakdown=monthNames.map(function(mn,mi){
@@ -6058,10 +6077,8 @@ function TrackerApp(props){
           var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
           var monthlyArr=months.map(function(){return 0});
           holdings.forEach(function(h2){if(h2.shares<=0)return;
-            if(h2.freq==="monthly"){months.forEach(function(m2,mi){monthlyArr[mi]+=h2.dps*h2.shares})}
-            else if(h2.freq==="quarterly"){[0,3,6,9].forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})}
-            else if(h2.freq==="semi"){[0,6].forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})}
-            else{monthlyArr[0]+=h2.dps*h2.shares}});
+            var payMonths=estimatePayMonths({divFrequency:h2.freq,exDivDate:h2.exDiv});
+            payMonths.forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})});
           var maxMonth=Math.max.apply(null,monthlyArr)||1;
           // Upcoming ex-div dates
           var upcoming2=holdings.filter(function(h2){return h2.exDiv&&new Date(h2.exDiv)>=new Date()}).sort(function(a,b){return a.exDiv>b.exDiv?1:-1});
