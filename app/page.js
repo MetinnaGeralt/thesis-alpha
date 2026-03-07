@@ -1090,7 +1090,7 @@ function TrackerApp(props){
       saveTrial(Object.assign({},trial,{bonusEarned:true,bonusEarnedAt:new Date().toISOString()}));
       celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
       showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
-      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:"+TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
+      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
