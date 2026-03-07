@@ -639,7 +639,7 @@ function TrackerApp(props){
   var bm=theme==="bloomberg";
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="light"?"dark":"light";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
-  var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
+  var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
@@ -675,7 +675,8 @@ function TrackerApp(props){
   var isPro=plan==="pro"||trialActive;
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
-  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
+  var _mp=useState(false),managingPlan=_mp[0],setManagingPlan=_mp[1];
+  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}setManagingPlan(true);fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setManagingPlan(false);showToast("Could not open billing portal","info",3000)}}).catch(function(e){console.warn("Portal error:",e);setManagingPlan(false);setShowUpgrade(true);setUpgradeCtx("manage")})}
   var DEFAULT_DASH={portfolioView:"list",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -1012,9 +1013,28 @@ function TrackerApp(props){
     var fontId="ta-theme-font";var prevFont=document.getElementById(fontId);if(prevFont)prevFont.remove();
     if(isForest){var link=document.createElement("link");link.id=fontId;link.rel="stylesheet";link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(link)}
     return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove()}},[isDark,theme]);
+  // ── Browser back button — stay in app ──
+  useEffect(function(){
+    // Push initial state so back button has somewhere to go within the app
+    window.history.pushState({ta:true,page:"dashboard"},"","");
+    function onPop(e){
+      // Always push a new entry to prevent leaving the app
+      window.history.pushState({ta:true},"","");
+      // Navigate back within the app
+      if(selId){
+        // If viewing a company, go back to portfolio list
+        setSelId(null);setSubPage(null);setPage("dashboard")
+      } else if(page!=="dashboard"){
+        // If on a sub-page, go back to dashboard
+        setPage("dashboard")
+      }
+      // If already on dashboard with no selection, do nothing (stay put)
+    }
+    window.addEventListener("popstate",onPop);
+    return function(){window.removeEventListener("popstate",onPop)}},[selId,page]);
   // ── Load data ──
   useEffect(function(){
-    // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
+    // Load: try cloud first (cross-device), then localStorage (offline cache), then empty + onboarding
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
@@ -1060,7 +1080,7 @@ function TrackerApp(props){
         // First login on this account — push local data to cloud
         cloudSave(props.userId,local);
         setLoaded(true);return}
-      // Brand new user — use sample data
+      // Brand new user — show onboarding (empty portfolio until they choose)
       try{if(!localStorage.getItem("ta-onboarded"))setObStep(1)}catch(e){setObStep(1)}
       // Start trial for new users
       if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}
@@ -2045,7 +2065,7 @@ function TrackerApp(props){
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4}}>{item.desc}</div></div>})}</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
         {obReplay?<button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Continue Tour {"→"}</button>
-        :<>{React.createElement("button",{onClick:function(){setObPath("fresh");setCos([]);setObStep(2)},style:Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})},"Start Fresh")}{React.createElement("button",{onClick:function(){setObPath("demo");setObStep(2)},style:Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})},"Explore with Demo Data")}</>}</div>
+        :<>{React.createElement("button",{onClick:function(){setObPath("fresh");setCos([]);setObStep(2)},style:Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})},"Start Fresh")}{React.createElement("button",{onClick:function(){setObPath("demo");setCos(SAMPLE);setObStep(2)},style:Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})},"Explore with Demo Data")}</>}</div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 2: Path-dependent
@@ -2190,9 +2210,10 @@ function TrackerApp(props){
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
-      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:"pointer"}} onClick={openManage}>
+      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:managingPlan?K.grn+"20":K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:managingPlan?"wait":"pointer",transition:"all .15s",opacity:managingPlan?.7:1}} onClick={function(){if(!managingPlan)openManage()}} onMouseEnter={function(e){if(!managingPlan){e.currentTarget.style.background=K.grn+"20";e.currentTarget.style.borderColor=K.grn+"50";e.currentTarget.style.transform="translateY(-1px)"}}} onMouseLeave={function(e){e.currentTarget.style.background=K.grn+"10";e.currentTarget.style.borderColor=K.grn+"25";e.currentTarget.style.transform="none"}}>
         <span style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
-        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
+        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{managingPlan?"Opening Stripe…":"Manage plan →"}</span>
+        {managingPlan&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.grn,borderRadius:"50%",animation:"spin .8s linear infinite",marginLeft:"auto"}}/>}</div>
       :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1}}>TRIAL</span>
