@@ -185,6 +185,33 @@ function calcOwnerScore(cos){
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
 
+// Per-company mastery level (1-5 stars) — Pokémon Go-style progression
+function calcMastery(c){
+  var score=0;var maxScore=10;var details={thesis:false,kpis:false,earnings:false,moat:false,mastered:false};
+  // Star 1: Added to portfolio (always true if exists)
+  score+=1;
+  // Star 2: Thesis written (core + at least 1 section)
+  if(c.thesisNote&&c.thesisNote.trim().length>30){var sec=c.thesisNote;
+    var hasSections=sec.indexOf("## MOAT")>=0||sec.indexOf("## RISKS")>=0||sec.indexOf("## SELL")>=0;
+    if(hasSections){score+=2;details.thesis=true}else{score+=1}}
+  // Star 3: KPIs defined + at least 1 earnings check
+  if(c.kpis&&c.kpis.length>=2){score+=1;details.kpis=true}
+  if(c.earningsHistory&&c.earningsHistory.length>=1){score+=1;details.earnings=true}
+  // Star 4: Moat classified + conviction rated + decision logged
+  var mt=c.moatTypes||{};var hasMoat=Object.keys(mt).some(function(k){return mt[k]&&mt[k].active});
+  if(hasMoat){score+=1;details.moat=true}
+  if(c.conviction>0)score+=1;
+  if(c.decisions&&c.decisions.length>=1)score+=1;
+  // Star 5: Full mastery — thesis reviewed within 90d, 3+ earnings, conviction history
+  var fresh=c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90;
+  var deepEarnings=c.earningsHistory&&c.earningsHistory.length>=3;
+  var convHist=c.convictionHistory&&c.convictionHistory.length>=3;
+  if(fresh&&deepEarnings&&convHist){score+=1;details.mastered=true}
+  var stars=score>=10?5:score>=8?4:score>=5?3:score>=3?2:1;
+  var labels=["Tracking","Researching","Informed","Disciplined","Mastered"];
+  var colors=["#6B7280","#3B82F6","#F59E0B","#8B5CF6","#22C55E"];
+  return{stars:stars,score:score,maxScore:maxScore,label:labels[stars-1],color:colors[stars-1],pct:Math.round(score/maxScore*100),details:details}}
+
 // Legacy name → metricId mapping for existing user data
 var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
 var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","current ratio":"currentRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf margin":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth"};
@@ -799,7 +826,7 @@ function TrackerApp(props){
     setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2×)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
       if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
-      return n});setXpFloat({amount:actualAmount,label:label+(isDoubleXP?" 2×":""),id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
+      return n});// XP float silenced — mastery system replaces visual points}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
   // ── Daily Activity Streak ──
@@ -2053,7 +2080,7 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{globalOS.total}</div>
+      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
     </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
@@ -3071,7 +3098,10 @@ function TrackerApp(props){
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
       {/* Header */}
       <div className="ta-detail-head" style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?28:36}/>
-        <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
+            {(function(){var mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:5,background:mm.color+"12",border:"1px solid "+mm.color+"25"}}>
+              <div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(function(s){return<div key={s} style={{width:6,height:6,borderRadius:"50%",background:s<=mm.stars?mm.color:K.bdr}}/>})}</div>
+              <span style={{fontSize:9,fontWeight:600,color:mm.color,fontFamily:fm}}>{mm.label}</span></div>})()}</div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
             <span style={{fontSize:11,color:K.dim}}>{"•"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
@@ -5191,11 +5221,7 @@ function TrackerApp(props){
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
-    {/* ── XP Float Animation ── */}
-    {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
-      <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
-        <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
-    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
+
     {/* ── Today's Focus Card (hero element, always first) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var focus=null;
@@ -5229,115 +5255,43 @@ function TrackerApp(props){
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
       </div>})()}
     {/* ── Compact Streak/Process bar (collapsible, hidden until first action) ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&xp.total>0&&<div style={{marginBottom:16}}>
-      {/* Compact summary line — always visible */}
-      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <span style={{fontSize:12}}>{String.fromCodePoint(0x1F525)}</span>
-          <span style={{fontSize:11,fontWeight:600,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>{dailyStreak.current}d</span>
-          <span style={{width:1,height:12,background:K.bdr}}/>
-          <span style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim,fontFamily:fm}}>{streakData.current}w</span>
-          {!didActivityToday&&dailyStreak.current>0&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>streak expires tonight</span>}
-          {didActivityToday&&<span style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓ active"}</span>}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{position:"relative",width:22,height:22,flexShrink:0}}>
-            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2" strokeDasharray={Math.round(globalOS.total/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
-          {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)+" 2×"}</span>}
-          <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
-        </div>
+    {sideTab==="portfolio"&&filtered.length>0&&<div style={{marginBottom:16}}>
+      {/* Portfolio Mastery Overview */}
+      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
+        {/* Mastery stars summary */}
+        {(function(){var mastered=filtered.filter(function(cc){return calcMastery(cc).stars>=5}).length;
+          var avgStars=filtered.reduce(function(s,cc){return s+calcMastery(cc).stars},0)/Math.max(filtered.length,1);
+          return<React.Fragment>
+            <div style={{display:"flex",gap:2}}>
+              {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:8,height:8,borderRadius:"50%",background:avgStars>=s?K.grn:avgStars>=s-.5?K.amb:K.bdr}}/>})}</div>
+            <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{avgStars.toFixed(1)} avg</span>
+            <span style={{fontSize:10,color:K.dim}}>{"·"}</span>
+            <span style={{fontSize:10,color:mastered>0?K.grn:K.dim,fontFamily:fm}}>{mastered} mastered</span>
+            <span style={{fontSize:10,color:K.dim}}>{"·"}</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"🔥"} {streakData.current||0}w</span>
+          </React.Fragment>})()}
+        <div style={{flex:1}}/>
+        <span style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
       </div>
-      {/* Expanded detail — full streak/XP cards */}
-      {dashGameExpanded&&<div style={{display:"flex",gap:12,padding:"12px 14px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
-        {/* Daily Streak */}
-        <div onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:1}}>
-          <div>
-            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
-            <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div></div></div>
-        {/* Weekly Streak */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:2}}>
-          <div style={{fontSize:20,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
-          <div>
-            <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
-            <div style={{fontSize:8,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed "+String.fromCodePoint(0x2713):"Review due"}</div>
-            {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-              return next?<div style={{fontSize:7,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
-          {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"2px 6px"}}>
-            <span style={{fontSize:10}}>{"🛡️"}</span>
-            <span style={{fontSize:8,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
-        {/* Process Score */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("hub")}}>
-          <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
-            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <div>
-            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Process</div>
-            <div style={{fontSize:8,color:K.dim}}>{currentLevel.icon} {currentLevel.name}</div></div></div>
+      {dashGameExpanded&&<div style={{padding:"14px 16px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
+        {/* Per-company mastery grid */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
+          {filtered.map(function(cc){var m=calcMastery(cc);
+            return<div key={cc.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}>
+              <div style={{position:"relative",width:28,height:28,flexShrink:0}}>
+                <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="14" cy="14" r="12" fill="none" stroke={m.color} strokeWidth="2.5" strokeDasharray={Math.round(m.pct/100*75)+" 75"} strokeLinecap="round" transform="rotate(-90 14 14)"/></svg>
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:8,fontWeight:800,color:m.color,fontFamily:fm}}>{m.stars}</div></div>
+              <div>
+                <div style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+                <div style={{fontSize:8,color:m.color,fontFamily:fm}}>{m.label}</div></div></div>})}</div>
+        {/* Owner's Score */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginTop:12,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
+          <svg width={28} height={28} viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="14" cy="14" r="12" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*75)+" 75"} strokeLinecap="round" transform="rotate(-90 14 14)"/></svg>
+          <div><div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Owner's Score: {globalOS.total}/100</div>
+            <div style={{fontSize:9,color:K.dim}}>{currentLevel.icon} {currentLevel.name} {"·"} {globalOS.total>=80?"Exceptional discipline":globalOS.total>=50?"Building strong habits":"Room to grow"}</div></div></div>
       </div>}
     </div>}
-    {/* ── Getting Started Quest (persistent onboarding) ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
-      var portfolio=filtered;
-      var hasThesis=portfolio.some(function(c){return c.thesisNote&&c.thesisNote.trim().length>20});
-      var hasKpi=portfolio.some(function(c){return c.kpis.length>=2});
-      var hasConviction=portfolio.some(function(c){return c.conviction>0});
-      var hasReview=weeklyReviews.length>0;
-      var steps=[
-        {done:hasThesis,label:"Write a thesis",icon:"lightbulb",color:K.grn,onClick:function(){var t=portfolio.find(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"thesis"})}},
-        {done:hasKpi,label:"Add 2+ KPIs",icon:"target",color:K.blue,onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2})||portfolio[0];setSelId(t.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}},
-        {done:hasConviction,label:"Rate conviction",icon:"trending",color:K.amb,onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction})||portfolio[0];setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}},
-        {done:hasReview,label:"Weekly review",icon:"shield",color:"#9333EA",onClick:function(){setPage("review")}}
-      ];
-      var completed=steps.filter(function(s){return s.done}).length;
-      if(completed>=4){
-        // Auto-dismiss when all done (celebrate)
-        if(!milestones.onboard_complete){checkMilestone("onboard_complete",String.fromCodePoint(0x1F389)+" Owner's Loop complete! You've built the foundation of a disciplined investor.");
-          showCelebration(String.fromCodePoint(0x1F389)+" Owner's Loop Complete","You've written a thesis, tracked KPIs, rated conviction, and completed a review. The foundation is set.",null,K.grn);
-          var nm2=Object.assign({},milestones);nm2.onboard_dismissed=true;setMilestones(nm2);try{localStorage.setItem("ta-milestones",JSON.stringify(nm2))}catch(e){}}
-        return null}
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:13}}>{"🎯"}</span>
-            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Getting Started</span>
-            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{completed}/4</span></div>
-          <button onClick={function(){var nm3=Object.assign({},milestones);nm3.onboard_dismissed=true;setMilestones(nm3);try{localStorage.setItem("ta-milestones",JSON.stringify(nm3))}catch(e){}}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:2}}>{"✕"}</button></div>
-        {/* Progress bar */}
-        <div style={{display:"flex",gap:3,marginBottom:12}}>
-          {steps.map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
-        {/* Step buttons */}
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:10,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
-            {s.done?<IC name="check" size={9} color={K.grn}/>:<IC name={s.icon} size={9} color={s.color}/>}{s.label}</button>})}</div>
-      </div>})()}
-    {dashSet.showSummary&&sideTab==="portfolio"&&function(){
-      var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
-      if(held.length===0)return null;
-      var totalCost=held.reduce(function(s,c){return s+(c.position.shares*c.position.avgCost)},0);
-      var totalValue=held.reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
-      var totalReturn=totalValue-totalCost;var totalReturnPct=totalCost>0?(totalReturn/totalCost*100):0;
-      var isUp=totalReturn>=0;
-      var best=null,worst=null;held.forEach(function(c){var pct=(c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100;if(!best||pct>best.pct)best={ticker:c.ticker,pct:pct};if(!worst||pct<worst.pct)worst={ticker:c.ticker,pct:pct}});
-      return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?10:16,marginBottom:20}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Total Value</div>
-          <div style={{fontSize:22,fontWeight:600,color:K.txt,fontFamily:fm}}>${totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-          <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm}}>Cost: ${totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Total Return</div>
-          <div style={{fontSize:22,fontWeight:600,color:isUp?K.grn:K.red,fontFamily:fm}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
-          <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isUp?"+":""}${totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Best Performer</div>
-          <div style={{fontSize:18,fontWeight:600,color:K.grn,fontFamily:fm}}>{best?best.ticker:"—"}</div>
-          <div style={{fontSize:11,color:K.grn,marginTop:4,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Worst Performer</div>
-          <div style={{fontSize:18,fontWeight:600,color:K.red,fontFamily:fm}}>{worst?worst.ticker:"—"}</div>
-          <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
-      </div>}()}
     {/* Analytics quick link */}
 
     {/* View toggle */}
@@ -5366,7 +5320,9 @@ function TrackerApp(props){
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
+            <span style={{width:36,position:"relative"}}>
+              <CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/>
+              {(function(){var m2=calcMastery(cc);return<div style={{position:"absolute",bottom:-2,right:-4,width:12,height:12,borderRadius:"50%",background:m2.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:6,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{m2.stars}</div>})()}</span>
             <span style={{flex:1,minWidth:100}}>
               <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
@@ -5388,7 +5344,7 @@ function TrackerApp(props){
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{position:"relative"}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/>{(function(){var m3=calcMastery(c);return<div style={{position:"absolute",bottom:-2,right:-4,width:14,height:14,borderRadius:"50%",background:m3.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{m3.stars}</div>})()}</div><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
@@ -5546,7 +5502,7 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{globalOS.total}</div>
+            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
