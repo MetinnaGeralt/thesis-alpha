@@ -3342,7 +3342,7 @@ function TrackerApp(props){
           var fs=c.financialSnapshot||{};
           var eg=0;var kpiA=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
           var kpiT=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.value>0});
-          if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else if(fs.revenueGrowth){eg=fs.revenueGrowth}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
+          if(fs.revenueGrowth){eg=fs.revenueGrowth}else if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
           var dy=fs.dividendYield||c.divYield||0;var pe=fs.peRatio||fs.pe||0;
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
@@ -4196,14 +4196,14 @@ function TrackerApp(props){
           var holdingReturns=held.map(function(c2){
             var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
             var fs=c2.financialSnapshot||{};
-            // Growth estimate priority: 1) KPI target 2) actual snapshot 3) style default
+            // Growth estimate priority: 1) historical snapshot 2) KPI actual 3) KPI target 4) style
             var eg=0;var egSource="";
             var kpiGrowth=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth"||k.metricId==="orgGrowth")&&k.value>0});
             var kpiActual=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
-            if(kpiActual){eg=kpiActual.lastResult.actual;egSource="actual"}
-            else if(kpiGrowth){eg=kpiGrowth.value;egSource="target"}
-            else if(fs.revenueGrowth&&fs.revenueGrowth!==0){eg=fs.revenueGrowth;egSource="snapshot"}
-            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="style"}
+            if(fs.revenueGrowth&&fs.revenueGrowth!==0){eg=fs.revenueGrowth;egSource="historical"}
+            else if(kpiActual){eg=kpiActual.lastResult.actual;egSource="kpi result"}
+            else if(kpiGrowth){eg=kpiGrowth.value;egSource="kpi target"}
+            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="estimate"}
             // Dividend yield
             var dy=(fs.dividendYield||c2.divYield||0);if(dy>0)dy=Math.min(dy,12);
             // Multiple change: mean-revert PE with growth-appropriate fair PE
@@ -4234,7 +4234,7 @@ function TrackerApp(props){
             if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=8;
             if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=12;
             if(c2.conviction>=8)pred+=5;if(c2.conviction>=5)pred+=3;
-            if(egSource==="actual")pred+=8;else if(egSource==="target")pred+=4;
+            if(egSource==="historical")pred+=10;else if(egSource==="kpi result")pred+=7;else if(egSource==="kpi target")pred+=3;
             if((c2.earningsHistory||[]).length>=3)pred+=6;else if((c2.earningsHistory||[]).length>=1)pred+=3;
             if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=4;
             if(gmKpi&&gmKpi.lastResult.status==="met")pred+=3;
@@ -4278,22 +4278,22 @@ function TrackerApp(props){
               {/* Bell curve visualization */}
               <div style={{marginBottom:16}}>
                 <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
-                <svg width="100%" viewBox="0 0 500 120" style={{display:"block"}}>
+                <svg width="100%" viewBox="0 0 500 130" style={{display:"block"}}>
                   {/* Bell curve */}
-                  {(function(){var pts=[];for(var i=0;i<=100;i++){var x=i/100;var mu=0.5;var sigma=0.15+(1-portPred/100)*0.12;var y=Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI));pts.push({x:30+x*440,y:100-y*sigma*280})}
+                  {(function(){var pts=[];var sigma=0.15+(1-portPred/100)*0.12;var peakY=1/(sigma*Math.sqrt(2*Math.PI));for(var i=0;i<=100;i++){var x=i/100;var mu=0.5;var y=Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI));pts.push({x:30+x*440,y:110-y/peakY*90})}
                     var path="M"+pts.map(function(p){return p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" L");
-                    var fill=path+" L470,100 L30,100 Z";
+                    var fill=path+" L470,110 L30,110 Z";
                     // Map CAGR values to x positions
                     var cagrMin=lowCAGR-spread;var cagrMax=highCAGR+spread;var range2=cagrMax-cagrMin||1;
                     var targetX=30+Math.max(0,Math.min(1,(goals.targetCAGR-cagrMin)/range2))*440;
                     var expectedX=30+Math.max(0,Math.min(1,(portCAGR-cagrMin)/range2))*440;
                     return<g><path d={fill} fill={K.acc+"15"} stroke="none"/><path d={path} fill="none" stroke={K.acc} strokeWidth="2"/>
-                      <line x1={targetX} y1="10" x2={targetX} y2="100" stroke={K.amb} strokeWidth="1.5" strokeDasharray="4 3"/>
+                      <line x1={targetX} y1="10" x2={targetX} y2="110" stroke={K.amb} strokeWidth="1.5" strokeDasharray="4 3"/>
                       <text x={targetX} y="8" fill={K.amb} fontSize="9" fontFamily={fm} textAnchor="middle">Target {goals.targetCAGR}%</text>
-                      <line x1={expectedX} y1="15" x2={expectedX} y2="100" stroke={K.grn} strokeWidth="2"/>
+                      <line x1={expectedX} y1="15" x2={expectedX} y2="110" stroke={K.grn} strokeWidth="2"/>
                       <text x={expectedX} y="8" fill={K.grn} fontSize="9" fontFamily={fm} textAnchor="middle">Expected {portCAGR.toFixed(1)}%</text>
-                      <text x="30" y="115" fill={K.dim} fontSize="8" fontFamily={fm}>{cagrMin.toFixed(0)}%</text>
-                      <text x="470" y="115" fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="end">{cagrMax.toFixed(0)}%</text></g>})()}
+                      <text x="30" y="125" fill={K.dim} fontSize="8" fontFamily={fm}>{cagrMin.toFixed(0)}%</text>
+                      <text x="470" y="125" fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="end">{cagrMax.toFixed(0)}%</text></g>})()}
                 </svg></div>
               {/* Goal comparison */}
               <div style={{padding:"12px 16px",borderRadius:8,background:portCAGR>=goals.targetCAGR?K.grn+"08":K.amb+"08",border:"1px solid "+(portCAGR>=goals.targetCAGR?K.grn:K.amb)+"20"}}>
@@ -4324,7 +4324,7 @@ function TrackerApp(props){
               {/* Math explanation */}
               <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
                 <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>How this is calculated</div>
-                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change + Quality Signals. Growth uses your KPI results first, then targets, then financial data. Quality signals add/subtract based on: FCF health (are KPIs met?), margin trajectory, ROIC quality, and buyback/shareholder yield. Multiple change estimates P/E mean-reversion toward growth-appropriate fair value. Predictability weighs margin stability, ROIC, leverage, earnings history depth, FCF conversion, and data quality.</div></div></div>
+                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change + Quality Signals. Growth uses historical financial data first (most objective), then your KPI results, then targets, then a style-based estimate. Quality signals add/subtract based on: FCF health (are KPIs met?), margin trajectory, ROIC quality, and buyback/shareholder yield. Multiple change estimates P/E mean-reversion toward growth-appropriate fair value. Predictability weighs margin stability, ROIC, leverage, earnings history depth, FCF conversion, and data quality.</div></div></div>
             {/* What-if scenarios */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
