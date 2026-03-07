@@ -692,27 +692,27 @@ function TrackerApp(props){
   var _questData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-quests"))||{weekId:null,completed:[]}}catch(e){return{weekId:null,completed:[]}}}),questData=_questData[0],setQuestData=_questData[1];
   function completeQuest(qid){
     setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),completed:(p.completed||[]).concat([qid])});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});
-    addXP(8,"Quest completed")}
+    addXP(8,"Step completed")}
   function openQuestChest(){
     // Guaranteed uncommon or better
     var roll=Math.random();var reward;
     if(roll<0.15){
       var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
       var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
-      if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
-      else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus points for quest mastery",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+      if(nextLens){reward={type:"lens",tier:"rare",label:"New Perspective",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
+      else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"You completed every weekly action",icon:String.fromCodePoint(0x1F4B0),xp:50}}
     }else if(roll<0.5){
-      reward={type:"doublexp",tier:"uncommon",label:"Double Points!",desc:"All actions give 2× points for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}
+      reward={type:"doublexp",tier:"uncommon",label:"Focus Mode",desc:"Take time this week to revisit your oldest thesis",icon:String.fromCodePoint(0x26A1),xp:0}
     }else if(roll<0.75){
       var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
       if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
-        reward={type:"badge",tier:"uncommon",label:"New Badge!",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:15,badge:badge}}
-      else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+25 process points",icon:String.fromCodePoint(0x2728),xp:25}}
+        reward={type:"badge",tier:"uncommon",label:"Achievement",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:15,badge:badge}}
+      else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"A thoughtful review compounds over time",icon:String.fromCodePoint(0x2728),xp:25}}
     }else{
       var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
       if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
-        reward={type:"quote",tier:"uncommon",label:"Rare Wisdom!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:10,quote:quote}}
-      else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+20 process points",icon:String.fromCodePoint(0x2728),xp:20}}}
+        reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:10,quote:quote}}
+      else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"Discipline is the bridge between goals and results",icon:String.fromCodePoint(0x2728),xp:20}}}
     // Apply
     setChestRewards(function(p){
       var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
@@ -732,36 +732,36 @@ function TrackerApp(props){
         // Early lens unlock
         var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
         var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
-        if(nextLens){reward={type:"lens",tier:"rare",label:"Early Lens Unlock!",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:0,lensWeek:nextLens.w}}
-        else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus process points",icon:String.fromCodePoint(0x1F4B0),xp:50}}
+        if(nextLens){reward={type:"lens",tier:"rare",label:"New Perspective",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:0,lensWeek:nextLens.w}}
+        else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"Exceptional discipline this week",icon:String.fromCodePoint(0x1F4B0),xp:50}}
       }else{
         // Badge
         var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
         if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
-          reward={type:"badge",tier:"rare",label:"New Badge!",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:10,badge:badge}}
-        else{reward={type:"xp",tier:"rare",label:"Jackpot!",desc:"+50 bonus process points",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
+          reward={type:"badge",tier:"rare",label:"Achievement",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:10,badge:badge}}
+        else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"Exceptional discipline this week",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
     }else if(roll<0.30){
       // UNCOMMON: Double points or insight quote
       if(Math.random()<0.6){
-        reward={type:"doublexp",tier:"uncommon",label:"Double Points!",desc:"All actions give 2× points for the next 24 hours",icon:String.fromCodePoint(0x26A1),xp:0}}
+        reward={type:"doublexp",tier:"uncommon",label:"Focus Mode",desc:"Take time this week to revisit your oldest thesis",icon:String.fromCodePoint(0x26A1),xp:0}}
       else{
         var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
         if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
-          reward={type:"quote",tier:"uncommon",label:"Rare Quote!",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:5,quote:quote}}
-        else{reward={type:"xp",tier:"uncommon",label:"Bonus Points!",desc:"+15 process points",icon:String.fromCodePoint(0x2728),xp:15}}}
+          reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:5,quote:quote}}
+        else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"The process matters more than any single outcome",icon:String.fromCodePoint(0x2728),xp:15}}}
     }else{
-      // COMMON: Bonus points or streak freeze or quote
+      // COMMON: wisdom or reflection
       var r2=Math.random();
       if(r2<0.4){
         var bonusXP=[10,12,15,18,20][Math.floor(Math.random()*5)];
-        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus",desc:"Extra process points for your dedication",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
+        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus",desc:"Consistency is the hallmark of great investors",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
       else if(r2<0.65){
-        reward={type:"freeze",tier:"common",label:"Streak Freeze!",desc:"Protection against missing one week",icon:String.fromCodePoint(0x1F6E1),xp:0}}
+        reward={type:"freeze",tier:"common",label:"Review Flexibility",desc:"Your streak is protected for one missed week",icon:String.fromCodePoint(0x1F6E1),xp:0}}
       else{
         var available2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
         if(available2.length>0){var quote2=available2[Math.floor(Math.random()*available2.length)];
           reward={type:"quote",tier:"common",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4D6),xp:0,quote:quote2}}
-        else{reward={type:"xp",tier:"common",label:"+15 Bonus",desc:"Extra process points",icon:String.fromCodePoint(0x2B50),xp:15}}}}
+        else{reward={type:"xp",tier:"common",label:"+15 Bonus",desc:"Every review sharpens your edge",icon:String.fromCodePoint(0x2B50),xp:15}}}}
     return reward}
   function openChest(){
     var reward=rollChestReward();
@@ -799,7 +799,7 @@ function TrackerApp(props){
     trackDailyActivity();
     setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2×)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
-      if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
+      // level change handled silently
       return n});/* mastery replaces XP float */}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
@@ -2158,7 +2158,7 @@ function TrackerApp(props){
       logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
       addXP(8,"Decision logged");
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
-      if(allDecCount<=1)setTimeout(function(){checkMilestone("first_decision",String.fromCodePoint(0x1F4DD)+" First decision logged! Your journal has begun.")},300);
+      if(allDecCount<=1)setTimeout(function(){showToast("\u2713 First decision logged","info",3000)},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
     var scored=decisions.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
@@ -3664,7 +3664,7 @@ function TrackerApp(props){
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
               <div style={{fontSize:11,color:K.dim,marginBottom:12}}>You've earned a guaranteed Uncommon or Rare chest</div>
-              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Open Quest Reward</button></div>}
+              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Claim Weekly Insight</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
               <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest reward claimed this week ✓</div>
               <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
@@ -4041,12 +4041,12 @@ function TrackerApp(props){
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>ThesisAlpha tracks how well you follow a disciplined investment process — not whether your stocks go up. The Owner's Score measures the quality of your process across 6 dimensions. Research shows that investors who maintain a written thesis, track KPIs, and review regularly outperform those who don't.</div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality (20 pts)",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh — stale theses lose points."},
-              {icon:"target",color:K.blue,title:"KPI Discipline (20 pts)",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
-              {icon:"book",color:K.grn,title:"Journal Consistency (20 pts)",desc:"Log every BUY, SELL, ADD, TRIM with written reasoning. Tag outcomes later (right/wrong/mixed). This is how you learn from mistakes."},
-              {icon:"trending",color:K.amb,title:"Conviction Hygiene (15 pts)",desc:"Rate conviction 1–10 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
-              {icon:"castle",color:"#9333EA",title:"Moat Vigilance (10 pts)",desc:"Classify moat types (brand, switching costs, network effects, etc). Add Morningstar's rating for reference. Track whether the moat is strengthening or eroding."},
-              {icon:"bar",color:K.mid,title:"Portfolio Balance (15 pts)",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns — it's about thoughtful construction."}
+            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh — stale theses lose points."},
+              {icon:"target",color:K.blue,title:"KPI Discipline",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
+              {icon:"book",color:K.grn,title:"Journal Consistency",desc:"Log every BUY, SELL, ADD, TRIM with written reasoning. Tag outcomes later (right/wrong/mixed). This is how you learn from mistakes."},
+              {icon:"trending",color:K.amb,title:"Conviction Hygiene",desc:"Rate conviction 1–10 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
+              {icon:"castle",color:"#9333EA",title:"Moat Vigilance",desc:"Classify moat types (brand, switching costs, network effects, etc). Add Morningstar's rating for reference. Track whether the moat is strengthening or eroding."},
+              {icon:"bar",color:K.mid,title:"Portfolio Balance",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns — it's about thoughtful construction."}
             ].map(function(item){return<div key={item.title} style={{padding:"14px 16px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><IC name={item.icon} size={14} color={item.color}/>
                 <span style={{fontSize:12,fontWeight:600,color:item.color,fontFamily:fm}}>{item.title}</span></div>
@@ -4062,7 +4062,7 @@ function TrackerApp(props){
               <div style={{fontSize:11,color:K.mid,marginBottom:4}}>{xp.total.toLocaleString()} / {xpLevel.xpForNext.toLocaleString()} pts</div>
               <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:xpPct+"%",borderRadius:3,background:K.acc}}/></div></div></div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{label:"Write thesis",xp:"+10 pts",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"+5 pts",sub:""},{label:"Rate conviction",xp:"+8 pts",sub:""},{label:"Weekly review",xp:"+25 pts",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
+            {[{label:"Write thesis",xp:"",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"Research saved",sub:""},{label:"Rate conviction",xp:"Action logged",sub:""},{label:"Weekly review",xp:"",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
               <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:11,color:K.mid}}>{r.label}</span><span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{r.xp}</span></div>
               {r.sub&&<div style={{fontSize:9,color:K.dim}}>{r.sub}</div>}</div>})}</div>
         </div>
@@ -4533,7 +4533,7 @@ function TrackerApp(props){
         var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
         var tierIcons={rare:String.fromCodePoint(0x1F48E),uncommon:String.fromCodePoint(0x2728),common:String.fromCodePoint(0x2B50)};
         var tierOdds={rare:"5%",uncommon:"25%",common:"70%"};
-        var tierHints={rare:"Early lens unlock, profile badge",uncommon:"2× points boost, rare quote",common:"Bonus points, streak freeze, wisdom"};
+        var tierHints={rare:"Curated investor wisdom",uncommon:"Deep investment insight",common:"Reflection or wisdom quote"};
 
         return<div style={{padding:"48px 20px"}}>
         {/* ── LOCKED STATE: Countdown + Preview ── */}
@@ -4549,15 +4549,15 @@ function TrackerApp(props){
               <div style={{fontSize:32,fontWeight:800,color:K.acc,fontFamily:fm,letterSpacing:2}}>{countdownStr}</div></div></div>}
           {/* Chest Preview */}
           <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>This Week's Insight Contains…</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Complete Your Review To Receive…</div>
             <div style={{display:"flex",justifyContent:"center",gap:16}}>
               {previewTiers.map(function(tier,i){return<div key={i} style={{width:100,height:130,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
                 <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:tierColors[tier]}}/>
                 <div style={{fontSize:24,marginBottom:4}}>{tierIcons[tier]}</div>
-                <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier].toUpperCase()}</div>
+                <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier]}</div>
                 <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tierOdds[tier]} chance</div>
                 <div style={{fontSize:7,color:K.dim,marginTop:4,padding:"0 8px",textAlign:"center",lineHeight:1.3}}>{tierHints[tier]}</div></div>})}</div>
-            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Bonus points, streak freezes, investor wisdom, 2× point boosts, badges, or a rare early lens unlock.</div></div>
+            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Investor wisdom, deep insights, and reflections from legendary investors.</div></div>
           <button disabled style={{background:K.prim,color:K.primTxt,border:"none",borderRadius:8,padding:"12px 32px",fontSize:14,fontWeight:600,fontFamily:fm,opacity:.35,cursor:"not-allowed"}}>Available Friday</button>
         </div>}
 
@@ -4570,7 +4570,7 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
               <div style={{width:32,height:32,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={16} color="#a78bfa"/></div>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Weekly Insight awaits</span></div>
-            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to earn <strong style={{color:K.grn}}>+25 pts</strong> and claim a weekly insight. Could be bonus points, a streak freeze, investor wisdom, 2× points, or even a rare lens unlock.</div></div>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to claim your weekly insight. Receive investor wisdom, reflections, or a new perspective on your holdings.</div></div>
           <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Start Review</button>
         </div>}
 
@@ -4598,7 +4598,7 @@ function TrackerApp(props){
               <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{reward.label}</div>
               <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{reward.desc}</div>
               {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"— "+reward.author}</div>}
-              {reward.xp>0&&<div style={{marginTop:6}}><span style={{fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} pts</span></div>}
+              
             </div>;
             if(histEntry)return<div style={{textAlign:"center",padding:"14px 16px",background:K.card,borderRadius:12,border:"1px solid "+K.bdr,marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
               <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD — "+tierLabels2[histEntry.tier||"common"]}</div>
@@ -4706,7 +4706,7 @@ function TrackerApp(props){
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{display:"inline-flex",alignItems:"center",gap:8,background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"8px 16px"}}>
               <span style={{fontSize:18,animation:"glowPulse 2s ease-in-out infinite"}}>{String.fromCodePoint(0x1F381)}</span>
-              <span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}>+25 pts & Weekly Insight awaits</span></div></div>
+              <span style={{fontSize:11,color:K.grn,fontWeight:600,fontFamily:fm}}> & Weekly Insight awaits</span></div></div>
           {/* CTA */}
           <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:16,padding:"16px 0",borderRadius:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
             {String.fromCodePoint(0x2705)+" Complete Review & Claim Insight"}</button>
@@ -5192,8 +5192,7 @@ function TrackerApp(props){
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
-    {/* ── XP Float Animation ── */}
-    {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
+        {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
@@ -5500,7 +5499,7 @@ function TrackerApp(props){
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
     {/* ── Weekly Insight Overlay ── */}
     {chestOverlay&&<div style={{position:"fixed",inset:0,zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",animation:"fadeInFast .3s ease"}} onClick={function(){setChestOverlay(null)}}>
-      <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"2px solid "+(chestOverlay.tier==="rare"?"#FFD700":chestOverlay.tier==="uncommon"?"#a78bfa":K.acc),boxShadow:"0 0 60px "+(chestOverlay.tier==="rare"?"rgba(255,215,0,.4)":chestOverlay.tier==="uncommon"?"rgba(167,139,250,.3)":"rgba(0,0,0,.3)")+", 0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"1px solid "+K.bdr,boxShadow:"0 8px 32px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
         {/* Tier glow bar */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:chestOverlay.tier==="rare"?"linear-gradient(90deg,#FFD700,#FF8C00,#FFD700)":chestOverlay.tier==="uncommon"?"linear-gradient(90deg,#a78bfa,#818cf8,#a78bfa)":K.acc}}/>
         {/* Tier label */}
@@ -5559,11 +5558,11 @@ function TrackerApp(props){
             {editingName&&<div style={{display:"flex",gap:6,marginTop:4}}><input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Choose a username" maxLength={20} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:11,fontFamily:fm,width:140,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername()}} autoFocus/><button onClick={saveUsername} style={{background:K.acc,color:K.primTxt,border:"none",borderRadius:4,padding:"4px 10px",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save</button></div>}
             {username&&<div style={{fontSize:10,color:K.dim}}>{props.user}</div>}
             <div style={{fontSize:12,color:K.acc,fontWeight:600,fontFamily:fm}}>Level {xpLevel.level}</div>
-            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{xp.total.toLocaleString()} pts total</div></div></div>
+            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{currentLevel.name}</div></div></div>
         {/* XP Progress to next level */}
         <div style={{marginBottom:20}}>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>
-            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" pts to Level "+(xpLevel.level+1):"Max level!"}</span></div>
+            <span>Level {xpLevel.level}</span><span>{xpToNext>0?xpToNext.toLocaleString()+" to "+(xpLevel.level+1):"Max level!"}</span></div>
           <div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
             <div style={{height:"100%",width:xpPct+"%",borderRadius:4,background:K.acc,transition:"width .3s"}}/></div></div>
         {/* Stats grid */}
