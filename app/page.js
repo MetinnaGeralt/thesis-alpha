@@ -542,7 +542,7 @@ function TrackerApp(props){
   // Bloomberg Terminal overrides fonts via CSS injection (see global CSS useEffect)
   var bm=theme==="bloomberg";
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
-  function toggleTheme(){cycleTheme()}
+  function toggleTheme(){var n=theme==="light"?"dark":"light";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
@@ -575,8 +575,8 @@ function TrackerApp(props){
   var isPro=plan==="pro"||trialActive;
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
-  function openManage(){if(!stripeCustomerId)return;fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e)})}
-  var DEFAULT_DASH={showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
+  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
+  var DEFAULT_DASH={portfolioView:"list",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
@@ -1991,8 +1991,14 @@ function TrackerApp(props){
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?280:240,minWidth:isMobile?280:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":"none",transition:"transform .2s ease"}}>
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={sideDark}/><span style={{fontSize:13,fontWeight:600,color:sideText,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
+    <div style={{position:"relative"}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:sideMid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:sideMid}/>Portfolio Overview</span></div>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"absolute",left:"100%",top:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+    <div style={{position:"relative"}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"absolute",left:"100%",top:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Command Center",pg:"hub",icon:"trending"},{l:"Research Journal",pg:"hub",icon:"book"},{l:"Research Trail",pg:"hub",icon:"file"},{l:"Investor Lenses",pg:"hub",icon:"search"},{l:"How It Works",pg:"hub",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     {/* More pages accessible via links, not sidebar */}
@@ -5334,7 +5340,51 @@ function TrackerApp(props){
       </div>}()}
     {/* Analytics quick link */}
 
-    {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
+    {/* View toggle */}
+    {filtered.length>0&&<div style={{display:"flex",justifyContent:"flex-end",gap:4,marginBottom:12}}>
+      <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"list"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:10,fontFamily:fm,background:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"18":"transparent",color:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="file" size={10} color={dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim}/> List</button>
+      <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"cards"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:10,fontFamily:fm,background:dashSet.portfolioView==="cards"?K.acc+"18":"transparent",color:dashSet.portfolioView==="cards"?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="cards"?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="overview" size={10} color={dashSet.portfolioView==="cards"?K.acc:K.dim}/> Cards</button></div>}
+    {/* Nordnet-style list view */}
+    {filtered.length>0&&dashSet.portfolioView!=="cards"&&(function(){
+      var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
+        <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
+          <span style={{width:36}}/>
+          <span style={{flex:1,minWidth:100}}>Company</span>
+          {!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          <span style={{width:60,textAlign:"right"}}>Return</span>
+          {!isMobile&&<span style={{width:80,textAlign:"right"}}>Value</span>}
+          <span style={{width:50,textAlign:"right"}}>Wt%</span>
+          <span style={{width:isMobile?60:120,paddingLeft:6}}>Alloc.</span>
+          <span style={{width:40,textAlign:"center"}}>C</span>
+          {!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
+          {!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}</div>
+        {filtered.map(function(cc,ci){
+          var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
+          var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
+          var weight=totalVal>0&&val>0?(val/totalVal*100):0;
+          var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
+          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
+            <span style={{flex:1,minWidth:100}}>
+              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
+            {!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
+            <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
+            {!isMobile&&<span style={{width:80,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
+            <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{weight>0?weight.toFixed(1)+"%":"\u2014"}</span>
+            <span style={{width:isMobile?60:120,paddingLeft:6}}>
+              {weight>0?<div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
+                <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:4,background:K.acc,transition:"width .4s"}}/></div>:<div style={{height:8}}/>}
+            </span>
+            <span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:11,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>
+            {!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
+            {!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+          </div>})}
+      </div>})()}
+    {/* Card view */}
+    {filtered.length>0&&dashSet.portfolioView==="cards"&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
