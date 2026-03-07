@@ -1140,7 +1140,7 @@ function TrackerApp(props){
     // Custom HTML block
     if(p.html)h+=p.html;
     // CTA
-    h+='<div style="margin-top:24px;text-align:center"><a href="https://thesisalpha.com" style="display:inline-block;background:'+accent+';color:#fff;text-decoration:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:600">Open ThesisAlpha</a></div>';
+    h+='<div style="margin-top:24px;text-align:center"><a href="https://thesisalpha.io" style="display:inline-block;background:'+accent+';color:#fff;text-decoration:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:600">Open ThesisAlpha</a></div>';
     // Footer
     h+='<div style="margin-top:32px;padding-top:16px;border-top:1px solid '+bdr+';text-align:center">';
     h+='<div style="font-size:11px;color:#4b5563">ThesisAlpha — invest with conviction, not impulse.</div>';
