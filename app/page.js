@@ -675,8 +675,7 @@ function TrackerApp(props){
   var isPro=plan==="pro"||trialActive;
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
-  var _mp=useState(false),managingPlan=_mp[0],setManagingPlan=_mp[1];
-  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}setManagingPlan(true);fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setManagingPlan(false);showToast("Could not open billing portal","info",3000)}}).catch(function(e){console.warn("Portal error:",e);setManagingPlan(false);setShowUpgrade(true);setUpgradeCtx("manage")})}
+  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
   var DEFAULT_DASH={portfolioView:"list",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -710,7 +709,6 @@ function TrackerApp(props){
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
-  var _obReplay=useState(false),obReplay=_obReplay[0],setObReplay=_obReplay[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
@@ -1958,12 +1956,10 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim}}>{r.desc}</div></div>
             <div style={{fontSize:10,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"✓":"Wk "+r.w}</div></div>})}</div>
         <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
-        <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
+        <div style={{marginTop:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <button onClick={function(){setModal(null);setObStep(1)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>Replay welcome tour</button>
+          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
-      {/* ── Always visible footer ── */}
-      <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <button onClick={function(){setModal(null);setObReplay(true);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.mid,fontSize:11,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
-        <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ThesisAlpha v1.0</div></div>
     </Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
   function UpgradeModal(){
@@ -1998,7 +1994,7 @@ function TrackerApp(props){
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
-  function finishOnboarding(){setObStep(0);setObReplay(false);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
+  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
     // Auto-trigger price refresh and earnings check for newly added companies
     setTimeout(function(){refreshPrices()},500)}
   function OnboardingFlow(){
@@ -2045,7 +2041,7 @@ function TrackerApp(props){
             <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.label}</div>
             <div style={{fontSize:10,color:K.dim,lineHeight:1.4}}>{item.desc}</div></div>})}</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"center"}}>
-        {obReplay?<button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Continue Tour {"→"}</button>
+        {false?<button onClick={function(){setObStep(3)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Continue Tour {"→"}</button>
         :<>{React.createElement("button",{onClick:function(){setObPath("fresh");setCos([]);setObStep(2)},style:Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})},"Start Fresh")}{React.createElement("button",{onClick:function(){setObPath("demo");setCos(SAMPLE);setObStep(2)},style:Object.assign({},S.btn,{padding:"10px 24px",fontSize:13})},"Explore with Demo Data")}</>}</div>
       <button onClick={finishOnboarding} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
@@ -2124,9 +2120,9 @@ function TrackerApp(props){
         <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:6}}>Your process builds over time</div>
         <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>Every action — writing a thesis, tracking KPIs, reviewing conviction — builds your <strong>Owner’s Score</strong>. The score measures how disciplined your process is, not whether your stocks go up. Show up consistently, and you’ll unlock investor lenses, themes, and insights along the way.</div></div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(obReplay?1:2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(false?1:2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12})}>{"←"} Back</button>
         <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:12})}>Next {"→"}</button></div>
-      <button onClick={function(){setObReplay(false);finishOnboarding()}} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
+      <button onClick={function(){finishOnboarding()}} style={{position:"absolute",top:16,right:20,background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:4}}>{"✕"}</button>
     </div></div>;
     // Step 4: Guide to write thesis for the company they just added
       if(!firstCo){setObStep(5);return null}
@@ -2191,10 +2187,9 @@ function TrackerApp(props){
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
-      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:managingPlan?K.grn+"20":K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:managingPlan?"wait":"pointer",transition:"all .15s",opacity:managingPlan?.7:1}} onClick={function(){if(!managingPlan)openManage()}} onMouseEnter={function(e){if(!managingPlan){e.currentTarget.style.background=K.grn+"20";e.currentTarget.style.borderColor=K.grn+"50";e.currentTarget.style.transform="translateY(-1px)"}}} onMouseLeave={function(e){e.currentTarget.style.background=K.grn+"10";e.currentTarget.style.borderColor=K.grn+"25";e.currentTarget.style.transform="none"}}>
+      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:"pointer"}} onClick={openManage}>
         <span style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
-        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{managingPlan?"Opening Stripe…":"Manage plan →"}</span>
-        {managingPlan&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.grn,borderRadius:"50%",animation:"spin .8s linear infinite",marginLeft:"auto"}}/>}</div>
+        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
       :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1}}>TRIAL</span>
