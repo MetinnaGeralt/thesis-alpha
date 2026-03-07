@@ -612,7 +612,6 @@ function TrackerApp(props){
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
-  var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
   var LEVELS=[{min:0,name:"Novice",next:25,icon:"🌱"},{min:25,name:"Apprentice",next:50,icon:"📚"},{min:50,name:"Practitioner",next:70,icon:"🔭"},{min:70,name:"Disciplined",next:85,icon:"⭐"},{min:85,name:"Master",next:100,icon:"🏆"}];
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
@@ -835,18 +834,6 @@ function TrackerApp(props){
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
-    // Browser back button — push state on meaningful navigation, restore on popstate
-    var _skipPush=useRef(false);var _mounted=useRef(false);
-    useEffect(function(){
-      if(!_mounted.current){_mounted.current=true;return}
-      if(_skipPush.current){_skipPush.current=false;return}
-      try{window.history.pushState({page:page,selId:selId},"",window.location.pathname)}catch(e){}
-    },[page,selId]);
-    useEffect(function(){function onPop(e){
-      _skipPush.current=true;
-      if(e.state){if(e.state.selId!=null){setSelId(e.state.selId)}else{setSelId(null)}if(e.state.page){setPage(e.state.page)}}
-      else{setSelId(null);setPage("dashboard")}}
-      window.addEventListener("popstate",onPop);return function(){window.removeEventListener("popstate",onPop)}},[]);
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
@@ -2008,11 +1995,11 @@ function TrackerApp(props){
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={sideDark}/><span style={{fontSize:13,fontWeight:600,color:sideText,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:sideMid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",pg:"hub",icon:"trending"},{l:"Research Journal",pg:"hub",icon:"book"},{l:"Research Trail",pg:"hub",icon:"file"},{l:"Investor Lenses",pg:"hub",icon:"search"},{l:"How It Works",pg:"hub",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
@@ -4095,7 +4082,6 @@ function TrackerApp(props){
     var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""}),form=_form[0],setForm=_form[1];
     var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
     var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
-    var _histPrices=useState(null),histPrices=_histPrices[0],setHistPrices=_histPrices[1];
 
     var positions=assets.positions||[];
     var snapshots=(assets.snapshots||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date)});
@@ -4121,39 +4107,8 @@ function TrackerApp(props){
         var snap={date:new Date().toISOString().split("T")[0],values:Object.assign({},classTotals),total:totalValue};
         saveAssets(function(prev){return Object.assign({},prev,{snapshots:(prev.snapshots||[]).concat([snap]).slice(-120)})})}},[positions.length,totalValue]);
 
-    // Build stacked chart data — enhanced with historical stock prices
-    useEffect(function(){
-      // Fetch historical prices for portfolio stocks to build value-over-time
-      var stockHoldings=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.position&&c2.position.shares>0&&c2.purchaseDate});
-      if(stockHoldings.length===0){setHistPrices(null);return}
-      var pricePromises=stockHoldings.map(function(c2){return fetchHistoricalPrice(c2.ticker,"5Y").then(function(pts){return{ticker:c2.ticker,shares:c2.position.shares,purchaseDate:c2.purchaseDate,points:pts||[]}}).catch(function(){return{ticker:c2.ticker,shares:c2.position.shares,purchaseDate:c2.purchaseDate,points:[]}})});
-      Promise.all(pricePromises).then(function(results){
-        // Build date -> total value map
-        var dateMap={};
-        results.forEach(function(r){
-          var buyDate=r.purchaseDate;
-          r.points.forEach(function(pt){
-            if(pt.date>=buyDate){
-              if(!dateMap[pt.date])dateMap[pt.date]={stocks:0,other:0};
-              dateMap[pt.date].stocks+=(r.shares*pt.close)}})});
-        // Sample monthly
-        var allDates=Object.keys(dateMap).sort();
-        var monthly=[];var lastMonth="";
-        allDates.forEach(function(d){var m=d.substring(0,7);if(m!==lastMonth){lastMonth=m;monthly.push(d)}});
-        if(allDates.length>0&&monthly[monthly.length-1]!==allDates[allDates.length-1])monthly.push(allDates[allDates.length-1]);
-        var histData=monthly.map(function(d){return{date:d,stockVal:dateMap[d]?dateMap[d].stocks:0}});
-        setHistPrices(histData)}).catch(function(){setHistPrices(null)})},[cos.length]);
-
+    // Build stacked chart data
     var chartData=snapshots.slice();
-    // Merge historical stock price data with manual asset snapshots
-    if(histPrices&&histPrices.length>0){
-      // Build from historical prices + manual positions
-      var manualTotal=positions.reduce(function(s,p3){return p3.classId!=="stocks"?s+(p3.value||0):s},0);
-      chartData=histPrices.map(function(hp){return{date:hp.date,values:{stocks:hp.stockVal},total:hp.stockVal+manualTotal}});
-      // Layer in manual asset snapshots for non-stock classes
-      snapshots.forEach(function(snap){var existing=chartData.find(function(d){return d.date===snap.date});
-        if(existing){Object.keys(snap.values||{}).forEach(function(k){if(k!=="stocks")existing.values[k]=(snap.values[k]||0)});existing.total=Object.values(existing.values).reduce(function(s,v){return s+v},0)}})
-    }
     // Add current point
     if(totalValue>0){var today2=new Date().toISOString().split("T")[0];
       if(!chartData.length||chartData[chartData.length-1].date!==today2){chartData.push({date:today2,values:Object.assign({},classTotals),total:totalValue})}}
@@ -5394,56 +5349,40 @@ function TrackerApp(props){
     {/* Nordnet-style list view */}
     {filtered.length>0&&dashSet.portfolioView!=="cards"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-      var listCols=dashSet.listCols||{};
-      function togCol(k){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[k]=!lc[k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
-        {/* Header */}
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
-          <span style={{width:40}}/>
+          <span style={{width:36}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
-          <span style={{width:75,textAlign:"right"}}>Avg Price</span>
-          <span style={{width:65,textAlign:"right"}}>Return</span>
-          {!isMobile&&<span style={{width:85,textAlign:"right"}}>Value</span>}
-          <span style={{width:isMobile?70:150,paddingLeft:8}}>Allocation</span>
-          {listCols.conviction&&<span style={{width:40,textAlign:"center"}}>Conv.</span>}
-          {listCols.kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
-          {listCols.earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
-          {listCols.price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
-          <span style={{width:28,textAlign:"right",position:"relative"}}>
-            <button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:155,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
-              <div style={{padding:"4px 14px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
-              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings Date"}].map(function(col){return<div key={col.k} onClick={function(){togCol(col.k)}} style={{padding:"6px 14px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                <div style={{width:14,height:14,borderRadius:3,border:"1.5px solid "+(listCols[col.k]?K.acc:K.bdr),background:listCols[col.k]?K.acc:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {listCols[col.k]&&<svg width="8" height="8" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>}</div>
-                {col.l}</div>})}</div>}
-          </span></div>
-        {/* Rows — sorted by allocation (largest first) */}
+          {!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          <span style={{width:60,textAlign:"right"}}>Return</span>
+          {!isMobile&&<span style={{width:80,textAlign:"right"}}>Value</span>}
+          <span style={{width:50,textAlign:"right"}}>Wt%</span>
+          <span style={{width:isMobile?60:120,paddingLeft:6}}>Alloc.</span>
+          <span style={{width:40,textAlign:"center"}}>C</span>
+          {!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
+          {!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}</div>
         {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
           var weight=totalVal>0&&val>0?(val/totalVal*100):0;
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
-          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
+          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={26}/></span>
+            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
             <span style={{flex:1,minWidth:100}}>
-              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
-              <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
-            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{p2.avgCost>0?"$"+p2.avgCost.toFixed(2):"\u2014"}</span>
-            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
-            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
-            <span style={{width:isMobile?70:150,paddingLeft:8}}>
-              {weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}>
-                <div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>
-                <span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:30,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}
+              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
+            {!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
+            <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
+            {!isMobile&&<span style={{width:80,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
+            <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{weight>0?weight.toFixed(1)+"%":"\u2014"}</span>
+            <span style={{width:isMobile?60:120,paddingLeft:6}}>
+              {weight>0?<div style={{height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
+                <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>:<div style={{height:8}}/>}
             </span>
-            {listCols.conviction&&<span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>}
-            {listCols.kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
-            {listCols.earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
-            {listCols.price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
-            <span style={{width:28}}/>
+            <span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:11,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>
+            {!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
+            {!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
           </div>})}
       </div>})()}
     {/* Card view */}
