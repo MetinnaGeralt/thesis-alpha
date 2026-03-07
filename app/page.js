@@ -544,14 +544,17 @@ function TrackerApp(props){
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="light"?"dark":"light";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
-  var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
+  var _s=useState(null),selId=_s[0],_setSelIdRaw=_s[1];
+  function setSelId(id){_setSelIdRaw(id);try{if(id){window.history.pushState({selId:id},"",window.location.pathname)}else{window.history.pushState({page:page,selId:null},"",window.location.pathname)}}catch(e){}}var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
-  var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
+  var _pg=useState("dashboard"),page=_pg[0],_setPageRaw=_pg[1];
+  function setPage(p){_setPageRaw(p);try{window.history.pushState({page:p,selId:null},"",window.location.pathname)}catch(e){}}
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];
+  var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
@@ -834,6 +837,11 @@ function TrackerApp(props){
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
+    // Browser back button handler
+    useEffect(function(){function onPop(e){
+      if(e.state){if(e.state.selId){_setSelIdRaw(e.state.selId)}else{_setSelIdRaw(null);if(e.state.page)_setPageRaw(e.state.page)}}
+      else{_setSelIdRaw(null);_setPageRaw("dashboard")}}
+      window.addEventListener("popstate",onPop);return function(){window.removeEventListener("popstate",onPop)}},[]);
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
@@ -1993,13 +2001,13 @@ function TrackerApp(props){
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?280:240,minWidth:isMobile?280:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":"none",transition:"transform .2s ease"}}>
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={sideDark}/><span style={{fontSize:13,fontWeight:600,color:sideText,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:sideMid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"absolute",left:"100%",top:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"absolute",left:"100%",top:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",pg:"hub",icon:"trending"},{l:"Research Journal",pg:"hub",icon:"book"},{l:"Research Trail",pg:"hub",icon:"file"},{l:"Investor Lenses",pg:"hub",icon:"search"},{l:"How It Works",pg:"hub",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
@@ -4082,6 +4090,7 @@ function TrackerApp(props){
     var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""}),form=_form[0],setForm=_form[1];
     var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
     var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
+    var _histPrices=useState(null),histPrices=_histPrices[0],setHistPrices=_histPrices[1];
 
     var positions=assets.positions||[];
     var snapshots=(assets.snapshots||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date)});
@@ -4107,8 +4116,39 @@ function TrackerApp(props){
         var snap={date:new Date().toISOString().split("T")[0],values:Object.assign({},classTotals),total:totalValue};
         saveAssets(function(prev){return Object.assign({},prev,{snapshots:(prev.snapshots||[]).concat([snap]).slice(-120)})})}},[positions.length,totalValue]);
 
-    // Build stacked chart data
+    // Build stacked chart data — enhanced with historical stock prices
+    useEffect(function(){
+      // Fetch historical prices for portfolio stocks to build value-over-time
+      var stockHoldings=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.position&&c2.position.shares>0&&c2.purchaseDate});
+      if(stockHoldings.length===0){setHistPrices(null);return}
+      var pricePromises=stockHoldings.map(function(c2){return fetchHistoricalPrice(c2.ticker,"5Y").then(function(pts){return{ticker:c2.ticker,shares:c2.position.shares,purchaseDate:c2.purchaseDate,points:pts||[]}}).catch(function(){return{ticker:c2.ticker,shares:c2.position.shares,purchaseDate:c2.purchaseDate,points:[]}})});
+      Promise.all(pricePromises).then(function(results){
+        // Build date -> total value map
+        var dateMap={};
+        results.forEach(function(r){
+          var buyDate=r.purchaseDate;
+          r.points.forEach(function(pt){
+            if(pt.date>=buyDate){
+              if(!dateMap[pt.date])dateMap[pt.date]={stocks:0,other:0};
+              dateMap[pt.date].stocks+=(r.shares*pt.close)}})});
+        // Sample monthly
+        var allDates=Object.keys(dateMap).sort();
+        var monthly=[];var lastMonth="";
+        allDates.forEach(function(d){var m=d.substring(0,7);if(m!==lastMonth){lastMonth=m;monthly.push(d)}});
+        if(allDates.length>0&&monthly[monthly.length-1]!==allDates[allDates.length-1])monthly.push(allDates[allDates.length-1]);
+        var histData=monthly.map(function(d){return{date:d,stockVal:dateMap[d]?dateMap[d].stocks:0}});
+        setHistPrices(histData)}).catch(function(){setHistPrices(null)})},[cos.length]);
+
     var chartData=snapshots.slice();
+    // Merge historical stock price data with manual asset snapshots
+    if(histPrices&&histPrices.length>0){
+      // Build from historical prices + manual positions
+      var manualTotal=positions.reduce(function(s,p3){return p3.classId!=="stocks"?s+(p3.value||0):s},0);
+      chartData=histPrices.map(function(hp){return{date:hp.date,values:{stocks:hp.stockVal},total:hp.stockVal+manualTotal}});
+      // Layer in manual asset snapshots for non-stock classes
+      snapshots.forEach(function(snap){var existing=chartData.find(function(d){return d.date===snap.date});
+        if(existing){Object.keys(snap.values||{}).forEach(function(k){if(k!=="stocks")existing.values[k]=(snap.values[k]||0)});existing.total=Object.values(existing.values).reduce(function(s,v){return s+v},0)}})
+    }
     // Add current point
     if(totalValue>0){var today2=new Date().toISOString().split("T")[0];
       if(!chartData.length||chartData[chartData.length-1].date!==today2){chartData.push({date:today2,values:Object.assign({},classTotals),total:totalValue})}}
@@ -5373,8 +5413,8 @@ function TrackerApp(props){
                   {listCols[col.k]&&<svg width="8" height="8" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>}</div>
                 {col.l}</div>})}</div>}
           </span></div>
-        {/* Rows */}
-        {filtered.map(function(cc,ci){
+        {/* Rows — sorted by allocation (largest first) */}
+        {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
           var weight=totalVal>0&&val>0?(val/totalVal*100):0;
