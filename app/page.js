@@ -714,7 +714,7 @@ function TrackerApp(props){
     // Guaranteed uncommon or better
     var roll=Math.random();var reward;
     if(roll<0.15){
-      var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
+      var locked=[{w:4,n:"Warren Buffett"},{w:8,n:"Joel Greenblatt"},{w:12,n:"Peter Lynch"},{w:16,n:"Shelby Cullom Davis"},{w:20,n:"Chris Hohn"}];
       var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
       if(nextLens){reward={type:"lens",tier:"rare",label:"New Perspective",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
       else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"You completed every weekly action",icon:String.fromCodePoint(0x1F4B0),xp:50}}
@@ -742,44 +742,39 @@ function TrackerApp(props){
     if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
     setChestOverlay(reward)}
   function rollChestReward(){
-    var roll=Math.random();var reward;
-    if(roll<0.05){
-      // RARE: Early lens unlock or badge
-      if(Math.random()<0.5){
-        // Early lens unlock
-        var locked=[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}];
-        var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
-        if(nextLens){reward={type:"lens",tier:"rare",label:"New Perspective",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:0,lensWeek:nextLens.w}}
-        else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"Exceptional discipline this week",icon:String.fromCodePoint(0x1F4B0),xp:50}}
-      }else{
-        // Badge
-        var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
-        if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
-          reward={type:"badge",tier:"rare",label:"Achievement",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:10,badge:badge}}
-        else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"Exceptional discipline this week",icon:String.fromCodePoint(0x1F4B0),xp:50}}}
-    }else if(roll<0.30){
-      // UNCOMMON: Double points or insight quote
-      if(Math.random()<0.6){
-        reward={type:"doublexp",tier:"uncommon",label:"Focus Mode",desc:"Take time this week to revisit your oldest thesis",icon:String.fromCodePoint(0x26A1),xp:0}}
-      else{
-        var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
-        if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
-          reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:5,quote:quote}}
-        else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"The process matters more than any single outcome",icon:String.fromCodePoint(0x2728),xp:15}}}
-    }else{
-      // COMMON: wisdom or reflection
-      var r2=Math.random();
-      if(r2<0.4){
-        var bonusXP=[10,12,15,18,20][Math.floor(Math.random()*5)];
-        reward={type:"xp",tier:"common",label:"+"+bonusXP+" Bonus",desc:"Consistency is the hallmark of great investors",icon:String.fromCodePoint(0x2B50),xp:bonusXP}}
-      else if(r2<0.65){
-        reward={type:"freeze",tier:"common",label:"Review Flexibility",desc:"Your streak is protected for one missed week",icon:String.fromCodePoint(0x1F6E1),xp:0}}
-      else{
-        var available2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
-        if(available2.length>0){var quote2=available2[Math.floor(Math.random()*available2.length)];
-          reward={type:"quote",tier:"common",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4D6),xp:0,quote:quote2}}
-        else{reward={type:"xp",tier:"common",label:"+15 Bonus",desc:"Every review sharpens your edge",icon:String.fromCodePoint(0x2B50),xp:15}}}}
+    var reward;var streakWeeks=streakData.current||0;
+    if(plan==="pro"){
+      // PRO: Always investor wisdom + portfolio health
+      var wisdomPool=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).some(function(cq){return cq.q===q.q})});
+      if(wisdomPool.length===0)wisdomPool=INVESTOR_QUOTES;
+      var quote=wisdomPool[Math.floor(Math.random()*wisdomPool.length)];
+      // Build health report
+      var stale=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
+      var unchecked=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&!c2.lastChecked&&c2.earningsDate&&c2.earningsDate!=="TBD"});
+      var healthNote=stale.length>0?"Thesis refresh needed: "+stale.map(function(c2){return c2.ticker}).join(", ")+". ":"";
+      healthNote+=unchecked.length>0?"Earnings unchecked: "+unchecked.map(function(c2){return c2.ticker}).join(", ")+".":"";
+      if(!healthNote)healthNote="All holdings are well-maintained. Keep it up.";
+      reward={type:"wisdom",tier:"rare",label:"Weekly Reflection",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:0,quote:quote,healthNote:healthNote}
+    } else {
+      // FREE: Unlock features progressively
+      var themeUnlocks=[{w:1,id:"forest",label:"Forest Theme"},{w:3,id:"paypal",label:"PayPal Blue Theme"},{w:6,id:"purple",label:"Purple Theme"},{w:10,id:"bloomberg",label:"Bloomberg Theme"}];
+      var lensUnlocks=[{w:2,label:"Munger Lens"},{w:4,label:"Buffett Lens"},{w:8,label:"Greenblatt Lens"},{w:12,label:"Lynch Lens"},{w:16,label:"Davis Lens"},{w:20,label:"Hohn Lens"}];
+      var allUnlocks=themeUnlocks.concat(lensUnlocks).sort(function(a,b){return a.w-b.w});
+      var nextUnlock=allUnlocks.find(function(u){return u.w>streakWeeks});
+      if(nextUnlock&&nextUnlock.w===streakWeeks+1){
+        reward={type:"unlock",tier:"rare",label:"Feature Unlocked!",desc:nextUnlock.label+" is now available",icon:String.fromCodePoint(0x1F513),xp:0}
+      } else {
+        // Give wisdom quote
+        var wisdomPool2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).some(function(cq){return cq.q===q.q})});
+        if(wisdomPool2.length===0)wisdomPool2=INVESTOR_QUOTES;
+        var quote2=wisdomPool2[Math.floor(Math.random()*wisdomPool2.length)];
+        var weeksToNext=nextUnlock?nextUnlock.w-streakWeeks-1:0;
+        var teaser=nextUnlock?" "+weeksToNext+" more week"+(weeksToNext!==1?"s":"")+" until "+nextUnlock.label+".":"";
+        reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4DC),xp:0,quote:quote2,teaser:teaser}
+      }
+    }
     return reward}
+
   function openChest(){
     var reward=rollChestReward();
     // Apply reward
@@ -835,7 +830,7 @@ function TrackerApp(props){
       return n})}
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
-      var newUnlock=null;[{w:4,n:"Charlie Munger"},{w:8,n:"Warren Buffett"},{w:12,n:"Joel Greenblatt"},{w:16,n:"Peter Lynch"},{w:20,n:"Shelby Cullom Davis"},{w:24,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
+      var newUnlock=null;[{w:4,n:"Warren Buffett"},{w:8,n:"Joel Greenblatt"},{w:12,n:"Peter Lynch"},{w:16,n:"Shelby Cullom Davis"},{w:20,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
       if(newUnlock)setTimeout(function(){showToast("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
       // Early streak rewards
       if(n.current>=1&&(p.current||0)<1)setTimeout(function(){showToast("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
@@ -1779,7 +1774,7 @@ function TrackerApp(props){
           {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes"},
             {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for AI tools"},
             {w:3,icon:String.fromCodePoint(0x1F4B3),label:"PayPal Blue theme",desc:"Crisp professional blue"},
-            {w:4,icon:String.fromCodePoint(0x1F9D0),label:"Charlie Munger lens",desc:"Quality at Scale"},
+            {w:2,icon:String.fromCodePoint(0x1F9D0),label:"Munger Lens (free)",desc:"Available to all users"},
             {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange"},
             {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings"},
             {w:12,icon:String.fromCodePoint(0x2728),label:"Joel Greenblatt lens",desc:"Magic Formula"},
@@ -3134,7 +3129,7 @@ function TrackerApp(props){
         </div>})()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
-        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
+        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?700:500,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
       {/* ═══ OVERVIEW TAB ═══ */}
       {/* ═══ DOSSIER TAB — Munger's pinned sheet ═══ */}
       {detailTab==="dossier"&&<div className="ta-fade">
@@ -3594,7 +3589,7 @@ function TrackerApp(props){
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {[{id:"command",l:"Command Center",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
-          return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?600:400,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
+          return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
@@ -3853,7 +3848,7 @@ function TrackerApp(props){
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — the engine of compounding"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Low debt = low risk of permanent impairment",invert:true}
               ]},
-            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:4,quote:"A great business at a fair price is superior to a fair business at a great price.",
+            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:0,quote:"A great business at a fair price is superior to a fair business at a great price.",
               metrics:[
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"The single best measure of a moat"},
                 {id:"grossMargin",label:"Pricing Power (Gross Margin)",sp500:45,unit:"%",weight:20,desc:"Can they raise prices without losing customers?"},
@@ -3862,7 +3857,7 @@ function TrackerApp(props){
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
                 {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
               ]},
-            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:8,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:4,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
               metrics:[
                 {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
                 {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
@@ -3870,7 +3865,7 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
               ]},
-            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:12,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
+            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:8,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
               metrics:[
                 {id:"roic",label:"Return on Capital",sp500:15,unit:"%",weight:35,desc:"The first pillar of the Magic Formula — high ROIC = good business"},
                 {id:"netMargin",label:"Earnings Yield",sp500:12,unit:"%",weight:35,desc:"The second pillar — high earnings yield = bargain price"},
@@ -3878,7 +3873,7 @@ function TrackerApp(props){
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
               ]},
-            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:16,quote:"Know what you own, and know why you own it.",
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:12,quote:"Know what you own, and know why you own it.",
               metrics:[
                 {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
@@ -3886,7 +3881,7 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
               ]},
-            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:20,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
+            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:16,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
               metrics:[
                 {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:25,desc:"Growing earnings = rising stock price (first play)"},
                 {id:"netMargin",label:"Net Margin Expansion",sp500:12,unit:"%",weight:20,desc:"Expanding margins = multiple expansion (second play)"},
@@ -3895,7 +3890,7 @@ function TrackerApp(props){
                 {id:"fcfConversion",label:"Cash Generation",sp500:85,unit:"%",weight:10,desc:"Real cash flow backing earnings growth"},
                 {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:10,desc:"Durable margins through cycles"}
               ]},
-            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:24,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
+            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:20,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
               metrics:[
                 {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
@@ -4055,7 +4050,7 @@ function TrackerApp(props){
       {ht==="guide"&&<div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
           <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>ThesisAlpha tracks how well you follow a disciplined investment process — not whether your stocks go up. The Owner's Score measures the quality of your process across 6 dimensions. Research shows that investors who maintain a written thesis, track KPIs, and review regularly outperform those who don't.</div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:16}}>Your Owner's Score (0-100) reflects how well you understand your holdings. It measures 6 things: thesis quality, KPI tracking, decision journaling, conviction hygiene, moat analysis, and portfolio balance. The score decays if you neglect your holdings — because understanding fades without maintenance.</div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
             {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh — stale theses lose points."},
               {icon:"target",color:K.blue,title:"KPI Discipline",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
@@ -4544,83 +4539,27 @@ function TrackerApp(props){
 
       {step!=="review"&&(function(){
         // Chest preview - always show one of each tier to build curiosity
-        var previewTiers=["common","uncommon","rare"];
-        var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
-        var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
-        var tierIcons={rare:String.fromCodePoint(0x1F48E),uncommon:String.fromCodePoint(0x2728),common:String.fromCodePoint(0x2B50)};
-        var tierOdds={rare:"5%",uncommon:"25%",common:"70%"};
-        var tierHints={rare:"Curated investor wisdom",uncommon:"Deep investment insight",common:"Reflection or wisdom quote"};
-
-        return<div style={{padding:"48px 20px"}}>
-        {/* ── LOCKED STATE: Countdown + Preview ── */}
-        {!isReviewDay&&!currentWeekReviewed&&<div>
-          <div style={{textAlign:"center",marginBottom:32}}>
-            <div style={{fontSize:48,marginBottom:12}}>{String.fromCodePoint(0x1F512)}</div>
-            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:4}}>Weekly Review</div>
-            <div style={{fontSize:13,color:K.dim}}>Opens every Friday through Sunday</div></div>
-          {/* Countdown */}
-          {countdownStr&&<div style={{textAlign:"center",marginBottom:28}}>
-            <div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 36px"}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Opens In</div>
-              <div style={{fontSize:32,fontWeight:800,color:K.acc,fontFamily:fm,letterSpacing:2}}>{countdownStr}</div></div></div>}
-          {/* Chest Preview */}
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Complete Your Review To Receive…</div>
-            <div style={{display:"flex",justifyContent:"center",gap:16}}>
-              {previewTiers.map(function(tier,i){return<div key={i} style={{width:100,height:130,borderRadius:12,background:K.card,border:"2px solid "+tierColors[tier]+"50",boxShadow:"0 4px 20px "+tierColors[tier]+"15",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",overflow:"hidden"}}>
-                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:tierColors[tier]}}/>
-                <div style={{fontSize:24,marginBottom:4}}>{tierIcons[tier]}</div>
-                <div style={{fontSize:9,fontWeight:600,color:tierColors[tier],fontFamily:fm,letterSpacing:1}}>{tierLabels[tier]}</div>
-                <div style={{fontSize:8,color:K.dim,marginTop:2}}>{tierOdds[tier]} chance</div>
-                <div style={{fontSize:7,color:K.dim,marginTop:4,padding:"0 8px",textAlign:"center",lineHeight:1.3}}>{tierHints[tier]}</div></div>})}</div>
-            <div style={{fontSize:11,color:K.dim,marginTop:14,lineHeight:1.6}}>Investor wisdom, deep insights, and reflections from legendary investors.</div></div>
-          <button disabled style={{background:K.prim,color:K.primTxt,border:"none",borderRadius:8,padding:"12px 32px",fontSize:14,fontWeight:600,fontFamily:fm,opacity:.35,cursor:"not-allowed"}}>Available Friday</button>
-        </div>}
-
-        {/* ── REVIEW DAY: Ready to go ── */}
-        {isReviewDay&&!currentWeekReviewed&&<div style={{textAlign:"center"}}>
-          <div style={{fontSize:48,marginBottom:16}}>{String.fromCodePoint(0x1F4CB)}</div>
-          <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:8}}>Ready for your weekly check-in?</div>
-          <div style={{fontSize:13,color:K.dim,marginBottom:24,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>Go through each holding. Confirm or adjust conviction. Flag any actions. Takes about 3 minutes.</div>
-          <div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"14px 18px",marginBottom:20,display:"inline-block",textAlign:"left"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-              <div style={{width:32,height:32,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={16} color="#a78bfa"/></div>
-              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>Weekly Insight awaits</span></div>
-            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>Complete your review to claim your weekly insight. Receive investor wisdom, reflections, or a new perspective on your holdings.</div></div>
-          <br/><button onClick={startReview} style={Object.assign({},S.btnP,{fontSize:14,padding:"12px 32px"})}>Start Review</button>
-        </div>}
-
-        {/* ── DONE STATE ── */}
-        {currentWeekReviewed&&<div>
-          <div style={{textAlign:"center",marginBottom:24}}>
-            <div style={{fontSize:56,marginBottom:12,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 12px rgba(255,215,0,.4))"}}>{String.fromCodePoint(0x1F3C6)}</div>
-            <div style={{fontSize:22,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>This week’s review is complete</div>
-            <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.7}}>Come back next week to keep your streak alive and earn your next weekly insight.</div>
+        return<div style={{marginBottom:24}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:12}}>{String.fromCodePoint(0x1F4DC)}</div>
+            <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>{plan==="pro"?"Weekly Reflection":"Weekly Insight"}</div>
+            <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:340,margin:"0 auto",marginBottom:16}}>
+              {plan==="pro"?"Complete your review to receive curated investor wisdom and a health report on your portfolio.":"Complete your review to earn investor wisdom and unlock new features as your streak grows."}</div>
+            {plan!=="pro"&&(function(){
+              var themeUn=[{w:1,l:"Forest Theme"},{w:3,l:"PayPal Blue"},{w:6,l:"Purple Theme"},{w:10,l:"Bloomberg"}];
+              var lensUn=[{w:2,l:"Munger Lens"},{w:4,l:"Buffett Lens"},{w:8,l:"Greenblatt Lens"},{w:12,l:"Lynch Lens"}];
+              var allUn=themeUn.concat(lensUn).sort(function(a,b){return a.w-b.w});
+              var sw=(streakData.current||0);
+              var next=allUn.find(function(u){return u.w>sw});
+              return next?<div style={{fontSize:11,color:K.acc,fontFamily:fm}}>Next unlock: {next.l} (week {next.w})</div>:null})()}
+            {plan==="pro"&&<div style={{fontSize:11,color:K.grn,fontFamily:fm}}>Pro: All features unlocked. Your reward is wisdom + portfolio health insights.</div>}
           </div>
-          {/* Countdown */}
-          {countdownStr&&!isReviewDay&&<div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{display:"inline-block",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 24px"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Next Review In</div>
-              <div style={{fontSize:20,fontWeight:700,color:K.acc,fontFamily:fm}}>{countdownStr}</div></div></div>}
-          {/* This week's reward */}
-          {(function(){
-            var reward=latestWeeklyReward;
-            var histEntry=chestRewards.history&&chestRewards.history.length>0?chestRewards.history[0]:null;
-            var tierColors2={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
-            var tierLabels2={rare:"Rare",uncommon:"Uncommon",common:"Common"};
-            if(reward)return<div style={{textAlign:"center",padding:"20px 16px",background:K.card,borderRadius:12,border:"1px solid "+(tierColors2[reward.tier]||K.bdr)+"40",marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK’S REWARD — "+tierLabels2[reward.tier||"common"]}</div>
-              <div style={{fontSize:32,marginBottom:4}}>{reward.icon}</div>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{reward.label}</div>
-              <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{reward.desc}</div>
-              {reward.author&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:2}}>{"— "+reward.author}</div>}
-              
-            </div>;
-            if(histEntry)return<div style={{textAlign:"center",padding:"14px 16px",background:K.card,borderRadius:12,border:"1px solid "+K.bdr,marginBottom:16,maxWidth:360,margin:"0 auto 16px"}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors2[histEntry.tier]||K.dim,fontFamily:fm,marginBottom:4}}>{"LATEST REWARD — "+tierLabels2[histEntry.tier||"common"]}</div>
-              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{histEntry.reward}</div>
-            </div>;
-            return null})()}
+          {currentWeekReviewed?<div style={{textAlign:"center",marginTop:16}}>
+            <div style={{fontSize:14,fontWeight:600,color:K.grn,marginBottom:4}}>{"✓"} Review complete for this week</div>
+            <div style={{fontSize:12,color:K.dim}}>Come back next week for your next insight</div></div>
+          :<div style={{textAlign:"center",marginTop:16}}>
+            <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Start Review</button></div>}
+        </div>
           {/* Reward history */}
           {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"0 auto 20px",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>PAST REWARDS</div>
@@ -5244,7 +5183,7 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
       </div>})()}
-    {/* ── Getting Started Quest (persistent onboarding) ── */}
+    {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
       var portfolio=filtered;
       var hasThesis=portfolio.some(function(c){return c.thesisNote&&c.thesisNote.trim().length>20});
@@ -5260,15 +5199,15 @@ function TrackerApp(props){
       var completed=steps.filter(function(s){return s.done}).length;
       if(completed>=4){
         // Auto-dismiss when all done (celebrate)
-        if(!milestones.onboard_complete){checkMilestone("onboard_complete",String.fromCodePoint(0x1F389)+" Owner's Loop complete! You've built the foundation of a disciplined investor.");
-          showCelebration(String.fromCodePoint(0x1F389)+" Owner's Loop Complete","You've written a thesis, tracked KPIs, rated conviction, and completed a review. The foundation is set.",null,K.grn);
+        if(!milestones.onboard_complete){showToast("Owner's Checklist complete - the foundation is set","info",4000);
+          
           var nm2=Object.assign({},milestones);nm2.onboard_dismissed=true;setMilestones(nm2);try{localStorage.setItem("ta-milestones",JSON.stringify(nm2))}catch(e){}}
         return null}
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:13}}>{"🎯"}</span>
-            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Getting Started</span>
+            <span style={{fontSize:13}}>{"📋"}</span>
+            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>Owner's Checklist</span>
             <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{completed}/4</span></div>
           <button onClick={function(){var nm3=Object.assign({},milestones);nm3.onboard_dismissed=true;setMilestones(nm3);try{localStorage.setItem("ta-milestones",JSON.stringify(nm3))}catch(e){}}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:2}}>{"✕"}</button></div>
         {/* Progress bar */}
@@ -5499,6 +5438,8 @@ function TrackerApp(props){
         {/* Description */}
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:chestOverlay.author?4:16}}>{chestOverlay.desc}</div>
         {chestOverlay.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:16}}>{"— "+chestOverlay.author}</div>}
+        {chestOverlay.healthNote&&<div style={{textAlign:"left",marginTop:4,padding:"12px 14px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr,marginBottom:12}}><div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>Portfolio Health</div><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{chestOverlay.healthNote}</div></div>}
+        {chestOverlay.teaser&&<div style={{fontSize:11,color:K.acc,marginTop:4,marginBottom:12,fontFamily:fm}}>{chestOverlay.teaser}</div>}
         {/* XP earned */}
         {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"4px 12px",marginBottom:12}}>
           </div>}
