@@ -5261,7 +5261,7 @@ function TrackerApp(props){
         {/* Mastery stars summary */}
         {(function(){var mastered=filtered.filter(function(cc){return calcMastery(cc).stars>=5}).length;
           var avgStars=filtered.reduce(function(s,cc){return s+calcMastery(cc).stars},0)/Math.max(filtered.length,1);
-          return<React.Fragment>
+          return<div style={{display:"flex",alignItems:"center",gap:12,flex:1}}>
             <div style={{display:"flex",gap:2}}>
               {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:8,height:8,borderRadius:"50%",background:avgStars>=s?K.grn:avgStars>=s-.5?K.amb:K.bdr}}/>})}</div>
             <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{avgStars.toFixed(1)} avg</span>
@@ -5269,7 +5269,7 @@ function TrackerApp(props){
             <span style={{fontSize:10,color:mastered>0?K.grn:K.dim,fontFamily:fm}}>{mastered} mastered</span>
             <span style={{fontSize:10,color:K.dim}}>{"·"}</span>
             <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"🔥"} {streakData.current||0}w</span>
-          </React.Fragment>})()}
+          </div>})()}
         <div style={{flex:1}}/>
         <span style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
         <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
