@@ -3358,6 +3358,29 @@ function TrackerApp(props){
                 <div style={{fontSize:11,color:K.dim,marginTop:2}}>{step.desc}</div></div>
               <button onClick={step.action} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Start</button></div>
           </div>})()}
+        {/* ── OWNER'S CHECKLIST — persistent until complete ── */}
+        {guidedSetup!==c.id&&(function(){
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
+          var hasKpis=c.kpis.length>=2;
+          var hasConv=c.conviction>0;
+          var hasMoat=Object.keys(c.moatTypes||{}).some(function(k2){return c.moatTypes[k2]&&c.moatTypes[k2].active});
+          var items=[
+            {id:"thesis",label:"Write thesis",done:hasThesis,icon:"lightbulb",action:function(){setModal({type:"thesis"})}},
+            {id:"kpis",label:"Add 2+ KPIs",done:hasKpis,icon:"target",action:function(){setModal({type:"kpi"})}},
+            {id:"conv",label:"Rate conviction",done:hasConv,icon:"trending",action:function(){setModal({type:"conviction"})}},
+            {id:"moat",label:"Classify moat",done:hasMoat,icon:"castle",action:function(){setSubPage("moat")}}
+          ];
+          var doneCount=items.filter(function(it){return it.done}).length;
+          if(doneCount>=items.length)return null;
+          return<div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner Checklist</span>
+              <span style={{fontSize:10,color:doneCount>=3?K.grn:K.dim,fontFamily:fm,fontWeight:600}}>{doneCount}/{items.length}</span></div>
+            <div style={{display:"flex",gap:6}}>
+              {items.map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+                {it.done?<svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill={K.grn+"20"} stroke={K.grn} strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke={K.grn} strokeWidth="1.5" fill="none"/></svg>
+                  :<IC name={it.icon} size={14} color={K.dim}/>}
+                <span style={{fontSize:9,color:it.done?K.grn:K.mid,fontFamily:fm,fontWeight:it.done?600:400}}>{it.label}</span></button>})}</div></div>})()}
         {/* ── OWNERSHIP SNOWFLAKE ── */}
         {(function(){
           var mm=calcMastery(c);var fs=c.financialSnapshot||{};
@@ -3386,28 +3409,30 @@ function TrackerApp(props){
           monScore=Math.min(100,monScore);
           var axes=[{label:"Thesis",score:thesisScore,color:"#8B5CF6"},{label:"KPIs",score:kpiScore,color:"#3B82F6"},{label:"Conviction",score:convScore,color:"#F59E0B"},{label:"Fundamentals",score:fundScore,color:"#22C55E"},{label:"Mastery",score:mastScore,color:"#EC4899"},{label:"Monitoring",score:monScore,color:"#14B8A6"}];
           var avgScore=Math.round(axes.reduce(function(s2,a2){return s2+a2.score},0)/6);
-          // SVG radar
+          // SVG radar — rounded Simply Wall St style
           var cx=90,cy=90,r=70;var n=6;var angleOff=-Math.PI/2;
           function pt(i2,val){var ang=angleOff+i2/n*2*Math.PI;return{x:cx+Math.cos(ang)*r*val/100,y:cy+Math.sin(ang)*r*val/100}}
           var gridLevels=[25,50,75,100];
+          // Build smooth rounded path from data points
+          function roundedPath(pts2){if(pts2.length<3)return"";var d="";for(var i3=0;i3<pts2.length;i3++){var prev=pts2[(i3-1+pts2.length)%pts2.length];var curr=pts2[i3];var next=pts2[(i3+1)%pts2.length];var smooth=0.25;var cp1x=curr.x+(next.x-prev.x)*smooth;var cp1y=curr.y+(next.y-prev.y)*smooth;var prevNext=pts2[(i3+2)%pts2.length];var cp2x=next.x-(prevNext.x-curr.x)*smooth;var cp2y=next.y-(prevNext.y-curr.y)*smooth;if(i3===0)d+="M"+curr.x.toFixed(1)+","+curr.y.toFixed(1)+" ";d+="C"+cp1x.toFixed(1)+","+cp1y.toFixed(1)+" "+cp2x.toFixed(1)+","+cp2y.toFixed(1)+" "+next.x.toFixed(1)+","+next.y.toFixed(1)+" "}return d+"Z"}
+          function roundedGridPath(level){var pts2=[];for(var i3=0;i3<n;i3++)pts2.push(pt(i3,level));return roundedPath(pts2)}
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",gap:16}}>
               <svg width="180" height="180" viewBox="0 0 180 180">
-                {/* Grid rings */}
-                {gridLevels.map(function(gl){var pts2=[];for(var i3=0;i3<n;i3++){var p3=pt(i3,gl);pts2.push(p3.x.toFixed(1)+","+p3.y.toFixed(1))}
-                  return<polygon key={gl} points={pts2.join(" ")} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
-                {/* Axis lines */}
-                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.5"/>})}
-                {/* Filled shape */}
-                {(function(){var pts2=axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));return p3.x.toFixed(1)+","+p3.y.toFixed(1)});
-                  return<polygon points={pts2.join(" ")} fill={"#3B82F620"} stroke={"#3B82F6"} strokeWidth="2" strokeLinejoin="round"/>})()}
+                {/* Rounded grid rings */}
+                {gridLevels.map(function(gl){return<path key={gl} d={roundedGridPath(gl)} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
+                {/* Axis lines — subtle */}
+                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
+                {/* Filled shape — rounded, more opaque */}
+                {(function(){var dataPts=axes.map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
+                  return<path d={roundedPath(dataPts)} fill={"#3B82F635"} stroke={"#3B82F6"} strokeWidth="2.5"/>})()}
                 {/* Score dots + labels */}
-                {axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,5));var lp=pt(i3,118);
-                  return<g key={i3}><circle cx={p3.x} cy={p3.y} r="4" fill={a2.color} stroke={K.card} strokeWidth="1.5"/>
+                {axes.map(function(a2,i3){var p3=pt(i3,Math.max(a2.score,8));var lp=pt(i3,118);
+                  return<g key={i3}><circle cx={p3.x} cy={p3.y} r="4.5" fill={a2.color} stroke={K.card} strokeWidth="2"/>
                     <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle">{a2.label}</text></g>})}
                 {/* Center score */}
-                <text x={cx} y={cy-4} fill={K.txt} fontSize="20" fontWeight="800" fontFamily={fm} textAnchor="middle">{avgScore}</text>
-                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle">OWNERSHIP</text>
+                <text x={cx} y={cy-4} fill={K.txt} fontSize="22" fontWeight="800" fontFamily={fm} textAnchor="middle">{avgScore}</text>
+                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1">OWNERSHIP</text>
               </svg>
               <div style={{flex:1}}>
                 <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Ownership Depth</div>
