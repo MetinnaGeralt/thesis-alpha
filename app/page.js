@@ -569,6 +569,7 @@ function TrackerApp(props){
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
+  var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
@@ -2006,12 +2007,12 @@ function TrackerApp(props){
     <div style={{padding:"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={sideDark}/><span style={{fontSize:13,fontWeight:600,color:sideText,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:sideMid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:100,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",pg:"hub",icon:"trending"},{l:"Research Journal",pg:"hub",icon:"book"},{l:"Research Trail",pg:"hub",icon:"file"},{l:"Investor Lenses",pg:"hub",icon:"search"},{l:"How It Works",pg:"hub",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     {/* More pages accessible via links, not sidebar */}
@@ -3088,6 +3089,8 @@ function TrackerApp(props){
       {/* Header */}
       <div className="ta-detail-head" style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?28:36}/>
         <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></span>{(function(){var _mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:5,background:_mm.color+"12",border:"1px solid "+_mm.color+"25"}}><div style={{display:"flex",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:5,height:5,borderRadius:"50%",background:s<=_mm.stars?_mm.color:K.bdr}}/>})}</div><span style={{fontSize:9,fontWeight:600,color:_mm.color,fontFamily:fm}}>{_mm.label}</span></div>})()}</div>
+            {c.investStyle&&STYLE_MAP[c.investStyle]&&<button onClick={function(){setModal({type:"edit"})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:5,background:STYLE_MAP[c.investStyle].color+"12",border:"1px solid "+STYLE_MAP[c.investStyle].color+"25",cursor:"pointer",fontSize:9,fontWeight:600,color:STYLE_MAP[c.investStyle].color,fontFamily:fm}} title="Click to change investment style"><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</button>}
+            {!c.investStyle&&<button onClick={function(){setModal({type:"edit"})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:5,background:K.bdr+"50",border:"1px solid "+K.bdr,cursor:"pointer",fontSize:9,color:K.dim,fontFamily:fm}}>+ Set style</button>}
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
             <span style={{fontSize:11,color:K.dim}}>{"•"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
@@ -3480,7 +3483,7 @@ function TrackerApp(props){
     var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
-    var _ht=useState("command"),ht=_ht[0],setHt=_ht[1];
+    var ht=hubTab,setHt=setHubTab;
     var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
     var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
     var _lensLoading=useState(false),lensLoading=_lensLoading[0],setLensLoading=_lensLoading[1];
@@ -3653,7 +3656,7 @@ function TrackerApp(props){
           // Check if quest chest already claimed this week
           var questChestClaimed=questData.weekId===wk&&(questData.chestClaimed||false);
           return<div style={{marginBottom:20}}>
-            {/* Quest header */}
+            {/* Focus header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
               <div>
                 <div style={{fontSize:14,fontWeight:600,color:K.txt}}>This Week's Focus</div>
@@ -3661,7 +3664,7 @@ function TrackerApp(props){
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:80,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:questPct+"%",borderRadius:3,background:allDone2?K.grn:K.acc,transition:"width .5s"}}/></div>
                 <span style={{fontSize:11,fontWeight:600,color:allDone2?K.grn:K.acc,fontFamily:fm}}>{questPct}%</span></div></div>
-            {/* Quest list */}
+            {/* Focus list */}
             <div style={{display:"grid",gap:6}}>
               {quests.map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
                 <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -3673,13 +3676,13 @@ function TrackerApp(props){
             {/* Quest reward preview */}
             {!allDone2&&<div style={{marginTop:12,padding:"10px 16px",background:K.bg,borderRadius:8,display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:28,height:28,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={14} color="#a78bfa"/></div>
-              <div style={{fontSize:11,color:K.dim}}>Complete all quests to unlock a <strong style={{color:"#a78bfa"}}>guaranteed Uncommon+</strong> chest reward</div></div>}
+              <div style={{fontSize:11,color:K.dim}}>Complete all actions to claim your weekly insight</div></div>}
             {/* Quest complete + claim */}
             {allDone2&&!questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"20px",background:"linear-gradient(135deg,"+K.acc+"08,#a78bfa08)",border:"1px solid #a78bfa30",borderRadius:12}}>
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
-              <div style={{fontSize:11,color:K.dim,marginBottom:12}}>You've earned a guaranteed Uncommon or Rare chest</div>
-              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:"#a78bfa",borderColor:"#a78bfa"})}>Claim Weekly Insight</button></div>}
+              <div style={{fontSize:11,color:K.dim,marginBottom:12}}>All actions complete! Claim your weekly insight</div>
+              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
               <div style={{fontSize:12,color:K.grn,fontWeight:500}}>Quest reward claimed this week ✓</div>
               <div style={{fontSize:10,color:K.dim}}>New quests arrive Monday</div></div>}
@@ -4727,7 +4730,7 @@ function TrackerApp(props){
           <div style={{textAlign:"center",marginBottom:24}}>
             <div style={{fontSize:56,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 16px rgba(255,215,0,.5))"}}>{String.fromCodePoint(0x1F3C6)}</div>
             <div style={{fontSize:22,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Review Complete</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Confirm to save convictions and open your weekly chest.</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Confirm to save convictions and claim your weekly insight.</div>
           </div>
           {/* Stats row */}
           <div style={{display:"flex",justifyContent:"center",gap:24,marginBottom:20}}>
@@ -4767,7 +4770,7 @@ function TrackerApp(props){
               <div style={{fontSize:14,fontWeight:600,color:"#FFD700",fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
               <div style={{fontSize:12,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
             {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
-              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"THIS WEEK’S REWARD — "+tierLabels[reward.tier||"common"]}</div>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"WEEKLY INSIGHT"}</div>
               <div style={{fontSize:36,marginBottom:6}}>{reward.icon}</div>
               <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>{reward.label}</div>
               <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
@@ -4777,7 +4780,7 @@ function TrackerApp(props){
             </div>}
             {/* Previously earned rewards */}
             {chestRewards.history.length>0&&<div>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>REWARD HISTORY</div>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>INSIGHT HISTORY</div>
               <div style={{maxHeight:180,overflow:"auto"}}>
               {chestRewards.history.slice(0,20).map(function(h,hi){
                 var tc=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
@@ -5607,11 +5610,7 @@ function TrackerApp(props){
               <IC name={s.icon} size={12} color={K.dim}/>
               <span style={{fontSize:11,color:K.mid,flex:1}}>{s.label}</span>
               <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
-        {/* Double XP indicator */}
-        {isDoubleXP&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:14}}>{String.fromCodePoint(0x26A1)}</span>
-          <div><div style={{fontSize:11,fontWeight:600,color:K.amb}}>2× Points Active</div>
-            <div style={{fontSize:9,color:K.dim}}>Expires {new Date(doubleXP).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}</div></div></div>}
+        
         {/* Badges */}
         {(chestRewards.badges||[]).length>0&&<div style={{marginBottom:16}}>
           <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
