@@ -5350,16 +5350,20 @@ function TrackerApp(props){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
-          <span style={{width:36}}/>
+          <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
-          {!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
-          <span style={{width:60,textAlign:"right"}}>Return</span>
-          {!isMobile&&<span style={{width:80,textAlign:"right"}}>Value</span>}
-          <span style={{width:50,textAlign:"right"}}>Wt%</span>
-          <span style={{width:isMobile?60:120,paddingLeft:6}}>Alloc.</span>
-          <span style={{width:40,textAlign:"center"}}>C</span>
-          {!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
-          {!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}</div>
+          <span style={{width:75,textAlign:"right"}}>Avg Price</span>
+          <span style={{width:65,textAlign:"right"}}>Return</span>
+          {!isMobile&&<span style={{width:85,textAlign:"right"}}>Value</span>}
+          <span style={{width:isMobile?70:140,paddingLeft:8}}>Allocation</span>
+          {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>C</span>}
+          {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
+          {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
+          {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          <span style={{width:28,position:"relative"}}><button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>
+            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
+              <div style={{padding:"4px 12px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
+              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"}].map(function(col){return<div key={col.k} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"6px 12px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><div style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent"}}/>{col.l}</div>})}</div>}</span></div>
         {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
@@ -5367,21 +5371,19 @@ function TrackerApp(props){
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
+            <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/></span>
             <span style={{flex:1,minWidth:100}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
-              <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
-            {!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
-            <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
-            {!isMobile&&<span style={{width:80,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
-            <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{weight>0?weight.toFixed(1)+"%":"\u2014"}</span>
-            <span style={{width:isMobile?60:120,paddingLeft:6}}>
-              {weight>0?<div style={{height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
-                <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>:<div style={{height:8}}/>}
-            </span>
-            <span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:11,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>
-            {!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
-            {!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
+            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{p2.avgCost>0?"$"+p2.avgCost.toFixed(2):"—"}</span>
+            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</span>
+            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}
+            <span style={{width:isMobile?70:140,paddingLeft:8}}>{weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
+            {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{color:K.dim}}>{"—"}</span>}</span>}
+            {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
+            {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+            {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>}
+            <span style={{width:28}}/>
           </div>})}
       </div>})()}
     {/* Card view */}
