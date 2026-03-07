@@ -1910,7 +1910,7 @@ function TrackerApp(props){
     var allThemes=[{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {/* ── Widgets Tab ── */}
       {sTab==="widgets"&&<div>
         <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
@@ -1960,7 +1960,48 @@ function TrackerApp(props){
         <div style={{fontSize:10,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
         <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
-      {/* ── Always visible footer ── */}
+      {/* ── Account Tab ── */}
+      {sTab==="account"&&<div>
+        <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Manage your account, subscription, and profile.</div>
+        {/* Email */}
+        <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Email</div>
+          <div style={{fontSize:13,color:K.txt}}>{props.user}</div></div>
+        {/* Username */}
+        <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Username</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{fontSize:13,color:K.txt}}>{username||"Not set"}</div>
+            <button onClick={function(){setModal(null);setShowProfile(true);setEditingName(true);setNameInput(username||"")}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Change</button></div></div>
+        {/* Avatar */}
+        <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Avatar</div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            {avatarUrl?<img src={avatarUrl} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.bdr}}/>
+              :<div style={{width:40,height:40,borderRadius:"50%",background:K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:K.acc,fontWeight:600,fontFamily:fm}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={function(){var inp=document.getElementById("ta-avatar-input");if(inp)inp.click()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>{avatarUrl?"Change":"Upload"}</button>
+              <input id="ta-avatar-input" type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
+              {avatarUrl&&<button onClick={function(){setAvatarUrl("");try{localStorage.removeItem("ta-avatar")}catch(e){}showToast("Avatar removed","info",2000)}} style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:10})}>Remove</button>}
+            </div></div></div>
+        {/* Password */}
+        <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Password</div>
+          <button onClick={function(){if(!supabase){showToast("Auth not available","info",3000);return}supabase.auth.resetPasswordForEmail(props.user).then(function(){showToast("Password reset email sent to "+props.user,"milestone",5000)}).catch(function(e){showToast("Could not send reset email: "+(e.message||"try again"),"info",4000)})}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})}>Send Password Reset Email</button>
+          <div style={{fontSize:10,color:K.dim,marginTop:6}}>A reset link will be sent to {props.user}</div></div>
+        {/* Subscription */}
+        <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Subscription</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div><div style={{fontSize:13,fontWeight:600,color:plan==="pro"?K.grn:K.txt}}>{plan==="pro"?"Pro Plan":trialActive?"Trial ("+trialDaysLeft+"d left)":"Free Plan"}</div>
+              {plan==="pro"&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>Manage billing, change plan, or cancel</div>}
+              {plan!=="pro"&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>{trialActive?"Upgrade anytime to keep Pro features":"Upgrade to unlock data features"}</div>}</div>
+            {plan==="pro"?<button onClick={function(){openManage()}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})}>Manage in Stripe</button>
+              :<button onClick={function(){setModal(null);setShowUpgrade(true);setUpgradeCtx("")}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:11})}>Upgrade to Pro</button>}</div></div>
+        {/* Logout */}
+        <div style={{padding:"14px 0"}}>
+          <button onClick={function(){props.onLogout()}} style={{background:K.red+"10",border:"1px solid "+K.red+"25",borderRadius:6,padding:"8px 16px",fontSize:11,color:K.red,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Log Out</button></div>
+      </div>}
       <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.mid,fontSize:11,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
         <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>ThesisAlpha v1.0</div></div>
