@@ -585,6 +585,7 @@ function TrackerApp(props){
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
+  var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
@@ -1146,7 +1147,7 @@ function TrackerApp(props){
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},1000)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
       var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis.trim(),kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setModal(null)}
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");setGuidedSetup(nc.id);setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
@@ -3170,6 +3171,38 @@ function TrackerApp(props){
       {/* ═══ OVERVIEW TAB ═══ */}
       {/* ═══ DOSSIER TAB — Munger's pinned sheet ═══ */}
       {detailTab==="dossier"&&<div className="ta-fade">
+        {/* Guided Setup Flow */}
+        {guidedSetup===c.id&&(function(){
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
+          var hasKpis=c.kpis.length>=2;
+          var hasConviction=c.conviction>0;
+          var steps=[
+            {id:"thesis",label:"Write your thesis",desc:"Why do you own "+c.ticker+"? What's the core investment case?",done:hasThesis,icon:"lightbulb",action:function(){setModal({type:"thesis"})}},
+            {id:"kpis",label:"Define 2-3 KPIs",desc:"What metrics will prove or disprove your thesis?",done:hasKpis,icon:"target",action:function(){setModal({type:"kpi"})}},
+            {id:"conviction",label:"Rate your conviction",desc:"How confident are you on a scale of 1-10?",done:hasConviction,icon:"trending",action:function(){setModal({type:"conviction"})}}
+          ];
+          var currentStep=steps.findIndex(function(s){return!s.done});
+          if(currentStep<0){setTimeout(function(){setGuidedSetup(null);showToast(c.ticker+" setup complete - you're ready to track this investment","info",4000)},500);return null}
+          var step=steps[currentStep];
+          return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+              <div><div style={{fontSize:13,fontWeight:600,color:K.txt}}>Set up {c.ticker}</div>
+                <div style={{fontSize:11,color:K.dim,marginTop:2}}>Step {currentStep+1} of {steps.length}</div></div>
+              <button onClick={function(){setGuidedSetup(null)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"2px 8px"}}>Skip</button></div>
+            <div style={{display:"flex",gap:6,marginBottom:14}}>
+              {steps.map(function(s,i){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
+                <div style={{width:22,height:22,borderRadius:"50%",background:s.done?K.grn:i===currentStep?K.acc:K.bdr,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {s.done?<svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>
+                    :<span style={{fontSize:9,fontWeight:700,color:i===currentStep?"#fff":K.dim}}>{i+1}</span>}</div>
+                <span style={{fontSize:10,color:s.done?K.grn:i===currentStep?K.txt:K.dim,fontWeight:i===currentStep?600:400,fontFamily:fm}}>{s.label}</span>
+                {i<steps.length-1&&<div style={{flex:1,height:1,background:s.done?K.grn:K.bdr}}/>}</div>})}</div>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}}>
+              <IC name={step.icon} size={18} color={K.acc}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:12,fontWeight:600,color:K.txt}}>{step.label}</div>
+                <div style={{fontSize:11,color:K.dim,marginTop:2}}>{step.desc}</div></div>
+              <button onClick={step.action} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Start</button></div>
+          </div>})()}
         {/* Company Summary — auto-fetched from FMP */}
         {c.description&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:8}}>{descExpanded||c.description.length<=200?c.description:c.description.substring(0,200)+"…"}
