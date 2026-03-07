@@ -135,6 +135,50 @@ var INVEST_STYLES=[
     sellPrompt:"What timeline for recovery? What would prove the turnaround thesis is dead?"}
 ];
 var STYLE_MAP={};INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
+var SUPERINVESTORS=[
+  {id:"berkshire",name:"Warren Buffett",fund:"Berkshire Hathaway",style:"Quality Value",desc:"Wonderful companies at fair prices. Concentrated, low turnover, moat-focused.",
+    holdings:["AAPL","BAC","AXP","KO","CVX","OXY","MCO","KHC","CB","DVA","ALLY","VRSN","NU","AMZN","LLY"],
+    traits:{quality:0.9,value:0.7,growth:0.2,income:0.5,concentration:0.8,turnover:0.1}},
+  {id:"klarman",name:"Seth Klarman",fund:"Baupost Group",style:"Deep Value",desc:"Margin of safety obsessed. Contrarian, patient, often holds cash.",
+    holdings:["LBTYA","LBTYK","QRTEA","FOXA","GOOGL","INTC","EBAY","WBD","PYPL","META","PARA","CRH","BEPC"],
+    traits:{quality:0.4,value:0.95,growth:0.2,income:0.2,concentration:0.5,turnover:0.3}},
+  {id:"ackman",name:"Bill Ackman",fund:"Pershing Square",style:"Activist Quality",desc:"Concentrated bets on high-quality businesses. Activist approach, pushes for value creation.",
+    holdings:["GOOG","CMG","HLT","QSR","HHH","CP","LOW","NKE","UBER"],
+    traits:{quality:0.8,value:0.5,growth:0.5,income:0.2,concentration:0.95,turnover:0.3}},
+  {id:"smith",name:"Terry Smith",fund:"Fundsmith",style:"Quality Compounder",desc:"Buy good companies, don't overpay, do nothing. Ultra-low turnover, high ROIC focus.",
+    holdings:["META","MSFT","NOVO-B","L'OREAL","IDEXX","VISA","ESTC","AMZN","MASI","WAT","POOL","FICO","PAYC","VEEV"],
+    traits:{quality:0.95,value:0.3,growth:0.5,income:0.3,concentration:0.4,turnover:0.05}},
+  {id:"hohn",name:"Chris Hohn",fund:"TCI Fund",style:"Activist FCF",desc:"Concentrated on free cash flow machines. Activist shareholder, pushes capital returns.",
+    holdings:["GOOG","MSFT","V","MA","MCO","CPRT","GE","LHX","CSGP","SPGI","CDW"],
+    traits:{quality:0.85,value:0.4,growth:0.4,income:0.3,concentration:0.8,turnover:0.15}},
+  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",style:"Growth at Reasonable Price",desc:"Know what you own. Everyday observation, PEG ratio, growth with margin of safety.",
+    holdings:["COST","HD","SBUX","NKE","TJX","WMT","MCD","PG","UNH","ABBV","JNJ","PEP","AMGN","TMO"],
+    traits:{quality:0.6,value:0.5,growth:0.7,income:0.4,concentration:0.2,turnover:0.4}},
+  {id:"greenblatt",name:"Joel Greenblatt",fund:"Gotham Asset Mgmt",style:"Magic Formula",desc:"High ROIC + high earnings yield. Systematic, quantitative approach to value.",
+    holdings:["GOOG","META","MSFT","AAPL","AMZN","BRK-B","UNH","JNJ","PG","V","MA","HD","COST"],
+    traits:{quality:0.6,value:0.8,growth:0.4,income:0.2,concentration:0.3,turnover:0.5}},
+  {id:"einhorn",name:"David Einhorn",fund:"Greenlight Capital",style:"Value + Shorts",desc:"Classic value investor who also shorts overvalued stocks. Contrarian, forensic accounting focus.",
+    holdings:["GPRE","TECK","GTN","ODP","CNX","GEN","JACK","CC","BHF","PRDO"],
+    traits:{quality:0.3,value:0.9,growth:0.2,income:0.3,concentration:0.6,turnover:0.4}},
+  {id:"marks",name:"Howard Marks",fund:"Oaktree Capital",style:"Distressed/Contrarian",desc:"Second-level thinker. Buys when others panic. Focused on risk control and cycles.",
+    holdings:["OC","TEL","WMB","BKNG","LYB","NRG","PVH","CZR","HCA","DAL"],
+    traits:{quality:0.4,value:0.85,growth:0.2,income:0.4,concentration:0.4,turnover:0.3}},
+  {id:"kantesaria",name:"Dev Kantesaria",fund:"Valley Forge Capital",style:"Quality Compounder",desc:"15%+ compounders with minimal risk of permanent loss. Ultra-concentrated, high conviction.",
+    holdings:["MSFT","GOOG","V","MA","MCO","SPGI","ROP","FICO","CPRT","POOL"],
+    traits:{quality:0.95,value:0.3,growth:0.5,income:0.1,concentration:0.9,turnover:0.05}},
+  {id:"pabrai",name:"Mohnish Pabrai",fund:"Pabrai Investment Funds",style:"Cloner Value",desc:"Shamelessly clones the best ideas. Concentrated, high-conviction, Munger-inspired.",
+    holdings:["COAL","TRMD","AMPS","JSPR","BATT","SATS","EXPE","TROW"],
+    traits:{quality:0.5,value:0.8,growth:0.4,income:0.2,concentration:0.9,turnover:0.3}},
+  {id:"burry",name:"Michael Burry",fund:"Scion Asset Mgmt",style:"Deep Value Contrarian",desc:"The Big Short. Extreme contrarian, forensic research, often against consensus.",
+    holdings:["BABA","JD","GOOG","BKNG","ORLY","HCA","STLA","REAL"],
+    traits:{quality:0.3,value:0.9,growth:0.3,income:0.1,concentration:0.7,turnover:0.7}},
+  {id:"ainslie",name:"Lee Ainslie",fund:"Maverick Capital",style:"Long/Short Quality Growth",desc:"Growth-oriented with hedging. Deep fundamental research, sector-focused.",
+    holdings:["MSFT","AMZN","META","GOOG","NVDA","CRM","SNOW","UBER","DASH","ABNB","COIN","DDOG"],
+    traits:{quality:0.6,value:0.2,growth:0.9,income:0.0,concentration:0.4,turnover:0.5}},
+  {id:"gayner",name:"Tom Gayner",fund:"Markel",style:"Patient Quality",desc:"Insurance-funded long-term equity portfolio. Patient, quality-focused, Buffett-inspired.",
+    holdings:["BRK-B","GOOG","MSFT","DIS","BAM","AMZN","V","MA","HD","CME","WMT","KKR"],
+    traits:{quality:0.8,value:0.5,growth:0.4,income:0.3,concentration:0.3,turnover:0.1}}
+];
 var MSTAR_RATINGS=["Wide","Narrow","None","Not Rated"];
 function calcOwnerScore(cos){
   var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
@@ -3898,22 +3942,77 @@ function TrackerApp(props){
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
               {[{l:"Theses",v:tw+"/"+portfolio.length,c:tw===portfolio.length?K.grn:K.txt},{l:"Avg depth",v:avgSec.toFixed(1)+"/4",c:avgSec>=3?K.grn:K.txt},{l:"KPIs tracked",v:totalK+(" (")+kpC+" checked)",c:kpC>0?K.grn:K.txt},{l:"Earnings reviewed",v:tE+"q",c:tE>=portfolio.length*2?K.grn:K.txt},{l:"Conviction updates",v:tCu+"",c:tCu>=portfolio.length*2?K.grn:K.txt},{l:"Mastery avg",v:avgM.toFixed(1)+"/6",c:avgM>=4?K.grn:K.txt}].map(function(g2){return<div key={g2.l} style={{padding:"6px 8px",background:K.bg,borderRadius:6}}>
                 <div style={{fontSize:13,fontWeight:700,color:g2.c,fontFamily:fm}}>{g2.v}</div><div style={{fontSize:8,color:K.dim}}>{g2.l}</div></div>})}</div></div>})()}
-        {/* === INVESTOR DNA === */}
+        {/* === INVESTOR DNA v2 === */}
         {portfolio.length>=2&&(function(){
-          var styles={growth:0,value:0,quality:0,income:0};
-          portfolio.forEach(function(c2){if(c2.investStyle==="growth"||c2.investStyle==="aggressive")styles.growth++;else if(c2.investStyle==="value"||c2.investStyle==="contrarian")styles.value++;else if(c2.investStyle==="income"||c2.investStyle==="dividend")styles.income++;else styles.quality++});
-          var tot2=Object.values(styles).reduce(function(s2,v2){return s2+v2},0)||1;
-          var dom=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0];
-          var avgC=portfolio.reduce(function(s2,c2){return s2+(c2.conviction||0)},0)/Math.max(portfolio.length,1);
+          var userTickers=portfolio.map(function(c2){return c2.ticker.toUpperCase()});
+          // Match against each superinvestor
+          var matches=SUPERINVESTORS.map(function(si){
+            var shared=si.holdings.filter(function(h2){return userTickers.indexOf(h2)>=0});
+            var overlapPct=userTickers.length>0?shared.length/userTickers.length*100:0;
+            var coveragePct=si.holdings.length>0?shared.length/si.holdings.length*100:0;
+            // Style trait similarity
+            var userTraits={quality:0,value:0,growth:0,income:0,concentration:0,turnover:0};
+            var styleCounts={growth:0,value:0,quality:0,income:0};
+            portfolio.forEach(function(c2){if(c2.investStyle==="growth"||c2.investStyle==="aggressive")styleCounts.growth++;else if(c2.investStyle==="value"||c2.investStyle==="contrarian")styleCounts.value++;else if(c2.investStyle==="income"||c2.investStyle==="dividend")styleCounts.income++;else styleCounts.quality++});
+            var tot3=Math.max(portfolio.length,1);
+            userTraits.quality=styleCounts.quality/tot3;userTraits.growth=styleCounts.growth/tot3;
+            userTraits.value=styleCounts.value/tot3;userTraits.income=styleCounts.income/tot3;
+            userTraits.concentration=portfolio.length<=5?0.9:portfolio.length<=10?0.6:portfolio.length<=20?0.3:0.1;
+            // Composite match: 60% holdings overlap + 40% style traits
+            var traitSim=0;var traitKeys=["quality","value","growth","income","concentration"];
+            traitKeys.forEach(function(tk){traitSim+=1-Math.abs((userTraits[tk]||0)-(si.traits[tk]||0))});
+            traitSim=traitSim/traitKeys.length*100;
+            var composite=overlapPct*0.6+traitSim*0.4;
+            return{investor:si,shared:shared,overlapPct:overlapPct,traitSim:traitSim,composite:composite}});
+          matches.sort(function(a,b){return b.composite-a.composite});
+          var top3=matches.slice(0,3);var best=top3[0];
+          if(!best)return null;
+          // Sector analysis
           var sectors2={};portfolio.forEach(function(c2){var s3=c2.sector||"Other";sectors2[s3]=(sectors2[s3]||0)+1});
-          var topS=Object.keys(sectors2).sort(function(a,b){return sectors2[b]-sectors2[a]})[0]||"";
-          var conc=topS?Math.round(sectors2[topS]/portfolio.length*100):0;
-          var match=dom==="quality"&&avgC>=7?"Terry Smith":dom==="growth"?"Peter Lynch":dom==="value"?"Seth Klarman":dom==="income"?"Shelby Davis":"Warren Buffett";
+          var topSectors=Object.keys(sectors2).sort(function(a,b){return sectors2[b]-sectors2[a]}).slice(0,3);
+          var avgConv=portfolio.reduce(function(s2,c2){return s2+(c2.conviction||0)},0)/Math.max(portfolio.length,1);
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Investor DNA</div>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:10}}>Your style resembles <span style={{color:K.acc}}>{match}</span></div>
-            <div style={{display:"flex",gap:8,marginBottom:8}}>{Object.keys(styles).map(function(s3){var pct=Math.round(styles[s3]/tot2*100);return<div key={s3} style={{flex:1,textAlign:"center"}}><div style={{height:32,display:"flex",alignItems:"flex-end",justifyContent:"center",marginBottom:3}}><div style={{width:18,height:Math.max(pct*0.32,2),borderRadius:3,background:s3===dom?K.acc:K.bdr}}/></div><div style={{fontSize:8,color:s3===dom?K.acc:K.dim,fontWeight:s3===dom?600:400,fontFamily:fm}}>{s3}</div></div>})}</div>
-            <div style={{display:"flex",gap:10,fontSize:10,color:K.dim}}><span>Conviction avg: <strong style={{color:K.txt}}>{avgC.toFixed(1)}</strong></span><span>Top: <strong style={{color:K.txt}}>{topS}</strong> ({conc}%)</span><span>{portfolio.length} holdings</span></div></div>})()}
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Investor DNA</div>
+            {/* Top match */}
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,padding:"12px 14px",background:K.acc+"06",borderRadius:10,border:"1px solid "+K.acc+"15"}}>
+              <div style={{width:44,height:44,borderRadius:"50%",background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:700,color:K.txt}}>{best.investor.name}</div>
+                <div style={{fontSize:11,color:K.acc,fontWeight:600}}>{best.investor.style}</div>
+                <div style={{fontSize:10,color:K.dim,marginTop:2}}>{best.investor.desc}</div></div>
+              <div style={{textAlign:"center",padding:"6px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}}>
+                <div style={{fontSize:20,fontWeight:800,color:best.composite>=50?K.grn:best.composite>=25?K.acc:K.dim,fontFamily:fm}}>{Math.round(best.composite)}%</div>
+                <div style={{fontSize:8,color:K.dim}}>match</div></div></div>
+            {/* Shared holdings */}
+            {best.shared.length>0&&<div style={{marginBottom:12}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>Shared holdings with {best.investor.name} ({best.shared.length})</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                {best.shared.map(function(t2){return<span key={t2} style={{padding:"3px 8px",borderRadius:4,background:K.grn+"10",border:"1px solid "+K.grn+"25",fontSize:10,fontWeight:600,color:K.grn,fontFamily:fm}}>{t2}</span>})}</div></div>}
+            {/* Why this match */}
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6,padding:"8px 10px",background:K.bg,borderRadius:6,marginBottom:14}}>
+              {"Based on "}<strong style={{color:K.txt}}>{best.shared.length}</strong>{" shared holdings ("+best.overlapPct.toFixed(0)+"% of your portfolio) and "}
+              <strong style={{color:K.txt}}>{best.traitSim.toFixed(0)}%</strong>{" style similarity. "}
+              {best.investor.fund!==""&&<span>{"Fund: "+best.investor.fund+". "}</span>}
+              {"Source: public 13F SEC filings."}</div>
+            {/* Other matches */}
+            {top3.length>1&&<div style={{marginBottom:12}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>Other close matches</div>
+              <div style={{display:"flex",gap:8}}>
+                {top3.slice(1).map(function(m2){return<div key={m2.investor.id} style={{flex:1,padding:"8px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr}}>
+                  <div style={{fontSize:11,fontWeight:600,color:K.txt}}>{m2.investor.name}</div>
+                  <div style={{fontSize:9,color:K.dim}}>{m2.investor.style}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+                    <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(m2.composite,100)+"%",borderRadius:2,background:K.acc}}/></div>
+                    <span style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm}}>{Math.round(m2.composite)}%</span></div>
+                  {m2.shared.length>0&&<div style={{fontSize:8,color:K.dim,marginTop:3}}>{m2.shared.join(", ")}</div>}</div>})}</div></div>}
+            {/* Your portfolio traits */}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:10,color:K.dim}}>
+              <span>{portfolio.length} holdings</span>
+              <span>{"\u00b7"}</span>
+              <span>Avg conviction: <strong style={{color:K.txt}}>{avgConv.toFixed(1)}</strong></span>
+              <span>{"\u00b7"}</span>
+              <span>Top sectors: <strong style={{color:K.txt}}>{topSectors.join(", ")}</strong></span></div></div>})()}
         {/* === QUARTERLY LETTER === */}
         {weeklyReviews.length>=2&&(function(){
           var now2=new Date();var ql="Q"+(Math.floor(now2.getMonth()/3)+1)+" "+now2.getFullYear();
