@@ -185,6 +185,23 @@ function calcOwnerScore(cos){
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
 
+function calcMastery(c){
+  var score=0;var details={};
+  score+=1;
+  if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;
+    if(hasSec){score+=2;details.thesis=true}else{score+=1}}
+  if(c.kpis&&c.kpis.length>=2){score+=1;details.kpis=true}
+  if(c.earningsHistory&&c.earningsHistory.length>=1){score+=1;details.earnings=true}
+  var mt=c.moatTypes||{};if(Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})){score+=1;details.moat=true}
+  if(c.conviction>0)score+=1;
+  if(c.decisions&&c.decisions.length>=1)score+=1;
+  var fresh=c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90;
+  if(fresh&&c.earningsHistory&&c.earningsHistory.length>=3&&c.convictionHistory&&c.convictionHistory.length>=3){score+=1;details.mastered=true}
+  var stars=score>=9?5:score>=7?4:score>=5?3:score>=3?2:1;
+  var labels=["Tracking","Researching","Informed","Disciplined","Mastered"];
+  var colors=["#6B7280","#3B82F6","#F59E0B","#8B5CF6","#22C55E"];
+  return{stars:stars,score:score,label:labels[stars-1],color:colors[stars-1],pct:Math.round(score/10*100),details:details}}
+
 // Legacy name → metricId mapping for existing user data
 var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
 var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","current ratio":"currentRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf margin":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth"};
@@ -552,6 +569,7 @@ function TrackerApp(props){
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];
+  var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
@@ -801,7 +819,7 @@ function TrackerApp(props){
     setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2×)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
       var newLevel=getXPLevel(n.total).level;
       if(newLevel>prevLevel)setTimeout(function(){celebrate("Level "+newLevel+" reached!","levelup",6000);showCelebration(String.fromCodePoint(0x2B50)+" Level "+newLevel,"You're growing as an owner-operator. Keep building your process.",null,newLevel>=20?"#FFD700":newLevel>=10?K.grn:K.acc)},2500);
-      return n});setXpFloat({amount:actualAmount,label:label+(isDoubleXP?" 2×":""),id:Date.now()});setTimeout(function(){setXpFloat(null)},2000)}
+      return n});// mastery system replaces XP float visual}
   // ── Weekly Streak with Freeze ──
   var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
   // ── Daily Activity Streak ──
@@ -834,6 +852,18 @@ function TrackerApp(props){
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
+    // Browser back button — track navigation in history
+    var _prevNav=useRef(null);
+    useEffect(function(){
+      // Push to history on navigation (but not on first render)
+      var key=page+"|"+(selId||"");
+      if(_prevNav.current!==null&&_prevNav.current!==key){
+        try{window.history.pushState({p:page,s:selId},"",window.location.pathname)}catch(e){}}
+      _prevNav.current=key},[page,selId]);
+    useEffect(function(){
+      function onPop(e){if(e.state){if(e.state.s!=null)setSelId(e.state.s);else setSelId(null);if(e.state.p)setPage(e.state.p)}else{setSelId(null);setPage("dashboard")}}
+      window.addEventListener("popstate",onPop);
+      return function(){window.removeEventListener("popstate",onPop)}},[]);
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
@@ -2055,7 +2085,7 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{globalOS.total}</div>
+      <div style={{position:"absolute",bottom:-5,right:-8,background:K.prim,color:K.primTxt,fontSize:8,fontWeight:800,fontFamily:fm,padding:"2px 5px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,lineHeight:1,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
     </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
@@ -3073,7 +3103,7 @@ function TrackerApp(props){
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
       {/* Header */}
       <div className="ta-detail-head" style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?28:36}/>
-        <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>{(function(){var _mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:5,background:_mm.color+"12",border:"1px solid "+_mm.color+"25"}}><div style={{display:"flex",gap:1}}>{[1,2,3,4,5].map(function(s){return<div key={s} style={{width:5,height:5,borderRadius:"50%",background:s<=_mm.stars?_mm.color:K.bdr}}/>})}</div><span style={{fontSize:9,fontWeight:600,color:_mm.color,fontFamily:fm}}>{_mm.label}</span></div>})()}</div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
             <span style={{fontSize:11,color:K.dim}}>{"•"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
@@ -5193,11 +5223,7 @@ function TrackerApp(props){
         <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
         <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:11})} onClick={function(){exportCSV(filtered)}}>CSV</button>
         <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div></div>
-    {/* ── XP Float Animation ── */}
-    {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
-      <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
-        <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
-    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
+
     {/* ── Today's Focus Card (hero element, always first) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var focus=null;
@@ -5231,52 +5257,34 @@ function TrackerApp(props){
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
       </div>})()}
     {/* ── Compact Streak/Process bar (collapsible, hidden until first action) ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&xp.total>0&&<div style={{marginBottom:16}}>
+    {sideTab==="portfolio"&&filtered.length>0&&<div style={{marginBottom:16}}>
       {/* Compact summary line — always visible */}
-      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <span style={{fontSize:12}}>{String.fromCodePoint(0x1F525)}</span>
-          <span style={{fontSize:11,fontWeight:600,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>{dailyStreak.current}d</span>
-          <span style={{width:1,height:12,background:K.bdr}}/>
-          <span style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim,fontFamily:fm}}>{streakData.current}w</span>
-          {!didActivityToday&&dailyStreak.current>0&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>streak expires tonight</span>}
-          {didActivityToday&&<span style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓ active"}</span>}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{position:"relative",width:22,height:22,flexShrink:0}}>
-            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2" strokeDasharray={Math.round(globalOS.total/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
-          {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)+" 2×"}</span>}
-          <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
-        </div>
+      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
+        {(function(){var mastered=filtered.filter(function(cc2){return calcMastery(cc2).stars>=5}).length;
+          var avgStars=filtered.reduce(function(s2,cc2){return s2+calcMastery(cc2).stars},0)/Math.max(filtered.length,1);
+          return<div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+            <div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(function(s3){return<div key={s3} style={{width:7,height:7,borderRadius:"50%",background:avgStars>=s3?K.grn:avgStars>=s3-.5?K.amb:K.bdr}}/>})}</div>
+            <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{avgStars.toFixed(1)} avg</span>
+            <span style={{fontSize:10,color:K.dim}}>{"\u00b7"}</span>
+            <span style={{fontSize:10,color:mastered>0?K.grn:K.dim,fontFamily:fm}}>{mastered} mastered</span>
+            <span style={{fontSize:10,color:K.dim}}>{"\u00b7"}</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"\ud83d\udd25"} {streakData.current||0}w</span></div>})()}
+        <span style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
       </div>
-      {/* Expanded detail — full streak/XP cards */}
-      {dashGameExpanded&&<div style={{display:"flex",gap:12,padding:"12px 14px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
-        {/* Daily Streak */}
-        <div onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:1}}>
-          <div>
-            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
-            <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div></div></div>
-        {/* Weekly Streak */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:2}}>
-          <div style={{fontSize:20,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
-          <div>
-            <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
-            <div style={{fontSize:8,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed "+String.fromCodePoint(0x2713):"Review due"}</div>
-            {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-              return next?<div style={{fontSize:7,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
-          {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"2px 6px"}}>
-            <span style={{fontSize:10}}>{"🛡️"}</span>
-            <span style={{fontSize:8,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
-        {/* Process Score */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("hub")}}>
-          <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
-            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <div>
-            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Process</div>
-            <div style={{fontSize:8,color:K.dim}}>{currentLevel.icon} {currentLevel.name}</div></div></div>
+      {dashGameExpanded&&<div style={{padding:"14px 16px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,marginBottom:12}}>
+          {filtered.map(function(cc3){var _m3=calcMastery(cc3);
+            return<div key={cc3.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(cc3.id);setDetailTab("dossier")}}>
+              <div style={{position:"relative",width:26,height:26,flexShrink:0}}>
+                <svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="13" cy="13" r="11" fill="none" stroke={_m3.color} strokeWidth="2.5" strokeDasharray={Math.round(_m3.pct/100*69)+" 69"} strokeLinecap="round" transform="rotate(-90 13 13)"/></svg>
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:8,fontWeight:800,color:_m3.color,fontFamily:fm}}>{_m3.stars}</div></div>
+              <div><div style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc3.ticker}</div>
+                <div style={{fontSize:8,color:_m3.color,fontFamily:fm}}>{_m3.label}</div></div></div>})}</div>
+        <div style={{display:"flex",alignItems:"center",gap:12,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
+          <svg width={26} height={26} viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="13" cy="13" r="11" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*69)+" 69"} strokeLinecap="round" transform="rotate(-90 13 13)"/></svg>
+          <div><div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Owner's Score: {globalOS.total}/100</div>
+            <div style={{fontSize:9,color:K.dim}}>{currentLevel.icon} {currentLevel.name}</div></div></div>
       </div>}
     </div>}
     {/* ── Getting Started Quest (persistent onboarding) ── */}
@@ -5351,16 +5359,25 @@ function TrackerApp(props){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
-          <span style={{width:36}}/>
+          <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
-          {!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
-          <span style={{width:60,textAlign:"right"}}>Return</span>
-          {!isMobile&&<span style={{width:80,textAlign:"right"}}>Value</span>}
-          <span style={{width:50,textAlign:"right"}}>Wt%</span>
-          <span style={{width:isMobile?60:120,paddingLeft:6}}>Alloc.</span>
-          <span style={{width:40,textAlign:"center"}}>C</span>
-          {!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
-          {!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}</div>
+          <span style={{width:75,textAlign:"right"}}>Avg Price</span>
+          <span style={{width:65,textAlign:"right"}}>Return</span>
+          {!isMobile&&<span style={{width:85,textAlign:"right"}}>Value</span>}
+          <span style={{width:isMobile?70:140,paddingLeft:8}}>Allocation</span>
+          {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>Conv.</span>}
+          {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
+          {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
+          {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          <span style={{width:28,textAlign:"right",position:"relative"}}>
+            <button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2,display:"flex",alignItems:"center"}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:155,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
+              <div style={{padding:"4px 14px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
+              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings Date"}].map(function(col){return<div key={col.k} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"6px 14px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{width:14,height:14,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {(dashSet.listCols||{})[col.k]&&<svg width="8" height="8" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>}</div>
+                {col.l}</div>})}</div>}
+          </span></div>
         {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
@@ -5368,21 +5385,24 @@ function TrackerApp(props){
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:36}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={22}/></span>
+            <span style={{width:40,position:"relative"}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/>{(function(){var _m=calcMastery(cc);return<div style={{position:"absolute",bottom:-2,right:-2,width:12,height:12,borderRadius:"50%",background:_m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:6,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{_m.stars}</div>})()}</span>
             <span style={{flex:1,minWidth:100}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
-              <div style={{fontSize:9,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{cc.name}</div></span>
-            {!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
-            <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
-            {!isMobile&&<span style={{width:80,textAlign:"right",fontSize:10,color:K.mid,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
-            <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{weight>0?weight.toFixed(1)+"%":"\u2014"}</span>
-            <span style={{width:isMobile?60:120,paddingLeft:6}}>
-              {weight>0?<div style={{height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
-                <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>:<div style={{height:8}}/>}
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
+            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{p2.avgCost>0?"$"+p2.avgCost.toFixed(2):"\u2014"}</span>
+            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:ret!=null?(ret>=0?K.grn:K.red):K.dim}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"\u2014"}</span>
+            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"\u2014"}</span>}
+            <span style={{width:isMobile?70:140,paddingLeft:8}}>
+              {weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div>
+                <span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:30,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}
             </span>
-            <span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:11,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>
-            {!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
-            {!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+            {(dashSet.listCols||{}).conviction&&<span style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{fontSize:10,color:K.dim}}>\u2014</span>}</span>}
+            {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
+            {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
+            {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"\u2014"}</span>}
+            <span style={{width:28}}/>
           </div>})}
       </div>})()}
     {/* Card view */}
@@ -5548,7 +5568,7 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{globalOS.total}</div>
+            <div style={{position:"absolute",bottom:-3,right:-10,background:K.prim,color:K.primTxt,fontSize:9,fontWeight:800,fontFamily:fm,padding:"2px 7px",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid "+K.card,whiteSpace:"nowrap"}}>{currentLevel.icon}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
