@@ -6431,7 +6431,11 @@ function TrackerApp(props){
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{h.amount}</span>
                 <span style={{fontSize:9,color:K.dim}}>{fD(h.date)}</span></div></div>})}</div></div>}
-        <div style={{marginTop:16,textAlign:"center"}}>
+        <div style={{marginTop:16,textAlign:"center",display:"flex",flexDirection:"column",gap:8,alignItems:"center"}}>
+          <button onClick={function(){
+            var html=buildEmailHTML({title:"Test Email",subtitle:"If you see this, email delivery is working.",summary:"This is a test email from ThesisAlpha. Your Resend integration is connected and emails will be delivered to "+props.user+".",kpis:[{name:"Test KPI",actual:"100",unit:"%",status:"met"}],metCount:1,totalCount:1});
+            fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:"ThesisAlpha: Test Email",html:html,type:"test"})}).then(function(r){return r.json()}).then(function(d){if(d.success)showToast("Test email sent to "+props.user,"milestone",4000);else showToast("Failed: "+(d.error||"unknown error"),"info",5000)}).catch(function(e){showToast("Connection error: "+e.message,"info",5000)})
+          }} style={Object.assign({},S.btn,{padding:"7px 16px",fontSize:11,display:"inline-flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Send Test Email</button>
           <button onClick={function(){setShowProfile(false)}} style={S.btn}>Close</button></div>
       </div>})()}
     {trial&&trial.start&&plan!=="pro"&&function(){
