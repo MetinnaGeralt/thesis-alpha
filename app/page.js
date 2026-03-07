@@ -2921,8 +2921,10 @@ function TrackerApp(props){
     // Chart data
     var chartItems=[{k:"revenue",l:"Revenue"},{k:"grossProfit",l:"Gross Profit"},{k:"operatingIncome",l:"Op. Income"},{k:"netIncome",l:"Net Income"},{k:"ebitda",l:"EBITDA"},{k:"eps",l:"EPS",sm:1},{k:"freeCashFlow",l:"Free Cash Flow"},{k:"operatingCashFlow",l:"Op. Cash Flow"},{k:"totalAssets",l:"Total Assets"},{k:"totalDebt",l:"Total Debt"},{k:"totalStockholdersEquity",l:"Equity"},{k:"grossProfitRatio",l:"Gross Margin",p:1},{k:"operatingIncomeRatio",l:"Op. Margin",p:1},{k:"netIncomeRatio",l:"Net Margin",p:1}];
     function toggleChartMetric(key){setChartSel(function(prev){return prev.indexOf(key)>=0?prev.filter(function(k){return k!==key}):[].concat(prev,[key]).slice(-6)})}
-    // Build multi-metric chart data
-    var dates=rows.map(function(r){return r.date}).filter(Boolean);
+    // Build multi-metric chart data — use dates from longest statement so chart persists across tabs
+    var _allDates={};if(data){["income","balance","cashflow"].forEach(function(st){(data[st]||[]).forEach(function(r){if(r.date)_allDates[r.date]=true})})}
+    var dates=Object.keys(_allDates).sort();
+    if(dates.length===0)dates=rows.map(function(r){return r.date}).filter(Boolean);
     var chartSeries=chartSel.map(function(key,si){
       var def=chartItems.find(function(ci){return ci.k===key})||{k:key,l:key};
       var pts=dates.map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
@@ -3043,6 +3045,7 @@ function TrackerApp(props){
     var _moatD=useState(null),dossierMoat=_moatD[0],setDossierMoat=_moatD[1];
     var _keyFin=useState(null),keyFin=_keyFin[0],setKeyFin=_keyFin[1];
     var _hovD=useState(null),hovD=_hovD[0],setHovD=_hovD[1];
+    var _descExp=useState(false),descExpanded=_descExp[0],setDescExpanded=_descExp[1];
     useEffect(function(){
       // Backfill description from FMP profile if missing (free for all users)
       if(!c.description){fmp("profile/"+c.ticker).then(function(p){
@@ -3114,7 +3117,8 @@ function TrackerApp(props){
       {detailTab==="dossier"&&<div className="ta-fade">
         {/* Company Summary — auto-fetched from FMP */}
         {c.description&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
-          <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:c.ceo||c.employees||c.mktCap?10:0}}>{c.description.length>300?c.description.substring(0,300)+"…":c.description}</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:8}}>{descExpanded||c.description.length<=200?c.description:c.description.substring(0,200)+"…"}
+            {c.description.length>200&&<button onClick={function(){setDescExpanded(!descExpanded)}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0,marginLeft:4}}>{descExpanded?"Show less":"Read more"}</button>}</div>
           {(c.ceo||c.employees||c.mktCap||c.exchange)&&<div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:10,color:K.dim,fontFamily:fm}}>
             {c.ceo&&<span>CEO: <strong style={{color:K.mid}}>{c.ceo}</strong></span>}
             {c.employees>0&&<span>Employees: <strong style={{color:K.mid}}>{c.employees.toLocaleString()}</strong></span>}
@@ -3221,7 +3225,46 @@ function TrackerApp(props){
             return<div>{recent.map(function(d2){return<JournalCard key={d2.id} entry={d2}/>})}</div>})()}
         </div>
 
-        {/* ── 4. THE MOAT ── */}
+        {/* ── OWNER'S NUMBERS ── */}
+        {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
+          if(!hasSnap)return null;
+          // Group metrics
+          var valuation=[];var returns=[];var divInfo=[];var health=[];
+          if(snap.pe)valuation.push({l:"P/E",v:snap.pe.value,tip:"Price to earnings"});
+          if(snap.pb)valuation.push({l:"P/B",v:snap.pb.value,tip:"Price to book"});
+          if(snap.fcf)valuation.push({l:"FCF/Share",v:snap.fcf.value,tip:"Free cash flow per share"});
+          if(snap.hi52&&snap.lo52){var cp=pos.currentPrice||0;if(cp>0){var pctOfHi=((cp/parseFloat(snap.hi52.value.replace("$","")))*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}
+          if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,tip:"Return on invested capital",isGood:parseFloat(snap.roic.value)>=12});
+          if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,tip:"Return on equity",isGood:parseFloat(snap.roe.value)>=15});
+          if(snap.grossMargin)returns.push({l:"Gross Margin",v:snap.grossMargin.value,tip:"Revenue minus COGS"});
+          if(snap.opMargin)returns.push({l:"Op. Margin",v:snap.opMargin.value,tip:"Operating income / revenue"});
+          if(snap.netMargin)returns.push({l:"Net Margin",v:snap.netMargin.value,tip:"Net income / revenue"});
+          if(snap.revGrowth)returns.push({l:"Rev Growth",v:snap.revGrowth.value,tip:"Year-over-year revenue growth",isGood:snap.revGrowth.positive});
+          // Dividend info
+          if(c.divPerShare>0||c.lastDiv>0){var ann=(c.divPerShare||c.lastDiv||0)*(c.divFrequency==="monthly"?12:c.divFrequency==="quarterly"?4:c.divFrequency==="semi"?2:1);
+            var yld=pos.currentPrice>0?(ann/pos.currentPrice*100):0;
+            divInfo.push({l:"Dividend",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)+" / "+c.divFrequency});
+            if(yld>0)divInfo.push({l:"Yield",v:yld.toFixed(2)+"%",isGood:yld>=2});
+            if(c.exDivDate)divInfo.push({l:"Ex-Div",v:fD(c.exDivDate)})}
+          if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
+          if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
+          var sections=[];
+          if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
+          if(returns.length>0)sections.push({title:"RETURNS & GROWTH",items:returns,color:K.grn});
+          if(divInfo.length>0)sections.push({title:"DIVIDENDS",items:divInfo,color:K.amb});
+          if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
+          if(sections.length===0)return null;
+          return<div style={{marginBottom:24}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>OWNER'S NUMBERS</div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+              {sections.map(function(sec,si){return<div key={si} style={{marginBottom:si<sections.length-1?14:0}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>{sec.title}</div>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:"6px 16px"}}>
+                  {sec.items.map(function(item,ii){return<div key={ii} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"30"}}>
+                    <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.l}</span>
+                    <span style={{fontSize:11,fontWeight:600,fontFamily:fm,color:item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt}}>{item.v}</span></div>})}</div></div>})}</div></div>})()}
+
+                {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE MOAT</div>
