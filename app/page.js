@@ -6065,7 +6065,7 @@ function TrackerApp(props){
         if(worst2&&worst2.ticker!==best2.ticker)h+='<div class="stat"><div class="stat-n red">'+worst2.ticker+'</div><div class="stat-l">Worst '+(worst2.ret>=0?"+":"")+worst2.ret.toFixed(0)+'%</div></div>';
         h+='</div>';
         h+='<div class="sec">Discipline</div>';
-        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n">'+os2.total+'</div><div class="stat-l">Owner's Score</div></div>';
+        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n">'+os2.total+'</div><div class="stat-l">Owner&#39;s Score</div></div>';
         h+='<div class="stat"><div class="stat-n">'+avgMast.toFixed(1)+'</div><div class="stat-l">Avg Mastery /6</div></div>';
         h+='<div class="stat"><div class="stat-n">'+qRevs.length+'</div><div class="stat-l">Reviews</div></div></div>';
         if(shifts.length>0){h+='<div class="sec">Conviction Changes</div><p>';shifts.slice(0,5).forEach(function(s3){h+=s3.ticker+' ('+s3.rating+'/10'+(s3.note?" - "+s3.note.substring(0,50):"")+'); '});h+='</p>'}
