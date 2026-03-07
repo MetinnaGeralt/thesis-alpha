@@ -2243,7 +2243,9 @@ function TrackerApp(props){
         {!trialBonusEarned&&<div>
           <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
           <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"→"} +{TRIAL_BONUS} days</div></div>}
-        {trialBonusEarned&&<div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}</div>
+        {trialBonusEarned&&<div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{width:"100%",marginTop:8,padding:"7px 12px",background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:6,fontSize:10,fontWeight:600,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:8,fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
     <div style={{padding:"10px 16px 6px"}}>
@@ -3318,40 +3320,6 @@ function TrackerApp(props){
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11,opacity:(streakData.current||0)>=2?1:.5})} onClick={function(){if((streakData.current||0)<2){showToast("Research Export unlocks at week 2 streak. "+((streakData.current||0)===0?"Start your streak with a weekly review!":(2-(streakData.current||0))+" week"+(2-(streakData.current||0)>1?"s":"")+" to go!"),"info",4000);return}exportResearch(c.id)}} title={(streakData.current||0)>=2?"Copy thesis + KPIs + history for NotebookLM or ChatGPT":"Unlocks at week 2 streak"}>{(streakData.current||0)<2?String.fromCodePoint(0x1F512)+" ":""}Export AI</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
-      {/* Moat type badges */}
-      {function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
-        if(active.length===0)return null;
-        return<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8,paddingBottom:8}}>
-          {active.map(function(t){var d=mt[t.id];var dots=d.strength||3;
-            return<div key={t.id} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:t.color+"12",border:"1px solid "+t.color+"30",cursor:"pointer"}} onClick={function(){setDetailTab("research");setSubPage("moat")}}>
-              <IC name={t.icon} size={10} color={t.color}/>
-              <span style={{fontSize:10,fontWeight:600,color:t.color,fontFamily:fm}}>{t.label}</span>
-              <span style={{fontSize:8,color:t.color,fontFamily:fm,letterSpacing:1}}>{"•".repeat(dots)}{"·".repeat(5-dots)}</span>
-            </div>})}</div>}()}
-      {/* Process indicators — compact badges showing key scores */}
-      {(function(){var os2=calcOwnerScore([c]);var conv2=c.conviction||0;
-        var mt=c.moatTypes||{};var activeMoats=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active}).length;
-        var hasKpis=c.kpis.length>0;var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
-        var items=[];
-        if(conv2>0)items.push({label:"Conviction",value:conv2+"/10",color:conv2>=7?K.grn:conv2>=4?K.amb:K.red});
-        if(hasKpis){var kh=gH(c.kpis);items.push({label:"KPIs",value:kh.l,color:kh.c})}
-        if(activeMoats>0)items.push({label:"Moat",value:activeMoats+" type"+(activeMoats>1?"s":""),color:"#9333EA"});
-        if(os2.total>0)items.push({label:"Process",value:os2.total+"/100",color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red});
-        if(items.length===0)return null;
-        return<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10,paddingBottom:6}}>
-          {items.map(function(it,ii){return<div key={ii} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:it.color+"08",border:"1px solid "+it.color+"20"}}>
-            <span style={{fontSize:9,color:it.color,fontFamily:fm,fontWeight:600}}>{it.label}</span>
-            <span style={{fontSize:10,color:it.color,fontWeight:700,fontFamily:fm}}>{it.value}</span></div>})}</div>})()}
-      {/* Community conviction consensus */}
-      {conv>0&&(function(){
-        var portOwners=cos.filter(function(x){return(x.status||"portfolio")==="portfolio"}).length;
-        var hist=c.convictionHistory||[];var avgConv=hist.length>0?Math.round(hist.reduce(function(s,h){return s+h.rating},0)/hist.length*10)/10:conv;
-        return<div style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.bg,borderRadius:8,marginBottom:8}}>
-          <IC name="users" size={14} color={K.dim}/>
-          <div style={{flex:1}}>
-            <div style={{fontSize:11,color:K.mid}}><span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{conv}/10</span> conviction · {hist.length} rating{hist.length!==1?"s":""} over time{hist.length>=3?" · avg "+avgConv:""}</div>
-            <div style={{fontSize:9,color:K.dim,marginTop:1}}>Community consensus coming as more owners join ThesisAlpha</div></div>
-        </div>})()}
       {/* Tab Navigation */}
       <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
         {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?700:500,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
@@ -3717,6 +3685,14 @@ function TrackerApp(props){
           var kpiT=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.value>0});
           var snapG=dpv("revGrowth")||dpv("epsGrowth");
           if(snapG){eg=snapG}else if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
+          // Market cap mean reversion (same logic as Performance & Goals)
+          var mcap=c.mktCap||0;
+          var baseR=mcap>500e9?9:mcap>100e9?11:mcap>50e9?13:mcap>10e9?15:mcap>1e9?17:20;
+          var capG=mcap>500e9?15:mcap>100e9?20:mcap>50e9?25:mcap>10e9?35:mcap>1e9?45:60;
+          eg=Math.min(eg,capG);
+          var bw=mcap>500e9?0.55:mcap>100e9?0.4:mcap>50e9?0.3:mcap>10e9?0.2:0.1;
+          eg=eg*(1-bw)+baseR*bw;
+          if(eg>baseR){var dcay=mcap>500e9?0.08:mcap>100e9?0.06:0.04;eg=baseR+(eg-baseR)*Math.pow(1-dcay,Math.max(goals.horizon,5)/2)}
           var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
@@ -4654,6 +4630,17 @@ function TrackerApp(props){
             else if(kpiActual){eg=kpiActual.lastResult.actual;egSource="kpi result"}
             else if(kpiGrowth){eg=kpiGrowth.value;egSource="kpi target"}
             else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="estimate"}
+            // ── MARKET CAP MEAN REVERSION ──
+            // Large companies cannot sustain high growth — apply base rate blending
+            var mc=c2.mktCap||0;
+            var baseRate=mc>500e9?9:mc>100e9?11:mc>50e9?13:mc>10e9?15:mc>1e9?17:20;// SP500 long-run ~10%
+            var capGrowth=mc>500e9?15:mc>100e9?20:mc>50e9?25:mc>10e9?35:mc>1e9?45:60;// max believable growth
+            eg=Math.min(eg,capGrowth);// hard cap by market cap tier
+            // Blend toward base rate: bigger company = more weight on base rate
+            var blendWeight=mc>500e9?0.55:mc>100e9?0.4:mc>50e9?0.3:mc>10e9?0.2:0.1;
+            eg=eg*(1-blendWeight)+baseRate*blendWeight;
+            // Growth decay over time horizon — high growth mean-reverts
+            if(eg>baseRate){var decayPerYear=mc>500e9?0.08:mc>100e9?0.06:0.04;eg=baseRate+(eg-baseRate)*Math.pow(1-decayPerYear,goals.horizon/2)}
             // Dividend yield — from snapshot, company data, or last known div
             var dy=0;var dySnap=fs.divYield;if(dySnap&&dySnap.numVal)dy=dySnap.numVal;
             else dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&c2.position.currentPrice>0?(c2.lastDiv*4/c2.position.currentPrice*100):0);
@@ -4684,36 +4671,37 @@ function TrackerApp(props){
                 if(repurch>0&&c2.mktCap>0)buybackBoost=Math.min(repurch/c2.mktCap*100,8);
                 else if(repurch>0&&latest.revenue>0)buybackBoost=Math.min(repurch/latest.revenue*3,8)}}
             var expectedReturn=eg+dy+multChange+fcfBoost+marginBoost+roicBoost+buybackBoost;
-            // Predictability: higher for stable, proven businesses
-            var pred=40;
-            var gm=pv("grossMargin");if(gm>60)pred+=10;else if(gm>40)pred+=5;
-            var roic2=pv("roic")||pv("roe");if(roic2>20)pred+=10;else if(roic2>12)pred+=5;
-            var de=pv("debtEquity")||999;if(de<0.5)pred+=8;else if(de<1.5)pred+=3;else if(de>3)pred-=10;
-            var nm=pv("netMargin");if(nm>20)pred+=5;else if(nm>10)pred+=2;
-            var fcfConv=0;var fcfS=fs.fcf;if(fcfS)fcfConv=50;if(fcfConv>0)pred+=3;
-            if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=8;
-            if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=12;
-            if(c2.conviction>=8)pred+=5;if(c2.conviction>=5)pred+=3;
-            if(egSource==="historical")pred+=10;else if(egSource==="kpi result")pred+=7;else if(egSource==="kpi target")pred+=3;
-            if((c2.earningsHistory||[]).length>=3)pred+=6;else if((c2.earningsHistory||[]).length>=1)pred+=3;
-            if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=4;
-            if(gmKpi&&gmKpi.lastResult.status==="met")pred+=3;
-            pred=Math.max(15,Math.min(95,pred));
+            // Predictability: base 30, hard to get above 65 without exceptional data
+            var pred=30;
+            var gm=pv("grossMargin");if(gm>60)pred+=6;else if(gm>40)pred+=3;
+            var roic2=pv("roic")||pv("roe");if(roic2>20)pred+=6;else if(roic2>12)pred+=3;
+            var de=pv("debtEquity")||999;if(de<0.5)pred+=5;else if(de<1.5)pred+=2;else if(de>3)pred-=10;
+            var nm=pv("netMargin");if(nm>20)pred+=3;else if(nm>10)pred+=1;
+            var fcfConv=0;var fcfS=fs.fcf;if(fcfS)fcfConv=50;if(fcfConv>0)pred+=2;
+            if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=5;
+            if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=15;
+            if(c2.conviction>=8)pred+=3;if(c2.conviction>=5)pred+=2;
+            if(egSource==="historical")pred+=5;else if(egSource==="kpi result")pred+=4;else if(egSource==="kpi target")pred+=2;
+            if((c2.earningsHistory||[]).length>=3)pred+=4;else if((c2.earningsHistory||[]).length>=1)pred+=2;
+            if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=2;
+            if(gmKpi&&gmKpi.lastResult.status==="met")pred+=2;
+            // Market cap penalty for growth stocks — harder to predict hypergrowth sustainability
+            if(mc<10e9&&eg>20)pred-=8;
+            pred=Math.max(10,Math.min(75,pred));
             return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,buyback:buybackBoost,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
           // Portfolio weighted expected CAGR
           var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
           var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
-          // Range based on predictability
+          // Range based on predictability — wider spreads for realism
           var uncertainty=(100-portPred)/100;
-          var spread=Math.max(portCAGR*0.3,4)*uncertainty+2;
-          var lowCAGR=portCAGR-spread*1.2;var highCAGR=portCAGR+spread*0.8;
+          var spread=Math.max(portCAGR*0.4,6)*uncertainty+4;// wider base spread
+          var lowCAGR=portCAGR-spread*1.4;var highCAGR=portCAGR+spread*0.7;// asymmetric — more downside
           // Probability using cumulative normal approximation
-          var diff=portCAGR-goals.targetCAGR;var sigma=spread*0.8||1;
+          var diff=portCAGR-goals.targetCAGR;var sigma=spread*0.9||1;
           var t2=diff/sigma;
           // Approximation of normal CDF
-          var prob;if(t2>=0){prob=Math.round(Math.min(95,50+50*(1-Math.exp(-0.7*t2-0.35*t2*t2))))}else{prob=Math.round(Math.max(5,50-50*(1-Math.exp(0.7*t2-0.35*t2*t2))))}
-          if(portCAGR>=goals.targetCAGR*1.3)prob=Math.max(prob,75);
-          if(portCAGR>=goals.targetCAGR)prob=Math.max(prob,45);
+          var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
+          // No artificial floors — let the math speak
           // Portfolio character
           var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
           // Sort by contribution
