@@ -3582,8 +3582,8 @@ function TrackerApp(props){
         {/* Quick stats — consolidated */}
         <div style={{display:"flex",gap:isMobile?12:16}}>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak>0?String.fromCodePoint(0x1F525)+" ":""}{streak}</div>
-            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>week streak</div></div>
+            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>holdings</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"—"}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>batting avg</div></div>
@@ -5244,55 +5244,6 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
         {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
       </div>})()}
-    {/* ── Compact Streak/Process bar (collapsible, hidden until first action) ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&xp.total>0&&<div style={{marginBottom:16}}>
-      {/* Compact summary line — always visible */}
-      <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <span style={{fontSize:12}}>{String.fromCodePoint(0x1F525)}</span>
-          
-          <span style={{width:1,height:12,background:K.bdr}}/>
-          <span style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim,fontFamily:fm}}>{streakData.current}w</span>
-          
-          {didActivityToday&&<span style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓ active"}</span>}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{position:"relative",width:22,height:22,flexShrink:0}}>
-            <svg width={22} height={22} viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="none" stroke={K.bdr} strokeWidth="2"/><circle cx="11" cy="11" r="9" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2" strokeDasharray={Math.round(globalOS.total/100*56)+" 56"} strokeLinecap="round" transform="rotate(-90 11 11)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
-          {isDoubleXP&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{String.fromCodePoint(0x26A1)+" 2×"}</span>}
-          <svg width="10" height="10" viewBox="0 0 10 10" style={{transform:dashGameExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s"}}><path d="M2 3.5L5 6.5L8 3.5" stroke={K.dim} strokeWidth="1.5" fill="none"/></svg>
-        </div>
-      </div>
-      {/* Expanded detail — full streak/XP cards */}
-      {dashGameExpanded&&<div style={{display:"flex",gap:12,padding:"12px 14px",background:K.card,borderTop:"1px solid "+K.bdr+"50",borderRadius:"0 0 10px 10px",border:"1px solid "+K.bdr,borderTopColor:K.bdr+"50"}}>
-        {/* Daily Streak */}
-        <div onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:1}}>
-          <div>
-            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current||0}</div>
-            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Week Streak</div></div></div>
-        {/* Weekly Streak */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:2}}>
-          <div style={{fontSize:20,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
-          <div>
-            <div style={{fontSize:10,fontWeight:600,color:streakData.current>0?K.grn:K.dim}}>Week Streak</div>
-            <div style={{fontSize:8,color:K.dim}}>{streakData.current>0?"Best: "+streakData.best:currentWeekReviewed?"Reviewed "+String.fromCodePoint(0x2713):"Review due"}</div>
-            {(function(){var rewards=[{w:1,r:"Themes"},{w:2,r:"AI Export"},{w:3,r:"PayPal Blue"},{w:4,r:"Munger"},{w:5,r:"Bloomberg"},{w:8,r:"Buffett"},{w:12,r:"Greenblatt"},{w:16,r:"Lynch"},{w:20,r:"Davis"},{w:24,r:"Hohn"}];var next=rewards.find(function(x){return x.w>(streakData.current||0)});
-              return next?<div style={{fontSize:7,color:K.acc,fontFamily:fm}}>{String.fromCodePoint(0x1F381)+" Unlock at wk "+next.w}</div>:null})()}</div>
-          {streakData.freezes>0&&<div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:3,background:K.blue+"10",borderRadius:4,padding:"2px 6px"}}>
-            <span style={{fontSize:10}}>{"🛡️"}</span>
-            <span style={{fontSize:8,color:K.blue,fontFamily:fm}}>{streakData.freezes}</span></div>}</div>
-        {/* Process Score */}
-        <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:1,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("hub")}}>
-          <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
-            <svg width={32} height={32} viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke={K.bdr} strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc} strokeWidth="2.5" strokeDasharray={Math.round(globalOS.total/100*82)+" 82"} strokeLinecap="round" transform="rotate(-90 16 16)"/></svg>
-            <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.acc,fontFamily:fm}}>{globalOS.total}</div></div>
-          <div>
-            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>Process</div>
-            <div style={{fontSize:8,color:K.dim}}>{currentLevel.icon} {currentLevel.name}</div></div></div>
-      </div>}
-    </div>}
     {/* ── Getting Started Quest (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
       var portfolio=filtered;
@@ -5375,10 +5326,11 @@ function TrackerApp(props){
           {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}>KPIs</span>}
           {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right"}}>Earn.</span>}
           {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right"}}>Price</span>}
+          {(dashSet.listCols||{}).mastery&&<span style={{width:55,textAlign:"center"}}>Mastery</span>}
           <span style={{width:28,position:"relative"}}><button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>
             {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
               <div style={{padding:"4px 12px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
-              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"}].map(function(col){return<div key={col.k} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"6px 12px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><div style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent"}}/>{col.l}</div>})}</div>}</span></div>
+              {[{k:"price",l:"Current Price"},{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"mastery",l:"Mastery Stars"}].map(function(col){return<div key={col.k} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"6px 12px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><div style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent"}}/>{col.l}</div>})}</div>}</span></div>
         {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc,ci){
           var p2=cc.position||{};var val=p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0;
           var ret=p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;
@@ -5386,7 +5338,7 @@ function TrackerApp(props){
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:40,position:"relative"}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/>{(function(){var _m=calcMastery(cc);return _m.stars>1?<div style={{position:"absolute",bottom:-2,right:-2,width:13,height:13,borderRadius:"50%",background:_m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{_m.stars}</div>:null})()}</span>
+            <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/></span>
             <span style={{flex:1,minWidth:100}}>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
@@ -5398,6 +5350,7 @@ function TrackerApp(props){
             {(dashSet.listCols||{}).kpis&&!isMobile&&<span style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>}
             {(dashSet.listCols||{}).earnings&&!isMobile&&<span style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>}
             {(dashSet.listCols||{}).price&&!isMobile&&<span style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>}
+            {(dashSet.listCols||{}).mastery&&(function(){var _ml=calcMastery(cc);return<span style={{width:55,textAlign:"center",display:"flex",justifyContent:"center",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<svg key={s} width="7" height="7" viewBox="0 0 12 12"><polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" fill={s<=_ml.stars?_ml.color:K.bdr}/></svg>})}</span>})()}
             <span style={{width:28}}/>
           </div>})}
       </div>})()}
@@ -5406,7 +5359,7 @@ function TrackerApp(props){
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{position:"relative"}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/>{(function(){var _mc=calcMastery(c);return _mc.stars>1?<div style={{position:"absolute",bottom:-2,right:-3,width:14,height:14,borderRadius:"50%",background:_mc.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{_mc.stars}</div>:null})()}</div><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
@@ -5439,6 +5392,25 @@ function TrackerApp(props){
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d — "+fD(c.earningsDate))}</span>
               {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:9,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" ⏳":""}</div></div></div>})}</div>}
+    {/* Mastery Overview */}
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){
+      var items=filtered.map(function(cc2){return{ticker:cc2.ticker,id:cc2.id,m:calcMastery(cc2),domain:cc2.domain}}).sort(function(a,b){return a.m.stars-b.m.stars});
+      var avgStars=items.reduce(function(s2,i2){return s2+i2.m.stars},0)/Math.max(items.length,1);
+      var mastered=items.filter(function(i2){return i2.m.stars>=6}).length;
+      var nextSteps={"Added":"Write a thesis with core investment case, moat, risks, and sell criteria","Thesis":"Define 2+ KPIs and rate your conviction","Tracked":"Check earnings and classify the competitive moat","Monitored":"Log a decision and review your thesis (keep it fresh)","Disciplined":"Accumulate 3+ quarters of earnings data and conviction history"};
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Ownership Mastery</div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{avgStars.toFixed(1)}/6 avg {mastered>0?" · "+mastered+" mastered":""}</div></div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {items.map(function(it){return<div key={it.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",borderRadius:8,background:K.bg,cursor:"pointer"}} onClick={function(){setSelId(it.id);setDetailTab("dossier")}}>
+            <CoLogo domain={it.domain} ticker={it.ticker} size={20}/>
+            <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:50}}>{it.ticker}</span>
+            <div style={{display:"flex",gap:2}}>{[1,2,3,4,5,6].map(function(s2){return<svg key={s2} width="14" height="14" viewBox="0 0 12 12"><polygon points="6,0.5 7.8,4.2 12,4.7 8.8,7.5 9.7,11.5 6,9.3 2.3,11.5 3.2,7.5 0,4.7 4.2,4.2" fill={s2<=it.m.stars?it.m.color:K.bdr} stroke={s2<=it.m.stars?it.m.color:K.bdr} strokeWidth="0.5"/></svg>})}</div>
+            <span style={{fontSize:10,fontWeight:600,color:it.m.color,fontFamily:fm,minWidth:70}}>{it.m.label}</span>
+            {it.m.stars<6&&<span style={{fontSize:10,color:K.dim,flex:1}}>{nextSteps[it.m.label]||""}</span>}
+            {it.m.stars>=6&&<span style={{fontSize:10,color:K.grn,flex:1}}>{"✓"} Full mastery</span>}
+          </div>})}</div></div>})()}
     {sideTab==="portfolio"&&filtered.length>=2&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>
       {[{label:"Analytics",icon:"bar",color:K.acc,pg:"analytics",desc:"Moat scores & quality"},
         {label:"Earnings",icon:"target",color:K.amb,pg:"calendar",desc:"Upcoming & recent"},
