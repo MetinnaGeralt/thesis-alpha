@@ -544,13 +544,11 @@ function TrackerApp(props){
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="light"?"dark":"light";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState(SAMPLE),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
-  var _s=useState(null),selId=_s[0],_setSelIdRaw=_s[1];
-  function setSelId(id){_setSelIdRaw(id);try{if(id){window.history.pushState({selId:id},"",window.location.pathname)}else{window.history.pushState({page:page,selId:null},"",window.location.pathname)}}catch(e){}}var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
+  var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
-  var _pg=useState("dashboard"),page=_pg[0],_setPageRaw=_pg[1];
-  function setPage(p){_setPageRaw(p);try{window.history.pushState({page:p,selId:null},"",window.location.pathname)}catch(e){}}
+  var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];
   var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];
@@ -837,10 +835,17 @@ function TrackerApp(props){
     var os=calcOwnerScore(cos);var lv=getLevel(os.total);
     prevScoreLevel.current=lv.name},[cos,loaded]);
   useEffect(function(){if(typeof window==="undefined")return;
-    // Browser back button handler
+    // Browser back button — push state on meaningful navigation, restore on popstate
+    var _skipPush=useRef(false);var _mounted=useRef(false);
+    useEffect(function(){
+      if(!_mounted.current){_mounted.current=true;return}
+      if(_skipPush.current){_skipPush.current=false;return}
+      try{window.history.pushState({page:page,selId:selId},"",window.location.pathname)}catch(e){}
+    },[page,selId]);
     useEffect(function(){function onPop(e){
-      if(e.state){if(e.state.selId){_setSelIdRaw(e.state.selId)}else{_setSelIdRaw(null);if(e.state.page)_setPageRaw(e.state.page)}}
-      else{_setSelIdRaw(null);_setPageRaw("dashboard")}}
+      _skipPush.current=true;
+      if(e.state){if(e.state.selId!=null){setSelId(e.state.selId)}else{setSelId(null)}if(e.state.page){setPage(e.state.page)}}
+      else{setSelId(null);setPage("dashboard")}}
       window.addEventListener("popstate",onPop);return function(){window.removeEventListener("popstate",onPop)}},[]);
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
