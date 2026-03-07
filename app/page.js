@@ -3708,6 +3708,91 @@ function TrackerApp(props){
               <span style={{fontSize:11,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dec.reasoning?dec.reasoning.substring(0,60)+"...":""}</span>
               {dec.outcome&&<span style={{fontSize:9,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,fontFamily:fm,fontWeight:600}}>{dec.outcome}</span>}
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>})}</div>}
+
+        {/* === PERFORMANCE ATTRIBUTION === */}
+        {portfolio.length>0&&(function(){
+          var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0});
+          if(held.length===0)return null;
+          var totalCost=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
+          var totalVal2=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
+          var totalRet=totalCost>0?((totalVal2-totalCost)/totalCost*100):0;
+          var attr=held.map(function(c2){var p2=c2.position;var cost=p2.shares*p2.avgCost;var ret2=(p2.shares*p2.currentPrice-cost)/cost*100;var weight=cost/totalCost;
+            var buyDec=(c2.decisions||[]).find(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
+            return{ticker:c2.ticker,ret:ret2,contrib:weight*ret2,weight:weight*100,reasoning:buyDec?buyDec.reasoning:"",id:c2.id}}).sort(function(a,b){return b.contrib-a.contrib});
+          var bestD=attr[0];var worstD=attr[attr.length-1];
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:12}}>Performance Attribution</div>
+            <div style={{display:"flex",gap:16,marginBottom:12}}>
+              <div><div style={{fontSize:24,fontWeight:700,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div><div style={{fontSize:10,color:K.dim}}>Portfolio return</div></div>
+              <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>{attr.slice(0,5).map(function(a2){return<div key={a2.ticker} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={function(){setSelId(a2.id);setDetailTab("dossier");setPage("dashboard")}}>
+                <span style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{a2.ticker}</span>
+                <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(Math.abs(a2.contrib)/Math.max(Math.abs(attr[0].contrib),1)*100,100)+"%",borderRadius:3,background:a2.contrib>=0?K.grn:K.red}}/></div>
+                <span style={{fontSize:10,fontWeight:600,color:a2.contrib>=0?K.grn:K.red,fontFamily:fm,minWidth:42,textAlign:"right"}}>{a2.contrib>=0?"+":""}{a2.contrib.toFixed(1)}%</span></div>})}</div></div>
+            {bestD&&bestD.reasoning&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5,padding:"8px 10px",background:K.bg,borderRadius:6}}><span style={{fontWeight:600,color:K.grn}}>Best call:</span> {bestD.ticker} ({bestD.ret>=0?"+":""}{bestD.ret.toFixed(0)}%) {bestD.reasoning.substring(0,80)}</div>}
+          </div>})()}
+        {/* === GROWTH TIMELINE === */}
+        {portfolio.length>0&&(function(){
+          var tw=portfolio.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>30}).length;
+          var avgSec=portfolio.reduce(function(s2,c2){var n2=c2.thesisNote||"";var sec=1;if(n2.indexOf("## MOAT")>=0)sec++;if(n2.indexOf("## RISKS")>=0)sec++;if(n2.indexOf("## SELL")>=0)sec++;return s2+sec},0)/Math.max(portfolio.length,1);
+          var totalK=portfolio.reduce(function(s2,c2){return s2+c2.kpis.length},0);
+          var kpC=portfolio.reduce(function(s2,c2){return s2+c2.kpis.filter(function(k2){return k2.lastResult}).length},0);
+          var tE=portfolio.reduce(function(s2,c2){return s2+(c2.earningsHistory||[]).length},0);
+          var tCu=portfolio.reduce(function(s2,c2){return s2+(c2.convictionHistory||[]).length},0);
+          var avgM=portfolio.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/Math.max(portfolio.length,1);
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:12}}>Your Growth</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {[{l:"Theses",v:tw+"/"+portfolio.length,c:tw===portfolio.length?K.grn:K.txt},{l:"Avg depth",v:avgSec.toFixed(1)+"/4",c:avgSec>=3?K.grn:K.txt},{l:"KPIs tracked",v:totalK+(" (")+kpC+" checked)",c:kpC>0?K.grn:K.txt},{l:"Earnings reviewed",v:tE+"q",c:tE>=portfolio.length*2?K.grn:K.txt},{l:"Conviction updates",v:tCu+"",c:tCu>=portfolio.length*2?K.grn:K.txt},{l:"Mastery avg",v:avgM.toFixed(1)+"/6",c:avgM>=4?K.grn:K.txt}].map(function(g2){return<div key={g2.l} style={{padding:"6px 8px",background:K.bg,borderRadius:6}}>
+                <div style={{fontSize:13,fontWeight:700,color:g2.c,fontFamily:fm}}>{g2.v}</div><div style={{fontSize:8,color:K.dim}}>{g2.l}</div></div>})}</div></div>})()}
+        {/* === INVESTOR DNA === */}
+        {portfolio.length>=2&&(function(){
+          var styles={growth:0,value:0,quality:0,income:0};
+          portfolio.forEach(function(c2){if(c2.investStyle==="growth"||c2.investStyle==="aggressive")styles.growth++;else if(c2.investStyle==="value"||c2.investStyle==="contrarian")styles.value++;else if(c2.investStyle==="income"||c2.investStyle==="dividend")styles.income++;else styles.quality++});
+          var tot2=Object.values(styles).reduce(function(s2,v2){return s2+v2},0)||1;
+          var dom=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0];
+          var avgC=portfolio.reduce(function(s2,c2){return s2+(c2.conviction||0)},0)/Math.max(portfolio.length,1);
+          var sectors2={};portfolio.forEach(function(c2){var s3=c2.sector||"Other";sectors2[s3]=(sectors2[s3]||0)+1});
+          var topS=Object.keys(sectors2).sort(function(a,b){return sectors2[b]-sectors2[a]})[0]||"";
+          var conc=topS?Math.round(sectors2[topS]/portfolio.length*100):0;
+          var match=dom==="quality"&&avgC>=7?"Terry Smith":dom==="growth"?"Peter Lynch":dom==="value"?"Seth Klarman":dom==="income"?"Shelby Davis":"Warren Buffett";
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Investor DNA</div>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:10}}>Your style resembles <span style={{color:K.acc}}>{match}</span></div>
+            <div style={{display:"flex",gap:8,marginBottom:8}}>{Object.keys(styles).map(function(s3){var pct=Math.round(styles[s3]/tot2*100);return<div key={s3} style={{flex:1,textAlign:"center"}}><div style={{height:32,display:"flex",alignItems:"flex-end",justifyContent:"center",marginBottom:3}}><div style={{width:18,height:Math.max(pct*0.32,2),borderRadius:3,background:s3===dom?K.acc:K.bdr}}/></div><div style={{fontSize:8,color:s3===dom?K.acc:K.dim,fontWeight:s3===dom?600:400,fontFamily:fm}}>{s3}</div></div>})}</div>
+            <div style={{display:"flex",gap:10,fontSize:10,color:K.dim}}><span>Conviction avg: <strong style={{color:K.txt}}>{avgC.toFixed(1)}</strong></span><span>Top: <strong style={{color:K.txt}}>{topS}</strong> ({conc}%)</span><span>{portfolio.length} holdings</span></div></div>})()}
+        {/* === QUARTERLY LETTER === */}
+        {weeklyReviews.length>=2&&(function(){
+          var now2=new Date();var ql="Q"+(Math.floor(now2.getMonth()/3)+1)+" "+now2.getFullYear();
+          var cut=new Date(now2);cut.setMonth(cut.getMonth()-3);var cutS=cut.toISOString();
+          var rRevs=weeklyReviews.filter(function(r2){return r2.date>=cutS});
+          var rDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cutS)rDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
+          var buys=rDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
+          var sells=rDecs.filter(function(d2){return d2.action==="SELL"||d2.action==="TRIM"});
+          if(rRevs.length===0&&rDecs.length===0)return null;
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Quarterly Letter — {ql}</div>
+            <div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>
+              {"This quarter you completed "}<strong style={{color:K.txt}}>{rRevs.length}</strong>{" reviews and logged "}<strong style={{color:K.txt}}>{rDecs.length}</strong>{" decisions. "}
+              {buys.length>0&&<span>{"Added: "}<strong style={{color:K.grn}}>{buys.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+              {sells.length>0&&<span>{"Exited: "}<strong style={{color:K.red}}>{sells.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+            </div></div>})()}
+        {/* === BEHAVIORAL PATTERNS === */}
+        {allDecs.length>=3&&(function(){
+          var pats=[];
+          var lowers=0;var totalCh=0;cos.forEach(function(c2){var ch=c2.convictionHistory||[];totalCh+=ch.length;for(var i2=1;i2<ch.length;i2++){if(ch[i2].rating<ch[i2-1].rating)lowers++}});
+          if(totalCh>5&&lowers===0)pats.push({icon:"alert",color:K.amb,t:"You have never lowered conviction on any holding. Stay honest with yourself."});
+          var held2=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
+          if(held2.length>=3){var vals2=held2.map(function(c2){return c2.position.shares*c2.position.currentPrice});var tv2=vals2.reduce(function(a,b){return a+b},0);var mv2=Math.max.apply(null,vals2);
+            if(mv2/tv2>0.4)pats.push({icon:"search",color:K.blue,t:"Largest position is "+Math.round(mv2/tv2*100)+"% of portfolio. High concentration demands high conviction."})}
+          if(weeklyReviews.length>=6){var gaps=[];for(var i2=1;i2<weeklyReviews.length;i2++){gaps.push(Math.round((new Date(weeklyReviews[i2].date)-new Date(weeklyReviews[i2-1].date))/604800000))}
+            var ag=gaps.reduce(function(a,b){return a+b},0)/gaps.length;
+            if(ag<=1.3)pats.push({icon:"check",color:K.grn,t:"Review cadence: every "+ag.toFixed(1)+" weeks. Exceptional consistency."})}
+          if(pats.length===0)return null;
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
+            {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
+              <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
+
         {/* ═══ COMMUNITY BENCHMARK ═══ */}
         <div style={{marginTop:24}}>
           <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community</div>
