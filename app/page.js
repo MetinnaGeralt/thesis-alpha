@@ -184,7 +184,24 @@ function calcOwnerScore(cos){
   balP=Math.min(balP,15);
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
-function calcMastery(c){var s=0;if(c.thesisNote&&c.thesisNote.trim().length>30){s+=(c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0)?3:2}else{s+=1}if(c.kpis&&c.kpis.length>=2)s+=1;if(c.earningsHistory&&c.earningsHistory.length>=1)s+=1;var mt=c.moatTypes||{};if(Object.keys(mt).some(function(k){return mt[k]&&mt[k].active}))s+=1;if(c.conviction>0)s+=1;if(c.decisions&&c.decisions.length>=1)s+=1;if(c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90&&c.earningsHistory&&c.earningsHistory.length>=3&&c.convictionHistory&&c.convictionHistory.length>=3)s+=1;var st=s>=9?5:s>=7?4:s>=5?3:s>=3?2:1;var lb=["Tracking","Researching","Informed","Disciplined","Mastered"];var cl=["#6B7280","#3B82F6","#F59E0B","#8B5CF6","#22C55E"];return{stars:st,score:s,label:lb[st-1],color:cl[st-1],pct:Math.round(s/10*100)}}
+function calcMastery(c){
+  var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
+  // Star 2: Thesis written (core + at least 1 section)
+  if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;if(hasSec)d.thesis=true}
+  // Star 3: KPIs defined + conviction rated
+  if(c.kpis&&c.kpis.length>=2&&c.conviction>0)d.tracked=true;
+  // Star 4: Earnings checked + moat classified
+  var mt=c.moatTypes||{};var hasMoat=Object.keys(mt).some(function(k){return mt[k]&&mt[k].active});
+  if(c.earningsHistory&&c.earningsHistory.length>=1&&hasMoat)d.monitored=true;
+  // Star 5: Decision logged + thesis reviewed within 90 days
+  var fresh=c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90;
+  if(c.decisions&&c.decisions.length>=1&&fresh)d.disciplined=true;
+  // Star 6: 3+ quarters earnings, 3+ conviction updates, fresh thesis
+  if(c.earningsHistory&&c.earningsHistory.length>=3&&c.convictionHistory&&c.convictionHistory.length>=3&&fresh)d.mastered=true;
+  var stars=1;if(d.thesis)stars=2;if(d.thesis&&d.tracked)stars=3;if(stars>=3&&d.monitored)stars=4;if(stars>=4&&d.disciplined)stars=5;if(stars>=5&&d.mastered)stars=6;
+  var lb=["Added","Thesis","Tracked","Monitored","Disciplined","Mastered"];
+  var cl=["#6B7280","#3B82F6","#F59E0B","#EC4899","#8B5CF6","#22C55E"];
+  return{stars:stars,max:6,label:lb[stars-1],color:cl[stars-1],pct:Math.round(stars/6*100),details:d}}
 
 // Legacy name → metricId mapping for existing user data
 var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
@@ -814,7 +831,7 @@ function TrackerApp(props){
       var consecutive=p.lastDate===yesterday?(p.current||0)+1:1;
       var n={current:consecutive,best:Math.max(consecutive,p.best||0),lastDate:todayStr};
       try{localStorage.setItem("ta-daily",JSON.stringify(n))}catch(e){}
-      if(consecutive>1&&consecutive>(p.current||0))showToast(consecutive+" day streak! Keep building the habit.","info",2500);
+
       return n})}
   function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
@@ -2054,7 +2071,6 @@ function TrackerApp(props){
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-      <div style={{position:"absolute",bottom:-4,right:-6,fontSize:12,lineHeight:1}}>{currentLevel.icon}</div>
     </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
@@ -3072,7 +3088,7 @@ function TrackerApp(props){
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
       {/* Header */}
       <div className="ta-detail-head" style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?28:36}/>
-        <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></span>{(function(){var _mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:5,background:_mm.color+"12",border:"1px solid "+_mm.color+"25"}}><div style={{display:"flex",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:5,height:5,borderRadius:"50%",background:s<=_mm.stars?_mm.color:K.bdr}}/>})}</div><span style={{fontSize:9,fontWeight:600,color:_mm.color,fontFamily:fm}}>{_mm.label}</span></div>})()}</div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
             <span style={{fontSize:11,color:K.dim}}>{"•"}</span><span style={{fontSize:11,color:dU(c.earningsDate)<=7&&dU(c.earningsDate)>=0?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"Earnings: TBD":"Earnings: "+fD(c.earningsDate)+" "+c.earningsTime}</span>
@@ -3442,7 +3458,7 @@ function TrackerApp(props){
     var activityDates={};allDecs.forEach(function(d){if(d.date)activityDates[d.date.substring(0,10)]=true});
     cos.forEach(function(c){if(c.thesisUpdatedAt)activityDates[c.thesisUpdatedAt.substring(0,10)]=true;
       (c.earningsHistory||[]).forEach(function(h){if(h.checkedAt)activityDates[h.checkedAt.substring(0,10)]=true})});
-    var streak=dailyStreak.current||0;
+    var streak=streakData.current||0;
     // Thesis health
     var withThesis=portfolio.filter(function(c){return c.thesisNote});
     var staleTheses=withThesis.filter(function(c){var lastTouch=c.thesisUpdatedAt?new Date(c.thesisUpdatedAt):null;
@@ -3561,13 +3577,13 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
               <div style={{width:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{xp.total.toLocaleString()} pts</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
             </div></div></div>
         {/* Quick stats — consolidated */}
         <div style={{display:"flex",gap:isMobile?12:16}}>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:streak>0?K.grn:K.dim,fontFamily:fm}}>{streak>0?String.fromCodePoint(0x1F525)+" ":""}{streak}</div>
-            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>day streak</div></div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>week streak</div></div>
           <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
             <div style={{fontSize:20,fontWeight:700,color:dqPct>=70?K.grn:dqPct>=50?K.amb:scored.length>0?K.red:K.dim,fontFamily:fm}}>{scored.length>0?dqPct+"%":"—"}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>batting avg</div></div>
@@ -3652,7 +3668,7 @@ function TrackerApp(props){
                 <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {q.done?<IC name="check" size={12} color="#fff" strokeWidth={3}/>:<IC name={q.icon} size={10} color={q.color}/>}</div>
                 <div style={{flex:1,fontSize:12,color:q.done?K.dim:K.txt,textDecoration:q.done?"line-through":"none"}}>{q.text}</div>
-                {!q.done&&<span style={{fontSize:10,color:q.color,fontFamily:fm,fontWeight:600,flexShrink:0}}>+8 pts</span>}
+                
                 {q.done&&<span style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"}</span>}
               </div>})}</div>
             {/* Quest reward preview */}
@@ -4732,7 +4748,7 @@ function TrackerApp(props){
               <div style={{fontSize:12,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
               {reward.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginTop:4}}>{"— "+reward.author}</div>}
               {reward.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"3px 10px",marginTop:8}}>
-                <span style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>+{reward.xp} pts</span></div>}
+                </div>}
             </div>}
             {/* Previously earned rewards */}
             {chestRewards.history.length>0&&<div>
@@ -5218,7 +5234,7 @@ function TrackerApp(props){
       // Priority 8: Missing position data
       if(!focus){var noPos=portfolio.filter(function(c){var p=c.position||{};return!p.shares||p.shares===0});if(noPos.length>0)focus={color:K.mid,icon:"trending",title:"Log your position in "+noPos[0].ticker,desc:"Add your shares and average cost to track performance.",btn:"Add position",onClick:function(){setSelId(noPos[0].id);setPage("dashboard")}}}
       // Did something today? Show encouragement, else generic prompt
-      if(!focus&&didActivityToday)focus={color:K.grn,icon:"check",title:"Done for today",desc:"You showed up. Come back tomorrow to keep your streak alive.",btn:null,onClick:null};
+
       if(!focus)focus={color:K.acc,icon:"lightbulb",title:"Explore your portfolio",desc:"Open any holding to deepen your thesis, review KPIs, or check earnings history.",btn:null,onClick:null};
       return<div style={{background:focus.color+"08",border:"1px solid "+focus.color+"25",borderRadius:12,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:44,height:44,borderRadius:10,background:focus.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={focus.icon} size={20} color={focus.color}/></div>
@@ -5234,10 +5250,10 @@ function TrackerApp(props){
       <div onClick={toggleDashGame} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:dashGameExpanded?"10px 10px 0 0":10,cursor:"pointer",userSelect:"none"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
           <span style={{fontSize:12}}>{String.fromCodePoint(0x1F525)}</span>
-          <span style={{fontSize:11,fontWeight:600,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>{dailyStreak.current}d</span>
+          
           <span style={{width:1,height:12,background:K.bdr}}/>
           <span style={{fontSize:11,fontWeight:600,color:streakData.current>0?K.grn:K.dim,fontFamily:fm}}>{streakData.current}w</span>
-          {!didActivityToday&&dailyStreak.current>0&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>streak expires tonight</span>}
+          
           {didActivityToday&&<span style={{fontSize:9,color:K.grn,fontFamily:fm}}>{"✓ active"}</span>}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -5254,8 +5270,8 @@ function TrackerApp(props){
         {/* Daily Streak */}
         <div onClick={function(e){e.stopPropagation();setPage("hub")}} style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",flex:1}}>
           <div>
-            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{dailyStreak.current>0?String.fromCodePoint(0x1F525)+" ":""}{dailyStreak.current}</div>
-            <div style={{fontSize:9,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm}}>Day Streak</div></div></div>
+            <div style={{fontSize:20,fontWeight:800,color:dailyStreak.current>0?K.acc:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current||0}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Week Streak</div></div></div>
         {/* Weekly Streak */}
         <div style={{background:K.bg,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flex:2}}>
           <div style={{fontSize:20,fontWeight:800,color:streakData.current>0?K.grn:K.dim,fontFamily:fm,lineHeight:1}}>{streakData.current}</div>
@@ -5370,7 +5386,7 @@ function TrackerApp(props){
           var h2=gH(cc.kpis);var d2=dU(cc.earningsDate);
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/></span>
+            <span style={{width:40,position:"relative"}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/>{(function(){var _m=calcMastery(cc);return _m.stars>1?<div style={{position:"absolute",bottom:-2,right:-2,width:13,height:13,borderRadius:"50%",background:_m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{_m.stars}</div>:null})()}</span>
             <span style={{flex:1,minWidth:100}}>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
@@ -5390,7 +5406,7 @@ function TrackerApp(props){
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><div style={{position:"relative"}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/>{(function(){var _mc=calcMastery(c);return _mc.stars>1?<div style={{position:"absolute",bottom:-2,right:-3,width:14,height:14,borderRadius:"50%",background:_mc.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff",border:"1.5px solid "+K.card}}>{_mc.stars}</div>:null})()}</div><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
@@ -5513,7 +5529,7 @@ function TrackerApp(props){
         {chestOverlay.author&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:16}}>{"— "+chestOverlay.author}</div>}
         {/* XP earned */}
         {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"4px 12px",marginBottom:12}}>
-          <span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>+{chestOverlay.xp} pts</span></div>}
+          </div>}
         <div><button onClick={function(){setChestOverlay(null)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:12})}>Collect</button></div>
       </div></div>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
@@ -5548,7 +5564,6 @@ function TrackerApp(props){
           <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
             {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
               :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:-3,right:-8,fontSize:13,lineHeight:1}}>{currentLevel.icon}</div>
             <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
