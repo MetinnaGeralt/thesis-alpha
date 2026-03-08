@@ -274,7 +274,20 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
           if(upcoming.length){ed=upcoming[0].date;et=upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"}
           else{var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:pr.lastDiv||0,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
+      // Fetch full dividend info in parallel
+      var divInfo=null;
+      if(pr.lastDiv>0){try{divInfo=await fetchDividendInfo(t)}catch(e){}}
+      var divData={lastDiv:pr.lastDiv||0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
+      if(divInfo&&divInfo.divPerShare>0){
+        divData.divPerShare=divInfo.divPerShare;divData.divFrequency=divInfo.divFrequency;
+        divData.exDivDate=divInfo.exDivDate;divData.lastDiv=divInfo.lastDiv;
+        var mult=divInfo.divFrequency==="monthly"?12:divInfo.divFrequency==="quarterly"?4:divInfo.divFrequency==="semi"?2:1;
+        divData.divYield=pr.price>0?(divInfo.divPerShare*mult/pr.price*100):0
+      } else if(pr.lastDiv>0){
+        divData.divPerShare=pr.lastDiv;divData.divFrequency="quarterly";
+        divData.divYield=pr.price>0?(pr.lastDiv*4/pr.price*100):0
+      }
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
@@ -1301,13 +1314,13 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
-        var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.lastDiv>0)info.push("Div: $"+r.lastDiv.toFixed(2)+"/yr"+(r.price>0?" ("+(r.lastDiv*4/r.price*100).toFixed(1)+"%)":""));else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
+        var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -3648,9 +3661,16 @@ function TrackerApp(props){
           // Dividend info
           if(c.divPerShare>0||c.lastDiv>0){var ann=(c.divPerShare||c.lastDiv||0)*(c.divFrequency==="monthly"?12:c.divFrequency==="quarterly"?4:c.divFrequency==="semi"?2:1);
             var yld=pos.currentPrice>0?(ann/pos.currentPrice*100):0;
-            divInfo.push({l:"Dividend",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)+" / "+c.divFrequency});
+            var yoc=pos.avgCost>0?(ann/pos.avgCost*100):0;
+            divInfo.push({l:"Per Payment",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)});
+            divInfo.push({l:"Frequency",v:c.divFrequency==="monthly"?"Monthly":c.divFrequency==="semi"?"Semi-Annual":c.divFrequency==="annual"?"Annual":"Quarterly"});
             if(yld>0)divInfo.push({l:"Yield",v:yld.toFixed(2)+"%",isGood:yld>=2});
-            if(c.exDivDate)divInfo.push({l:"Ex-Div",v:fD(c.exDivDate)})}
+            if(yoc>0&&yoc!==yld)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
+            divInfo.push({l:"Annual/Share",v:"$"+ann.toFixed(2)});
+            if(pos.shares>0)divInfo.push({l:"Annual Income",v:"$"+(pos.shares*ann).toFixed(0),isGood:true});
+            if(c.exDivDate)divInfo.push({l:"Next Ex-Div",v:fD(c.exDivDate)})}
+          else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
+            divInfo.push({l:"Dividend",v:"None",isNeutral:true})}
           if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
           if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
           if(snap.mktCap)health.push({l:"Market Cap",v:snap.mktCap.value});
@@ -5787,12 +5807,29 @@ function TrackerApp(props){
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Dividend Hub</h1>
         <p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>Track income from your dividend-paying holdings</p></div>
       {/* Summary cards */}
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>ANNUAL INCOME</div><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnual.toFixed(0)}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>MONTHLY AVG</div><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${monthlyIncome.toFixed(0)}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>PORTFOLIO YIELD</div><div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{portfolioYield.toFixed(2)}%</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>DAILY INCOME</div><div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${(totalAnnual/365).toFixed(2)}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>PAYERS</div><div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{divPayers.length}<span style={{fontSize:13,color:K.dim,fontWeight:400}}>/{portfolio.length}</span></div></div>
       </div>
+      {/* Upcoming ex-div dates */}
+      {(function(){var upcoming2=divPayers.filter(function(c2){if(!c2.exDivDate)return false;
+        var ed=new Date(c2.exDivDate);var now2=new Date();var freq=c2.divFrequency;
+        while(ed<now2){if(freq==="monthly")ed.setMonth(ed.getMonth()+1);else if(freq==="semi")ed.setMonth(ed.getMonth()+6);else if(freq==="annual")ed.setFullYear(ed.getFullYear()+1);else ed.setMonth(ed.getMonth()+3)}
+        c2._nextExDiv=ed.toISOString().split("T")[0];return Math.ceil((ed-now2)/864e5)<=60}).sort(function(a,b){return a._nextExDiv>b._nextExDiv?1:-1});
+        if(upcoming2.length===0)return null;
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:24}}>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Upcoming Ex-Dividend Dates</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {upcoming2.slice(0,8).map(function(c2){var dU2=Math.ceil((new Date(c2._nextExDiv)-new Date())/864e5);var pos=c2.position||{};var payout=(pos.shares||0)*(c2.divPerShare||c2.lastDiv||0);
+              return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:dU2<=7?K.amb+"08":K.bg,borderRadius:8,border:"1px solid "+(dU2<=7?K.amb+"25":K.bdr),cursor:"pointer"}} onClick={function(){setSelId(c2.id);setPage("dashboard")}}>
+                <CoLogo domain={c2.domain} ticker={c2.ticker} size={18}/>
+                <div><div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</div>
+                  <div style={{fontSize:9,color:dU2<=7?K.amb:K.dim,fontFamily:fm}}>{fD(c2._nextExDiv)}{dU2<=30?" ("+dU2+"d)":""}</div></div>
+                {payout>0&&<div style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>${payout.toFixed(0)}</div>}</div>})}
+          </div></div>})()}
       {/* Monthly income calendar */}
       {totalAnnual>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
         <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Monthly Income Calendar</div>
@@ -5814,28 +5851,41 @@ function TrackerApp(props){
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead><tr style={{borderBottom:"1px solid "+K.bdr}}>
             <th style={{textAlign:"left",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Company</th>
-            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Per Payment</th>
-            <th style={{textAlign:"center",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Frequency</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Price</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Per Pmt</th>
+            <th style={{textAlign:"center",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Freq</th>
             <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Yield</th>
-            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Annual/Share</th>
-            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Annual Income</th>
-            {!isMobile&&<th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Ex-Div Date</th>}
+            {!isMobile&&<th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>YoC</th>}
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Annual</th>
+            <th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Income</th>
+            {!isMobile&&<th style={{textAlign:"right",padding:"8px 10px",fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>Next Ex-Div</th>}
           </tr></thead>
           <tbody>{divPayers.map(function(c){
             var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
             var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
             var annDps=dps*mult;var yld=pos.currentPrice?annDps/pos.currentPrice*100:0;
+            var yoc=pos.avgCost>0?annDps/pos.avgCost*100:0;
             var annIncome=(pos.shares||0)*annDps;
+            // Estimate next ex-div date
+            var nextExDiv="";if(c.exDivDate){var ed=new Date(c.exDivDate);var now2=new Date();
+              while(ed<now2){if(c.divFrequency==="monthly")ed.setMonth(ed.getMonth()+1);
+                else if(c.divFrequency==="semi")ed.setMonth(ed.getMonth()+6);
+                else if(c.divFrequency==="annual")ed.setFullYear(ed.getFullYear()+1);
+                else ed.setMonth(ed.getMonth()+3)}
+              nextExDiv=ed.toISOString().split("T")[0]}
+            var daysToEx=nextExDiv?Math.ceil((new Date(nextExDiv)-new Date())/864e5):-1;
             return<tr key={c.id} style={{borderBottom:"1px solid "+K.bdr+"60",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}>
               <td style={{padding:"10px 10px",display:"flex",alignItems:"center",gap:8}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
                 <div><div style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim}}>{c.name}</div></div></td>
+              <td style={{textAlign:"right",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:11}}>{pos.currentPrice>0?"$"+pos.currentPrice.toFixed(2):"—"}</td>
               <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${dps.toFixed(2)}</td>
-              <td style={{textAlign:"center",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:11}}>{freqLabel(c.divFrequency)}</td>
+              <td style={{textAlign:"center",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:10}}>{freqLabel(c.divFrequency)}</td>
               <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{yld.toFixed(2)}%</td>
+              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",color:yoc>yld?K.grn:K.dim,fontFamily:fm,fontSize:11}}>{yoc>0?yoc.toFixed(2)+"%":"—"}</td>}
               <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${annDps.toFixed(2)}</td>
               <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{pos.shares>0?"$"+annIncome.toFixed(0):<span style={{color:K.dim,fontSize:10}}>Add shares</span>}</td>
-              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",color:K.amb,fontFamily:fm,fontSize:11}}>{c.exDivDate?fD(c.exDivDate):"—"}</td>}
+              {!isMobile&&<td style={{textAlign:"right",padding:"10px 10px",fontFamily:fm,fontSize:11,color:daysToEx>=0&&daysToEx<=14?K.amb:K.dim}}>{nextExDiv?fD(nextExDiv)+(daysToEx>=0&&daysToEx<=30?" ("+daysToEx+"d)":""):"—"}</td>}
             </tr>})}</tbody>
         </table></div>
         {/* Total row */}
@@ -5853,7 +5903,8 @@ function TrackerApp(props){
       {divPayers.length===0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
         <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F4B0)}</div>
         <div style={{fontSize:14,marginBottom:6}}>No dividend data yet</div>
-        <div style={{fontSize:12}}>Set dividends for your holdings in Position settings</div>
+        <div style={{fontSize:12,maxWidth:400,margin:"0 auto",lineHeight:1.6}}>Dividend data is automatically fetched when you add companies. If your holdings pay dividends, they'll appear here with yield, frequency, income projections, and ex-dividend dates.</div>
+        {portfolio.length>0&&<button onClick={function(){refreshPrices();showToast("Refreshing dividend data...","info",3000)}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:12,marginTop:16})}>Refresh Dividend Data</button>}
       </div>}
     </div>}
 
@@ -6300,7 +6351,7 @@ function TrackerApp(props){
       {/* Dividends */}
       {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
         <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Dashboard</div>
-        {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Set dividends in Position settings for each holding.</span></div>}
+        {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Dividend data is auto-fetched when you add companies.</span></div>}
         {divCos.length>0&&(function(){
           var totalVal3=divCos.reduce(function(s2,c2){var p2=c2.position||{};return s2+(p2.shares||0)*(p2.currentPrice||0)},0);
           var portYield=totalVal3>0?totalAnnualDiv/totalVal3*100:0;
