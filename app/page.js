@@ -673,14 +673,6 @@ function TrackerApp(props){
   var thesisProgress=Math.min(completeTheses,THESIS_UNLOCK);
   // isPro = paid subscriber OR active trial
   var isPro=plan==="pro"||trialActive;
-  // Progressive disclosure: unlock features as user engagement grows
-  var portCount=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length;
-  var hasReviewed=weeklyReviews.length>0;
-  var maturity=portCount>=2&&hasReviewed?2:portCount>=1?1:0;// 0=new, 1=started, 2=engaged
-  // Redirect locked pages to dashboard
-  useEffect(function(){if(!loaded)return;
-    if(maturity<2&&["analytics","calendar","dividends","timeline","assets"].indexOf(page)>=0)setPage("dashboard");
-    if(maturity<1&&["hub","review"].indexOf(page)>=0)setPage("dashboard")},[loaded,maturity,page]);
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
@@ -694,6 +686,10 @@ function TrackerApp(props){
     return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
   var currentWeekReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
+  // Progressive disclosure: unlock features as user engagement grows
+  var portCount=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length;
+  var hasReviewed=weeklyReviews.length>0;
+  var maturity=portCount>=2&&hasReviewed?2:portCount>=1?1:0;// 0=new, 1=started, 2=engaged
   var reviewStreak=function(){var s=0;var wk=new Date();for(var i=0;i<weeklyReviews.length;i++){var rid=weeklyReviews[i].weekId;var expect=new Date(wk);expect.setDate(expect.getDate()-expect.getDay()+(expect.getDay()===0?-6:1)-s*7);var expId=expect.toISOString().split('T')[0];if(rid===expId)s++;else break}return s}();
   // Old reviewStreak milestones removed — handled by streakData system
 
@@ -6308,6 +6304,10 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
+  // Redirect locked pages
+  var ePage=page;
+  if(maturity<2&&["analytics","calendar","dividends","timeline","assets"].indexOf(page)>=0)ePage="dashboard";
+  if(maturity<1&&["hub","review"].indexOf(page)>=0)ePage="dashboard";
   return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}
     {/* ── Weekly Insight Overlay ── */}
 
@@ -6636,7 +6636,7 @@ function TrackerApp(props){
         <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:11,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+      return null}()}<div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{ePage==="hub"?<OwnersHub/>:ePage==="assets"?<AllAssets/>:ePage==="review"?<WeeklyReview/>:ePage==="timeline"?<PortfolioTimeline/>:ePage==="analytics"?<PortfolioAnalytics/>:ePage==="calendar"?<EarningsCalendar/>:ePage==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
