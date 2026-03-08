@@ -3476,7 +3476,7 @@ function TrackerApp(props){
           var axes=[{label:"Thesis",score:thesisScore,color:"#8B5CF6",tip:"How thorough is your written thesis? Covers core belief, moat, risks, and sell criteria."},{label:"KPIs",score:kpiScore,color:"#3B82F6",tip:"How many key metrics are you tracking, and how many have been checked against earnings?"},{label:"Conviction",score:convScore,color:"#F59E0B",tip:"Your self-rated confidence in this investment on a 1-10 scale."},{label:"Fundamentals",score:fundScore,color:"#22C55E",tip:"Quality of the underlying business: margins, ROIC, growth, and balance sheet strength."},{label:"Mastery",score:mastScore,color:"#EC4899",tip:"Overall ownership completeness: thesis + KPIs + conviction + moat + monitoring combined."},{label:"Monitoring",score:monScore,color:"#14B8A6",tip:"How recently you have reviewed your thesis, checked earnings, and updated conviction."}];
           var avgScore=Math.round(axes.reduce(function(s2,a2){return s2+a2.score},0)/6);
           // SVG radar — rounded Simply Wall St style
-          var cx=90,cy=90,r=70;var n=6;var angleOff=-Math.PI/2;
+          var cx=100,cy=90,r=65;var n=6;var angleOff=-Math.PI/2;
           function pt(i2,val){var ang=angleOff+i2/n*2*Math.PI;return{x:cx+Math.cos(ang)*r*val/100,y:cy+Math.sin(ang)*r*val/100}}
           var gridLevels=[25,50,75,100];
           // Build smooth rounded path from data points
@@ -3484,7 +3484,7 @@ function TrackerApp(props){
           function roundedGridPath(level){var pts2=[];for(var i3=0;i3<n;i3++)pts2.push(pt(i3,level));return roundedPath(pts2)}
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",gap:16}}>
-              <svg width="180" height="180" viewBox="0 0 180 180">
+              <svg width="200" height="180" viewBox="0 0 200 180">
                 {/* Rounded grid rings */}
                 {gridLevels.map(function(gl){return<path key={gl} d={roundedGridPath(gl)} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
                 {/* Axis lines — subtle */}
@@ -3570,12 +3570,13 @@ function TrackerApp(props){
               <span style={S.badge(h.c)}>{h.l}</span></div>
             {c.kpis.map(function(k){
               var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var match=e.results.find(function(r){return r.kpi_name===k.name});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
-              return<div key={k.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+              return<div key={k.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){setModal({type:"kpi",data:k.id})}} title="Click to edit or delete">
                 <div style={{width:7,height:7,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim,flexShrink:0}}/>
                 <span style={{fontSize:11,color:K.txt,flex:1}}>{k.name}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{k.target}</span>
                 {k.lastResult&&<span style={{fontSize:10,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:""}</span>}
                 {hist.length>=2&&<div style={{display:"flex",gap:2}}>{hist.slice(0,4).reverse().map(function(hh,hi){return<div key={hi} style={{width:4,height:12,borderRadius:1,background:hh.s==="met"?K.grn:K.red}}/>})}</div>}
+                <IC name="edit" size={10} color={K.dim}/>
               </div>})}
             <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,marginTop:8,padding:0}}>+ Add KPI</button>
           </div>
