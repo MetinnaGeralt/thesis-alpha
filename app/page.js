@@ -274,19 +274,9 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
           if(upcoming.length){ed=upcoming[0].date;et=upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"}
           else{var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
-      // Fetch full dividend info in parallel
-      var divInfo=null;
-      if(pr.lastDiv>0){try{divInfo=await fetchDividendInfo(t)}catch(e){}}
-      var divData={lastDiv:pr.lastDiv||0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
-      if(divInfo&&divInfo.divPerShare>0){
-        divData.divPerShare=divInfo.divPerShare;divData.divFrequency=divInfo.divFrequency;
-        divData.exDivDate=divInfo.exDivDate;divData.lastDiv=divInfo.lastDiv;
-        var mult=divInfo.divFrequency==="monthly"?12:divInfo.divFrequency==="quarterly"?4:divInfo.divFrequency==="semi"?2:1;
-        divData.divYield=pr.price>0?(divInfo.divPerShare*mult/pr.price*100):0
-      } else if(pr.lastDiv>0){
-        divData.divPerShare=pr.lastDiv;divData.divFrequency="quarterly";
-        divData.divYield=pr.price>0?(pr.lastDiv*4/pr.price*100):0
-      }
+      // Dividend data from profile (free tier — no premium endpoints needed)
+      var divData={lastDiv:pr.lastDiv||0,divPerShare:pr.lastDiv||0,divFrequency:pr.lastDiv>0?"quarterly":"none",exDivDate:"",divYield:0};
+      if(pr.lastDiv>0&&pr.price>0){divData.divYield=pr.lastDiv*4/pr.price*100}
       return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
@@ -1128,26 +1118,36 @@ function TrackerApp(props){
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
-  // Auto-fetch dividend data for ALL users (free + pro) — backfill missing dividend info
+  // Auto-fetch dividend data for ALL users — uses only profile endpoint (free tier)
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){return(!c.divPerShare||c.divPerShare===0)&&c.divFrequency!=="none"});
+    var needsDiv=cos.filter(function(c){
+      // Re-check companies with no div data, OR that were wrongly set to "none"
+      var hasDivData=c.divPerShare>0||c.lastDiv>0;
+      return !hasDivData});
     if(needsDiv.length===0)return;
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
         try{var r=await fetchPrice(c.ticker);
           if(r&&r.price){
-            upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
-              if(r.lastDiv>0){updates.lastDiv=r.lastDiv;updates.divPerShare=r.lastDiv}
-              else{updates.divFrequency="none"}
-              return Object.assign({},prev,updates)})}
-          if(r&&r.lastDiv>0){
-            var dInfo=await fetchDividendInfo(c.ticker);
-            if(dInfo&&dInfo.divPerShare>0){
-              upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:dInfo.divPerShare,divFrequency:dInfo.divFrequency,exDivDate:dInfo.exDivDate||prev.exDivDate,lastDiv:dInfo.lastDiv})})}}
-          else if(r){upd(c.id,function(prev){if(!prev.divPerShare&&!prev.lastDiv)return Object.assign({},prev,{divFrequency:"none"});return prev})}
+            if(r.lastDiv>0){
+              // Company pays dividends — lastDiv from FMP profile is per-payment amount
+              upd(c.id,function(prev){return Object.assign({},prev,{
+                position:Object.assign({},prev.position,{currentPrice:r.price}),
+                lastDiv:r.lastDiv,
+                divPerShare:r.lastDiv,
+                divFrequency:prev.divFrequency&&prev.divFrequency!=="none"&&prev.divFrequency!=="quarterly"?prev.divFrequency:"quarterly"
+              })})
+            } else {
+              // No dividend — mark as confirmed non-payer
+              upd(c.id,function(prev){return Object.assign({},prev,{
+                position:Object.assign({},prev.position,{currentPrice:r.price}),
+                divFrequency:"none",divPerShare:0,lastDiv:0
+              })})
+            }
+          }
         }catch(e){}
-        await new Promise(function(res){setTimeout(res,400)})}
-    })()},3000);return function(){clearTimeout(t)}},[loaded]);
+        await new Promise(function(res){setTimeout(res,300)})}
+    })()},2500);return function(){clearTimeout(t)}},[loaded]);
   // Auto-notify: when earnings date has passed, automatically check them
   var autoCheckDone=useRef({});
   useEffect(function(){if(!loaded||!autoNotify||!isPro)return;
@@ -1316,11 +1316,11 @@ function TrackerApp(props){
   async function refreshPrices(){setPriceLoading(true);
     for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
       if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
-        // Auto-populate dividend from FMP if user hasn't manually set one
-        if(r.lastDiv>0&&!prev.divPerShare){updates.divPerShare=r.lastDiv;updates.lastDiv=r.lastDiv}
-        return Object.assign({},prev,updates)});
-        // Fetch detailed dividend info if we have a lastDiv but no exDivDate
-        if(r.lastDiv>0&&(!c.exDivDate||c.exDivDate==="")){fetchDividendInfo(c.ticker).then(function(dInfo){if(dInfo&&dInfo.divPerShare>0){upd(c.id,function(prev){var du={};if(!prev.divPerShare||prev.divPerShare===0)du.divPerShare=dInfo.divPerShare;if(!prev.divFrequency||prev.divFrequency==="quarterly")du.divFrequency=dInfo.divFrequency;if(!prev.exDivDate)du.exDivDate=dInfo.exDivDate;if(!prev.lastDiv)du.lastDiv=dInfo.lastDiv;return Object.keys(du).length>0?Object.assign({},prev,du):prev})}}).catch(function(){})}
+        // Auto-populate dividend from FMP profile
+        if(r.lastDiv>0){
+          if(!prev.divPerShare||prev.divPerShare===0){updates.divPerShare=r.lastDiv;updates.lastDiv=r.lastDiv;updates.divFrequency=prev.divFrequency==="none"?"quarterly":prev.divFrequency||"quarterly"}
+        } else if(!prev.divPerShare&&!prev.lastDiv){updates.divFrequency="none"}
+        return Object.assign({},prev,updates)})
       }}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
