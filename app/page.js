@@ -912,7 +912,28 @@ function TrackerApp(props){
       try{localStorage.setItem("ta-daily",JSON.stringify(n))}catch(e){}
 
       return n})}
-  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);if(completed){n.current=(p.current||0)+1;n.lastWeek=thisWeek;if(n.current>n.best)n.best=n.current;if(n.current%4===0)n.freezes=(n.freezes||0)+1}else{var lastW=p.lastWeek;var weeksGap=lastW?Math.floor((new Date()-new Date(lastW.replace(/W/g,"-W").replace(/^(\d{4})(\d{2})$/,"$1-W$2")))/604800000):99;if(weeksGap<=2&&p.freezes>0){n.freezes=p.freezes-1;n.frozenWeek=thisWeek}else{n.current=0}}try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
+  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);
+    // Calculate weeks gap since last review
+    var weeksGap=0;
+    if(p.lastWeek){try{var lastMon=new Date(p.lastWeek);var thisMon=new Date(thisWeek);weeksGap=Math.round((thisMon-lastMon)/604800000)}catch(e){weeksGap=99}}
+    else{weeksGap=99}
+    if(completed){
+      if(weeksGap===1){
+        // Consecutive week — extend streak
+        n.current=(p.current||0)+1
+      } else if(weeksGap===2&&(p.freezes||0)>0){
+        // Missed 1 week but have a freeze — preserve streak
+        n.current=(p.current||0)+1;n.freezes=(p.freezes||1)-1;n.frozenWeek=thisWeek
+      } else if(weeksGap===0||!p.lastWeek){
+        // First ever review or same week
+        n.current=Math.max(p.current||0,1)
+      } else {
+        // Gap too large — reset to 1 (this review counts as week 1)
+        n.current=1
+      }
+      n.lastWeek=thisWeek;if(n.current>(n.best||0))n.best=n.current;if(n.current>0&&n.current%4===0&&n.current>(p.current||0))n.freezes=(n.freezes||0)+1
+    }else{n.current=0}
+    try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
       // Check for new lens unlocks
       var newUnlock=null;[{w:4,n:"Warren Buffett"},{w:8,n:"Joel Greenblatt"},{w:12,n:"Peter Lynch"},{w:16,n:"Shelby Cullom Davis"},{w:20,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
       if(newUnlock)setTimeout(function(){showToast("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
