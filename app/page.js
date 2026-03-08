@@ -1301,7 +1301,8 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");setLm("Auto-filled ✓"+(r.earningsDate&&r.earningsDate!=="TBD"?" (incl. earnings date)":""))}
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
+        var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.lastDiv>0)info.push("Div: $"+r.lastDiv.toFixed(2)+"/yr"+(r.price>0?" ("+(r.lastDiv*4/r.price*100).toFixed(1)+"%)":""));else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
@@ -1384,10 +1385,13 @@ function TrackerApp(props){
               {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={9} color={K.dim}/>}</div>})}</div></div>
       <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>A well-structured thesis forces clarity. Munger: "If you can't state the argument against your position, you don't understand it well enough."</div>
       {sections.map(function(sec){var wordCount=(f[sec.key]||"").trim().split(/\s+/).filter(function(w){return w}).length;var done=f[sec.key]&&f[sec.key].trim().length>15;
+        var aiPrompts={core:"I own "+sel.ticker+" ("+sel.name+", "+sel.sector+"). Write a 2-3 paragraph investment thesis explaining why this is a compelling long-term holding. Cover the business model, competitive position, and growth drivers.",moat:"Analyze the competitive moat of "+sel.ticker+" ("+sel.name+"). Cover switching costs, network effects, brand value, cost advantages, and regulatory barriers. Rate the moat as Wide, Narrow, or None with evidence.",risks:"What are the top 3-5 risks for "+sel.ticker+" ("+sel.name+")? Include competitive threats, regulatory risks, technology disruption, management risks, and valuation concerns.",sell:"Define specific, measurable sell criteria for "+sel.ticker+" ("+sel.name+"). What financial metrics, competitive developments, or management actions would break the investment thesis? Be specific with numbers."};
         return<div key={sec.key} style={{marginBottom:16}}>
-        <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:done?sec.color:K.mid,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:done?sec.color:K.mid,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600,flex:1}}>
           {done?<IC name="check" size={11} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
           {wordCount>0&&<span style={{fontSize:9,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label>
+          {!done&&<button onClick={function(){try{navigator.clipboard.writeText(aiPrompts[sec.key]);showToast("Prompt copied — paste into ChatGPT or Claude","info",3000)}catch(e){showToast("Copy failed — try manually","info",2000)}}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:4,padding:"2px 8px",fontSize:9,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3}} title="Copy an AI prompt to help write this section"><IC name="flask" size={9} color={K.dim}/>AI prompt</button>}</div>
         <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
       {sel.thesisVersions&&sel.thesisVersions.length>0&&<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
         <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
@@ -1406,20 +1410,29 @@ function TrackerApp(props){
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];
     var _kpiS=useState(""),kpiSearch=_kpiS[0],setKpiSearch=_kpiS[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
-    // Filter out already-tracked metrics
-    var used=sel.kpis.map(function(k){return k.metricId});
+    var _added=useState([]),added=_added[0],setAdded=_added[1];
+    // Filter out already-tracked metrics AND just-added ones
+    var used=sel.kpis.map(function(k){return k.metricId}).concat(added.map(function(a){return a.metricId}));
     var avail=METRICS.filter(function(m){return(!used.includes(m.id)||m.id===(ex&&ex.metricId))&&(!kpiSearch||m.label.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.cat.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.id.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0)});
     var sty=STYLE_MAP[sel.investStyle];var recIds=sty?sty.kpis:[];
     var cats={};avail.forEach(function(m){if(!cats[m.cat])cats[m.cat]=[];cats[m.cat].push(m)});
     var selMet=f.metricId?METRIC_MAP[f.metricId]:null;
-    function doSave(){if(!f.metricId||isNaN(parseFloat(f.value)))return;var met=METRIC_MAP[f.metricId];var nv=parseFloat(f.value);
+    function addOne(){if(!f.metricId||isNaN(parseFloat(f.value)))return;var met=METRIC_MAP[f.metricId];var nv=parseFloat(f.value);
       var kd={metricId:f.metricId,name:met.label,rule:f.rule,value:nv,unit:met.unit,period:f.period.trim(),target:bT(f.rule,nv,met.unit),notes:""};
-      if(ex)upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd):k})})});
-      else upd(selId,function(c){var newKpis=c.kpis.concat([Object.assign({id:nId(c.kpis),lastResult:null},kd)]);
-        if(newKpis.length===1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
-        addXP(5,"KPI added");
-        if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
-        return Object.assign({},c,{kpis:newKpis})});setModal(null)}
+      setAdded(function(p){return p.concat([kd])});setF({metricId:"",rule:"gte",value:"",period:f.period});setKpiSearch("")}
+    function doSave(){
+      if(f.metricId&&!isNaN(parseFloat(f.value))){var met=METRIC_MAP[f.metricId];var nv=parseFloat(f.value);
+        var kd={metricId:f.metricId,name:met.label,rule:f.rule,value:nv,unit:met.unit,period:f.period.trim(),target:bT(f.rule,nv,met.unit),notes:""};
+        added=added.concat([kd])}
+      if(ex){var met2=METRIC_MAP[f.metricId];var nv2=parseFloat(f.value);var kd2={metricId:f.metricId,name:met2.label,rule:f.rule,value:nv2,unit:met2.unit,period:f.period.trim(),target:bT(f.rule,nv2,met2.unit),notes:""};
+        upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd2):k})})})
+      } else if(added.length>0){
+        upd(selId,function(c){var newKpis=c.kpis;added.forEach(function(kd3){newKpis=newKpis.concat([Object.assign({id:nId(newKpis),lastResult:null},kd3)])});
+          if(c.kpis.length===0&&newKpis.length>=1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+          addXP(5*added.length,"KPIs added");
+          if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
+          return Object.assign({},c,{kpis:newKpis})})}
+      setModal(null)}
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Metric picker with search */}
       {!ex&&<div style={{marginBottom:20}}>
@@ -1445,7 +1458,18 @@ function TrackerApp(props){
           <Inp label={"Target"+(selMet?" ("+selMet.unit+")":"")} value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder={selMet&&selMet.unit==="%"?"e.g. 20":"e.g. 5"} K={K}/>
           <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
         <div style={{fontSize:11,color:K.dim,marginTop:4,marginBottom:12}}>Auto-fetched from Finnhub when you click Check Earnings</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.filter(function(k){return k.id!==kid})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.metricId&&f.value?1:.4})} onClick={doSave}>Save</button></div></Modal>}
+      {/* Queued KPIs */}
+      {!ex&&added.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
+        <div style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>{added.length} KPI{added.length>1?"s":""} queued</div>
+        {added.map(function(a,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,padding:"2px 0"}}>
+          <span style={{color:K.grn}}>{"✓"}</span><span style={{fontWeight:600}}>{a.name}</span><span style={{color:K.dim}}>{a.target}</span>
+          <button onClick={function(){setAdded(function(p){return p.filter(function(_,j){return j!==i})})}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",marginLeft:"auto"}}>{"✕"}</button></div>})}</div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:8}}>
+        {ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.filter(function(k){return k.id!==kid})})});setModal(null)}}>Delete</button>}
+        <div style={{flex:1}}/>
+        <button style={S.btn} onClick={function(){setModal(null)}}>{added.length>0&&!f.metricId?"Cancel":"Cancel"}</button>
+        {!ex&&f.metricId&&f.value&&<button style={Object.assign({},S.btn,{color:K.acc,borderColor:K.acc+"40"})} onClick={addOne}>+ Add Another</button>}
+        <button style={Object.assign({},S.btnP,{opacity:(f.metricId&&f.value)||added.length>0?1:.4})} onClick={doSave} disabled={!f.metricId&&added.length===0&&!f.value}>{ex?"Save":added.length>0?(f.metricId&&f.value?"Save "+(added.length+1)+" KPIs":"Save "+added.length+" KPI"+(added.length>1?"s":"")):"Save"}</button></div></Modal>}
   function ResultModal(){if(!sel)return null;var kpi=sel.kpis.find(function(k){return k.id===modal.data});if(!kpi)return null;
     var _a=useState(kpi.lastResult?String(kpi.lastResult.actual):""),a=_a[0],setA=_a[1];var _ex=useState(kpi.lastResult?kpi.lastResult.excerpt||"":""),ex=_ex[0],setEx=_ex[1];var pv=a?eS(kpi.rule,kpi.value,a):null;
     return<Modal title="Enter Result" onClose={function(){setModal(null)}} w={440} K={K}><div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"14px 18px",marginBottom:20}}><div style={{fontSize:14,color:K.txt}}>{kpi.name}</div><div style={{fontSize:12,color:K.dim}}>Target: {kpi.target}</div></div>
@@ -4686,79 +4710,78 @@ function TrackerApp(props){
           var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
           if(held.length===0)return<div style={{textAlign:"center",padding:"40px",color:K.dim}}>Add holdings with position data to see projections</div>;
           var totalVal=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
-          // Per-holding expected return
+          // Per-holding expected return — Compounding TSR Model
           var holdingReturns=held.map(function(c2){
             var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
             var fs=c2.financialSnapshot||{};
             function pv(f2){if(!fs[f2])return 0;if(fs[f2].numVal!=null)return fs[f2].numVal;var v2=fs[f2].value;if(typeof v2==="number")return v2;if(typeof v2==="string")return parseFloat(v2.replace(/[^\d.\-]/g,""))||0;return 0}
-            // Growth estimate priority: 1) historical snapshot 2) KPI actual 3) KPI target 4) style
-            var eg=0;var egSource="";
+            // ── 1. EARNINGS GROWTH ──
+            var rawGrowth=0;var egSource="";
             var snapGrowth=pv("revGrowth")||pv("epsGrowth");
             var kpiGrowth=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth"||k.metricId==="orgGrowth")&&k.value>0});
             var kpiActual=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
-            if(snapGrowth&&snapGrowth!==0){eg=snapGrowth;egSource="historical"}
-            else if(kpiActual){eg=kpiActual.lastResult.actual;egSource="kpi result"}
-            else if(kpiGrowth){eg=kpiGrowth.value;egSource="kpi target"}
-            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};eg=styleEst[c2.investStyle]||10;egSource="estimate"}
-            // ── MARKET CAP MEAN REVERSION ──
-            // Large companies cannot sustain high growth — apply base rate blending
+            if(snapGrowth&&snapGrowth!==0){rawGrowth=snapGrowth;egSource="historical"}
+            else if(kpiActual){rawGrowth=kpiActual.lastResult.actual;egSource="kpi result"}
+            else if(kpiGrowth){rawGrowth=kpiGrowth.value;egSource="kpi target"}
+            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};rawGrowth=styleEst[c2.investStyle]||10;egSource="estimate"}
+            // Market cap mean reversion
             var mc=c2.mktCap||0;
-            var baseRate=mc>500e9?9:mc>100e9?11:mc>50e9?13:mc>10e9?15:mc>1e9?17:20;// SP500 long-run ~10%
-            var capGrowth=mc>500e9?15:mc>100e9?20:mc>50e9?25:mc>10e9?35:mc>1e9?45:60;// max believable growth
-            eg=Math.min(eg,capGrowth);// hard cap by market cap tier
-            // Blend toward base rate: bigger company = more weight on base rate
-            var blendWeight=mc>500e9?0.55:mc>100e9?0.4:mc>50e9?0.3:mc>10e9?0.2:0.1;
-            eg=eg*(1-blendWeight)+baseRate*blendWeight;
-            // Growth decay over time horizon — high growth mean-reverts
-            if(eg>baseRate){var decayPerYear=mc>500e9?0.08:mc>100e9?0.06:0.04;eg=baseRate+(eg-baseRate)*Math.pow(1-decayPerYear,goals.horizon/2)}
-            // Dividend yield — from snapshot, company data, or last known div
-            var dy=0;var dySnap=fs.divYield;if(dySnap&&dySnap.numVal)dy=dySnap.numVal;
-            else dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&c2.position.currentPrice>0?(c2.lastDiv*4/c2.position.currentPrice*100):0);
-            if(dy>0)dy=Math.min(dy,12);
-            // Multiple change: mean-revert PE with growth-appropriate fair PE
+            var baseRate=mc>500e9?9:mc>100e9?11:mc>50e9?13:mc>10e9?15:mc>1e9?17:20;
+            var capGrowth=mc>500e9?15:mc>100e9?20:mc>50e9?25:mc>10e9?35:mc>1e9?45:60;
+            rawGrowth=Math.min(rawGrowth,capGrowth);
+            var bw=mc>500e9?0.55:mc>100e9?0.4:mc>50e9?0.3:mc>10e9?0.2:0.1;
+            rawGrowth=rawGrowth*(1-bw)+baseRate*bw;
+            if(rawGrowth>baseRate){var decay=mc>500e9?0.08:mc>100e9?0.06:0.04;rawGrowth=baseRate+(rawGrowth-baseRate)*Math.pow(1-decay,goals.horizon/2)}
+            // ── QUALITY HAIRCUT (multiplicative) ──
+            var roic=pv("roic")||pv("roe")||0;
+            var qualityScore=roic>25?1.15:roic>20?1.1:roic>15?1.0:roic>10?0.9:roic>5?0.75:0.6;
+            var gm=pv("grossMargin");if(gm>60)qualityScore=Math.min(1.2,qualityScore+0.05);
+            var nm=pv("netMargin");if(nm>20)qualityScore=Math.min(1.2,qualityScore+0.03);
+            if(!roic&&!gm)qualityScore=0.85;// no data = haircut
+            var eg=rawGrowth*qualityScore;
+            // ── 2. MULTIPLE FADE (terminal PE) ──
             var pe=pv("pe");
-            var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
+            // Terminal growth in Year 10 decays toward base rate
+            var terminalGrowth=baseRate+(eg-baseRate)*Math.pow(0.92,goals.horizon);
+            var terminalPE=terminalGrowth>20?28:terminalGrowth>15?25:terminalGrowth>10?20:terminalGrowth>5?16:terminalGrowth>0?13:10;
             var multChange=0;
-            if(pe>0&&pe<200){multChange=(Math.pow(fairPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-12,Math.min(12,multChange))}
-            // FCF growth signal
-            var fcfKpi=c2.kpis.find(function(k){return(k.metricId==="fcf"||k.metricId==="fcfPerShare"||k.metricId==="fcfMargin"||k.metricId==="fcfConversion")&&k.lastResult&&k.lastResult.actual});
-            var fcfBoost=0;if(fcfKpi){var fcfSt=fcfKpi.lastResult.status;if(fcfSt==="met")fcfBoost=1.5;else fcfBoost=-1}
-            // Margin trend signal
-            var gmKpi=c2.kpis.find(function(k){return(k.metricId==="grossMargin"||k.metricId==="opMargin"||k.metricId==="netMargin")&&k.lastResult});
-            var marginBoost=0;if(gmKpi){if(gmKpi.lastResult.status==="met")marginBoost=1;else marginBoost=-0.5}
-            // ROIC quality signal
-            var roicKpi=c2.kpis.find(function(k){return(k.metricId==="roic"||k.metricId==="roce"||k.metricId==="roe")&&k.lastResult});
-            var roicBoost=0;if(roicKpi&&roicKpi.lastResult.actual>15)roicBoost=1.5;else if(roicKpi&&roicKpi.lastResult.actual>10)roicBoost=0.5;
-            // Buyback/shareholder yield — from snapshot, KPI, or cash flow estimate
-            var buybackBoost=0;
-            var bbSnap=fs.buybackYield;if(bbSnap&&bbSnap.numVal)buybackBoost=Math.min(bbSnap.numVal,8);
-            if(!buybackBoost){var buybackKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
-              if(buybackKpi)buybackBoost=Math.min(buybackKpi.lastResult.actual||0,8)}
-            // Fallback: estimate from cash flow statements if fetched (Pro)
-            if(!buybackBoost&&c2.financialStatements){var cfs=c2.financialStatements;
+            if(pe>0&&pe<200){multChange=(Math.pow(terminalPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-15,Math.min(10,multChange))}
+            // ── 3. SHAREHOLDER YIELD ──
+            // Dividends
+            var dy=0;var dySnap=fs.divYield;if(dySnap&&dySnap.numVal)dy=dySnap.numVal;
+            else dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&p2.currentPrice>0?(c2.lastDiv*4/p2.currentPrice*100):0);
+            dy=Math.min(dy,12);
+            // Buybacks boost EPS growth (not additive)
+            var buybackYield=0;
+            var bbSnap=fs.buybackYield;if(bbSnap&&bbSnap.numVal)buybackYield=Math.min(bbSnap.numVal,8);
+            if(!buybackYield){var bbKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
+              if(bbKpi)buybackYield=Math.min(bbKpi.lastResult.actual||0,8)}
+            if(!buybackYield&&c2.financialStatements){var cfs=c2.financialStatements;
               if(cfs&&cfs.cashflow&&cfs.cashflow.length>0){var latest=cfs.cashflow[0];var repurch=Math.abs(latest.commonStockRepurchased||0);
-                var mktCap2=c2.position.currentPrice*((c2.employees||1)*1000);// rough estimate
-                if(repurch>0&&c2.mktCap>0)buybackBoost=Math.min(repurch/c2.mktCap*100,8);
-                else if(repurch>0&&latest.revenue>0)buybackBoost=Math.min(repurch/latest.revenue*3,8)}}
-            var expectedReturn=eg+dy+multChange+fcfBoost+marginBoost+roicBoost+buybackBoost;
-            // Predictability: base 30, hard to get above 65 without exceptional data
+                if(repurch>0&&c2.mktCap>0)buybackYield=Math.min(repurch/c2.mktCap*100,8)}}
+            // ── MULTIPLICATIVE TSR ──
+            // TSR = (1+EPS_growth+Buyback_boost) * (1+Multiple_change) + Dividend_yield - 1
+            var epsGrowthPlusBuyback=eg/100+buybackYield/100;
+            var multFactor=1+multChange/100;
+            var expectedReturn=((1+epsGrowthPlusBuyback)*multFactor-1)*100+dy;
+            // ── REQUIRED GROWTH reverse-engineer ──
+            var reqGrowth=0;
+            if(pe>0){var targetMult=1+goals.targetCAGR/100;var multContrib=Math.pow(terminalPE/pe,1/goals.horizon);
+              var neededFromGrowth=targetMult/multContrib-1-dy/100;reqGrowth=Math.max(0,neededFromGrowth*100)}
+            // Predictability
             var pred=30;
-            var gm=pv("grossMargin");if(gm>60)pred+=6;else if(gm>40)pred+=3;
-            var roic2=pv("roic")||pv("roe");if(roic2>20)pred+=6;else if(roic2>12)pred+=3;
+            if(gm>60)pred+=6;else if(gm>40)pred+=3;
+            if(roic>20)pred+=6;else if(roic>12)pred+=3;
             var de=pv("debtEquity")||999;if(de<0.5)pred+=5;else if(de<1.5)pred+=2;else if(de>3)pred-=10;
-            var nm=pv("netMargin");if(nm>20)pred+=3;else if(nm>10)pred+=1;
-            var fcfConv=0;var fcfS=fs.fcf;if(fcfS)fcfConv=50;if(fcfConv>0)pred+=2;
+            if(nm>20)pred+=3;else if(nm>10)pred+=1;
             if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=5;
             if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=15;
             if(c2.conviction>=8)pred+=3;if(c2.conviction>=5)pred+=2;
             if(egSource==="historical")pred+=5;else if(egSource==="kpi result")pred+=4;else if(egSource==="kpi target")pred+=2;
             if((c2.earningsHistory||[]).length>=3)pred+=4;else if((c2.earningsHistory||[]).length>=1)pred+=2;
-            if(fcfKpi&&fcfKpi.lastResult.status==="met")pred+=2;
-            if(gmKpi&&gmKpi.lastResult.status==="met")pred+=2;
-            // Market cap penalty for growth stocks — harder to predict hypergrowth sustainability
             if(mc<10e9&&eg>20)pred-=8;
             pred=Math.max(10,Math.min(75,pred));
-            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,dy:dy,buyback:buybackBoost,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,fairPE:fairPE,domain:c2.domain,egSource:egSource}});
+            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,rawGrowth:rawGrowth,qualityScore:qualityScore,dy:dy,buyback:buybackYield,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,terminalPE:terminalPE,reqGrowth:reqGrowth,domain:c2.domain,egSource:egSource}});
           // Portfolio weighted expected CAGR
           var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
           var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
@@ -4824,33 +4847,33 @@ function TrackerApp(props){
                 <span style={{width:36}}/>
                 <span style={{flex:1}}>Company</span>
                 <span style={{width:50,textAlign:"right"}}>Weight</span>
-                <span style={{width:60,textAlign:"right"}}>Earnings</span>
-                <span style={{width:50,textAlign:"right"}}>Div</span>
-                <span style={{width:50,textAlign:"right"}}>Buyback</span>
-                <span style={{width:55,textAlign:"right"}}>Multiple</span>
-                <span style={{width:70,textAlign:"right"}}>Expected</span>
-                <span style={{width:55,textAlign:"right"}}>Contrib.</span></div>
+                <span style={{width:55,textAlign:"right"}}>Growth</span>
+                <span style={{width:40,textAlign:"right"}}>Qual</span>
+                <span style={{width:50,textAlign:"right"}}>Yield</span>
+                <span style={{width:55,textAlign:"right"}}>PE Fade</span>
+                <span style={{width:65,textAlign:"right"}}>TSR</span>
+                <span style={{width:55,textAlign:"right"}}>Needed</span></div>
               {holdingReturns.map(function(h2){var contrib=h2.weight/100*h2.expected;
                 return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+K.bdr+"40",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
                   <span style={{width:36}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={20}/></span>
                   <span style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
                   <span style={{width:50,textAlign:"right",fontSize:10,color:K.dim,fontFamily:fm}}>{h2.weight.toFixed(1)}%</span>
-                  <span style={{width:60,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{h2.egSource}</div></span>
-                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.dy>0?K.grn:K.dim,fontFamily:fm}}>{h2.dy>0?"+"+h2.dy.toFixed(1)+"%":"--"}</span>
-                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.buyback>0?K.grn:K.dim,fontFamily:fm}}>{h2.buyback>0?"+"+h2.buyback.toFixed(1)+"%":"--"}</span>
-                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.multChange>=0?K.grn:K.red,fontFamily:fm}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%</span>
-                  <span style={{width:70,textAlign:"right",fontSize:11,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
-                  <span style={{width:55,textAlign:"right",fontSize:10,fontWeight:600,color:contrib>=0?K.grn:K.red,fontFamily:fm}}>{contrib>=0?"+":""}{contrib.toFixed(1)}%</span></div>})}
+                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{h2.egSource}</div></span>
+                  <span style={{width:40,textAlign:"right",fontSize:10,color:h2.qualityScore>=1.0?K.grn:h2.qualityScore>=0.8?K.txt:K.red,fontFamily:fm}}>{h2.qualityScore.toFixed(2)}x</span>
+                  <span style={{width:50,textAlign:"right",fontSize:10,color:h2.dy>0||h2.buyback>0?K.grn:K.dim,fontFamily:fm}}>{(h2.dy+h2.buyback)>0?"+"+(h2.dy+h2.buyback).toFixed(1)+"%":"--"}</span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,fontFamily:fm}}>{h2.pe>0?<span style={{color:h2.multChange>=0?K.grn:K.red}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{Math.round(h2.pe)}{"→"}{h2.terminalPE}</div></span>:<span style={{color:K.dim}}>--</span>}</span>
+                  <span style={{width:65,textAlign:"right",fontSize:11,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
+                  <span style={{width:55,textAlign:"right",fontSize:10,color:h2.reqGrowth>30?K.red:h2.reqGrowth>15?K.amb:K.grn,fontFamily:fm}}>{h2.pe>0?h2.reqGrowth.toFixed(0)+"%":"--"}</span></div>})}
               {/* Math explanation */}
               <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>How this is calculated</div>
-                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>Expected Return = Earnings Growth + Dividend Yield + Multiple Change + Quality Signals. Growth uses historical financial data first (most objective), then your KPI results, then targets, then a style-based estimate. Quality signals add/subtract based on: FCF health (are KPIs met?), margin trajectory, ROIC quality, and buyback/shareholder yield. Multiple change estimates P/E mean-reversion toward growth-appropriate fair value. Predictability weighs margin stability, ROIC, leverage, earnings history depth, FCF conversion, and data quality.</div></div></div>
+                <div style={{fontSize:10,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>Compounding TSR Model</div>
+                <div style={{fontSize:10,color:K.dim,lineHeight:1.6}}>TSR = (1 + EPS Growth + Buyback Yield) × (1 + Multiple Change) + Dividend Yield - 1. Growth is adjusted by a Quality Score (ROIC, margins) — high-quality companies earn full credit, low-ROIC companies get haircut. Multiple Change uses terminal P/E based on Year 10 growth rate (growth decays toward market base rate). "Needed" shows the organic growth required to hit your target CAGR given current valuation — red means the target is likely unrealistic.</div></div></div>
             {/* What-if scenarios */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 {[{label:"Bull Case",desc:"Growth accelerates 20%",factor:1.2,color:K.grn},{label:"Base Case",desc:"Current trajectory continues",factor:1.0,color:K.acc},{label:"Slowdown",desc:"Growth halves from here",factor:0.5,color:K.amb},{label:"Bear Case",desc:"Growth stalls, margins compress",factor:0.2,color:K.red}].map(function(sc){
-                  var scCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*(h2.eg*sc.factor+h2.dy+h2.multChange*(sc.factor>0.5?1:0.5))},0);
+                  var scCAGR=holdingReturns.reduce(function(s2,h2){var adjG=h2.eg*sc.factor/100+h2.buyback/100;var mf=1+h2.multChange/100*(sc.factor>0.5?1:0.5);return s2+h2.weight/100*(((1+adjG)*mf-1)*100+h2.dy)},0);
                   return<div key={sc.label} style={{padding:"12px 14px",borderRadius:8,background:K.bg,border:"1px solid "+K.bdr}}>
                     <div style={{fontSize:11,fontWeight:600,color:sc.color}}>{sc.label}</div>
                     <div style={{fontSize:10,color:K.dim,marginTop:2}}>{sc.desc}</div>
