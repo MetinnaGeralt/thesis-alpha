@@ -274,13 +274,28 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
           if(upcoming.length){ed=upcoming[0].date;et=upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"}
           else{var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
-      // Dividend data from profile (free tier — no premium endpoints needed)
-      var divData={lastDiv:pr.lastDiv||0,divPerShare:pr.lastDiv||0,divFrequency:pr.lastDiv>0?"quarterly":"none",exDivDate:"",divYield:0};
-      if(pr.lastDiv>0&&pr.price>0){divData.divYield=pr.lastDiv*4/pr.price*100}
+      // Dividend data from Finnhub (free, reliable)
+      var divData={lastDiv:0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
+      try{var fhDiv=await fetchDivFromFinnhub(t);
+        if(fhDiv&&fhDiv.payer){divData.divPerShare=fhDiv.divPerShare;divData.lastDiv=fhDiv.annualDiv||fhDiv.divPerShare;divData.divFrequency=fhDiv.divFrequency;divData.divYield=fhDiv.divYield}
+      }catch(e){}
+      // Fallback to FMP lastDiv if Finnhub missed it
+      if(divData.divPerShare===0&&pr.lastDiv>0){divData.divPerShare=pr.lastDiv;divData.lastDiv=pr.lastDiv;divData.divFrequency="quarterly";divData.divYield=pr.price>0?pr.lastDiv*4/pr.price*100:0}
       return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
+// Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
+async function fetchDivFromFinnhub(ticker){try{
+  var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
+  if(!met||!met.metric)return null;var m=met.metric;
+  var annDiv=m["dividendPerShareAnnual"]||0;
+  var divYield=m["dividendYieldIndicatedAnnual"]||0;
+  if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
+  // Estimate per-payment: most US stocks are quarterly
+  var perPayment=annDiv>0?annDiv/4:0;
+  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:"quarterly"}
+}catch(e){return null}}
 // Fetch dividend details from FMP
 async function fetchDividendInfo(ticker){try{
   var hist=await fmp("historical-price-full/stock_dividend/"+ticker);
@@ -1118,35 +1133,27 @@ function TrackerApp(props){
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
-  // Auto-fetch dividend data for ALL users — uses only profile endpoint (free tier)
+  // Auto-fetch dividend data for ALL users — uses Finnhub (free tier)
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){
-      // Re-check companies with no div data, OR that were wrongly set to "none"
-      var hasDivData=c.divPerShare>0||c.lastDiv>0;
-      return !hasDivData});
+    var needsDiv=cos.filter(function(c){return !c._divChecked&&(!c.divPerShare||c.divPerShare===0)});
     if(needsDiv.length===0)return;
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
-        try{var r=await fetchPrice(c.ticker);
-          if(r&&r.price){
-            if(r.lastDiv>0){
-              // Company pays dividends — lastDiv from FMP profile is per-payment amount
-              upd(c.id,function(prev){return Object.assign({},prev,{
-                position:Object.assign({},prev.position,{currentPrice:r.price}),
-                lastDiv:r.lastDiv,
-                divPerShare:r.lastDiv,
-                divFrequency:prev.divFrequency&&prev.divFrequency!=="none"&&prev.divFrequency!=="quarterly"?prev.divFrequency:"quarterly"
-              })})
-            } else {
-              // No dividend — mark as confirmed non-payer
-              upd(c.id,function(prev){return Object.assign({},prev,{
-                position:Object.assign({},prev.position,{currentPrice:r.price}),
-                divFrequency:"none",divPerShare:0,lastDiv:0
-              })})
-            }
+        try{
+          var fhDiv=await fetchDivFromFinnhub(c.ticker);
+          if(fhDiv&&fhDiv.payer){
+            upd(c.id,function(prev){return Object.assign({},prev,{
+              divPerShare:fhDiv.divPerShare,
+              lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,
+              divFrequency:fhDiv.divFrequency,
+              divYield:fhDiv.divYield,
+              _divChecked:true
+            })})
+          } else {
+            upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none",divPerShare:0,lastDiv:0,_divChecked:true})})
           }
         }catch(e){}
-        await new Promise(function(res){setTimeout(res,300)})}
+        await new Promise(function(res){setTimeout(res,500)})}
     })()},2500);return function(){clearTimeout(t)}},[loaded]);
   // Auto-notify: when earnings date has passed, automatically check them
   var autoCheckDone=useRef({});
@@ -1316,11 +1323,12 @@ function TrackerApp(props){
   async function refreshPrices(){setPriceLoading(true);
     for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
       if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
-        // Auto-populate dividend from FMP profile
-        if(r.lastDiv>0){
-          if(!prev.divPerShare||prev.divPerShare===0){updates.divPerShare=r.lastDiv;updates.lastDiv=r.lastDiv;updates.divFrequency=prev.divFrequency==="none"?"quarterly":prev.divFrequency||"quarterly"}
-        } else if(!prev.divPerShare&&!prev.lastDiv){updates.divFrequency="none"}
-        return Object.assign({},prev,updates)})
+        return Object.assign({},prev,updates)});
+        // Fetch dividend from Finnhub if missing
+        if(!c.divPerShare||c.divPerShare===0){
+          try{var fhDiv=await fetchDivFromFinnhub(c.ticker);
+            if(fhDiv&&fhDiv.payer){upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,divFrequency:fhDiv.divFrequency})})}
+            else if(fhDiv){upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none"})})}}catch(e){}}
       }}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
@@ -1340,7 +1348,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
