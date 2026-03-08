@@ -5975,37 +5975,101 @@ function TrackerApp(props){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:12,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
-    {/* ── Today's Focus Card (hero element, always first) ── */}
+    {/* ── MORNING BRIEFING ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
-      var focus=null;
-      var portfolio=filtered;
-      // Priority 1: Earnings within 3 days
-      var urgent=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=3}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
-      if(urgent.length>0){var uc=urgent[0];focus={color:K.amb,icon:"target",title:uc.ticker+" reports "+(dU(uc.earningsDate)===0?"today":dU(uc.earningsDate)===1?"tomorrow":"in "+dU(uc.earningsDate)+"d"),desc:"Review your thesis and "+uc.kpis.length+" KPIs before results drop",btn:"Prepare now",onClick:function(){setSelId(uc.id);setDetailTab("dossier");setPage("dashboard")}}}
-      // Priority 2: Weekly review not done
-      if(!focus&&!currentWeekReviewed){focus={color:K.grn,icon:"shield",title:"Weekly review time",desc:"Confirm your conviction across "+portfolio.length+" holdings. Takes 3 minutes.",btn:"Start review",onClick:function(){setPage("review")}}}
-      // Priority 3: Thesis missing
-      if(!focus){var noT=portfolio.filter(function(c){return!c.thesisNote||c.thesisNote.trim().length<20});if(noT.length>0)focus={color:K.acc,icon:"lightbulb",title:"Write your thesis for "+noT[0].ticker,desc:"Why do you own it? What's the moat? When would you sell?",btn:"Write thesis",onClick:function(){setSelId(noT[0].id);setPage("dashboard");setModal({type:"thesis"})}}}
-      // Priority 4: Stale thesis
-      if(!focus){var staleT=portfolio.filter(function(c){return c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)>90}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)});if(staleT.length>0)focus={color:K.red,icon:"clock",title:staleT[0].ticker+" thesis is getting stale",desc:"Last updated "+(Math.ceil((new Date()-new Date(staleT[0].thesisUpdatedAt))/864e5))+" days ago. Still accurate?",btn:"Review thesis",onClick:function(){setSelId(staleT[0].id);setPage("dashboard");setModal({type:"thesis"})}}}
-      // Priority 5: Missing conviction
-      if(!focus){var noC=portfolio.filter(function(c){return!c.conviction});if(noC.length>0)focus={color:K.amb,icon:"trending",title:"Rate your conviction for "+noC[0].ticker,desc:"How confident are you in this position? 1-10.",btn:"Rate now",onClick:function(){setSelId(noC[0].id);setPage("dashboard");setModal({type:"conviction"})}}}
-      // Priority 6: Missing KPIs
-      if(!focus){var noK=portfolio.filter(function(c){return c.kpis.length===0});if(noK.length>0)focus={color:K.blue||K.acc,icon:"bar",title:"Add KPIs for "+noK[0].ticker,desc:"Define the metrics that prove or disprove your thesis — revenue, margins, retention.",btn:"Add KPIs",onClick:function(){setSelId(noK[0].id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},100)}}}
-      // Priority 7: Missing moat classification
-      if(!focus){var noM=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(noM.length>0)focus={color:"#9333EA",icon:"castle",title:"Classify the moat for "+noM[0].ticker,desc:"What gives this company its competitive advantage? Network effects, switching costs, brand?",btn:"Classify moat",onClick:function(){setSelId(noM[0].id);setSubPage("moat");setPage("dashboard")}}}
-      // Priority 8: Missing position data
-      if(!focus){var noPos=portfolio.filter(function(c){var p=c.position||{};return!p.shares||p.shares===0});if(noPos.length>0)focus={color:K.mid,icon:"trending",title:"Log your position in "+noPos[0].ticker,desc:"Add your shares and average cost to track performance.",btn:"Add position",onClick:function(){setSelId(noPos[0].id);setPage("dashboard")}}}
-      // Did something today? Show encouragement, else generic prompt
-
-      if(!focus)focus={color:K.acc,icon:"lightbulb",title:"Explore your portfolio",desc:"Open any holding to deepen your thesis, review KPIs, or check earnings history.",btn:null,onClick:null};
-      return<div style={{background:focus.color+"08",border:"1px solid "+focus.color+"25",borderRadius:12,padding:"16px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:14}}>
-        <div style={{width:44,height:44,borderRadius:10,background:focus.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={focus.icon} size={20} color={focus.color}/></div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:focus.color,fontFamily:fm,marginBottom:2}}>Today's Focus</div>
-          <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{focus.title}</div>
-          <div style={{fontSize:11,color:K.mid,marginTop:2}}>{focus.desc}</div></div>
-        {focus.btn&&<button onClick={focus.onClick} style={{background:focus.color,color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{focus.btn}</button>}
+      var portfolio=filtered;var now=new Date();var hour=now.getHours();
+      var greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+      // Portfolio value & change
+      var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
+      var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
+      var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
+      var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
+      // Notable movers (any holding with position data)
+      var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
+      var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
+      // Upcoming earnings
+      var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+      // Recent insider buys (from cached transactions)
+      var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length})}});
+      // Pending actions
+      var actions=[];
+      if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,text:"Weekly review due"+(streakData.current>0?" — "+streakData.current+"wk streak on the line":""),onClick:function(){setPage("review")}});
+      var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+      if(unchecked.length>0)actions.push({icon:"target",color:K.amb,text:unchecked.map(function(c2){return c2.ticker}).join(", ")+" — earnings released, KPIs unchecked",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}});
+      var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
+      if(stale.length>0)actions.push({icon:"clock",color:K.red,text:stale.length+" thesis"+(stale.length>1?"es":"")+" older than 90 days",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
+      var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
+      if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.acc,text:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
+      // Investor quotes
+      var quotes=[
+        {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
+        {q:"Risk comes from not knowing what you're doing.",a:"Warren Buffett"},
+        {q:"The big money is not in the buying and selling, but in the waiting.",a:"Charlie Munger"},
+        {q:"In investing, what is comfortable is rarely profitable.",a:"Robert Arnott"},
+        {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
+        {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
+        {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
+        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
+        {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
+        {q:"It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
+        {q:"Our favorite holding period is forever.",a:"Warren Buffett"},
+        {q:"The four most dangerous words in investing are: this time it's different.",a:"John Templeton"}
+      ];
+      var dayIdx=Math.floor(now.getTime()/86400000)%quotes.length;
+      var quote=quotes[dayIdx];
+      // Earnings urgency color
+      var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
+      var earningsTomorrow=upcoming.filter(function(c2){return dU(c2.earningsDate)===1}).length;
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:20,overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"20px 24px 16px",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div>
+              <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
+              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div></div>
+            {totalVal>0&&<div style={{textAlign:"right"}}>
+              <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
+              <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
+          {/* Left column — Market Intel */}
+          <div style={{padding:"16px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
+            {/* Upcoming earnings */}
+            {upcoming.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:600,marginBottom:8}}>{earningsToday>0?"REPORTING TODAY":earningsTomorrow>0?"REPORTING TOMORROW":"EARNINGS THIS WEEK"}</div>
+              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={18}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
+            {/* Notable movers */}
+            {movers.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>YOUR HOLDINGS</div>
+              {movers.slice(0,5).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
+                <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
+                <span style={{marginLeft:"auto",fontSize:11,fontWeight:600,color:m.ret>=0?K.grn:K.red,fontFamily:fm}}>{m.ret>=0?"+":""}{m.ret.toFixed(1)}%</span></div>})}</div>}
+            {/* Insider signals */}
+            {insiderSignals.length>0&&<div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>INSIDER BUYING</div>
+              <div style={{fontSize:11,color:K.mid}}>{insiderSignals.map(function(s){return s.ticker+" ("+s.count+")"}).join(", ")}</div></div>}
+          </div>
+          {/* Right column — Actions & Wisdom */}
+          <div style={{padding:"16px 24px"}}>
+            {actions.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>ACTION ITEMS</div>
+              {actions.slice(0,3).map(function(a,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,marginBottom:4,background:a.color+"06",border:"1px solid "+a.color+"15",cursor:"pointer"}} onClick={a.onClick}>
+                <IC name={a.icon} size={12} color={a.color}/>
+                <span style={{fontSize:11,color:K.mid,flex:1}}>{a.text}</span>
+                <span style={{fontSize:10,color:a.color,fontFamily:fm}}>{"→"}</span></div>})}</div>}
+            {actions.length===0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>ALL CLEAR</div>
+              <div style={{fontSize:11,color:K.mid}}>No urgent actions. Your portfolio is in good shape.</div></div>}
+            {/* Daily quote */}
+            <div style={{background:K.bg,borderRadius:8,padding:"12px 14px",marginTop:actions.length>0?0:8}}>
+              <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
+              <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>{"— "+quote.a}</div></div>
+          </div></div>
       </div>})()}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
