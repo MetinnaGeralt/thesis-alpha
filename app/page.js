@@ -1128,6 +1128,26 @@ function TrackerApp(props){
   // Auto-refresh prices on load — PRO only (uses FMP API)
   useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
+  // Auto-fetch dividend data for ALL users (free + pro) — backfill missing dividend info
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var needsDiv=cos.filter(function(c){return(!c.divPerShare||c.divPerShare===0)&&c.divFrequency!=="none"});
+    if(needsDiv.length===0)return;
+    var t=setTimeout(function(){(async function(){
+      for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
+        try{var r=await fetchPrice(c.ticker);
+          if(r&&r.price){
+            upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
+              if(r.lastDiv>0){updates.lastDiv=r.lastDiv;updates.divPerShare=r.lastDiv}
+              else{updates.divFrequency="none"}
+              return Object.assign({},prev,updates)})}
+          if(r&&r.lastDiv>0){
+            var dInfo=await fetchDividendInfo(c.ticker);
+            if(dInfo&&dInfo.divPerShare>0){
+              upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:dInfo.divPerShare,divFrequency:dInfo.divFrequency,exDivDate:dInfo.exDivDate||prev.exDivDate,lastDiv:dInfo.lastDiv})})}}
+          else if(r){upd(c.id,function(prev){if(!prev.divPerShare&&!prev.lastDiv)return Object.assign({},prev,{divFrequency:"none"});return prev})}
+        }catch(e){}
+        await new Promise(function(res){setTimeout(res,400)})}
+    })()},3000);return function(){clearTimeout(t)}},[loaded]);
   // Auto-notify: when earnings date has passed, automatically check them
   var autoCheckDone=useRef({});
   useEffect(function(){if(!loaded||!autoNotify||!isPro)return;
