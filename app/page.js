@@ -550,11 +550,13 @@ var FOREST={bg:"#f0f0f0",side:"#235a00",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
 var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
-// ── Thesis Themes (landing page aesthetic: Outfit font, heavy rounding, purple accent) ──
-var THESIS_DARK={bg:"#16161D",side:"#16161D",card:"#1C1C1E",bdr:"rgba(255,255,255,0.05)",bdr2:"rgba(255,255,255,0.1)",txt:"#ffffff",mid:"rgba(255,255,255,0.8)",dim:"rgba(255,255,255,0.5)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
-var THESIS_LIGHT={bg:"#F7F5F0",side:"#F7F5F0",card:"#ffffff",bdr:"rgba(0,0,0,0.06)",bdr2:"rgba(0,0,0,0.1)",txt:"#16161D",mid:"rgba(22,22,29,0.8)",dim:"rgba(22,22,29,0.5)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+// ── Thesis Themes — landing page aesthetic: Outfit font, heavy rounding, purple accent ──
+var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.06)",bdr2:"rgba(255,255,255,0.12)",txt:"#ffffff",mid:"rgba(255,255,255,0.75)",dim:"rgba(255,255,255,0.4)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.07)",bdr2:"rgba(0,0,0,0.12)",txt:"#16161D",mid:"rgba(22,22,29,0.7)",dim:"rgba(22,22,29,0.4)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
 var THEMES={thesis_dark:THESIS_DARK,thesis_light:THESIS_LIGHT,dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
+// Global thesis flag — updated inside TrackerApp before mkS calls
+var _isThesis=true;
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
 var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"lightbulb"},{id:"my-writeups",label:"Investment Memos",icon:"edit"},{id:"deep-dives",label:"Research Clips",icon:"link"},{id:"reports",label:"IR Library",icon:"bar"},{id:"notes",label:"Quick Notes",icon:"file"}];
@@ -606,10 +608,27 @@ function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
   var d=paths[p.name]||paths.file;
   return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" style={p.style||{flexShrink:0}}><path d={d}/></svg>}
 
-function mkS(K){return{btn:{background:"transparent",border:"1px solid "+K.bdr,color:K.mid,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnP:{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},btnD:{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:"8px 16px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,transition:"all .15s ease"},btnChk:{background:K.blue+"12",border:"1px solid "+K.blue+"40",color:K.blue,padding:"9px 18px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:600,transition:"all .15s ease"},sec:{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,marginBottom:12,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8},badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:500,color:c,background:c+"15",padding:"3px 10px",borderRadius:6,fontFamily:fm}},dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}}}}
-function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(10px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?"16px 16px 0 0":16,padding:mob?"24px 20px 32px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h2 style={{margin:0,fontSize:mob?15:17,fontWeight:500,color:K.txt,fontFamily:fh}}>{p.title}</h2><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}} onMouseEnter={function(e){e.target.style.color=K.txt}} onMouseLeave={function(e){e.target.style.color=K.dim}}>{"✕"}</button></div>{p.children}</div></div>}
-function Inp(p){var K=p.K||DARK;var b={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"};return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}{p.ta?<textarea value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} rows={3} style={Object.assign({},b,{resize:"vertical"})}/>:<input type={p.type||"text"} value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} spellCheck={p.spellCheck!==undefined?p.spellCheck:true} autoCorrect={p.autoCorrect||"on"} autoComplete={p.autoComplete||"on"} style={b}/>}</div>}
-function Sel(p){var K=p.K||DARK;return<div style={{marginBottom:16}}>{p.label&&<label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>{p.label}</label>}<select value={p.value} onChange={function(e){p.onChange(e.target.value)}} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none"}}>{p.options.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>})}</select></div>}
+function mkS(K){
+  var th=_isThesis;
+  var br=th?999:8; // button border-radius
+  var cr=th?20:6;  // card/input border-radius
+  var bdrStyle=th?"none":"1px solid "+K.bdr;
+  var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
+  return{
+    btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:th?"1px solid rgba(255,255,255,0.1)":"1px solid "+K.bdr,color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
+    btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"10px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 14px "+K.prim+"50":"none"}),
+    btnD:Object.assign({},btnBase,{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
+    btnChk:Object.assign({},btnBase,{background:K.blue+"18",border:"1px solid "+K.blue+"40",color:K.blue,padding:th?"10px 24px":"9px 18px",borderRadius:br,fontWeight:600}),
+    sec:{fontSize:th?12:11,letterSpacing:th?0:1,textTransform:th?"none":"uppercase",color:K.dim,marginBottom:12,fontWeight:th?700:600,fontFamily:th?fm:fb,display:"flex",alignItems:"center",gap:8},
+    badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 12px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
+    dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
+    card:{background:K.card,border:"1px solid "+K.bdr,borderRadius:th?20:6,padding:th?"20px 24px":"16px 20px"},
+    inp:{width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:13,fontFamily:fm,outline:"none"},
+  }
+}
+function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;var th=_isThesis;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(12px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?(th?"28px 28px 0 0":"16px 16px 0 0"):th?28:16,padding:mob?th?"28px 24px 36px":"24px 20px 32px":th?"32px 36px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:th?"0 32px 80px rgba(0,0,0,.5)":"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:th?28:24}}><h2 style={{margin:0,fontSize:mob?15:th?18:17,fontWeight:th?800:500,color:K.txt,fontFamily:fh,letterSpacing:th?"-0.5px":0}}>{p.title}</h2><button onClick={p.onClose} style={{background:th?"rgba(255,255,255,0.08)":"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"6px 10px",borderRadius:th?999:6,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=K.txt}} onMouseLeave={function(e){e.currentTarget.style.color=K.dim}}>{"✕"}</button></div>{p.children}</div></div>}
+function Inp(p){var K=p.K||DARK;var th=_isThesis;var b={width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:13,fontFamily:fm,outline:"none"};return<div style={{marginBottom:18}}>{p.label&&<label style={{display:"block",fontSize:th?12:11,color:K.dim,marginBottom:th?8:6,letterSpacing:th?0:.5,textTransform:th?"none":"uppercase",fontFamily:fm,fontWeight:th?600:400}}>{p.label}</label>}{p.ta?<textarea value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} rows={3} style={Object.assign({},b,{resize:"vertical"})}/>:<input type={p.type||"text"} value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} spellCheck={p.spellCheck!==undefined?p.spellCheck:true} autoCorrect={p.autoCorrect||"on"} autoComplete={p.autoComplete||"on"} style={b}/>}</div>}
+function Sel(p){var K=p.K||DARK;var th=_isThesis;return<div style={{marginBottom:18}}>{p.label&&<label style={{display:"block",fontSize:th?12:11,color:K.dim,marginBottom:th?8:6,letterSpacing:th?0:.5,textTransform:th?"none":"uppercase",fontFamily:fm,fontWeight:th?600:400}}>{p.label}</label>}<select value={p.value} onChange={function(e){p.onChange(e.target.value)}} style={{width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:13,fontFamily:fm,outline:"none"}}>{p.options.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>})}</select></div>}
 
 // ═══ LOGIN ═══
 function LoginPage(props){
@@ -648,16 +667,18 @@ function LoginPage(props){
 // ═══ TRACKER APP ═══
 function TrackerApp(props){
   var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){return"thesis_dark"}}),theme=_th[0],setTheme=_th[1];
-  var K=THEMES[theme]||THESIS_DARK;var S=mkS(K);
-  var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
-  // Per-theme font overrides
-  var isForest=theme==="forest";
   var isThesis=theme==="thesis_dark"||theme==="thesis_light";
+  var isForest=theme==="forest";
   var bm=theme==="bloomberg";
-  if(isThesis){fm="'Outfit',sans-serif";fh="'Outfit',sans-serif";fb="'Outfit',sans-serif";S=mkS(K)}
-  else if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
-  else if(bm){fm="'Consolas','Courier New',monospace";fh="'Consolas','Courier New',monospace";fb="'Consolas','Courier New',monospace";S=mkS(K)}
-  else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
+  // Update global flag so mkS, Modal, Inp, Sel all pick up the right shape language
+  _isThesis=isThesis;
+  var K=THEMES[theme]||THESIS_DARK;
+  if(isThesis){fm="'Outfit',sans-serif";fh="'Outfit',sans-serif";fb="'Outfit',sans-serif";}
+  else if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";}
+  else if(bm){fm="'Consolas','Courier New',monospace";fh="'Consolas','Courier New',monospace";fb="'Consolas','Courier New',monospace";}
+  else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";}
+  var S=mkS(K);
+  var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
   var sideDark=isDark||theme==="forest"||theme==="paypal";
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
@@ -981,18 +1002,15 @@ function TrackerApp(props){
     if(typeof document==="undefined")return;
     var id="ta-global-css";var prev=document.getElementById(id);if(prev)prev.remove();
     var style=document.createElement("style");style.id=id;
-    var hov=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
+    var hov=isDark?"rgba(255,255,255,.05)":"rgba(0,0,0,.04)";
     var hovTxt=isDark?"#eeeeee":"#1a1a1a";
     var scrollT=isDark?"rgba(255,255,255,.1)":"rgba(0,0,0,.12)";
     var scrollH=isDark?"rgba(255,255,255,.2)":"rgba(0,0,0,.2)";
-    var focusC=isDark?"rgba(255,255,255,.25)":"rgba(0,0,0,.15)";
-    var focusS=isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
+    var focusC=isThesis?K.acc:isDark?"rgba(255,255,255,.25)":"rgba(0,0,0,.15)";
+    var focusS=isThesis?K.acc+"30":isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
     var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
-    // Dynamic Thesis Theme Values
-    var cardRadius=isThesis?"24px":"6px";
-    var btnRadius=isThesis?"999px!important":"8px!important";
-    var inpRadius=isThesis?"16px!important":"6px!important";
-    var cardShadow=isThesis?(isDark?"0 10px 40px -10px rgba(0,0,0,0.5)":"0 10px 40px -10px rgba(107,76,230,0.15)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
+    var cardR=isThesis?"20px":"6px";
+    var cardSh=isThesis?(isDark?"0 8px 32px rgba(0,0,0,.4)":"0 8px 32px rgba(107,76,230,.12)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
@@ -1008,23 +1026,26 @@ function TrackerApp(props){
       ".ta-glow{animation:glowPulse 2s ease-in-out infinite}",
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
-      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease;border-radius:"+cardRadius+"}",
-      ".ta-card:hover{box-shadow:"+cardShadow+";transform:translateY(-1px)}",
+      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease;border-radius:"+cardR+"}",
+      ".ta-card:hover{box-shadow:"+cardSh+";transform:translateY(-1px)}",
       ".ta-btn{transition:all .15s ease}",
       ".ta-btn:hover{filter:brightness(1.15)}",
       ".ta-btn:active{transform:translateY(0.5px)}",
-      ".ta-skel{background:linear-gradient(90deg,transparent 0%,"+shimC+" 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:6px}",
+      ".ta-skel{background:linear-gradient(90deg,transparent 0%,"+shimC+" 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:"+cardR+"}",
       "::-webkit-scrollbar{width:6px;height:6px}",
       "::-webkit-scrollbar-track{background:transparent}",
       "::-webkit-scrollbar-thumb{background:"+scrollT+";border-radius:3px}",
       "::-webkit-scrollbar-thumb:hover{background:"+scrollH+"}",
-      "input:focus,textarea:focus,select:focus{border-color:"+focusC+"!important;box-shadow:0 0 0 3px "+focusS+"!important;transition:all .15s ease}",
-      "button{transition:all .12s ease;border-radius:"+btnRadius+"}",
+      "input:focus,textarea:focus,select:focus{border-color:"+focusC+"!important;box-shadow:0 0 0 3px "+focusS+"!important;outline:none!important;transition:all .15s ease}",
+      "button{transition:all .12s ease;border-radius:"+(isThesis?"999px":"8px")+"}",
       "select{transition:border-color .15s ease}",
       ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
       ".ta-side-item:hover{background:"+hov+"}",
       ".ta-tab{transition:all .15s ease;position:relative}",
       ".ta-tab:hover{color:"+hovTxt+"}",
+      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px}h1,h2,h3{font-weight:900!important;letter-spacing:-0.5px!important}input,textarea,select{border-radius:14px!important;font-weight:500!important}button{border-radius:999px!important;font-weight:700!important}":"",
+      bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
+      isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
       "@media(max-width:767px){",
       "  .ta-card:hover{box-shadow:none!important;transform:none!important}",
       "  .ta-side-item:hover{background:transparent!important}",
@@ -1051,16 +1072,14 @@ function TrackerApp(props){
       "  .ta-summary-grid{grid-template-columns:1fr 1fr!important}",
       "  .ta-style-wrap{flex-wrap:wrap!important}",
       "}",
-      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px}h1,h2,h3{font-weight:900!important;letter-spacing:-0.5px!important}input,textarea,select{font-weight:500!important;border-radius:"+inpRadius+"}button{font-weight:700!important}":"",
-      bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
-      isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
     ].join("\n");
     document.head.appendChild(style);
     // Load theme-specific fonts via link tag
     var fontId="ta-theme-font";var prevFont=document.getElementById(fontId);if(prevFont)prevFont.remove();
-    if(isForest){var link=document.createElement("link");link.id=fontId;link.rel="stylesheet";link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(link)}
-    if(isThesis){var link2=document.createElement("link");link2.id="ta-thesis-font";link2.rel="stylesheet";link2.href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap";document.head.appendChild(link2)}
-    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove();var fl2=document.getElementById("ta-thesis-font");if(fl2)fl2.remove()}},[isDark,theme]);
+    var fontId2="ta-theme-font2";var prevFont2=document.getElementById(fontId2);if(prevFont2)prevFont2.remove();
+    if(isForest){var lnk=document.createElement("link");lnk.id=fontId;lnk.rel="stylesheet";lnk.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(lnk)}
+    if(isThesis){var lnk2=document.createElement("link");lnk2.id=fontId2;lnk2.rel="stylesheet";lnk2.href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap";document.head.appendChild(lnk2)}
+    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove();var fl2=document.getElementById(fontId2);if(fl2)fl2.remove()}},[isDark,isThesis,theme]);
   // ── Load data ──
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
