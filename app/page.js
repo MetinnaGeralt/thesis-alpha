@@ -234,6 +234,29 @@ function calcOwnerScore(cos){
   balP=Math.min(balP,15);
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
+function classifyPortfolio(portfolio){
+  var styles={};var divPayerCount=0;var totalDivYield=0;var avgGrowth=0;var growthCount=0;
+  portfolio.forEach(function(c2){var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
+    var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
+    var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
+    var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
+    if(yld>=2){divPayerCount++;totalDivYield+=yld}
+    var snap=c2.financialSnapshot||{};if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}});
+  var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
+  var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
+  var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
+  var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
+  var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
+  if(divDominant&&meanDivYield>=4)return"Income-Focused";
+  if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))return"Growth-Oriented";
+  if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))return"Value-Oriented";
+  if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))return"Quality Compounder";
+  if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))return"Income-Focused";
+  if(meanGrowth>20)return"Growth-Oriented";
+  if(divDominant)return"Income & Growth";
+  if(portfolio.length>=6)return"Diversified";
+  if(portfolio.length<=3)return"Concentrated";
+  return"Balanced"}
 function calcMastery(c){
   var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
   // Star 2: Thesis written (core + at least 1 section)
@@ -278,7 +301,7 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
       // Dividend data from Finnhub (free, reliable)
       var divData={lastDiv:0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
-      try{var fhDiv=await fetchDivFromFinnhub(t);
+      try{var fhDiv=await fetchDivFromFinnhub(t,pr.lastDiv);
         if(fhDiv&&fhDiv.payer){divData.divPerShare=fhDiv.divPerShare;divData.lastDiv=fhDiv.annualDiv||fhDiv.divPerShare;divData.divFrequency=fhDiv.divFrequency;divData.divYield=fhDiv.divYield}
       }catch(e){}
       // Fallback to FMP lastDiv if Finnhub missed it
@@ -286,17 +309,23 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
       return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
-async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
+async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
+async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+ticker);if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
-async function fetchDivFromFinnhub(ticker){try{
+var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN"];
+async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
   if(!met||!met.metric)return null;var m=met.metric;
   var annDiv=m["dividendPerShareAnnual"]||0;
   var divYield=m["dividendYieldIndicatedAnnual"]||0;
   if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
-  // Estimate per-payment: most US stocks are quarterly
-  var perPayment=annDiv>0?annDiv/4:0;
-  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:"quarterly"}
+  var freq="quarterly";var perPayment=annDiv>0?annDiv/4:0;
+  if(KNOWN_MONTHLY.indexOf(ticker.toUpperCase())>=0){freq="monthly";perPayment=annDiv/12}
+  else if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){var ratio=Math.round(annDiv/fmpLastDiv);
+    if(ratio>=10&&ratio<=14){freq="monthly";perPayment=annDiv/12}
+    else if(ratio>=1.5&&ratio<=2.5){freq="semi";perPayment=annDiv/2}
+    else if(ratio<=1.2){freq="annual";perPayment=annDiv}}
+  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:freq}
 }catch(e){return null}}
 // Fetch dividend details from FMP
 async function fetchDividendInfo(ticker){try{
@@ -571,8 +600,8 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
+  if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
   return<div style={{width:sz,height:sz,borderRadius:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
@@ -1175,28 +1204,27 @@ function TrackerApp(props){
       celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
       showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
       setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
-  // Auto-refresh prices on load — PRO only (uses FMP API)
-  useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
-    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
-  // Auto-fetch dividend data for ALL users — uses Finnhub (free tier)
+  // Auto-refresh prices on load
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){return !c._divChecked&&(!c.divPerShare||c.divPerShare===0)});
+    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
+  // Auto-fetch dividend data for ALL users
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var needsDiv=cos.filter(function(c){
+      if(!c._divChecked&&(!c.divPerShare||c.divPerShare===0))return true;
+      if(c.divFrequency==="quarterly"&&KNOWN_MONTHLY.indexOf(c.ticker.toUpperCase())>=0)return true;
+      return false});
     if(needsDiv.length===0)return;
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
         try{
-          var fhDiv=await fetchDivFromFinnhub(c.ticker);
+          var fmpData=await fetchPrice(c.ticker);var fmpLD=fmpData?fmpData.lastDiv:0;
+          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price}),_dayChange:fmpData.changes||0,_dayChangePct:fmpData.changesPercentage||0})})}
+          var fhDiv=await fetchDivFromFinnhub(c.ticker,fmpLD);
           if(fhDiv&&fhDiv.payer){
             upd(c.id,function(prev){return Object.assign({},prev,{
-              divPerShare:fhDiv.divPerShare,
-              lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,
-              divFrequency:fhDiv.divFrequency,
-              divYield:fhDiv.divYield,
-              _divChecked:true
-            })})
-          } else {
-            upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none",divPerShare:0,lastDiv:0,_divChecked:true})})
-          }
+              divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,
+              divFrequency:fhDiv.divFrequency,divYield:fhDiv.divYield,_divChecked:true})})}
+          else{upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none",divPerShare:0,lastDiv:0,_divChecked:true})})}
         }catch(e){}
         await new Promise(function(res){setTimeout(res,500)})}
     })()},2500);return function(){clearTimeout(t)}},[loaded]);
@@ -1366,12 +1394,15 @@ function TrackerApp(props){
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
   async function checkAll(){var all=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
   async function refreshPrices(){setPriceLoading(true);
-    for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
-      if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
-        return Object.assign({},prev,updates)});
-        // Fetch dividend from Finnhub if missing
+    for(var i=0;i<cos.length;i++){var c=cos[i];try{
+      var rP=fetchPrice(c.ticker);var rQ=fetchQuote(c.ticker);
+      var r=await rP;var q=await rQ;
+      if(r&&r.price){var dayPct=0;var dayAbs=0;
+        if(q&&q.changePct!=null){dayPct=q.changePct;dayAbs=q.change}
+        else if(r.changesPercentage){dayPct=typeof r.changesPercentage==="string"?parseFloat(r.changesPercentage):r.changesPercentage;dayAbs=r.changes||0}
+        upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:r.price}),_dayChange:dayAbs,_dayChangePct:dayPct})});
         if(!c.divPerShare||c.divPerShare===0){
-          try{var fhDiv=await fetchDivFromFinnhub(c.ticker);
+          try{var fhDiv=await fetchDivFromFinnhub(c.ticker,r.lastDiv);
             if(fhDiv&&fhDiv.payer){upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,divFrequency:fhDiv.divFrequency})})}
             else if(fhDiv){upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none"})})}}catch(e){}}
       }}catch(e){}
@@ -1806,184 +1837,96 @@ function TrackerApp(props){
           <input type="number" value={kr[k.id]||""} onChange={function(e){setKr(function(p){var n=Object.assign({},p);n[k.id]=e.target.value;return n})}} placeholder="Actual" style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>})}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.quarter.trim()&&f.summary.trim()?1:.4})} onClick={doSave}>Save Earnings</button></div></Modal>}
   function exportPDF(){if(!sel)return;var c=sel;var h=gH(c.kpis);var pos=c.position||{};var sec=parseThesis(c.thesisNote);
-    var os=calcOwnerScore([c]);var conv=c.conviction||0;var daysToEarn=c.earningsDate&&c.earningsDate!=="TBD"?dU(c.earningsDate):null;
+    var os=calcOwnerScore([c]);var conv=c.conviction||0;
     var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
     var total=c.kpis.filter(function(k){return k.lastResult}).length;
     var activeMoats=MOAT_TYPES.filter(function(t){return c.moatTypes&&c.moatTypes[t.id]&&c.moatTypes[t.id].active});
     var style=c.investStyle&&STYLE_MAP[c.investStyle]?STYLE_MAP[c.investStyle]:null;
-    // Conviction chart SVG
+    var snap=c.financialSnapshot||{};var scenarios=c.scenarios||[];
+    function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br/>")}
+    function pv(f2){if(!snap[f2])return"\u2014";return snap[f2].value||"\u2014"}
+    var dps=c.divPerShare||c.lastDiv||0;var divMult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+    var annDiv=dps*divMult;var divYld=pos.currentPrice>0&&annDiv>0?(annDiv/pos.currentPrice*100):0;
+    var totalReturn=pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):0;
+    var posValue=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
+    var costBasis=pos.shares>0&&pos.avgCost>0?(pos.shares*pos.avgCost):0;
+    var today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
     var convSvg="";
-    if(c.convictionHistory&&c.convictionHistory.length>1){var ch=c.convictionHistory.slice(-12);var cw=320;var chh=60;
-      convSvg='<svg width="'+cw+'" height="'+chh+'" viewBox="0 0 '+cw+' '+chh+'" style="display:block;margin:8px 0">';
-      convSvg+='<line x1="0" y1="'+chh/2+'" x2="'+cw+'" y2="'+chh/2+'" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="3,3"/>';
-      var pts=ch.map(function(p,i){var x=i/(ch.length-1)*cw;var y=chh-4-(p.rating/10)*(chh-8);return{x:x,y:y,r:p.rating}});
-      var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
-      convSvg+='<path d="'+line+'" fill="none" stroke="#2563eb" stroke-width="1.5"/>';
-      pts.forEach(function(p){var cl=p.r>=8?"#16a34a":p.r>=5?"#2563eb":"#dc2626";convSvg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="'+cl+'" stroke="white" stroke-width="1.5"/>'});
+    if(c.convictionHistory&&c.convictionHistory.length>1){var ch=c.convictionHistory.slice(-16);var cw=440;var chh=70;
+      convSvg='<svg width="'+cw+'" height="'+chh+'" viewBox="0 0 '+cw+' '+chh+'">';
+      var pts=ch.map(function(p,i){return{x:i/(ch.length-1)*cw*.92,y:chh-6-(p.rating/10)*(chh-12),r:p.rating}});
+      var area="M"+pts[0].x+","+chh+" "+pts.map(function(p){return"L"+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ")+" L"+pts[pts.length-1].x+","+chh+" Z";
+      convSvg+='<path d="'+area+'" fill="#2563eb" opacity="0.06"/>';
+      convSvg+='<path d="'+pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ")+'" fill="none" stroke="#2563eb" stroke-width="2"/>';
+      pts.forEach(function(p){var cl=p.r>=8?"#16a34a":p.r>=5?"#2563eb":"#dc2626";convSvg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+cl+'" stroke="white" stroke-width="2"/>'});
       convSvg+='</svg>'}
-    // Moat bars SVG
     var moatSvg="";
-    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"grossMargin",l:"Pricing Power"},{k:"revGrowth",l:"Revenue Growth"},{k:"opLeverage",l:"Operating Leverage"},{k:"roic",l:"Capital Efficiency"},{k:"fcfConversion",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"},{k:"netMargin",l:"Profitability"},{k:"rdIntensity",l:"R&D Investment"}];
+    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"grossMargin",l:"Pricing Power"},{k:"revGrowth",l:"Revenue Growth"},{k:"opLeverage",l:"Operating Leverage"},{k:"roic",l:"Capital Efficiency"},{k:"fcfConversion",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"},{k:"netMargin",l:"Profitability"}];
       var visibleDims=dims2.filter(function(dm){return mc[dm.k]!=null&&mc[dm.k]>0});
-      if(visibleDims.length>0){moatSvg='<svg width="340" height="'+(visibleDims.length*26+10)+'" viewBox="0 0 340 '+(visibleDims.length*26+10)+'" style="display:block;margin:10px 0">';
-      visibleDims.forEach(function(dm,i){var v=mc[dm.k];var y2=i*26+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
-        moatSvg+='<text x="0" y="'+(y2+11)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
-        moatSvg+='<rect x="120" y="'+y2+'" width="170" height="14" rx="3" fill="#f3f4f6"/>';
-        moatSvg+='<rect x="120" y="'+y2+'" width="'+(v/10*170).toFixed(0)+'" height="14" rx="3" fill="'+cl+'"/>';
-        moatSvg+='<text x="300" y="'+(y2+11)+'" font-size="11" font-weight="600" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
+      if(visibleDims.length>0){moatSvg='<svg width="460" height="'+(visibleDims.length*28+10)+'" viewBox="0 0 460 '+(visibleDims.length*28+10)+'">';
+      visibleDims.forEach(function(dm,i){var v=mc[dm.k];var y2=i*28+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
+        moatSvg+='<text x="0" y="'+(y2+12)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
+        moatSvg+='<rect x="130" y="'+y2+'" width="270" height="16" rx="4" fill="#f3f4f6"/>';
+        moatSvg+='<rect x="130" y="'+y2+'" width="'+(v/10*270).toFixed(0)+'" height="16" rx="4" fill="'+cl+'" opacity="0.85"/>';
+        moatSvg+='<text x="410" y="'+(y2+12)+'" font-size="12" font-weight="700" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
       moatSvg+='</svg>'}}
-    // KPI table rows
-    var kpiRows="";if(c.kpis.length>0){
-      kpiRows='<table class="kpi-table"><thead><tr><th align="left">Metric</th><th align="right">Target</th><th align="right">Actual</th><th align="center">Status</th></tr></thead><tbody>';
-      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stClr=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stIcon=st==="met"?"✓":st==="missed"?"✗":"•";
-        var mDef=METRIC_MAP[k.metricId||""]||{};var unit=mDef.unit||k.unit||"";
-        kpiRows+='<tr><td>'+((mDef.label||k.name)+(unit?" ("+unit+")":""))+'</td><td align="right" class="mono">'+(k.rule==="gte"?"≥":k.rule==="lte"?"≤":"=")+' '+k.value+'</td><td align="right" class="mono" style="color:'+stClr+'">'+(k.lastResult?k.lastResult.actual:"—")+'</td><td align="center" style="color:'+stClr+';font-weight:700">'+stIcon+'</td></tr>'});
-      kpiRows+='</tbody></table>'}
-    // Decision table
-    var decRows="";if(c.decisions&&c.decisions.length>0){
-      decRows='<table class="dec-table"><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';
-      c.decisions.slice(0,10).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";
-        decRows+='<tr><td class="mono" style="white-space:nowrap">'+(d.date?d.date.substring(0,10):"")+'</td><td style="color:'+clr+';font-weight:700">'+d.action+'</td><td style="max-width:280px">'+((d.reasoning||"").substring(0,120)+(d.reasoning&&d.reasoning.length>120?"...":""))+'</td><td class="mono" style="color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+(d.outcome||"—")+'</td></tr>'});
-      decRows+='</tbody></table>'}
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note — ThesisAlpha</title>';
-    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
-    html+='<style>';
-    html+='@page{size:A4;margin:24mm 20mm 20mm 20mm}';
-    html+='*{margin:0;padding:0;box-sizing:border-box}';
-    html+='body{font-family:"Inter",sans-serif;color:#1a1a2e;padding:0;font-size:12px;line-height:1.7;background:#fff}';
-    html+='.page{max-width:680px;margin:0 auto;padding:40px 48px}';
-    // Header
-    html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a1a2e;margin-bottom:24px}';
-    html+='.hdr-left h1{font-family:"Playfair Display",Georgia,serif;font-size:32px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1}';
-    html+='.hdr-left .sub{font-family:"Inter",sans-serif;font-size:13px;color:#6b7280;margin-top:4px}';
-    html+='.hdr-right{text-align:right}';
-    html+='.logo{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
-    html+='.logo-sub{font-family:"Inter",sans-serif;font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px}';
-    html+='.date{font-family:"JetBrains Mono",monospace;font-size:10px;color:#6b7280;margin-top:8px}';
-    // Meta strip
-    html+='.meta-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}';
-    html+='.meta-tag{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;padding:3px 10px;border-radius:4px;letter-spacing:.5px}';
-    // Stat cards
-    html+='.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}';
-    html+='.stat{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;text-align:center}';
-    html+='.stat-label{font-family:"JetBrains Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}';
-    html+='.stat-val{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;line-height:1.2}';
-    html+='.stat-sub{font-size:10px;color:#9ca3af;margin-top:2px}';
-    // Section headers
-    html+='.sec-h{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#6b7280;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb}';
-    // Thesis blocks
-    html+='.thesis-core{font-family:"Playfair Display",Georgia,serif;font-size:14px;line-height:1.8;color:#1a1a2e;margin-bottom:16px;padding:16px 20px;background:#fafafa;border-radius:8px;border-left:4px solid #1a1a2e}';
-    html+='.thesis-section{padding:10px 16px;border-radius:6px;margin-bottom:8px;background:#fafafa;font-size:12px;line-height:1.7;color:#374151}';
-    html+='.thesis-section.moat{border-left:3px solid #16a34a}';
-    html+='.thesis-section.risks{border-left:3px solid #d97706}';
-    html+='.thesis-section.sell{border-left:3px solid #dc2626}';
-    html+='.ts-label{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
-    html+='.ts-label.moat{color:#16a34a}.ts-label.risks{color:#d97706}.ts-label.sell{color:#dc2626}';
-    // Tables
-    html+='.kpi-table,.dec-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}';
-    html+='.kpi-table th,.dec-table th{font-family:"JetBrains Mono",monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:600}';
-    html+='.kpi-table td,.dec-table td{padding:8px 10px;border-bottom:1px solid #f3f4f6;vertical-align:top}';
-    html+='.mono{font-family:"JetBrains Mono",monospace}';
-    // Moat badges
-    html+='.moat-badges{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}';
-    html+='.moat-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid #e5e7eb}';
-    html+='.moat-badge .dots{display:flex;gap:2px}';
-    html+='.moat-badge .dot{width:6px;height:6px;border-radius:50%}';
-    // Footer
-    html+='.footer{margin-top:36px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}';
-    html+='.footer-left{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
-    html+='.footer-right{font-size:9px;color:#9ca3af;text-align:right}';
-    html+='.footer-disc{font-size:8px;color:#9ca3af;margin-top:8px;line-height:1.4;font-style:italic}';
-    html+='.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.blue{color:#2563eb}';
-    html+='@media print{.page{padding:0}.no-print{display:none}}';
-    html+='</style></head><body><div class="page">';
-
-    // ═══ HEADER ═══
-    html+='<div class="hdr"><div class="hdr-left"><h1>'+c.ticker+'</h1>';
-    html+='<div class="sub">'+c.name+(c.sector?' · '+c.sector:'')+(c.industry?' · '+c.industry:'')+'</div></div>';
-    html+='<div class="hdr-right"><div class="logo"><svg width="14" height="14" viewBox="0 0 100 100" style="vertical-align:middle;margin-right:4px"><rect width="100" height="100" rx="16" fill="#1a1a2e"/><path d="M50 18L82 78H18L50 18Z" fill="none" stroke="white" stroke-width="6" stroke-linejoin="round"/><path d="M50 38L66 70H34L50 38Z" fill="white"/></svg>ThesisAlpha</div>';
-    html+='<div class="logo-sub">Investment Research Note</div>';
-    html+='<div class="date">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
-
-    // ═══ META STRIP ═══
-    html+='<div class="meta-strip">';
-    if(style)html+='<span class="meta-tag" style="background:'+style.color+'10;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
-    html+='<span class="meta-tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">'+h.l+'</span>';
-    if(c.morningstarMoat)html+='<span class="meta-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a">M★ '+c.morningstarMoat+(c.moatTrend?' · '+c.moatTrend:'')+'</span>';
-    if(daysToEarn!==null&&daysToEarn>=0)html+='<span class="meta-tag" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a">Earnings: '+daysToEarn+'d — '+c.earningsDate+'</span>';
-    html+='</div>';
-
-    // ═══ KEY METRICS STRIP ═══
-    html+='<div class="stats">';
-    html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'—')+'</div></div>';
-    if(pos.currentPrice>0)html+='<div class="stat"><div class="stat-label">Price</div><div class="stat-val">$'+pos.currentPrice.toFixed(2)+'</div>'+(pos.avgCost>0?'<div class="stat-sub '+(pos.currentPrice>=pos.avgCost?"grn":"red")+'">'+(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'% return</div>':'')+'</div>';
-    if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares · $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
-    html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+(total>0?met+'/'+total:'—')+'</div><div class="stat-sub">met</div></div>';
-    if(os&&os.total>0)html+='<div class="stat"><div class="stat-label">Owner\'s Score</div><div class="stat-val '+(os.total>=80?"grn":os.total>=50?"amb":"red")+'">'+os.total+'</div><div class="stat-sub">/ 100</div></div>';
-    html+='</div>';
-
-    // ═══ POSITION DETAILS ═══
-    if(pos.shares>0||c.purchaseDate){html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:#fafafa;border-radius:8px;border:1px solid #f3f4f6;font-size:11px;color:#6b7280">';
-      if(pos.avgCost>0)html+='<span><strong style="color:#1a1a2e">Avg Cost:</strong> $'+pos.avgCost.toFixed(2)+'</span>';
-      if(pos.shares>0&&pos.currentPrice>0)html+='<span><strong style="color:#1a1a2e">Cost Basis:</strong> $'+(pos.shares*pos.avgCost).toLocaleString(undefined,{maximumFractionDigits:0})+'</span><span><strong style="color:#1a1a2e">Market Value:</strong> $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
-      if(c.purchaseDate)html+='<span><strong style="color:#1a1a2e">Owned Since:</strong> '+fD(c.purchaseDate)+'</span>';
-      var dps=c.divPerShare||c.lastDiv||0;if(dps>0){var divMult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var annDiv2=dps*divMult;
-        html+='<span><strong style="color:#16a34a">Dividend:</strong> $'+dps.toFixed(2)+'/'+(c.divFrequency==="monthly"?"mo":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"yr":"qtr")+' ('+((pos.currentPrice>0?(annDiv2/pos.currentPrice*100).toFixed(2):0))+'% yield)</span>';
-        if(pos.shares>0)html+='<span><strong style="color:#16a34a">Annual Income:</strong> $'+(pos.shares*annDiv2).toFixed(0)+'</span>'}
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note</title>';
+    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
+    html+='<style>@page{size:A4;margin:20mm 18mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.65}.page{max-width:700px;margin:0 auto;padding:36px 44px}';
+    html+='.cover{padding:48px 0 36px;border-bottom:3px solid #1a1a2e;margin-bottom:32px}.cover h1{font-family:Playfair Display,serif;font-size:42px;font-weight:800;letter-spacing:-1px;line-height:1}.cover .cn{font-size:16px;color:#4b5563;margin-top:8px}.cover .meta{font-family:JetBrains Mono,monospace;font-size:10px;color:#9ca3af;margin-top:6px}';
+    html+='.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:20px}.tag{font-family:JetBrains Mono,monospace;font-size:8.5px;font-weight:600;padding:4px 12px;border-radius:4px}';
+    html+='.kstats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:5px}.ks-v{font-family:JetBrains Mono,monospace;font-size:18px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:3px}';
+    html+='.sh{font-family:JetBrains Mono,monospace;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:#1a1a2e;margin:32px 0 14px;padding-bottom:8px;border-bottom:2px solid #1a1a2e;display:flex;align-items:center;gap:8px}.sh-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1a1a2e;color:#fff;font-size:9px}';
+    html+='.tc{font-family:Playfair Display,serif;font-size:13px;line-height:1.85;padding:20px 24px;background:linear-gradient(135deg,#fafafa,#f5f5f5);border-radius:10px;border-left:4px solid #1a1a2e;margin-bottom:14px}';
+    html+='.tb{padding:12px 18px;border-radius:8px;margin-bottom:8px;font-size:11px;line-height:1.7;color:#374151;background:#fafafa}.tl{font-family:JetBrains Mono,monospace;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
+    html+='table{width:100%;border-collapse:collapse;font-size:10.5px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:8px 12px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:9px 12px;border-bottom:1px solid #f3f4f6}';
+    html+='.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}';
+    html+='.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.fc{border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px}.fch{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:10px;font-weight:700}.fr{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f9fafb}.fr:last-child{border-bottom:none}.fk{font-size:10px;color:#6b7280}.fv{font-family:JetBrains Mono,monospace;font-size:11px;font-weight:600;color:#1a1a2e}';
+    html+='.sc{border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid}.scc{font-family:JetBrains Mono,monospace;font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#6b4ce6;margin-bottom:4px}.scq{font-size:10px;color:#6b7280;font-style:italic;margin-bottom:6px;line-height:1.5}.sca{font-size:11px;color:#1a1a2e;line-height:1.6}';
+    html+='.footer{margin-top:40px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-start}';
+    html+='@media print{.page{padding:0}}</style></head><body><div class="page">';
+    html+='<div class="cover"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h1>'+c.ticker+'</h1><div class="cn">'+esc(c.name)+'</div><div class="meta">'+[c.sector,c.industry,c.exchange,c.country].filter(Boolean).join(' \u00B7 ')+'</div>';
+    html+='<div class="tags">';
+    if(style)html+='<span class="tag" style="background:'+style.color+'12;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
+    html+='<span class="tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">KPIs: '+h.l+'</span>';
+    if(conv>0)html+='<span class="tag" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">Conviction: '+conv+'/10</span>';
+    activeMoats.forEach(function(t){html+='<span class="tag" style="background:'+t.color+'10;color:'+t.color+';border:1px solid '+t.color+'30">'+t.label+'</span>'});
+    html+='</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Investment Research Note</div><div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280;margin-top:10px">'+today+'</div></div></div>';
+    html+='<div class="kstats"><div class="ks"><div class="ks-l">Price</div><div class="ks-v">'+(pos.currentPrice>0?'$'+pos.currentPrice.toFixed(2):'\u2014')+'</div>'+(pos.avgCost>0?'<div class="ks-s '+(totalReturn>=0?'grn':'red')+'">'+(totalReturn>=0?'+':'')+totalReturn.toFixed(1)+'%</div>':'')+'</div>';
+    html+='<div class="ks"><div class="ks-l">Position</div><div class="ks-v">'+(posValue>0?'$'+(posValue>=1e6?(posValue/1e6).toFixed(1)+'M':(posValue/1e3).toFixed(1)+'k'):'\u2014')+'</div>'+(pos.shares>0?'<div class="ks-s">'+pos.shares+' shares</div>':'')+'</div>';
+    html+='<div class="ks"><div class="ks-l">Conviction</div><div class="ks-v '+(conv>=7?'grn':conv>=4?'amb':'red')+'">'+(conv>0?conv+'/10':'\u2014')+'</div></div>';
+    html+='<div class="ks"><div class="ks-l">KPI Score</div><div class="ks-v '+(total>0?(met===total?'grn':met>0?'amb':'red'):'')+'">'+(total>0?met+'/'+total:'\u2014')+'</div><div class="ks-s">met</div></div>';
+    html+='<div class="ks"><div class="ks-l">Div Yield</div><div class="ks-v '+(divYld>0?'grn':'')+'">'+(divYld>0?divYld.toFixed(1)+'%':'\u2014')+'</div></div>';
+    html+='</div></div>';
+    if(sec.core||sec.moat||sec.risks||sec.sell){html+='<div class="sh"><span class="sh-n">1</span>Investment Thesis</div>';
+      if(sec.core)html+='<div class="tc">'+esc(sec.core)+'</div>';
+      if(sec.moat)html+='<div class="tb" style="border-left:3px solid #16a34a"><div class="tl" style="color:#16a34a">Competitive Moat</div>'+esc(sec.moat)+'</div>';
+      if(sec.risks)html+='<div class="tb" style="border-left:3px solid #d97706"><div class="tl" style="color:#d97706">Key Risks</div>'+esc(sec.risks)+'</div>';
+      if(sec.sell)html+='<div class="tb" style="border-left:3px solid #dc2626"><div class="tl" style="color:#dc2626">Sell Criteria</div>'+esc(sec.sell)+'</div>'}
+    var hasFinancials=Object.keys(snap).length>0;
+    if(hasFinancials||pos.shares>0){html+='<div class="sh"><span class="sh-n">2</span>Financial Profile</div><div class="fg">';
+      var valItems=[[pv("pe"),"P/E"],[pv("pb"),"P/B"],[pv("fcf"),"FCF/Share"],[pv("grossMargin"),"Gross Margin"],[pv("opMargin"),"Op Margin"],[pv("roe"),"ROE"],[pv("roic"),"ROIC"],[pv("revGrowth"),"Rev Growth"]].filter(function(x){return x[0]!=="\u2014"});
+      if(valItems.length>0){html+='<div class="fc"><div class="fch">Valuation & Returns</div>';valItems.forEach(function(x){html+='<div class="fr"><span class="fk">'+x[1]+'</span><span class="fv">'+x[0]+'</span></div>'});html+='</div>'}
+      var healthItems=[[pv("currentRatio"),"Current Ratio"],[pv("debtEquity"),"Debt/Equity"]].filter(function(x){return x[0]!=="\u2014"});
+      if(divYld>0){healthItems.push([divYld.toFixed(2)+"%","Div Yield"]);healthItems.push(["$"+annDiv.toFixed(2),"Annual Div/Share"])}
+      if(healthItems.length>0){html+='<div class="fc"><div class="fch">Balance Sheet & Income</div>';healthItems.forEach(function(x){html+='<div class="fr"><span class="fk">'+x[1]+'</span><span class="fv">'+x[0]+'</span></div>'});html+='</div>'}
       html+='</div>'}
-
-    // ═══ INVESTMENT THESIS ═══
-    if(sec.core||sec.moat||sec.risks||sec.sell){
-      html+='<div class="sec-h">Investment Thesis</div>';
-      if(sec.core)html+='<div class="thesis-core">'+sec.core.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.moat)html+='<div class="thesis-section moat"><div class="ts-label moat">▲ Competitive Moat</div>'+sec.moat.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.risks)html+='<div class="thesis-section risks"><div class="ts-label risks">⚠ Key Risks</div>'+sec.risks.replace(/\n/g,"<br/>")+'</div>';
-      if(sec.sell)html+='<div class="thesis-section sell"><div class="ts-label sell">✗ Sell Criteria</div>'+sec.sell.replace(/\n/g,"<br/>")+'</div>'}
-
-    // ═══ MOAT CLASSIFICATION ═══
-    if(activeMoats.length>0){html+='<div class="sec-h">Moat Classification</div>';
-      html+='<div class="moat-badges">';
-      activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;
-        html+='<div class="moat-badge" style="border-color:'+t.color+'30;background:'+t.color+'08"><span style="color:'+t.color+';font-weight:700">'+t.label+'</span><span class="dots">';
-        for(var di=0;di<5;di++){html+='<span class="dot" style="background:'+(di<str?t.color:"#e5e7eb")+'"></span>'}
-        html+='</span></div>'});html+='</div>'}
-
-    // ═══ MOAT DURABILITY SCORES ═══
-    if(moatSvg){html+='<div class="sec-h">Moat Durability Analysis'+(c._moatCache?' — '+c._moatCache.composite.toFixed(1)+'/10':'')+'</div>';html+=moatSvg}
-
-    // ═══ KEY PERFORMANCE INDICATORS ═══
-    if(kpiRows){html+='<div class="sec-h">Key Performance Indicators</div>';html+=kpiRows}
-
-    // ═══ CONVICTION HISTORY ═══
-    if(convSvg){html+='<div class="sec-h">Conviction History</div>';html+=convSvg;
-      html+='<div style="display:flex;gap:16px;font-size:10px;color:#9ca3af;margin-top:4px">';
-      if(c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];
-        html+='<span>'+first.date.substring(0,10)+': '+first.rating+'/10</span><span>→</span><span>'+last.date.substring(0,10)+': '+last.rating+'/10</span>'}
-      html+='</div>'}
-
-    // ═══ DECISION LEDGER ═══
-    if(decRows){html+='<div class="sec-h">Decision Ledger</div>';html+=decRows}
-
-    // ═══ EARNINGS HISTORY ═══
-    if(c.earningsHistory&&c.earningsHistory.length){html+='<div class="sec-h">Earnings History</div>';
-      c.earningsHistory.slice(0,4).forEach(function(e){
-        html+='<div style="padding:8px 14px;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px"><span class="mono" style="font-size:11px;font-weight:700;color:#1a1a2e">'+e.quarter+'</span>';
-        html+='<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5">'+((e.summary||"").substring(0,200))+'</div></div>'})}
-
-    // ═══ FINANCIAL SNAPSHOT ═══
-    if(c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0){html+='<div class="sec-h">Financial Snapshot</div>';
-      html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
-      var snap=c.financialSnapshot;Object.keys(snap).forEach(function(k){var s=snap[k];if(!s||!s.value)return;
-        html+='<div style="padding:6px 10px;border:1px solid #f3f4f6;border-radius:4px"><div style="font-size:9px;color:#9ca3af;font-family:JetBrains Mono,monospace;letter-spacing:.5px">'+s.label+'</div><div class="mono" style="font-size:13px;font-weight:600;color:#1a1a2e">'+s.value+'</div></div>'});
-      html+='</div>'}
-
-    // ═══ FOOTER ═══
-    html+='<div class="footer"><div class="footer-left"><svg width="12" height="12" viewBox="0 0 100 100" style="vertical-align:middle;margin-right:3px"><rect width="100" height="100" rx="16" fill="#1a1a2e"/><path d="M50 18L82 78H18L50 18Z" fill="none" stroke="white" stroke-width="6" stroke-linejoin="round"/><path d="M50 38L66 70H34L50 38Z" fill="white"/></svg>ThesisAlpha</div>';
-    html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+c.ticker+' · '+c.name+'</div>';
-    html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
-    html+='<div class="footer-disc">This document was generated by ThesisAlpha for personal investment research purposes. It does not constitute financial advice. All data is sourced from third-party providers and may contain errors. Past performance does not indicate future results.</div>';
+    if(c.kpis.length>0){html+='<div class="sh"><span class="sh-n">3</span>KPI Scorecard</div><table><thead><tr><th>Metric</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th style="text-align:center">Status</th></tr></thead><tbody>';
+      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stC=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stL=st==="met"?"MET":st==="missed"?"MISSED":"PENDING";var mDef=METRIC_MAP[k.metricId||""]||{};
+        html+='<tr><td style="font-weight:600">'+esc(mDef.label||k.name)+'</td><td style="text-align:right" class="mono">'+(k.rule==="gte"?"\u2265":k.rule==="lte"?"\u2264":"=")+' '+k.value+(mDef.unit||"")+'</td><td style="text-align:right;font-weight:700;color:'+stC+'" class="mono">'+(k.lastResult?k.lastResult.actual:'\u2014')+'</td><td style="text-align:center"><span class="mono" style="font-size:8px;font-weight:800;color:'+stC+';background:'+stC+'10;padding:2px 8px;border-radius:3px">'+stL+'</span></td></tr>'});
+      html+='</tbody></table>'}
+    if(activeMoats.length>0||moatSvg){html+='<div class="sh"><span class="sh-n">4</span>Moat Analysis</div>';
+      if(activeMoats.length>0){html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;html+='<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid '+t.color+'30;background:'+t.color+'06"><span style="font-size:11px;font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="display:flex;gap:2px">';for(var di=0;di<5;di++){html+='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(di<str?t.color:'#e5e7eb')+'"></span>'}html+='</span></div>'});html+='</div>'}
+      if(moatSvg){html+=moatSvg;if(c._moatCache)html+='<div style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;margin-top:6px">Composite: '+c._moatCache.composite.toFixed(1)+'/10</div>'}}
+    if(convSvg||conv>0){html+='<div class="sh"><span class="sh-n">5</span>Conviction History</div>';if(convSvg)html+=convSvg;
+      if(c.convictionHistory&&c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];html+='<div style="display:flex;gap:20px;font-size:9px;color:#6b7280;margin-top:8px;font-family:JetBrains Mono,monospace"><span>Start: '+first.rating+'/10</span><span>Current: '+last.rating+'/10</span><span>Trend: '+(last.rating>first.rating?'<span class="grn">Rising</span>':last.rating<first.rating?'<span class="red">Falling</span>':'Stable')+'</span></div>'}}
+    if(scenarios.length>0){html+='<div class="sh"><span class="sh-n">6</span>Stress Test</div>';scenarios.forEach(function(s){html+='<div class="sc"><div class="scc">'+(s.category||"").toUpperCase()+'</div><div class="scq">'+esc(s.prompt)+'</div><div class="sca">'+esc(s.response)+'</div></div>'})}
+    var decs=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)});
+    if(c.earningsHistory&&c.earningsHistory.length>0){html+='<div class="sh"><span class="sh-n">7</span>Earnings History</div><table><thead><tr><th>Quarter</th><th>Summary</th></tr></thead><tbody>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<tr><td class="mono" style="font-weight:700;white-space:nowrap">'+esc(e.quarter)+'</td><td style="font-size:10px;color:#4b5563;max-width:380px">'+esc((e.summary||"").substring(0,250))+'</td></tr>'});html+='</tbody></table>'}
+    if(decs.length>0){html+='<div class="sh"><span class="sh-n">8</span>Decision Ledger</div><table><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';decs.slice(0,8).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";html+='<tr><td class="mono" style="white-space:nowrap;font-size:10px">'+esc((d.date||"").substring(0,10))+'</td><td style="font-weight:800;color:'+clr+'" class="mono">'+esc(d.action||"")+'</td><td style="font-size:10px;color:#4b5563;max-width:300px">'+esc((d.reasoning||"").substring(0,180))+'</td><td class="mono" style="font-weight:700;color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+esc(d.outcome||"\u2014")+'</td></tr>'});html+='</tbody></table>'}
+    html+='<div class="footer"><div><div style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:8px;color:#9ca3af;margin-top:4px;max-width:320px;line-height:1.5">Generated for personal research purposes. Not financial advice. Data from third-party providers may contain errors. Past performance does not predict future results.</div></div><div style="text-align:right"><div class="mono" style="font-size:10px;font-weight:700">'+c.ticker+'</div><div style="font-size:9px;color:#6b7280">'+today+'</div></div></div>';
     html+='</div></body></html>';
-    var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
+    var w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},800)}}
 
   // ── Research Export Pack (for NotebookLM, ChatGPT, etc.) ──
   function exportResearch(cid){var c=cos.find(function(x){return x.id===cid});if(!c)return;
@@ -2170,7 +2113,41 @@ function TrackerApp(props){
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
+  function ScenarioModal(){if(!sel)return null;var c=sel;var sid=modal.data;var scenarios=c.scenarios||[];var existing=sid?scenarios.find(function(s){return s.id===sid}):null;var pos=c.position||{};var conv=c.conviction||0;var hasDivs=(c.divPerShare||c.lastDiv)>0;var posVal=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
+    var prompts=[{id:"drawdown",cat:"Price",q:c.ticker+" drops 40% in 30 days with no fundamental news. Your position goes from $"+(posVal>0?Math.round(posVal).toLocaleString():"X")+" to $"+(posVal>0?Math.round(posVal*0.6).toLocaleString():"Y")+". What do you do?",icon:"trending"},{id:"ceo_exit",cat:"Management",q:c.name+"'s CEO "+(c.ceo||"")+" unexpectedly resigns. No successor named. Hold, trim, or sell?",icon:"alert"},{id:"competitor",cat:"Competition",q:"A well-funded competitor launches a product 30% cheaper and arguably better than "+c.ticker+"'s core offering. How does this affect your thesis?",icon:"search"},{id:"kpi_miss",cat:"Thesis",q:c.ticker+" misses your most important KPI for 3 consecutive quarters. At what point does this break your thesis?",icon:"target"},{id:"concentration",cat:"Sizing",q:c.ticker+" runs up 80% and now represents a large portion of your portfolio. Trim to rebalance, or let winners run?",icon:"bar"},{id:"recession",cat:"Macro",q:"A severe recession hits. "+c.ticker+"'s revenue drops 25% YoY. Stock down 50% from entry. You believe in the 10-year thesis. What's your move?",icon:"shield"},{id:"short_attack",cat:"Psychology",q:"A prominent short seller publishes a report alleging accounting irregularities at "+c.ticker+". Stock drops 20% pre-market. What do you do?",icon:"alert"},{id:"double",cat:"Psychology",q:c.ticker+" doubles in 6 months. Conviction is "+conv+"/10. Thesis unchanged. Take profits, hold, or add?",icon:"trending"}];
+    if(hasDivs)prompts.push({id:"div_cut",cat:"Income",q:c.ticker+" announces a 50% dividend cut. Stock drops 15%. Does this change your thesis?",icon:"dollar"});
+    prompts.push({id:"sell_all",cat:"Psychology",q:"If you had to sell "+c.ticker+" today and never buy it back, how would you feel? What would you miss most?",icon:"lightbulb"});
+    var answered=scenarios.map(function(s){return s.promptId});
+    var _selP=useState(existing?existing.promptId:null),selPrompt=_selP[0],setSelPrompt=_selP[1];
+    var _resp=useState(existing?existing.response:""),resp=_resp[0],setResp=_resp[1];
+    var activePrompt=prompts.find(function(p2){return p2.id===selPrompt});
+    function doSave(){if(!selPrompt||!resp.trim())return;var entry={id:existing?existing.id:nId(scenarios),promptId:selPrompt,prompt:activePrompt?activePrompt.q:"",category:activePrompt?activePrompt.cat:"",response:resp.trim(),answeredAt:new Date().toISOString()};
+      if(existing){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).map(function(s){return s.id===existing.id?entry:s})})})}
+      else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})});addXP(10,"Scenario planned")}
+      setModal(null)}
+    return<Modal title={"Stress Test \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
+      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Plan your response to difficult situations before they happen \u2014 when your mind is clear and emotions are quiet.</div>
+      {!selPrompt&&<div>
+        <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
+        <div style={{display:"grid",gap:8}}>{prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
+            return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:10,cursor:"pointer"}}>
+              <div style={{width:32,height:32,borderRadius:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:9,fontWeight:600,color:done?K.grn:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:3}}>{p2.cat.toUpperCase()}</div>
+                <div style={{fontSize:12,color:K.txt,lineHeight:1.5}}>{p2.q.substring(0,120)}{p2.q.length>120?"...":""}</div>
+                {done&&<div style={{fontSize:9,color:K.dim,marginTop:4,fontFamily:fm}}>Answered {fD(scenarios.find(function(s){return s.promptId===p2.id}).answeredAt)}</div>}</div></div>})}</div></div>}
+      {selPrompt&&activePrompt&&<div>
+        <button onClick={function(){setSelPrompt(null);setResp("")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0,marginBottom:12}}>{"\u2190 Back to scenarios"}</button>
+        <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"14px 18px",marginBottom:16}}>
+          <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{activePrompt.cat.toUpperCase()}</div>
+          <div style={{fontSize:13,color:K.txt,lineHeight:1.7}}>{activePrompt.q}</div></div>
+        <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:8,fontFamily:fm,fontWeight:600}}>Your plan</label>
+        <textarea value={resp} onChange={function(e){setResp(e.target.value)}} placeholder="Write your honest response. What would you actually do?" rows={6} style={{width:"100%",boxSizing:"border-box",background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:_isThesis?14:6,color:K.txt,padding:"14px 18px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:12}}>
+          {existing&&<button style={S.btnD} onClick={function(){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).filter(function(s){return s.id!==existing.id})})});setModal(null)}}>Delete</button>}
+          <div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
+          <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave}>Save Plan</button></div></div>}
+    </Modal>}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -3742,6 +3719,29 @@ function TrackerApp(props){
             return<div>{recent.map(function(d2){return<JournalCard key={d2.id} entry={d2}/>})}</div>})()}
         </div>
 
+        {/* ── STRESS TEST ── */}
+        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
+          return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
+            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
+          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
+              <div style={{flex:1}}/>
+              <span style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
+            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
+              <IC name="check" size={12} color={K.grn} style={{marginTop:2,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
+                <div style={{fontSize:11,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
+            <IC name="shield" size={20} color={K.acc} style={{marginBottom:6}}/>
+            <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
+        </div>})()}
         {/* ── OWNER'S NUMBERS ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
           if(!hasSnap)return null;
@@ -4481,6 +4481,18 @@ function TrackerApp(props){
             {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
               <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
+        {/* ═══ STRESS TEST ═══ */}
+        {portfolio.length>0&&<div style={{marginTop:24}}>
+          <div style={S.sec}><IC name="shield" size={14} color={K.acc}/>Stress Test</div>
+          {(function(){var planned=portfolio.filter(function(c2){return(c2.scenarios||[]).length>0});var unplanned=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});var totalScen=portfolio.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                <div style={{fontSize:28,fontWeight:800,color:planned.length===portfolio.length?K.grn:planned.length>0?K.amb:K.dim,fontFamily:fm}}>{planned.length}<span style={{fontSize:14,fontWeight:400,color:K.dim}}>/{portfolio.length}</span></div>
+                <div><div style={{fontSize:12,fontWeight:600,color:K.txt}}>Holdings stress-tested</div>
+                  <div style={{fontSize:10,color:K.dim}}>{totalScen} scenario{totalScen!==1?"s":""} planned</div></div></div>
+              {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:10,fontFamily:fm,borderRadius:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer"}}>{c2.ticker}</button>})}</div>}
+              {planned.length===portfolio.length&&<div style={{fontSize:11,color:K.grn,fontFamily:fm}}>Every holding has a crisis plan.</div>}
+            </div>})()}</div>}
         {/* ═══ COMMUNITY BENCHMARK ═══ */}
         <div style={{marginTop:24}}>
           <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community</div>
@@ -6169,7 +6181,7 @@ function TrackerApp(props){
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
       // Notable movers (any holding with position data)
-      var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
+      var movers=held.filter(function(c2){var p2=c2.position;return p2.currentPrice>0}).map(function(c2){var p2=c2.position;return{ticker:c2.ticker,id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice,dayChg:c2._dayChangePct||0,hasPos:p2.avgCost>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
       // Upcoming earnings
       var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
@@ -6177,13 +6189,15 @@ function TrackerApp(props){
       var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length})}});
       // Pending actions
       var actions=[];
-      if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,text:"Weekly review due"+(streakData.current>0?" — "+streakData.current+"wk streak on the line":""),onClick:function(){setPage("review")}});
+      if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,text:"Weekly review due"+(streakData.current>0?" \u2014 "+streakData.current+"wk streak on the line":""),onClick:function(){setPage("review")}});
       var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-      if(unchecked.length>0)actions.push({icon:"target",color:K.amb,text:unchecked.map(function(c2){return c2.ticker}).join(", ")+" — earnings released, KPIs unchecked",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}});
+      if(unchecked.length>0)actions.push({icon:"target",color:K.amb,text:unchecked.map(function(c2){return c2.ticker}).join(", ")+" \u2014 earnings released, KPIs unchecked",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}});
       var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
       if(stale.length>0)actions.push({icon:"clock",color:K.red,text:stale.length+" thesis"+(stale.length>1?"es":"")+" older than 90 days",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
       var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
       if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.acc,text:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
+      var noScenario=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
+      if(noScenario.length>0&&actions.length<4)actions.push({icon:"shield",color:"#9333EA",text:noScenario.length+" holding"+(noScenario.length>1?"s":"")+" without a crisis plan",onClick:function(){setSelId(noScenario[0].id);setModal({type:"scenario"})}});
       // Investor quotes
       var quotes=[
         {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
@@ -6228,11 +6242,15 @@ function TrackerApp(props){
                   <span style={{marginLeft:"auto",fontSize:9,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
             {/* Notable movers */}
             {movers.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Your Holdings</div>
-              {movers.slice(0,5).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700}}>Your Holdings</div>
+                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}><span style={{width:50,textAlign:"right"}}>Today</span><span style={{width:50,textAlign:"right"}}>Total</span></div></div>
+              {movers.slice(0,6).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"20"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
-                <span style={{marginLeft:"auto",fontSize:11,fontWeight:600,color:m.ret>=0?K.grn:K.red,fontFamily:fm}}>{m.ret>=0?"+":""}{m.ret.toFixed(1)}%</span></div>})}</div>}
+                <span style={{marginLeft:"auto"}}/>
+                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg!==0?(m.dayChg>0?"+":"")+m.dayChg.toFixed(1)+"%":priceLoading?"\u00B7\u00B7\u00B7":"0.0%"}</span>
+                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:500,color:m.hasPos?(m.ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{m.hasPos?(m.ret>=0?"+":"")+m.ret.toFixed(1)+"%":"\u2014"}</span></div>})}</div>}
             {/* Insider signals */}
             {insiderSignals.length>0&&<div>
               <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
