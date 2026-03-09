@@ -610,19 +610,18 @@ function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
 
 function mkS(K){
   var th=_isThesis;
-  var br=th?999:8; // button border-radius
-  var cr=th?20:6;  // card/input border-radius
-  var bdrStyle=th?"none":"1px solid "+K.bdr;
+  var br=th?999:8;
   var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
+  var cardShadow=th?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 2px 16px rgba(107,76,230,0.1), 0 1px 6px rgba(0,0,0,0.06)"):"none";
   return{
-    btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:th?"1px solid rgba(255,255,255,0.1)":"1px solid "+K.bdr,color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
-    btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"10px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 14px "+K.prim+"50":"none"}),
+    btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:"1px solid "+(th?"rgba(255,255,255,0.1)":K.bdr),color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
+    btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"11px 28px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 20px "+K.prim+"60":"none",letterSpacing:th?"-0.2px":0}),
     btnD:Object.assign({},btnBase,{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
-    btnChk:Object.assign({},btnBase,{background:K.blue+"18",border:"1px solid "+K.blue+"40",color:K.blue,padding:th?"10px 24px":"9px 18px",borderRadius:br,fontWeight:600}),
-    sec:{fontSize:th?12:11,letterSpacing:th?0:1,textTransform:th?"none":"uppercase",color:K.dim,marginBottom:12,fontWeight:th?700:600,fontFamily:th?fm:fb,display:"flex",alignItems:"center",gap:8},
-    badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 12px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
+    btnChk:Object.assign({},btnBase,{background:K.acc+"18",border:"1px solid "+K.acc+"40",color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:600}),
+    sec:{fontSize:th?11:11,letterSpacing:th?0.5:1,textTransform:"uppercase",color:th?K.acc:K.dim,marginBottom:th?16:12,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",gap:8},
+    badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 14px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
     dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
-    card:{background:K.card,border:"1px solid "+K.bdr,borderRadius:th?20:6,padding:th?"20px 24px":"16px 20px"},
+    card:{background:K.card,border:"1px solid "+K.bdr,borderRadius:th?20:6,padding:th?"24px 28px":"16px 20px",boxShadow:cardShadow},
     inp:{width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:13,fontFamily:fm,outline:"none"},
   }
 }
@@ -1015,7 +1014,8 @@ function TrackerApp(props){
     var focusS=isThesis?K.acc+"30":isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
     var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
     var cardR=isThesis?"20px":"6px";
-    var cardSh=isThesis?(isDark?"0 8px 32px rgba(0,0,0,.4)":"0 8px 32px rgba(107,76,230,.12)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
+    var cardSh=isThesis?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 2px 16px rgba(107,76,230,0.1), 0 1px 6px rgba(0,0,0,0.06)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
+    var cardShHov=isThesis?(isDark?"0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)":"0 16px 48px rgba(107,76,230,0.2), 0 4px 16px rgba(0,0,0,0.1)"):(isDark?"0 8px 32px rgba(0,0,0,.3)":"0 8px 32px rgba(0,0,0,.12)");
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
@@ -1031,8 +1031,8 @@ function TrackerApp(props){
       ".ta-glow{animation:glowPulse 2s ease-in-out infinite}",
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
-      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease;border-radius:"+cardR+"}",
-      ".ta-card:hover{box-shadow:"+cardSh+";transform:translateY(-1px)}",
+      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;border-radius:"+cardR+";box-shadow:"+cardSh+"}",
+      ".ta-card:hover{box-shadow:"+cardShHov+";transform:translateY(-2px)}",
       ".ta-btn{transition:all .15s ease}",
       ".ta-btn:hover{filter:brightness(1.15)}",
       ".ta-btn:active{transform:translateY(0.5px)}",
@@ -1048,7 +1048,7 @@ function TrackerApp(props){
       ".ta-side-item:hover{background:"+hov+"}",
       ".ta-tab{transition:all .15s ease;position:relative}",
       ".ta-tab:hover{color:"+hovTxt+"}",
-      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px}h1,h2,h3{font-weight:900!important;letter-spacing:-0.5px!important}input,textarea,select{border-radius:14px!important;font-weight:500!important}button{border-radius:999px!important;font-weight:700!important}":"",
+      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px} h1{font-size:32px!important;font-weight:900!important;letter-spacing:-1px!important} h2{font-size:22px!important;font-weight:800!important;letter-spacing:-0.5px!important} h3{font-weight:700!important;letter-spacing:-0.3px!important} input,textarea,select{border-radius:14px!important;font-weight:500!important} button{border-radius:999px!important;font-weight:700!important}":"",
       bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
       isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
       "@media(max-width:767px){",
@@ -2342,18 +2342,18 @@ function TrackerApp(props){
     if(isMobile&&!sideOpen)return null;
     function navClick(fn){return function(){fn();if(isMobile)setSideOpen(false)}}
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
-    <div style={{width:isMobile?280:240,minWidth:isMobile?280:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":"none",transition:"transform .2s ease"}}>
-    <div style={{padding:"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={22} dark={sideDark}/><span style={{fontSize:13,fontWeight:600,color:sideText,letterSpacing:1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
+    <div style={{width:isMobile?300:isThesis?268:240,minWidth:isMobile?300:isThesis?268:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":isThesis?"4px 0 40px rgba(0,0,0,.2)":"none",transition:"transform .2s ease"}}>
+    <div style={{padding:isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:isThesis?15:13,fontWeight:isThesis?800:600,color:sideText,letterSpacing:isThesis?"-0.3px":1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?K.blue+"10":"transparent",borderLeft:!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:12,color:!selId&&page==="dashboard"?K.blue:sideMid,fontWeight:!selId&&page==="dashboard"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?K.blue:sideMid}/>Portfolio Overview</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
     {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?K.acc+"10":"transparent",borderLeft:page==="hub"?"2px solid "+K.acc:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
     {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?K.grn+"10":"transparent",borderLeft:page==="review"?"2px solid "+K.grn:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?K.amb+"10":"transparent",borderLeft:page==="assets"?"2px solid "+K.amb:"2px solid transparent"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?600:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
@@ -2384,7 +2384,7 @@ function TrackerApp(props){
       var pctToTarget=hasTarget?((c.targetPrice-pos.currentPrice)/pos.currentPrice*100):0;
       var pctReturn=hasPrice&&pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):0;
       var isWatchlist=c.status==="watchlist";
-      return<div key={c.id} className="ta-side-item" style={{padding:"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?K.blue+"10":"transparent",borderLeft:active?"2px solid "+K.blue:"2px solid transparent"}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
+      return<div key={c.id} className="ta-side-item" style={{padding:isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(isThesis?K.acc+"15":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:sideDim2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
@@ -3000,7 +3000,7 @@ function TrackerApp(props){
       if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null,c.pricingPower?c.pricingPower.score:null]);
     var cLabel=!moat?"Insufficient Data":moatLabel(adjComposite);
     var cColor=!moat?K.dim:moatColor(adjComposite);
-    return<div className="ta-page-pad" style={{padding:"0 32px 60px",maxWidth:900}}>
+    return<div className="ta-page-pad" style={{padding:isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
@@ -3272,7 +3272,7 @@ function TrackerApp(props){
       html+='<div class="disc">Source: '+(data.source==="sec-edgar"?"SEC EDGAR":"Financial Modeling Prep")+' · Generated by ThesisAlpha · For personal research only. Not financial advice. Verify all data before making investment decisions.</div>';
       html+='</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
-    if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
+    if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
@@ -3315,7 +3315,7 @@ function TrackerApp(props){
     var allVals=[];chartSeries.forEach(function(s){s.pts.forEach(function(p){allVals.push(p.val)})});
     var hasPctMix=chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return d&&d.p})&&chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return!d||!d.p});
     var cW=Math.max(500,dates.length*60);var cH=200;var pad={l:60,r:20,t:20,b:30};var plotW=cW-pad.l-pad.r;var plotH=cH-pad.t-pad.b;
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
@@ -3446,7 +3446,7 @@ function TrackerApp(props){
       }).catch(function(){})
     },[c.ticker,isPro]);
     var TABS=[{id:"dossier",label:"Dossier",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"research",label:"Research",icon:"book"}];
-    return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
+    return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
       {/* Header */}
@@ -4127,7 +4127,7 @@ function TrackerApp(props){
     var currentLevel=getLevel(os.total);
     var nextMilestone=currentLevel.next;var pctToNext=nextMilestone>currentLevel.min?Math.round((os.total-currentLevel.min)/(nextMilestone-currentLevel.min)*100):100;
 
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
       {/* Header with score ring + unified progress */}
       <div style={{padding:"28px 0 24px",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?16:24,flexDirection:isMobile?"column":"row"}}>
         <div style={{display:"flex",alignItems:"center",gap:20,flex:1}}>
@@ -5140,7 +5140,7 @@ function TrackerApp(props){
 
     function fmtVal(v){if(v>=1e6)return(v/1e6).toFixed(2)+"M";if(v>=1e3)return(v/1e3).toFixed(1)+"k";return Math.round(v).toLocaleString()}
 
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1000}}>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
       <div style={{padding:"28px 0 20px"}}>
         <h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>All Assets</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>Your complete net worth — every asset class in one view</p></div>
@@ -5339,7 +5339,7 @@ function TrackerApp(props){
     // Group by month
     var months={};filtered.forEach(function(e){var key=e.date.substring(0,7);if(!months[key])months[key]=[];months[key].push(e)});
 
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:800}}>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Timeline</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{events.length} events across {portfolio.length} holdings — your investment memory</p></div>
 
@@ -5442,7 +5442,7 @@ function TrackerApp(props){
 
     var streakColor=(streakData.current||0)>=8?K.grn:(streakData.current||0)>=4?K.amb:K.mid;
 
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:800}}>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Weekly Owner’s Review</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>3 minutes to confirm or adjust conviction across your portfolio</p></div>
 
@@ -5691,7 +5691,7 @@ function TrackerApp(props){
 
     var secStyle={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" • Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" • "+withMoat.length+" analyzed":""}</p></div>
 
@@ -5866,7 +5866,7 @@ function TrackerApp(props){
         if(payout>0){income+=payout;payers.push({ticker:c.ticker,amount:payout})}});
       return{month:mn,income:income,payers:payers}});
     var maxMonthly=Math.max.apply(null,monthlyBreakdown.map(function(m){return m.income}))||1;
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:960}}>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:960}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Dividend Hub</h1>
         <p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>Track income from your dividend-paying holdings</p></div>
       {/* Summary cards */}
@@ -5977,7 +5977,7 @@ function TrackerApp(props){
     var upcoming=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0}).sort(function(a,b){return a.earningsDate>b.earningsDate?1:-1});
     var recent=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-30}).sort(function(a,b){return b.earningsDate>a.earningsDate?-1:1});
     var tbdCos=allCos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:900}}>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Earnings Calendar</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{upcoming.length} upcoming · {recent.length} recent · {tbdCos.length} TBD</p></div>
       {/* This week */}
@@ -6073,8 +6073,8 @@ function TrackerApp(props){
     // Dividend data
     var divCos=filtered.filter(function(c){return(c.divPerShare||c.lastDiv)>0&&c.divFrequency!=="none"});
     var totalAnnualDiv=divCos.reduce(function(sum,c){var pos=c.position||{};var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return sum+(pos.shares||0)*(c.divPerShare||c.lastDiv||0)*mult},0);
-    return<div style={{padding:isMobile?"0 12px 60px":"0 32px 60px",maxWidth:1100}}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" • Outside your circle of competence":priceLoading?" • Updating prices…":""}</p></div>
+    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 60px":"0 32px 60px",maxWidth:1100}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:isThesis?"36px 0 24px":"28px 0 20px"}}><div><h1 style={{margin:0,fontSize:isThesis?32:26,fontWeight:isThesis?900:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-1px":"normal"}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" • Outside your circle of competence":priceLoading?" • Updating prices…":""}</p></div>
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:11,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON — will auto-fetch earnings when they drop":"Click to enable: auto-checks earnings when released"}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
