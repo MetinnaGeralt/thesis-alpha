@@ -6175,13 +6175,36 @@ function TrackerApp(props){
       var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
-      // Portfolio Character
-      var styles={};portfolio.forEach(function(c2){var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1});
+      // Portfolio Character — classify based on actual portfolio DNA
+      var styles={};var totalDivYield=0;var divPayerCount=0;var avgGrowth=0;var growthCount=0;
+      portfolio.forEach(function(c2){
+        var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
+        // Only count meaningful dividend payers (yield > 2%)
+        var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
+        var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
+        var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
+        if(yld>=2){divPayerCount++;totalDivYield+=yld}
+        // Track growth from snapshot
+        var snap=c2.financialSnapshot||{};
+        if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}
+      });
       var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
-      var divPctPort=0;portfolio.forEach(function(c2){if((c2.divPerShare||c2.lastDiv)>0)divPctPort++});
-      var divRatio=portfolio.length>0?divPctPort/portfolio.length:0;
-      var portCharacter=divRatio>=0.6?"Dividend Income":topStyle==="growth"||topStyle==="aggressive"?"Growth-Oriented":topStyle==="value"||topStyle==="contrarian"?"Deep Value":topStyle==="quality"||topStyle==="compounder"?"Quality Compounder":topStyle==="income"||topStyle==="dividend"?"Dividend Income":portfolio.length>=5?"Diversified":"Focused";
-      var portCharIcon=portCharacter==="Dividend Income"?String.fromCodePoint(0x1F4B0):portCharacter==="Growth-Oriented"?String.fromCodePoint(0x1F680):portCharacter==="Deep Value"?String.fromCodePoint(0x1F3AF):portCharacter==="Quality Compounder"?String.fromCodePoint(0x2728):portCharacter==="Diversified"?String.fromCodePoint(0x1F310):String.fromCodePoint(0x1F50D);
+      var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
+      var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
+      var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
+      var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
+      // Classification priority
+      var portCharacter="Balanced";
+      if(divDominant&&meanDivYield>=4)portCharacter="Income-Focused";
+      else if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))portCharacter="Growth-Oriented";
+      else if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))portCharacter="Value-Oriented";
+      else if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))portCharacter="Quality Compounder";
+      else if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))portCharacter="Income-Focused";
+      else if(meanGrowth>20)portCharacter="Growth-Oriented";
+      else if(divDominant)portCharacter="Income & Growth";
+      else if(portfolio.length>=6)portCharacter="Diversified";
+      else if(portfolio.length<=3)portCharacter="Concentrated";
+      else portCharacter="Balanced";
       // Notable movers (any holding with position data)
       var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
@@ -6225,7 +6248,7 @@ function TrackerApp(props){
             <div style={{minWidth:0}}>
               <div style={{fontSize:isMobile?16:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
               <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
-              {portfolio.length>=2&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:6,padding:"3px 10px",borderRadius:6,background:K.acc+"10",border:"1px solid "+K.acc+"20",fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{portCharIcon} {portCharacter} Portfolio</div>}</div>
+              {portfolio.length>=2&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:6,padding:"3px 10px",borderRadius:6,background:K.acc+"10",border:"1px solid "+K.acc+"20",fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{portCharacter}</div>}</div>
             {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
               <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div>
