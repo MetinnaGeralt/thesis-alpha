@@ -2227,7 +2227,61 @@ function TrackerApp(props){
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
+  // ── Scenario / Stress Test Modal ──
+  function ScenarioModal(){if(!sel)return null;var c=sel;var sid=modal.data;
+    var scenarios=c.scenarios||[];var existing=sid?scenarios.find(function(s){return s.id===sid}):null;
+    var pos=c.position||{};var conv=c.conviction||0;var hasDivs=(c.divPerShare||c.lastDiv)>0;
+    var posVal=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
+    // Generate company-specific prompts
+    var prompts=[
+      {id:"drawdown",cat:"Price",q:c.ticker+" drops 40% in the next 30 days with no fundamental news. Your position goes from $"+(posVal>0?Math.round(posVal).toLocaleString():"X")+" to $"+(posVal>0?Math.round(posVal*0.6).toLocaleString():"Y")+". What do you do?",icon:"trending"},
+      {id:"ceo_exit",cat:"Management",q:c.name+"'s CEO "+(c.ceo||"")+" unexpectedly resigns. No successor is named. Do you hold, trim, or sell?",icon:"alert"},
+      {id:"competitor",cat:"Competition",q:"A well-funded competitor launches a product that is 30% cheaper and arguably better than "+c.ticker+"'s core offering. How does this affect your thesis?",icon:"search"},
+      {id:"kpi_miss",cat:"Thesis",q:c.ticker+" misses your most important KPI for 3 consecutive quarters. Revenue growth stalls. At what point does this break your thesis, and what's your exit plan?",icon:"target"},
+      {id:"concentration",cat:"Sizing",q:c.ticker+" runs up 80% and now represents "+(posVal>0?"a large":"an outsized")+" portion of your portfolio. Do you trim to rebalance, or let winners run?",icon:"bar"},
+      {id:"recession",cat:"Macro",q:"A severe recession hits. "+c.ticker+"'s revenue drops 25% YoY. The stock is down 50% from your entry. You still believe in the 10-year thesis. What's your move?",icon:"shield"},
+      {id:"short_attack",cat:"Psychology",q:"A prominent short seller publishes a detailed report alleging accounting irregularities at "+c.ticker+". The stock drops 20% pre-market. You have 30 minutes before the market opens. What do you do?",icon:"alert"},
+      {id:"double",cat:"Psychology",q:c.ticker+" doubles in 6 months. Your conviction is "+conv+"/10. Your original thesis is unchanged. Do you take profits, hold, or add more?",icon:"trending"}
+    ];
+    if(hasDivs)prompts.push({id:"div_cut",cat:"Income",q:c.ticker+" announces a 50% dividend cut, citing the need to reinvest in growth. The stock drops 15%. Does this change your thesis?",icon:"dollar"});
+    prompts.push({id:"sell_all",cat:"Psychology",q:"If you had to sell your entire "+c.ticker+" position today and could never buy it back, how would you feel? What would you miss most? This reveals how much of your conviction is emotional vs. rational.",icon:"lightbulb"});
+    var answered=scenarios.map(function(s){return s.promptId});
+    var _selP=useState(existing?existing.promptId:null),selPrompt=_selP[0],setSelPrompt=_selP[1];
+    var _resp=useState(existing?existing.response:""),resp=_resp[0],setResp=_resp[1];
+    var activePrompt=prompts.find(function(p2){return p2.id===selPrompt});
+    function doSave(){if(!selPrompt||!resp.trim())return;
+      var entry={id:existing?existing.id:nId(scenarios),promptId:selPrompt,prompt:activePrompt?activePrompt.q:"",category:activePrompt?activePrompt.cat:"",response:resp.trim(),answeredAt:new Date().toISOString()};
+      if(existing){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).map(function(s){return s.id===existing.id?entry:s})})})}
+      else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})});addXP(10,"Scenario planned")}
+      setModal(null)}
+    return<Modal title={"Stress Test — "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
+      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Pre-mortem thinking. Plan your response to difficult situations before they happen — when your mind is clear and your emotions are quiet.</div>
+      {!selPrompt&&<div>
+        <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
+        <div style={{display:"grid",gap:8}}>
+          {prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
+            return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:10,cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={function(e){if(!done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!done)e.currentTarget.style.borderColor=K.bdr}}>
+              <div style={{width:32,height:32,borderRadius:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:9,fontWeight:600,color:done?K.grn:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:3}}>{p2.cat.toUpperCase()}</div>
+                <div style={{fontSize:12,color:K.txt,lineHeight:1.5}}>{p2.q.substring(0,120)}{p2.q.length>120?"...":""}</div>
+                {done&&<div style={{fontSize:9,color:K.dim,marginTop:4,fontFamily:fm}}>Answered {fD(scenarios.find(function(s){return s.promptId===p2.id}).answeredAt)}</div>}</div></div>})}</div></div>}
+      {selPrompt&&activePrompt&&<div>
+        <button onClick={function(){setSelPrompt(null);setResp("")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0,marginBottom:12,display:"flex",alignItems:"center",gap:4}}>{"← Back to scenarios"}</button>
+        <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"14px 18px",marginBottom:16}}>
+          <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{activePrompt.cat.toUpperCase()}</div>
+          <div style={{fontSize:13,color:K.txt,lineHeight:1.7}}>{activePrompt.q}</div></div>
+        <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:8,fontFamily:fm,fontWeight:600}}>Your plan</label>
+        <textarea value={resp} onChange={function(e){setResp(e.target.value)}} placeholder={"Write your honest response. There are no right answers — only your answers. What would you actually do?"} rows={6} style={{width:"100%",boxSizing:"border-box",background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:_isThesis?14:6,color:K.txt,padding:"14px 18px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/>
+        <div style={{fontSize:10,color:K.dim,marginTop:6,marginBottom:12}}>{resp.trim().split(/\s+/).filter(function(w){return w}).length} words</div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>
+          {existing&&<button style={S.btnD} onClick={function(){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).filter(function(s){return s.id!==existing.id})})});setModal(null)}}>Delete</button>}
+          <div style={{flex:1}}/>
+          <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
+          <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave} disabled={resp.trim().length<=10}>Save Plan</button></div></div>}
+    </Modal>}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -3801,6 +3855,31 @@ function TrackerApp(props){
         </div>
 
         {/* ── OWNER'S NUMBERS ── */}
+        {/* ── 4. STRESS TEST ── */}
+        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
+          return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
+            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
+          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
+              <div style={{flex:1}}/>
+              <span style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
+            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
+              <IC name="check" size={12} color={K.grn} style={{marginTop:2,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
+                <div style={{fontSize:11,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
+            {scenarios.length>3&&<div style={{fontSize:10,color:K.acc,textAlign:"center",paddingTop:6,cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>+{scenarios.length-3} more</div>}
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
+            <IC name="shield" size={20} color={K.acc} style={{marginBottom:6}}/>
+            <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now, while your thinking is clear.</div></div>}
+        </div>})()}
+        {/* ── OWNER'S NUMBERS (actual) ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
           if(!hasSnap)return null;
           // Group metrics
@@ -4537,6 +4616,25 @@ function TrackerApp(props){
             <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
             {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
               <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
+
+        {/* ═══ STRESS TEST ═══ */}
+        {portfolio.length>0&&<div style={{marginTop:24}}>
+          <div style={S.sec}><IC name="shield" size={14} color={K.acc}/>Stress Test</div>
+          {(function(){
+            var planned=portfolio.filter(function(c2){return(c2.scenarios||[]).length>0});
+            var unplanned=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
+            var totalScenarios=portfolio.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+                <div style={{fontSize:28,fontWeight:800,color:planned.length===portfolio.length?K.grn:planned.length>0?K.amb:K.dim,fontFamily:fm}}>{planned.length}<span style={{fontSize:14,fontWeight:400,color:K.dim}}>/{portfolio.length}</span></div>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:K.txt}}>Holdings stress-tested</div>
+                  <div style={{fontSize:10,color:K.dim}}>{totalScenarios} scenario{totalScenarios!==1?"s":""} planned across your portfolio</div></div></div>
+              {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:10,fontFamily:fm,borderRadius:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={14}/>{c2.ticker}</button>})}</div>}
+              {planned.length===portfolio.length&&<div style={{fontSize:11,color:K.grn,fontFamily:fm}}>Every holding has a crisis plan. You're prepared.</div>}
+            </div>})()}</div>}
 
         {/* ═══ COMMUNITY BENCHMARK ═══ */}
         <div style={{marginTop:24}}>
@@ -6243,6 +6341,8 @@ function TrackerApp(props){
       if(stale.length>0)actions.push({icon:"clock",color:K.red,text:stale.length+" thesis"+(stale.length>1?"es":"")+" older than 90 days",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
       var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
       if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.acc,text:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
+      var noScenario=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
+      if(noScenario.length>0&&actions.length<4)actions.push({icon:"shield",color:"#9333EA",text:noScenario.length+" holding"+(noScenario.length>1?"s":"")+" without a crisis plan",onClick:function(){setSelId(noScenario[0].id);setModal({type:"scenario"})}});
       // Investor quotes
       var quotes=[
         {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
