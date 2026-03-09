@@ -15,6 +15,10 @@ async function cloudLoad(userId){if(!supabase||!userId)return null;
     if(res.error||!res.data)return null;return res.data.data}catch(e){console.warn("Cloud load:",e);return null}}
 async function cloudSave(userId,payload){if(!supabase||!userId)return;
   try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
+// Get current Supabase auth token for API calls
+async function getAuthToken(){if(!supabase)return null;try{var s=await supabase.auth.getSession();return s.data.session?s.data.session.access_token:null}catch(e){return null}}
+// Secure fetch wrapper — adds auth header
+async function authFetch(url,opts){var token=await getAuthToken();var headers=Object.assign({"Content-Type":"application/json"},opts.headers||{});if(token)headers["Authorization"]="Bearer "+token;return fetch(url,Object.assign({},opts,{headers:headers}))}
 
 // ═══ FMP (server proxy — profiles & prices) ═══
 // ═══ API CACHE (1hr TTL — saves ~80% of FMP quota) ═══
@@ -22,10 +26,10 @@ var _cache={};var CACHE_TTL=3600000;
 function cacheGet(k){var e=_cache[k];if(!e)return null;if(Date.now()-e.t>CACHE_TTL){delete _cache[k];return null}return e.d}
 function cacheSet(k,d){_cache[k]={d:d,t:Date.now()};return d}
 
-async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
+async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){//console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));//console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
 
 // ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
-async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
+async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){//console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -375,14 +379,14 @@ async function fetchFinancialStatements(ticker,period){
     // Primary: FMP (Starter plan — 300 req/min, 5yr history)
     var isQ=period==="quarter";var lim=isQ?20:5;
     var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
-    console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
+    //console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
     var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
     var _is=results[0],_bs=results[1],_cf=results[2];
     if(_is&&(_is._fmpError||!Array.isArray(_is)))_is=null;
     if(_bs&&(_bs._fmpError||!Array.isArray(_bs)))_bs=null;
     if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
     if((_is&&_is.length>0)||(_bs&&_bs.length>0)||(_cf&&_cf.length>0)){
-      console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
+      //console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
       var incRows=(_is||[]).reverse().map(function(row){
         // Compute grossProfitRatio if missing but grossProfit and revenue exist
         if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
@@ -393,12 +397,12 @@ async function fetchFinancialStatements(ticker,period){
         return row});
       var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
-    console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
+    //console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
     // Fallback: SEC EDGAR (free, no API key needed)
     var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
     if(r.ok){var d=await r.json();
       if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
-        console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
+        //console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
         var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
         _fincache[key]=res;return res}}
     return{income:[],balance:[],cashflow:[]}}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
@@ -428,7 +432,7 @@ async function fetchFMPMetrics(ticker){
     if(!ratios&&!km)return null;
     var out={ratios:ratios||{},km:km||{}};
     _fmpmetricscache[ticker]=out;
-    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+    //console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
     return out;
   }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
 
@@ -438,8 +442,8 @@ async function fetchEarnings(co,kpis){
   var fhMap={};
   try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
     var earn=await finnhub("stock/earnings?symbol="+co.ticker);
-    console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
-    console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
+    //console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
+    //console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
     if(met&&met.metric){var m=met.metric;
       // Build raw snapshot for display regardless of KPIs
       if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
@@ -552,7 +556,7 @@ async function fetchEarnings(co,kpis){
           if(estBuyback>0.2)snapshot.buybackYield={label:"Est. Buyback Yield",value:estBuyback.toFixed(1)+"%",numVal:estBuyback,source:"FMP est."}}
       }
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
-      console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
+      //console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
 
   // Step 3: Match user's tracked KPIs from merged map
@@ -563,7 +567,7 @@ async function fetchEarnings(co,kpis){
     else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub or FMP"})}})}
 
   if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Neither Finnhub nor FMP returned metrics."};
-  console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
+  //console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub+FMP",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
@@ -739,7 +743,6 @@ function TrackerApp(props){
   var sideDark=isDark||theme==="forest"||theme==="paypal";
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
-  function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
@@ -779,7 +782,7 @@ function TrackerApp(props){
   var isPro=plan==="pro"||trialActive;
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
-  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}fetch("/api/stripe/portal",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
+  function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
   var DEFAULT_DASH={portfolioView:"list",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -1326,14 +1329,14 @@ function TrackerApp(props){
       totalCount:total
     });
     var sub="ThesisAlpha: "+c.ticker+" — "+met+"/"+total+" KPIs met";
-    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:sub,html:html,type:"earnings"})}).then(function(r){return r.json()}).then(function(d){
+    authFetch("/api/send-email",{method:"POST",body:JSON.stringify({to:props.user,subject:sub,html:html,type:"earnings"})}).then(function(r){return r.json()}).then(function(d){
       if(d.success)showToast("Earnings summary emailed to "+props.user,"milestone",4000);
       else showToast("Email failed — "+(d.error||"try again"),"info",4000)
     }).catch(function(){showToast("Could not send email — check connection","info",4000)})}
   function sendQuarterlyLetterEmail(htmlContent,qTitle){
     var sub="ThesisAlpha: Your "+qTitle+" Quarterly Letter";
     var wrapped=buildEmailHTML({title:qTitle+" — Quarterly Letter",subtitle:"Your ownership process, reviewed.",html:'<div style="background:#18181b;border:1px solid #2a2a2e;border-radius:8px;padding:20px;margin-bottom:16px;font-size:13px;color:#e5e7eb;line-height:1.6">'+htmlContent+'</div>'});
-    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:props.user,subject:sub,html:wrapped,type:"quarterly"})}).then(function(r){return r.json()}).then(function(d){
+    authFetch("/api/send-email",{method:"POST",body:JSON.stringify({to:props.user,subject:sub,html:wrapped,type:"quarterly"})}).then(function(r){return r.json()}).then(function(d){
       if(d.success)showToast("Quarterly letter emailed","milestone",4000);
       else showToast("Email failed — "+(d.error||"try again"),"info",4000)
     }).catch(function(){showToast("Could not send email","info",4000)})}
@@ -2260,7 +2263,7 @@ function TrackerApp(props){
     var _loading=useState(null),loading=_loading[0],setLoading=_loading[1];
     var ctxMsg={"trial-ending":"Your trial ends in "+trialDaysLeft+" day"+(trialDaysLeft!==1?"s":"")+". Lock in Pro to keep your data features.","trial-expired":"Your "+(!trialBonusEarned?TRIAL_BASE:TRIAL_TOTAL)+"-day trial has ended. Your theses and data are safe — upgrade to continue using data features.",companies:"Upgrade to unlock data features.",earnings:"Earnings checking is a Pro feature.",financials:"Financial statements are a Pro feature.",charts:"Price charts are a Pro feature.",analysts:"Analyst data is a Pro feature.",import:"CSV import is a Pro feature.",export:"Premium PDF export is a Pro feature."}[upgradeCtx]||"Unlock the full ThesisAlpha experience.";
     function startCheckout(priceId){setLoading(priceId);
-      fetch("/api/stripe/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error — please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
+      authFetch("/api/stripe/checkout",{method:"POST",body:JSON.stringify({priceId:priceId,userId:props.userId,email:props.user})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url;else{setLoading(null);showToast("Checkout error — please try again","info",4000)}}).catch(function(e){setLoading(null);showToast("Connection error","info",3000)})}
     return<Modal title="Upgrade to Owner’s Plan" onClose={function(){setShowUpgrade(false)}} w={520} K={K}>
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{ctxMsg}</div>
@@ -7075,7 +7078,7 @@ export default function App(){
       // Check if user changed — clear localStorage to prevent data bleed
       var prevId=null;try{prevId=localStorage.getItem("ta-userid")}catch(e){}
       if(prevId&&prevId!==res.data.session.user.id){
-        console.log("[ThesisAlpha] User changed from",prevId,"to",res.data.session.user.id,"— clearing local data");
+        //console.log("[ThesisAlpha] User changed from",prevId,"to",res.data.session.user.id,"— clearing local data");
         var keysToKeep=["ta-theme"];var savedTheme=null;try{savedTheme=localStorage.getItem("ta-theme")}catch(e){}
         Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&keysToKeep.indexOf(k)<0)localStorage.removeItem(k)});
         if(savedTheme)try{localStorage.setItem("ta-theme",savedTheme)}catch(e){}
@@ -7086,7 +7089,7 @@ export default function App(){
       if(session){
         var prevId2=null;try{prevId2=localStorage.getItem("ta-userid")}catch(e){}
         if(prevId2&&prevId2!==session.user.id){
-          console.log("[ThesisAlpha] Auth change: user switched — reloading");
+          //console.log("[ThesisAlpha] Auth change: user switched — reloading");
           var savedTheme2=null;try{savedTheme2=localStorage.getItem("ta-theme")}catch(e){}
           Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
           if(savedTheme2)try{localStorage.setItem("ta-theme",savedTheme2)}catch(e){}
