@@ -3348,8 +3348,14 @@ function TrackerApp(props){
         <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:11,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}
           <button onClick={exportFinancialsPDF} disabled={!data||ld} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,opacity:data&&!ld?1:.4,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>PDF</button></div></div>
       {/* Statement Tabs */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {isMobile?<div style={{marginBottom:16}}>
+        <div style={{position:"relative"}}>
+          <select value={tab} onChange={function(e){setTab(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
+            {STMT_TABS.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
+          <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>:<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>}
       {ld?<div style={{padding:"32px 0"}}><div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:24}}>
         {[0,1,2,3,4,5].map(function(i){return<div key={i} style={{display:"flex",gap:12,marginBottom:12}}>
           <div className="ta-skel" style={{height:12,flex:1,background:K.bdr}}/>
@@ -3486,8 +3492,15 @@ function TrackerApp(props){
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
       {/* Tab Navigation */}
-      <div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
-        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?700:500,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}</div>
+      {isMobile?<div style={{marginBottom:20}}>
+        <div style={{position:"relative"}}>
+          <select value={detailTab} onChange={function(e){var v=e.target.value;if(v==="financials"){setSubPage("financials")}else{setDetailTab(v);setSubPage(null)}}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
+            {TABS.map(function(t){return<option key={t.id} value={t.id}>{t.label}</option>})}</select>
+          <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+      </div>:<div className="ta-detail-tabs" style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
+        {TABS.map(function(t){var active=detailTab===t.id;return<button key={t.id} className="ta-tab" onClick={function(){if(t.id==="financials"){setSubPage("financials")}else{setDetailTab(t.id);setSubPage(null)}}} style={{background:"none",border:"none",borderBottom:active?"2px solid "+K.acc:"2px solid transparent",color:active?K.txt:K.dim,padding:"12px 20px",fontSize:12,fontFamily:fb,fontWeight:active?700:500,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}><IC name={t.icon} size={14} color={active?K.acc:K.dim}/>{t.label}{t.id==="financials"&&isPro&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,marginLeft:2}}>PRO</span>}</button>})}
+      </div>}
       {/* ═══ OVERVIEW TAB ═══ */}
       {/* ═══ DOSSIER TAB — Munger's pinned sheet ═══ */}
       {detailTab==="dossier"&&<div className="ta-fade">
@@ -4150,41 +4163,50 @@ function TrackerApp(props){
     var currentLevel=getLevel(os.total);
     var nextMilestone=currentLevel.next;var pctToNext=nextMilestone>currentLevel.min?Math.round((os.total-currentLevel.min)/(nextMilestone-currentLevel.min)*100):100;
 
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
       {/* Header with score ring + unified progress */}
-      <div style={{padding:"28px 0 24px",display:"flex",alignItems:isMobile?"flex-start":"center",gap:isMobile?16:24,flexDirection:isMobile?"column":"row"}}>
-        <div style={{display:"flex",alignItems:"center",gap:20,flex:1}}>
-          <div style={{position:"relative",width:80,height:80,flexShrink:0}}>
-            <svg width={80} height={80} viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="5"/>
+      <div style={{padding:isMobile?"20px 0 16px":"28px 0 24px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:isMobile?14:24,marginBottom:isMobile?16:0}}>
+          <div style={{position:"relative",width:isMobile?68:80,height:isMobile?68:80,flexShrink:0}}>
+            <svg width={isMobile?68:80} height={isMobile?68:80} viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="5"/>
               <circle cx="40" cy="40" r="34" fill="none" stroke={os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red} strokeWidth="5" strokeDasharray={Math.round(os.total/100*214)+" 214"} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg>
             <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-              <div style={{fontSize:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
+              <div style={{fontSize:isMobile?20:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
-          <div><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Owner's Hub</h1>
+          <div style={{flex:1,minWidth:0}}>
+            <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isMobile?"-0.5px":"normal"}}>Owner's Hub</h1>
             <div style={{fontSize:13,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:11,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
-            {/* Progress bar + level name */}
-            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
-              <div style={{width:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
+              <div style={{width:isMobile?120:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{currentLevel.name}</span>
             </div></div></div>
-        {/* Quick stats — consolidated */}
-        <div style={{display:"flex",gap:isMobile?12:16}}>
-          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
+        {/* Quick stats */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:isMobile?8:16,marginTop:isMobile?12:16}}>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>holdings</div></div>
-          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{scored.length}</div>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{scored.length}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>scored</div></div>
-          <div style={{textAlign:"center",padding:"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
-            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+            <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>decisions</div></div></div></div>
 
-      {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}].map(function(tab){
-          return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:isMobile?"10px 12px":"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>
+      {/* Tab bar — dropdown on mobile, full bar on desktop */}
+      {(function(){
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
+        var active=tabs.find(function(t){return t.id===ht})||tabs[0];
+        if(isMobile){return<div style={{marginBottom:20}}>
+          <div style={{position:"relative"}}>
+            <select value={ht} onChange={function(e){setHt(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
+              {tabs.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
+            <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
+        </div>}
+        return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
+          {tabs.map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:12,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
+      })()}
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
       {ht==="command"&&<div>
