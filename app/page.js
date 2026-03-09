@@ -312,6 +312,8 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
+// Fetch daily quote from Finnhub (FREE — returns today's change reliably)
+async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+ticker);if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
 var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN","GLADHD","PRT"];
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
@@ -612,8 +614,8 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
+  if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
   return<div style={{width:sz,height:sz,borderRadius:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
@@ -1415,9 +1417,15 @@ function TrackerApp(props){
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
   async function checkAll(){var all=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
   async function refreshPrices(){setPriceLoading(true);
-    for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
-      if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price}),_dayChange:r.changes||0,_dayChangePct:r.changesPercentage||0};
-        return Object.assign({},prev,updates)});
+    for(var i=0;i<cos.length;i++){var c=cos[i];try{
+      // Fetch price from FMP + daily change from Finnhub (both free)
+      var rP=fetchPrice(c.ticker);var rQ=fetchQuote(c.ticker);
+      var r=await rP;var q=await rQ;
+      if(r&&r.price){
+        var dayPct=0;var dayAbs=0;
+        if(q&&q.changePct!=null){dayPct=q.changePct;dayAbs=q.change}
+        else if(r.changesPercentage){dayPct=typeof r.changesPercentage==="string"?parseFloat(r.changesPercentage):r.changesPercentage;dayAbs=r.changes||0}
+        upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:r.price}),_dayChange:dayAbs,_dayChangePct:dayPct})});
         // Fetch dividend from Finnhub if missing
         if(!c.divPerShare||c.divPerShare===0){
           try{var fhDiv=await fetchDivFromFinnhub(c.ticker,r.lastDiv);
@@ -6288,7 +6296,7 @@ function TrackerApp(props){
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
                 <span style={{marginLeft:"auto"}}/>
-                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg>0?"+":""}{m.dayChg.toFixed(1)}%</span>
+                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg!==0?(m.dayChg>0?"+":"")+m.dayChg.toFixed(1)+"%":priceLoading?"···":"0.0%"}</span>
                 <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:500,color:m.hasPos?(m.ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{m.hasPos?(m.ret>=0?"+":"")+m.ret.toFixed(1)+"%":"—"}</span></div>})}</div>}
             {/* Insider signals */}
             {insiderSignals.length>0&&<div>
