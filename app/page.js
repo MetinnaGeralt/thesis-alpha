@@ -698,7 +698,8 @@ function LoginPage(props){
 function TrackerApp(props){
   (function(){try{var storedId=localStorage.getItem("ta-userid");
     if(storedId&&storedId!==props.userId){var savedTheme=localStorage.getItem("ta-theme");
-      Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+      var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf("ta-")===0)keys.push(k)}
+      keys.forEach(function(k){localStorage.removeItem(k)});
       if(savedTheme)localStorage.setItem("ta-theme",savedTheme);
       localStorage.setItem("ta-userid",props.userId)}
     else if(!storedId){localStorage.setItem("ta-userid",props.userId)}}catch(e){}})();
@@ -723,6 +724,7 @@ function TrackerApp(props){
   var sideDark=isDark||theme==="forest"||theme==="paypal";
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
   function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
@@ -2113,7 +2115,7 @@ function TrackerApp(props){
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
-  function ScenarioModal(){if(!sel)return null;var c=sel;var sid=modal.data;var scenarios=c.scenarios||[];var existing=sid?scenarios.find(function(s){return s.id===sid}):null;var pos=c.position||{};var conv=c.conviction||0;var hasDivs=(c.divPerShare||c.lastDiv)>0;var posVal=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
+  function ScenarioModal(){if(!sel)return null;var c=sel;var sid=modal?modal.data:null;var scenarios=c.scenarios||[];var existing=sid?scenarios.find(function(s){return s.id===sid}):null;var pos=c.position||{};var conv=c.conviction||0;var hasDivs=((c.divPerShare||0)+(c.lastDiv||0))>0;var posVal=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
     var prompts=[{id:"drawdown",cat:"Price",q:c.ticker+" drops 40% in 30 days with no fundamental news. Your position goes from $"+(posVal>0?Math.round(posVal).toLocaleString():"X")+" to $"+(posVal>0?Math.round(posVal*0.6).toLocaleString():"Y")+". What do you do?",icon:"trending"},{id:"ceo_exit",cat:"Management",q:c.name+"'s CEO "+(c.ceo||"")+" unexpectedly resigns. No successor named. Hold, trim, or sell?",icon:"alert"},{id:"competitor",cat:"Competition",q:"A well-funded competitor launches a product 30% cheaper and arguably better than "+c.ticker+"'s core offering. How does this affect your thesis?",icon:"search"},{id:"kpi_miss",cat:"Thesis",q:c.ticker+" misses your most important KPI for 3 consecutive quarters. At what point does this break your thesis?",icon:"target"},{id:"concentration",cat:"Sizing",q:c.ticker+" runs up 80% and now represents a large portion of your portfolio. Trim to rebalance, or let winners run?",icon:"bar"},{id:"recession",cat:"Macro",q:"A severe recession hits. "+c.ticker+"'s revenue drops 25% YoY. Stock down 50% from entry. You believe in the 10-year thesis. What's your move?",icon:"shield"},{id:"short_attack",cat:"Psychology",q:"A prominent short seller publishes a report alleging accounting irregularities at "+c.ticker+". Stock drops 20% pre-market. What do you do?",icon:"alert"},{id:"double",cat:"Psychology",q:c.ticker+" doubles in 6 months. Conviction is "+conv+"/10. Thesis unchanged. Take profits, hold, or add?",icon:"trending"}];
     if(hasDivs)prompts.push({id:"div_cut",cat:"Income",q:c.ticker+" announces a 50% dividend cut. Stock drops 15%. Does this change your thesis?",icon:"dollar"});
     prompts.push({id:"sell_all",cat:"Psychology",q:"If you had to sell "+c.ticker+" today and never buy it back, how would you feel? What would you miss most?",icon:"lightbulb"});
@@ -6181,7 +6183,7 @@ function TrackerApp(props){
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
       // Notable movers (any holding with position data)
-      var movers=held.filter(function(c2){var p2=c2.position;return p2.currentPrice>0}).map(function(c2){var p2=c2.position;return{ticker:c2.ticker,id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice,dayChg:c2._dayChangePct||0,hasPos:p2.avgCost>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
+      var movers=held.filter(function(c2){return c2&&c2.position&&c2.position.currentPrice>0}).map(function(c2){var p2=c2.position||{};return{ticker:c2.ticker||"?",id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice||0,dayChg:c2._dayChangePct||0,hasPos:(p2.avgCost||0)>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
       // Upcoming earnings
       var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
@@ -6927,7 +6929,7 @@ export default function App(){
       var prevId=null;try{prevId=localStorage.getItem("ta-userid")}catch(e){}
       if(prevId&&prevId!==res.data.session.user.id){
         var savedTheme=null;try{savedTheme=localStorage.getItem("ta-theme")}catch(e){}
-        Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+        var _k=[];for(var _i=0;_i<localStorage.length;_i++){var _key=localStorage.key(_i);if(_key&&_key.indexOf("ta-")===0)_k.push(_key)}_k.forEach(function(k){localStorage.removeItem(k)});
         if(savedTheme)try{localStorage.setItem("ta-theme",savedTheme)}catch(e){}}
       try{localStorage.setItem("ta-userid",res.data.session.user.id)}catch(e){}
       setUser(res.data.session.user)}setReady(true)});
@@ -6935,7 +6937,7 @@ export default function App(){
       if(session){var prevId2=null;try{prevId2=localStorage.getItem("ta-userid")}catch(e){}
         if(prevId2&&prevId2!==session.user.id){
           var savedTheme2=null;try{savedTheme2=localStorage.getItem("ta-theme")}catch(e){}
-          Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+          var _k=[];for(var _i=0;_i<localStorage.length;_i++){var _key=localStorage.key(_i);if(_key&&_key.indexOf("ta-")===0)_k.push(_key)}_k.forEach(function(k){localStorage.removeItem(k)});
           if(savedTheme2)try{localStorage.setItem("ta-theme",savedTheme2)}catch(e){}
           try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}
           window.location.reload();return}
@@ -6943,7 +6945,7 @@ export default function App(){
       setUser(session?session.user:null)});
     return function(){sub.data.subscription.unsubscribe()}},[]);
   function onAuth(u){try{localStorage.setItem("ta-userid",u.id)}catch(e){}setUser(u)}
-  async function onLogout(){Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&k!=="ta-theme")localStorage.removeItem(k)});if(supabase)await supabase.auth.signOut();setUser(null)}
+  async function onLogout(){var _k=[];for(var _i=0;_i<localStorage.length;_i++){var _key=localStorage.key(_i);if(_key&&_key.indexOf("ta-")===0&&_key!=="ta-theme")_k.push(_key)}_k.forEach(function(k){localStorage.removeItem(k)});if(supabase)await supabase.auth.signOut();setUser(null)}
   if(!ready){var _ltheme="thesis_dark";try{_ltheme=localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){}var _ldark=_ltheme==="dark"||_ltheme==="thesis_dark"||_ltheme==="purple"||_ltheme==="bloomberg";
     return<div style={{background:_ldark?"#1a1a1a":"#f7f7f7",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid "+(_ldark?"#333":"#ddd"),borderTopColor:_ldark?"#fff":"#1a1a1a",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:_ldark?"#777":"#888",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>}
   if(!user)return<LoginPage onAuth={onAuth}/>;
