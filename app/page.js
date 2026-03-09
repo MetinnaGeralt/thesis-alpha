@@ -6881,6 +6881,47 @@ function TrackerApp(props){
           {shifts.length>0&&<div><SH color={K.amb}>Conviction Shifts</SH><div style={{marginBottom:12}}>{shifts.slice(0,6).map(function(s3,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"20"}}><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,width:44}}>{s3.ticker}</span><span style={{fontSize:12,fontWeight:800,color:s3.rating>=7?K.grn:s3.rating>=4?K.amb:K.red,fontFamily:fm}}>{s3.rating}/10</span>{s3.note&&<span style={{fontSize:10,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s3.note}</span>}</div>})}</div></div>}
           {qDivIncome>0&&<div><SH color={K.grn}>Dividend Income</SH><div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{"Estimated this quarter: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome).toLocaleString()}</strong>{" \u2014 annualized: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome*4).toLocaleString()}</strong>{"/year."}</div></div>}
           {(freshT>0||staleT>0)&&<div><SH color={"#9333EA"}>Thesis Health</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{freshT>0&&<span><strong style={{color:K.grn}}>{freshT}</strong>{" fresh (<90d). "}</span>}{staleT>0&&<span><strong style={{color:K.amb}}>{staleT}</strong>{" need review. "}</span>}{totalScenarios>0&&<span><strong style={{color:K.acc}}>{totalScenarios}</strong>{" pre-mortem scenarios across "}<strong>{scenarioCount}</strong>{" holdings."}</span>}</div></div>}
+          {/* Personalized Observations */}
+          {(function(){var obs=[];
+            // Conviction vs sizing mismatch
+            var highConvLowSize=perfArr.filter(function(hp){return hp.conv>=8}).sort(function(a,b){return a.val-b.val});
+            var lowConvHighSize=perfArr.filter(function(hp){return hp.conv>0&&hp.conv<=4}).sort(function(a,b){return b.val-a.val});
+            if(highConvLowSize.length>0&&perfArr.length>=3){var hc=highConvLowSize[0];var rank=perfArr.indexOf(hc)+1;
+              if(rank>perfArr.length/2)obs.push("Your highest-conviction holding ("+hc.ticker+" at "+hc.conv+"/10) is among the smaller positions in your portfolio. Your sizing and conviction tell different stories.")}
+            if(lowConvHighSize.length>0&&perfArr.length>=3){var lc=lowConvHighSize[0];var rank2=perfArr.indexOf(lc)+1;
+              if(rank2<=2)obs.push(lc.ticker+" is one of your largest positions, but your conviction is only "+lc.conv+"/10. Worth reflecting on whether that disconnect is intentional.")}
+            // Thesis staleness
+            var staleList=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&c2.thesisUpdatedAt}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)});
+            if(staleList.length>0){var oldest=staleList[0];var days=Math.ceil((new Date()-new Date(oldest.thesisUpdatedAt))/864e5);
+              if(days>120)obs.push("Your "+oldest.ticker+" thesis was last updated "+days+" days ago \u2014 the oldest in your portfolio. Markets change; does your reasoning still hold?")}
+            // Portfolio concentration
+            if(perfArr.length>=2&&totalVal2>0){var topWeight=perfArr[0].val/totalVal2*100;
+              if(topWeight>40)obs.push(perfArr[0].ticker+" represents "+topWeight.toFixed(0)+"% of your portfolio. Concentrated positions amplify both conviction and risk.")}
+            // ROIC quality observation
+            var highRoic=portfolio2.filter(function(c2){var s=c2.financialSnapshot||{};return s.roic&&s.roic.numVal&&s.roic.numVal>20});
+            if(highRoic.length>0&&portfolio2.length>=3)obs.push(highRoic.length+" of your "+portfolio2.length+" holdings have ROIC above 20%. Your portfolio leans toward capital-efficient businesses.");
+            // Decision quality
+            var scored3=qDecs.filter(function(d2){return d2.outcome});
+            if(scored3.length>=3){var rightPct=Math.round(scored3.filter(function(d2){return d2.outcome==="right"}).length/scored3.length*100);
+              obs.push("You scored "+scored3.length+" decisions this quarter \u2014 "+rightPct+"% were marked correct. Tracking outcomes builds better judgment over time.")}
+            // Best decision
+            var bestDec=qDecs.find(function(d2){if(d2.action!=="BUY"&&d2.action!=="ADD")return false;var co2=cos.find(function(x){return x.ticker===d2.ticker});if(!co2)return false;var p2=co2.position||{};return p2.currentPrice>0&&d2.price>0&&p2.currentPrice>d2.price});
+            if(bestDec){var co3=cos.find(function(x){return x.ticker===bestDec.ticker});var chg=((co3.position.currentPrice-bestDec.price)/bestDec.price*100);
+              if(chg>5)obs.push("Your decision to add "+bestDec.ticker+" at $"+bestDec.price+" has worked out so far (+"+chg.toFixed(0)+"%). The reasoning: \u201C"+(bestDec.reasoning||"").substring(0,80)+"\u201D")}
+            // Dividend growth observation
+            if(qDivIncome>0&&portfolio2.length>=3){var divPayers2=portfolio2.filter(function(c2){return(c2.divPerShare||c2.lastDiv)>0});
+              obs.push("You receive income from "+divPayers2.length+" dividend payers. Your estimated quarterly income of $"+Math.round(qDivIncome)+" compounds quietly in the background.")}
+            // Unscored stress tests
+            if(scenarioCount>0&&scenarioCount<portfolio2.length)obs.push(scenarioCount+" of "+portfolio2.length+" holdings have pre-mortem plans. The unplanned ones are the most vulnerable in a downturn.");
+            // Holding period
+            var withDate=portfolio2.filter(function(c2){return c2.purchaseDate});
+            if(withDate.length>0){var avgDays=Math.round(withDate.reduce(function(s,c2){return s+Math.ceil((new Date()-new Date(c2.purchaseDate))/864e5)},0)/withDate.length);
+              if(avgDays>365)obs.push("Your average holding period is "+Math.round(avgDays/30)+" months. Long-term ownership is where compounding happens.")}
+            if(obs.length===0)return null;
+            return<div><SH color={K.mid}>Observations</SH>
+              <div style={{marginBottom:16}}>{obs.slice(0,4).map(function(o,i){return<div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<Math.min(obs.length,4)-1?"1px solid "+K.bdr+"20":"none"}}>
+                <div style={{width:3,height:3,borderRadius:"50%",background:K.acc,marginTop:7,flexShrink:0}}/>
+                <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{o}</div></div>})}</div></div>})()}
           {upcomingE.length>0&&<div><SH color={K.amb}>Looking Ahead</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{"Upcoming: "}{upcomingE.slice(0,5).map(function(c2,i){return<span key={c2.id}>{i>0?", ":""}<strong style={{color:K.txt}}>{c2.ticker}</strong>{" ("+dU(c2.earningsDate)+"d)"}</span>})}</div></div>}
           <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
