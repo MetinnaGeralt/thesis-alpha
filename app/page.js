@@ -550,7 +550,10 @@ var FOREST={bg:"#f0f0f0",side:"#235a00",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4
 var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
 var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
-var THEMES={dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
+// ── Thesis Themes (landing page aesthetic: Outfit font, heavy rounding, purple accent) ──
+var THESIS_DARK={bg:"#16161D",side:"#16161D",card:"#1C1C1E",bdr:"rgba(255,255,255,0.05)",bdr2:"rgba(255,255,255,0.1)",txt:"#ffffff",mid:"rgba(255,255,255,0.8)",dim:"rgba(255,255,255,0.5)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THESIS_LIGHT={bg:"#F7F5F0",side:"#F7F5F0",card:"#ffffff",bdr:"rgba(0,0,0,0.06)",bdr2:"rgba(0,0,0,0.1)",txt:"#16161D",mid:"rgba(22,22,29,0.8)",dim:"rgba(22,22,29,0.5)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THEMES={thesis_dark:THESIS_DARK,thesis_light:THESIS_LIGHT,dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 function TLogo(p){var s=p.size||28;return<img src="/logo.png" width={s} height={s} style={{borderRadius:6,objectFit:"contain"}} alt="T"/>}
 // (sector suggestions removed — using predefined METRICS dropdown)
@@ -644,19 +647,21 @@ function LoginPage(props){
 
 // ═══ TRACKER APP ═══
 function TrackerApp(props){
-  var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"dark"}catch(e){return"dark"}}),theme=_th[0],setTheme=_th[1];
-  var K=THEMES[theme]||DARK;var S=mkS(K);var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg";
-  // Per-theme font overrides — Forest uses Duolingo-style rounded fonts
+  var _th=useState(function(){try{return localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){return"thesis_dark"}}),theme=_th[0],setTheme=_th[1];
+  var K=THEMES[theme]||THESIS_DARK;var S=mkS(K);
+  var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
+  // Per-theme font overrides
   var isForest=theme==="forest";
-  if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
-  else if(theme==="bloomberg"){fm="'Consolas','Courier New',monospace";fh="'Consolas','Courier New',monospace";fb="'Consolas','Courier New',monospace";S=mkS(K)}
-  else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
-  var sideDark=isDark||theme==="forest"||theme==="paypal"; // Forest and PayPal have dark sidebar on light bg
-  var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
-  // Bloomberg Terminal overrides fonts via CSS injection (see global CSS useEffect)
+  var isThesis=theme==="thesis_dark"||theme==="thesis_light";
   var bm=theme==="bloomberg";
-  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["light","dark"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
-  function toggleTheme(){var n=theme==="light"?"dark":"light";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  if(isThesis){fm="'Outfit',sans-serif";fh="'Outfit',sans-serif";fb="'Outfit',sans-serif";S=mkS(K)}
+  else if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
+  else if(bm){fm="'Consolas','Courier New',monospace";fh="'Consolas','Courier New',monospace";fb="'Consolas','Courier New',monospace";S=mkS(K)}
+  else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";S=mkS(K)}
+  var sideDark=isDark||theme==="forest"||theme==="paypal";
+  var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
+  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
@@ -983,7 +988,11 @@ function TrackerApp(props){
     var focusC=isDark?"rgba(255,255,255,.25)":"rgba(0,0,0,.15)";
     var focusS=isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
     var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
-    var cardSh=isDark?"rgba(0,0,0,.2)":"rgba(0,0,0,.08)";
+    // Dynamic Thesis Theme Values
+    var cardRadius=isThesis?"24px":"6px";
+    var btnRadius=isThesis?"999px!important":"8px!important";
+    var inpRadius=isThesis?"16px!important":"6px!important";
+    var cardShadow=isThesis?(isDark?"0 10px 40px -10px rgba(0,0,0,0.5)":"0 10px 40px -10px rgba(107,76,230,0.15)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
@@ -999,8 +1008,8 @@ function TrackerApp(props){
       ".ta-glow{animation:glowPulse 2s ease-in-out infinite}",
       ".ta-fade{animation:fadeIn .3s ease-out both}",
       ".ta-slide{animation:slideUp .35s ease-out both}",
-      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease}",
-      ".ta-card:hover{box-shadow:0 4px 20px "+cardSh+";transform:translateY(-1px)}",
+      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .15s ease;border-radius:"+cardRadius+"}",
+      ".ta-card:hover{box-shadow:"+cardShadow+";transform:translateY(-1px)}",
       ".ta-btn{transition:all .15s ease}",
       ".ta-btn:hover{filter:brightness(1.15)}",
       ".ta-btn:active{transform:translateY(0.5px)}",
@@ -1010,7 +1019,7 @@ function TrackerApp(props){
       "::-webkit-scrollbar-thumb{background:"+scrollT+";border-radius:3px}",
       "::-webkit-scrollbar-thumb:hover{background:"+scrollH+"}",
       "input:focus,textarea:focus,select:focus{border-color:"+focusC+"!important;box-shadow:0 0 0 3px "+focusS+"!important;transition:all .15s ease}",
-      "button{transition:all .12s ease}",
+      "button{transition:all .12s ease;border-radius:"+btnRadius+"}",
       "select{transition:border-color .15s ease}",
       ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
       ".ta-side-item:hover{background:"+hov+"}",
@@ -1042,6 +1051,7 @@ function TrackerApp(props){
       "  .ta-summary-grid{grid-template-columns:1fr 1fr!important}",
       "  .ta-style-wrap{flex-wrap:wrap!important}",
       "}",
+      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px}h1,h2,h3{font-weight:900!important;letter-spacing:-0.5px!important}input,textarea,select{font-weight:500!important;border-radius:"+inpRadius+"}button{font-weight:700!important}":"",
       bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
       isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
     ].join("\n");
@@ -1049,7 +1059,8 @@ function TrackerApp(props){
     // Load theme-specific fonts via link tag
     var fontId="ta-theme-font";var prevFont=document.getElementById(fontId);if(prevFont)prevFont.remove();
     if(isForest){var link=document.createElement("link");link.id=fontId;link.rel="stylesheet";link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(link)}
-    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove()}},[isDark,theme]);
+    if(isThesis){var link2=document.createElement("link");link2.id="ta-thesis-font";link2.rel="stylesheet";link2.href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap";document.head.appendChild(link2)}
+    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove();var fl2=document.getElementById("ta-thesis-font");if(fl2)fl2.remove()}},[isDark,theme]);
   // ── Load data ──
   useEffect(function(){
     // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
@@ -6794,7 +6805,7 @@ export default function App(){
     return function(){sub.data.subscription.unsubscribe()}},[]);
   function onAuth(u){setUser(u)}
   async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
-  if(!ready){var _ltheme="dark";try{_ltheme=localStorage.getItem("ta-theme")||"dark"}catch(e){}var _ldark=_ltheme==="dark";
+  if(!ready){var _ltheme="thesis_dark";try{_ltheme=localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){}var _ldark=_ltheme==="dark"||_ltheme==="thesis_dark"||_ltheme==="purple"||_ltheme==="bloomberg";
     return<div style={{background:_ldark?"#1a1a1a":"#f7f7f7",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid "+(_ldark?"#333":"#ddd"),borderTopColor:_ldark?"#fff":"#1a1a1a",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:_ldark?"#777":"#888",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>}
   if(!user)return<LoginPage onAuth={onAuth}/>;
   return<TrackerApp user={user.email||""} userId={user.id} onLogout={onLogout}/>;
