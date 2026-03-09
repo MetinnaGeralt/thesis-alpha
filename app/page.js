@@ -308,10 +308,10 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
       }catch(e){}
       // Fallback to FMP lastDiv if Finnhub missed it
       if(divData.divPerShare===0&&pr.lastDiv>0){divData.divPerShare=pr.lastDiv;divData.lastDiv=pr.lastDiv;divData.divFrequency="quarterly";divData.divYield=pr.price>0?pr.lastDiv*4/pr.price*100:0}
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,changes:pr.changes||0,changesPercentage:pr.changesPercentage||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
-async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
+async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
 var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN","GLADHD","PRT"];
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
@@ -826,6 +826,8 @@ function TrackerApp(props){
   // Owner's Score expanded state on dashboard
   var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
   var _briefPeriod=useState("total"),briefPeriod=_briefPeriod[0],setBriefPeriod=_briefPeriod[1];
+  var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
+  var _finChartSel=useState(["revenue"]),finChartSel=_finChartSel[0],setFinChartSel=_finChartSel[1];
   // ── XP System ──
   var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
   var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
@@ -1215,9 +1217,9 @@ function TrackerApp(props){
       celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
       showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
       setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
-  // Auto-refresh prices on load — PRO only (uses FMP API)
-  useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
-    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
+  // Auto-refresh prices on load — all users (free FMP profile endpoint)
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
   // Auto-fetch dividend data for ALL users — uses Finnhub (free tier)
   useEffect(function(){if(!loaded||cos.length===0)return;
     var needsDiv=cos.filter(function(c){
@@ -1231,7 +1233,7 @@ function TrackerApp(props){
         try{
           // Fetch FMP lastDiv for frequency cross-reference
           var fmpData=await fetchPrice(c.ticker);var fmpLD=fmpData?fmpData.lastDiv:0;
-          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price})})})}
+          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price}),_dayChange:fmpData.changes||0,_dayChangePct:fmpData.changesPercentage||0})})}
           var fhDiv=await fetchDivFromFinnhub(c.ticker,fmpLD);
           if(fhDiv&&fhDiv.payer){
             upd(c.id,function(prev){return Object.assign({},prev,{
@@ -1414,7 +1416,7 @@ function TrackerApp(props){
   async function checkAll(){var all=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
   async function refreshPrices(){setPriceLoading(true);
     for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
-      if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
+      if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price}),_dayChange:r.changes||0,_dayChangePct:r.changesPercentage||0};
         return Object.assign({},prev,updates)});
         // Fetch dividend from Finnhub if missing
         if(!c.divPerShare||c.divPerShare===0){
@@ -1434,13 +1436,13 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_dayChangePct:r.changesPercentage||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
         var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,_dayChangePct:f._dayChangePct||0,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -3368,7 +3370,7 @@ function TrackerApp(props){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
-    var _chart=useState(["revenue"]),chartSel=_chart[0],setChartSel=_chart[1];
+    var _chart=finChartSel,chartSel=_chart,setChartSel=setFinChartSel;
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
     var CHART_COLORS=["#1cb0f6","#58cc02","#ff9600","#ce82ff","#ff4b4b","#ffc800","#3B82F6","#EC4899","#14B8A6","#8B5CF6","#EF4444","#F59E0B","#6366F1","#10B981"];
@@ -3388,6 +3390,7 @@ function TrackerApp(props){
     var _allDates={};if(data){["income","balance","cashflow"].forEach(function(st){(data[st]||[]).forEach(function(r){if(r.date)_allDates[r.date]=true})})}
     var dates=Object.keys(_allDates).sort();
     if(dates.length===0)dates=rows.map(function(r){return r.date}).filter(Boolean);
+    var hovDate=hov||(dates.length>0?dates[dates.length-1]:null);
     var chartSeries=chartSel.map(function(key,si){
       var def=chartItems.find(function(ci){return ci.k===key})||{k:key,l:key};
       var pts=dates.map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
@@ -3461,19 +3464,19 @@ function TrackerApp(props){
                     if(gMn<0){barH=Math.abs(val)/gRange*plotH}
                     var y=val>=0?zeroY-barH:zeroY;
                     var bx=groupX+(si*(barW2+1));
-                    var isHov2=hov===dt;
+                    var isHov2=hovDate===dt;
                     return<rect key={s.key} x={bx} y={val>=0?zeroY-(val-Math.max(gMn,0))/gRange*plotH:zeroY} width={barW2} height={Math.max(Math.abs(val-(gMn>=0?gMn:0))/gRange*plotH,2)} rx={2} fill={isHov2?s.color:s.color+"90"} style={{transition:"fill .15s",animation:"fadeInFast .3s ease both",animationDelay:(di*30+si*60)+"ms"}}/>})}
                   {/* Date label */}
-                  <text x={groupX+groupW/2} y={cH-4} textAnchor="middle" fill={hov===dt?K.txt:K.dim} fontSize={per==="quarter"?7:9} fontWeight={hov===dt?600:400} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[di]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>
+                  <text x={groupX+groupW/2} y={cH-4} textAnchor="middle" fill={hovDate===dt?K.txt:K.dim} fontSize={per==="quarter"?7:9} fontWeight={hovDate===dt?600:400} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[di]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>
                   {/* Hover zone */}
-                  <rect x={groupX-2} y={pad.t} width={groupW+4} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}} onMouseLeave={function(){setHov(null)}}/>
+                  <rect x={groupX-2} y={pad.t} width={groupW+4} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}}/>
                 </g>})}
             </svg>
             {/* Hover tooltip */}
-            {hov&&(function(){var hi=dates.indexOf(hov);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
+            {hovDate&&(function(){var hi=dates.indexOf(hovDate);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
               return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hov:hov.substring(0,4)}</div>
-                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hov});if(!pt)return null;
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hovDate:hovDate.substring(0,4)}</div>
+                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hovDate});if(!pt)return null;
                   var prev=s.pts[s.pts.indexOf(pt)-1];var yoy=prev&&prev.val!==0?((pt.val-prev.val)/Math.abs(prev.val)*100):null;
                   return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                     <span style={{width:6,height:6,borderRadius:2,background:s.color,flexShrink:0}}/>
@@ -4142,7 +4145,6 @@ function TrackerApp(props){
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
     var ht=hubTab,setHt=setHubTab;
-    var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
     var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
     var _lensLoading=useState(false),lensLoading=_lensLoading[0],setLensLoading=_lensLoading[1];
     // Auto-fetch financial metrics when Lenses tab is opened
@@ -4681,7 +4683,7 @@ function TrackerApp(props){
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
                 {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
               ]},
-            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:4,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:0,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
               metrics:[
                 {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
                 {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
@@ -4689,7 +4691,7 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
               ]},
-            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:8,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
+            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:0,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
               metrics:[
                 {id:"roic",label:"Return on Capital",sp500:15,unit:"%",weight:35,desc:"The first pillar of the Magic Formula — high ROIC = good business"},
                 {id:"netMargin",label:"Earnings Yield",sp500:12,unit:"%",weight:35,desc:"The second pillar — high earnings yield = bargain price"},
@@ -4697,7 +4699,7 @@ function TrackerApp(props){
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
               ]},
-            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:12,quote:"Know what you own, and know why you own it.",
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",
               metrics:[
                 {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
@@ -4705,7 +4707,7 @@ function TrackerApp(props){
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
               ]},
-            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:16,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
+            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:0,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
               metrics:[
                 {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:25,desc:"Growing earnings = rising stock price (first play)"},
                 {id:"netMargin",label:"Net Margin Expansion",sp500:12,unit:"%",weight:20,desc:"Expanding margins = multiple expansion (second play)"},
@@ -4714,7 +4716,7 @@ function TrackerApp(props){
                 {id:"fcfConversion",label:"Cash Generation",sp500:85,unit:"%",weight:10,desc:"Real cash flow backing earnings growth"},
                 {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:10,desc:"Durable margins through cycles"}
               ]},
-            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:20,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
+            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:0,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
               metrics:[
                 {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
@@ -6218,7 +6220,7 @@ function TrackerApp(props){
       // Portfolio Character — shared classification
       var portCharacter=classifyPortfolio(portfolio);
       // Notable movers (any holding with position data)
-      var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
+      var movers=portfolio.filter(function(c2){var p2=c2.position||{};return p2.currentPrice>0}).map(function(c2){var p2=c2.position;return{ticker:c2.ticker,id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice,dayChg:c2._dayChangePct||0,dayAbs:c2._dayChange||0,hasPos:p2.avgCost>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
       // Upcoming earnings
       var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
@@ -6279,11 +6281,15 @@ function TrackerApp(props){
                   <span style={{marginLeft:"auto",fontSize:9,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
             {/* Notable movers */}
             {movers.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Your Holdings</div>
-              {movers.slice(0,5).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700}}>Your Holdings</div>
+                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}><span style={{width:50,textAlign:"right"}}>Today</span><span style={{width:50,textAlign:"right"}}>Total</span></div></div>
+              {movers.slice(0,6).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"20"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
-                <span style={{marginLeft:"auto",fontSize:11,fontWeight:600,color:m.ret>=0?K.grn:K.red,fontFamily:fm}}>{m.ret>=0?"+":""}{m.ret.toFixed(1)}%</span></div>})}</div>}
+                <span style={{marginLeft:"auto"}}/>
+                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg>0?"+":""}{m.dayChg.toFixed(1)}%</span>
+                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:500,color:m.hasPos?(m.ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{m.hasPos?(m.ret>=0?"+":"")+m.ret.toFixed(1)+"%":"—"}</span></div>})}</div>}
             {/* Insider signals */}
             {insiderSignals.length>0&&<div>
               <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
@@ -6971,7 +6977,7 @@ function TrackerApp(props){
         <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:11,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
