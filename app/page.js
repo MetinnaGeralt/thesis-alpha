@@ -612,12 +612,12 @@ function mkS(K){
   var th=_isThesis;
   var br=th?999:8;
   var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
-  var cardShadow=th?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"none";
+  var cardShadow=th?(isDark?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.07), 0 0 0 1px rgba(0,0,0,0.04)"):"none";
   return{
     btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:"1px solid "+(th?"rgba(255,255,255,0.1)":K.bdr),color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
     btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"11px 28px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 20px "+K.prim+"60":"none",letterSpacing:th?"-0.2px":0}),
     btnD:Object.assign({},btnBase,{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
-    btnChk:Object.assign({},btnBase,{background:K.acc+"18",border:"1px solid "+K.acc+"40",color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:600}),
+    btnChk:Object.assign({},btnBase,{background:isDark?K.acc+"18":K.acc+"22",border:"1px solid "+K.acc+(isDark?"40":"60"),color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:isDark?"none":"inset 0 1px 0 rgba(255,255,255,0.6)"}),
     sec:{fontSize:th?11:11,letterSpacing:th?0.5:1,textTransform:"uppercase",color:th?K.acc:K.dim,marginBottom:th?16:12,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",gap:8},
     badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 14px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
     dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
@@ -1014,8 +1014,8 @@ function TrackerApp(props){
     var focusS=isThesis?K.acc+"30":isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
     var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
     var cardR=isThesis?"20px":"6px";
-    var cardSh=isThesis?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 2px 16px rgba(107,76,230,0.1), 0 1px 6px rgba(0,0,0,0.06)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 4px 20px rgba(0,0,0,.08)");
-    var cardShHov=isThesis?(isDark?"0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)":"0 16px 48px rgba(107,76,230,0.2), 0 4px 16px rgba(0,0,0,0.1)"):(isDark?"0 8px 32px rgba(0,0,0,.3)":"0 8px 32px rgba(0,0,0,.12)");
+    var cardSh=isThesis?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.08), 0 0 0 1px rgba(0,0,0,0.04)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,0.04)");
+    var cardShHov=isThesis?(isDark?"0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)":"0 12px 40px rgba(0,0,0,0.14), 0 4px 16px rgba(107,76,230,0.12), 0 0 0 1px rgba(0,0,0,0.06)"):(isDark?"0 8px 32px rgba(0,0,0,.3)":"0 8px 32px rgba(0,0,0,.12)");
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
@@ -2396,7 +2396,7 @@ function TrackerApp(props){
           {!isWatchlist&&hasPrice&&pos.avgCost>0&&<div style={{fontSize:9,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</div>}
           {!hasPrice&&d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {!hasPrice&&c.earningsDate==="TBD"&&<div style={{fontSize:9,color:sideDim2,fontFamily:fm}}>TBD</div>}
-          <div style={{width:18,height:4,borderRadius:2,background:h.c,opacity:0.8,marginTop:1}}/></div></div>})}</div>
+          <div style={{width:20,height:4,borderRadius:2,background:h.c,opacity:isDark?0.8:1,marginTop:1,boxShadow:isDark?"none":"0 0 0 1px "+h.c+"30"}}/></div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
       {isMobile&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.mid,cursor:"pointer",fontSize:11,fontFamily:fm,width:"100%"}}>
         {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
@@ -2439,7 +2439,7 @@ function TrackerApp(props){
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:12,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-alert"?"pointer":"default"}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
         <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:12,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:10,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:10,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
     <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-    <button onClick={function(){props.onLogout()}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Logout</button>
+    <button onClick={function(){props.onLogout()}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,color:K.dim}} title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
@@ -6197,7 +6197,7 @@ function TrackerApp(props){
       // Earnings urgency color
       var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
       var earningsTomorrow=upcoming.filter(function(c2){return dU(c2.earningsDate)===1}).length;
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:20,overflow:"hidden",maxWidth:"100%"}}>
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden",maxWidth:"100%"}}>
         {/* Header */}
         <div style={{padding:isMobile?"16px 16px 12px":"20px 24px 16px",borderBottom:"1px solid "+K.bdr}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
@@ -6209,7 +6209,7 @@ function TrackerApp(props){
               <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
           {/* Left column — Market Intel */}
-          <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
+          <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+(isDark?K.bdr:K.bdr2)}}>
             {/* Upcoming earnings */}
             {upcoming.length>0&&<div style={{marginBottom:14}}>
               <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:600,marginBottom:8}}>{earningsToday>0?"REPORTING TODAY":earningsTomorrow>0?"REPORTING TOMORROW":"EARNINGS THIS WEEK"}</div>
@@ -6292,19 +6292,19 @@ function TrackerApp(props){
       var isUp=totalReturn>=0;
       var best=null,worst=null;held.forEach(function(c){var pct=(c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100;if(!best||pct>best.pct)best={ticker:c.ticker,pct:pct};if(!worst||pct<worst.pct)worst={ticker:c.ticker,pct:pct}});
       return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?8:16,marginBottom:20}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Value</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.15}}>${totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
           <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Cost: ${totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Return</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
           <div style={{fontSize:10,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}${totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Best</div>
           <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.15}}>{best?best.ticker:"—"}</div>
           <div style={{fontSize:10,color:K.grn,marginTop:4,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Worst</div>
           <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.red,fontFamily:fm,lineHeight:1.15}}>{worst?worst.ticker:"—"}</div>
           <div style={{fontSize:10,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
