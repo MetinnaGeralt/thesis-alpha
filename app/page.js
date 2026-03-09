@@ -1915,19 +1915,31 @@ function TrackerApp(props){
       if(divYld>0){healthItems.push([divYld.toFixed(2)+"%","Div Yield"]);healthItems.push(["$"+annDiv.toFixed(2),"Annual Div/Share"])}
       if(healthItems.length>0){html+='<div class="fc"><div class="fch">Balance Sheet & Income</div>';healthItems.forEach(function(x){html+='<div class="fr"><span class="fk">'+x[1]+'</span><span class="fv">'+x[0]+'</span></div>'});html+='</div>'}
       html+='</div>'}
-    if(c.kpis.length>0){html+='<div class="sh"><span class="sh-n">3</span>KPI Scorecard</div><table><thead><tr><th>Metric</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th style="text-align:center">Status</th></tr></thead><tbody>';
+    // Valuation Framework
+    var valPdf=c.valuation||{metrics:[]};
+    if(valPdf.metrics.length>0){html+='<div class="sh"><span class="sh-n">3</span>Valuation Framework</div>';
+      var vResults=valPdf.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;var cur=getValMetricValue(def,snap,pos.currentPrice||0,c);var pass=cur!=null&&vm.threshold>0?(vm.rule==="gte"?cur>=vm.threshold:cur<=vm.threshold):null;return{label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:cur,pass:pass}}).filter(Boolean);
+      var vPass=vResults.filter(function(r){return r.pass===true}).length;var vTotal=vResults.filter(function(r){return r.pass!=null}).length;
+      var vVerdict=vTotal===0?null:vPass>=vTotal*0.75?"Attractive":vPass>=vTotal*0.5?"Fair":"Expensive";
+      var vColor=vVerdict==="Attractive"?"#16a34a":vVerdict==="Fair"?"#d97706":"#dc2626";
+      if(vVerdict)html+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><span style="font-size:18px;font-weight:800;color:'+vColor+';font-family:JetBrains Mono,monospace">'+vVerdict+'</span><span style="font-size:10px;color:#9ca3af">'+vPass+'/'+vTotal+' criteria met</span></div>';
+      html+='<table><thead><tr><th>Metric</th><th style="text-align:right">Threshold</th><th style="text-align:right">Current</th><th style="text-align:center">Pass</th></tr></thead><tbody>';
+      vResults.forEach(function(r){var clr=r.pass===true?"#16a34a":r.pass===false?"#dc2626":"#9ca3af";
+        html+='<tr><td style="font-weight:600">'+r.label+'</td><td class="mono" style="text-align:right">'+(r.rule==="gte"?"\u2265":"\u2264")+' '+r.threshold+r.unit+'</td><td class="mono" style="text-align:right;font-weight:700;color:'+clr+'">'+(r.current!=null?r.current.toFixed(r.unit==="%"?1:r.current<1?2:1)+r.unit:"\u2014")+'</td><td style="text-align:center"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+clr+'"></span></td></tr>'});
+      html+='</tbody></table>'}
+    if(c.kpis.length>0){html+='<div class="sh"><span class="sh-n">'+(valPdf.metrics.length>0?4:3)+'</span>KPI Scorecard</div><table><thead><tr><th>Metric</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th style="text-align:center">Status</th></tr></thead><tbody>';
       c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stC=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stL=st==="met"?"MET":st==="missed"?"MISSED":"PENDING";var mDef=METRIC_MAP[k.metricId||""]||{};
         html+='<tr><td style="font-weight:600">'+esc(mDef.label||k.name)+'</td><td style="text-align:right" class="mono">'+(k.rule==="gte"?"\u2265":k.rule==="lte"?"\u2264":"=")+' '+k.value+(mDef.unit||"")+'</td><td style="text-align:right;font-weight:700;color:'+stC+'" class="mono">'+(k.lastResult?k.lastResult.actual:'\u2014')+'</td><td style="text-align:center"><span class="mono" style="font-size:8px;font-weight:800;color:'+stC+';background:'+stC+'10;padding:2px 8px;border-radius:3px">'+stL+'</span></td></tr>'});
       html+='</tbody></table>'}
-    if(activeMoats.length>0||moatSvg){html+='<div class="sh"><span class="sh-n">4</span>Moat Analysis</div>';
+    if(activeMoats.length>0||moatSvg){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Moat Analysis</div>';
       if(activeMoats.length>0){html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;html+='<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid '+t.color+'30;background:'+t.color+'06"><span style="font-size:11px;font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="display:flex;gap:2px">';for(var di=0;di<5;di++){html+='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(di<str?t.color:'#e5e7eb')+'"></span>'}html+='</span></div>'});html+='</div>'}
       if(moatSvg){html+=moatSvg;if(c._moatCache)html+='<div style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;margin-top:6px">Composite: '+c._moatCache.composite.toFixed(1)+'/10</div>'}}
-    if(convSvg||conv>0){html+='<div class="sh"><span class="sh-n">5</span>Conviction History</div>';if(convSvg)html+=convSvg;
+    if(convSvg||conv>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Conviction History</div>';if(convSvg)html+=convSvg;
       if(c.convictionHistory&&c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];html+='<div style="display:flex;gap:20px;font-size:9px;color:#6b7280;margin-top:8px;font-family:JetBrains Mono,monospace"><span>Start: '+first.rating+'/10</span><span>Current: '+last.rating+'/10</span><span>Trend: '+(last.rating>first.rating?'<span class="grn">Rising</span>':last.rating<first.rating?'<span class="red">Falling</span>':'Stable')+'</span></div>'}}
-    if(scenarios.length>0){html+='<div class="sh"><span class="sh-n">6</span>Stress Test</div>';scenarios.forEach(function(s){html+='<div class="sc"><div class="scc">'+(s.category||"").toUpperCase()+'</div><div class="scq">'+esc(s.prompt)+'</div><div class="sca">'+esc(s.response)+'</div></div>'})}
+    if(scenarios.length>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Stress Test</div>';scenarios.forEach(function(s){html+='<div class="sc"><div class="scc">'+(s.category||"").toUpperCase()+'</div><div class="scq">'+esc(s.prompt)+'</div><div class="sca">'+esc(s.response)+'</div></div>'})}
     var decs=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)});
-    if(c.earningsHistory&&c.earningsHistory.length>0){html+='<div class="sh"><span class="sh-n">7</span>Earnings History</div><table><thead><tr><th>Quarter</th><th>Summary</th></tr></thead><tbody>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<tr><td class="mono" style="font-weight:700;white-space:nowrap">'+esc(e.quarter)+'</td><td style="font-size:10px;color:#4b5563;max-width:380px">'+esc((e.summary||"").substring(0,250))+'</td></tr>'});html+='</tbody></table>'}
-    if(decs.length>0){html+='<div class="sh"><span class="sh-n">8</span>Decision Ledger</div><table><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';decs.slice(0,8).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";html+='<tr><td class="mono" style="white-space:nowrap;font-size:10px">'+esc((d.date||"").substring(0,10))+'</td><td style="font-weight:800;color:'+clr+'" class="mono">'+esc(d.action||"")+'</td><td style="font-size:10px;color:#4b5563;max-width:300px">'+esc((d.reasoning||"").substring(0,180))+'</td><td class="mono" style="font-weight:700;color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+esc(d.outcome||"\u2014")+'</td></tr>'});html+='</tbody></table>'}
+    if(c.earningsHistory&&c.earningsHistory.length>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Earnings History</div><table><thead><tr><th>Quarter</th><th>Summary</th></tr></thead><tbody>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<tr><td class="mono" style="font-weight:700;white-space:nowrap">'+esc(e.quarter)+'</td><td style="font-size:10px;color:#4b5563;max-width:380px">'+esc((e.summary||"").substring(0,250))+'</td></tr>'});html+='</tbody></table>'}
+    if(decs.length>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Decision Ledger</div><table><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';decs.slice(0,8).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";html+='<tr><td class="mono" style="white-space:nowrap;font-size:10px">'+esc((d.date||"").substring(0,10))+'</td><td style="font-weight:800;color:'+clr+'" class="mono">'+esc(d.action||"")+'</td><td style="font-size:10px;color:#4b5563;max-width:300px">'+esc((d.reasoning||"").substring(0,180))+'</td><td class="mono" style="font-weight:700;color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+esc(d.outcome||"\u2014")+'</td></tr>'});html+='</tbody></table>'}
     html+='<div class="footer"><div><div style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:8px;color:#9ca3af;margin-top:4px;max-width:320px;line-height:1.5">Generated for personal research purposes. Not financial advice. Data from third-party providers may contain errors. Past performance does not predict future results.</div></div><div style="text-align:right"><div class="mono" style="font-size:10px;font-weight:700">'+c.ticker+'</div><div style="font-size:9px;color:#6b7280">'+today+'</div></div></div>';
     html+='</div></body></html>';
     var w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},800)}}
@@ -2151,7 +2163,65 @@ function TrackerApp(props){
           <div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
           <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave}>Save Plan</button></div></div>}
     </Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal};var C=map[modal.type];return C?<C/>:null}
+  // ── Valuation Modal ──
+  var VALUATION_METRICS=[
+    {id:"pe",label:"P/E Ratio",desc:"Price to earnings. Lower = cheaper relative to profits.",unit:"x",defaultRule:"lte",defaultVal:25,snap:"pe",calc:null},
+    {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;var g=s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0;return(pe>0&&g>1)?(pe/g):null}},
+    {id:"pb",label:"P/B Ratio",desc:"Price to book value. Below 1 means trading below asset value.",unit:"x",defaultRule:"lte",defaultVal:3,snap:"pb",calc:null},
+    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:null,calc:function(s,p){var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(fcf/p*100):null}},
+    {id:"earningsYield",label:"Earnings Yield",desc:"Inverse of P/E (earnings/price). Compare to bond yields.",unit:"%",defaultRule:"gte",defaultVal:5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;return pe>0?(1/pe*100):null}},
+    {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:null,calc:null},
+    {id:"divYield",label:"Dividend Yield",desc:"Annual dividend / price. Income return on investment.",unit:"%",defaultRule:"gte",defaultVal:2,snap:null,calc:function(s,p,c){var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return(dps>0&&p>0)?(dps*mult/p*100):null}},
+    {id:"priceToFcf",label:"Price / FCF",desc:"Price to free cash flow per share. Lower = cheaper.",unit:"x",defaultRule:"lte",defaultVal:20,snap:null,calc:function(s,p){var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(p/fcf):null}},
+    {id:"grossMargin",label:"Gross Margin",desc:"Pricing power indicator. Higher = stronger moat.",unit:"%",defaultRule:"gte",defaultVal:40,snap:"grossMargin",calc:null},
+    {id:"roic",label:"ROIC",desc:"Return on invested capital. Measures capital efficiency.",unit:"%",defaultRule:"gte",defaultVal:15,snap:"roic",calc:null},
+    {id:"debtEquity",label:"Debt / Equity",desc:"Financial leverage. Lower = less risk.",unit:"x",defaultRule:"lte",defaultVal:1,snap:"debtEquity",calc:null}
+  ];
+  function getValMetricValue(vm,snap,price,company){
+    if(vm.calc){var v=vm.calc(snap,price,company);return v}
+    if(vm.snap&&snap[vm.snap]){var sv=snap[vm.snap];return sv.numVal!=null?sv.numVal:parseFloat(String(sv.value).replace(/[^0-9.\-]/g,""))||null}
+    return null}
+  function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||0;
+    var existing=c.valuation||{metrics:[]};
+    var _vm=useState(existing.metrics.length>0?existing.metrics:VALUATION_METRICS.slice(0,4).map(function(m){return{id:m.id,threshold:m.defaultVal,rule:m.defaultRule}})),vMetrics=_vm[0],setVMetrics=_vm[1];
+    var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
+    function toggleMetric(id){setVMetrics(function(prev){var exists=prev.find(function(m){return m.id===id});if(exists)return prev.filter(function(m){return m.id!==id});var def=VALUATION_METRICS.find(function(m){return m.id===id});return prev.concat([{id:id,threshold:def.defaultVal,rule:def.defaultRule}])})}
+    function updateThreshold(id,val){setVMetrics(function(prev){return prev.map(function(m){return m.id===id?Object.assign({},m,{threshold:parseFloat(val)||0}):m})})}
+    function updateRule(id,rule){setVMetrics(function(prev){return prev.map(function(m){return m.id===id?Object.assign({},m,{rule:rule}):m})})}
+    function doSave(){upd(selId,function(prev){return Object.assign({},prev,{valuation:{metrics:vMetrics,updatedAt:new Date().toISOString()}})});setModal(null)}
+    var activeIds=vMetrics.map(function(m){return m.id});
+    return<Modal title={"Valuation Framework \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={560} K={K}>
+      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Define what "good value" means to you. Pick metrics and set your thresholds \u2014 the system will tell you when the numbers match your criteria.</div>
+      {/* Active metrics */}
+      {vMetrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
+        var current=getValMetricValue(def,snap,price,c);
+        var pass=current!=null&&vm.threshold>0?(vm.rule==="gte"?current>=vm.threshold:current<=vm.threshold):null;
+        return<div key={vm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr,marginBottom:8}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600,color:K.txt}}>{def.label}</div>
+            <div style={{fontSize:10,color:K.dim,marginTop:2}}>{def.desc}</div></div>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+            <select value={vm.rule} onChange={function(e){updateRule(vm.id,e.target.value)}} style={{background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 6px",fontSize:10,fontFamily:fm}}>
+              <option value="lte">{"\u2264"}</option><option value="gte">{"\u2265"}</option></select>
+            <input type="number" value={vm.threshold} onChange={function(e){updateThreshold(vm.id,e.target.value)}} style={{width:56,background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:11,fontFamily:fm,textAlign:"right"}}/>
+            <span style={{fontSize:9,color:K.dim,width:14}}>{def.unit}</span>
+            {current!=null&&<span style={{fontSize:11,fontWeight:700,color:pass?K.grn:K.red,fontFamily:fm,minWidth:44,textAlign:"right"}}>{current.toFixed(def.unit==="%"?1:current<1?2:1)}</span>}
+            {current==null&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,minWidth:44,textAlign:"right"}}>{"\u2014"}</span>}
+            <button onClick={function(){toggleMetric(vm.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:2}}>{"\u00D7"}</button></div></div>})}
+      {/* Add more */}
+      {!adding&&<button onClick={function(){setAdding(true)}} style={{background:"none",border:"1px dashed "+K.acc+"40",borderRadius:8,color:K.acc,fontSize:11,cursor:"pointer",padding:"8px 14px",width:"100%",fontFamily:fm}}>+ Add metric</button>}
+      {adding&&<div style={{border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 14px",marginTop:4}}>
+        <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:8}}>Choose a metric</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{VALUATION_METRICS.filter(function(m){return activeIds.indexOf(m.id)<0}).map(function(m){return<div key={m.id} onClick={function(){toggleMetric(m.id);setAdding(false)}} style={{padding:"8px 10px",borderRadius:6,border:"1px solid "+K.bdr,cursor:"pointer",background:K.bg}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+          <div style={{fontSize:11,fontWeight:600,color:K.txt}}>{m.label}</div>
+          <div style={{fontSize:9,color:K.dim}}>{m.desc.substring(0,50)}</div></div>})}</div>
+        <button onClick={function(){setAdding(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",marginTop:6}}>Cancel</button></div>}
+      {/* Save */}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:16}}>
+        <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
+        <button style={S.btnP} onClick={doSave}>Save Framework</button></div>
+    </Modal>}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -3745,6 +3815,36 @@ function TrackerApp(props){
             <IC name="shield" size={20} color={K.acc}/>
             <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
             <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
+        </div>})()}
+        {/* ── VALUATION ── */}
+        {(function(){var val=c.valuation||{metrics:[]};var snap2=c.financialSnapshot||{};var price2=(c.position||{}).currentPrice||0;
+          var results=val.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
+            var current=getValMetricValue(def,snap2,price2,c);var pass=current!=null&&vm.threshold>0?(vm.rule==="gte"?current>=vm.threshold:current<=vm.threshold):null;
+            return{id:vm.id,label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:current,pass:pass}}).filter(Boolean);
+          var passCount=results.filter(function(r){return r.pass===true}).length;var failCount=results.filter(function(r){return r.pass===false}).length;
+          var totalJudged=passCount+failCount;var verdict=totalJudged===0?null:passCount>=totalJudged*0.75?"Attractive":passCount>=totalJudged*0.5?"Fair":"Expensive";
+          var verdictColor=verdict==="Attractive"?K.grn:verdict==="Fair"?K.amb:verdict==="Expensive"?K.red:K.dim;
+          return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>VALUATION</div>
+            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit framework":"Set up"}</button></div>
+          {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+            {verdict&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16,fontWeight:800,color:verdictColor,fontFamily:fm}}>{verdict}</span>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{passCount}/{totalJudged} criteria met</span></div>
+              <div style={{display:"flex",gap:3}}>{results.map(function(r){return<div key={r.id} style={{width:8,height:8,borderRadius:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
+            {results.map(function(r,ri){return<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:ri>0?"1px solid "+K.bdr+"30":"none"}}>
+              <span style={{fontSize:11,color:K.mid,flex:1}}>{r.label}</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{r.rule==="gte"?"\u2265":"\u2264"}{r.threshold}{r.unit}</span>
+              <span style={{fontSize:12,fontWeight:700,color:r.pass===true?K.grn:r.pass===false?K.red:K.dim,fontFamily:fm,minWidth:48,textAlign:"right"}}>{r.current!=null?r.current.toFixed(r.unit==="%"?1:r.current<1?2:1)+r.unit:"\u2014"}</span>
+              <span style={{width:6,height:6,borderRadius:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40",flexShrink:0}}/></div>})}
+            {val.updatedAt&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:8,textAlign:"right"}}>Framework set {fD(val.updatedAt)}</div>}
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"valuation"})}}>
+            <IC name="chart" size={20} color={K.acc}/>
+            <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4,marginTop:6}}>Define your valuation framework</div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you \u2014 FCF yield, P/E, PEG, earnings yield \u2014 and set your own thresholds for what constitutes good value.</div></div>}
         </div>})()}
         {/* ── OWNER'S NUMBERS ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
