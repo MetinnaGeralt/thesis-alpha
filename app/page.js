@@ -612,7 +612,7 @@ function mkS(K){
   var th=_isThesis;
   var br=th?999:8;
   var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
-  var cardShadow=th?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 2px 16px rgba(107,76,230,0.1), 0 1px 6px rgba(0,0,0,0.06)"):"none";
+  var cardShadow=th?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"none";
   return{
     btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:"1px solid "+(th?"rgba(255,255,255,0.1)":K.bdr),color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
     btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"11px 28px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 20px "+K.prim+"60":"none",letterSpacing:th?"-0.2px":0}),
