@@ -5094,8 +5094,8 @@ function TrackerApp(props){
     var chartClasses=[];var seenClasses={};chartData.forEach(function(d){Object.keys(d.values||{}).forEach(function(k){if(!seenClasses[k]){seenClasses[k]=true;chartClasses.push(k)}})});
     chartClasses=ASSET_CLASSES.filter(function(ac){return seenClasses[ac.id]});
 
-    // SVG stacked area chart
-    var cW=700,cH=260,padL=60,padR=20,padT=20,padB=30;
+    // SVG stacked area chart — responsive width
+    var cW=isMobile?320:700,cH=isMobile?200:260,padL=50,padR=12,padT=16,padB=28;
     var plotW=cW-padL-padR,plotH=cH-padT-padB;
     var maxTotal=Math.max.apply(null,chartData.map(function(d){return d.total||0}).concat([1]));
 
@@ -5185,47 +5185,47 @@ function TrackerApp(props){
 
     function fmtVal(v){if(v>=1e6)return(v/1e6).toFixed(2)+"M";if(v>=1e3)return(v/1e3).toFixed(1)+"k";return Math.round(v).toLocaleString()}
 
-    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
-      <div style={{padding:"28px 0 20px"}}>
-        <h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>All Assets</h1>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}>
+        <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh}}>All Assets</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>Your complete net worth — every asset class in one view</p></div>
 
       {/* Summary Cards */}
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>NET WORTH</div>
-          <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(totalValue)}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{positions.length+(stockValue>0&&!hasManualStocks?1:0)} positions</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>ASSET CLASSES</div>
-          <div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{allocData.length}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>diversified across</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>LARGEST HOLDING</div>
-          <div style={{fontSize:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].label:"—"}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{allocData[0]?allocData[0].pct.toFixed(1)+"%":"Add assets"}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>STOCKS</div>
-          <div style={{fontSize:14,fontWeight:700,color:K.grn,fontFamily:fm}}>{stockValue>0?fmtVal(stockValue+(hasManualStocks?0:0)):"—"}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{!hasManualStocks&&stockValue>0?"from ThesisAlpha portfolio":"—"}</div></div>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?8:12,marginBottom:20}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>NET WORTH</div>
+          <div style={{fontSize:isMobile?17:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.1}}>{fmtVal(totalValue)}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3}}>{positions.length+(stockValue>0&&!hasManualStocks?1:0)} positions</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>CLASSES</div>
+          <div style={{fontSize:isMobile?17:22,fontWeight:700,color:K.acc,fontFamily:fm,lineHeight:1.1}}>{allocData.length}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3}}>diversified across</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>LARGEST</div>
+          <div style={{fontSize:isMobile?13:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm,lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{allocData[0]?allocData[0].label:"—"}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3}}>{allocData[0]?allocData[0].pct.toFixed(1)+"%":"Add assets"}</div></div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>STOCKS</div>
+          <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.2}}>{stockValue>0?fmtVal(stockValue):"—"}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3}}>{!hasManualStocks&&stockValue>0?"ThesisAlpha":"—"}</div></div>
       </div>
 
       {/* Stacked Chart + Pie */}
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 220px",gap:20,marginBottom:24}}>
         {/* Stacked Area Chart */}
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",marginBottom:14,flexDirection:isMobile?"column":"row",gap:isMobile?8:0}}>
             <div style={S.sec}><IC name="chart" size={14} color={K.dim}/>Portfolio Value Over Time</div>
-            <div style={{display:"flex",gap:3}}>
+            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
               {["M3","M6","Y1","Y2","Y5","ALL"].map(function(r){return<button key={r} onClick={function(){setChartRange(r)}}
-                style={{padding:"3px 8px",fontSize:9,fontFamily:fm,background:chartRange===r?K.acc+"18":"transparent",color:chartRange===r?K.acc:K.dim,border:"1px solid "+(chartRange===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
+                style={{padding:"4px 10px",fontSize:isMobile?11:9,fontFamily:fm,background:chartRange===r?K.acc+"18":"transparent",color:chartRange===r?K.acc:K.dim,border:"1px solid "+(chartRange===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
 
           {chartData.length<2?<div style={{padding:"60px 20px",textAlign:"center"}}>
             <div style={{fontSize:32,marginBottom:12}}>{String.fromCodePoint(0x1F4C8)}</div>
             <div style={{fontSize:13,color:K.dim}}>Add assets below to start tracking your net worth.</div>
             <div style={{fontSize:11,color:K.dim,marginTop:4}}>The chart builds over time as monthly snapshots are recorded.</div></div>:
-          <div style={{overflowX:"auto"}}>
-            <svg width={cW} height={cH} style={{display:"block"}} onMouseLeave={function(){setHovIdx(null)}}>
+          <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+            <svg width={cW} height={cH} viewBox={"0 0 "+cW+" "+cH} style={{display:"block",minWidth:isMobile?280:undefined}} onMouseLeave={function(){setHovIdx(null)}}>
               <defs>{chartClasses.map(function(ac){return<linearGradient key={ac.id} id={"ag-"+ac.id} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={ac.color} stopOpacity="0.7"/>
                 <stop offset="100%" stopColor={ac.color} stopOpacity="0.2"/></linearGradient>})}</defs>
@@ -5277,8 +5277,8 @@ function TrackerApp(props){
         <button onClick={function(){setAddOpen(!addOpen);setEditId(null)}} style={Object.assign({},S.btnP,{fontSize:11,padding:"6px 16px"})}>{addOpen?"Cancel":"+ Add Asset"}</button></div>
 
       {/* Add form */}
-      {addOpen&&<div style={{background:K.card,border:"1px solid "+K.acc+"40",borderRadius:12,padding:"20px 24px",marginBottom:16}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+      {addOpen&&<div style={{background:K.card,border:"1px solid "+K.acc+"40",borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:16}}>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>ASSET CLASS</div>
             <select value={form.classId} onChange={function(e){setForm(Object.assign({},form,{classId:e.target.value}))}}
               style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}>
@@ -5286,7 +5286,7 @@ function TrackerApp(props){
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NAME</div>
             <input value={form.name} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder="e.g. Bitcoin, Gold ETF, Rental property..."
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 2fr",gap:12,marginBottom:12}}>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 2fr",gap:12,marginBottom:12}}>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>VALUE</div>
             <input value={form.value} onChange={function(e){setForm(Object.assign({},form,{value:e.target.value}))}} placeholder="100000" type="number"
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>
@@ -5294,12 +5294,19 @@ function TrackerApp(props){
             <select value={form.currency} onChange={function(e){setForm(Object.assign({},form,{currency:e.target.value}))}}
               style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}>
               {["USD","EUR","NOK","GBP","SEK","DKK","CHF","JPY","CAD","AUD"].map(function(c2){return<option key={c2} value={c2}>{c2}</option>})}</select></div>
+          {isMobile?null:<div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>OWNED SINCE</div>
+            <input value={form.startDate} onChange={function(e){setForm(Object.assign({},form,{startDate:e.target.value}))}} type="month"
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>}
+          {isMobile?null:<div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
+            <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>}</div>
+        {isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>OWNED SINCE</div>
             <input value={form.startDate} onChange={function(e){setForm(Object.assign({},form,{startDate:e.target.value}))}} type="month"
               style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
             <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/></div></div>}
         <button onClick={addPosition} style={Object.assign({},S.btnP,{width:"100%"})}>Add Asset</button></div>}
 
       {/* Auto-synced stocks card */}
