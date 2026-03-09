@@ -15,9 +15,7 @@ async function cloudLoad(userId){if(!supabase||!userId)return null;
     if(res.error||!res.data)return null;return res.data.data}catch(e){console.warn("Cloud load:",e);return null}}
 async function cloudSave(userId,payload){if(!supabase||!userId)return;
   try{await supabase.from("portfolios").upsert({user_id:userId,data:payload,updated_at:new Date().toISOString()},{onConflict:"user_id"})}catch(e){console.warn("Cloud save:",e)}}
-// Get current Supabase auth token for API calls
 async function getAuthToken(){if(!supabase)return null;try{var s=await supabase.auth.getSession();return s.data.session?s.data.session.access_token:null}catch(e){return null}}
-// Secure fetch wrapper — adds auth header
 async function authFetch(url,opts){var token=await getAuthToken();var headers=Object.assign({"Content-Type":"application/json"},opts.headers||{});if(token)headers["Authorization"]="Bearer "+token;return fetch(url,Object.assign({},opts,{headers:headers}))}
 
 // ═══ FMP (server proxy — profiles & prices) ═══
@@ -26,10 +24,10 @@ var _cache={};var CACHE_TTL=3600000;
 function cacheGet(k){var e=_cache[k];if(!e)return null;if(Date.now()-e.t>CACHE_TTL){delete _cache[k];return null}return e.d}
 function cacheSet(k,d){_cache[k]={d:d,t:Date.now()};return d}
 
-async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){//console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));//console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
+async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
 
 // ═══ FINNHUB (server proxy — earnings, metrics, news, analysts) ═══
-async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){//console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
+async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
 
 // ═══ AI (server proxy) ═══
 function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
@@ -236,33 +234,6 @@ function calcOwnerScore(cos){
   balP=Math.min(balP,15);
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
-// Shared portfolio character classification
-function classifyPortfolio(portfolio){
-  var styles={};var divPayerCount=0;var totalDivYield=0;var avgGrowth=0;var growthCount=0;
-  portfolio.forEach(function(c2){
-    var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
-    var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
-    var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
-    var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
-    if(yld>=2){divPayerCount++;totalDivYield+=yld}
-    var snap=c2.financialSnapshot||{};
-    if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}
-  });
-  var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
-  var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
-  var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
-  var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
-  var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
-  if(divDominant&&meanDivYield>=4)return"Income-Focused";
-  if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))return"Growth-Oriented";
-  if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))return"Value-Oriented";
-  if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))return"Quality Compounder";
-  if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))return"Income-Focused";
-  if(meanGrowth>20)return"Growth-Oriented";
-  if(divDominant)return"Income & Growth";
-  if(portfolio.length>=6)return"Diversified";
-  if(portfolio.length<=3)return"Concentrated";
-  return"Balanced"}
 function calcMastery(c){
   var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
   // Star 2: Thesis written (core + at least 1 section)
@@ -307,43 +278,25 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
       // Dividend data from Finnhub (free, reliable)
       var divData={lastDiv:0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
-      try{var fhDiv=await fetchDivFromFinnhub(t,pr.lastDiv);
+      try{var fhDiv=await fetchDivFromFinnhub(t);
         if(fhDiv&&fhDiv.payer){divData.divPerShare=fhDiv.divPerShare;divData.lastDiv=fhDiv.annualDiv||fhDiv.divPerShare;divData.divFrequency=fhDiv.divFrequency;divData.divYield=fhDiv.divYield}
       }catch(e){}
       // Fallback to FMP lastDiv if Finnhub missed it
       if(divData.divPerShare===0&&pr.lastDiv>0){divData.divPerShare=pr.lastDiv;divData.lastDiv=pr.lastDiv;divData.divFrequency="quarterly";divData.divYield=pr.price>0?pr.lastDiv*4/pr.price*100:0}
-      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,changes:pr.changes||0,changesPercentage:pr.changesPercentage||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
   return{error:"Not found — enter details manually"}}
-async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
-// Fetch daily quote from Finnhub (FREE — returns today's change reliably)
-async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+ticker);if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
+async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
-var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN","GLADHD","PRT"];
-async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
+async function fetchDivFromFinnhub(ticker){try{
   var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
   if(!met||!met.metric)return null;var m=met.metric;
   var annDiv=m["dividendPerShareAnnual"]||0;
   var divYield=m["dividendYieldIndicatedAnnual"]||0;
   if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
-  // Detect frequency
-  var freq="quarterly";var perPayment=annDiv>0?annDiv/4:0;
-  // Method 1: Known monthly payers
-  if(KNOWN_MONTHLY.indexOf(ticker.toUpperCase())>=0){freq="monthly";perPayment=annDiv/12}
-  // Method 2: Cross-reference FMP lastDiv (per-payment) with Finnhub annual
-  else if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){
-    var ratio=Math.round(annDiv/fmpLastDiv);
-    if(ratio>=10&&ratio<=14){freq="monthly";perPayment=annDiv/12}
-    else if(ratio>=3&&ratio<=5){freq="quarterly";perPayment=annDiv/4}
-    else if(ratio>=1.5&&ratio<=2.5){freq="semi";perPayment=annDiv/2}
-    else if(ratio<=1.2){freq="annual";perPayment=annDiv}
-  }
-  // Method 3: Finnhub sometimes has dividendsPerShareTTM which we can compare
-  else if(m["dividendsPerShareTTM"]&&m["dividendsPerShareTTM"]>0&&annDiv>0){
-    var ttmRatio=m["dividendsPerShareTTM"]/annDiv;
-    if(ttmRatio>0.9&&ttmRatio<1.1){/* roughly same = consistent quarterly or monthly, can't tell */}
-  }
-  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:freq}
+  // Estimate per-payment: most US stocks are quarterly
+  var perPayment=annDiv>0?annDiv/4:0;
+  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:"quarterly"}
 }catch(e){return null}}
 // Fetch dividend details from FMP
 async function fetchDividendInfo(ticker){try{
@@ -379,14 +332,14 @@ async function fetchFinancialStatements(ticker,period){
     // Primary: FMP (Starter plan — 300 req/min, 5yr history)
     var isQ=period==="quarter";var lim=isQ?20:5;
     var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
-    //console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
+    console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
     var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
     var _is=results[0],_bs=results[1],_cf=results[2];
     if(_is&&(_is._fmpError||!Array.isArray(_is)))_is=null;
     if(_bs&&(_bs._fmpError||!Array.isArray(_bs)))_bs=null;
     if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
     if((_is&&_is.length>0)||(_bs&&_bs.length>0)||(_cf&&_cf.length>0)){
-      //console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
+      console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
       var incRows=(_is||[]).reverse().map(function(row){
         // Compute grossProfitRatio if missing but grossProfit and revenue exist
         if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
@@ -397,12 +350,12 @@ async function fetchFinancialStatements(ticker,period){
         return row});
       var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
-    //console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
+    console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
     // Fallback: SEC EDGAR (free, no API key needed)
     var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
     if(r.ok){var d=await r.json();
       if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
-        //console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
+        console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
         var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
         _fincache[key]=res;return res}}
     return{income:[],balance:[],cashflow:[]}}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
@@ -432,7 +385,7 @@ async function fetchFMPMetrics(ticker){
     if(!ratios&&!km)return null;
     var out={ratios:ratios||{},km:km||{}};
     _fmpmetricscache[ticker]=out;
-    //console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
     return out;
   }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
 
@@ -442,8 +395,8 @@ async function fetchEarnings(co,kpis){
   var fhMap={};
   try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
     var earn=await finnhub("stock/earnings?symbol="+co.ticker);
-    //console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
-    //console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
+    console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
+    console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
     if(met&&met.metric){var m=met.metric;
       // Build raw snapshot for display regardless of KPIs
       if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
@@ -556,7 +509,7 @@ async function fetchEarnings(co,kpis){
           if(estBuyback>0.2)snapshot.buybackYield={label:"Est. Buyback Yield",value:estBuyback.toFixed(1)+"%",numVal:estBuyback,source:"FMP est."}}
       }
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
-      //console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
+      console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
 
   // Step 3: Match user's tracked KPIs from merged map
@@ -567,7 +520,7 @@ async function fetchEarnings(co,kpis){
     else if(metricId&&!isCustomKpi(metricId)){results.push({kpi_name:k.metricId||metricId||k.name,actual_value:null,status:"unclear",excerpt:"Not available from Finnhub or FMP"})}})}
 
   if(!results.length&&!quarter&&!Object.keys(snapshot).length)return{found:false,reason:"No earnings data found for "+co.ticker+". Neither Finnhub nor FMP returned metrics."};
-  //console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
+  console.log("[ThesisAlpha] fetchEarnings result for "+co.ticker+":",{found:true,quarter:quarter,resultsCount:results.length,snapshotKeys:Object.keys(snapshot).length,summary:summary.substring(0,80)});
   return{found:true,quarter:quarter||"Latest",summary:summary||"Earnings data retrieved.",results:results,sourceUrl:srcUrl,sourceLabel:srcLabel||"Finnhub+FMP",snapshot:snapshot}}
 // Earnings date lookup — Finnhub only ($0, no AI)
 async function lookupNextEarnings(ticker){
@@ -618,8 +571,8 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
+  if(p.domain&&a===0)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=64"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} alt=""/>;
   return<div style={{width:sz,height:sz,borderRadius:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
@@ -714,10 +667,8 @@ function LoginPage(props){
 
 // ═══ TRACKER APP ═══
 function TrackerApp(props){
-  // Safety: verify localStorage belongs to this user
   (function(){try{var storedId=localStorage.getItem("ta-userid");
-    if(storedId&&storedId!==props.userId){console.warn("[ThesisAlpha] localStorage user mismatch — clearing");
-      var savedTheme=localStorage.getItem("ta-theme");
+    if(storedId&&storedId!==props.userId){var savedTheme=localStorage.getItem("ta-theme");
       Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
       if(savedTheme)localStorage.setItem("ta-theme",savedTheme);
       localStorage.setItem("ta-userid",props.userId)}
@@ -751,9 +702,6 @@ function TrackerApp(props){
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
-  var sideHoverTimer=useRef(null);
-  function startSideHover(id,e){setFlyY(e.currentTarget.getBoundingClientRect().top);if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);sideHoverTimer.current=setTimeout(function(){setSideHover(id)},200)}
-  function clearSideHover(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
@@ -838,9 +786,6 @@ function TrackerApp(props){
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
   // Owner's Score expanded state on dashboard
   var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
-  var _briefPeriod=useState("total"),briefPeriod=_briefPeriod[0],setBriefPeriod=_briefPeriod[1];
-  var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
-  var _finChartSel=useState(["revenue"]),finChartSel=_finChartSel[0],setFinChartSel=_finChartSel[1];
   // ── XP System ──
   var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
   var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
@@ -1230,24 +1175,17 @@ function TrackerApp(props){
       celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
       showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
       setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
-  // Auto-refresh prices on load — all users (free FMP profile endpoint)
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
+  // Auto-refresh prices on load — PRO only (uses FMP API)
+  useEffect(function(){if(!loaded||cos.length===0||!isPro)return;
+    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
   // Auto-fetch dividend data for ALL users — uses Finnhub (free tier)
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){
-      if(!c._divChecked&&(!c.divPerShare||c.divPerShare===0))return true;
-      // Re-check known monthly payers stuck as quarterly
-      if(c.divFrequency==="quarterly"&&KNOWN_MONTHLY.indexOf(c.ticker.toUpperCase())>=0)return true;
-      return false});
+    var needsDiv=cos.filter(function(c){return !c._divChecked&&(!c.divPerShare||c.divPerShare===0)});
     if(needsDiv.length===0)return;
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
         try{
-          // Fetch FMP lastDiv for frequency cross-reference
-          var fmpData=await fetchPrice(c.ticker);var fmpLD=fmpData?fmpData.lastDiv:0;
-          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price}),_dayChange:fmpData.changes||0,_dayChangePct:fmpData.changesPercentage||0})})}
-          var fhDiv=await fetchDivFromFinnhub(c.ticker,fmpLD);
+          var fhDiv=await fetchDivFromFinnhub(c.ticker);
           if(fhDiv&&fhDiv.payer){
             upd(c.id,function(prev){return Object.assign({},prev,{
               divPerShare:fhDiv.divPerShare,
@@ -1428,18 +1366,12 @@ function TrackerApp(props){
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
   async function checkAll(){var all=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
   async function refreshPrices(){setPriceLoading(true);
-    for(var i=0;i<cos.length;i++){var c=cos[i];try{
-      // Fetch price from FMP + daily change from Finnhub (both free)
-      var rP=fetchPrice(c.ticker);var rQ=fetchQuote(c.ticker);
-      var r=await rP;var q=await rQ;
-      if(r&&r.price){
-        var dayPct=0;var dayAbs=0;
-        if(q&&q.changePct!=null){dayPct=q.changePct;dayAbs=q.change}
-        else if(r.changesPercentage){dayPct=typeof r.changesPercentage==="string"?parseFloat(r.changesPercentage):r.changesPercentage;dayAbs=r.changes||0}
-        upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:r.price}),_dayChange:dayAbs,_dayChangePct:dayPct})});
+    for(var i=0;i<cos.length;i++){var c=cos[i];try{var r=await fetchPrice(c.ticker);
+      if(r&&r.price){upd(c.id,function(prev){var updates={position:Object.assign({},prev.position,{currentPrice:r.price})};
+        return Object.assign({},prev,updates)});
         // Fetch dividend from Finnhub if missing
         if(!c.divPerShare||c.divPerShare===0){
-          try{var fhDiv=await fetchDivFromFinnhub(c.ticker,r.lastDiv);
+          try{var fhDiv=await fetchDivFromFinnhub(c.ticker);
             if(fhDiv&&fhDiv.payer){upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,divFrequency:fhDiv.divFrequency})})}
             else if(fhDiv){upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none"})})}}catch(e){}}
       }}catch(e){}
@@ -1455,13 +1387,13 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_dayChangePct:r.changesPercentage||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
+      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
         var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
       else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,_dayChangePct:f._dayChangePct||0,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -1879,229 +1811,179 @@ function TrackerApp(props){
     var total=c.kpis.filter(function(k){return k.lastResult}).length;
     var activeMoats=MOAT_TYPES.filter(function(t){return c.moatTypes&&c.moatTypes[t.id]&&c.moatTypes[t.id].active});
     var style=c.investStyle&&STYLE_MAP[c.investStyle]?STYLE_MAP[c.investStyle]:null;
-    var snap=c.financialSnapshot||{};var scenarios=c.scenarios||[];
-    function pv(f2){if(!snap[f2])return"—";return snap[f2].value||"—"}
-    function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br/>")}
-    var dps=c.divPerShare||c.lastDiv||0;var divMult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
-    var annDiv=dps*divMult;var divYld=pos.currentPrice>0&&annDiv>0?(annDiv/pos.currentPrice*100):0;
-    var totalReturn=pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):0;
-    var posValue=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
-    var costBasis=pos.shares>0&&pos.avgCost>0?(pos.shares*pos.avgCost):0;
-    var today=new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
-    // Conviction history SVG
+    // Conviction chart SVG
     var convSvg="";
-    if(c.convictionHistory&&c.convictionHistory.length>1){var ch=c.convictionHistory.slice(-16);var cw=440;var chh=70;
-      convSvg='<svg width="'+cw+'" height="'+chh+'" viewBox="0 0 '+cw+' '+chh+'">';
-      for(var gi=0;gi<=10;gi+=5){var gy=chh-6-(gi/10)*(chh-12);convSvg+='<line x1="0" y1="'+gy+'" x2="'+cw+'" y2="'+gy+'" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="2,4"/><text x="'+cw+'" y="'+(gy+3)+'" text-anchor="end" fill="#9ca3af" font-size="7" font-family="JetBrains Mono">'+gi+'</text>'}
-      var pts=ch.map(function(p,i){return{x:i/(ch.length-1)*cw*.92,y:chh-6-(p.rating/10)*(chh-12),r:p.rating,d:p.date}});
-      var area="M"+pts[0].x+","+chh+" "+pts.map(function(p){return"L"+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ")+" L"+pts[pts.length-1].x+","+chh+" Z";
-      convSvg+='<path d="'+area+'" fill="#2563eb" opacity="0.06"/>';
-      convSvg+='<path d="'+pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ")+'" fill="none" stroke="#2563eb" stroke-width="2"/>';
-      pts.forEach(function(p){var cl=p.r>=8?"#16a34a":p.r>=5?"#2563eb":"#dc2626";convSvg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="'+cl+'" stroke="white" stroke-width="2"/>'});
+    if(c.convictionHistory&&c.convictionHistory.length>1){var ch=c.convictionHistory.slice(-12);var cw=320;var chh=60;
+      convSvg='<svg width="'+cw+'" height="'+chh+'" viewBox="0 0 '+cw+' '+chh+'" style="display:block;margin:8px 0">';
+      convSvg+='<line x1="0" y1="'+chh/2+'" x2="'+cw+'" y2="'+chh/2+'" stroke="#e5e7eb" stroke-width="0.5" stroke-dasharray="3,3"/>';
+      var pts=ch.map(function(p,i){var x=i/(ch.length-1)*cw;var y=chh-4-(p.rating/10)*(chh-8);return{x:x,y:y,r:p.rating}});
+      var line=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" ");
+      convSvg+='<path d="'+line+'" fill="none" stroke="#2563eb" stroke-width="1.5"/>';
+      pts.forEach(function(p){var cl=p.r>=8?"#16a34a":p.r>=5?"#2563eb":"#dc2626";convSvg+='<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3" fill="'+cl+'" stroke="white" stroke-width="1.5"/>'});
       convSvg+='</svg>'}
     // Moat bars SVG
     var moatSvg="";
-    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"grossMargin",l:"Pricing Power"},{k:"revGrowth",l:"Revenue Growth"},{k:"opLeverage",l:"Operating Leverage"},{k:"roic",l:"Capital Efficiency"},{k:"fcfConversion",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"},{k:"netMargin",l:"Profitability"}];
+    if(c._moatCache&&c._moatCache.composite!=null){var mc=c._moatCache;var dims2=[{k:"grossMargin",l:"Pricing Power"},{k:"revGrowth",l:"Revenue Growth"},{k:"opLeverage",l:"Operating Leverage"},{k:"roic",l:"Capital Efficiency"},{k:"fcfConversion",l:"Earnings Quality"},{k:"fortress",l:"Financial Strength"},{k:"netMargin",l:"Profitability"},{k:"rdIntensity",l:"R&D Investment"}];
       var visibleDims=dims2.filter(function(dm){return mc[dm.k]!=null&&mc[dm.k]>0});
-      if(visibleDims.length>0){moatSvg='<svg width="460" height="'+(visibleDims.length*28+10)+'" viewBox="0 0 460 '+(visibleDims.length*28+10)+'">';
-      visibleDims.forEach(function(dm,i){var v=mc[dm.k];var y2=i*28+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
-        moatSvg+='<text x="0" y="'+(y2+12)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
-        moatSvg+='<rect x="130" y="'+y2+'" width="270" height="16" rx="4" fill="#f3f4f6"/>';
-        moatSvg+='<rect x="130" y="'+y2+'" width="'+(v/10*270).toFixed(0)+'" height="16" rx="4" fill="'+cl+'" opacity="0.85"/>';
-        moatSvg+='<text x="410" y="'+(y2+12)+'" font-size="12" font-weight="700" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>';
-        moatSvg+='<text x="440" y="'+(y2+12)+'" font-size="9" fill="#9ca3af" font-family="JetBrains Mono,monospace">/10</text>'});
+      if(visibleDims.length>0){moatSvg='<svg width="340" height="'+(visibleDims.length*26+10)+'" viewBox="0 0 340 '+(visibleDims.length*26+10)+'" style="display:block;margin:10px 0">';
+      visibleDims.forEach(function(dm,i){var v=mc[dm.k];var y2=i*26+6;var cl=v>=8?"#16a34a":v>=6?"#2563eb":v>=4?"#d97706":"#dc2626";
+        moatSvg+='<text x="0" y="'+(y2+11)+'" font-size="10" fill="#6b7280" font-family="Inter,sans-serif">'+dm.l+'</text>';
+        moatSvg+='<rect x="120" y="'+y2+'" width="170" height="14" rx="3" fill="#f3f4f6"/>';
+        moatSvg+='<rect x="120" y="'+y2+'" width="'+(v/10*170).toFixed(0)+'" height="14" rx="3" fill="'+cl+'"/>';
+        moatSvg+='<text x="300" y="'+(y2+11)+'" font-size="11" font-weight="600" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
       moatSvg+='</svg>'}}
-
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' — Investment Research Note</title>';
-    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
+    // KPI table rows
+    var kpiRows="";if(c.kpis.length>0){
+      kpiRows='<table class="kpi-table"><thead><tr><th align="left">Metric</th><th align="right">Target</th><th align="right">Actual</th><th align="center">Status</th></tr></thead><tbody>';
+      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stClr=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stIcon=st==="met"?"✓":st==="missed"?"✗":"•";
+        var mDef=METRIC_MAP[k.metricId||""]||{};var unit=mDef.unit||k.unit||"";
+        kpiRows+='<tr><td>'+((mDef.label||k.name)+(unit?" ("+unit+")":""))+'</td><td align="right" class="mono">'+(k.rule==="gte"?"≥":k.rule==="lte"?"≤":"=")+' '+k.value+'</td><td align="right" class="mono" style="color:'+stClr+'">'+(k.lastResult?k.lastResult.actual:"—")+'</td><td align="center" style="color:'+stClr+';font-weight:700">'+stIcon+'</td></tr>'});
+      kpiRows+='</tbody></table>'}
+    // Decision table
+    var decRows="";if(c.decisions&&c.decisions.length>0){
+      decRows='<table class="dec-table"><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';
+      c.decisions.slice(0,10).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";
+        decRows+='<tr><td class="mono" style="white-space:nowrap">'+(d.date?d.date.substring(0,10):"")+'</td><td style="color:'+clr+';font-weight:700">'+d.action+'</td><td style="max-width:280px">'+((d.reasoning||"").substring(0,120)+(d.reasoning&&d.reasoning.length>120?"...":""))+'</td><td class="mono" style="color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+(d.outcome||"—")+'</td></tr>'});
+      decRows+='</tbody></table>'}
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note — ThesisAlpha</title>';
+    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
     html+='<style>';
-    html+='@page{size:A4;margin:20mm 18mm 18mm 18mm}';
+    html+='@page{size:A4;margin:24mm 20mm 20mm 20mm}';
     html+='*{margin:0;padding:0;box-sizing:border-box}';
-    html+='body{font-family:"Inter",sans-serif;color:#1a1a2e;font-size:11px;line-height:1.65;background:#fff}';
-    html+='.page{max-width:700px;margin:0 auto;padding:36px 44px}';
-    // Cover area
-    html+='.cover{padding:48px 0 36px;border-bottom:3px solid #1a1a2e;margin-bottom:32px}';
-    html+='.cover-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}';
-    html+='.cover h1{font-family:"Playfair Display",Georgia,serif;font-size:42px;font-weight:800;color:#1a1a2e;letter-spacing:-1px;line-height:1}';
-    html+='.cover .company-name{font-family:"Inter",sans-serif;font-size:16px;font-weight:400;color:#4b5563;margin-top:8px;letter-spacing:.5px}';
-    html+='.cover .meta{font-family:"JetBrains Mono",monospace;font-size:10px;color:#9ca3af;margin-top:6px}';
-    html+='.brand{text-align:right}';
-    html+='.brand-name{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:800;letter-spacing:3px;color:#1a1a2e;text-transform:uppercase}';
-    html+='.brand-sub{font-family:"Inter",sans-serif;font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px}';
-    html+='.brand-date{font-family:"JetBrains Mono",monospace;font-size:9px;color:#6b7280;margin-top:10px}';
-    // Tags
-    html+='.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:20px}';
-    html+='.tag{font-family:"JetBrains Mono",monospace;font-size:8.5px;font-weight:600;padding:4px 12px;border-radius:4px;letter-spacing:.5px}';
-    // Key stats grid
-    html+='.kstats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px}';
-    html+='.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}';
-    html+='.ks:last-child{border-right:none}';
-    html+='.ks-l{font-family:"JetBrains Mono",monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:5px}';
-    html+='.ks-v{font-family:"JetBrains Mono",monospace;font-size:18px;font-weight:800;line-height:1.2}';
-    html+='.ks-s{font-size:9px;color:#9ca3af;margin-top:3px}';
+    html+='body{font-family:"Inter",sans-serif;color:#1a1a2e;padding:0;font-size:12px;line-height:1.7;background:#fff}';
+    html+='.page{max-width:680px;margin:0 auto;padding:40px 48px}';
+    // Header
+    html+='.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:3px solid #1a1a2e;margin-bottom:24px}';
+    html+='.hdr-left h1{font-family:"Playfair Display",Georgia,serif;font-size:32px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;line-height:1.1}';
+    html+='.hdr-left .sub{font-family:"Inter",sans-serif;font-size:13px;color:#6b7280;margin-top:4px}';
+    html+='.hdr-right{text-align:right}';
+    html+='.logo{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+    html+='.logo-sub{font-family:"Inter",sans-serif;font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px}';
+    html+='.date{font-family:"JetBrains Mono",monospace;font-size:10px;color:#6b7280;margin-top:8px}';
+    // Meta strip
+    html+='.meta-strip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}';
+    html+='.meta-tag{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:600;padding:3px 10px;border-radius:4px;letter-spacing:.5px}';
+    // Stat cards
+    html+='.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}';
+    html+='.stat{border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;text-align:center}';
+    html+='.stat-label{font-family:"JetBrains Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}';
+    html+='.stat-val{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;line-height:1.2}';
+    html+='.stat-sub{font-size:10px;color:#9ca3af;margin-top:2px}';
     // Section headers
-    html+='.sh{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:#1a1a2e;margin:32px 0 14px;padding-bottom:8px;border-bottom:2px solid #1a1a2e;display:flex;align-items:center;gap:8px}';
-    html+='.sh-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1a1a2e;color:#fff;font-size:9px;font-weight:800}';
+    html+='.sec-h{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#6b7280;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #e5e7eb}';
     // Thesis blocks
-    html+='.thesis-core{font-family:"Playfair Display",Georgia,serif;font-size:13px;line-height:1.85;color:#1a1a2e;padding:20px 24px;background:linear-gradient(135deg,#fafafa,#f5f5f5);border-radius:10px;border-left:4px solid #1a1a2e;margin-bottom:14px}';
-    html+='.thesis-block{padding:12px 18px;border-radius:8px;margin-bottom:8px;font-size:11px;line-height:1.7;color:#374151;background:#fafafa}';
-    html+='.tb-label{font-family:"JetBrains Mono",monospace;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
+    html+='.thesis-core{font-family:"Playfair Display",Georgia,serif;font-size:14px;line-height:1.8;color:#1a1a2e;margin-bottom:16px;padding:16px 20px;background:#fafafa;border-radius:8px;border-left:4px solid #1a1a2e}';
+    html+='.thesis-section{padding:10px 16px;border-radius:6px;margin-bottom:8px;background:#fafafa;font-size:12px;line-height:1.7;color:#374151}';
+    html+='.thesis-section.moat{border-left:3px solid #16a34a}';
+    html+='.thesis-section.risks{border-left:3px solid #d97706}';
+    html+='.thesis-section.sell{border-left:3px solid #dc2626}';
+    html+='.ts-label{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
+    html+='.ts-label.moat{color:#16a34a}.ts-label.risks{color:#d97706}.ts-label.sell{color:#dc2626}';
     // Tables
-    html+='table{width:100%;border-collapse:collapse;font-size:10.5px}';
-    html+='th{font-family:"JetBrains Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:8px 12px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}';
-    html+='td{padding:9px 12px;border-bottom:1px solid #f3f4f6;vertical-align:top}';
-    html+='tr:last-child td{border-bottom:none}';
+    html+='.kpi-table,.dec-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}';
+    html+='.kpi-table th,.dec-table th{font-family:"JetBrains Mono",monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:600}';
+    html+='.kpi-table td,.dec-table td{padding:8px 10px;border-bottom:1px solid #f3f4f6;vertical-align:top}';
     html+='.mono{font-family:"JetBrains Mono",monospace}';
-    // Financial grid
-    html+='.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}';
-    html+='.fin-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px}';
-    html+='.fin-card-h{font-family:"JetBrains Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:10px;font-weight:700}';
-    html+='.fin-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f9fafb}';
-    html+='.fin-row:last-child{border-bottom:none}';
-    html+='.fin-k{font-size:10px;color:#6b7280}';
-    html+='.fin-v{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;color:#1a1a2e}';
-    // Scenario cards
-    html+='.sc-card{border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid}';
-    html+='.sc-cat{font-family:"JetBrains Mono",monospace;font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#6b4ce6;margin-bottom:4px}';
-    html+='.sc-q{font-size:10px;color:#6b7280;font-style:italic;margin-bottom:6px;line-height:1.5}';
-    html+='.sc-a{font-size:11px;color:#1a1a2e;line-height:1.6}';
+    // Moat badges
+    html+='.moat-badges{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}';
+    html+='.moat-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid #e5e7eb}';
+    html+='.moat-badge .dots{display:flex;gap:2px}';
+    html+='.moat-badge .dot{width:6px;height:6px;border-radius:50%}';
     // Footer
-    html+='.footer{margin-top:40px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-start}';
-    html+='.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.blue{color:#2563eb}.purp{color:#6b4ce6}';
-    html+='@media print{.page{padding:0}.pb{page-break-before:always}}';
+    html+='.footer{margin-top:36px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:center}';
+    html+='.footer-left{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;letter-spacing:2px;color:#1a1a2e;text-transform:uppercase}';
+    html+='.footer-right{font-size:9px;color:#9ca3af;text-align:right}';
+    html+='.footer-disc{font-size:8px;color:#9ca3af;margin-top:8px;line-height:1.4;font-style:italic}';
+    html+='.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.blue{color:#2563eb}';
+    html+='@media print{.page{padding:0}.no-print{display:none}}';
     html+='</style></head><body><div class="page">';
 
-    // ═══ COVER ═══
-    html+='<div class="cover"><div class="cover-top"><div><h1>'+c.ticker+'</h1>';
-    html+='<div class="company-name">'+esc(c.name)+'</div>';
-    html+='<div class="meta">'+[c.sector,c.industry,c.exchange,c.country].filter(Boolean).join(' · ')+'</div>';
-    html+='<div class="tags">';
-    if(style)html+='<span class="tag" style="background:'+style.color+'12;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
-    html+='<span class="tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">KPIs: '+h.l+'</span>';
-    if(conv>0)html+='<span class="tag" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">Conviction: '+conv+'/10</span>';
-    if(activeMoats.length>0)activeMoats.forEach(function(t){html+='<span class="tag" style="background:'+t.color+'10;color:'+t.color+';border:1px solid '+t.color+'30">'+t.label+'</span>'});
-    html+='</div></div>';
-    html+='<div class="brand"><div class="brand-name">ThesisAlpha</div><div class="brand-sub">Investment Research Note</div><div class="brand-date">'+today+'</div></div></div>';
+    // ═══ HEADER ═══
+    html+='<div class="hdr"><div class="hdr-left"><h1>'+c.ticker+'</h1>';
+    html+='<div class="sub">'+c.name+(c.sector?' · '+c.sector:'')+(c.industry?' · '+c.industry:'')+'</div></div>';
+    html+='<div class="hdr-right"><div class="logo"><svg width="14" height="14" viewBox="0 0 100 100" style="vertical-align:middle;margin-right:4px"><rect width="100" height="100" rx="16" fill="#1a1a2e"/><path d="M50 18L82 78H18L50 18Z" fill="none" stroke="white" stroke-width="6" stroke-linejoin="round"/><path d="M50 38L66 70H34L50 38Z" fill="white"/></svg>ThesisAlpha</div>';
+    html+='<div class="logo-sub">Investment Research Note</div>';
+    html+='<div class="date">'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
 
-    // Key stats
-    html+='<div class="kstats">';
-    html+='<div class="ks"><div class="ks-l">Price</div><div class="ks-v">'+(pos.currentPrice>0?'$'+pos.currentPrice.toFixed(2):'—')+'</div>'+(pos.avgCost>0?'<div class="ks-s '+(totalReturn>=0?'grn':'red')+'">'+(totalReturn>=0?'+':'')+totalReturn.toFixed(1)+'% return</div>':'')+'</div>';
-    html+='<div class="ks"><div class="ks-l">Position</div><div class="ks-v">'+(posValue>0?'$'+(posValue>=1e6?(posValue/1e6).toFixed(1)+'M':(posValue/1e3).toFixed(1)+'k'):'—')+'</div>'+(pos.shares>0?'<div class="ks-s">'+pos.shares+' shares</div>':'')+'</div>';
-    html+='<div class="ks"><div class="ks-l">Conviction</div><div class="ks-v '+(conv>=7?'grn':conv>=4?'amb':'red')+'">'+(conv>0?conv+'/10':'—')+'</div></div>';
-    html+='<div class="ks"><div class="ks-l">KPI Score</div><div class="ks-v '+(total>0?(met===total?'grn':met>0?'amb':'red'):'')+'">'+(total>0?met+'/'+total:'—')+'</div><div class="ks-s">met</div></div>';
-    html+='<div class="ks"><div class="ks-l">Div Yield</div><div class="ks-v '+(divYld>0?'grn':'')+'">'+(divYld>0?divYld.toFixed(1)+'%':'—')+'</div>'+(annDiv>0&&pos.shares>0?'<div class="ks-s">$'+(pos.shares*annDiv).toFixed(0)+'/yr</div>':'')+'</div>';
-    html+='</div></div>';
+    // ═══ META STRIP ═══
+    html+='<div class="meta-strip">';
+    if(style)html+='<span class="meta-tag" style="background:'+style.color+'10;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
+    html+='<span class="meta-tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">'+h.l+'</span>';
+    if(c.morningstarMoat)html+='<span class="meta-tag" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a">M★ '+c.morningstarMoat+(c.moatTrend?' · '+c.moatTrend:'')+'</span>';
+    if(daysToEarn!==null&&daysToEarn>=0)html+='<span class="meta-tag" style="background:#fffbeb;color:#d97706;border:1px solid #fde68a">Earnings: '+daysToEarn+'d — '+c.earningsDate+'</span>';
+    html+='</div>';
 
-    // ═══ 1. INVESTMENT THESIS ═══
+    // ═══ KEY METRICS STRIP ═══
+    html+='<div class="stats">';
+    html+='<div class="stat"><div class="stat-label">Conviction</div><div class="stat-val '+(conv>=8?"grn":conv>=5?"":"red")+'">'+(conv>0?conv+'/10':'—')+'</div></div>';
+    if(pos.currentPrice>0)html+='<div class="stat"><div class="stat-label">Price</div><div class="stat-val">$'+pos.currentPrice.toFixed(2)+'</div>'+(pos.avgCost>0?'<div class="stat-sub '+(pos.currentPrice>=pos.avgCost?"grn":"red")+'">'+(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+'% return</div>':'')+'</div>';
+    if(pos.shares>0)html+='<div class="stat"><div class="stat-label">Position</div><div class="stat-val">'+pos.shares+'</div><div class="stat-sub">shares · $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</div></div>';
+    html+='<div class="stat"><div class="stat-label">KPIs</div><div class="stat-val '+(total>0?(met===total?"grn":met>0?"amb":"red"):"")+'">'+(total>0?met+'/'+total:'—')+'</div><div class="stat-sub">met</div></div>';
+    if(os&&os.total>0)html+='<div class="stat"><div class="stat-label">Owner\'s Score</div><div class="stat-val '+(os.total>=80?"grn":os.total>=50?"amb":"red")+'">'+os.total+'</div><div class="stat-sub">/ 100</div></div>';
+    html+='</div>';
+
+    // ═══ POSITION DETAILS ═══
+    if(pos.shares>0||c.purchaseDate){html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;padding:12px 16px;background:#fafafa;border-radius:8px;border:1px solid #f3f4f6;font-size:11px;color:#6b7280">';
+      if(pos.avgCost>0)html+='<span><strong style="color:#1a1a2e">Avg Cost:</strong> $'+pos.avgCost.toFixed(2)+'</span>';
+      if(pos.shares>0&&pos.currentPrice>0)html+='<span><strong style="color:#1a1a2e">Cost Basis:</strong> $'+(pos.shares*pos.avgCost).toLocaleString(undefined,{maximumFractionDigits:0})+'</span><span><strong style="color:#1a1a2e">Market Value:</strong> $'+(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
+      if(c.purchaseDate)html+='<span><strong style="color:#1a1a2e">Owned Since:</strong> '+fD(c.purchaseDate)+'</span>';
+      var dps=c.divPerShare||c.lastDiv||0;if(dps>0){var divMult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var annDiv2=dps*divMult;
+        html+='<span><strong style="color:#16a34a">Dividend:</strong> $'+dps.toFixed(2)+'/'+(c.divFrequency==="monthly"?"mo":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"yr":"qtr")+' ('+((pos.currentPrice>0?(annDiv2/pos.currentPrice*100).toFixed(2):0))+'% yield)</span>';
+        if(pos.shares>0)html+='<span><strong style="color:#16a34a">Annual Income:</strong> $'+(pos.shares*annDiv2).toFixed(0)+'</span>'}
+      html+='</div>'}
+
+    // ═══ INVESTMENT THESIS ═══
     if(sec.core||sec.moat||sec.risks||sec.sell){
-      html+='<div class="sh"><span class="sh-num">1</span>Investment Thesis</div>';
-      if(sec.core)html+='<div class="thesis-core">'+esc(sec.core)+'</div>';
-      if(sec.moat)html+='<div class="thesis-block" style="border-left:3px solid #16a34a"><div class="tb-label" style="color:#16a34a">Competitive Moat</div>'+esc(sec.moat)+'</div>';
-      if(sec.risks)html+='<div class="thesis-block" style="border-left:3px solid #d97706"><div class="tb-label" style="color:#d97706">Key Risks</div>'+esc(sec.risks)+'</div>';
-      if(sec.sell)html+='<div class="thesis-block" style="border-left:3px solid #dc2626"><div class="tb-label" style="color:#dc2626">Sell Criteria</div>'+esc(sec.sell)+'</div>'}
+      html+='<div class="sec-h">Investment Thesis</div>';
+      if(sec.core)html+='<div class="thesis-core">'+sec.core.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.moat)html+='<div class="thesis-section moat"><div class="ts-label moat">▲ Competitive Moat</div>'+sec.moat.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.risks)html+='<div class="thesis-section risks"><div class="ts-label risks">⚠ Key Risks</div>'+sec.risks.replace(/\n/g,"<br/>")+'</div>';
+      if(sec.sell)html+='<div class="thesis-section sell"><div class="ts-label sell">✗ Sell Criteria</div>'+sec.sell.replace(/\n/g,"<br/>")+'</div>'}
 
-    // ═══ 2. FINANCIAL PROFILE ═══
-    var hasFinancials=Object.keys(snap).length>0;
-    if(hasFinancials||pos.shares>0){
-      html+='<div class="sh"><span class="sh-num">2</span>Financial Profile</div>';
-      html+='<div class="fin-grid">';
-      // Valuation
-      var valItems=[[pv("pe"),"P/E"],[pv("pb"),"P/B"],[pv("fcf"),"FCF/Share"]].filter(function(x){return x[0]!=="—"});
-      var retItems=[[pv("grossMargin"),"Gross Margin"],[pv("opMargin"),"Op Margin"],[pv("netMargin"),"Net Margin"],[pv("roe"),"ROE"],[pv("roic"),"ROIC"],[pv("revGrowth"),"Rev Growth"]].filter(function(x){return x[0]!=="—"});
-      if(valItems.length>0||retItems.length>0){
-        html+='<div class="fin-card"><div class="fin-card-h">Valuation & Returns</div>';
-        valItems.concat(retItems).forEach(function(x){html+='<div class="fin-row"><span class="fin-k">'+x[1]+'</span><span class="fin-v">'+x[0]+'</span></div>'});
-        html+='</div>'}
-      // Health + Dividends
-      var healthItems=[[pv("currentRatio"),"Current Ratio"],[pv("debtEquity"),"Debt/Equity"]].filter(function(x){return x[0]!=="—"});
-      if(divYld>0){healthItems.push([divYld.toFixed(2)+"%","Div Yield (Annual)"]);healthItems.push(["$"+annDiv.toFixed(2),"Annual Div/Share"]);healthItems.push([c.divFrequency==="monthly"?"Monthly":c.divFrequency==="semi"?"Semi-Annual":c.divFrequency==="annual"?"Annual":"Quarterly","Frequency"])}
-      if(healthItems.length>0){
-        html+='<div class="fin-card"><div class="fin-card-h">Balance Sheet & Income</div>';
-        healthItems.forEach(function(x){html+='<div class="fin-row"><span class="fin-k">'+x[1]+'</span><span class="fin-v">'+x[0]+'</span></div>'});
-        html+='</div>'}
-      html+='</div>';
-      // Position details
-      if(pos.shares>0){html+='<div style="display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;background:#fafafa;border-radius:8px;font-size:10px;color:#6b7280;margin-bottom:8px">';
-        if(pos.avgCost>0)html+='<span><strong style="color:#1a1a2e">Avg Cost:</strong> $'+pos.avgCost.toFixed(2)+'</span>';
-        if(costBasis>0)html+='<span><strong style="color:#1a1a2e">Cost Basis:</strong> $'+costBasis.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
-        if(posValue>0)html+='<span><strong style="color:#1a1a2e">Market Value:</strong> $'+posValue.toLocaleString(undefined,{maximumFractionDigits:0})+'</span>';
-        if(c.purchaseDate)html+='<span><strong style="color:#1a1a2e">Owned Since:</strong> '+fD(c.purchaseDate)+'</span>';
-        if(annDiv>0&&pos.shares>0)html+='<span><strong style="color:#16a34a">Annual Income:</strong> $'+(pos.shares*annDiv).toFixed(0)+'</span>';
-        html+='</div>'}}
+    // ═══ MOAT CLASSIFICATION ═══
+    if(activeMoats.length>0){html+='<div class="sec-h">Moat Classification</div>';
+      html+='<div class="moat-badges">';
+      activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;
+        html+='<div class="moat-badge" style="border-color:'+t.color+'30;background:'+t.color+'08"><span style="color:'+t.color+';font-weight:700">'+t.label+'</span><span class="dots">';
+        for(var di=0;di<5;di++){html+='<span class="dot" style="background:'+(di<str?t.color:"#e5e7eb")+'"></span>'}
+        html+='</span></div>'});html+='</div>'}
 
-    // ═══ 3. KPI SCORECARD ═══
-    if(c.kpis.length>0){
-      html+='<div class="sh"><span class="sh-num">3</span>KPI Scorecard</div>';
-      html+='<table><thead><tr><th>Metric</th><th style="text-align:right">Target</th><th style="text-align:right">Actual</th><th style="text-align:center">Status</th><th>Evidence</th></tr></thead><tbody>';
-      c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stC=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stL=st==="met"?"MET":st==="missed"?"MISSED":"PENDING";
-        var mDef=METRIC_MAP[k.metricId||""]||{};
-        html+='<tr><td style="font-weight:600;color:#1a1a2e">'+esc(mDef.label||k.name)+'</td>';
-        html+='<td style="text-align:right" class="mono">'+(k.rule==="gte"?"≥":k.rule==="lte"?"≤":"=")+' '+k.value+(mDef.unit||"")+'</td>';
-        html+='<td style="text-align:right;font-weight:700;color:'+stC+'" class="mono">'+(k.lastResult?k.lastResult.actual:'—')+'</td>';
-        html+='<td style="text-align:center"><span class="mono" style="font-size:8px;font-weight:800;color:'+stC+';background:'+stC+'10;padding:2px 8px;border-radius:3px;letter-spacing:1px">'+stL+'</span></td>';
-        html+='<td style="font-size:9px;color:#6b7280;max-width:140px">'+esc((k.lastResult&&k.lastResult.excerpt)||"")+'</td></tr>'});
-      html+='</tbody></table>'}
+    // ═══ MOAT DURABILITY SCORES ═══
+    if(moatSvg){html+='<div class="sec-h">Moat Durability Analysis'+(c._moatCache?' — '+c._moatCache.composite.toFixed(1)+'/10':'')+'</div>';html+=moatSvg}
 
-    // ═══ 4. MOAT ANALYSIS ═══
-    if(activeMoats.length>0||moatSvg){
-      html+='<div class="sh"><span class="sh-num">4</span>Moat Analysis</div>';
-      if(activeMoats.length>0){html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
-        activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;
-          html+='<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid '+t.color+'30;background:'+t.color+'06"><span style="font-size:11px;font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="display:flex;gap:2px">';
-          for(var di=0;di<5;di++){html+='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(di<str?t.color:'#e5e7eb')+'"></span>'}
-          html+='</span></div>'});html+='</div>'}
-      if(moatSvg){html+='<div style="margin-bottom:12px">'+moatSvg+'</div>';
-        if(c._moatCache)html+='<div style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px;color:#1a1a2e;font-weight:700">Composite Moat Score: '+c._moatCache.composite.toFixed(1)+' / 10</div>'}}
+    // ═══ KEY PERFORMANCE INDICATORS ═══
+    if(kpiRows){html+='<div class="sec-h">Key Performance Indicators</div>';html+=kpiRows}
 
-    // ═══ 5. CONVICTION HISTORY ═══
-    if(convSvg||conv>0){
-      html+='<div class="sh"><span class="sh-num">5</span>Conviction History</div>';
-      if(convSvg)html+=convSvg;
-      if(c.convictionHistory&&c.convictionHistory.length>0){html+='<div style="display:flex;gap:20px;font-size:9px;color:#6b7280;margin-top:8px;font-family:JetBrains Mono,monospace">';
-        var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];
-        html+='<span>Start: '+first.rating+'/10 ('+first.date.substring(0,10)+')</span>';
-        html+='<span>Current: '+last.rating+'/10 ('+last.date.substring(0,10)+')</span>';
-        html+='<span>Trend: '+(last.rating>first.rating?'<span class="grn">Rising</span>':last.rating<first.rating?'<span class="red">Falling</span>':'<span>Stable</span>')+'</span>';
-        html+='</div>'}}
+    // ═══ CONVICTION HISTORY ═══
+    if(convSvg){html+='<div class="sec-h">Conviction History</div>';html+=convSvg;
+      html+='<div style="display:flex;gap:16px;font-size:10px;color:#9ca3af;margin-top:4px">';
+      if(c.convictionHistory.length>0){var first=c.convictionHistory[0];var last=c.convictionHistory[c.convictionHistory.length-1];
+        html+='<span>'+first.date.substring(0,10)+': '+first.rating+'/10</span><span>→</span><span>'+last.date.substring(0,10)+': '+last.rating+'/10</span>'}
+      html+='</div>'}
 
-    // ═══ 6. STRESS TEST SCENARIOS ═══
-    if(scenarios.length>0){
-      html+='<div class="sh"><span class="sh-num">6</span>Stress Test — Pre-Mortem Plans</div>';
-      scenarios.forEach(function(s){
-        html+='<div class="sc-card"><div class="sc-cat">'+(s.category||"").toUpperCase()+'</div>';
-        html+='<div class="sc-q">'+esc(s.prompt)+'</div>';
-        html+='<div class="sc-a">'+esc(s.response)+'</div></div>'})}
+    // ═══ DECISION LEDGER ═══
+    if(decRows){html+='<div class="sec-h">Decision Ledger</div>';html+=decRows}
 
-    // ═══ 7. EARNINGS HISTORY ═══
-    if(c.earningsHistory&&c.earningsHistory.length>0){
-      html+='<div class="sh"><span class="sh-num">7</span>Earnings History</div>';
-      html+='<table><thead><tr><th>Quarter</th><th>Summary</th><th style="text-align:right">KPIs</th></tr></thead><tbody>';
-      c.earningsHistory.slice(0,6).forEach(function(e){var kMet=e.results?e.results.filter(function(r){return r.status==="met"}).length:0;var kTot=e.results?e.results.length:0;
-        html+='<tr><td class="mono" style="font-weight:700;white-space:nowrap;color:#1a1a2e">'+esc(e.quarter)+'</td>';
-        html+='<td style="font-size:10px;color:#4b5563;line-height:1.5;max-width:380px">'+esc((e.summary||"").substring(0,250))+'</td>';
-        html+='<td style="text-align:right" class="mono"><span style="color:'+(kTot>0?(kMet===kTot?'#16a34a':'#d97706'):'#9ca3af')+'">'+kMet+'/'+kTot+'</span></td></tr>'});
-      html+='</tbody></table>'}
+    // ═══ EARNINGS HISTORY ═══
+    if(c.earningsHistory&&c.earningsHistory.length){html+='<div class="sec-h">Earnings History</div>';
+      c.earningsHistory.slice(0,4).forEach(function(e){
+        html+='<div style="padding:8px 14px;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px"><span class="mono" style="font-size:11px;font-weight:700;color:#1a1a2e">'+e.quarter+'</span>';
+        html+='<div style="font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5">'+((e.summary||"").substring(0,200))+'</div></div>'})}
 
-    // ═══ 8. DECISION LEDGER ═══
-    var decs=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)});
-    if(decs.length>0){
-      html+='<div class="sh"><span class="sh-num">8</span>Decision Ledger</div>';
-      html+='<table><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';
-      decs.slice(0,8).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";
-        html+='<tr><td class="mono" style="white-space:nowrap;font-size:10px">'+esc((d.date||"").substring(0,10))+'</td>';
-        html+='<td style="font-weight:800;color:'+clr+';font-size:10px" class="mono">'+esc(d.action||"")+'</td>';
-        html+='<td style="font-size:10px;color:#4b5563;max-width:300px">'+esc((d.reasoning||"").substring(0,180))+'</td>';
-        html+='<td class="mono" style="font-size:10px;font-weight:700;color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+esc(d.outcome||"—")+'</td></tr>'});
-      html+='</tbody></table>'}
+    // ═══ FINANCIAL SNAPSHOT ═══
+    if(c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0){html+='<div class="sec-h">Financial Snapshot</div>';
+      html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">';
+      var snap=c.financialSnapshot;Object.keys(snap).forEach(function(k){var s=snap[k];if(!s||!s.value)return;
+        html+='<div style="padding:6px 10px;border:1px solid #f3f4f6;border-radius:4px"><div style="font-size:9px;color:#9ca3af;font-family:JetBrains Mono,monospace;letter-spacing:.5px">'+s.label+'</div><div class="mono" style="font-size:13px;font-weight:600;color:#1a1a2e">'+s.value+'</div></div>'});
+      html+='</div>'}
 
     // ═══ FOOTER ═══
-    html+='<div class="footer"><div><div class="brand-name" style="font-size:10px">ThesisAlpha</div>';
-    html+='<div style="font-size:8px;color:#9ca3af;margin-top:2px;max-width:320px;line-height:1.5">This document is generated for personal investment research purposes only. It does not constitute financial advice, a recommendation, or an offer to buy or sell securities. All data sourced from third-party providers (FMP, Finnhub) and may contain errors. Past performance does not predict future results. Verify all information independently before making investment decisions.</div></div>';
-    html+='<div style="text-align:right"><div class="mono" style="font-size:10px;font-weight:700;color:#1a1a2e">'+c.ticker+' · '+esc(c.name)+'</div>';
-    html+='<div style="font-size:9px;color:#6b7280">'+today+'</div>';
-    html+='<div style="font-size:8px;color:#9ca3af;margin-top:4px">Owner\'s Score: '+os.total+'/100 · Process: '+classifyPortfolio([c])+'</div></div></div>';
+    html+='<div class="footer"><div class="footer-left"><svg width="12" height="12" viewBox="0 0 100 100" style="vertical-align:middle;margin-right:3px"><rect width="100" height="100" rx="16" fill="#1a1a2e"/><path d="M50 18L82 78H18L50 18Z" fill="none" stroke="white" stroke-width="6" stroke-linejoin="round"/><path d="M50 38L66 70H34L50 38Z" fill="white"/></svg>ThesisAlpha</div>';
+    html+='<div class="footer-right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;color:#6b7280">'+c.ticker+' · '+c.name+'</div>';
+    html+='<div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div></div>';
+    html+='<div class="footer-disc">This document was generated by ThesisAlpha for personal investment research purposes. It does not constitute financial advice. All data is sourced from third-party providers and may contain errors. Past performance does not indicate future results.</div>';
     html+='</div></body></html>';
-    var w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},800)}}
+    var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
 
   // ── Research Export Pack (for NotebookLM, ChatGPT, etc.) ──
   function exportResearch(cid){var c=cos.find(function(x){return x.id===cid});if(!c)return;
@@ -2288,61 +2170,7 @@ function TrackerApp(props){
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:10,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
-  // ── Scenario / Stress Test Modal ──
-  function ScenarioModal(){if(!sel)return null;var c=sel;var sid=modal.data;
-    var scenarios=c.scenarios||[];var existing=sid?scenarios.find(function(s){return s.id===sid}):null;
-    var pos=c.position||{};var conv=c.conviction||0;var hasDivs=(c.divPerShare||c.lastDiv)>0;
-    var posVal=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice):0;
-    // Generate company-specific prompts
-    var prompts=[
-      {id:"drawdown",cat:"Price",q:c.ticker+" drops 40% in the next 30 days with no fundamental news. Your position goes from $"+(posVal>0?Math.round(posVal).toLocaleString():"X")+" to $"+(posVal>0?Math.round(posVal*0.6).toLocaleString():"Y")+". What do you do?",icon:"trending"},
-      {id:"ceo_exit",cat:"Management",q:c.name+"'s CEO "+(c.ceo||"")+" unexpectedly resigns. No successor is named. Do you hold, trim, or sell?",icon:"alert"},
-      {id:"competitor",cat:"Competition",q:"A well-funded competitor launches a product that is 30% cheaper and arguably better than "+c.ticker+"'s core offering. How does this affect your thesis?",icon:"search"},
-      {id:"kpi_miss",cat:"Thesis",q:c.ticker+" misses your most important KPI for 3 consecutive quarters. Revenue growth stalls. At what point does this break your thesis, and what's your exit plan?",icon:"target"},
-      {id:"concentration",cat:"Sizing",q:c.ticker+" runs up 80% and now represents "+(posVal>0?"a large":"an outsized")+" portion of your portfolio. Do you trim to rebalance, or let winners run?",icon:"bar"},
-      {id:"recession",cat:"Macro",q:"A severe recession hits. "+c.ticker+"'s revenue drops 25% YoY. The stock is down 50% from your entry. You still believe in the 10-year thesis. What's your move?",icon:"shield"},
-      {id:"short_attack",cat:"Psychology",q:"A prominent short seller publishes a detailed report alleging accounting irregularities at "+c.ticker+". The stock drops 20% pre-market. You have 30 minutes before the market opens. What do you do?",icon:"alert"},
-      {id:"double",cat:"Psychology",q:c.ticker+" doubles in 6 months. Your conviction is "+conv+"/10. Your original thesis is unchanged. Do you take profits, hold, or add more?",icon:"trending"}
-    ];
-    if(hasDivs)prompts.push({id:"div_cut",cat:"Income",q:c.ticker+" announces a 50% dividend cut, citing the need to reinvest in growth. The stock drops 15%. Does this change your thesis?",icon:"dollar"});
-    prompts.push({id:"sell_all",cat:"Psychology",q:"If you had to sell your entire "+c.ticker+" position today and could never buy it back, how would you feel? What would you miss most? This reveals how much of your conviction is emotional vs. rational.",icon:"lightbulb"});
-    var answered=scenarios.map(function(s){return s.promptId});
-    var _selP=useState(existing?existing.promptId:null),selPrompt=_selP[0],setSelPrompt=_selP[1];
-    var _resp=useState(existing?existing.response:""),resp=_resp[0],setResp=_resp[1];
-    var activePrompt=prompts.find(function(p2){return p2.id===selPrompt});
-    function doSave(){if(!selPrompt||!resp.trim())return;
-      var entry={id:existing?existing.id:nId(scenarios),promptId:selPrompt,prompt:activePrompt?activePrompt.q:"",category:activePrompt?activePrompt.cat:"",response:resp.trim(),answeredAt:new Date().toISOString()};
-      if(existing){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).map(function(s){return s.id===existing.id?entry:s})})})}
-      else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})});addXP(10,"Scenario planned")}
-      setModal(null)}
-    return<Modal title={"Stress Test — "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
-      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Pre-mortem thinking. Plan your response to difficult situations before they happen — when your mind is clear and your emotions are quiet.</div>
-      {!selPrompt&&<div>
-        <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
-        <div style={{display:"grid",gap:8}}>
-          {prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
-            return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:10,cursor:"pointer",transition:"border-color .15s"}} onMouseEnter={function(e){if(!done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!done)e.currentTarget.style.borderColor=K.bdr}}>
-              <div style={{width:32,height:32,borderRadius:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                {done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:9,fontWeight:600,color:done?K.grn:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:3}}>{p2.cat.toUpperCase()}</div>
-                <div style={{fontSize:12,color:K.txt,lineHeight:1.5}}>{p2.q.substring(0,120)}{p2.q.length>120?"...":""}</div>
-                {done&&<div style={{fontSize:9,color:K.dim,marginTop:4,fontFamily:fm}}>Answered {fD(scenarios.find(function(s){return s.promptId===p2.id}).answeredAt)}</div>}</div></div>})}</div></div>}
-      {selPrompt&&activePrompt&&<div>
-        <button onClick={function(){setSelPrompt(null);setResp("")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0,marginBottom:12,display:"flex",alignItems:"center",gap:4}}>{"← Back to scenarios"}</button>
-        <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"14px 18px",marginBottom:16}}>
-          <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{activePrompt.cat.toUpperCase()}</div>
-          <div style={{fontSize:13,color:K.txt,lineHeight:1.7}}>{activePrompt.q}</div></div>
-        <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:8,fontFamily:fm,fontWeight:600}}>Your plan</label>
-        <textarea value={resp} onChange={function(e){setResp(e.target.value)}} placeholder={"Write your honest response. There are no right answers — only your answers. What would you actually do?"} rows={6} style={{width:"100%",boxSizing:"border-box",background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:_isThesis?14:6,color:K.txt,padding:"14px 18px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/>
-        <div style={{fontSize:10,color:K.dim,marginTop:6,marginBottom:12}}>{resp.trim().split(/\s+/).filter(function(w){return w}).length} words</div>
-        <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>
-          {existing&&<button style={S.btnD} onClick={function(){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).filter(function(s){return s.id!==existing.id})})});setModal(null)}}>Delete</button>}
-          <div style={{flex:1}}/>
-          <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
-          <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave} disabled={resp.trim().length<=10}>Save Plan</button></div></div>}
-    </Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -2526,14 +2354,14 @@ function TrackerApp(props){
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?300:isThesis?268:240,minWidth:isMobile?300:isThesis?268:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":isThesis?"4px 0 40px rgba(0,0,0,.2)":"none",transition:"transform .2s ease"}}>
     <div style={{padding:isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:isThesis?15:13,fontWeight:isThesis?800:600,color:sideText,letterSpacing:isThesis?"-0.3px":1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){startSideHover("portfolio",e)}} onMouseLeave={clearSideHover}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);setSideHover("portfolio")}} onMouseLeave={clearSideHover}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){startSideHover("hub",e)}} onMouseLeave={clearSideHover}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);setSideHover("hub")}} onMouseLeave={clearSideHover}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"Quarterly Letter",t:"_letter",icon:"file"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={sub.t==="_letter"?navClick(function(){var now3=new Date();var cq=Math.floor(now3.getMonth()/3)+1;var cy=now3.getFullYear();setShowQLetter("Q"+cq+"-"+cy);setSideHover(null)}):navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     {/* More pages accessible via links, not sidebar */}
@@ -3493,7 +3321,7 @@ function TrackerApp(props){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
-    var _chart=finChartSel,chartSel=_chart,setChartSel=setFinChartSel;
+    var _chart=useState(["revenue"]),chartSel=_chart[0],setChartSel=_chart[1];
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
     var CHART_COLORS=["#1cb0f6","#58cc02","#ff9600","#ce82ff","#ff4b4b","#ffc800","#3B82F6","#EC4899","#14B8A6","#8B5CF6","#EF4444","#F59E0B","#6366F1","#10B981"];
@@ -3513,7 +3341,6 @@ function TrackerApp(props){
     var _allDates={};if(data){["income","balance","cashflow"].forEach(function(st){(data[st]||[]).forEach(function(r){if(r.date)_allDates[r.date]=true})})}
     var dates=Object.keys(_allDates).sort();
     if(dates.length===0)dates=rows.map(function(r){return r.date}).filter(Boolean);
-    var hovDate=hov||(dates.length>0?dates[dates.length-1]:null);
     var chartSeries=chartSel.map(function(key,si){
       var def=chartItems.find(function(ci){return ci.k===key})||{k:key,l:key};
       var pts=dates.map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
@@ -3587,19 +3414,19 @@ function TrackerApp(props){
                     if(gMn<0){barH=Math.abs(val)/gRange*plotH}
                     var y=val>=0?zeroY-barH:zeroY;
                     var bx=groupX+(si*(barW2+1));
-                    var isHov2=hovDate===dt;
+                    var isHov2=hov===dt;
                     return<rect key={s.key} x={bx} y={val>=0?zeroY-(val-Math.max(gMn,0))/gRange*plotH:zeroY} width={barW2} height={Math.max(Math.abs(val-(gMn>=0?gMn:0))/gRange*plotH,2)} rx={2} fill={isHov2?s.color:s.color+"90"} style={{transition:"fill .15s",animation:"fadeInFast .3s ease both",animationDelay:(di*30+si*60)+"ms"}}/>})}
                   {/* Date label */}
-                  <text x={groupX+groupW/2} y={cH-4} textAnchor="middle" fill={hovDate===dt?K.txt:K.dim} fontSize={per==="quarter"?7:9} fontWeight={hovDate===dt?600:400} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[di]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>
+                  <text x={groupX+groupW/2} y={cH-4} textAnchor="middle" fill={hov===dt?K.txt:K.dim} fontSize={per==="quarter"?7:9} fontWeight={hov===dt?600:400} fontFamily="JetBrains Mono,monospace">{per==="quarter"?((rows[di]||{}).period||"")+" '"+dt.substring(2,4):dt.substring(0,4)}</text>
                   {/* Hover zone */}
-                  <rect x={groupX-2} y={pad.t} width={groupW+4} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}}/>
+                  <rect x={groupX-2} y={pad.t} width={groupW+4} height={plotH} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHov(dt)}} onMouseLeave={function(){setHov(null)}}/>
                 </g>})}
             </svg>
             {/* Hover tooltip */}
-            {hovDate&&(function(){var hi=dates.indexOf(hovDate);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
+            {hov&&(function(){var hi=dates.indexOf(hov);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
               return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hovDate:hovDate.substring(0,4)}</div>
-                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hovDate});if(!pt)return null;
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hov:hov.substring(0,4)}</div>
+                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hov});if(!pt)return null;
                   var prev=s.pts[s.pts.indexOf(pt)-1];var yoy=prev&&prev.val!==0?((pt.val-prev.val)/Math.abs(prev.val)*100):null;
                   return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                     <span style={{width:6,height:6,borderRadius:2,background:s.color,flexShrink:0}}/>
@@ -3916,31 +3743,6 @@ function TrackerApp(props){
         </div>
 
         {/* ── OWNER'S NUMBERS ── */}
-        {/* ── 4. STRESS TEST ── */}
-        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
-          return<div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
-            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
-          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
-              <div style={{flex:1}}/>
-              <span style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
-            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
-              <IC name="check" size={12} color={K.grn} style={{marginTop:2,flexShrink:0}}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
-                <div style={{fontSize:11,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
-            {scenarios.length>3&&<div style={{fontSize:10,color:K.acc,textAlign:"center",paddingTop:6,cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>+{scenarios.length-3} more</div>}
-          </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
-            <IC name="shield" size={20} color={K.acc} style={{marginBottom:6}}/>
-            <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
-            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now, while your thinking is clear.</div></div>}
-        </div>})()}
-        {/* ── OWNER'S NUMBERS (actual) ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
           if(!hasSnap)return null;
           // Group metrics
@@ -3970,11 +3772,11 @@ function TrackerApp(props){
           if(c.divPerShare>0||c.lastDiv>0){var ann=(c.divPerShare||c.lastDiv||0)*(c.divFrequency==="monthly"?12:c.divFrequency==="quarterly"?4:c.divFrequency==="semi"?2:1);
             var yld=pos.currentPrice>0?(ann/pos.currentPrice*100):0;
             var yoc=pos.avgCost>0?(ann/pos.avgCost*100):0;
-            if(yld>0)divInfo.push({l:"Div. Yield (Annual)",v:yld.toFixed(2)+"%",isGood:yld>=2});
-            if(yoc>0&&Math.abs(yoc-yld)>0.05)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
-            divInfo.push({l:"Annual Div/Share",v:"$"+ann.toFixed(2)});
-            divInfo.push({l:"Per Payment",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)+" ("+
-              (c.divFrequency==="monthly"?"monthly":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"annual":"quarterly")+")"});
+            divInfo.push({l:"Per Payment",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)});
+            divInfo.push({l:"Frequency",v:c.divFrequency==="monthly"?"Monthly":c.divFrequency==="semi"?"Semi-Annual":c.divFrequency==="annual"?"Annual":"Quarterly"});
+            if(yld>0)divInfo.push({l:"Yield",v:yld.toFixed(2)+"%",isGood:yld>=2});
+            if(yoc>0&&yoc!==yld)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
+            divInfo.push({l:"Annual/Share",v:"$"+ann.toFixed(2)});
             if(pos.shares>0)divInfo.push({l:"Annual Income",v:"$"+(pos.shares*ann).toFixed(0),isGood:true});
             if(c.exDivDate)divInfo.push({l:"Next Ex-Div",v:fD(c.exDivDate)})}
           else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
@@ -4293,6 +4095,7 @@ function TrackerApp(props){
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
     var ht=hubTab,setHt=setHubTab;
+    var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
     var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
     var _lensLoading=useState(false),lensLoading=_lensLoading[0],setLensLoading=_lensLoading[1];
     // Auto-fetch financial metrics when Lenses tab is opened
@@ -4660,7 +4463,7 @@ function TrackerApp(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:4}}>Quarterly Letters</div>
                 <div style={{fontSize:12,color:K.mid}}>Your personal investment reflections, generated each quarter.</div></div>
-              <button onClick={function(){var now3=new Date();var cq=Math.floor(now3.getMonth()/3)+1;var cy=now3.getFullYear();setShowQLetter("Q"+cq+"-"+cy)}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,whiteSpace:"nowrap"})}>Preview Q{Math.floor(new Date().getMonth()/3)+1} Letter</button></div></div>}
+              <button onClick={function(){var now3=new Date();var pq=Math.floor(now3.getMonth()/3);var py=now3.getFullYear();if(pq===0){pq=4;py--}setShowQLetter("Q"+pq+"-"+py)}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,whiteSpace:"nowrap"})}>View Latest</button></div></div>}
         {/* === BEHAVIORAL PATTERNS === */}
         {allDecs.length>=3&&(function(){
           var pats=[];
@@ -4678,25 +4481,6 @@ function TrackerApp(props){
             {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
               <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
-        {/* ═══ STRESS TEST ═══ */}
-        {portfolio.length>0&&<div style={{marginTop:24}}>
-          <div style={S.sec}><IC name="shield" size={14} color={K.acc}/>Stress Test</div>
-          {(function(){
-            var planned=portfolio.filter(function(c2){return(c2.scenarios||[]).length>0});
-            var unplanned=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
-            var totalScenarios=portfolio.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                <div style={{fontSize:28,fontWeight:800,color:planned.length===portfolio.length?K.grn:planned.length>0?K.amb:K.dim,fontFamily:fm}}>{planned.length}<span style={{fontSize:14,fontWeight:400,color:K.dim}}>/{portfolio.length}</span></div>
-                <div>
-                  <div style={{fontSize:12,fontWeight:600,color:K.txt}}>Holdings stress-tested</div>
-                  <div style={{fontSize:10,color:K.dim}}>{totalScenarios} scenario{totalScenarios!==1?"s":""} planned across your portfolio</div></div></div>
-              {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:10,fontFamily:fm,borderRadius:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={14}/>{c2.ticker}</button>})}</div>}
-              {planned.length===portfolio.length&&<div style={{fontSize:11,color:K.grn,fontFamily:fm}}>Every holding has a crisis plan. You're prepared.</div>}
-            </div>})()}</div>}
-
         {/* ═══ COMMUNITY BENCHMARK ═══ */}
         <div style={{marginTop:24}}>
           <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community</div>
@@ -4708,7 +4492,7 @@ function TrackerApp(props){
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <div style={{fontSize:36,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.red,fontFamily:fm}}>{globalOS.total}</div>
                   <div>
-                    <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Process Score: {globalOS.total}/100</div>
+                    <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{currentLevel.icon} {currentLevel.name}</div>
                     <div style={{fontSize:11,color:K.dim}}>Top investors maintain 70+ process scores</div></div></div>
               </div>
               {/* Benchmark */}
@@ -4892,7 +4676,7 @@ function TrackerApp(props){
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||(streakData.current||0)>=l.unlock)})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -5152,7 +4936,7 @@ function TrackerApp(props){
           var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
           // No artificial floors — let the math speak
           // Portfolio character
-          var character=classifyPortfolio(held);
+          var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
           // Sort by contribution
           holdingReturns.sort(function(a,b){return(b.weight/100*b.expected)-(a.weight/100*a.expected)});
           return<div>
@@ -6384,10 +6168,8 @@ function TrackerApp(props){
       var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
-      // Portfolio Character — shared classification
-      var portCharacter=classifyPortfolio(portfolio);
       // Notable movers (any holding with position data)
-      var movers=portfolio.filter(function(c2){var p2=c2.position||{};return p2.currentPrice>0}).map(function(c2){var p2=c2.position;return{ticker:c2.ticker,id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice,dayChg:c2._dayChangePct||0,dayAbs:c2._dayChange||0,hasPos:p2.avgCost>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
+      var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
       // Upcoming earnings
       var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
@@ -6402,8 +6184,6 @@ function TrackerApp(props){
       if(stale.length>0)actions.push({icon:"clock",color:K.red,text:stale.length+" thesis"+(stale.length>1?"es":"")+" older than 90 days",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
       var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
       if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.acc,text:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
-      var noScenario=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
-      if(noScenario.length>0&&actions.length<4)actions.push({icon:"shield",color:"#9333EA",text:noScenario.length+" holding"+(noScenario.length>1?"s":"")+" without a crisis plan",onClick:function(){setSelId(noScenario[0].id);setModal({type:"scenario"})}});
       // Investor quotes
       var quotes=[
         {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
@@ -6430,12 +6210,10 @@ function TrackerApp(props){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{minWidth:0}}>
               <div style={{fontSize:isMobile?16:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
-              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
-              {portfolio.length>=2&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:6,padding:"3px 10px",borderRadius:6,background:K.acc+"10",border:"1px solid "+K.acc+"20",fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{portCharacter}</div>}</div>
+              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div></div>
             {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
-              <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div>
-              <div style={{fontSize:8,color:K.dim,fontFamily:fm,marginTop:2}}>total return</div></div>}</div></div>
+              <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
           {/* Left column — Market Intel */}
           <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+(isDark?K.bdr:K.bdr2)}}>
@@ -6450,15 +6228,11 @@ function TrackerApp(props){
                   <span style={{marginLeft:"auto",fontSize:9,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
             {/* Notable movers */}
             {movers.length>0&&<div style={{marginBottom:14}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700}}>Your Holdings</div>
-                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}><span style={{width:50,textAlign:"right"}}>Today</span><span style={{width:50,textAlign:"right"}}>Total</span></div></div>
-              {movers.slice(0,6).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"20"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
+              <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Your Holdings</div>
+              {movers.slice(0,5).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
-                <span style={{marginLeft:"auto"}}/>
-                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg!==0?(m.dayChg>0?"+":"")+m.dayChg.toFixed(1)+"%":priceLoading?"···":"0.0%"}</span>
-                <span style={{width:50,textAlign:"right",fontSize:10,fontWeight:500,color:m.hasPos?(m.ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{m.hasPos?(m.ret>=0?"+":"")+m.ret.toFixed(1)+"%":"—"}</span></div>})}</div>}
+                <span style={{marginLeft:"auto",fontSize:11,fontWeight:600,color:m.ret>=0?K.grn:K.red,fontFamily:fm}}>{m.ret>=0?"+":""}{m.ret.toFixed(1)}%</span></div>})}</div>}
             {/* Insider signals */}
             {insiderSignals.length>0&&<div>
               <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
@@ -6475,28 +6249,6 @@ function TrackerApp(props){
             {actions.length===0&&<div style={{marginBottom:14}}>
               <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>All Clear</div>
               <div style={{fontSize:11,color:K.mid}}>No urgent actions. Your portfolio is in good shape.</div></div>}
-            {/* Recently reported */}
-            {(function(){var recent=portfolio.filter(function(c2){return c2.lastChecked&&Math.ceil((now-new Date(c2.lastChecked))/864e5)<=14});
-              if(recent.length===0)return null;
-              return<div style={{marginBottom:14}}>
-                <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>Recently Reported</div>
-                {recent.slice(0,3).map(function(c2){var kMet=c2.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var kTotal=c2.kpis.filter(function(k){return k.lastResult}).length;
-                  return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0",fontSize:11,cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                    <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                    {kTotal>0&&<span style={{fontSize:9,fontWeight:600,color:kMet===kTotal?K.grn:kMet>0?K.amb:K.red,fontFamily:fm,background:(kMet===kTotal?K.grn:kMet>0?K.amb:K.red)+"12",padding:"1px 6px",borderRadius:4}}>{kMet}/{kTotal} KPIs</span>}
-                    <span style={{fontSize:9,color:K.dim,marginLeft:"auto"}}>{Math.ceil((now-new Date(c2.lastChecked))/864e5)}d ago</span></div>})}</div>})()}
-            {/* Next dividend */}
-            {(function(){var nextDiv=portfolio.filter(function(c2){return(c2.divPerShare||c2.lastDiv)>0&&c2.exDivDate}).map(function(c2){
-              var ed=new Date(c2.exDivDate);var freq=c2.divFrequency;
-              while(ed<now){if(freq==="monthly")ed.setMonth(ed.getMonth()+1);else if(freq==="semi")ed.setMonth(ed.getMonth()+6);else if(freq==="annual")ed.setFullYear(ed.getFullYear()+1);else ed.setMonth(ed.getMonth()+3)}
-              return{ticker:c2.ticker,date:ed,days:Math.ceil((ed-now)/864e5),payout:(c2.position.shares||0)*(c2.divPerShare||c2.lastDiv||0)}}).filter(function(d){return d.days>=0&&d.days<=60}).sort(function(a,b){return a.days-b.days});
-              if(nextDiv.length===0)return null;var nd=nextDiv[0];
-              return<div style={{marginBottom:14}}>
-                <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>Next Dividend</div>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11}}>
-                  <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{nd.ticker}</span>
-                  <span style={{color:nd.days<=7?K.amb:K.dim,fontFamily:fm}}>{nd.days===0?"Today":nd.days+"d"}</span>
-                  {nd.payout>0&&<span style={{color:K.grn,fontFamily:fm,marginLeft:"auto"}}>${nd.payout.toFixed(0)}</span>}</div></div>})()}
             {/* Daily quote */}
             <div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginTop:actions.length>0?0:8}}>
               <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
@@ -6824,119 +6576,198 @@ function TrackerApp(props){
     {/* === QUARTERLY LETTER POPUP === */}
     {showQLetter&&(function(){
       var parts=showQLetter.split("-");var qNum=parseInt(parts[0].replace("Q",""));var qYear=parseInt(parts[1]);
-      var qLabels=["","Jan \u2014 Mar","Apr \u2014 Jun","Jul \u2014 Sep","Oct \u2014 Dec"];
+      var qLabels=["","Jan-Mar","Apr-Jun","Jul-Sep","Oct-Dec"];
       var qTitle="Q"+qNum+" "+qYear;var qRange=qLabels[qNum]+" "+qYear;
       var cut3=new Date(qYear,(qNum-1)*3,1).toISOString();var cutEnd=new Date(qYear,qNum*3,0).toISOString();
       var portfolio2=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"});
-      var portChar=classifyPortfolio(portfolio2);
+      // Activity
       var qRevs=weeklyReviews.filter(function(r2){return r2.date>=cut3&&r2.date<=cutEnd});
       var qDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cut3&&d2.date<=cutEnd)qDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
       var buys2=qDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
       var sells2=qDecs.filter(function(d2){return d2.action==="SELL"||d2.action==="TRIM"});
+      var holds2=qDecs.filter(function(d2){return d2.action==="HOLD"});
+      // Performance
       var held2=portfolio2.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0});
       var totalCost2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
       var totalVal2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
-      var totalRet2=totalCost2>0?((totalVal2-totalCost2)/totalCost2*100):0;var pnl=totalVal2-totalCost2;
-      var perfArr=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),val:c2.position.shares*c2.position.currentPrice,conv:c2.conviction||0,domain:c2.domain}}).sort(function(a,b){return b.ret-a.ret});
+      var totalRet2=totalCost2>0?((totalVal2-totalCost2)/totalCost2*100):0;
+      // Best/worst
+      var perfArr=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100)}}).sort(function(a,b){return b.ret-a.ret});
       var best2=perfArr[0];var worst2=perfArr[perfArr.length-1];
-      var shifts=[];cos.forEach(function(c2){(c2.convictionHistory||[]).forEach(function(cv){if(cv.date&&cv.date>=cut3&&cv.date<=cutEnd)shifts.push({ticker:c2.ticker,rating:cv.rating,note:cv.note||""})})});
-      var totalKpis=0;var metKpis=0;portfolio2.forEach(function(c2){c2.kpis.forEach(function(k){if(k.lastResult){totalKpis++;if(k.lastResult.status==="met")metKpis++}})});
+      // Conviction shifts
+      var shifts=[];cos.forEach(function(c2){var ch=c2.convictionHistory||[];ch.forEach(function(cv){if(cv.date&&cv.date>=cut3&&cv.date<=cutEnd)shifts.push({ticker:c2.ticker,rating:cv.rating,note:cv.note||""})})});
+      // Mastery progress
+      var avgMast=portfolio2.length>0?portfolio2.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/portfolio2.length:0;
+      var os2=calcOwnerScore(cos);
+      // Score decisions
+      var scored2=qDecs.filter(function(d2){return d2.outcome});
+      var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
+      // ── NEW: Richer data ──
+      // KPI hit rate across portfolio
+      var totalKpis=0;var metKpis=0;var missedKpis=0;
+      portfolio2.forEach(function(c2){c2.kpis.forEach(function(k){if(k.lastResult){totalKpis++;if(k.lastResult.status==="met")metKpis++;else missedKpis++}})});
       var kpiHitRate=totalKpis>0?Math.round(metKpis/totalKpis*100):0;
-      var qDivIncome=0;portfolio2.forEach(function(c2){var dps2=c2.divPerShare||c2.lastDiv||0;if(dps2<=0)return;var pos2=c2.position||{};var mult2=c2.divFrequency==="monthly"?3:c2.divFrequency==="quarterly"?1:c2.divFrequency==="semi"?0.5:0.25;qDivIncome+=(pos2.shares||0)*dps2*mult2});
-      var os2=calcOwnerScore(cos);var avgConv=portfolio2.length>0?Math.round(portfolio2.reduce(function(s,c2){return s+(c2.conviction||0)},0)/portfolio2.length*10)/10:0;
-      var streakWeeks=streakData.current||0;
-      var freshT=portfolio2.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<90}).length;
-      var staleT=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&(!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>=90)}).length;
+      // Thesis freshness
+      var freshTheses=portfolio2.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<90}).length;
+      var staleTheses=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&(!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>=90)}).length;
+      // Per-holding performance table
+      var holdPerf=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),val:c2.position.shares*c2.position.currentPrice,conv:c2.conviction||0}}).sort(function(a,b){return b.val-a.val});
+      // Streak data
+      var streakWeeks=streakData.current||0;var bestStreak=streakData.best||0;
+      // Moat coverage
       var moatCount=portfolio2.filter(function(c2){var mt2=c2.moatTypes||{};return Object.keys(mt2).some(function(k){return mt2[k]&&mt2[k].active})}).length;
-      var scenarioCount=portfolio2.filter(function(c2){return(c2.scenarios||[]).length>0}).length;
-      var totalScenarios=portfolio2.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
-      var earningsChecked=portfolio2.filter(function(c2){return c2.lastChecked&&c2.lastChecked>=cut3}).length;
-      var qNotes=0;cos.forEach(function(c2){(c2.docs||[]).forEach(function(d){if(d.updatedAt&&d.updatedAt>=cut3&&d.updatedAt<=cutEnd)qNotes++})});
-      var upcomingE=portfolio2.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+      // Journal entries this quarter
+      var qJournalCount=0;cos.forEach(function(c2){(c2.docs||[]).forEach(function(d){if(d.updatedAt&&d.updatedAt>=cut3&&d.updatedAt<=cutEnd)qJournalCount++})});
+      // Avg conviction
+      var avgConv=portfolio2.length>0?Math.round(portfolio2.reduce(function(s,c2){return s+(c2.conviction||0)},0)/portfolio2.length*10)/10:0;
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
-      function SH(p){return<div style={{fontSize:9,letterSpacing:_isThesis?1:2.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:800,marginTop:24,marginBottom:10,paddingBottom:6,borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:8}}><div style={{width:4,height:14,borderRadius:2,background:p.color||K.acc}}/>{p.children}</div>}
-      function exportPDF(){var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+'</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"><style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7}.page{max-width:680px;margin:0 auto;padding:40px}h1{font-family:Playfair Display,serif;font-size:36px;font-weight:800;letter-spacing:-1px}.sh{font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:JetBrains Mono,monospace;font-weight:800;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #1a1a2e}.kstats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin:16px 0 20px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}.ks-v{font-family:JetBrains Mono,monospace;font-size:20px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:7px 10px;border-bottom:1px solid #f3f4f6}.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}.pc{padding:10px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}.pc-v{font-family:JetBrains Mono,monospace;font-size:16px;font-weight:800}.pc-l{font-size:8px;color:#9ca3af;margin-top:2px}.footer{margin-top:36px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:8px;color:#9ca3af}</style></head><body><div class="page">';
-        h+='<div style="border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px"><div style="display:flex;justify-content:space-between"><div><h1>Quarterly Letter</h1><div style="font-size:13px;color:#6b7280;margin-top:4px">'+qTitle+' \u2014 '+qRange+'</div><div style="font-size:10px;color:#6b4ce6;font-family:JetBrains Mono,monospace;font-weight:600;margin-top:6px">'+portChar+'</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af">Quarterly Owner\'s Report</div></div></div></div>';
-        h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
-        h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">This quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions, <strong>'+earningsChecked+'</strong> earnings checked. Portfolio: <strong>'+portfolio2.length+'</strong> holdings.</p>';
-        h+='<div class="kstats"><div class="ks"><div class="ks-l">Total Return</div><div class="ks-v '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div></div>';
-        if(best2)h+='<div class="ks"><div class="ks-l">Best</div><div class="ks-v grn">'+best2.ticker+'</div><div class="ks-s">'+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%</div></div>';
-        h+='<div class="ks"><div class="ks-l">KPI Hit</div><div class="ks-v">'+kpiHitRate+'%</div></div>';
-        h+='<div class="ks"><div class="ks-l">Div Income</div><div class="ks-v '+(qDivIncome>0?"grn":"")+'">$'+Math.round(qDivIncome)+'</div></div></div>';
-        if(perfArr.length>0){h+='<div class="sh">Holdings</div><table><thead><tr><th>Ticker</th><th style="text-align:right">Return</th><th style="text-align:right">Value</th><th style="text-align:center">Conv</th></tr></thead><tbody>';perfArr.slice(0,10).forEach(function(hp){h+='<tr><td class="mono" style="font-weight:700">'+hp.ticker+'</td><td class="mono" style="text-align:right;color:'+(hp.ret>=0?"#16a34a":"#dc2626")+'">'+(hp.ret>=0?"+":"")+hp.ret.toFixed(1)+'%</td><td class="mono" style="text-align:right">$'+(hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0))+'</td><td style="text-align:center" class="mono">'+(hp.conv>0?hp.conv+"/10":"\u2014")+'</td></tr>'});h+='</tbody></table>'}
-        h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Week Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
-        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:20px;line-height:1.8">'+(qRevs.length>=10?"Exceptional discipline. Your process is compounding.":qRevs.length>=4?"Solid quarter. Consistency is your edge.":"Every journey starts with a step. Build the habit next quarter.")+'</p>';
-        h+='<div class="footer"><div><strong style="font-family:JetBrains Mono,monospace;letter-spacing:3px;color:#1a1a2e;font-size:10px">THESISALPHA</strong><div style="margin-top:4px">For personal use only. Not financial advice.</div></div><div style="text-align:right">'+new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+'</div></div></div></body></html>';
-        var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
-      return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(10px)"}} onClick={dismiss}>
-        <div style={{background:K.card,borderRadius:_isThesis?24:16,maxWidth:600,width:"92%",maxHeight:"88vh",overflowY:"auto",padding:_isThesis?"36px 40px":"32px 36px",position:"relative",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}>
-          <div style={{borderBottom:"3px solid "+K.txt,paddingBottom:16,marginBottom:24}}>
+      function exportPDF(){
+        var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+' - ThesisAlpha</title>';
+        h+='<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">';
+        h+='<style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7;background:#fff}';
+        h+='.page{max-width:680px;margin:0 auto;padding:40px}.hdr{border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px}';
+        h+='h1{font-family:Playfair Display,serif;font-size:28px;font-weight:700;margin-bottom:4px}';
+        h+='.sub{font-size:12px;color:#6b7280}.sec{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin:20px 0 8px;font-family:JetBrains Mono,monospace}';
+        h+='.stat{display:inline-block;text-align:center;padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;margin-right:8px}';
+        h+='.stat-n{font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace}.stat-l{font-size:8px;color:#9ca3af}';
+        h+='.grn{color:#22C55E}.red{color:#EF4444}.amb{color:#F59E0B}';
+        h+='.footer{margin-top:32px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af}';
+        h+='.footer strong{color:#1a1a2e;font-family:JetBrains Mono,monospace;letter-spacing:2px}</style></head><body><div class="page">';
+        h+='<div class="hdr"><h1>Quarterly Letter</h1><div class="sub">'+qTitle+' ('+qRange+') - '+(username||props.user||"Investor")+'</div></div>';
+        h+='<p style="margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
+        h+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
+        if(buys2.length>0)h+='You added to <span class="grn"><strong>'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
+        if(sells2.length>0)h+='You exited <span class="red"><strong>'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
+        h+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
+        h+='<div class="sec">Performance</div>';
+        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div><div class="stat-l">Total Return</div></div>';
+        if(best2)h+='<div class="stat"><div class="stat-n grn">'+best2.ticker+'</div><div class="stat-l">Best '+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%</div></div>';
+        if(worst2&&worst2.ticker!==best2.ticker)h+='<div class="stat"><div class="stat-n red">'+worst2.ticker+'</div><div class="stat-l">Worst '+(worst2.ret>=0?"+":"")+worst2.ret.toFixed(0)+'%</div></div>';
+        h+='</div>';
+        h+='<div class="sec">Discipline</div>';
+        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n">'+os2.total+'</div><div class="stat-l">Owner&#39;s Score</div></div>';
+        h+='<div class="stat"><div class="stat-n">'+avgMast.toFixed(1)+'</div><div class="stat-l">Avg Mastery /6</div></div>';
+        h+='<div class="stat"><div class="stat-n">'+qRevs.length+'</div><div class="stat-l">Reviews</div></div></div>';
+        if(shifts.length>0){h+='<div class="sec">Conviction Changes</div><p>';shifts.slice(0,5).forEach(function(s3){h+=s3.ticker+' ('+s3.rating+'/10'+(s3.note?" - "+s3.note.substring(0,50):"")+'); '});h+='</p>'}
+        if(scored2.length>0){h+='<div class="sec">Decision Scorecard</div><p>'+rights2+' right of '+scored2.length+' scored decisions this quarter.</p>'}
+        h+='<p style="margin-top:20px;font-style:italic;color:#6b7280">Keep investing with discipline. The process compounds just like the returns.</p>';
+        h+='<div class="footer"><div><strong>ThesisAlpha</strong></div><div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div>';
+        h+='</div></body></html>';
+        var w2=window.open("","_blank");w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},600)}
+      return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(6px)"}} onClick={dismiss}>
+        <div style={{background:K.card,borderRadius:16,maxWidth:560,width:"90%",maxHeight:"85vh",overflowY:"auto",padding:"32px 36px",position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
+          {/* Letter header */}
+          <div style={{borderBottom:"3px solid "+K.txt,paddingBottom:14,marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>Quarterly Letter</div>
-                <div style={{fontSize:13,color:K.dim,marginTop:4}}>{qTitle+" \u2014 "+qRange}</div>
-                <div style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600,marginTop:6}}>{portChar}</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:800,letterSpacing:3,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
-                <div style={{fontSize:9,color:K.dim,letterSpacing:1,textTransform:"uppercase"}}>{"Owner\u2019s Report"}</div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:6}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.85,marginBottom:20}}>{"Dear "+(username||"Investor")+","}<br/><br/>{"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews, logged "}<strong style={{color:K.txt}}>{qDecs.length}</strong>{" decisions, and checked earnings on "}<strong style={{color:K.txt}}>{earningsChecked}</strong>{" holdings. "}{buys2.length>0&&<span>{"Added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{sells2.length>0&&<span>{"Exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{"Portfolio: "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden",marginBottom:24}}>
-            <div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Total Return</div><div style={{fontSize:22,fontWeight:800,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>${(pnl>=0?"+":"")+Math.round(pnl).toLocaleString()}</div></div>
-            {best2&&<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Best</div><div style={{fontSize:18,fontWeight:800,color:K.grn,fontFamily:fm}}>{best2.ticker}</div><div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
-            {worst2&&worst2.ticker!==(best2&&best2.ticker)?<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Weakest</div><div style={{fontSize:18,fontWeight:800,color:K.red,fontFamily:fm}}>{worst2.ticker}</div><div style={{fontSize:9,color:K.red,fontFamily:fm}}>{worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>:<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}/>}
-            <div style={{padding:"14px 10px",textAlign:"center"}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Div Income</div><div style={{fontSize:18,fontWeight:800,color:qDivIncome>0?K.grn:K.dim,fontFamily:fm}}>${Math.round(qDivIncome)}</div><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>this quarter</div></div></div>
-          {perfArr.length>0&&<div><SH color={K.blue}>Holdings Snapshot</SH><div style={{marginBottom:20}}>{perfArr.slice(0,10).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:hi<Math.min(perfArr.length,10)-1?"1px solid "+K.bdr+"30":"none"}}><CoLogo domain={hp.domain} ticker={hp.ticker} size={18}/><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,width:48}}>{hp.ticker}</span><span style={{fontSize:11,fontWeight:700,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:60,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span><span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0)}</span><span style={{marginLeft:"auto",fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":"\u2014"}</span></div>})}</div></div>}
-          {totalKpis>0&&<div><SH color={K.grn}>KPI Scorecard</SH><div style={{display:"flex",gap:8,marginBottom:10}}><div style={{flex:1,padding:"10px",background:K.grn+"08",borderRadius:8,textAlign:"center",border:"1px solid "+K.grn+"20"}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div><div style={{fontSize:8,color:K.dim}}>Hit Rate</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{metKpis}</div><div style={{fontSize:8,color:K.dim}}>Met</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.red,fontFamily:fm}}>{totalKpis-metKpis}</div><div style={{fontSize:8,color:K.dim}}>Missed</div></div></div><div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong execution \u2014 thesis assumptions holding.":kpiHitRate>=40?"Mixed results \u2014 consider revising persistent misses.":"Several misses \u2014 review whether theses need updating."}</div></div>}
-          <SH color={K.acc}>Process Discipline</SH>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>{[{v:os2.total,l:"Owner\u2019s Score",c:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red},{v:streakWeeks+"wk",l:"Streak",c:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim},{v:avgConv,l:"Avg Conviction",c:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim},{v:qRevs.length,l:"Reviews",c:qRevs.length>=8?K.grn:qRevs.length>=4?K.amb:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>{[{v:moatCount+"/"+portfolio2.length,l:"Moats",c:moatCount>=portfolio2.length?K.grn:K.amb},{v:scenarioCount+"/"+portfolio2.length,l:"Stress-Tested",c:scenarioCount>=portfolio2.length?K.grn:K.amb},{v:freshT,l:"Fresh Theses",c:freshT>=portfolio2.length?K.grn:K.amb},{v:qNotes,l:"Notes",c:qNotes>0?K.txt:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
-          {shifts.length>0&&<div><SH color={K.amb}>Conviction Shifts</SH><div style={{marginBottom:12}}>{shifts.slice(0,6).map(function(s3,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"20"}}><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,width:44}}>{s3.ticker}</span><span style={{fontSize:12,fontWeight:800,color:s3.rating>=7?K.grn:s3.rating>=4?K.amb:K.red,fontFamily:fm}}>{s3.rating}/10</span>{s3.note&&<span style={{fontSize:10,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s3.note}</span>}</div>})}</div></div>}
-          {qDivIncome>0&&<div><SH color={K.grn}>Dividend Income</SH><div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{"Estimated this quarter: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome).toLocaleString()}</strong>{" \u2014 annualized: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome*4).toLocaleString()}</strong>{"/year."}</div></div>}
-          {(freshT>0||staleT>0)&&<div><SH color={"#9333EA"}>Thesis Health</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{freshT>0&&<span><strong style={{color:K.grn}}>{freshT}</strong>{" fresh (<90d). "}</span>}{staleT>0&&<span><strong style={{color:K.amb}}>{staleT}</strong>{" need review. "}</span>}{totalScenarios>0&&<span><strong style={{color:K.acc}}>{totalScenarios}</strong>{" pre-mortem scenarios across "}<strong>{scenarioCount}</strong>{" holdings."}</span>}</div></div>}
-          {/* Personalized Observations */}
-          {(function(){var obs=[];
-            // Conviction vs sizing mismatch
-            var highConvLowSize=perfArr.filter(function(hp){return hp.conv>=8}).sort(function(a,b){return a.val-b.val});
-            var lowConvHighSize=perfArr.filter(function(hp){return hp.conv>0&&hp.conv<=4}).sort(function(a,b){return b.val-a.val});
-            if(highConvLowSize.length>0&&perfArr.length>=3){var hc=highConvLowSize[0];var rank=perfArr.indexOf(hc)+1;
-              if(rank>perfArr.length/2)obs.push("Your highest-conviction holding ("+hc.ticker+" at "+hc.conv+"/10) is among the smaller positions in your portfolio. Your sizing and conviction tell different stories.")}
-            if(lowConvHighSize.length>0&&perfArr.length>=3){var lc=lowConvHighSize[0];var rank2=perfArr.indexOf(lc)+1;
-              if(rank2<=2)obs.push(lc.ticker+" is one of your largest positions, but your conviction is only "+lc.conv+"/10. Worth reflecting on whether that disconnect is intentional.")}
-            // Thesis staleness
-            var staleList=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&c2.thesisUpdatedAt}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)});
-            if(staleList.length>0){var oldest=staleList[0];var days=Math.ceil((new Date()-new Date(oldest.thesisUpdatedAt))/864e5);
-              if(days>120)obs.push("Your "+oldest.ticker+" thesis was last updated "+days+" days ago \u2014 the oldest in your portfolio. Markets change; does your reasoning still hold?")}
-            // Portfolio concentration
-            if(perfArr.length>=2&&totalVal2>0){var topWeight=perfArr[0].val/totalVal2*100;
-              if(topWeight>40)obs.push(perfArr[0].ticker+" represents "+topWeight.toFixed(0)+"% of your portfolio. Concentrated positions amplify both conviction and risk.")}
-            // ROIC quality observation
-            var highRoic=portfolio2.filter(function(c2){var s=c2.financialSnapshot||{};return s.roic&&s.roic.numVal&&s.roic.numVal>20});
-            if(highRoic.length>0&&portfolio2.length>=3)obs.push(highRoic.length+" of your "+portfolio2.length+" holdings have ROIC above 20%. Your portfolio leans toward capital-efficient businesses.");
-            // Decision quality
-            var scored3=qDecs.filter(function(d2){return d2.outcome});
-            if(scored3.length>=3){var rightPct=Math.round(scored3.filter(function(d2){return d2.outcome==="right"}).length/scored3.length*100);
-              obs.push("You scored "+scored3.length+" decisions this quarter \u2014 "+rightPct+"% were marked correct. Tracking outcomes builds better judgment over time.")}
-            // Best decision
-            var bestDec=qDecs.find(function(d2){if(d2.action!=="BUY"&&d2.action!=="ADD")return false;var co2=cos.find(function(x){return x.ticker===d2.ticker});if(!co2)return false;var p2=co2.position||{};return p2.currentPrice>0&&d2.price>0&&p2.currentPrice>d2.price});
-            if(bestDec){var co3=cos.find(function(x){return x.ticker===bestDec.ticker});var chg=((co3.position.currentPrice-bestDec.price)/bestDec.price*100);
-              if(chg>5)obs.push("Your decision to add "+bestDec.ticker+" at $"+bestDec.price+" has worked out so far (+"+chg.toFixed(0)+"%). The reasoning: \u201C"+(bestDec.reasoning||"").substring(0,80)+"\u201D")}
-            // Dividend growth observation
-            if(qDivIncome>0&&portfolio2.length>=3){var divPayers2=portfolio2.filter(function(c2){return(c2.divPerShare||c2.lastDiv)>0});
-              obs.push("You receive income from "+divPayers2.length+" dividend payers. Your estimated quarterly income of $"+Math.round(qDivIncome)+" compounds quietly in the background.")}
-            // Unscored stress tests
-            if(scenarioCount>0&&scenarioCount<portfolio2.length)obs.push(scenarioCount+" of "+portfolio2.length+" holdings have pre-mortem plans. The unplanned ones are the most vulnerable in a downturn.");
-            // Holding period
-            var withDate=portfolio2.filter(function(c2){return c2.purchaseDate});
-            if(withDate.length>0){var avgDays=Math.round(withDate.reduce(function(s,c2){return s+Math.ceil((new Date()-new Date(c2.purchaseDate))/864e5)},0)/withDate.length);
-              if(avgDays>365)obs.push("Your average holding period is "+Math.round(avgDays/30)+" months. Long-term ownership is where compounding happens.")}
-            if(obs.length===0)return null;
-            return<div><SH color={K.mid}>Observations</SH>
-              <div style={{marginBottom:16}}>{obs.slice(0,4).map(function(o,i){return<div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<Math.min(obs.length,4)-1?"1px solid "+K.bdr+"20":"none"}}>
-                <div style={{width:3,height:3,borderRadius:"50%",background:K.acc,marginTop:7,flexShrink:0}}/>
-                <div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{o}</div></div>})}</div></div>})()}
-          {upcomingE.length>0&&<div><SH color={K.amb}>Looking Ahead</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{"Upcoming: "}{upcomingE.slice(0,5).map(function(c2,i){return<span key={c2.id}>{i>0?", ":""}<strong style={{color:K.txt}}>{c2.ticker}</strong>{" ("+dU(c2.earningsDate)+"d)"}</span>})}</div></div>}
-          <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
+              <div><div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh}}>Quarterly Letter</div>
+                <div style={{fontSize:12,color:K.dim,marginTop:2}}>{qTitle} ({qRange})</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
+                <div style={{fontSize:9,color:K.dim}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
+          {/* Salutation */}
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
+            {"Dear "+(username||"Investor")+","}</div>
+          {/* Activity summary */}
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
+            {"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews and logged "}
+            <strong style={{color:K.txt}}>{qDecs.length}</strong>{" investment decisions. "}
+            {buys2.length>0&&<span>{"You added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+            {sells2.length>0&&<span>{"You exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
+            {"Your portfolio currently holds "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}
+          </div>
+          {/* Performance stats */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Performance</div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div>
+              <div style={{fontSize:8,color:K.dim}}>Total Return</div></div>
+            {best2&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{best2.ticker}</div>
+              <div style={{fontSize:8,color:K.grn}}>Best {best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
+            {worst2&&worst2.ticker!==(best2&&best2.ticker)&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{worst2.ticker}</div>
+              <div style={{fontSize:8,color:K.red}}>Worst {worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>}
+          </div>
+          {/* Discipline metrics */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Discipline</div>
+          <div style={{display:"flex",gap:10,marginBottom:20}}>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red,fontFamily:fm}}>{os2.total}</div>
+              <div style={{fontSize:8,color:K.dim}}>Owner's Score</div></div>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{avgMast.toFixed(1)}</div>
+              <div style={{fontSize:8,color:K.dim}}>Avg Mastery /6</div></div>
+            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
+              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{qRevs.length}</div>
+              <div style={{fontSize:8,color:K.dim}}>Weekly Reviews</div></div></div>
+          {/* Conviction shifts */}
+          {shifts.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Notable Conviction Changes</div>
+            {shifts.slice(0,5).map(function(s3,i3){return<div key={i3} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:i3<4?"1px solid "+K.bdr+"30":"none"}}>
+              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{s3.ticker}</span>
+              <span style={{fontSize:11,color:K.acc,fontFamily:fm}}>{s3.rating}/10</span>
+              {s3.note&&<span style={{fontSize:10,color:K.dim,flex:1}}>{s3.note.substring(0,50)}</span>}</div>})}</div>}
+          {/* Decision scorecard */}
+          {scored2.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
+            <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter ({scored2.length>0?Math.round(rights2/scored2.length*100):0}% accuracy).</div></div>}
+          {/* KPI Performance */}
+          {totalKpis>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>KPI Tracking</div>
+            <div style={{display:"flex",gap:10,marginBottom:8}}>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div>
+                <div style={{fontSize:8,color:K.grn}}>Hit Rate</div></div>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{metKpis}</div>
+                <div style={{fontSize:8,color:K.dim}}>Met</div></div>
+              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
+                <div style={{fontSize:18,fontWeight:700,color:K.red,fontFamily:fm}}>{missedKpis}</div>
+                <div style={{fontSize:8,color:K.dim}}>Missed</div></div></div>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong KPI execution — your thesis assumptions are holding up well.":kpiHitRate>=40?"Mixed results — consider whether missed KPIs warrant thesis revisions.":"Several KPI misses — revisit your assumptions and consider if your theses need updating."}</div></div>}
+          {/* Holdings breakdown */}
+          {holdPerf.length>0&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:isThesis?0.5:2,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Holdings Snapshot</div>
+            {holdPerf.slice(0,8).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:hi<Math.min(holdPerf.length,8)-1?"1px solid "+K.bdr+"30":"none"}}>
+              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{hp.ticker}</span>
+              <span style={{fontSize:11,fontWeight:600,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:56,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1000?(hp.val/1000).toFixed(1)+"k":hp.val.toFixed(0)}</span>
+              <span style={{fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":""}</span></div>})}</div>}
+          {/* Process & Behavioral Insights */}
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Process Health</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Weekly Streak</div>
+              <div style={{fontSize:14,fontWeight:700,color:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim,fontFamily:fm}}>{streakWeeks} wk{streakWeeks!==1?"s":""}</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Avg Conviction</div>
+              <div style={{fontSize:14,fontWeight:700,color:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim,fontFamily:fm}}>{avgConv}/10</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Moat Coverage</div>
+              <div style={{fontSize:14,fontWeight:700,color:moatCount>=portfolio2.length?K.grn:K.dim,fontFamily:fm}}>{moatCount}/{portfolio2.length}</div></div>
+            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,color:K.dim}}>Research Notes</div>
+              <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{qJournalCount}</div></div></div>
+          {/* Thesis health */}
+          {(freshTheses>0||staleTheses>0)&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{freshTheses>0&&<span><strong style={{color:K.grn}}>{freshTheses}</strong> {freshTheses===1?"thesis is":"theses are"} fresh (updated within 90 days). </span>}{staleTheses>0&&<span><strong style={{color:K.amb}}>{staleTheses}</strong> {staleTheses===1?"thesis needs":"theses need"} a review — consider whether your original assumptions still hold.</span>}</div></div>}
+          {/* Closing */}
+          <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:16,marginBottom:24,lineHeight:1.7}}>
+            {qRevs.length>=8?"An exceptional quarter of discipline. Your consistency is your edge.":qRevs.length>=4?"Solid quarterly discipline. The habit is forming.":qRevs.length>=1?"A start — aim for weekly reviews next quarter to build the compounding habit.":"The process compounds just like the returns. Start your weekly reviews next quarter."}</div>
+          {/* Actions */}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
-            <button onClick={function(){var eBody='<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e"><div style="border-bottom:3px solid #1a1a2e;padding-bottom:12px;margin-bottom:20px"><h1 style="font-family:Georgia,serif;font-size:24px;margin:0">Quarterly Letter</h1><div style="font-size:12px;color:#6b7280;margin-top:4px">'+qTitle+'</div></div><p style="line-height:1.8">Dear '+(username||"Investor")+', this quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions. Return: <strong style="color:'+(totalRet2>=0?"#16a34a":"#dc2626")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</strong>. Score: '+os2.total+'. KPI hit: '+kpiHitRate+'%.'+(qDivIncome>0?' Dividends: $'+Math.round(qDivIncome)+'.':'')+'</p><p style="font-style:italic;color:#9ca3af;margin-top:16px">The process compounds just like the returns.</p><div style="border-top:2px solid #1a1a2e;padding-top:10px;margin-top:20px;font-size:10px;color:#9ca3af"><strong style="color:#1a1a2e;letter-spacing:2px;font-family:monospace">THESISALPHA</strong></div></div>';sendQuarterlyLetterEmail(eBody,qTitle)}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
+            <button onClick={function(){
+              var eBody='<p>Dear '+(username||"Investor")+',</p>';
+              eBody+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
+              if(buys2.length>0)eBody+='You added to <strong style="color:#22c55e">'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
+              if(sells2.length>0)eBody+='You exited <strong style="color:#ef4444">'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
+              eBody+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
+              eBody+='<p style="margin-top:12px"><strong>Total Return:</strong> <span style="color:'+(totalRet2>=0?"#22c55e":"#ef4444")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</span>';
+              if(best2)eBody+=' &nbsp; <strong>Best:</strong> '+best2.ticker+' ('+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%)';
+              eBody+='</p>';
+              eBody+='<p><strong>Owner\'s Score:</strong> '+os2.total+' &nbsp; <strong>Avg Mastery:</strong> '+avgMast.toFixed(1)+'/6 &nbsp; <strong>Reviews:</strong> '+qRevs.length+'</p>';
+              eBody+='<p style="margin-top:12px;font-style:italic;color:#9ca3af">Keep investing with discipline. The process compounds just like the returns.</p>';
+              sendQuarterlyLetterEmail(eBody,qTitle)
+            }} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12})}>Close</button></div>
         </div></div>})()}
@@ -7067,7 +6898,7 @@ function TrackerApp(props){
         <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:11,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+      return null}()}<div key={contentKey} className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
@@ -7075,37 +6906,26 @@ export default function App(){
   var _ready=useState(false),ready=_ready[0],setReady=_ready[1];
   useEffect(function(){if(!supabase){setReady(true);return}
     supabase.auth.getSession().then(function(res){if(res.data.session){
-      // Check if user changed — clear localStorage to prevent data bleed
       var prevId=null;try{prevId=localStorage.getItem("ta-userid")}catch(e){}
       if(prevId&&prevId!==res.data.session.user.id){
-        //console.log("[ThesisAlpha] User changed from",prevId,"to",res.data.session.user.id,"— clearing local data");
-        var keysToKeep=["ta-theme"];var savedTheme=null;try{savedTheme=localStorage.getItem("ta-theme")}catch(e){}
-        Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&keysToKeep.indexOf(k)<0)localStorage.removeItem(k)});
-        if(savedTheme)try{localStorage.setItem("ta-theme",savedTheme)}catch(e){}
-      }
+        var savedTheme=null;try{savedTheme=localStorage.getItem("ta-theme")}catch(e){}
+        Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+        if(savedTheme)try{localStorage.setItem("ta-theme",savedTheme)}catch(e){}}
       try{localStorage.setItem("ta-userid",res.data.session.user.id)}catch(e){}
       setUser(res.data.session.user)}setReady(true)});
     var sub=supabase.auth.onAuthStateChange(function(event,session){
-      if(session){
-        var prevId2=null;try{prevId2=localStorage.getItem("ta-userid")}catch(e){}
+      if(session){var prevId2=null;try{prevId2=localStorage.getItem("ta-userid")}catch(e){}
         if(prevId2&&prevId2!==session.user.id){
-          //console.log("[ThesisAlpha] Auth change: user switched — reloading");
           var savedTheme2=null;try{savedTheme2=localStorage.getItem("ta-theme")}catch(e){}
           Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
           if(savedTheme2)try{localStorage.setItem("ta-theme",savedTheme2)}catch(e){}
           try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}
           window.location.reload();return}
-        try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}
-      }
+        try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}}
       setUser(session?session.user:null)});
     return function(){sub.data.subscription.unsubscribe()}},[]);
-  function onAuth(u){
-    try{localStorage.setItem("ta-userid",u.id)}catch(e){}
-    setUser(u)}
-  async function onLogout(){
-    // Clear user data from localStorage on logout
-    Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&k!=="ta-theme")localStorage.removeItem(k)});
-    if(supabase)await supabase.auth.signOut();setUser(null)}
+  function onAuth(u){try{localStorage.setItem("ta-userid",u.id)}catch(e){}setUser(u)}
+  async function onLogout(){Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&k!=="ta-theme")localStorage.removeItem(k)});if(supabase)await supabase.auth.signOut();setUser(null)}
   if(!ready){var _ltheme="thesis_dark";try{_ltheme=localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){}var _ldark=_ltheme==="dark"||_ltheme==="thesis_dark"||_ltheme==="purple"||_ltheme==="bloomberg";
     return<div style={{background:_ldark?"#1a1a1a":"#f7f7f7",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid "+(_ldark?"#333":"#ddd"),borderTopColor:_ldark?"#fff":"#1a1a1a",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:_ldark?"#777":"#888",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>}
   if(!user)return<LoginPage onAuth={onAuth}/>;
