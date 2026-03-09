@@ -233,6 +233,33 @@ function calcOwnerScore(cos){
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
 function calcMastery(c){
+// Shared portfolio character classification
+function classifyPortfolio(portfolio){
+  var styles={};var divPayerCount=0;var totalDivYield=0;var avgGrowth=0;var growthCount=0;
+  portfolio.forEach(function(c2){
+    var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
+    var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
+    var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
+    var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
+    if(yld>=2){divPayerCount++;totalDivYield+=yld}
+    var snap=c2.financialSnapshot||{};
+    if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}
+  });
+  var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
+  var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
+  var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
+  var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
+  var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
+  if(divDominant&&meanDivYield>=4)return"Income-Focused";
+  if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))return"Growth-Oriented";
+  if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))return"Value-Oriented";
+  if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))return"Quality Compounder";
+  if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))return"Income-Focused";
+  if(meanGrowth>20)return"Growth-Oriented";
+  if(divDominant)return"Income & Growth";
+  if(portfolio.length>=6)return"Diversified";
+  if(portfolio.length<=3)return"Concentrated";
+  return"Balanced"}
   var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
   // Star 2: Thesis written (core + at least 1 section)
   if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;if(hasSec)d.thesis=true}
@@ -286,20 +313,29 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
+var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN","GLADHD","PRT"];
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
   if(!met||!met.metric)return null;var m=met.metric;
   var annDiv=m["dividendPerShareAnnual"]||0;
   var divYield=m["dividendYieldIndicatedAnnual"]||0;
   if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
-  // Detect frequency using FMP lastDiv as per-payment reference
+  // Detect frequency
   var freq="quarterly";var perPayment=annDiv>0?annDiv/4:0;
-  if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){
+  // Method 1: Known monthly payers
+  if(KNOWN_MONTHLY.indexOf(ticker.toUpperCase())>=0){freq="monthly";perPayment=annDiv/12}
+  // Method 2: Cross-reference FMP lastDiv (per-payment) with Finnhub annual
+  else if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){
     var ratio=Math.round(annDiv/fmpLastDiv);
     if(ratio>=10&&ratio<=14){freq="monthly";perPayment=annDiv/12}
     else if(ratio>=3&&ratio<=5){freq="quarterly";perPayment=annDiv/4}
     else if(ratio>=1.5&&ratio<=2.5){freq="semi";perPayment=annDiv/2}
     else if(ratio<=1.2){freq="annual";perPayment=annDiv}
+  }
+  // Method 3: Finnhub sometimes has dividendsPerShareTTM which we can compare
+  else if(m["dividendsPerShareTTM"]&&m["dividendsPerShareTTM"]>0&&annDiv>0){
+    var ttmRatio=m["dividendsPerShareTTM"]/annDiv;
+    if(ttmRatio>0.9&&ttmRatio<1.1){/* roughly same = consistent quarterly or monthly, can't tell */}
   }
   return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:freq}
 }catch(e){return null}}
@@ -1184,7 +1220,11 @@ function TrackerApp(props){
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded,isPro]);
   // Auto-fetch dividend data for ALL users — uses Finnhub (free tier)
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){return !c._divChecked&&(!c.divPerShare||c.divPerShare===0)});
+    var needsDiv=cos.filter(function(c){
+      if(!c._divChecked&&(!c.divPerShare||c.divPerShare===0))return true;
+      // Re-check known monthly payers stuck as quarterly
+      if(c.divFrequency==="quarterly"&&KNOWN_MONTHLY.indexOf(c.ticker.toUpperCase())>=0)return true;
+      return false});
     if(needsDiv.length===0)return;
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
@@ -4943,7 +4983,7 @@ function TrackerApp(props){
           var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
           // No artificial floors — let the math speak
           // Portfolio character
-          var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
+          var character=classifyPortfolio(held);
           // Sort by contribution
           holdingReturns.sort(function(a,b){return(b.weight/100*b.expected)-(a.weight/100*a.expected)});
           return<div>
@@ -6175,36 +6215,8 @@ function TrackerApp(props){
       var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
-      // Portfolio Character — classify based on actual portfolio DNA
-      var styles={};var totalDivYield=0;var divPayerCount=0;var avgGrowth=0;var growthCount=0;
-      portfolio.forEach(function(c2){
-        var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
-        // Only count meaningful dividend payers (yield > 2%)
-        var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
-        var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
-        var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
-        if(yld>=2){divPayerCount++;totalDivYield+=yld}
-        // Track growth from snapshot
-        var snap=c2.financialSnapshot||{};
-        if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}
-      });
-      var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
-      var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
-      var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
-      var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
-      var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
-      // Classification priority
-      var portCharacter="Balanced";
-      if(divDominant&&meanDivYield>=4)portCharacter="Income-Focused";
-      else if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))portCharacter="Growth-Oriented";
-      else if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))portCharacter="Value-Oriented";
-      else if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))portCharacter="Quality Compounder";
-      else if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))portCharacter="Income-Focused";
-      else if(meanGrowth>20)portCharacter="Growth-Oriented";
-      else if(divDominant)portCharacter="Income & Growth";
-      else if(portfolio.length>=6)portCharacter="Diversified";
-      else if(portfolio.length<=3)portCharacter="Concentrated";
-      else portCharacter="Balanced";
+      // Portfolio Character — shared classification
+      var portCharacter=classifyPortfolio(portfolio);
       // Notable movers (any holding with position data)
       var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
@@ -6252,7 +6264,7 @@ function TrackerApp(props){
             {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
               <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div>
-              <div style={{display:"flex",gap:2,marginTop:4,justifyContent:"flex-end"}}>{[{id:"total",l:"Total"},{id:"ytd",l:"YTD"}].map(function(p2){return<button key={p2.id} onClick={function(e){e.stopPropagation();setBriefPeriod(p2.id)}} style={{padding:"2px 6px",fontSize:8,fontFamily:fm,borderRadius:4,border:"1px solid "+(briefPeriod===p2.id?K.acc+"50":K.bdr),background:briefPeriod===p2.id?K.acc+"12":"transparent",color:briefPeriod===p2.id?K.acc:K.dim,cursor:"pointer"}}>{p2.l}</button>})}</div></div>}</div></div>
+              <div style={{fontSize:8,color:K.dim,fontFamily:fm,marginTop:2}}>total return</div></div>}</div></div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
           {/* Left column — Market Intel */}
           <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+(isDark?K.bdr:K.bdr2)}}>
@@ -6288,6 +6300,28 @@ function TrackerApp(props){
             {actions.length===0&&<div style={{marginBottom:14}}>
               <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>All Clear</div>
               <div style={{fontSize:11,color:K.mid}}>No urgent actions. Your portfolio is in good shape.</div></div>}
+            {/* Recently reported */}
+            {(function(){var recent=portfolio.filter(function(c2){return c2.lastChecked&&Math.ceil((now-new Date(c2.lastChecked))/864e5)<=14});
+              if(recent.length===0)return null;
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>Recently Reported</div>
+                {recent.slice(0,3).map(function(c2){var kMet=c2.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var kTotal=c2.kpis.filter(function(k){return k.lastResult}).length;
+                  return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 0",fontSize:11,cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                    <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                    {kTotal>0&&<span style={{fontSize:9,fontWeight:600,color:kMet===kTotal?K.grn:kMet>0?K.amb:K.red,fontFamily:fm,background:(kMet===kTotal?K.grn:kMet>0?K.amb:K.red)+"12",padding:"1px 6px",borderRadius:4}}>{kMet}/{kTotal} KPIs</span>}
+                    <span style={{fontSize:9,color:K.dim,marginLeft:"auto"}}>{Math.ceil((now-new Date(c2.lastChecked))/864e5)}d ago</span></div>})}</div>})()}
+            {/* Next dividend */}
+            {(function(){var nextDiv=portfolio.filter(function(c2){return(c2.divPerShare||c2.lastDiv)>0&&c2.exDivDate}).map(function(c2){
+              var ed=new Date(c2.exDivDate);var freq=c2.divFrequency;
+              while(ed<now){if(freq==="monthly")ed.setMonth(ed.getMonth()+1);else if(freq==="semi")ed.setMonth(ed.getMonth()+6);else if(freq==="annual")ed.setFullYear(ed.getFullYear()+1);else ed.setMonth(ed.getMonth()+3)}
+              return{ticker:c2.ticker,date:ed,days:Math.ceil((ed-now)/864e5),payout:(c2.position.shares||0)*(c2.divPerShare||c2.lastDiv||0)}}).filter(function(d){return d.days>=0&&d.days<=60}).sort(function(a,b){return a.days-b.days});
+              if(nextDiv.length===0)return null;var nd=nextDiv[0];
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>Next Dividend</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11}}>
+                  <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{nd.ticker}</span>
+                  <span style={{color:nd.days<=7?K.amb:K.dim,fontFamily:fm}}>{nd.days===0?"Today":nd.days+"d"}</span>
+                  {nd.payout>0&&<span style={{color:K.grn,fontFamily:fm,marginLeft:"auto"}}>${nd.payout.toFixed(0)}</span>}</div></div>})()}
             {/* Daily quote */}
             <div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginTop:actions.length>0?0:8}}>
               <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
