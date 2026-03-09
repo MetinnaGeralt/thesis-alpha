@@ -710,6 +710,14 @@ function LoginPage(props){
 
 // ═══ TRACKER APP ═══
 function TrackerApp(props){
+  // Safety: verify localStorage belongs to this user
+  (function(){try{var storedId=localStorage.getItem("ta-userid");
+    if(storedId&&storedId!==props.userId){console.warn("[ThesisAlpha] localStorage user mismatch — clearing");
+      var savedTheme=localStorage.getItem("ta-theme");
+      Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+      if(savedTheme)localStorage.setItem("ta-theme",savedTheme);
+      localStorage.setItem("ta-userid",props.userId)}
+    else if(!storedId){localStorage.setItem("ta-userid",props.userId)}}catch(e){}})();
   var _th=useState(function(){try{
     var saved=localStorage.getItem("ta-theme");
     if(saved==="light"){localStorage.setItem("ta-theme","thesis_light");return"thesis_light"}
@@ -7063,11 +7071,38 @@ export default function App(){
   var _user=useState(null),user=_user[0],setUser=_user[1];
   var _ready=useState(false),ready=_ready[0],setReady=_ready[1];
   useEffect(function(){if(!supabase){setReady(true);return}
-    supabase.auth.getSession().then(function(res){if(res.data.session)setUser(res.data.session.user);setReady(true)});
-    var sub=supabase.auth.onAuthStateChange(function(event,session){setUser(session?session.user:null)});
+    supabase.auth.getSession().then(function(res){if(res.data.session){
+      // Check if user changed — clear localStorage to prevent data bleed
+      var prevId=null;try{prevId=localStorage.getItem("ta-userid")}catch(e){}
+      if(prevId&&prevId!==res.data.session.user.id){
+        console.log("[ThesisAlpha] User changed from",prevId,"to",res.data.session.user.id,"— clearing local data");
+        var keysToKeep=["ta-theme"];var savedTheme=null;try{savedTheme=localStorage.getItem("ta-theme")}catch(e){}
+        Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&keysToKeep.indexOf(k)<0)localStorage.removeItem(k)});
+        if(savedTheme)try{localStorage.setItem("ta-theme",savedTheme)}catch(e){}
+      }
+      try{localStorage.setItem("ta-userid",res.data.session.user.id)}catch(e){}
+      setUser(res.data.session.user)}setReady(true)});
+    var sub=supabase.auth.onAuthStateChange(function(event,session){
+      if(session){
+        var prevId2=null;try{prevId2=localStorage.getItem("ta-userid")}catch(e){}
+        if(prevId2&&prevId2!==session.user.id){
+          console.log("[ThesisAlpha] Auth change: user switched — reloading");
+          var savedTheme2=null;try{savedTheme2=localStorage.getItem("ta-theme")}catch(e){}
+          Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-"))localStorage.removeItem(k)});
+          if(savedTheme2)try{localStorage.setItem("ta-theme",savedTheme2)}catch(e){}
+          try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}
+          window.location.reload();return}
+        try{localStorage.setItem("ta-userid",session.user.id)}catch(e){}
+      }
+      setUser(session?session.user:null)});
     return function(){sub.data.subscription.unsubscribe()}},[]);
-  function onAuth(u){setUser(u)}
-  async function onLogout(){if(supabase)await supabase.auth.signOut();setUser(null)}
+  function onAuth(u){
+    try{localStorage.setItem("ta-userid",u.id)}catch(e){}
+    setUser(u)}
+  async function onLogout(){
+    // Clear user data from localStorage on logout
+    Object.keys(localStorage).forEach(function(k){if(k.startsWith("ta-")&&k!=="ta-theme")localStorage.removeItem(k)});
+    if(supabase)await supabase.auth.signOut();setUser(null)}
   if(!ready){var _ltheme="thesis_dark";try{_ltheme=localStorage.getItem("ta-theme")||"thesis_dark"}catch(e){}var _ldark=_ltheme==="dark"||_ltheme==="thesis_dark"||_ltheme==="purple"||_ltheme==="bloomberg";
     return<div style={{background:_ldark?"#1a1a1a":"#f7f7f7",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{width:32,height:32,border:"2px solid "+(_ldark?"#333":"#ddd"),borderTopColor:_ldark?"#fff":"#1a1a1a",borderRadius:"50%",animation:"spin .8s linear infinite"}}/><span style={{color:_ldark?"#777":"#888",fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:1}}>ThesisAlpha</span></div>}
   if(!user)return<LoginPage onAuth={onAuth}/>;
