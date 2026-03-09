@@ -232,7 +232,6 @@ function calcOwnerScore(cos){
   balP=Math.min(balP,15);
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
-function calcMastery(c){
 // Shared portfolio character classification
 function classifyPortfolio(portfolio){
   var styles={};var divPayerCount=0;var totalDivYield=0;var avgGrowth=0;var growthCount=0;
@@ -260,6 +259,7 @@ function classifyPortfolio(portfolio){
   if(portfolio.length>=6)return"Diversified";
   if(portfolio.length<=3)return"Concentrated";
   return"Balanced"}
+function calcMastery(c){
   var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
   // Star 2: Thesis written (core + at least 1 section)
   if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;if(hasSec)d.thesis=true}
