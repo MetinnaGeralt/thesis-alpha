@@ -6813,198 +6813,78 @@ function TrackerApp(props){
     {/* === QUARTERLY LETTER POPUP === */}
     {showQLetter&&(function(){
       var parts=showQLetter.split("-");var qNum=parseInt(parts[0].replace("Q",""));var qYear=parseInt(parts[1]);
-      var qLabels=["","Jan-Mar","Apr-Jun","Jul-Sep","Oct-Dec"];
+      var qLabels=["","Jan \u2014 Mar","Apr \u2014 Jun","Jul \u2014 Sep","Oct \u2014 Dec"];
       var qTitle="Q"+qNum+" "+qYear;var qRange=qLabels[qNum]+" "+qYear;
       var cut3=new Date(qYear,(qNum-1)*3,1).toISOString();var cutEnd=new Date(qYear,qNum*3,0).toISOString();
       var portfolio2=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"});
-      // Activity
+      var portChar=classifyPortfolio(portfolio2);
       var qRevs=weeklyReviews.filter(function(r2){return r2.date>=cut3&&r2.date<=cutEnd});
       var qDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cut3&&d2.date<=cutEnd)qDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
       var buys2=qDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
       var sells2=qDecs.filter(function(d2){return d2.action==="SELL"||d2.action==="TRIM"});
-      var holds2=qDecs.filter(function(d2){return d2.action==="HOLD"});
-      // Performance
       var held2=portfolio2.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.avgCost>0&&p2.currentPrice>0});
       var totalCost2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
       var totalVal2=held2.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
-      var totalRet2=totalCost2>0?((totalVal2-totalCost2)/totalCost2*100):0;
-      // Best/worst
-      var perfArr=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100)}}).sort(function(a,b){return b.ret-a.ret});
+      var totalRet2=totalCost2>0?((totalVal2-totalCost2)/totalCost2*100):0;var pnl=totalVal2-totalCost2;
+      var perfArr=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),val:c2.position.shares*c2.position.currentPrice,conv:c2.conviction||0,domain:c2.domain}}).sort(function(a,b){return b.ret-a.ret});
       var best2=perfArr[0];var worst2=perfArr[perfArr.length-1];
-      // Conviction shifts
-      var shifts=[];cos.forEach(function(c2){var ch=c2.convictionHistory||[];ch.forEach(function(cv){if(cv.date&&cv.date>=cut3&&cv.date<=cutEnd)shifts.push({ticker:c2.ticker,rating:cv.rating,note:cv.note||""})})});
-      // Mastery progress
-      var avgMast=portfolio2.length>0?portfolio2.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/portfolio2.length:0;
-      var os2=calcOwnerScore(cos);
-      // Score decisions
-      var scored2=qDecs.filter(function(d2){return d2.outcome});
-      var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
-      // ── NEW: Richer data ──
-      // KPI hit rate across portfolio
-      var totalKpis=0;var metKpis=0;var missedKpis=0;
-      portfolio2.forEach(function(c2){c2.kpis.forEach(function(k){if(k.lastResult){totalKpis++;if(k.lastResult.status==="met")metKpis++;else missedKpis++}})});
+      var shifts=[];cos.forEach(function(c2){(c2.convictionHistory||[]).forEach(function(cv){if(cv.date&&cv.date>=cut3&&cv.date<=cutEnd)shifts.push({ticker:c2.ticker,rating:cv.rating,note:cv.note||""})})});
+      var totalKpis=0;var metKpis=0;portfolio2.forEach(function(c2){c2.kpis.forEach(function(k){if(k.lastResult){totalKpis++;if(k.lastResult.status==="met")metKpis++}})});
       var kpiHitRate=totalKpis>0?Math.round(metKpis/totalKpis*100):0;
-      // Thesis freshness
-      var freshTheses=portfolio2.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<90}).length;
-      var staleTheses=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&(!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>=90)}).length;
-      // Per-holding performance table
-      var holdPerf=held2.map(function(c2){return{ticker:c2.ticker,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),val:c2.position.shares*c2.position.currentPrice,conv:c2.conviction||0}}).sort(function(a,b){return b.val-a.val});
-      // Streak data
-      var streakWeeks=streakData.current||0;var bestStreak=streakData.best||0;
-      // Moat coverage
+      var qDivIncome=0;portfolio2.forEach(function(c2){var dps2=c2.divPerShare||c2.lastDiv||0;if(dps2<=0)return;var pos2=c2.position||{};var mult2=c2.divFrequency==="monthly"?3:c2.divFrequency==="quarterly"?1:c2.divFrequency==="semi"?0.5:0.25;qDivIncome+=(pos2.shares||0)*dps2*mult2});
+      var os2=calcOwnerScore(cos);var avgConv=portfolio2.length>0?Math.round(portfolio2.reduce(function(s,c2){return s+(c2.conviction||0)},0)/portfolio2.length*10)/10:0;
+      var streakWeeks=streakData.current||0;
+      var freshT=portfolio2.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<90}).length;
+      var staleT=portfolio2.filter(function(c2){return c2.thesisNote&&c2.thesisNote.trim().length>20&&(!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>=90)}).length;
       var moatCount=portfolio2.filter(function(c2){var mt2=c2.moatTypes||{};return Object.keys(mt2).some(function(k){return mt2[k]&&mt2[k].active})}).length;
-      // Journal entries this quarter
-      var qJournalCount=0;cos.forEach(function(c2){(c2.docs||[]).forEach(function(d){if(d.updatedAt&&d.updatedAt>=cut3&&d.updatedAt<=cutEnd)qJournalCount++})});
-      // Avg conviction
-      var avgConv=portfolio2.length>0?Math.round(portfolio2.reduce(function(s,c2){return s+(c2.conviction||0)},0)/portfolio2.length*10)/10:0;
+      var scenarioCount=portfolio2.filter(function(c2){return(c2.scenarios||[]).length>0}).length;
+      var totalScenarios=portfolio2.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
+      var earningsChecked=portfolio2.filter(function(c2){return c2.lastChecked&&c2.lastChecked>=cut3}).length;
+      var qNotes=0;cos.forEach(function(c2){(c2.docs||[]).forEach(function(d){if(d.updatedAt&&d.updatedAt>=cut3&&d.updatedAt<=cutEnd)qNotes++})});
+      var upcomingE=portfolio2.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
-      function exportPDF(){
-        var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+' - ThesisAlpha</title>';
-        h+='<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">';
-        h+='<style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7;background:#fff}';
-        h+='.page{max-width:680px;margin:0 auto;padding:40px}.hdr{border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px}';
-        h+='h1{font-family:Playfair Display,serif;font-size:28px;font-weight:700;margin-bottom:4px}';
-        h+='.sub{font-size:12px;color:#6b7280}.sec{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin:20px 0 8px;font-family:JetBrains Mono,monospace}';
-        h+='.stat{display:inline-block;text-align:center;padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;margin-right:8px}';
-        h+='.stat-n{font-size:20px;font-weight:700;font-family:JetBrains Mono,monospace}.stat-l{font-size:8px;color:#9ca3af}';
-        h+='.grn{color:#22C55E}.red{color:#EF4444}.amb{color:#F59E0B}';
-        h+='.footer{margin-top:32px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af}';
-        h+='.footer strong{color:#1a1a2e;font-family:JetBrains Mono,monospace;letter-spacing:2px}</style></head><body><div class="page">';
-        h+='<div class="hdr"><h1>Quarterly Letter</h1><div class="sub">'+qTitle+' ('+qRange+') - '+(username||props.user||"Investor")+'</div></div>';
-        h+='<p style="margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
-        h+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
-        if(buys2.length>0)h+='You added to <span class="grn"><strong>'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
-        if(sells2.length>0)h+='You exited <span class="red"><strong>'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong></span>. ';
-        h+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
-        h+='<div class="sec">Performance</div>';
-        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div><div class="stat-l">Total Return</div></div>';
-        if(best2)h+='<div class="stat"><div class="stat-n grn">'+best2.ticker+'</div><div class="stat-l">Best '+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%</div></div>';
-        if(worst2&&worst2.ticker!==best2.ticker)h+='<div class="stat"><div class="stat-n red">'+worst2.ticker+'</div><div class="stat-l">Worst '+(worst2.ret>=0?"+":"")+worst2.ret.toFixed(0)+'%</div></div>';
-        h+='</div>';
-        h+='<div class="sec">Discipline</div>';
-        h+='<div style="margin-bottom:16px"><div class="stat"><div class="stat-n">'+os2.total+'</div><div class="stat-l">Owner&#39;s Score</div></div>';
-        h+='<div class="stat"><div class="stat-n">'+avgMast.toFixed(1)+'</div><div class="stat-l">Avg Mastery /6</div></div>';
-        h+='<div class="stat"><div class="stat-n">'+qRevs.length+'</div><div class="stat-l">Reviews</div></div></div>';
-        if(shifts.length>0){h+='<div class="sec">Conviction Changes</div><p>';shifts.slice(0,5).forEach(function(s3){h+=s3.ticker+' ('+s3.rating+'/10'+(s3.note?" - "+s3.note.substring(0,50):"")+'); '});h+='</p>'}
-        if(scored2.length>0){h+='<div class="sec">Decision Scorecard</div><p>'+rights2+' right of '+scored2.length+' scored decisions this quarter.</p>'}
-        h+='<p style="margin-top:20px;font-style:italic;color:#6b7280">Keep investing with discipline. The process compounds just like the returns.</p>';
-        h+='<div class="footer"><div><strong>ThesisAlpha</strong></div><div>'+new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})+'</div></div>';
-        h+='</div></body></html>';
-        var w2=window.open("","_blank");w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},600)}
-      return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(6px)"}} onClick={dismiss}>
-        <div style={{background:K.card,borderRadius:16,maxWidth:560,width:"90%",maxHeight:"85vh",overflowY:"auto",padding:"32px 36px",position:"relative",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
-          {/* Letter header */}
-          <div style={{borderBottom:"3px solid "+K.txt,paddingBottom:14,marginBottom:20}}>
+      function SH(p){return<div style={{fontSize:9,letterSpacing:_isThesis?1:2.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:800,marginTop:24,marginBottom:10,paddingBottom:6,borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:8}}><div style={{width:4,height:14,borderRadius:2,background:p.color||K.acc}}/>{p.children}</div>}
+      function exportPDF(){var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+'</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"><style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7}.page{max-width:680px;margin:0 auto;padding:40px}h1{font-family:Playfair Display,serif;font-size:36px;font-weight:800;letter-spacing:-1px}.sh{font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:JetBrains Mono,monospace;font-weight:800;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #1a1a2e}.kstats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin:16px 0 20px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}.ks-v{font-family:JetBrains Mono,monospace;font-size:20px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:7px 10px;border-bottom:1px solid #f3f4f6}.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}.pc{padding:10px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}.pc-v{font-family:JetBrains Mono,monospace;font-size:16px;font-weight:800}.pc-l{font-size:8px;color:#9ca3af;margin-top:2px}.footer{margin-top:36px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:8px;color:#9ca3af}</style></head><body><div class="page">';
+        h+='<div style="border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px"><div style="display:flex;justify-content:space-between"><div><h1>Quarterly Letter</h1><div style="font-size:13px;color:#6b7280;margin-top:4px">'+qTitle+' \u2014 '+qRange+'</div><div style="font-size:10px;color:#6b4ce6;font-family:JetBrains Mono,monospace;font-weight:600;margin-top:6px">'+portChar+'</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af">Quarterly Owner\'s Report</div></div></div></div>';
+        h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
+        h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">This quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions, <strong>'+earningsChecked+'</strong> earnings checked. Portfolio: <strong>'+portfolio2.length+'</strong> holdings.</p>';
+        h+='<div class="kstats"><div class="ks"><div class="ks-l">Total Return</div><div class="ks-v '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div></div>';
+        if(best2)h+='<div class="ks"><div class="ks-l">Best</div><div class="ks-v grn">'+best2.ticker+'</div><div class="ks-s">'+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%</div></div>';
+        h+='<div class="ks"><div class="ks-l">KPI Hit</div><div class="ks-v">'+kpiHitRate+'%</div></div>';
+        h+='<div class="ks"><div class="ks-l">Div Income</div><div class="ks-v '+(qDivIncome>0?"grn":"")+'">$'+Math.round(qDivIncome)+'</div></div></div>';
+        if(perfArr.length>0){h+='<div class="sh">Holdings</div><table><thead><tr><th>Ticker</th><th style="text-align:right">Return</th><th style="text-align:right">Value</th><th style="text-align:center">Conv</th></tr></thead><tbody>';perfArr.slice(0,10).forEach(function(hp){h+='<tr><td class="mono" style="font-weight:700">'+hp.ticker+'</td><td class="mono" style="text-align:right;color:'+(hp.ret>=0?"#16a34a":"#dc2626")+'">'+(hp.ret>=0?"+":"")+hp.ret.toFixed(1)+'%</td><td class="mono" style="text-align:right">$'+(hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0))+'</td><td style="text-align:center" class="mono">'+(hp.conv>0?hp.conv+"/10":"\u2014")+'</td></tr>'});h+='</tbody></table>'}
+        h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Week Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
+        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:20px;line-height:1.8">'+(qRevs.length>=10?"Exceptional discipline. Your process is compounding.":qRevs.length>=4?"Solid quarter. Consistency is your edge.":"Every journey starts with a step. Build the habit next quarter.")+'</p>';
+        h+='<div class="footer"><div><strong style="font-family:JetBrains Mono,monospace;letter-spacing:3px;color:#1a1a2e;font-size:10px">THESISALPHA</strong><div style="margin-top:4px">For personal use only. Not financial advice.</div></div><div style="text-align:right">'+new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+'</div></div></div></body></html>';
+        var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
+      return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(10px)"}} onClick={dismiss}>
+        <div style={{background:K.card,borderRadius:_isThesis?24:16,maxWidth:600,width:"92%",maxHeight:"88vh",overflowY:"auto",padding:_isThesis?"36px 40px":"32px 36px",position:"relative",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}>
+          <div style={{borderBottom:"3px solid "+K.txt,paddingBottom:16,marginBottom:24}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div><div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh}}>Quarterly Letter</div>
-                <div style={{fontSize:12,color:K.dim,marginTop:2}}>{qTitle} ({qRange})</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
-                <div style={{fontSize:9,color:K.dim}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
-          {/* Salutation */}
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
-            {"Dear "+(username||"Investor")+","}</div>
-          {/* Activity summary */}
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.8,marginBottom:20}}>
-            {"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews and logged "}
-            <strong style={{color:K.txt}}>{qDecs.length}</strong>{" investment decisions. "}
-            {buys2.length>0&&<span>{"You added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
-            {sells2.length>0&&<span>{"You exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}
-            {"Your portfolio currently holds "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}
-          </div>
-          {/* Performance stats */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Performance</div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}>
-            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:22,fontWeight:700,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div>
-              <div style={{fontSize:8,color:K.dim}}>Total Return</div></div>
-            {best2&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{best2.ticker}</div>
-              <div style={{fontSize:8,color:K.grn}}>Best {best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
-            {worst2&&worst2.ticker!==(best2&&best2.ticker)&&<div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{worst2.ticker}</div>
-              <div style={{fontSize:8,color:K.red}}>Worst {worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>}
-          </div>
-          {/* Discipline metrics */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Discipline</div>
-          <div style={{display:"flex",gap:10,marginBottom:20}}>
-            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:22,fontWeight:700,color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red,fontFamily:fm}}>{os2.total}</div>
-              <div style={{fontSize:8,color:K.dim}}>Owner's Score</div></div>
-            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{avgMast.toFixed(1)}</div>
-              <div style={{fontSize:8,color:K.dim}}>Avg Mastery /6</div></div>
-            <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{qRevs.length}</div>
-              <div style={{fontSize:8,color:K.dim}}>Weekly Reviews</div></div></div>
-          {/* Conviction shifts */}
-          {shifts.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Notable Conviction Changes</div>
-            {shifts.slice(0,5).map(function(s3,i3){return<div key={i3} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:i3<4?"1px solid "+K.bdr+"30":"none"}}>
-              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{s3.ticker}</span>
-              <span style={{fontSize:11,color:K.acc,fontFamily:fm}}>{s3.rating}/10</span>
-              {s3.note&&<span style={{fontSize:10,color:K.dim,flex:1}}>{s3.note.substring(0,50)}</span>}</div>})}</div>}
-          {/* Decision scorecard */}
-          {scored2.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
-            <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter ({scored2.length>0?Math.round(rights2/scored2.length*100):0}% accuracy).</div></div>}
-          {/* KPI Performance */}
-          {totalKpis>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>KPI Tracking</div>
-            <div style={{display:"flex",gap:10,marginBottom:8}}>
-              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:700,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div>
-                <div style={{fontSize:8,color:K.grn}}>Hit Rate</div></div>
-              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{metKpis}</div>
-                <div style={{fontSize:8,color:K.dim}}>Met</div></div>
-              <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr,textAlign:"center"}}>
-                <div style={{fontSize:18,fontWeight:700,color:K.red,fontFamily:fm}}>{missedKpis}</div>
-                <div style={{fontSize:8,color:K.dim}}>Missed</div></div></div>
-            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong KPI execution — your thesis assumptions are holding up well.":kpiHitRate>=40?"Mixed results — consider whether missed KPIs warrant thesis revisions.":"Several KPI misses — revisit your assumptions and consider if your theses need updating."}</div></div>}
-          {/* Holdings breakdown */}
-          {holdPerf.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:isThesis?0.5:2,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Holdings Snapshot</div>
-            {holdPerf.slice(0,8).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:hi<Math.min(holdPerf.length,8)-1?"1px solid "+K.bdr+"30":"none"}}>
-              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{hp.ticker}</span>
-              <span style={{fontSize:11,fontWeight:600,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:56,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1000?(hp.val/1000).toFixed(1)+"k":hp.val.toFixed(0)}</span>
-              <span style={{fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":""}</span></div>})}</div>}
-          {/* Process & Behavioral Insights */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Process Health</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
-            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
-              <div style={{fontSize:9,color:K.dim}}>Weekly Streak</div>
-              <div style={{fontSize:14,fontWeight:700,color:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim,fontFamily:fm}}>{streakWeeks} wk{streakWeeks!==1?"s":""}</div></div>
-            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
-              <div style={{fontSize:9,color:K.dim}}>Avg Conviction</div>
-              <div style={{fontSize:14,fontWeight:700,color:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim,fontFamily:fm}}>{avgConv}/10</div></div>
-            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
-              <div style={{fontSize:9,color:K.dim}}>Moat Coverage</div>
-              <div style={{fontSize:14,fontWeight:700,color:moatCount>=portfolio2.length?K.grn:K.dim,fontFamily:fm}}>{moatCount}/{portfolio2.length}</div></div>
-            <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
-              <div style={{fontSize:9,color:K.dim}}>Research Notes</div>
-              <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{qJournalCount}</div></div></div>
-          {/* Thesis health */}
-          {(freshTheses>0||staleTheses>0)&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{freshTheses>0&&<span><strong style={{color:K.grn}}>{freshTheses}</strong> {freshTheses===1?"thesis is":"theses are"} fresh (updated within 90 days). </span>}{staleTheses>0&&<span><strong style={{color:K.amb}}>{staleTheses}</strong> {staleTheses===1?"thesis needs":"theses need"} a review — consider whether your original assumptions still hold.</span>}</div></div>}
-          {/* Closing */}
-          <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:16,marginBottom:24,lineHeight:1.7}}>
-            {qRevs.length>=8?"An exceptional quarter of discipline. Your consistency is your edge.":qRevs.length>=4?"Solid quarterly discipline. The habit is forming.":qRevs.length>=1?"A start — aim for weekly reviews next quarter to build the compounding habit.":"The process compounds just like the returns. Start your weekly reviews next quarter."}</div>
-          {/* Actions */}
+              <div><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>Quarterly Letter</div>
+                <div style={{fontSize:13,color:K.dim,marginTop:4}}>{qTitle+" \u2014 "+qRange}</div>
+                <div style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600,marginTop:6}}>{portChar}</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:800,letterSpacing:3,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
+                <div style={{fontSize:9,color:K.dim,letterSpacing:1,textTransform:"uppercase"}}>{"Owner\u2019s Report"}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:6}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
+          <div style={{fontSize:13,color:K.mid,lineHeight:1.85,marginBottom:20}}>{"Dear "+(username||"Investor")+","}<br/><br/>{"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews, logged "}<strong style={{color:K.txt}}>{qDecs.length}</strong>{" decisions, and checked earnings on "}<strong style={{color:K.txt}}>{earningsChecked}</strong>{" holdings. "}{buys2.length>0&&<span>{"Added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{sells2.length>0&&<span>{"Exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{"Portfolio: "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden",marginBottom:24}}>
+            <div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Total Return</div><div style={{fontSize:22,fontWeight:800,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>${(pnl>=0?"+":"")+Math.round(pnl).toLocaleString()}</div></div>
+            {best2&&<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Best</div><div style={{fontSize:18,fontWeight:800,color:K.grn,fontFamily:fm}}>{best2.ticker}</div><div style={{fontSize:9,color:K.grn,fontFamily:fm}}>{best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
+            {worst2&&worst2.ticker!==(best2&&best2.ticker)?<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Weakest</div><div style={{fontSize:18,fontWeight:800,color:K.red,fontFamily:fm}}>{worst2.ticker}</div><div style={{fontSize:9,color:K.red,fontFamily:fm}}>{worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>:<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}/>}
+            <div style={{padding:"14px 10px",textAlign:"center"}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Div Income</div><div style={{fontSize:18,fontWeight:800,color:qDivIncome>0?K.grn:K.dim,fontFamily:fm}}>${Math.round(qDivIncome)}</div><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>this quarter</div></div></div>
+          {perfArr.length>0&&<div><SH color={K.blue}>Holdings Snapshot</SH><div style={{marginBottom:20}}>{perfArr.slice(0,10).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:hi<Math.min(perfArr.length,10)-1?"1px solid "+K.bdr+"30":"none"}}><CoLogo domain={hp.domain} ticker={hp.ticker} size={18}/><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,width:48}}>{hp.ticker}</span><span style={{fontSize:11,fontWeight:700,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:60,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span><span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0)}</span><span style={{marginLeft:"auto",fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":"\u2014"}</span></div>})}</div></div>}
+          {totalKpis>0&&<div><SH color={K.grn}>KPI Scorecard</SH><div style={{display:"flex",gap:8,marginBottom:10}}><div style={{flex:1,padding:"10px",background:K.grn+"08",borderRadius:8,textAlign:"center",border:"1px solid "+K.grn+"20"}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div><div style={{fontSize:8,color:K.dim}}>Hit Rate</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{metKpis}</div><div style={{fontSize:8,color:K.dim}}>Met</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.red,fontFamily:fm}}>{totalKpis-metKpis}</div><div style={{fontSize:8,color:K.dim}}>Missed</div></div></div><div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong execution \u2014 thesis assumptions holding.":kpiHitRate>=40?"Mixed results \u2014 consider revising persistent misses.":"Several misses \u2014 review whether theses need updating."}</div></div>}
+          <SH color={K.acc}>Process Discipline</SH>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>{[{v:os2.total,l:"Owner\u2019s Score",c:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red},{v:streakWeeks+"wk",l:"Streak",c:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim},{v:avgConv,l:"Avg Conviction",c:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim},{v:qRevs.length,l:"Reviews",c:qRevs.length>=8?K.grn:qRevs.length>=4?K.amb:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>{[{v:moatCount+"/"+portfolio2.length,l:"Moats",c:moatCount>=portfolio2.length?K.grn:K.amb},{v:scenarioCount+"/"+portfolio2.length,l:"Stress-Tested",c:scenarioCount>=portfolio2.length?K.grn:K.amb},{v:freshT,l:"Fresh Theses",c:freshT>=portfolio2.length?K.grn:K.amb},{v:qNotes,l:"Notes",c:qNotes>0?K.txt:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
+          {shifts.length>0&&<div><SH color={K.amb}>Conviction Shifts</SH><div style={{marginBottom:12}}>{shifts.slice(0,6).map(function(s3,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"20"}}><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,width:44}}>{s3.ticker}</span><span style={{fontSize:12,fontWeight:800,color:s3.rating>=7?K.grn:s3.rating>=4?K.amb:K.red,fontFamily:fm}}>{s3.rating}/10</span>{s3.note&&<span style={{fontSize:10,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s3.note}</span>}</div>})}</div></div>}
+          {qDivIncome>0&&<div><SH color={K.grn}>Dividend Income</SH><div style={{fontSize:12,color:K.mid,lineHeight:1.7}}>{"Estimated this quarter: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome).toLocaleString()}</strong>{" \u2014 annualized: "}<strong style={{color:K.grn}}>${Math.round(qDivIncome*4).toLocaleString()}</strong>{"/year."}</div></div>}
+          {(freshT>0||staleT>0)&&<div><SH color={"#9333EA"}>Thesis Health</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{freshT>0&&<span><strong style={{color:K.grn}}>{freshT}</strong>{" fresh (<90d). "}</span>}{staleT>0&&<span><strong style={{color:K.amb}}>{staleT}</strong>{" need review. "}</span>}{totalScenarios>0&&<span><strong style={{color:K.acc}}>{totalScenarios}</strong>{" pre-mortem scenarios across "}<strong>{scenarioCount}</strong>{" holdings."}</span>}</div></div>}
+          {upcomingE.length>0&&<div><SH color={K.amb}>Looking Ahead</SH><div style={{fontSize:11,color:K.mid,lineHeight:1.7}}>{"Upcoming: "}{upcomingE.slice(0,5).map(function(c2,i){return<span key={c2.id}>{i>0?", ":""}<strong style={{color:K.txt}}>{c2.ticker}</strong>{" ("+dU(c2.earningsDate)+"d)"}</span>})}</div></div>}
+          <div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
-            <button onClick={function(){
-              var eBody='<p>Dear '+(username||"Investor")+',</p>';
-              eBody+='<p>This quarter you completed <strong>'+qRevs.length+'</strong> weekly reviews and logged <strong>'+qDecs.length+'</strong> investment decisions. ';
-              if(buys2.length>0)eBody+='You added to <strong style="color:#22c55e">'+buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
-              if(sells2.length>0)eBody+='You exited <strong style="color:#ef4444">'+sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")+'</strong>. ';
-              eBody+='Your portfolio currently holds <strong>'+portfolio2.length+'</strong> companies.</p>';
-              eBody+='<p style="margin-top:12px"><strong>Total Return:</strong> <span style="color:'+(totalRet2>=0?"#22c55e":"#ef4444")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</span>';
-              if(best2)eBody+=' &nbsp; <strong>Best:</strong> '+best2.ticker+' ('+(best2.ret>=0?"+":"")+best2.ret.toFixed(0)+'%)';
-              eBody+='</p>';
-              eBody+='<p><strong>Owner\'s Score:</strong> '+os2.total+' &nbsp; <strong>Avg Mastery:</strong> '+avgMast.toFixed(1)+'/6 &nbsp; <strong>Reviews:</strong> '+qRevs.length+'</p>';
-              eBody+='<p style="margin-top:12px;font-style:italic;color:#9ca3af">Keep investing with discipline. The process compounds just like the returns.</p>';
-              sendQuarterlyLetterEmail(eBody,qTitle)
-            }} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
+            <button onClick={function(){var eBody='<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e"><div style="border-bottom:3px solid #1a1a2e;padding-bottom:12px;margin-bottom:20px"><h1 style="font-family:Georgia,serif;font-size:24px;margin:0">Quarterly Letter</h1><div style="font-size:12px;color:#6b7280;margin-top:4px">'+qTitle+'</div></div><p style="line-height:1.8">Dear '+(username||"Investor")+', this quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions. Return: <strong style="color:'+(totalRet2>=0?"#16a34a":"#dc2626")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</strong>. Score: '+os2.total+'. KPI hit: '+kpiHitRate+'%.'+(qDivIncome>0?' Dividends: $'+Math.round(qDivIncome)+'.':'')+'</p><p style="font-style:italic;color:#9ca3af;margin-top:16px">The process compounds just like the returns.</p><div style="border-top:2px solid #1a1a2e;padding-top:10px;margin-top:20px;font-size:10px;color:#9ca3af"><strong style="color:#1a1a2e;letter-spacing:2px;font-family:monospace">THESISALPHA</strong></div></div>';sendQuarterlyLetterEmail(eBody,qTitle)}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:11,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12})}>Close</button></div>
         </div></div>})()}
