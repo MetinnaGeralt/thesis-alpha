@@ -612,12 +612,12 @@ function mkS(K){
   var th=_isThesis;
   var br=th?999:8;
   var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
-  var cardShadow=th?(isDark?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.07), 0 0 0 1px rgba(0,0,0,0.04)"):"none";
+  var _mkDark=K.bg==="#16161D"||K.bg==="#0F0F14"||K.bg==="#0a0a0f"||K.bg==="#1a1a1a"||K.bg==="#0d1117"||K.bg==="#0a0e1a"||K.bg==="#1a1a2e";  var cardShadow=th?(_mkDark?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.07), 0 0 0 1px rgba(0,0,0,0.04)"):"none";
   return{
     btn:Object.assign({},btnBase,{background:th?"rgba(255,255,255,0.06)":"transparent",border:"1px solid "+(th?"rgba(255,255,255,0.1)":K.bdr),color:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
     btnP:Object.assign({},btnBase,{background:K.prim,border:"1px solid "+K.prim,color:K.primTxt,padding:th?"11px 28px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 20px "+K.prim+"60":"none",letterSpacing:th?"-0.2px":0}),
     btnD:Object.assign({},btnBase,{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
-    btnChk:Object.assign({},btnBase,{background:isDark?K.acc+"18":K.acc+"22",border:"1px solid "+K.acc+(isDark?"40":"60"),color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:isDark?"none":"inset 0 1px 0 rgba(255,255,255,0.6)"}),
+    btnChk:Object.assign({},btnBase,{background:_mkDark?K.acc+"18":K.acc+"22",border:"1px solid "+K.acc+(_mkDark?"40":"60"),color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:_mkDark?"none":"inset 0 1px 0 rgba(255,255,255,0.6)"}),
     sec:{fontSize:th?11:11,letterSpacing:th?0.5:1,textTransform:"uppercase",color:th?K.acc:K.dim,marginBottom:th?16:12,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",gap:8},
     badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:11,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 14px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
     dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
