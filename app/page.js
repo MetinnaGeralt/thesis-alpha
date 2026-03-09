@@ -3731,14 +3731,14 @@ function TrackerApp(props){
               <div style={{flex:1}}/>
               <span style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
             {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
-              <IC name="check" size={12} color={K.grn} style={{marginTop:2,flexShrink:0}}/>
+              <IC name="check" size={12} color={K.grn}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:9,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
                 <div style={{fontSize:11,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
               <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
           </div>
           :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
-            <IC name="shield" size={20} color={K.acc} style={{marginBottom:6}}/>
+            <IC name="shield" size={20} color={K.acc}/>
             <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
             <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
         </div>})()}
