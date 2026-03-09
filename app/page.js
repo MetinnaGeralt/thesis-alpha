@@ -551,8 +551,8 @@ var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c
 var BLOOMBERG={bg:"#000000",side:"#0a0a0a",card:"#1a1a1a",bdr:"#333333",bdr2:"#444444",txt:"#ffffff",mid:"#cccccc",dim:"#888888",blue:"#4488ff",grn:"#00d26a",red:"#ff3333",amb:"#ff8800",acc:"#ff8800",prim:"#ff8800",primTxt:"#000000"};
 var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
 // ── Thesis Themes — landing page aesthetic: Outfit font, heavy rounding, purple accent ──
-var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.06)",bdr2:"rgba(255,255,255,0.12)",txt:"#ffffff",mid:"rgba(255,255,255,0.75)",dim:"rgba(255,255,255,0.4)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
-var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.07)",bdr2:"rgba(0,0,0,0.12)",txt:"#16161D",mid:"rgba(22,22,29,0.7)",dim:"rgba(22,22,29,0.4)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.07)",bdr2:"rgba(255,255,255,0.14)",txt:"#ffffff",mid:"rgba(255,255,255,0.82)",dim:"rgba(255,255,255,0.56)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.08)",bdr2:"rgba(0,0,0,0.14)",txt:"#16161D",mid:"rgba(22,22,29,0.75)",dim:"rgba(22,22,29,0.52)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
 var THEMES={thesis_dark:THESIS_DARK,thesis_light:THESIS_LIGHT,dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 // Global thesis flag — updated inside TrackerApp before mkS calls
@@ -1513,7 +1513,7 @@ function TrackerApp(props){
       {/* Metric picker with search */}
       {!ex&&<div style={{marginBottom:20}}>
         <input value={kpiSearch} onChange={function(e){setKpiSearch(e.target.value)}} placeholder="Search metrics..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none",marginBottom:12}}/>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
         {sty&&recIds.length>0&&<div style={{marginBottom:12}}>
           <div style={{fontSize:10,color:sty.color,marginBottom:6,fontFamily:fm}}>Recommended for {sty.label}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -1620,7 +1620,7 @@ function TrackerApp(props){
     return<Modal title={"Investment Memo — "+c2.ticker} onClose={function(){setModal(null)}} w={640} K={K}>
       {/* Auto-populated snapshot */}
       <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:20}}>
-        <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>SNAPSHOT (auto-filled)</div>
+        <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>SNAPSHOT (auto-filled)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
           <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>PRICE</div><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.currentPrice?"$"+pos.currentPrice:"—"}</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>CONVICTION</div><div style={{fontSize:16,fontWeight:700,color:c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c2.conviction||"—"}/10</div></div>
@@ -2089,17 +2089,17 @@ function TrackerApp(props){
         <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Manage your account, subscription, and profile.</div>
         {/* Email */}
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Email</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Email</div>
           <div style={{fontSize:13,color:K.txt}}>{props.user}</div></div>
         {/* Username */}
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Username</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Username</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{fontSize:13,color:K.txt}}>{username||"Not set"}</div>
             <button onClick={function(){setModal(null);setShowProfile(true);setEditingName(true);setNameInput(username||"")}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:10})}>Change</button></div></div>
         {/* Avatar */}
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Avatar</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Avatar</div>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             {avatarUrl?<img src={avatarUrl} style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.bdr}}/>
               :<div style={{width:40,height:40,borderRadius:"50%",background:K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:K.acc,fontWeight:600,fontFamily:fm}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
@@ -2110,12 +2110,12 @@ function TrackerApp(props){
             </div></div></div>
         {/* Password */}
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Password</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Password</div>
           <button onClick={function(){if(!supabase){showToast("Auth not available","info",3000);return}supabase.auth.resetPasswordForEmail(props.user).then(function(){showToast("Password reset email sent to "+props.user,"milestone",5000)}).catch(function(e){showToast("Could not send reset email: "+(e.message||"try again"),"info",4000)})}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})}>Send Password Reset Email</button>
           <div style={{fontSize:10,color:K.dim,marginTop:6}}>A reset link will be sent to {props.user}</div></div>
         {/* Subscription */}
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Subscription</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Subscription</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div><div style={{fontSize:13,fontWeight:600,color:plan==="pro"?K.grn:K.txt}}>{plan==="pro"?"Pro Plan":trialActive?"Trial ("+trialDaysLeft+"d left)":"Free Plan"}</div>
               {plan==="pro"&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>Manage billing, change plan, or cancel</div>}
@@ -2148,13 +2148,13 @@ function TrackerApp(props){
       {/* Pricing cards */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 16px",textAlign:"center"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$12.99<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/mo</span></div>
           <div style={{fontSize:10,color:K.dim,marginBottom:14}}>Cancel anytime</div>
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_MONTHLY||"price_1T8P7qB5sSVol2sMKMlNXT47")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
         <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
           <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:9,fontWeight:700,padding:"2px 10px",borderRadius:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$129<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/yr</span></div>
           <div style={{fontSize:10,color:K.grn,marginBottom:14}}>Save 17% — $10.75/mo</div>
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:12,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
@@ -2673,7 +2673,7 @@ function TrackerApp(props){
       {hasSummary&&<div style={{padding:"14px 24px",borderBottom:hasSnap||hasNews?"1px solid "+K.bdr:"none",fontSize:13,color:K.mid,lineHeight:1.6}}>{c.earningSummary}</div>}
       {/* Financial grid */}
       {hasSnap&&<div style={{padding:"16px 24px",borderBottom:hasNews?"1px solid "+K.bdr:"none"}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Key Financials</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Key Financials</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:8}}>
           {Object.keys(snap).map(function(k){var item=snap[k];
             return<div key={k} style={{background:K.bg,borderRadius:8,padding:"10px 12px"}}>
@@ -2683,7 +2683,7 @@ function TrackerApp(props){
       {!hasSnap&&hasSummary&&<div style={{padding:"12px 24px",fontSize:11,color:K.dim}}>Click Check Earnings again if financial details don't appear — Finnhub may have rate-limited this request.</div>}
       {/* Recent news */}
       {hasNews&&<div style={{padding:"12px 24px"}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Recent News</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Recent News</div>
         {news.slice(0,4).map(function(n,i){return<a key={i} href={n.url} target="_blank" rel="noreferrer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<3?"1px solid "+K.bdr:"none",textDecoration:"none",gap:8}}>
           <span style={{fontSize:11,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
           <span style={{fontSize:9,color:K.dim,whiteSpace:"nowrap",fontFamily:fm}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</span></a>})}</div>}</div>}
@@ -2713,7 +2713,7 @@ function TrackerApp(props){
     return<div style={{marginBottom:20}}>
       {/* Price Target bar */}
       {hasPt&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Price Target</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Price Target</div>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <div style={{flex:1}}>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>
@@ -2737,7 +2737,7 @@ function TrackerApp(props){
       {/* Analyst + EPS row */}
       <div style={{display:"grid",gridTemplateColumns:hasRecs&&hasEps?"1fr 1fr":"1fr",gap:12,marginBottom:12}}>
         {hasRecs&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
           {function(){var r=recs[0];var total=(r.buy||0)+(r.hold||0)+(r.sell||0)+(r.strongBuy||0)+(r.strongSell||0);if(!total)return null;
             var buys=(r.strongBuy||0)+(r.buy||0);var sells=(r.strongSell||0)+(r.sell||0);
             return<div><div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",marginBottom:8}}>
@@ -2750,7 +2750,7 @@ function TrackerApp(props){
                 <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {r.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
               <div style={{fontSize:10,color:K.dim,marginTop:4}}>{r.period} · {total} analysts</div></div>}()}</div>}
         {hasEps&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>EPS History</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>EPS History</div>
           {eps.slice(0,4).map(function(e,i){var beat=e.actual!=null&&e.estimate!=null?e.actual>=e.estimate:null;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
             return<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:50}}>Q{e.quarter} {String(e.year).slice(2)}</span>
@@ -2759,7 +2759,7 @@ function TrackerApp(props){
               <span style={{fontSize:9,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.dim,fontFamily:fm,marginLeft:"auto"}}>{beat!=null?(pct>=0?"+":"")+pct.toFixed(1)+"%":""}</span></div>})}</div>}</div>
       {/* Insider Transactions */}
       {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
         {txns.slice(0,8).map(function(t,i){
           // Finnhub transactionType: P=Purchase, S=Sale, A=Award/Grant, M=Option Exercise, etc
           var txType=t.transactionType||"";
@@ -2774,7 +2774,7 @@ function TrackerApp(props){
             <span style={{color:K.dim,fontFamily:fm,fontSize:10}}>{t.transactionDate}</span></div>})}</div>}
       {/* Peers */}
       {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Peer Companies</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Peer Companies</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
     </div>}
 
@@ -3516,7 +3516,7 @@ function TrackerApp(props){
           if(doneCount>=items.length)return null;
           return<div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <span style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Owner Checklist</span>
+              <span style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Owner Checklist</span>
               <span style={{fontSize:10,color:doneCount>=3?K.grn:K.dim,fontFamily:fm,fontWeight:600}}>{doneCount}/{items.length}</span></div>
             <div style={{display:"flex",gap:6}}>
               {items.map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
@@ -3577,7 +3577,7 @@ function TrackerApp(props){
                 <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1">OWNERSHIP</text>
               </svg>
               <div style={{flex:1}}>
-                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Ownership Depth</div>
+                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Ownership Depth</div>
                 {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
                   <div style={{width:6,height:6,borderRadius:"50%",background:a2.color,flexShrink:0}}/>
                   <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:70}}>{a2.label}</span>
@@ -3609,7 +3609,7 @@ function TrackerApp(props){
         {/* ── 1. THE STORY ── */}
         <div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE STORY</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE STORY</div>
             <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit thesis</button></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
@@ -3638,7 +3638,7 @@ function TrackerApp(props){
 
         {/* ── 2. THE EVIDENCE ── */}
         <div style={{marginBottom:24}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -3671,7 +3671,7 @@ function TrackerApp(props){
         {/* ── 3. THE LEDGER ── */}
         <div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE LEDGER</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE LEDGER</div>
             <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
@@ -3745,7 +3745,7 @@ function TrackerApp(props){
           if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
           if(sections.length===0)return null;
           return<div style={{marginBottom:24}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>OWNER'S NUMBERS</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>OWNER'S NUMBERS</div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
               {sections.map(function(sec,si){return<div key={si} style={{marginBottom:si<sections.length-1?14:0}}>
                 <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>{sec.title}</div>
@@ -3758,7 +3758,7 @@ function TrackerApp(props){
                 {/* -- INSIDER ACTIVITY -- */}
         {isPro&&<div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>INSIDER ACTIVITY</div></div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>INSIDER ACTIVITY</div></div>
           {insiderData?<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
             {/* Insider Transactions */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
@@ -3824,7 +3824,7 @@ function TrackerApp(props){
                 {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>THE MOAT</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE MOAT</div>
             <button onClick={function(){setSubPage("moat")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Full analysis {"→"}</button></div>
           {dossierMoat?(function(){
             var comp=dossierMoat.composite;var mColor=comp>=8?K.grn:comp>=6?K.amb:K.red;
@@ -3877,7 +3877,7 @@ function TrackerApp(props){
           var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
               <button onClick={function(){if(isPro){setPage("hub");setHubTab("goals")}else{setShowUpgrade(true);setUpgradeCtx("goals")}}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
             <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
               <span style={{fontSize:22,fontWeight:700,color:expected>=0?K.grn:K.red,fontFamily:fm}}>{expected>=0?"+":""}{expected.toFixed(1)}%</span>
@@ -3890,7 +3890,7 @@ function TrackerApp(props){
         {/* ── 5. KEY METRICS CHART ── */}
         {keyFin&&keyFin.length>=2&&<div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
             <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials")}}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>Full financials {"→"}</button></div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
             <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
@@ -3957,7 +3957,7 @@ function TrackerApp(props){
         {/* Research preview */}
         {(c.decisions||[]).length+(c.docs||[]).length>0&&<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>RESEARCH TRAIL</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>RESEARCH TRAIL</div>
             <button onClick={function(){setDetailTab("research")}} style={{background:"none",border:"none",color:K.acc,fontSize:10,cursor:"pointer",fontFamily:fm}}>View all {"→"}</button></div>
           {(c.decisions||[]).concat((c.docs||[]).map(function(d2){return Object.assign({},d2,{cardType:d2.isClip?"clip":d2.isMemo?"memo":d2.isIR?"ir":"doc",date:d2.updatedAt})})).sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,3).map(function(d2,di){
             return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:6,fontSize:11,color:K.mid}}>
@@ -4282,7 +4282,7 @@ function TrackerApp(props){
         {/* Recent decisions (last 5) */}
         {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Recent Decisions</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Recent Decisions</div>
             <button onClick={function(){setHt("journal")}} style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>View all {"→"}</button></div>
           {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).slice(0,5).map(function(dec,i){
             var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
@@ -4305,7 +4305,7 @@ function TrackerApp(props){
             return{ticker:c2.ticker,ret:ret2,contrib:weight*ret2,weight:weight*100,reasoning:buyDec?buyDec.reasoning:"",id:c2.id}}).sort(function(a,b){return b.contrib-a.contrib});
           var bestD=attr[0];var worstD=attr[attr.length-1];
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:12}}>Performance Attribution</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:12}}>Performance Attribution</div>
             <div style={{display:"flex",gap:16,marginBottom:12}}>
               <div><div style={{fontSize:24,fontWeight:700,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div><div style={{fontSize:10,color:K.dim}}>Portfolio return</div></div>
               <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>{attr.slice(0,5).map(function(a2){return<div key={a2.ticker} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={function(){setSelId(a2.id);setDetailTab("dossier");setPage("dashboard")}}>
@@ -4324,7 +4324,7 @@ function TrackerApp(props){
           var tCu=portfolio.reduce(function(s2,c2){return s2+(c2.convictionHistory||[]).length},0);
           var avgM=portfolio.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/Math.max(portfolio.length,1);
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:12}}>Your Growth</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:12}}>Your Growth</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
               {[{l:"Theses",v:tw+"/"+portfolio.length,c:tw===portfolio.length?K.grn:K.txt},{l:"Avg depth",v:avgSec.toFixed(1)+"/4",c:avgSec>=3?K.grn:K.txt},{l:"KPIs tracked",v:totalK+(" (")+kpC+" checked)",c:kpC>0?K.grn:K.txt},{l:"Earnings reviewed",v:tE+"q",c:tE>=portfolio.length*2?K.grn:K.txt},{l:"Conviction updates",v:tCu+"",c:tCu>=portfolio.length*2?K.grn:K.txt},{l:"Mastery avg",v:avgM.toFixed(1)+"/6",c:avgM>=4?K.grn:K.txt}].map(function(g2){return<div key={g2.l} style={{padding:"6px 8px",background:K.bg,borderRadius:6}}>
                 <div style={{fontSize:13,fontWeight:700,color:g2.c,fontFamily:fm}}>{g2.v}</div><div style={{fontSize:8,color:K.dim}}>{g2.l}</div></div>})}</div></div>})()}
@@ -4358,7 +4358,7 @@ function TrackerApp(props){
           var topSectors=Object.keys(sectors2).sort(function(a,b){return sectors2[b]-sectors2[a]}).slice(0,3);
           var avgConv=portfolio.reduce(function(s2,c2){return s2+(c2.conviction||0)},0)/Math.max(portfolio.length,1);
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Investor DNA</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:14}}>Investor DNA</div>
             {/* Top match */}
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,padding:"12px 14px",background:K.acc+"06",borderRadius:10,border:"1px solid "+K.acc+"15"}}>
               <div style={{width:44,height:44,borderRadius:"50%",background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -4405,7 +4405,7 @@ function TrackerApp(props){
         {/* === QUARTERLY LETTER === */}
         {weeklyReviews.length>=1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Quarterly Letters</div>
+              <div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:4}}>Quarterly Letters</div>
                 <div style={{fontSize:12,color:K.mid}}>Your personal investment reflections, generated each quarter.</div></div>
               <button onClick={function(){var now3=new Date();var pq=Math.floor(now3.getMonth()/3);var py=now3.getFullYear();if(pq===0){pq=4;py--}setShowQLetter("Q"+pq+"-"+py)}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11,whiteSpace:"nowrap"})}>View Latest</button></div></div>}
         {/* === BEHAVIORAL PATTERNS === */}
@@ -4421,7 +4421,7 @@ function TrackerApp(props){
             if(ag<=1.3)pats.push({icon:"check",color:K.grn,t:"Review cadence: every "+ag.toFixed(1)+" weeks. Exceptional consistency."})}
           if(pats.length===0)return null;
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
             {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
               <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
@@ -4432,7 +4432,7 @@ function TrackerApp(props){
             <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",gap:16,flexDirection:isMobile?"column":"row"}}>
               {/* Your score */}
               <div style={{flex:1}}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>YOUR PROCESS SCORE</div>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>YOUR PROCESS SCORE</div>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <div style={{fontSize:36,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.red,fontFamily:fm}}>{globalOS.total}</div>
                   <div>
@@ -4441,7 +4441,7 @@ function TrackerApp(props){
               </div>
               {/* Benchmark */}
               <div style={{flex:1,padding:"16px 20px",background:K.bg,borderRadius:10,textAlign:"center"}}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>COMMUNITY BENCHMARK</div>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>COMMUNITY BENCHMARK</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:8}}>ThesisAlpha is in early access. As more owners join, you'll see how your process compares.</div>
                 <div style={{display:"flex",justifyContent:"center",gap:12}}>
                   <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
@@ -4888,21 +4888,21 @@ function TrackerApp(props){
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
               <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Expected Portfolio CAGR</div>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Expected Portfolio CAGR</div>
                   <div style={{fontSize:36,fontWeight:800,color:portCAGR>=goals.targetCAGR?K.grn:K.amb,fontFamily:fm}}>{portCAGR>=0?"+":""}{portCAGR.toFixed(1)}%</div>
                   <div style={{fontSize:12,color:K.dim,marginTop:4}}>Range: {lowCAGR.toFixed(1)}% to {highCAGR.toFixed(1)}%</div></div>
                 <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Probability of {goals.targetCAGR}%+</div>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Probability of {goals.targetCAGR}%+</div>
                   <div style={{position:"relative",width:80,height:80,margin:"0 auto"}}>
                     <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="6"/><circle cx="40" cy="40" r="34" fill="none" stroke={prob>=60?K.grn:prob>=40?K.amb:K.red} strokeWidth="6" strokeDasharray={Math.round(prob/100*214)+" 214"} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg>
                     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:prob>=60?K.grn:prob>=40?K.amb:K.red,fontFamily:fm}}>{prob}%</div></div></div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Portfolio Character</div>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Portfolio Character</div>
                   <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{character}</div>
                   <div style={{fontSize:11,color:K.dim,marginTop:4}}>Predictability: {portPred.toFixed(0)}/100</div></div></div>
               {/* Bell curve visualization */}
               <div style={{marginBottom:16}}>
-                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
+                <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
                 <svg width="100%" viewBox="0 0 500 130" style={{display:"block"}}>
                   {/* Bell curve */}
                   {(function(){var pts=[];var sigma=0.15+(1-portPred/100)*0.12;var peakY=1/(sigma*Math.sqrt(2*Math.PI));for(var i=0;i<=100;i++){var x=i/100;var mu=0.5;var y=Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI));pts.push({x:30+x*440,y:110-y/peakY*90})}
@@ -5479,7 +5479,7 @@ function TrackerApp(props){
             <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Start Review</button></div>}
           {/* Reward history */}
           {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>PAST INSIGHTS</div>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>PAST INSIGHTS</div>
             <div style={{maxHeight:140,overflow:"auto"}}>
             {chestRewards.history.slice(1,15).map(function(h,hi){
               var tc2=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
@@ -5606,7 +5606,7 @@ function TrackerApp(props){
             </div>}
             {/* Previously earned rewards */}
             {chestRewards.history.length>0&&<div>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>INSIGHT HISTORY</div>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>INSIGHT HISTORY</div>
               <div style={{maxHeight:180,overflow:"auto"}}>
               {chestRewards.history.slice(0,20).map(function(h,hi){
                 var tc=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
@@ -5689,7 +5689,7 @@ function TrackerApp(props){
       var r=x.dims.roic?x.dims.roic.score:10;var f=x.dims.fortress?x.dims.fortress.score:10;
       return r<5||f<4});
 
-    var secStyle={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
+    var secStyle={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
     return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
@@ -5706,7 +5706,7 @@ function TrackerApp(props){
           {label:"Capital Efficiency",val:roicAvg,sub:roicAvg>=8?"Outstanding":roicAvg>=6?"Good":roicAvg>=4?"Fair":"Poor",icon:"target"}
         ].map(function(card){var v=card.val;var clr=v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim;
           return<div key={card.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name={card.icon} size={14} color={K.dim}/><div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb}}>{card.label}</div></div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name={card.icon} size={14} color={K.dim}/><div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontWeight:600,fontFamily:fb}}>{card.label}</div></div>
             <div style={{fontSize:28,fontWeight:700,color:clr,fontFamily:fm}}>{v||"—"}<span style={{fontSize:12,fontWeight:400,color:K.dim}}>/10</span></div>
             <div style={{fontSize:10,color:clr,marginTop:4,fontFamily:fb}}>{v?card.sub:""}</div></div>})}</div>
 
@@ -5884,7 +5884,7 @@ function TrackerApp(props){
         c2._nextExDiv=ed.toISOString().split("T")[0];return Math.ceil((ed-now2)/864e5)<=60}).sort(function(a,b){return a._nextExDiv>b._nextExDiv?1:-1});
         if(upcoming2.length===0)return null;
         return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:24}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Upcoming Ex-Dividend Dates</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Upcoming Ex-Dividend Dates</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {upcoming2.slice(0,8).map(function(c2){var dU2=Math.ceil((new Date(c2._nextExDiv)-new Date())/864e5);var pos=c2.position||{};var payout=(pos.shares||0)*(c2.divPerShare||c2.lastDiv||0);
               return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:dU2<=7?K.amb+"08":K.bg,borderRadius:8,border:"1px solid "+(dU2<=7?K.amb+"25":K.bdr),cursor:"pointer"}} onClick={function(){setSelId(c2.id);setPage("dashboard")}}>
@@ -5895,7 +5895,7 @@ function TrackerApp(props){
           </div></div>})()}
       {/* Monthly income calendar */}
       {totalAnnual>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Monthly Income Calendar</div>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Monthly Income Calendar</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(12, 1fr)",gap:isMobile?4:8}}>
           {monthlyBreakdown.map(function(m,i){var h=m.income>0?Math.max(8,Math.round(m.income/maxMonthly*60)):4;var isNow=new Date().getMonth()===i;
             return<div key={i} style={{textAlign:"center"}}>
@@ -5909,7 +5909,7 @@ function TrackerApp(props){
       </div>}
       {/* Payers table */}
       {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Payers</div>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Payers</div>
         <div style={{overflowX:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead><tr style={{borderBottom:"1px solid "+K.bdr}}>
@@ -5958,7 +5958,7 @@ function TrackerApp(props){
       </div>}
       {/* Non-payers */}
       {nonPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm}}>Non-Dividend Holdings ({nonPayers.length})</div>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Non-Dividend Holdings ({nonPayers.length})</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{nonPayers.map(function(c){
           return<div key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",background:K.bg,borderRadius:6,cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}>
             <CoLogo domain={c.domain} ticker={c.ticker} size={16}/><span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{c.ticker}</span></div>})}</div>
@@ -5997,7 +5997,7 @@ function TrackerApp(props){
       {function(){var later=upcoming.filter(function(c){return dU(c.earningsDate)>7});
         if(!later.length)return null;
         return<div style={{marginBottom:24}}>
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
             {later.map(function(c,i){var d=dU(c.earningsDate);
               return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
@@ -6007,7 +6007,7 @@ function TrackerApp(props){
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm,minWidth:30,textAlign:"right"}}>{d}d</span></div>})}</div></div>}()}
       {/* Recently reported */}
       {recent.length>0&&<div style={{marginBottom:24}}>
-        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
+        <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
           {recent.map(function(c,i){var h=gH(c.kpis);
             return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
@@ -6015,7 +6015,7 @@ function TrackerApp(props){
               <div style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:11,color:K.dim}}>{c.name}</span></div>
               <span style={S.badge(h.c)}>{h.l}</span>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)}</span></div>})}</div></div>}
-      {tbdCos.length>0&&<div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Date Not Set ({tbdCos.length})</div>
+      {tbdCos.length>0&&<div><div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Date Not Set ({tbdCos.length})</div>
         <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Earnings dates auto-update via Finnhub. These companies don't have a known upcoming date yet: {tbdCos.map(function(c){return c.ticker}).join(", ")}</div></div>}
     </div>}
 
@@ -6158,20 +6158,20 @@ function TrackerApp(props){
                   <span style={{marginLeft:"auto",fontSize:9,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
             {/* Notable movers */}
             {movers.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>YOUR HOLDINGS</div>
+              <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Your Holdings</div>
               {movers.slice(0,5).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
                 <span style={{marginLeft:"auto",fontSize:11,fontWeight:600,color:m.ret>=0?K.grn:K.red,fontFamily:fm}}>{m.ret>=0?"+":""}{m.ret.toFixed(1)}%</span></div>})}</div>}
             {/* Insider signals */}
             {insiderSignals.length>0&&<div>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>INSIDER BUYING</div>
+              <div style={{fontSize:9,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
               <div style={{fontSize:11,color:K.mid}}>{insiderSignals.map(function(s){return s.ticker+" ("+s.count+")"}).join(", ")}</div></div>}
           </div>
           {/* Right column — Actions & Wisdom */}
           <div style={{padding:"16px 24px"}}>
             {actions.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>ACTION ITEMS</div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>ACTION ITEMS</div>
               {actions.slice(0,3).map(function(a,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,marginBottom:4,background:a.color+"06",border:"1px solid "+a.color+"15",cursor:"pointer"}} onClick={a.onClick}>
                 <IC name={a.icon} size={12} color={a.color}/>
                 <span style={{fontSize:11,color:K.mid,flex:1}}>{a.text}</span>
@@ -6230,19 +6230,19 @@ function TrackerApp(props){
       var best=null,worst=null;held.forEach(function(c){var pct=(c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100;if(!best||pct>best.pct)best={ticker:c.ticker,pct:pct};if(!worst||pct<worst.pct)worst={ticker:c.ticker,pct:pct}});
       return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?10:16,marginBottom:20}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Total Value</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Total Value</div>
           <div style={{fontSize:22,fontWeight:600,color:K.txt,fontFamily:fm}}>${totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
           <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm}}>Cost: ${totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Total Return</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Total Return</div>
           <div style={{fontSize:22,fontWeight:600,color:isUp?K.grn:K.red,fontFamily:fm}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
           <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isUp?"+":""}${totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Best Performer</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Best Performer</div>
           <div style={{fontSize:18,fontWeight:600,color:K.grn,fontFamily:fm}}>{best?best.ticker:"—"}</div>
           <div style={{fontSize:11,color:K.grn,marginTop:4,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:8,fontFamily:fm}}>Worst Performer</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Worst Performer</div>
           <div style={{fontSize:18,fontWeight:600,color:K.red,fontFamily:fm}}>{worst?worst.ticker:"—"}</div>
           <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
@@ -6387,7 +6387,7 @@ function TrackerApp(props){
       {dashSet.showHeatmap&&function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
         if(withPrice.length<2)return null;
         return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
-          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Portfolio Heatmap</div>
+          <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Portfolio Heatmap</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {withPrice.sort(function(a,b){return(b.position.shares*b.position.currentPrice)-(a.position.shares*a.position.currentPrice)}).map(function(c2){
               var pos2=c2.position;var pct=(pos2.currentPrice-pos2.avgCost)/pos2.avgCost*100;var val=pos2.shares*pos2.currentPrice;
@@ -6401,7 +6401,7 @@ function TrackerApp(props){
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:(dashSet.showSectors&&dashSet.showDividends)?"1fr 1fr":"1fr",gap:16}}>
       {/* Sector Concentration (value-weighted) */}
       {dashSet.showSectors&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Sector Concentration</div>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Sector Concentration</div>
         {function(){var sectorVal={};var totalVal=0;
           filtered.forEach(function(c2){var s=c2.sector||"Other";var pos2=c2.position||{};var val=pos2.shares>0&&pos2.currentPrice>0?pos2.shares*pos2.currentPrice:0;sectorVal[s]=(sectorVal[s]||0)+val;totalVal+=val});
           var useValue=totalVal>0;
@@ -6413,7 +6413,7 @@ function TrackerApp(props){
               <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
       {/* Dividends */}
       {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Dashboard</div>
+        <div style={{fontSize:10,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Dashboard</div>
         {divCos.length===0&&<div style={{fontSize:12,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:11}}>Dividend data is auto-fetched when you add companies.</span></div>}
         {divCos.length>0&&(function(){
           var totalVal3=divCos.reduce(function(s2,c2){var p2=c2.position||{};return s2+(p2.shares||0)*(p2.currentPrice||0)},0);
@@ -6594,7 +6594,7 @@ function TrackerApp(props){
             {"Your portfolio currently holds "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}
           </div>
           {/* Performance stats */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Performance</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Performance</div>
           <div style={{display:"flex",gap:10,marginBottom:20}}>
             <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
               <div style={{fontSize:22,fontWeight:700,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div>
@@ -6607,7 +6607,7 @@ function TrackerApp(props){
               <div style={{fontSize:8,color:K.red}}>Worst {worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>}
           </div>
           {/* Discipline metrics */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Discipline</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Discipline</div>
           <div style={{display:"flex",gap:10,marginBottom:20}}>
             <div style={{textAlign:"center",padding:"10px 16px",border:"1px solid "+K.bdr,borderRadius:8,flex:1}}>
               <div style={{fontSize:22,fontWeight:700,color:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red,fontFamily:fm}}>{os2.total}</div>
@@ -6620,18 +6620,18 @@ function TrackerApp(props){
               <div style={{fontSize:8,color:K.dim}}>Weekly Reviews</div></div></div>
           {/* Conviction shifts */}
           {shifts.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Notable Conviction Changes</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Notable Conviction Changes</div>
             {shifts.slice(0,5).map(function(s3,i3){return<div key={i3} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:i3<4?"1px solid "+K.bdr+"30":"none"}}>
               <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{s3.ticker}</span>
               <span style={{fontSize:11,color:K.acc,fontFamily:fm}}>{s3.rating}/10</span>
               {s3.note&&<span style={{fontSize:10,color:K.dim,flex:1}}>{s3.note.substring(0,50)}</span>}</div>})}</div>}
           {/* Decision scorecard */}
           {scored2.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Decision Scorecard</div>
             <div style={{fontSize:12,color:K.mid}}>{rights2} right of {scored2.length} scored decisions this quarter ({scored2.length>0?Math.round(rights2/scored2.length*100):0}% accuracy).</div></div>}
           {/* KPI Performance */}
           {totalKpis>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>KPI Tracking</div>
+            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>KPI Tracking</div>
             <div style={{display:"flex",gap:10,marginBottom:8}}>
               <div style={{flex:1,padding:"8px 12px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
                 <div style={{fontSize:18,fontWeight:700,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div>
@@ -6645,14 +6645,14 @@ function TrackerApp(props){
             <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong KPI execution — your thesis assumptions are holding up well.":kpiHitRate>=40?"Mixed results — consider whether missed KPIs warrant thesis revisions.":"Several KPI misses — revisit your assumptions and consider if your theses need updating."}</div></div>}
           {/* Holdings breakdown */}
           {holdPerf.length>0&&<div style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Holdings Snapshot</div>
+            <div style={{fontSize:10,letterSpacing:isThesis?0.5:2,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Holdings Snapshot</div>
             {holdPerf.slice(0,8).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:hi<Math.min(holdPerf.length,8)-1?"1px solid "+K.bdr+"30":"none"}}>
               <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{hp.ticker}</span>
               <span style={{fontSize:11,fontWeight:600,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:56,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1000?(hp.val/1000).toFixed(1)+"k":hp.val.toFixed(0)}</span>
               <span style={{fontSize:10,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":""}</span></div>})}</div>}
           {/* Process & Behavioral Insights */}
-          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Process Health</div>
+          <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Process Health</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
             <div style={{padding:"8px 12px",background:K.bg,borderRadius:6,border:"1px solid "+K.bdr}}>
               <div style={{fontSize:9,color:K.dim}}>Weekly Streak</div>
@@ -6762,7 +6762,7 @@ function TrackerApp(props){
             <div style={{fontSize:9,color:K.dim}}>{s.sub}</div></div>})}</div>
         {/* Portfolio stats */}
         <div style={{background:K.bg,borderRadius:8,padding:"14px 16px",marginBottom:20}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Portfolio Activity</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Portfolio Activity</div>
           <div style={{display:"grid",gap:6}}>
             {[{label:"Companies tracked",value:portfolio.length,icon:"overview"},
               {label:"Theses written",value:withThesis,icon:"lightbulb"},
@@ -6775,21 +6775,21 @@ function TrackerApp(props){
         
         {/* Badges */}
         {(chestRewards.badges||[]).length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
             {(chestRewards.badges||[]).map(function(b){return<div key={b.id} title={b.desc} style={{display:"flex",alignItems:"center",gap:4,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 10px"}}>
               <span style={{fontSize:14}}>{b.icon}</span>
               <span style={{fontSize:10,fontWeight:600,color:K.txt,fontFamily:fm}}>{b.label}</span></div>})}</div></div>}
         {/* Collected Quotes */}
         {(chestRewards.quotes||[]).length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({(chestRewards.quotes||[]).length})</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({(chestRewards.quotes||[]).length})</div>
           <div style={{maxHeight:120,overflowY:"auto"}}>
             {(chestRewards.quotes||[]).slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
               <div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{"“"+q.q+"”"}</div>
               <div style={{fontSize:9,color:K.dim,textAlign:"right"}}>{"— "+q.a}</div></div>})}</div></div>}
         {/* Recent Activity history */}
         {xp.history.length>0&&<div>
-          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Recent Activity</div>
+          <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Recent Activity</div>
           <div style={{maxHeight:140,overflowY:"auto"}}>
             {xp.history.slice(0,10).map(function(h,i){return<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
               <span style={{fontSize:11,color:K.mid}}>{h.label}</span>
