@@ -276,7 +276,7 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
             if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
       // Dividend data from Finnhub (free, reliable)
       var divData={lastDiv:0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
-      try{var fhDiv=await fetchDivFromFinnhub(t);
+      try{var fhDiv=await fetchDivFromFinnhub(t,pr.lastDiv);
         if(fhDiv&&fhDiv.payer){divData.divPerShare=fhDiv.divPerShare;divData.lastDiv=fhDiv.annualDiv||fhDiv.divPerShare;divData.divFrequency=fhDiv.divFrequency;divData.divYield=fhDiv.divYield}
       }catch(e){}
       // Fallback to FMP lastDiv if Finnhub missed it
@@ -286,15 +286,22 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   return{error:"Not found — enter details manually"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
-async function fetchDivFromFinnhub(ticker){try{
+async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
   if(!met||!met.metric)return null;var m=met.metric;
   var annDiv=m["dividendPerShareAnnual"]||0;
   var divYield=m["dividendYieldIndicatedAnnual"]||0;
   if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
-  // Estimate per-payment: most US stocks are quarterly
-  var perPayment=annDiv>0?annDiv/4:0;
-  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:"quarterly"}
+  // Detect frequency using FMP lastDiv as per-payment reference
+  var freq="quarterly";var perPayment=annDiv>0?annDiv/4:0;
+  if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){
+    var ratio=Math.round(annDiv/fmpLastDiv);
+    if(ratio>=10&&ratio<=14){freq="monthly";perPayment=annDiv/12}
+    else if(ratio>=3&&ratio<=5){freq="quarterly";perPayment=annDiv/4}
+    else if(ratio>=1.5&&ratio<=2.5){freq="semi";perPayment=annDiv/2}
+    else if(ratio<=1.2){freq="annual";perPayment=annDiv}
+  }
+  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:freq}
 }catch(e){return null}}
 // Fetch dividend details from FMP
 async function fetchDividendInfo(ticker){try{
@@ -695,6 +702,9 @@ function TrackerApp(props){
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
+  var sideHoverTimer=useRef(null);
+  function startSideHover(id,e){setFlyY(e.currentTarget.getBoundingClientRect().top);if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);sideHoverTimer.current=setTimeout(function(){setSideHover(id)},200)}
+  function clearSideHover(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
@@ -779,6 +789,7 @@ function TrackerApp(props){
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
   // Owner's Score expanded state on dashboard
   var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
+  var _briefPeriod=useState("total"),briefPeriod=_briefPeriod[0],setBriefPeriod=_briefPeriod[1];
   // ── XP System ──
   var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
   var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
@@ -1178,7 +1189,10 @@ function TrackerApp(props){
     var t=setTimeout(function(){(async function(){
       for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
         try{
-          var fhDiv=await fetchDivFromFinnhub(c.ticker);
+          // Fetch FMP lastDiv for frequency cross-reference
+          var fmpData=await fetchPrice(c.ticker);var fmpLD=fmpData?fmpData.lastDiv:0;
+          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price})})})}
+          var fhDiv=await fetchDivFromFinnhub(c.ticker,fmpLD);
           if(fhDiv&&fhDiv.payer){
             upd(c.id,function(prev){return Object.assign({},prev,{
               divPerShare:fhDiv.divPerShare,
@@ -1364,7 +1378,7 @@ function TrackerApp(props){
         return Object.assign({},prev,updates)});
         // Fetch dividend from Finnhub if missing
         if(!c.divPerShare||c.divPerShare===0){
-          try{var fhDiv=await fetchDivFromFinnhub(c.ticker);
+          try{var fhDiv=await fetchDivFromFinnhub(c.ticker,r.lastDiv);
             if(fhDiv&&fhDiv.payer){upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,divFrequency:fhDiv.divFrequency})})}
             else if(fhDiv){upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none"})})}}catch(e){}}
       }}catch(e){}
@@ -2347,13 +2361,13 @@ function TrackerApp(props){
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?300:isThesis?268:240,minWidth:isMobile?300:isThesis?268:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":isThesis?"4px 0 40px rgba(0,0,0,.2)":"none",transition:"transform .2s ease"}}>
     <div style={{padding:isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:isThesis?15:13,fontWeight:isThesis?800:600,color:sideText,letterSpacing:isThesis?"-0.3px":1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){startSideHover("portfolio",e)}} onMouseLeave={clearSideHover}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);setSideHover("portfolio")}} onMouseLeave={clearSideHover}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){startSideHover("hub",e)}} onMouseLeave={clearSideHover}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){if(sideHoverTimer.current)clearTimeout(sideHoverTimer.current);setSideHover("hub")}} onMouseLeave={clearSideHover}>
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
@@ -3765,11 +3779,11 @@ function TrackerApp(props){
           if(c.divPerShare>0||c.lastDiv>0){var ann=(c.divPerShare||c.lastDiv||0)*(c.divFrequency==="monthly"?12:c.divFrequency==="quarterly"?4:c.divFrequency==="semi"?2:1);
             var yld=pos.currentPrice>0?(ann/pos.currentPrice*100):0;
             var yoc=pos.avgCost>0?(ann/pos.avgCost*100):0;
-            divInfo.push({l:"Per Payment",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)});
-            divInfo.push({l:"Frequency",v:c.divFrequency==="monthly"?"Monthly":c.divFrequency==="semi"?"Semi-Annual":c.divFrequency==="annual"?"Annual":"Quarterly"});
-            if(yld>0)divInfo.push({l:"Yield",v:yld.toFixed(2)+"%",isGood:yld>=2});
-            if(yoc>0&&yoc!==yld)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
-            divInfo.push({l:"Annual/Share",v:"$"+ann.toFixed(2)});
+            if(yld>0)divInfo.push({l:"Div. Yield (Annual)",v:yld.toFixed(2)+"%",isGood:yld>=2});
+            if(yoc>0&&Math.abs(yoc-yld)>0.05)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
+            divInfo.push({l:"Annual Div/Share",v:"$"+ann.toFixed(2)});
+            divInfo.push({l:"Per Payment",v:"$"+(c.divPerShare||c.lastDiv||0).toFixed(2)+" ("+
+              (c.divFrequency==="monthly"?"monthly":c.divFrequency==="semi"?"semi":c.divFrequency==="annual"?"annual":"quarterly")+")"});
             if(pos.shares>0)divInfo.push({l:"Annual Income",v:"$"+(pos.shares*ann).toFixed(0),isGood:true});
             if(c.exDivDate)divInfo.push({l:"Next Ex-Div",v:fD(c.exDivDate)})}
           else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
@@ -4485,7 +4499,7 @@ function TrackerApp(props){
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <div style={{fontSize:36,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.red,fontFamily:fm}}>{globalOS.total}</div>
                   <div>
-                    <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{currentLevel.icon} {currentLevel.name}</div>
+                    <div style={{fontSize:13,fontWeight:600,color:K.txt}}>Process Score: {globalOS.total}/100</div>
                     <div style={{fontSize:11,color:K.dim}}>Top investors maintain 70+ process scores</div></div></div>
               </div>
               {/* Benchmark */}
@@ -4669,7 +4683,7 @@ function TrackerApp(props){
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||(streakData.current||0)>=l.unlock)})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===activeLens})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -6161,6 +6175,13 @@ function TrackerApp(props){
       var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
       var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
       var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
+      // Portfolio Character
+      var styles={};portfolio.forEach(function(c2){var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1});
+      var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
+      var divPctPort=0;portfolio.forEach(function(c2){if((c2.divPerShare||c2.lastDiv)>0)divPctPort++});
+      var divRatio=portfolio.length>0?divPctPort/portfolio.length:0;
+      var portCharacter=divRatio>=0.6?"Dividend Income":topStyle==="growth"||topStyle==="aggressive"?"Growth-Oriented":topStyle==="value"||topStyle==="contrarian"?"Deep Value":topStyle==="quality"||topStyle==="compounder"?"Quality Compounder":topStyle==="income"||topStyle==="dividend"?"Dividend Income":portfolio.length>=5?"Diversified":"Focused";
+      var portCharIcon=portCharacter==="Dividend Income"?String.fromCodePoint(0x1F4B0):portCharacter==="Growth-Oriented"?String.fromCodePoint(0x1F680):portCharacter==="Deep Value"?String.fromCodePoint(0x1F3AF):portCharacter==="Quality Compounder"?String.fromCodePoint(0x2728):portCharacter==="Diversified"?String.fromCodePoint(0x1F310):String.fromCodePoint(0x1F50D);
       // Notable movers (any holding with position data)
       var movers=held.filter(function(c2){var p2=c2.position;return p2.avgCost>0}).map(function(c2){return{ticker:c2.ticker,id:c2.id,ret:((c2.position.currentPrice-c2.position.avgCost)/c2.position.avgCost*100),price:c2.position.currentPrice}}).sort(function(a,b){return Math.abs(b.ret)-Math.abs(a.ret)});
       var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
@@ -6203,10 +6224,12 @@ function TrackerApp(props){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{minWidth:0}}>
               <div style={{fontSize:isMobile?16:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
-              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div></div>
+              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
+              {portfolio.length>=2&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:6,padding:"3px 10px",borderRadius:6,background:K.acc+"10",border:"1px solid "+K.acc+"20",fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{portCharIcon} {portCharacter} Portfolio</div>}</div>
             {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
-              <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
+              <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div>
+              <div style={{display:"flex",gap:2,marginTop:4,justifyContent:"flex-end"}}>{[{id:"total",l:"Total"},{id:"ytd",l:"YTD"}].map(function(p2){return<button key={p2.id} onClick={function(e){e.stopPropagation();setBriefPeriod(p2.id)}} style={{padding:"2px 6px",fontSize:8,fontFamily:fm,borderRadius:4,border:"1px solid "+(briefPeriod===p2.id?K.acc+"50":K.bdr),background:briefPeriod===p2.id?K.acc+"12":"transparent",color:briefPeriod===p2.id?K.acc:K.dim,cursor:"pointer"}}>{p2.l}</button>})}</div></div>}</div></div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
           {/* Left column — Market Intel */}
           <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+(isDark?K.bdr:K.bdr2)}}>
