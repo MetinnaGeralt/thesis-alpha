@@ -1065,7 +1065,7 @@ function TrackerApp(props){
       "  .ta-notif-panel{width:calc(100vw - 24px)!important;right:12px!important;left:12px!important;max-height:70vh!important}",
       "  .ta-analytics-4col{grid-template-columns:1fr 1fr!important}",
       "  .ta-form-row{grid-template-columns:1fr!important}",
-      "  .ta-form-3col{grid-template-columns:1fr 1fr!important}",
+      "  .ta-form-3col{grid-template-columns:1fr!important}",
       "  .ta-grid-cards{grid-template-columns:1fr!important}",
       "  .ta-grid-2col{grid-template-columns:1fr!important}",
       "  .ta-grid-4col{grid-template-columns:1fr 1fr!important}",
@@ -1532,7 +1532,7 @@ function TrackerApp(props){
         <button onClick={function(){set("metricId","custom_"+kpiSearch.toLowerCase().replace(/[^a-z0-9]/g,"_"))}} style={Object.assign({},S.btn,{fontSize:11})}>Create custom: "{kpiSearch}"</button></div>}
             {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:11,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
       {f.metricId&&<div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
+        <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
           <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"≥ At least"},{v:"lte",l:"≤ At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
           <Inp label={"Target"+(selMet?" ("+selMet.unit+")":"")} value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder={selMet&&selMet.unit==="%"?"e.g. 20":"e.g. 5"} K={K}/>
           <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
@@ -2349,11 +2349,11 @@ function TrackerApp(props){
     <div style={{padding:isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:isThesis?15:13,fontWeight:isThesis?800:600,color:sideText,letterSpacing:isThesis?"-0.3px":1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isMobile?280:240),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
@@ -2387,7 +2387,7 @@ function TrackerApp(props){
       var pctToTarget=hasTarget?((c.targetPrice-pos.currentPrice)/pos.currentPrice*100):0;
       var pctReturn=hasPrice&&pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):0;
       var isWatchlist=c.status==="watchlist";
-      return<div key={c.id} className="ta-side-item" style={{padding:isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(isThesis?K.acc+"15":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
+      return<div key={c.id} className="ta-side-item" style={{padding:isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(isThesis?K.acc+"15":K.blue+"10"):h.c+"08",borderLeft:isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
         <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:sideDim2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
@@ -2396,10 +2396,14 @@ function TrackerApp(props){
           {!isWatchlist&&hasPrice&&pos.avgCost>0&&<div style={{fontSize:9,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</div>}
           {!hasPrice&&d>=0&&d<=7&&<div style={{fontSize:9,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
           {!hasPrice&&c.earningsDate==="TBD"&&<div style={{fontSize:9,color:sideDim2,fontFamily:fm}}>TBD</div>}
-          <div style={{width:6,height:6,borderRadius:"50%",background:h.c}}/></div></div>})}</div>
-    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6}}>
-      <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
-      <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div>}
+          <div style={{width:18,height:4,borderRadius:2,background:h.c,opacity:0.8,marginTop:1}}/></div></div>})}</div>
+    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
+      {isMobile&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.mid,cursor:"pointer",fontSize:11,fontFamily:fm,width:"100%"}}>
+        {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
+        {isDark?"Switch to Light":"Switch to Dark"}</button>}
+      <div style={{display:"flex",gap:6}}>
+        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:11})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
+        <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:11})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div></div>}
   function TopBar(){
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
@@ -3295,7 +3299,7 @@ function TrackerApp(props){
       html+='<div class="disc">Source: '+(data.source==="sec-edgar"?"SEC EDGAR":"Financial Modeling Prep")+' · Generated by ThesisAlpha · For personal research only. Not financial advice. Verify all data before making investment decisions.</div>';
       html+='</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
-    if(!isPro){return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+    if(!isPro){return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
@@ -3338,7 +3342,7 @@ function TrackerApp(props){
     var allVals=[];chartSeries.forEach(function(s){s.pts.forEach(function(p){allVals.push(p.val)})});
     var hasPctMix=chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return d&&d.p})&&chartSel.some(function(k){var d=chartItems.find(function(ci){return ci.k===k});return!d||!d.p});
     var cW=Math.max(500,dates.length*60);var cH=200;var pad={l:60,r:20,t:20,b:30};var plotW=cW-pad.l-pad.r;var plotH=cH-pad.t-pad.b;
-    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:14,padding:"24px 0 12px"}}>
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
@@ -3475,12 +3479,12 @@ function TrackerApp(props){
       }).catch(function(){})
     },[c.ticker,isPro]);
     var TABS=[{id:"dossier",label:"Dossier",icon:"overview"},{id:"financials",label:"Financials",icon:"chart"},{id:"research",label:"Research",icon:"book"}];
-    return<div className="ta-detail-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
+    return<div className="ta-detail-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       {/* Mobile back button */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:12,cursor:"pointer",padding:"12px 0 4px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Back to portfolio</button>}
       {/* Header */}
       <div className="ta-detail-head" style={{display:"flex",alignItems:"center",gap:14,padding:"28px 0 16px"}}><CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?28:36}/>
-        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></span>{(function(){var _mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:5,background:_mm.color+"12",border:"1px solid "+_mm.color+"25"}}><div style={{display:"flex",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:5,height:5,borderRadius:"50%",background:s<=_mm.stars?_mm.color:K.bdr}}/>})}</div><span style={{fontSize:9,fontWeight:600,color:_mm.color,fontFamily:fm}}>{_mm.label}</span></div>})()}</div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20,fontWeight:isThesis?800:500,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.3px":"normal"}}>{c.ticker}<span style={{fontWeight:300,color:K.mid,marginLeft:8,fontSize:16}}>{c.name}</span></span>{(function(){var _mm=calcMastery(c);return<div style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:5,background:_mm.color+"12",border:"1px solid "+_mm.color+"25"}}><div style={{display:"flex",gap:1}}>{[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:5,height:5,borderRadius:"50%",background:s<=_mm.stars?_mm.color:K.bdr}}/>})}</div><span style={{fontSize:9,fontWeight:600,color:_mm.color,fontFamily:fm}}>{_mm.label}</span></div>})()}</div>
           <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>
             {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:4,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 8px",borderRadius:4,fontFamily:fm,cursor:"pointer"}} onClick={function(){setModal({type:"edit"})}} title="Click to change investment style"><IC name={STYLE_MAP[c.investStyle].icon} size={9} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
             {!c.investStyle&&<button onClick={function(){setModal({type:"edit"})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"1px 8px",borderRadius:4,background:K.bdr+"50",border:"1px solid "+K.bdr,cursor:"pointer",fontSize:9,color:K.dim,fontFamily:fm}}>+ Set style</button>}
@@ -5391,8 +5395,8 @@ function TrackerApp(props){
     // Group by month
     var months={};filtered.forEach(function(e){var key=e.date.substring(0,7);if(!months[key])months[key]=[];months[key].push(e)});
 
-    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Timeline</h1>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Portfolio Timeline</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{events.length} events across {portfolio.length} holdings — your investment memory</p></div>
 
       {/* Filters */}
@@ -5494,8 +5498,8 @@ function TrackerApp(props){
 
     var streakColor=(streakData.current||0)>=8?K.grn:(streakData.current||0)>=4?K.amb:K.mid;
 
-    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Weekly Owner’s Review</h1>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Weekly Owner’s Review</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>3 minutes to confirm or adjust conviction across your portfolio</p></div>
 
       {/* Streak banner */}
@@ -5743,8 +5747,8 @@ function TrackerApp(props){
 
     var secStyle={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
-    return<div style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Portfolio Analytics</h1>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Portfolio Analytics</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{portCos.length} portfolio companies{ldM?" • Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" • "+withMoat.length+" analyzed":""}</p></div>
 
       {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:13,color:K.dim}}>Analyzing financial quality of {portCos.length} companies...</div>
@@ -5765,7 +5769,7 @@ function TrackerApp(props){
       {/* ── Portfolio Quality Profile (all 8 dimensions) ── */}
       {withMoat.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
         <div style={secStyle}><IC name="bar" size={14} color={K.dim}/>Portfolio Quality Profile</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
           {dimIds.map(function(d){var avg2=dimAvgs[d];if(avg2===null)return null;
             var clr=avg2>=8?K.grn:avg2>=6?K.acc:avg2>=4?K.amb:K.red;
             return<div key={d} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 0"}}>
@@ -5794,7 +5798,7 @@ function TrackerApp(props){
             <div style={{fontSize:16,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>}
 
       {/* ── Strongest / Weakest ── */}
-      {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
+      {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,marginBottom:24}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
           <div style={secStyle}><IC name="trending" size={14} color={K.grn}/>Strongest Businesses</div>
           {strongest.map(function(x){return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
@@ -5863,7 +5867,7 @@ function TrackerApp(props){
         return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
           <div style={secStyle}><IC name="castle" size={14} color={K.dim}/>Moat Source Map</div>
           <div style={{fontSize:12,color:K.dim,marginBottom:16}}>What protects your portfolio? Distribution of competitive advantages across holdings.</div>
-          <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+          <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10}}>
             {activeTypes.map(function(t){var cos2=typeCompanies[t.id]||[];var avgStr=cos2.length?Math.round(cos2.reduce(function(s,x){return s+x.strength},0)/cos2.length*10)/10:0;
               return<div key={t.id} style={{padding:"14px 16px",borderRadius:8,background:t.color+"08",border:"1px solid "+t.color+"25"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -5918,8 +5922,8 @@ function TrackerApp(props){
         if(payout>0){income+=payout;payers.push({ticker:c.ticker,amount:payout})}});
       return{month:mn,income:income,payers:payers}});
     var maxMonthly=Math.max.apply(null,monthlyBreakdown.map(function(m){return m.income}))||1;
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:960}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Dividend Hub</h1>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:960}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Dividend Hub</h1>
         <p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>Track income from your dividend-paying holdings</p></div>
       {/* Summary cards */}
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
@@ -6029,8 +6033,8 @@ function TrackerApp(props){
     var upcoming=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0}).sort(function(a,b){return a.earningsDate>b.earningsDate?1:-1});
     var recent=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-30}).sort(function(a,b){return b.earningsDate>a.earningsDate?-1:1});
     var tbdCos=allCos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 12px 60px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
-      <div style={{padding:"28px 0 20px"}}><h1 style={{margin:0,fontSize:26,fontWeight:400,color:K.txt,fontFamily:fh}}>Earnings Calendar</h1>
+    return<div className="ta-page-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Earnings Calendar</h1>
         <p style={{margin:"4px 0 0",fontSize:13,color:K.dim}}>{upcoming.length} upcoming · {recent.length} recent · {tbdCos.length} TBD</p></div>
       {/* This week */}
       {function(){var thisWeek=upcoming.filter(function(c){return dU(c.earningsDate)<=7});
