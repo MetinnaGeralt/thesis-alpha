@@ -1,7 +1,11 @@
 import "./globals.css";
 export const metadata = {
-  title: "ThesisAlpha — Investment Thesis Tracker",
-  description: "Track earnings KPIs, detect narrative drift, and expose Q&A evasion with AI.",
+  title: "ThesisAlpha",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/logo.png", // also shows on iOS home screen
+  },
 };
 export default function RootLayout({ children }) {
   return (
