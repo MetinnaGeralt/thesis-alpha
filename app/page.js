@@ -789,6 +789,10 @@ function TrackerApp(props){
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
+  var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
+  function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
+  var CURRENCIES=[{code:"USD",sym:"$",label:"US Dollar"},{code:"EUR",sym:"€",label:"Euro"},{code:"GBP",sym:"£",label:"British Pound"},{code:"NOK",sym:"kr ",label:"Norwegian Krone"},{code:"SEK",sym:"kr ",label:"Swedish Krona"},{code:"DKK",sym:"kr ",label:"Danish Krone"},{code:"CHF",sym:"CHF ",label:"Swiss Franc"},{code:"JPY",sym:"¥",label:"Japanese Yen"},{code:"AUD",sym:"A$",label:"Australian Dollar"},{code:"CAD",sym:"C$",label:"Canadian Dollar"},{code:"SGD",sym:"S$",label:"Singapore Dollar"},{code:"HKD",sym:"HK$",label:"Hong Kong Dollar"}];
+  var cSym=(CURRENCIES.find(function(c){return c.code===currency})||CURRENCIES[0]).sym;
   var _rl=useState(function(){try{var s=localStorage.getItem("ta-readinglist");return s?JSON.parse(s):[]}catch(e){return[]}}),readingList=_rl[0],setReadingList=_rl[1];
   function saveRL(next){setReadingList(next);try{localStorage.setItem("ta-readinglist",JSON.stringify(next))}catch(e){}}
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
@@ -1890,7 +1894,7 @@ function TrackerApp(props){
       <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:20}}>
         <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>SNAPSHOT (auto-filled)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
-          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>PRICE</div><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.currentPrice?"$"+pos.currentPrice:"—"}</div></div>
+          <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>PRICE</div><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.currentPrice?cSym+pos.currentPrice:"—"}</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>CONVICTION</div><div style={{fontSize:16,fontWeight:700,color:c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c2.conviction||"—"}/10</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>KPIs</div><div style={{fontSize:14,fontWeight:600,color:h2.c,fontFamily:fm}}>{h2.l}</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>MOAT</div><div style={{fontSize:14,fontWeight:600,color:activeMoats.length>0?K.grn:K.dim,fontFamily:fm}}>{activeMoats.length>0?activeMoats.length+" types":"—"}</div></div></div>
@@ -1963,8 +1967,8 @@ function TrackerApp(props){
       <Inp label="Purchase Date" value={f.purchaseDate} onChange={function(v){set("purchaseDate",v)}} type="date" K={K}/>
       {f.shares&&f.avgCost&&f.currentPrice&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:14,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
-          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>COST BASIS</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>${(parseFloat(f.shares)*parseFloat(f.avgCost)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>MKT VALUE</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>${(parseFloat(f.shares)*parseFloat(f.currentPrice)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>COST BASIS</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.avgCost)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>MKT VALUE</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.currentPrice)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
           <div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>GAIN/LOSS</div><div style={{fontSize:14,fontWeight:600,color:((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100)>=0?K.grn:K.red,fontFamily:fm}}>{((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100).toFixed(1)}%</div></div></div></div>}
       {/* Price alert / Buy zone */}
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:11,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Price Alert</div></div>
@@ -2226,7 +2230,25 @@ function TrackerApp(props){
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:12,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {/* ── Display Tab ── */}
+      {sTab==="display"&&<div>
+        <div style={{fontSize:12,color:K.dim,marginBottom:20}}>Choose how values are displayed across the app. Note: this changes the currency symbol only — no FX conversion is applied. Stock prices from market data remain in their original currency.</div>
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Currency Symbol</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {CURRENCIES.map(function(cur){var active=currency===cur.code;return<button key={cur.code} onClick={function(){saveCurrency(cur.code)}} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"10":K.card,cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
+              <span style={{fontSize:18,fontFamily:fm,fontWeight:700,color:active?K.acc:K.txt,minWidth:28}}>{cur.sym.trim()}</span>
+              <div>
+                <div style={{fontSize:12,fontWeight:active?700:500,color:active?K.acc:K.txt}}>{cur.code}</div>
+                <div style={{fontSize:10,color:K.dim}}>{cur.label}</div>
+              </div>
+              {active&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:K.acc,flexShrink:0}}/>}
+            </button>})}
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
+      </div>}
       {/* ── Widgets Tab ── */}
       {sTab==="widgets"&&<div>
         <div style={{fontSize:12,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
@@ -4105,7 +4127,7 @@ function TrackerApp(props){
             if(yld>0)divInfo.push({l:"Yield",v:yld.toFixed(2)+"%",isGood:yld>=2});
             if(yoc>0&&yoc!==yld)divInfo.push({l:"Yield on Cost",v:yoc.toFixed(2)+"%",isGood:yoc>yld});
             divInfo.push({l:"Annual/Share",v:"$"+ann.toFixed(2)});
-            if(pos.shares>0)divInfo.push({l:"Annual Income",v:"$"+(pos.shares*ann).toFixed(0),isGood:true});
+            if(pos.shares>0)divInfo.push({l:"Annual Income",v:cSym+(pos.shares*ann).toFixed(0),isGood:true});
             if(c.exDivDate)divInfo.push({l:"Next Ex-Div",v:fD(c.exDivDate)})}
           else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
             divInfo.push({l:"Dividend",v:"None",isNeutral:true})}
@@ -6520,7 +6542,7 @@ function TrackerApp(props){
                 var ss=calcSafetyScore(c);
                 return<tr key={c.id} style={{borderBottom:"1px solid "+K.bdr+"60",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}>
                   <td style={{padding:"10px 10px"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={c.domain} ticker={c.ticker} size={20}/><div><div style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:10,color:K.dim}}>{c.name}</div></div></div></td>
-                  <td style={{textAlign:"right",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:11}}>{pos.currentPrice>0?"$"+pos.currentPrice.toFixed(2):"\u2014"}</td>
+                  <td style={{textAlign:"right",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:11}}>{pos.currentPrice>0?cSym+pos.currentPrice.toFixed(2):"\u2014"}</td>
                   <td style={{textAlign:"right",padding:"10px 10px",color:K.txt,fontFamily:fm}}>${dps.toFixed(2)}</td>
                   <td style={{textAlign:"left",padding:"10px 10px",color:K.mid,fontFamily:fm,fontSize:10}}>{freqLabel(c.divFrequency)}</td>
                   <td style={{textAlign:"right",padding:"10px 10px",color:K.grn,fontWeight:600,fontFamily:fm}}>{yld.toFixed(2)}%</td>
@@ -6560,7 +6582,7 @@ function TrackerApp(props){
               {monthlyBreakdown.map(function(m){
                 var isNow=m.idx===nowMonth;var isHov=hovMonth===m.idx;var barH=m.income>0?Math.max(10,Math.round(m.income/maxMonthlyIncome*130)):3;
                 return<div key={m.idx} style={{display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",height:"100%",justifyContent:"flex-end"}} onMouseEnter={function(){setHovMonth(m.idx)}} onMouseLeave={function(){setHovMonth(null)}}>
-                  {(isHov||isNow)&&m.income>0&&<div style={{fontSize:isMobile?8:10,color:K.grn,fontFamily:fm,marginBottom:2,fontWeight:600}}>${m.income.toFixed(0)}</div>}
+                  {(isHov||isNow)&&m.income>0&&<div style={{fontSize:isMobile?8:10,color:K.grn,fontFamily:fm,marginBottom:2,fontWeight:600}}>{cSym}{m.income.toFixed(0)}</div>}
                   <div style={{width:"100%",height:barH,borderRadius:"3px 3px 0 0",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"flex-end",opacity:isHov?1:0.8,transition:"opacity .15s",outline:isNow?"2px solid "+K.acc:"none",outlineOffset:2}}>
                     {m.payers.length>0?m.payers.map(function(p,pi){var h=Math.round(p.amount/m.income*barH);return<div key={p.ticker} style={{width:"100%",height:Math.max(1,h),background:p.color,flexShrink:0}}/>}):<div style={{width:"100%",height:barH,background:K.bdr}}/>}
                   </div>
@@ -6571,7 +6593,7 @@ function TrackerApp(props){
             </div>
             {/* Hover detail */}
             {hovMonth!==null&&monthlyBreakdown[hovMonth].income>0&&<div style={{marginTop:16,padding:"12px 16px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr}}>
-              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{monthNames[hovMonth]} — ${monthlyBreakdown[hovMonth].income.toFixed(0)} total</div>
+              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{monthNames[hovMonth]} — {cSym}{monthlyBreakdown[hovMonth].income.toFixed(0)} total</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                 {monthlyBreakdown[hovMonth].payers.map(function(p){return<div key={p.ticker} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",background:p.color+"15",borderRadius:999,border:"1px solid "+p.color+"30"}}>
                   <div style={{width:8,height:8,borderRadius:"50%",background:p.color}}/>
@@ -7313,12 +7335,12 @@ function TrackerApp(props){
       return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?8:16,marginBottom:20}}>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Value</div>
-          <div style={{fontSize:isMobile?16:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.15}}>${totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Cost: ${totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div style={{fontSize:isMobile?16:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.15}}>{cSym}{totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+          <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Cost: {cSym}{totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Return</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
-          <div style={{fontSize:10,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}${totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div style={{fontSize:10,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}{cSym}{totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:9,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Best</div>
           <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.15}}>{best?best.ticker:"—"}</div>
@@ -7382,15 +7404,15 @@ function TrackerApp(props){
             <span style={{flex:1,minWidth:100}}>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
-            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{sideTab==="watchlist"?(p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"):(p2.avgCost>0?"$"+p2.avgCost.toFixed(2):"—")}</span>
-            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:sideTab==="watchlist"?(cc.targetPrice>0?K.txt:K.dim):(ret!=null?(ret>=0?K.grn:K.red):K.dim)}}>{sideTab==="watchlist"?(cc.targetPrice>0?"$"+cc.targetPrice.toFixed(0):"—"):(ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—")}</span>
-            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,fontFamily:fm}}>{sideTab==="watchlist"?(function(){if(!cc.targetPrice||!p2.currentPrice)return<span style={{color:K.dim}}>{"—"}</span>;var gap=((cc.targetPrice-p2.currentPrice)/p2.currentPrice*100);return<span style={{color:gap>0?K.grn:K.red,fontWeight:600}}>{gap>0?gap.toFixed(0)+"% below":"At target"}</span>})():<span style={{color:K.txt}}>{val>0?"$"+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}</span>}
+            <span style={{width:75,textAlign:"right",fontSize:11,color:K.mid,fontFamily:fm}}>{sideTab==="watchlist"?(p2.currentPrice>0?cSym+p2.currentPrice.toFixed(2):"—"):(p2.avgCost>0?cSym+p2.avgCost.toFixed(2):"—")}</span>
+            <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,fontFamily:fm,color:sideTab==="watchlist"?(cc.targetPrice>0?K.txt:K.dim):(ret!=null?(ret>=0?K.grn:K.red):K.dim)}}>{sideTab==="watchlist"?(cc.targetPrice>0?cSym+cc.targetPrice.toFixed(0):"—"):(ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—")}</span>
+            {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:11,fontFamily:fm}}>{sideTab==="watchlist"?(function(){if(!cc.targetPrice||!p2.currentPrice)return<span style={{color:K.dim}}>{"—"}</span>;var gap=((cc.targetPrice-p2.currentPrice)/p2.currentPrice*100);return<span style={{color:gap>0?K.grn:K.red,fontWeight:600}}>{gap>0?gap.toFixed(0)+"% below":"At target"}</span>})():<span style={{color:K.txt}}>{val>0?cSym+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}</span>}
             <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{cc.sector||""}</span>:weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:9,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
             {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];return oo.map(function(k2){if(!(dashSet.listCols||{})[k2])return null;
               if(k2==="conviction")return<span key={k2} style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:12,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{color:K.dim}}>{"—"}</span>}</span>;
               if(k2==="kpis"&&!isMobile)return<span key={k2} style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>;
               if(k2==="earnings"&&!isMobile)return<span key={k2} style={{width:60,textAlign:"right",fontSize:10,color:d2>=0&&d2<=7?K.amb:K.dim,fontFamily:fm}}>{cc.earningsDate==="TBD"?"TBD":d2<=0?"Done":d2+"d"}</span>;
-              if(k2==="price"&&!isMobile)return<span key={k2} style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>;
+              if(k2==="price"&&!isMobile)return<span key={k2} style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?cSym+p2.currentPrice.toFixed(2):"—"}</span>;
               if(k2==="mastery")return<span key={k2} style={{width:55,textAlign:"center",display:"flex",justifyContent:"center",gap:1}}>{(function(){var _ml=calcMastery(cc);return[1,2,3,4,5,6].map(function(s){return<svg key={s} width="7" height="7" viewBox="0 0 12 12"><polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" fill={s<=_ml.stars?_ml.color:K.bdr}/></svg>})})()}</span>;
               return null})})()}
             {!isMobile&&<span style={{width:28}}/>}
@@ -7405,7 +7427,7 @@ function TrackerApp(props){
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>${(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}{cSym}{(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
           {/* Investment style + Moat type micro-badges */}
           {c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",gap:4,marginBottom:8}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:9,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
