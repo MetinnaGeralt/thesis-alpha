@@ -1292,7 +1292,7 @@ function TrackerApp(props){
     async function loadData(){
       var cloudData=await cloudLoad(props.userId);
       if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
+        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",tooHardReason:"",parkedAt:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         if(cloudData.trial){saveTrial(cloudData.trial)}
         if(cloudData.profile){
@@ -1314,7 +1314,7 @@ function TrackerApp(props){
       // Fallback to localStorage
       var local=await ldS("ta-data");
       if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
+        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",tooHardReason:"",parkedAt:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(local.notifs)setNotifs(local.notifs);
         if(local.trial){saveTrial(local.trial)}
         if(local.profile){
@@ -1590,7 +1590,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -1600,6 +1600,7 @@ function TrackerApp(props){
         <Inp label="Company Name" value={f.name} onChange={function(v){set("name",v)}} placeholder="Apple Inc." K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} placeholder="Technology" K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"}]} K={K}/></div>
       <Sel label="Add to" value={f.status} onChange={function(v){set("status",v)}} options={[{v:"portfolio",l:"Portfolio (I own this)"},{v:"watchlist",l:"Watchlist (Researching)"},{v:"toohard",l:"Too Hard (Outside circle)"}]} K={K}/>
+      {f.status==="toohard"&&<Inp label="Why is this too hard? (optional)" value={f._tooHardReason||""} onChange={function(v){set("_tooHardReason",v)}} placeholder="e.g. Requires pharma expertise I don't have. Revisit in 12 months." K={K}/>}
       {f.status==="portfolio"&&<Inp label="Investment Thesis" value={f.thesis} onChange={function(v){set("thesis",v)}} ta placeholder="Why do you own this?" K={K}/>}
       {f.status==="portfolio"&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Investment Style</div>
@@ -7207,7 +7208,7 @@ function TrackerApp(props){
       <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"list"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:10,fontFamily:fm,background:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"18":"transparent",color:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="file" size={10} color={dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim}/> List</button>
       <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"cards"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:10,fontFamily:fm,background:dashSet.portfolioView==="cards"?K.acc+"18":"transparent",color:dashSet.portfolioView==="cards"?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="cards"?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="overview" size={10} color={dashSet.portfolioView==="cards"?K.acc:K.dim}/> Cards</button></div>}
     {/* Nordnet-style list view */}
-    {filtered.length>0&&dashSet.portfolioView!=="cards"&&(function(){
+    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView!=="cards"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
@@ -7269,7 +7270,7 @@ function TrackerApp(props){
           </div>})}
       </div>})()}
     {/* Card view */}
-    {filtered.length>0&&dashSet.portfolioView==="cards"&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
+    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="cards"&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
@@ -7334,7 +7335,55 @@ function TrackerApp(props){
         <IC name={lnk.icon} size={16} color={lnk.color}/>
         <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginTop:4}}>{lnk.label}</div>
         <div style={{fontSize:9,color:K.dim}}>{lnk.desc}</div></div>})}</div>}
-    {sideTab==="toohard"&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\"Acknowledging what you don’t know is the dawning of wisdom.\" Companies here are outside your circle — too complex, too unpredictable, or require expertise you don’t have. That’s not failure. That’s discipline."}</div></div>}
+    {sideTab==="toohard"&&filtered.length>0&&(function(){
+      var HARD_CHIPS=["Too complex to model","Outside circle of competence","Requires specialist knowledge","Valuation too opaque","Management concerns","Regulatory unpredictable","Commodity/macro-driven","Come back later"];
+      var stale=filtered.filter(function(c){return c.parkedAt&&(new Date()-new Date(c.parkedAt))/864e5>180});
+      return<div>
+        <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"} {filtered.length} {filtered.length===1?"company":"companies"} parked here.{stale.length>0?" \u2014 "+stale.length+" have been here 6+ months. Worth a second look?":""}</div>
+        </div>
+        {stale.length>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+          <IC name="clock" size={13} color={K.amb}/>
+          <span style={{fontSize:12,color:K.amb,fontFamily:fm,fontWeight:600}}>{stale.length} entr{stale.length===1?"y":"ies"} older than 6 months</span>
+          <span style={{fontSize:11,color:K.dim,flex:1}}>Has your understanding changed? Consider reconsidering.</span>
+        </div>}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {filtered.map(function(c){
+            var daysParked=c.parkedAt?Math.floor((new Date()-new Date(c.parkedAt))/864e5):null;
+            var isStale=daysParked!==null&&daysParked>180;
+            var tl=daysParked===null?"Unknown":daysParked<30?(daysParked+"d ago"):daysParked<365?(Math.floor(daysParked/30)+"mo ago"):(Math.floor(daysParked/365)+"yr "+Math.floor((daysParked%365)/30)+"mo ago");
+            return<div key={c.id} style={{background:K.card,border:"1px solid "+(isStale?K.amb+"50":K.bdr),borderRadius:12,padding:"16px 20px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8}}>
+                    <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
+                    <span style={{fontSize:11,color:K.dim}}>{c.name}</span>
+                    {c.sector&&<span style={{fontSize:10,color:K.dim,background:K.bg,padding:"1px 8px",borderRadius:999,border:"1px solid "+K.bdr}}>{c.sector}</span>}
+                    <span style={{fontSize:10,color:isStale?K.amb:K.dim,fontFamily:fm,marginLeft:"auto",fontWeight:isStale?600:400}}>{tl}</span>
+                  </div>
+                  {c.tooHardReason
+                    ?<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <span style={{fontSize:12,color:K.mid,fontStyle:"italic",flex:1}}>"{c.tooHardReason}"</span>
+                        <button onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:""})}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",fontFamily:fm,flexShrink:0}}>edit</button>
+                      </div>
+                    :<div style={{marginBottom:8}}>
+                        <div style={{fontSize:11,color:K.dim,marginBottom:6}}>Why too hard? <span style={{opacity:.7}}>(helps you decide later)</span></div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                          {HARD_CHIPS.map(function(r){return<button key={r} onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:r})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:999,padding:"3px 10px",fontSize:10,color:K.mid,cursor:"pointer",fontFamily:fm}}>{r}</button>})}
+                        </div>
+                      </div>}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0,marginLeft:8}}>
+                  <button onClick={function(e){e.stopPropagation();upd(c.id,{status:"watchlist",parkedAt:""});showToast(c.ticker+" moved to Watchlist","info",2000)}} style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:6,padding:"6px 12px",fontSize:11,color:K.grn,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Reconsider \u2192</button>
+                  <button onClick={function(e){e.stopPropagation();if(window.confirm("Remove "+c.ticker+"?"))setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"6px 12px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Remove</button>
+                </div>
+              </div>
+            </div>})}
+        </div>
+      </div>}())}
+    {sideTab==="toohard"&&filtered.length===0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:12,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"}</div></div>}
     {/* Enhanced empty state */}
     {filtered.length===0&&<div className="ta-fade" style={{padding:"60px 20px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
       <div style={{width:56,height:56,borderRadius:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name={sideTab==="portfolio"?"trending":sideTab==="watchlist"?"search":"alert"} size={24} color={K.acc}/></div>
