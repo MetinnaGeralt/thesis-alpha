@@ -6206,39 +6206,69 @@ function TrackerApp(props){
     // ── Safety scoring (1–10 per holding) ──────────────────────
     function calcSafetyScore(c){
       var snap=c.financialSnapshot||{};
+      var sector=(c.sector||"").toLowerCase();var industry=(c.industry||"").toLowerCase();
+      var isReit=sector.indexOf("real estate")>=0||industry.indexOf("reit")>=0||c.ticker==="O"||c.ticker==="REALTY";
+      var isUtility=sector.indexOf("utilit")>=0||industry.indexOf("utilit")>=0||industry.indexOf("electric")>=0||industry.indexOf("gas distribution")>=0;
       var dps=c.divPerShare||c.lastDiv||0;
       var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
       var annDps=dps*mult;
       var pos=c.position||{};
       var g=function(k){return snap[k]&&snap[k].numVal!=null?snap[k].numVal:null};
-      var payout=g("payoutRatio");var fcfPs=g("fcfPerShare");var de=g("debtEquity");var revGr=g("revGrowth");var divGr=g("divGrowth");
+      var payout=g("payoutRatio");var fcfPs=g("fcfPerShare");var ic=g("interestCoverage");
+      var de=g("debtEquity");var revGr=g("revGrowth");var divGr=g("divGrowth");
       var components=[];var total=0;var possible=0;
-      // 1. Payout ratio (0–3 pts) — core safety metric
+      // ── 1. Payout Ratio (0–3 pts) — SECTOR-ADJUSTED ───────────
+      // REITs must pay out 90%+ legally; utilities are stable at 60-70%; cyclicals need <45%
       if(payout!==null){possible+=3;
-        var pr=payout>0&&payout<1?payout*100:payout;// normalise if decimal
-        var pts=pr<40?3:pr<60?2:pr<80?1:0;
-        total+=pts;components.push({label:"Payout Ratio",value:pr.toFixed(0)+"%",pts:pts,max:3,tip:pr<40?"Conservatively low — plenty of room":"Approaching limit — watch closely"})
-      }
-      // 2. FCF coverage (0–2 pts) — can they actually pay it from cash?
+        var pr=payout>0&&payout<1?payout*100:payout;
+        var safeThresh=isReit?85:isUtility?65:45;
+        var warnThresh=isReit?95:isUtility?80:65;
+        var pts=pr<safeThresh?3:pr<warnThresh?2:pr<warnThresh+15?1:0;
+        var sectorNote=isReit?" (REIT — adjusted)":isUtility?" (Utility — adjusted)":"";
+        total+=pts;components.push({label:"Payout Ratio",value:pr.toFixed(0)+"%"+sectorNote,pts:pts,max:3,
+          tip:pr<safeThresh?"Conservatively low for this sector — ample coverage":pr<warnThresh?"Within acceptable range — monitor trends":"Elevated — limited headroom if earnings soften"})}
+      // ── 2. FCF Coverage (0–2 pts) — does cash actually fund it? ─
       if(fcfPs!==null&&annDps>0){possible+=2;
-        var cov=fcfPs/annDps;var pts2=cov>=2?2:cov>=1?1:0;
-        total+=pts2;components.push({label:"FCF Coverage",value:cov.toFixed(1)+"x",pts:pts2,max:2,tip:cov>=2?"Strong cash coverage":"FCF barely covers the dividend"})
+        var cov=fcfPs/annDps;var pts2=cov>=2?2:cov>=1.1?1:0;
+        total+=pts2;components.push({label:"FCF Coverage",value:cov.toFixed(1)+"x",pts:pts2,max:2,
+          tip:cov>=2?"Dividend funded comfortably from free cash flow":cov>=1.1?"Covered, but limited buffer":"FCF barely or does not cover the dividend — high risk"})}
+      // ── 3. Interest Coverage (0–2 pts) — NEW ──────────────────
+      // A company drowning in interest payments will sacrifice the dividend first
+      if(ic!==null){possible+=2;
+        var pts3=ic>=10?2:ic>=5?1:0;
+        total+=pts3;components.push({label:"Interest Coverage",value:ic.toFixed(1)+"x",pts:pts3,max:2,
+          tip:ic>=10?"Earnings cover interest 10x+ — financially fortress-like":ic>=5?"Adequate coverage, manageable debt service":"Thin coverage — debt pressure may force a cut"})}
+      // ── 4. Dividend Longevity (0–2 pts) — NEW ─────────────────
+      // Proxy: company age from ipoDate. Older companies have longer dividend track records.
+      // This mirrors SSD's "dividend commitment" factor — a 25yr payer is very different from a 2yr payer.
+      var longevityPts=0;var longevityLabel="Unknown";var longevityTip="";
+      if(c.ipoDate){
+        var yrsPublic=Math.max(0,(new Date()-new Date(c.ipoDate))/864e5/365);
+        longevityPts=yrsPublic>=15?2:yrsPublic>=7?1:0;
+        longevityLabel=yrsPublic>=1?Math.floor(yrsPublic)+"yr public company":"< 1yr public";
+        longevityTip=yrsPublic>=15?"Long-established company — dividend commitment is proven":yrsPublic>=7?"Established track record":"Younger company — dividend history is limited"
+      } else if(c.exDivDate){
+        // Fallback: if they have an ex-div date, at least they're paying
+        longevityPts=1;longevityLabel="Paying dividends";longevityTip="Company has dividend history but age unknown"
       }
-      // 3. Revenue growth (0–2 pts) — growing biz = growing div
-      if(revGr!==null){possible+=2;
-        var pts3=revGr>10?2:revGr>0?1:0;
-        total+=pts3;components.push({label:"Revenue Growth",value:(revGr>=0?"+":"")+revGr.toFixed(1)+"%",pts:pts3,max:2,tip:revGr>10?"Growing revenues fund future hikes":revGr>0?"Modest growth — dividend stable":"Declining revenue is a warning sign"})
-      }
-      // 4. Balance sheet (0–2 pts) — debt/equity
-      if(de!==null){possible+=2;
-        var pts4=de<0.5?2:de<1.5?1:0;
-        total+=pts4;components.push({label:"Debt/Equity",value:de.toFixed(2)+"x",pts:pts4,max:2,tip:de<0.5?"Low leverage — financially resilient":de<1.5?"Manageable debt":"High leverage increases cut risk"})
-      }
-      // 5. Dividend growth track (0–1 pt)
+      possible+=2;total+=longevityPts;
+      components.push({label:"Dividend Longevity",value:longevityLabel,pts:longevityPts,max:2,tip:longevityTip});
+      // ── 5. Revenue Growth (0–1 pt) ────────────────────────────
+      if(revGr!==null){possible+=1;
+        var pts5=revGr>0?1:0;
+        total+=pts5;components.push({label:"Revenue Growth",value:(revGr>=0?"+":"")+revGr.toFixed(1)+"%",pts:pts5,max:1,
+          tip:revGr>5?"Growing revenues create headroom for future increases":revGr>0?"Modest growth — dividend stable":"Declining revenue is an early warning sign"})}
+      // ── 6. Balance Sheet / Leverage (0–1 pt) ─────────────────
+      // Debt/equity gives a quick balance sheet check alongside interest coverage
+      if(de!==null){possible+=1;
+        var pts6=de<1.0?1:0;
+        total+=pts6;components.push({label:"Debt / Equity",value:de.toFixed(2)+"x",pts:pts6,max:1,
+          tip:de<0.5?"Minimal leverage — strong financial position":de<1?"Conservative debt levels":"Elevated leverage — limits financial flexibility"})}
+      // ── 7. Dividend Growth YoY (0–1 pt) ──────────────────────
       if(divGr!==null){possible+=1;
-        var pts5=divGr>0?1:0;
-        total+=pts5;components.push({label:"Div Growth YoY",value:(divGr>=0?"+":"")+divGr.toFixed(1)+"%",pts:pts5,max:1,tip:divGr>0?"Actively growing the dividend":"No recent growth"})
-      }
+        var pts7=divGr>0?1:0;
+        total+=pts7;components.push({label:"Div Growth YoY",value:(divGr>=0?"+":"")+divGr.toFixed(1)+"%",pts:pts7,max:1,
+          tip:divGr>5?"Meaningfully growing the payout — management confidence":divGr>0?"Maintaining growth track record":"Flat or declining — growth commitment uncertain"})}
       if(possible===0)return{score:null,components:[],label:"No data"};
       var score=Math.round(total/possible*10);
       var label=score>=8?"Fortress":score>=6?"Solid":score>=4?"Cautious":"At Risk";
@@ -6434,11 +6464,11 @@ function TrackerApp(props){
                 </div>
               </div>
               {/* Component breakdown */}
-              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:8}}>
+              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
                 {ss.components.map(function(comp){var pct=comp.pts/comp.max;var col=pct>=0.67?K.grn:pct>=0.34?K.amb:K.red;
                   return<div key={comp.label} style={{background:K.bg,borderRadius:8,padding:"10px 12px",border:"1px solid "+col+"25"}} title={comp.tip}>
-                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4,letterSpacing:.3}}>{comp.label}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:col,fontFamily:fm}}>{comp.value}</div>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4,letterSpacing:.3,lineHeight:1.3}}>{comp.label}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:fm,lineHeight:1.3}}>{comp.value}</div>
                     <div style={{display:"flex",gap:2,marginTop:6}}>
                       {Array.from({length:comp.max}).map(function(_,i){return<div key={i} style={{flex:1,height:3,borderRadius:999,background:i<comp.pts?col:K.bdr}}/>})}
                     </div>
@@ -6549,7 +6579,7 @@ function TrackerApp(props){
           {divPayers.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:12}}>No dividend payers in your portfolio.</div>}
           <div style={{marginTop:20,padding:"14px 18px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr}}>
             <div style={{fontSize:10,fontWeight:600,color:K.dim,fontFamily:fm,marginBottom:6,letterSpacing:.5}}>HOW CUT RISK IS CALCULATED</div>
-            <div style={{fontSize:11,color:K.dim,lineHeight:1.7}}>Based on 5 signals: <strong>payout ratio</strong> (how much of earnings is paid out), <strong>FCF coverage</strong> (does free cash flow actually cover the dividend?), <strong>revenue growth</strong> (declining revenue precedes cuts), <strong>debt/equity</strong> (high leverage limits flexibility), and <strong>dividend growth trend</strong>. Each signal is scored and weighted into a 1–10 safety score.</div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.7}}>Based on 7 signals inspired by Simply Safe Dividends’ methodology: <strong>payout ratio</strong> (sector-adjusted — a REIT at 85% is safer than a retailer at 85%), <strong>FCF coverage</strong> (does free cash flow actually fund the dividend?), <strong>interest coverage</strong> (a company drowning in interest payments will sacrifice the dividend first), <strong>dividend longevity</strong> (a 20-year payer is far more committed than a 2-year payer), <strong>revenue growth</strong> (declining revenue precedes cuts), <strong>debt/equity</strong> (leverage headroom), and <strong>dividend growth trend</strong>. Each signal is scored and normalised to a 1–10 safety score.</div>
           </div>
         </div>})()}
     </div>}
