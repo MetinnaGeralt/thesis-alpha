@@ -592,7 +592,9 @@ async function fetchEarnings(co,kpis){
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
 
   // Step 2b: Computed derived metrics
-  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&co.position&&co.position.currentPrice>0){var _fcfY=fhMap.fcfPerShare.v/co.position.currentPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
+  var _implPrice=(co.position&&co.position.currentPrice>0)?co.position.currentPrice:(fhMap.pe&&fhMap.pe.v>0&&fhMap.eps&&fhMap.eps.v!=null?fhMap.pe.v*Math.abs(fhMap.eps.v):0);
+  if(_implPrice>0){snapshot.livePrice={label:"Price",numVal:_implPrice,value:"$"+_implPrice.toFixed(2)}}
+  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&_implPrice>0){var _fcfY=fhMap.fcfPerShare.v/_implPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
   if(fhMap.pe&&fhMap.pe.v!=null&&fhMap.pe.v>0){var _ey=1/fhMap.pe.v*100;fhMap.earningsYield={v:_ey,label:_ey.toFixed(1)+"%"}}
   if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&fhMap.fcfPerShare.v>0&&co.position&&co.position.currentPrice>0){var _pFcf=co.position.currentPrice/fhMap.fcfPerShare.v;fhMap.priceToFcf={v:_pFcf,label:_pFcf.toFixed(1)+"x"}}
 
@@ -2173,7 +2175,7 @@ function TrackerApp(props){
     // Valuation Framework
     var valPdf=c.valuation||{metrics:[]};
     if(valPdf.metrics.length>0){html+='<div class="sh"><span class="sh-n">3</span>Valuation Framework</div>';
-      var vResults=valPdf.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;var cur=getValMetricValue(def,snap,pos.currentPrice||0,c);var pass=cur!=null&&vm.threshold>0?(vm.rule==="gte"?cur>=vm.threshold:cur<=vm.threshold):null;return{label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:cur,pass:pass}}).filter(Boolean);
+      var vResults=valPdf.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;var cur=getValMetricValue(def,snap,pos.currentPrice||(snap.livePrice&&snap.livePrice.numVal?snap.livePrice.numVal:0),c);var pass=cur!=null&&vm.threshold>0?(vm.rule==="gte"?cur>=vm.threshold:cur<=vm.threshold):null;return{label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:cur,pass:pass}}).filter(Boolean);
       var vPass=vResults.filter(function(r){return r.pass===true}).length;var vTotal=vResults.filter(function(r){return r.pass!=null}).length;
       var vVerdict=vTotal===0?null:vPass>=vTotal*0.75?"Attractive":vPass>=vTotal*0.5?"Fair":"Expensive";
       var vColor=vVerdict==="Attractive"?"#16a34a":vVerdict==="Fair"?"#d97706":"#dc2626";
@@ -2186,6 +2188,7 @@ function TrackerApp(props){
       c.kpis.forEach(function(k){var st=k.lastResult?k.lastResult.status:"pending";var stC=st==="met"?"#16a34a":st==="missed"?"#dc2626":"#9ca3af";var stL=st==="met"?"MET":st==="missed"?"MISSED":"PENDING";var mDef=METRIC_MAP[k.metricId||""]||{};
         html+='<tr><td style="font-weight:600">'+esc(mDef.label||k.name)+'</td><td style="text-align:right" class="mono">'+(k.rule==="gte"?"\u2265":k.rule==="lte"?"\u2264":"=")+' '+k.value+(mDef.unit||"")+'</td><td style="text-align:right;font-weight:700;color:'+stC+'" class="mono">'+(k.lastResult?k.lastResult.actual:'\u2014')+'</td><td style="text-align:center"><span class="mono" style="font-size:8px;font-weight:800;color:'+stC+';background:'+stC+'10;padding:2px 8px;border-radius:3px">'+stL+'</span></td></tr>'});
       html+='</tbody></table>'}
+    var _secN=1+(sec.core||sec.moat||sec.risks||sec.sell?1:0)+(Object.keys(snap).length>0||pos.shares>0?1:0)+(valPdf.metrics.length>0?1:0)+(c.kpis.length>0?1:0);
     if(activeMoats.length>0||moatSvg){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Moat Analysis</div>';
       if(activeMoats.length>0){html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';activeMoats.forEach(function(t){var d2=c.moatTypes[t.id];var str=d2.strength||3;html+='<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid '+t.color+'30;background:'+t.color+'06"><span style="font-size:11px;font-weight:700;color:'+t.color+'">'+t.label+'</span><span style="display:flex;gap:2px">';for(var di=0;di<5;di++){html+='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(di<str?t.color:'#e5e7eb')+'"></span>'}html+='</span></div>'});html+='</div>'}
       if(moatSvg){html+=moatSvg;if(c._moatCache)html+='<div style="text-align:right;font-family:JetBrains Mono,monospace;font-size:11px;font-weight:700;margin-top:6px">Composite: '+c._moatCache.composite.toFixed(1)+'/10</div>'}}
@@ -2454,7 +2457,7 @@ function TrackerApp(props){
     if(vm.calc){var v=vm.calc(snap,price,company);return v}
     if(vm.snap&&snap[vm.snap]){var sv=snap[vm.snap];return sv.numVal!=null?sv.numVal:parseFloat(String(sv.value).replace(/[^0-9.\-]/g,""))||null}
     return null}
-  function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||0;
+  function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||(snap.livePrice&&snap.livePrice.numVal?snap.livePrice.numVal:0);
     var existing=c.valuation||{metrics:[]};
     var _vm=useState(existing.metrics.length>0?existing.metrics:VALUATION_METRICS.slice(0,4).map(function(m){return{id:m.id,threshold:m.defaultVal,rule:m.defaultRule}})),vMetrics=_vm[0],setVMetrics=_vm[1];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
@@ -3104,11 +3107,11 @@ function TrackerApp(props){
     // 1. GROSS MARGIN
     var gm=vals(recent,"grossProfitRatio");
     if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmAvg/10)+3-(gmStd*5)))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}
+      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2)+(gmStd<3?1:gmStd>10?-1:0))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}
     else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
       if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
         if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
-          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round((gmA/10)+3-(gmS*5)))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
+          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
     // 2. REVENUE GROWTH
     var revs=vals(recent,"revenue");
     if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
@@ -3307,7 +3310,7 @@ function TrackerApp(props){
     if(moat&&c.pricingPower&&c.pricingPower.score!=null){var gmOrig=moat.metrics.find(function(m){return m.id==="grossMargin"});if(gmOrig){var total=moat.metrics.reduce(function(s,m){return s+m.score},0);var adjTotal=total-gmOrig.score+c.pricingPower.score;adjComposite=Math.round(adjTotal/moat.metrics.length)}}
     // Cache moat for PDF export (only if changed)
     useEffect(function(){if(moat&&moat.composite!=null){var cache={composite:adjComposite||moat.composite};moat.metrics.forEach(function(m){cache[m.id]=m.score;cache[m.id+"_val"]=m.value});if(c.pricingPower&&c.pricingPower.score!=null)cache.grossMargin=c.pricingPower.score;
-      if(!c._moatCache||c._moatCache.composite!==cache.composite)upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null,c.pricingPower?c.pricingPower.score:null]);
+      if(!c._moatCache||c._moatCache.composite!==cache.composite||c._moatCache.grossMargin!==(c.pricingPower&&c.pricingPower.score!=null?c.pricingPower.score:cache.grossMargin))upd(c.id,{_moatCache:cache})}},[moat?moat.composite:null,c.pricingPower?c.pricingPower.score:null]);
     var cLabel=!moat?"Insufficient Data":moatLabel(adjComposite);
     var cColor=!moat?K.dim:moatColor(adjComposite);
     return<div className="ta-page-pad" style={{padding:isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
@@ -3775,7 +3778,6 @@ function TrackerApp(props){
             <span style={{fontSize:12,color:K.dim}}>{"•"}</span><button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"40":c.status==="toohard"?K.red+"40":K.amb+"40"),borderRadius:4,padding:"1px 8px",fontSize:11,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button></div></div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={Object.assign({},S.btn,{display:"inline-flex",alignItems:"center",gap:5,textDecoration:"none",padding:"5px 12px",fontSize:12})}>IR{"↗"}</a>}
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){setModal({type:"edit"})}}>Settings</button>
-          <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12,opacity:(streakData.current||0)>=2?1:.5})} onClick={function(){if((streakData.current||0)<2){showToast("Research Export unlocks at week 2 streak. "+((streakData.current||0)===0?"Start your streak with a weekly review!":(2-(streakData.current||0))+" week"+(2-(streakData.current||0)>1?"s":"")+" to go!"),"info",4000);return}exportResearch(c.id)}} title={(streakData.current||0)>=2?"Copy thesis + KPIs + history for NotebookLM or ChatGPT":"Unlocks at week 2 streak"}>{(streakData.current||0)<2?String.fromCodePoint(0x1F512)+" ":""}Export AI</button>
           <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){exportPDF()}}>PDF</button>
           <button style={Object.assign({},S.btnD,{padding:"5px 12px",fontSize:12})} onClick={function(){setModal({type:"del"})}}>Remove</button></div></div>
       {/* Tab Navigation */}
@@ -4044,7 +4046,7 @@ function TrackerApp(props){
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
         </div>})()}
         {/* ── VALUATION ── */}
-        {(function(){var val=c.valuation||{metrics:[]};var snap2=c.financialSnapshot||{};var price2=(c.position||{}).currentPrice||0;
+        {(function(){var val=c.valuation||{metrics:[]};var snap2=c.financialSnapshot||{};var price2=(c.position||{}).currentPrice||(snap2.livePrice&&snap2.livePrice.numVal?snap2.livePrice.numVal:0);
           var results=val.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
             var current=getValMetricValue(def,snap2,price2,c);var pass=current!=null&&vm.threshold>0?(vm.rule==="gte"?current>=vm.threshold:current<=vm.threshold):null;
             return{id:vm.id,label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:current,pass:pass}}).filter(Boolean);
