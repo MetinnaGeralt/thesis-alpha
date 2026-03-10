@@ -7427,7 +7427,7 @@ function TrackerApp(props){
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:12,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
-            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}{cSym}{(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{cSym}{(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
           {/* Investment style + Moat type micro-badges */}
           {c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",gap:4,marginBottom:8}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
