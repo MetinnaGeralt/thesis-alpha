@@ -2304,7 +2304,7 @@ function TrackerApp(props){
       else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})});addXP(10,"Scenario planned")}
       setModal(null)}
     return<Modal title={"Stress Test \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
-      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Plan your response to difficult situations before they happen \u2014 when your mind is clear and emotions are quiet.</div>
+      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Plan your response to difficult situations before they happen — when your mind is clear and emotions are quiet.</div>
       {!selPrompt&&<div>
         <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
         <div style={{display:"grid",gap:8}}>{prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
@@ -2353,7 +2353,7 @@ function TrackerApp(props){
     function doSave(){upd(selId,function(prev){return Object.assign({},prev,{valuation:{metrics:vMetrics,updatedAt:new Date().toISOString()}})});setModal(null)}
     var activeIds=vMetrics.map(function(m){return m.id});
     return<Modal title={"Valuation Framework \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={560} K={K}>
-      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Define what "good value" means to you. Pick metrics and set your thresholds \u2014 the system will tell you when the numbers match your criteria.</div>
+      <div style={{fontSize:12,color:K.mid,lineHeight:1.7,marginBottom:16}}>Define what “good value” means to you. Pick metrics and set your thresholds — the system will tell you when the numbers match your criteria.</div>
       {/* Active metrics */}
       {vMetrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
         var current=getValMetricValue(def,snap,price,c);
@@ -4007,7 +4007,7 @@ function TrackerApp(props){
           :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"valuation"})}}>
             <IC name="chart" size={20} color={K.acc}/>
             <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:4,marginTop:6}}>Define your valuation framework</div>
-            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you \u2014 FCF yield, P/E, PEG, earnings yield \u2014 and set your own thresholds for what constitutes good value.</div></div>}
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you — FCF yield, P/E, PEG, earnings yield — and set your own thresholds for what constitutes good value.</div></div>}
         </div>})()}
         {/* ── OWNER'S NUMBERS ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
@@ -6488,10 +6488,16 @@ function TrackerApp(props){
         <button onClick={function(){setLibFolder(null)}} style={{padding:"7px 16px",borderRadius:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),background:libFolder===null?K.acc+"18":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===null?700:400,display:"flex",alignItems:"center",gap:6}}>
           <IC name="overview" size={12} color={libFolder===null?K.acc:K.mid}/>All <span style={{fontSize:10,opacity:.7}}>({allCount})</span>
         </button>
-        {folders.map(function(f){var cnt=totalByFolder[f.id]||0;return<button key={f.id} onClick={function(){setLibFolder(libFolder===f.id?null:f.id)}} onDoubleClick={function(){setLibModal({type:"folder",folder:f})}} style={{padding:"7px 16px",borderRadius:999,border:"1px solid "+(libFolder===f.id?f.color:K.bdr),background:libFolder===f.id?f.color+"18":"transparent",color:libFolder===f.id?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===f.id?700:400,display:"flex",alignItems:"center",gap:6}} title="Double-click to edit folder">
-          <div style={{width:8,height:8,borderRadius:"50%",background:f.color,flexShrink:0}}/>
-          {f.name} <span style={{fontSize:10,opacity:.7}}>({cnt})</span>
-        </button>})}
+        {folders.map(function(f){var cnt=totalByFolder[f.id]||0;var isActiveFol=libFolder===f.id;
+          return<div key={f.id} style={{position:"relative",display:"inline-flex",alignItems:"center"}}>
+            <button onClick={function(){setLibFolder(isActiveFol?null:f.id)}} style={{padding:"7px "+(isActiveFol?"30px":"16px")+" 7px 16px",borderRadius:999,border:"1px solid "+(isActiveFol?f.color:K.bdr),background:isActiveFol?f.color+"18":"transparent",color:isActiveFol?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isActiveFol?700:400,display:"flex",alignItems:"center",gap:6,transition:"padding .1s"}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:f.color,flexShrink:0}}/>
+              {f.name} <span style={{fontSize:10,opacity:.7}}>({cnt})</span>
+            </button>
+            {isActiveFol&&<button onClick={function(e){e.stopPropagation();setLibModal({type:"folder",folder:f})}} style={{position:"absolute",right:8,background:"none",border:"none",cursor:"pointer",padding:2,color:f.color,opacity:.75,display:"flex",alignItems:"center"}} title="Edit or delete folder">
+              <IC name="edit" size={10} color={f.color}/>
+            </button>}
+          </div>})}
       </div>}
       {/* Items grid */}
       {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":_isThesis?"repeat(auto-fill, minmax(280px,1fr))":"repeat(auto-fill, minmax(260px,1fr))",gap:_isThesis?20:16}}>
@@ -6745,7 +6751,7 @@ function TrackerApp(props){
               <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
               <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>{"— "+quote.a}</div></div>
           </div></div>
-        {/* ── Portfolio News Feed ── */}
+        {/* ── Owner's Intel Feed ── */}
         {(function(){
           var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
           var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
@@ -6758,7 +6764,7 @@ function TrackerApp(props){
               {/* Header row */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
                 <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Portfolio News
+                  <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Owner’s Intel
                   {briefNews&&briefNews.length>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
