@@ -2489,11 +2489,11 @@ function TrackerApp(props){
   // ── Valuation Modal ──
   var VALUATION_METRICS=[
     {id:"pe",label:"P/E Ratio",desc:"Price to earnings. Lower = cheaper relative to profits.",unit:"x",defaultRule:"lte",defaultVal:25,snap:"pe",calc:null},
-    {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;var g=s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0;return(pe>0&&g>1)?(pe/g):null}},
+    {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:"peg",calc:function(s){if(s.peg&&s.peg.numVal!=null)return s.peg.numVal;var pe=s.pe&&s.pe.numVal?s.pe.numVal:(s.pe?parseFloat(String(s.pe.value).replace(/[^0-9.]/g,""))||0:0);var g=s.epsGrowth&&s.epsGrowth.numVal?Math.abs(s.epsGrowth.numVal):(s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0);return(pe>0&&g>1)?(pe/g):null}},
     {id:"pb",label:"P/B Ratio",desc:"Price to book value. Below 1 means trading below asset value.",unit:"x",defaultRule:"lte",defaultVal:3,snap:"pb",calc:null},
-    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(fcf/p*100):null}},
+    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;var pr=p>0?p:(s.livePrice&&s.livePrice.numVal?s.livePrice.numVal:0);return(fcf!==0&&pr>0)?(fcf/pr*100):null}},
     {id:"earningsYield",label:"Earnings Yield",desc:"Inverse of P/E (earnings/price). Compare to bond yields.",unit:"%",defaultRule:"gte",defaultVal:5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;return pe>0?(1/pe*100):null}},
-    {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:null,calc:null},
+    {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:"evEbitda",calc:null},
     {id:"divYield",label:"Dividend Yield",desc:"Annual dividend / price. Income return on investment.",unit:"%",defaultRule:"gte",defaultVal:2,snap:null,calc:function(s,p,c){var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return(dps>0&&p>0)?(dps*mult/p*100):null}},
     {id:"priceToFcf",label:"Price / FCF",desc:"Price to free cash flow per share. Lower = cheaper.",unit:"x",defaultRule:"lte",defaultVal:20,snap:null,calc:function(s,p){var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(p/fcf):null}},
     {id:"grossMargin",label:"Gross Margin",desc:"Pricing power indicator. Higher = stronger moat.",unit:"%",defaultRule:"gte",defaultVal:40,snap:"grossMargin",calc:null},
@@ -2504,7 +2504,7 @@ function TrackerApp(props){
     if(vm.calc){var v=vm.calc(snap,price,company);return v}
     if(vm.snap&&snap[vm.snap]){var sv=snap[vm.snap];return sv.numVal!=null?sv.numVal:parseFloat(String(sv.value).replace(/[^0-9.\-]/g,""))||null}
     return null}
-  function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||(snap.livePrice&&snap.livePrice.numVal?snap.livePrice.numVal:0);
+  function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||(snap.livePrice&&snap.livePrice.numVal?snap.livePrice.numVal:0)||(snap.pe&&snap.eps?(parseFloat(String(snap.pe.value).replace(/[^0-9.]/g,""))||0)*(parseFloat(String(snap.eps.value).replace(/[^0-9.\-]/g,""))||0):0);
     var existing=c.valuation||{metrics:[]};
     var _vm=useState(existing.metrics.length>0?existing.metrics:VALUATION_METRICS.slice(0,4).map(function(m){return{id:m.id,threshold:m.defaultVal,rule:m.defaultRule}})),vMetrics=_vm[0],setVMetrics=_vm[1];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
