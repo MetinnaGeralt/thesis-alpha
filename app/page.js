@@ -1591,7 +1591,9 @@ function TrackerApp(props){
         // Auto-log earnings review journal entry
         var kpiResults=(r.results||[]);var metCount=kpiResults.filter(function(x){return x.status==="met"}).length;var totalKpis=kpiResults.length;
         logJournalEntry(cid,{cardType:"earnings_review",ticker:co.ticker,quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),kpisMet:metCount,kpisTotal:totalKpis,kpiDetails:kpiResults.map(function(x){return{name:x.kpi_name,actual:x.actual_value,status:x.status}}),priceAtTime:co.position&&co.position.currentPrice?co.position.currentPrice:null,convictionAtTime:co.conviction||0,action:"",trigger:"",thesisImpact:"",userNote:""});
-        setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
+        setNotifs(function(p){return[{id:Date.now(),type:"found",ticker:co.ticker,msg:(r.quarter||"")+" results found",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)});
+        var _popKpis=co.kpis.filter(function(k){return k.lastResult&&k.lastResult.actual!=null});
+        if(_popKpis.length>0){setModal({type:"earningsPopup",data:{ticker:co.ticker,quarter:r.quarter||"Latest",sourceLabel:r.sourceLabel||"FMP",kpis:_popKpis,summary:r.summary||""}})}else{showToast("\u2713 "+co.ticker+" \u2014 "+r.quarter+" results found","success",4000)}}
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n})}}
     catch(e){console.warn("checkOne error:",e);setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
@@ -2039,19 +2041,46 @@ function TrackerApp(props){
     function toggleFlag(id){setFlags(function(p){var n=Object.assign({},p);n[id]=!p[id];return n})}
     function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
       var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);addXP(8,"Conviction rated");setModal(null)}
-    if(step==="checklist")return<Modal title={"✈️ Pre-Flight Checklist — "+sel.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
-      <div style={{fontSize:13,color:K.mid,lineHeight:1.6,marginBottom:16}}>Before updating conviction, pause and honestly assess each bias. Flag any that apply right now.</div>
-      <div style={{marginBottom:16}}>
-        {BIAS_CHECKS.map(function(b){var flagged=flags[b.id];var answered=flags[b.id]!==undefined;return<div key={b.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"10px 14px",marginBottom:4,borderRadius:8,background:flagged?K.red+"08":answered?K.grn+"06":"transparent",border:"1px solid "+(flagged?K.red+"25":answered?K.grn+"20":K.bdr),cursor:"pointer",transition:"all .15s"}} onClick={function(){toggleFlag(b.id)}}>
-          <div style={{width:28,height:28,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:flagged?K.red+"15":answered?K.grn+"15":K.bg,border:"1px solid "+(flagged?K.red+"30":answered?K.grn+"30":K.bdr)}}>{flagged?<IC name="alert" size={13} color={K.red}/>:answered?<IC name="check" size={13} color={K.grn}/>:<IC name={b.icon} size={13} color={K.dim}/>}</div>
-          <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:flagged?K.red:K.txt,marginBottom:2}}>{b.label}</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.4}}>{b.q}</div></div>
-          <div style={{fontSize:10,color:flagged?K.red:answered?K.grn:K.dim,fontFamily:fm,flexShrink:0,paddingTop:4}}>{flagged?"FLAGGED":answered?"CLEAR":"tap"}</div>
-        </div>})}</div>
-      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:8,padding:"10px 14px",marginBottom:14}}><div style={{fontSize:13,fontWeight:600,color:K.amb,marginBottom:2}}>{"⚠"} {flagCount} biases flagged</div><div style={{fontSize:12,color:K.mid}}>Consider whether this is the right time to act. Munger: {'"'}The big money is not in the buying and selling, but in the waiting.{'"'}</div></div>}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{Object.keys(flags).length}/{BIAS_CHECKS.length} reviewed</div>
-        <div style={{display:"flex",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
-        <button style={Object.assign({},S.btnP,{opacity:allAnswered?1:.35})} onClick={function(){if(allAnswered)setStep("rate")}}>Continue to Rating {"→"}</button></div></div></Modal>;
+    if(step==="checklist")return<Modal title={null} onClose={function(){setModal(null)}} w={520} K={K}>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:K.acc,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>PRE-FLIGHT CHECKLIST</div>
+        <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1.25,letterSpacing:"-0.3px"}}>
+          {flagCount>=3?"Hold on — biases detected.":flagCount>0?"A few flags raised.":"Are you acting on facts or feelings?"}
+        </div>
+        <div style={{fontSize:13,color:K.dim,marginTop:6,lineHeight:1.5}}>Honestly flag any biases active right now before rating conviction.</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+        {BIAS_CHECKS.map(function(b){var flagged=flags[b.id];var answered=flags[b.id]!==undefined;
+          return<div key={b.id} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:12,background:flagged?K.red+"08":answered?K.grn+"06":K.bg,border:"2px solid "+(flagged?K.red+"30":answered?K.grn+"25":K.bdr),cursor:"pointer",transition:"all .15s"}} onClick={function(){toggleFlag(b.id)}}>
+            <div style={{width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:flagged?K.red+"15":answered?K.grn+"15":K.card,border:"1px solid "+(flagged?K.red+"40":answered?K.grn+"40":K.bdr)}}>
+              {flagged?<IC name="alert" size={14} color={K.red}/>:answered?<IC name="check" size={14} color={K.grn}/>:<IC name={b.icon} size={14} color={K.dim}/>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:600,color:flagged?K.red:K.txt}}>{b.label}</div>
+              <div style={{fontSize:12,color:K.dim,marginTop:1,lineHeight:1.35}}>{b.q}</div>
+            </div>
+            <div style={{fontSize:11,fontWeight:700,color:flagged?K.red:answered?K.grn:K.dim,fontFamily:fm,flexShrink:0,minWidth:50,textAlign:"right"}}>
+              {flagged?"FLAGGED":answered?"CLEAR":"—"}
+            </div>
+          </div>})}
+      </div>
+      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:10,padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"flex-start"}}>
+        <span style={{fontSize:18}}>⚠️</span>
+        <div>
+          <div style={{fontSize:13,fontWeight:700,color:K.amb,marginBottom:2}}>{flagCount} biases active — pause before acting</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.4}}>Munger: "The big money is not in the buying and selling, but in the waiting."</div>
+        </div>
+      </div>}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+        <div style={{fontSize:12,color:K.dim}}>
+          <span style={{fontWeight:700,color:K.txt}}>{Object.keys(flags).length}</span>/{BIAS_CHECKS.length} reviewed
+          {flagCount>0&&<span style={{marginLeft:8,color:K.red,fontWeight:600}}>{flagCount} flagged</span>}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
+          <button style={Object.assign({},S.btnP,{opacity:allAnswered?1:.35})} onClick={function(){if(allAnswered)setStep("rate")}}>Rate Conviction →</button>
+        </div>
+      </div></Modal>;
     return<Modal title={"Conviction Rating — "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
       {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:6,padding:"8px 12px",marginBottom:16,fontSize:12,color:K.amb,fontFamily:fm}}>{"⚠"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -2546,7 +2575,57 @@ function TrackerApp(props){
       </div>}
     </Modal>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
+  function EarningsPopup(){
+    if(!modal||modal.type!=="earningsPopup")return null;
+    var d=modal.data||{};var kpis=d.kpis||[];
+    var metCount=kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
+    var allMet=metCount===kpis.length&&kpis.length>0;
+    var ticker=d.ticker||"";var quarter=d.quarter||"Latest";var srcLabel=d.sourceLabel||"FMP";
+    function fmtVal(v,unit){if(v==null)return"—";var abs=Math.abs(v);return(abs>=1000?Number(v).toFixed(0):abs>=10?Number(v).toFixed(1):Number(v).toFixed(2))+(unit||"")}
+    return<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(0,0,0,.72)"}} onClick={function(e){if(e.target===e.currentTarget)setModal(null)}}>
+      <div style={{background:"#fff",borderRadius:22,padding:"26px 26px 22px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,.28)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
+          <div>
+            <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:8}}>
+              <span style={{fontSize:26,fontWeight:800,color:"#1a1a2e",letterSpacing:"-0.5px"}}>{ticker}</span>
+              <span style={{fontSize:15,color:"#9ca3af",fontWeight:500}}>{quarter} Earnings</span>
+            </div>
+            <span style={{fontSize:11,fontWeight:700,color:allMet?"#16a34a":metCount>0?"#d97706":"#dc2626",background:allMet?"#f0fdf4":metCount>0?"#fffbeb":"#fef2f2",border:"1px solid "+(allMet?"#bbf7d0":metCount>0?"#fde68a":"#fecaca"),borderRadius:20,padding:"3px 10px",fontFamily:fm}}>
+              {metCount}/{kpis.length} KPIs met {allMet?"🎉":metCount>0?"✓":"😬"}
+            </span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+            <button onClick={function(){setModal(null)}} style={{background:"#f3f4f6",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",color:"#6b7280",fontSize:16,lineHeight:1}}>×</button>
+            <span style={{fontSize:10,fontWeight:600,color:"#9ca3af",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,padding:"2px 8px",fontFamily:fm}}>Live Data: {srcLabel}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+          {kpis.map(function(k,i){var res=k.lastResult;var met=res&&res.status==="met";var missed=res&&res.status==="missed";
+            var unit=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";
+            var val=res&&res.actual!=null?fmtVal(res.actual,unit):"—";
+            var bg=met?"#f0fdf4":missed?"#fef2f2":"#f9fafb";var border=met?"#bbf7d0":missed?"#fecaca":"#e5e7eb";var vc=met?"#16a34a":missed?"#dc2626":"#374151";
+            return<div key={i} style={{background:bg,border:"2px solid "+border,borderRadius:14,padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:4}}>{k.name}</div>
+                <div style={{fontSize:32,fontWeight:800,color:vc,letterSpacing:"-0.5px",lineHeight:1}}>{val}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,color:"#9ca3af",fontFamily:fm,marginBottom:6}}>Target: {k.target}</div>
+                {met&&<div style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✓ MET 🎉</div>}
+                {missed&&<div style={{background:"#dc2626",color:"#fff",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✗ MISSED</div>}
+                {!met&&!missed&&<div style={{background:"#e5e7eb",color:"#6b7280",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>? UNCLEAR</div>}
+              </div>
+            </div>})}
+        </div>
+        {d.summary&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6b7280",lineHeight:1.6}}>{d.summary.substring(0,200)}{d.summary.length>200?"…":""}</div>}
+        <div style={{display:"flex",gap:8}}>
+          <button style={{flex:1,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>{allMet?"🎯 Rate Conviction":"Update Conviction"}</button>
+          <button style={{background:"#f3f4f6",color:"#374151",border:"none",borderRadius:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"earningsReport",data:0})}}>Full Report</button>
+        </div>
+      </div>
+    </div>}
+
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
