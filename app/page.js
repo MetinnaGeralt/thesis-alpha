@@ -2495,6 +2495,73 @@ function TrackerApp(props){
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
     setTimeout(function(){refreshPrices()},500)}
 
+  // ── Dossier Spotlight Tour ───────────────────────────────
+  function DossierTour(){
+    var co=cos.find(function(c){return c.id===oCoId})||sel;
+    var tick=co?co.ticker:"your company";
+    var TOUR=[
+      {step:1,sectionId:"ds-ledger",color:"#F59E0B",icon:"trending",
+       title:"Rate your conviction",
+       body:"How confident are you in this investment, 1–10? Conviction tracking is the habit that separates great investors from reactive ones. Update it every quarter and after every earnings report.",
+       action:"Rate Conviction",onAction:function(){setModal({type:"conviction"})}},
+      {step:2,sectionId:"ds-evidence",color:"#3B82F6",icon:"target",
+       title:"Check the first earnings report",
+       body:"When "+tick+" reports next quarter, hit Check Earnings. ThesisAlpha fetches the results and instantly compares them to your KPIs. One click, instant verdict.",
+       action:null,onAction:null},
+      {step:3,sectionId:null,color:"#22C55E",icon:"castle",
+       title:"Classify the moat",
+       body:"What actually protects "+tick+" from competition? Network effects? Switching costs? Brand? The Moat Tracker scores 8 dimensions and builds a composite moat strength.",
+       action:"Open Moat Tracker",onAction:function(){setSubPage("moat")}},
+      {step:4,sectionId:"ds-score",color:"#8B5CF6",icon:"shield",
+       title:"Your Owner\'s Score",
+       body:"This radar shows how well you understand "+tick+". Thesis depth, KPI discipline, conviction, fundamentals, moat, monitoring — all in one view.",
+       action:null,onAction:null},
+    ];
+    var cur=TOUR.find(function(t){return t.step===tourStep});
+    // Style injection side-effect — runs after paint, safe
+    useEffect(function(){
+      var styleId="ta-tour-style";
+      var styleEl=document.getElementById(styleId);
+      if(!styleEl){styleEl=document.createElement("style");styleEl.id=styleId;document.head.appendChild(styleEl)}
+      if(cur&&cur.sectionId){
+        styleEl.textContent=
+          "#"+cur.sectionId+"{outline:2px solid "+cur.color+";outline-offset:4px;border-radius:12px;}"+
+          "@keyframes ta-tour-pulse{0%,100%{outline-color:"+cur.color+"}50%{outline-color:"+cur.color+"88}}"+
+          "#"+cur.sectionId+"{animation:ta-tour-pulse 1.6s ease-in-out infinite}"
+      }else{styleEl.textContent=""}
+      // Scroll current section into view
+      if(cur&&cur.sectionId){var el=document.getElementById(cur.sectionId);if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
+      return function(){var s=document.getElementById("ta-tour-style");if(s)s.textContent=""}
+    },[tourStep]);
+    if(!cur)return null;
+    var isLast=tourStep===TOUR.length;
+    function advance(){
+      if(isLast){setTourStep(0);showToast("You know your way around. Go build something worth owning.","info",4000)}
+      else{setTourStep(function(s){return s+1})}}
+    function dismiss(){setTourStep(0)}
+    return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
+      <div style={{height:3,background:cur.color,width:(tourStep/TOUR.length*100)+"%",transition:"width .4s ease"}}/>
+      <div style={{padding:"16px 18px"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:30,height:30,borderRadius:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <IC name={cur.icon} size={14} color={cur.color}/>
+            </div>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:cur.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{tourStep} of {TOUR.length}</div>
+              <div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.2}}>{cur.title}</div>
+            </div>
+          </div>
+          <button onClick={dismiss} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>{"×"}</button>
+        </div>
+        <p style={{fontSize:12,color:K.mid,lineHeight:1.65,margin:"0 0 14px"}}>{cur.body}</p>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {cur.action&&cur.onAction&&<button onClick={function(){cur.onAction();advance()}} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 12px",color:cur.color,borderColor:cur.color+"40",flex:1})}>{cur.action}</button>}
+          <button onClick={advance} style={Object.assign({},S.btnP,{fontSize:12,padding:"7px 16px",flex:cur.action&&cur.onAction?0:1,background:cur.color,borderColor:cur.color})}>{isLast?"Done ✓":"Next →"}</button>
+        </div>
+      </div>
+    </div>}
+
   // ── Sidebar + TopBar ──────────────────────────────────────
   var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
@@ -7993,83 +8060,7 @@ function OnboardingFlow(p){
 
 
 // ── Dossier Spotlight Tour ────────────────────────────────
-function DossierTour(){
-  if(!tourStep||tourStep<1)return null;
-  var co=cos.find(function(c){return c.id===oCoId})||sel;
-  var tick=co?co.ticker:"your company";
 
-  var TOUR=[
-    {step:1,sectionId:"ds-ledger",color:"#F59E0B",icon:"trending",
-     title:"Rate your conviction",
-     body:"How confident are you in this investment, 1–10? Conviction tracking is the habit that separates great investors from reactive ones. Update it every quarter and after every earnings report.",
-     action:"Rate Conviction",onAction:function(){setModal({type:"conviction"})}},
-    {step:2,sectionId:"ds-evidence",color:"#3B82F6",icon:"target",
-     title:"Check the first earnings report",
-     body:"When "+tick+" reports next quarter, hit Check Earnings. ThesisAlpha fetches the results and instantly compares them to your KPIs. One click, instant verdict.",
-     action:"See how it works",onAction:null},
-    {step:3,sectionId:null,color:"#22C55E",icon:"castle",
-     title:"Classify the moat",
-     body:"What actually protects "+tick+" from competition? Network effects? Switching costs? Brand? The Moat Tracker scores 8 dimensions and builds a composite moat strength — the most underused tool for long-term investors.",
-     action:"Open Moat Tracker",onAction:function(){setSubPage("moat")}},
-    {step:4,sectionId:"ds-score",color:"#8B5CF6",icon:"shield",
-     title:"Your Owner's Score",
-     body:"This radar shows how well you understand "+tick+". Thesis depth, KPI discipline, conviction, fundamentals, moat, monitoring — all in one view. The goal isn't 100. It's making sure no section is dangerously low.",
-     action:null,onAction:null},
-  ];
-
-  var cur=TOUR.find(function(t){return t.step===tourStep});
-  if(!cur)return null;
-  var isLast=tourStep===TOUR.length;
-
-  function advance(){
-    if(isLast){setTourStep(0);showToast("You know your way around. Go build something worth owning.","info",4000)}
-    else{
-      // Scroll section into view
-      var nextT=TOUR.find(function(t){return t.step===tourStep+1});
-      if(nextT&&nextT.sectionId){
-        var el=document.getElementById(nextT.sectionId);
-        if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
-      setTourStep(function(s){return s+1})}}
-
-  function dismiss(){setTourStep(0)}
-
-  // Highlight the current section
-  var hlStyle=cur.sectionId?{outline:"2px solid "+cur.color,outlineOffset:3,borderRadius:12,transition:"outline .3s"}:{};
-  // We apply the highlight via a global style injection trick
-  var styleId="ta-tour-style";
-  var existing=document.getElementById(styleId);
-  if(!existing){var s2=document.createElement("style");s2.id=styleId;document.head.appendChild(s2)}
-  var styleEl=document.getElementById(styleId);
-  if(styleEl){
-    styleEl.textContent=cur.sectionId?
-      "#"+cur.sectionId+"{outline:2px solid "+cur.color+";outline-offset:4px;border-radius:12px;transition:outline .3s}"+
-      "@keyframes ta-tour-pulse{0%,100%{outline-color:"+cur.color+"}50%{outline-color:"+cur.color+"88}}"+
-      "#"+cur.sectionId+"{animation:ta-tour-pulse 1.6s ease-in-out infinite}"
-      :""}
-
-  return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
-    {/* colour bar */}
-    <div style={{height:3,background:cur.color,width:(tourStep/TOUR.length*100)+"%",transition:"width .4s ease"}}/>
-    <div style={{padding:"16px 18px"}}>
-      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:30,height:30,borderRadius:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <IC name={cur.icon} size={14} color={cur.color}/>
-          </div>
-          <div>
-            <div style={{fontSize:12,fontWeight:700,color:cur.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{tourStep} of {TOUR.length}</div>
-            <div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.2}}>{cur.title}</div>
-          </div>
-        </div>
-        <button onClick={dismiss} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>{"×"}</button>
-      </div>
-      <p style={{fontSize:12,color:K.mid,lineHeight:1.65,margin:"0 0 14px"}}>{cur.body}</p>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-        {cur.action&&cur.onAction&&<button onClick={function(){cur.onAction();advance()}} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 12px",color:cur.color,borderColor:cur.color+"40",flex:1})}>{cur.action}</button>}
-        <button onClick={advance} style={Object.assign({},S.btnP,{fontSize:12,padding:"7px 16px",flex:cur.action&&cur.onAction?0:1,background:cur.color,borderColor:cur.color})}>{isLast?"Done ✓":"Next →"}</button>
-      </div>
-    </div>
-  </div>}
 
 
 export default function App(){
