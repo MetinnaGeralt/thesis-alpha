@@ -602,9 +602,16 @@ async function fetchEarnings(co,kpis){
       if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
       if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
       if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
-      // FCF Yield direct from FMP (freeCashFlowYieldTTM) — no price derivation needed
-      if(km.freeCashFlowYieldTTM!=null&&!snapshot.fcfYield){var _fmpFcfY=km.freeCashFlowYieldTTM*100;snapshot.fcfYield={label:"FCF Yield",numVal:_fmpFcfY,value:_fmpFcfY.toFixed(1)+"%",source:"FMP"};
+      // FCF Yield — try multiple FMP field name variants, then compute from fcfPerShare/price
+      var _rawFcfYield=km.freeCashFlowYieldTTM!=null?km.freeCashFlowYieldTTM:(km.freeCashFlowYield!=null?km.freeCashFlowYield:(ra.freeCashFlowYieldTTM!=null?ra.freeCashFlowYieldTTM:null));
+      // FMP returns this as a decimal (e.g. 0.035 = 3.5%) — multiply by 100
+      if(_rawFcfYield!=null&&!snapshot.fcfYield){var _fmpFcfY=Math.abs(_rawFcfYield)<2?_rawFcfYield*100:_rawFcfYield;snapshot.fcfYield={label:"FCF Yield",numVal:_fmpFcfY,value:_fmpFcfY.toFixed(1)+"%",source:"FMP"};
         fhMap.fcfYield={v:_fmpFcfY,label:_fmpFcfY.toFixed(1)+"%"}}
+      // Final fallback: compute from fcfPerShare (now in fhMap after FMP fill) and position price
+      if(!snapshot.fcfYield&&fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null){
+        var _fcfFallbackPrice=(co.position&&co.position.currentPrice>0)?co.position.currentPrice:(fhMap.pe&&fhMap.pe.v>0&&fhMap.eps&&fhMap.eps.v!=null?fhMap.pe.v*Math.abs(fhMap.eps.v):0);
+        if(_fcfFallbackPrice>0){var _fcfYf=fhMap.fcfPerShare.v/_fcfFallbackPrice*100;snapshot.fcfYield={label:"FCF Yield",numVal:_fcfYf,value:_fcfYf.toFixed(1)+"%",source:"computed"};
+          fhMap.fcfYield={v:_fcfYf,label:_fcfYf.toFixed(1)+"%"}}}
       // Newly-added FMP metrics → snapshot
       if(km.priceToSalesRatioTTM!=null&&!snapshot.ps)snapshot.ps={label:"P/S",value:km.priceToSalesRatioTTM.toFixed(2),source:"FMP"};
       if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
@@ -635,7 +642,7 @@ async function fetchEarnings(co,kpis){
   // Step 2b: Computed derived metrics
   var _implPrice=(co.position&&co.position.currentPrice>0)?co.position.currentPrice:(fhMap.pe&&fhMap.pe.v>0&&fhMap.eps&&fhMap.eps.v!=null?fhMap.pe.v*Math.abs(fhMap.eps.v):0);
   if(_implPrice>0){snapshot.livePrice={label:"Price",numVal:_implPrice,value:"$"+_implPrice.toFixed(2)}}
-  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&_implPrice>0){var _fcfY=fhMap.fcfPerShare.v/_implPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
+  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&_implPrice>0&&!snapshot.fcfYield){var _fcfY=fhMap.fcfPerShare.v/_implPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
   if(fhMap.pe&&fhMap.pe.v!=null&&fhMap.pe.v>0){var _ey=1/fhMap.pe.v*100;fhMap.earningsYield={v:_ey,label:_ey.toFixed(1)+"%"}}
   if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&fhMap.fcfPerShare.v>0&&co.position&&co.position.currentPrice>0){var _pFcf=co.position.currentPrice/fhMap.fcfPerShare.v;fhMap.priceToFcf={v:_pFcf,label:_pFcf.toFixed(1)+"x"}}
 
