@@ -1641,11 +1641,63 @@ function TrackerApp(props){
     var _f=useState(parsed),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
+    var sid=sel.investStyle||"default";
+    // ── Sharp thinking questions per section per style ──────────
+    var Q={
+      core:{
+        quality:"If someone bet you $1,000 this business earns less in 5 years than today, what\'s your counter-argument?",
+        growth:"What\'s the TAM, and why does "+sel.ticker+" capture meaningful share rather than a better-capitalised competitor?",
+        prerev:"What\'s the specific catalyst, and what\'s your evidence it happens within your expected timeframe?",
+        dividend:"Why will this dividend still be growing in 10 years? What sustains the underlying cash generation?",
+        garp:"Is the earnings growth rate above the P/E multiple? If not, what specifically justifies the premium?",
+        value:"What does the market think this is worth — and what do they know that you disagree with?",
+        turnaround:"What specifically is broken, who is fixing it, and what\'s the concrete evidence the fix is already working?",
+        d:"If a smart investor took the other side of your trade on "+sel.ticker+", what would their best argument be? Now refute it."
+      },
+      moat:{
+        quality:"Which moat type applies — switching costs, network effects, brand, cost advantage, or regulatory? Give one specific piece of evidence, not assertion.",
+        growth:"Why does scale make this business harder to compete with over time, not easier? What compounds the advantage?",
+        prerev:"What first-mover advantage exists that a fast-follower with 10x the funding couldn\'t replicate in 3 years?",
+        dividend:"What prevents a lower-cost competitor from undercutting this business and forcing management to choose between the dividend and survival?",
+        garp:"What\'s the specific mechanism that protects margins as competitors close the product gap?",
+        value:"Is there hidden value — real assets, franchise value, earnings power — that the current price ignores? Be precise.",
+        turnaround:"What underlying franchise survives the current problems? Why does this business have a right to exist after the fix?",
+        d:"If a well-funded competitor entered this market tomorrow, what would take them the longest to replicate?"
+      },
+      risks:{
+        quality:"What would have to be true for this moat to be weaker than you think? What\'s the highest-probability way you\'re wrong?",
+        growth:"What slows the growth rate faster than expected — competition, market saturation, or customer churn? Rank the risks.",
+        prerev:"If the lead catalyst fails, is there anything left? Name the binary risk and your rough probability it doesn\'t go your way.",
+        dividend:"What specifically breaks the dividend — payout ratio creep, debt refinancing, earnings cyclicality? Which is most likely?",
+        garp:"If the market re-rates this at a lower multiple, how long does it take for earnings growth to earn your money back?",
+        value:"Why is this cheap? Be honest — is it a value trap or a market mistake? What\'s your evidence for which it is?",
+        turnaround:"What\'s the realistic worst case if the turnaround takes twice as long as expected? Can you hold through it financially and emotionally?",
+        d:"What\'s the one development that, if it happened, would make you admit you were wrong about this company?"
+      },
+      sell:{
+        quality:"At what valuation does this become too expensive even for a great business? Set a ceiling — P/E, EV/EBIT, or price-to-FCF.",
+        growth:"What growth deceleration signals the thesis is broken vs. a temporary blip? Name the metric and the threshold.",
+        prerev:"What catalyst failure or timeline slip is the point of no return? Be specific — not \'if things look bad.\'",
+        dividend:"At what payout ratio, dividend cut, or earnings miss is the income thesis broken?",
+        garp:"At what P/E or PEG does this no longer qualify as \'reasonable\' for the growth rate you\'re betting on?",
+        value:"At what price have you been proven right and should take profits? Set the number now, not when it\'s happening.",
+        turnaround:"What timeline are you giving this? What would prove the turnaround is dead vs. just slow?",
+        d:"Define 2-3 specific, measurable conditions that would make you sell. Not \'if things get bad\' — exact numbers."
+      }
+    };
+    var getQ=function(sec){return Q[sec][sid]||Q[sec].d};
+    // ── Auto-seed sell section from KPIs if blank ───────────────
+    var kpiSeed=(function(){
+      var kpis=sel.kpis||[];if(kpis.length===0)return null;
+      var lines=kpis.map(function(k){
+        var res=k.lastResult;var missed=res&&res.status==="missed";
+        return"— "+k.name+" misses "+k.target+(missed?" (currently missing)":"")+" for 2 consecutive quarters"});
+      return lines.join("\n")})();
     var sections=[
-      {key:"core",label:"Why I Own It",placeholder:sty?sty.thesisPrompt:"What makes this a great business? What's the core thesis?",icon:"lightbulb",color:K.acc},
-      {key:"moat",label:"Competitive Moat",placeholder:sty?sty.moatPrompt:"What protects this business? Switching costs, brand, network effects, cost advantages, regulatory barriers?",icon:"castle",color:K.grn},
-      {key:"risks",label:"Key Risks",placeholder:sty?sty.riskPrompt:"What could go wrong? Competition, regulation, technology disruption, management risk?",icon:"alert",color:K.amb},
-      {key:"sell",label:"What Would Make Me Sell",placeholder:sty?sty.sellPrompt:"Define your exit criteria upfront. What conditions would break this thesis?",icon:"target",color:K.red}];
+      {key:"core",label:"Why I Own It",icon:"lightbulb",color:K.acc},
+      {key:"moat",label:"Competitive Moat",icon:"castle",color:K.grn},
+      {key:"risks",label:"Key Risks",icon:"alert",color:K.amb},
+      {key:"sell",label:"What Would Make Me Sell",icon:"target",color:K.red}];
     // Live quality scoring
     var filled=sections.filter(function(s){return f[s.key]&&f[s.key].trim().length>15}).length;
     var totalWords=sections.reduce(function(a,s){return a+(f[s.key]||"").trim().split(/\s+/).filter(function(w){return w}).length},0);
@@ -1661,21 +1713,26 @@ function TrackerApp(props){
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:qualityColor,fontFamily:fm}}>{filled}/4</div></div>
         <div style={{flex:1}}>
           <div style={{fontSize:12,fontWeight:600,color:qualityColor}}>{qualityLabel}</div>
-          <div style={{fontSize:10,color:K.dim}}>{totalWords} words · {filled} of 4 sections filled</div></div>
+          <div style={{fontSize:10,color:K.dim}}>{totalWords} words · {filled} of 4 sections filled{sty?" · "+sty.label:""}</div></div>
         <div style={{display:"flex",gap:4}}>
           {sections.map(function(s){var done=f[s.key]&&f[s.key].trim().length>15;
             return<div key={s.key} style={{width:20,height:20,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:done?s.color+"15":"transparent",border:"1px solid "+(done?s.color+"30":K.bdr)}} title={s.label}>
               {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={9} color={K.dim}/>}</div>})}</div></div>
-      <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>A well-structured thesis forces clarity. Munger: "If you can't state the argument against your position, you don't understand it well enough."</div>
+      <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6,fontStyle:"italic"}}>{"\u201cIf you can\u2019t state the argument against your position, you don\u2019t understand it well enough.\u201d — Munger"}</div>
       {sections.map(function(sec){var wordCount=(f[sec.key]||"").trim().split(/\s+/).filter(function(w){return w}).length;var done=f[sec.key]&&f[sec.key].trim().length>15;
-        var aiPrompts={core:"I own "+sel.ticker+" ("+sel.name+", "+sel.sector+"). Write a 2-3 paragraph investment thesis explaining why this is a compelling long-term holding. Cover the business model, competitive position, and growth drivers.",moat:"Analyze the competitive moat of "+sel.ticker+" ("+sel.name+"). Cover switching costs, network effects, brand value, cost advantages, and regulatory barriers. Rate the moat as Wide, Narrow, or None with evidence.",risks:"What are the top 3-5 risks for "+sel.ticker+" ("+sel.name+")? Include competitive threats, regulatory risks, technology disruption, management risks, and valuation concerns.",sell:"Define specific, measurable sell criteria for "+sel.ticker+" ("+sel.name+"). What financial metrics, competitive developments, or management actions would break the investment thesis? Be specific with numbers."};
-        return<div key={sec.key} style={{marginBottom:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+        var showSeed=sec.key==="sell"&&!f.sell&&kpiSeed;
+        return<div key={sec.key} style={{marginBottom:18}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
           <label style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:done?sec.color:K.mid,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600,flex:1}}>
           {done?<IC name="check" size={11} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
-          {wordCount>0&&<span style={{fontSize:9,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label>
-          {!done&&<button onClick={function(){try{navigator.clipboard.writeText(aiPrompts[sec.key]);showToast("Prompt copied — paste into ChatGPT or Claude","info",3000)}catch(e){showToast("Copy failed — try manually","info",2000)}}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:4,padding:"2px 8px",fontSize:9,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:3}} title="Copy an AI prompt to help write this section"><IC name="flask" size={9} color={K.dim}/>AI prompt</button>}</div>
-        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={sec.placeholder} rows={sec.key==="core"?4:2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
+          {wordCount>0&&<span style={{fontSize:9,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label></div>
+        {!done&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:6,lineHeight:1.5,paddingLeft:2}}>{getQ(sec.key)}</div>}
+        {showSeed&&<div style={{marginBottom:8,padding:"10px 14px",background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:8}}>
+          <div style={{fontSize:10,color:K.red,fontFamily:fm,fontWeight:600,marginBottom:5,letterSpacing:.3}}>KPI THRESHOLDS — USE AS A STARTING POINT</div>
+          <pre style={{fontSize:11,color:K.mid,fontFamily:fb,margin:0,whiteSpace:"pre-wrap",lineHeight:1.6}}>{kpiSeed}</pre>
+          <button onClick={function(){set("sell",kpiSeed)}} style={{marginTop:8,background:"none",border:"1px solid "+K.red+"30",borderRadius:4,padding:"3px 10px",fontSize:10,color:K.red,cursor:"pointer",fontFamily:fm}}>Paste into section</button>
+        </div>}
+        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
       {sel.thesisVersions&&sel.thesisVersions.length>0&&<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
         <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
         <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
