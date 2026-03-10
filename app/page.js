@@ -768,6 +768,8 @@ function TrackerApp(props){
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
+  var _lib=useState(function(){try{var s=localStorage.getItem('ta-library');return s?JSON.parse(s):{folders:[],items:[]}}catch(e){return{folders:[],items:[]}}}),library=_lib[0],setLibrary=_lib[1];
+  function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
   function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
     addXP(25,"Weekly review");updateStreak(true);
     if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
@@ -2415,6 +2417,7 @@ function TrackerApp(props){
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
@@ -6149,6 +6152,205 @@ function TrackerApp(props){
       </div>}
     </div>}
 
+  // ── Library ──────────────────────────────────────────────────
+  function LibraryPage(){
+    var lib=library;
+    var _lf=useState(null),libFolder=_lf[0],setLibFolder=_lf[1];
+    var _lm=useState(null),libModal=_lm[0],setLibModal=_lm[1];
+    var _lsrch=useState(""),libSearch=_lsrch[0],setLibSearch=_lsrch[1];
+    var _ltype=useState("all"),libTypeFilter=_ltype[0],setLibTypeFilter=_ltype[1];
+    var _lplaying=useState(null),libPlaying=_lplaying[0],setLibPlaying=_lplaying[1];
+    var FOLDER_COLORS=[K.acc,K.grn,K.amb,K.red,"#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
+    var ITEM_TYPES=["Video","Article","Book","Podcast","Course","Other"];
+    function getYTId(url){if(!url)return null;var m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/))([^&?#\s]{11})/);return m?m[1]:null}
+    function getVimeoId(url){if(!url)return null;var m=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null}
+    function getEmbedUrl(url){var yt=getYTId(url);if(yt)return"https://www.youtube.com/embed/"+yt+"?autoplay=1";var vi=getVimeoId(url);if(vi)return"https://player.vimeo.com/video/"+vi+"?autoplay=1";return null}
+    function getThumb(url){var yt=getYTId(url);if(yt)return"https://img.youtube.com/vi/"+yt+"/hqdefault.jpg";return null}
+    function isEmbeddable(url){return!!(getYTId(url)||getVimeoId(url))}
+    var folders=lib.folders||[];
+    var items=lib.items||[];
+    var filtered=items.filter(function(it){
+      var matchFolder=!libFolder||it.folder===libFolder;
+      var matchType=libTypeFilter==="all"||it.type===libTypeFilter;
+      var q=libSearch.toLowerCase();
+      var matchSearch=!q||(it.title||"").toLowerCase().indexOf(q)>=0||(it.notes||"").toLowerCase().indexOf(q)>=0;
+      return matchFolder&&matchType&&matchSearch});
+    var totalByFolder={};items.forEach(function(it){totalByFolder[it.folder||""]=(totalByFolder[it.folder||""]||0)+1});
+    // Edit modal form state
+    function AddEditModal(){
+      var isNew=!libModal.item;
+      var def=libModal.item||{};
+      var _t=useState(def.title||""),title=_t[0],setTitle=_t[1];
+      var _u=useState(def.url||""),url=_u[0],setUrl=_u[1];
+      var _tp=useState(def.type||"Video"),type=_tp[0],setType=_tp[1];
+      var _fo=useState(def.folder||""),folder=_fo[0],setFolder=_fo[1];
+      var _no=useState(def.notes||""),notes=_no[0],setNotes=_no[1];
+      var _fn=useState(""),folderName=_fn[0],setFolderName=_fn[1];
+      var _fc=useState(FOLDER_COLORS[folders.length%FOLDER_COLORS.length]),folderColor=_fc[0],setFolderColor=_fc[1];
+      var _nf=useState(false),newFolderMode=_nf[0],setNewFolderMode=_nf[1];
+      function save(){
+        if(!title.trim())return showToast("Title is required","info",2000);
+        var nextFolders=folders.slice();
+        var useFolder=folder;
+        if(newFolderMode&&folderName.trim()){
+          var nf={id:"f"+Date.now(),name:folderName.trim(),color:folderColor};
+          nextFolders.push(nf);useFolder=nf.id}
+        var nextItems=items.slice();
+        if(isNew){nextItems.unshift({id:"li"+Date.now(),title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),addedAt:new Date().toISOString()})}
+        else{nextItems=nextItems.map(function(it){return it.id===def.id?Object.assign({},it,{title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim()}):it})}
+        saveLibrary({folders:nextFolders,items:nextItems});setLibModal(null);showToast(isNew?"Resource added":"Resource updated","info",2000)}
+      var thumb=getThumb(url);
+      return<Modal K={K} title={isNew?"Add Resource":"Edit Resource"} onClose={function(){setLibModal(null)}} w={520}>
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Type</label>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div>
+        </div>
+        <Inp K={K} label="Title" value={title} onChange={setTitle} placeholder="e.g. Howard Marks on Risk"/>
+        <Inp K={K} label="URL (YouTube, Vimeo, article, etc.)" value={url} onChange={setUrl} placeholder="https://..."/>
+        {thumb&&<div style={{borderRadius:8,overflow:"hidden",marginBottom:16,height:120,background:K.bg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/></div>}
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Folder</label>
+          {!newFolderMode&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
+            <button onClick={function(){setFolder("")}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(folder===""?K.acc:K.bdr),background:folder===""?K.acc+"18":"transparent",color:folder===""?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>None</button>
+            {folders.map(function(f){return<button key={f.id} onClick={function(){setFolder(f.id)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(folder===f.id?f.color:K.bdr),background:folder===f.id?f.color+"20":"transparent",color:folder===f.id?f.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:folder===f.id?700:400}}>{f.name}</button>})}
+            <button onClick={function(){setNewFolderMode(true)}} style={{padding:"6px 14px",borderRadius:999,border:"1px dashed "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>+ New folder</button>
+          </div>}
+          {newFolderMode&&<div>
+            <input value={folderName} onChange={function(e){setFolderName(e.target.value)}} placeholder="Folder name" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fm,outline:"none",marginBottom:8}}/>
+            <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c)}} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:folderColor===c?"2px solid "+K.txt:"2px solid transparent"}}/>})}</div>
+            <button onClick={function(){setNewFolderMode(false)}} style={{fontSize:11,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>← Back to existing</button>
+          </div>}
+        </div>
+        <Inp K={K} label="Notes (optional)" value={notes} onChange={setNotes} ta={true} placeholder="Key takeaways, why you saved this..."/>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+          <button onClick={function(){setLibModal(null)}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+          <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px"})}>{isNew?"Add":"Save"}</button>
+        </div>
+      </Modal>}
+    function FolderModal(){
+      var isNew=!libModal.folder;
+      var def=libModal.folder||{};
+      var _fn=useState(def.name||""),folderName=_fn[0],setFolderName=_fn[1];
+      var _fc=useState(def.color||FOLDER_COLORS[folders.length%FOLDER_COLORS.length]),folderColor=_fc[0],setFolderColor=_fc[1];
+      function save(){if(!folderName.trim())return;
+        var nextFolders;
+        if(isNew){nextFolders=folders.concat([{id:"f"+Date.now(),name:folderName.trim(),color:folderColor}])}
+        else{nextFolders=folders.map(function(f){return f.id===def.id?Object.assign({},f,{name:folderName.trim(),color:folderColor}):f})}
+        saveLibrary(Object.assign({},lib,{folders:nextFolders}));setLibModal(null);showToast(isNew?"Folder created":"Folder updated","info",1500)}
+      function del(){if(!window.confirm("Delete this folder? Items in it will become unorganized."))return;
+        var nextFolders=folders.filter(function(f){return f.id!==def.id});
+        var nextItems=items.map(function(it){return it.folder===def.id?Object.assign({},it,{folder:""}):it});
+        saveLibrary({folders:nextFolders,items:nextItems});setLibFolder(null);setLibModal(null)}
+      return<Modal K={K} title={isNew?"New Folder":"Edit Folder"} onClose={function(){setLibModal(null)}} w={400}>
+        <Inp K={K} label="Folder Name" value={folderName} onChange={setFolderName} placeholder="e.g. Mental Models"/>
+        <div style={{marginBottom:20}}>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Color</label>
+          <div style={{display:"flex",gap:8}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c)}} style={{width:28,height:28,borderRadius:"50%",background:c,cursor:"pointer",border:folderColor===c?"3px solid "+K.txt:"3px solid transparent",transition:"border .15s"}}/>})}</div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
+          {!isNew&&<button onClick={del} style={Object.assign({},S.btnD,{padding:"9px 16px",marginRight:"auto"})}>Delete</button>}
+          <button onClick={function(){setLibModal(null)}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+          <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px"})}>{isNew?"Create":"Save"}</button>
+        </div>
+      </Modal>}
+    function deleteItem(id){if(!window.confirm("Remove this resource?"))return;
+      saveLibrary(Object.assign({},lib,{items:items.filter(function(it){return it.id!==id})}));
+      if(libPlaying===id)setLibPlaying(null)}
+    function ItemCard(p){var it=p.item;
+      var thumb=getThumb(it.url);
+      var canEmbed=isEmbeddable(it.url);
+      var isPlaying=libPlaying===it.id;
+      var embedUrl=getEmbedUrl(it.url);
+      var fol=folders.find(function(f){return f.id===it.folder});
+      var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim};
+      var tc=typeColors[it.type]||K.dim;
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?16:10,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+        {/* Thumbnail / player area */}
+        {canEmbed&&<div style={{position:"relative",width:"100%",paddingTop:"56.25%",background:K.bg,cursor:isPlaying?"default":"pointer"}} onClick={function(){if(!isPlaying)setLibPlaying(it.id)}}>
+          {isPlaying&&embedUrl?<iframe src={embedUrl} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allowFullScreen allow="autoplay; encrypted-media"/>
+          :<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:K.bg}}>
+            {thumb&&<img src={thumb} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.6}}/>}
+            <div style={{position:"relative",width:44,height:44,borderRadius:"50%",background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+            </div>
+          </div>}
+        </div>}
+        {!canEmbed&&it.url&&<div style={{height:80,background:tc+"10",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}} onClick={function(){window.open(it.url,"_blank")}}>
+          <IC name={it.type==="Video"?"video":it.type==="Article"||it.type==="Book"?"file":it.type==="Podcast"?"news":"link"} size={28} color={tc}/>
+        </div>}
+        {/* Card body */}
+        <div style={{padding:"12px 14px",flex:1,display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.4,marginBottom:4}}>{it.title}</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,letterSpacing:.5}}>{it.type}</span>
+                {fol&&<span style={{fontSize:9,color:fol.color,background:fol.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm}}>{fol.name}</span>}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:4,flexShrink:0}}>
+              {it.url&&!canEmbed&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Open link"><IC name="link" size={13} color={K.dim}/></button>}
+              <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Edit"><IC name="edit" size={13} color={K.dim}/></button>
+              <button onClick={function(){deleteItem(it.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Remove"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+          </div>
+          {it.notes&&<p style={{margin:0,fontSize:11,color:K.dim,lineHeight:1.5,fontFamily:fm}}>{it.notes}</p>}
+          {it.addedAt&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:"auto",paddingTop:4}}>{fD(it.addedAt.split("T")[0])}</div>}
+        </div>
+      </div>}
+    var allCount=items.length;
+    return<div style={{padding:isMobile?"0 16px 80px":_isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:_isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:_isThesis?"-0.5px":"normal"}}>Library</h1>
+          <p style={{margin:"6px 0 0",fontSize:13,color:K.dim}}>Videos, articles, and resources that shape your thinking</p>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:12,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={13} color={K.mid}/>New Folder</button>
+          <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:12,display:"flex",alignItems:"center",gap:6})}><IC name="plus" size={13} color={K.primTxt}/>Add Resource</button>
+        </div>
+      </div>
+      {/* Search + type filter */}
+      <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{position:"relative",flex:1,minWidth:180,maxWidth:300}}>
+          <IC name="search" size={13} color={K.dim} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",flexShrink:0}}/>
+          <input value={libSearch} onChange={function(e){setLibSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?12:8,color:K.txt,padding:"9px 12px 9px 34px",fontSize:12,fontFamily:fm,outline:"none"}}/>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {["all"].concat(ITEM_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
+        </div>
+      </div>
+      {/* Folders row */}
+      {folders.length>0&&<div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+        <button onClick={function(){setLibFolder(null)}} style={{padding:"7px 16px",borderRadius:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),background:libFolder===null?K.acc+"18":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===null?700:400,display:"flex",alignItems:"center",gap:6}}>
+          <IC name="overview" size={12} color={libFolder===null?K.acc:K.mid}/>All <span style={{fontSize:10,opacity:.7}}>({allCount})</span>
+        </button>
+        {folders.map(function(f){var cnt=totalByFolder[f.id]||0;return<button key={f.id} onClick={function(){setLibFolder(libFolder===f.id?null:f.id)}} onDoubleClick={function(){setLibModal({type:"folder",folder:f})}} style={{padding:"7px 16px",borderRadius:999,border:"1px solid "+(libFolder===f.id?f.color:K.bdr),background:libFolder===f.id?f.color+"18":"transparent",color:libFolder===f.id?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===f.id?700:400,display:"flex",alignItems:"center",gap:6}} title="Double-click to edit folder">
+          <div style={{width:8,height:8,borderRadius:"50%",background:f.color,flexShrink:0}}/>
+          {f.name} <span style={{fontSize:10,opacity:.7}}>({cnt})</span>
+        </button>})}
+      </div>}
+      {/* Items grid */}
+      {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":_isThesis?"repeat(auto-fill, minmax(280px,1fr))":"repeat(auto-fill, minmax(260px,1fr))",gap:_isThesis?20:16}}>
+        {filtered.map(function(it){return<ItemCard key={it.id} item={it}/>})}
+      </div>}
+      {/* Empty state */}
+      {items.length===0&&<div style={{textAlign:"center",padding:"80px 0",color:K.dim}}>
+        <IC name="video" size={40} color={K.bdr} style={{display:"block",margin:"0 auto 16px"}}/>
+        <div style={{fontSize:16,fontWeight:600,color:K.mid,marginBottom:8}}>Your library is empty</div>
+        <div style={{fontSize:13,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>Save videos, articles, books, and podcasts that shape your investment thinking. Organize them in folders like "Mental Models", "Valuation", or "Sector Research".</div>
+        <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"11px 28px"})}>Add Your First Resource</button>
+      </div>}
+      {filtered.length===0&&items.length>0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
+        <div style={{fontSize:14,marginBottom:8}}>No resources match your filters</div>
+        <button onClick={function(){setLibSearch("");setLibFolder(null);setLibTypeFilter("all")}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:13,fontFamily:fm}}>Clear filters</button>
+      </div>}
+      {/* Modals */}
+      {libModal&&libModal.type==="item"&&<AddEditModal/>}
+      {libModal&&libModal.type==="folder"&&<FolderModal/>}
+    </div>}
+
   // ── Earnings Calendar ──────────────────────────────────────
   function EarningsCalendar(){
     var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});
@@ -6932,7 +7134,7 @@ function TrackerApp(props){
         <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:11,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:11,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
 export default function App(){
