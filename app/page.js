@@ -6382,7 +6382,7 @@ function TrackerApp(props){
                   <span style={{fontSize:13,fontWeight:600,color:clr,fontFamily:fm}}>{avg2}</span></div>
                 <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:avg2*10+"%",borderRadius:2,background:clr,transition:"width .5s"}}/></div></div></div>})}
         </div>
-        <div style={{marginTop:14,fontSize:12,color:K.dim,lineHeight:1.6,fontFamily:fb}}>Average scores across {withMoat.length} {withMoat.length!==analyzed.length?"of "+analyzed.length+" analyzed ":""} companies. Dimensions below 6 are portfolio-wide vulnerabilities.{analyzed.length>withMoat.length?" "+(analyzed.length-withMoat.length)+" holding"+(analyzed.length-withMoat.length>1?"s":"")+" lack historical data and are excluded.":""}</div></div>}
+        <div style={{marginTop:14,fontSize:12,color:K.dim,lineHeight:1.6,fontFamily:fb}}>Average scores across {withMoat.length} of {holdings.length} companies. Dimensions below 6 are portfolio-wide vulnerabilities.{withMoat.length<holdings.length?" "+(holdings.length-withMoat.length)+" holding"+(holdings.length-withMoat.length>1?"s":"")+" excluded — no historical data yet.":""}</div></div>}
 
       {/* ── Red Flags: Munger "avoid losers" ── */}
       {redFlags.length>0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"20px 24px",marginBottom:24}}>
