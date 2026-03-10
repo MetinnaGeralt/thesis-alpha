@@ -489,7 +489,7 @@ async function fetchEarnings(co,kpis){
       if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",numVal:m["totalDebt/totalEquityQuarterly"],value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
       if(m["peTTM"])snapshot.pe={label:"P/E",numVal:m["peTTM"],value:m["peTTM"].toFixed(1)};
       if(m["pbQuarterly"])snapshot.pb={label:"P/B",value:m["pbQuarterly"].toFixed(2)};
-      if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
+      if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",numVal:m["freeCashFlowPerShareTTM"],value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
       if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",numVal:m["revenueGrowthTTMYoy"],value:(m["revenueGrowthTTMYoy"]).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
       if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
@@ -575,7 +575,7 @@ async function fetchEarnings(co,kpis){
       if(!snapshot.pb&&fmpMap.pb.v!=null)snapshot.pb={label:"P/B",value:fmpMap.pb.fmt(fmpMap.pb.v),source:"FMP"};
       if(!snapshot.currentRatio&&fmpMap.currentRatio.v!=null)snapshot.currentRatio={label:"Current Ratio",value:fmpMap.currentRatio.fmt(fmpMap.currentRatio.v),source:"FMP"};
       if(!snapshot.debtEquity&&fmpMap.debtEquity.v!=null)snapshot.debtEquity={label:"Debt/Equity",value:fmpMap.debtEquity.fmt(fmpMap.debtEquity.v),source:"FMP"};
-      if(!snapshot.fcf&&fmpMap.fcfPerShare.v!=null)snapshot.fcf={label:"FCF/Share",value:fmpMap.fcfPerShare.fmt(fmpMap.fcfPerShare.v),source:"FMP"};
+      if(!snapshot.fcf&&fmpMap.fcfPerShare.v!=null)snapshot.fcf={label:"FCF/Share",numVal:fmpMap.fcfPerShare.v,value:fmpMap.fcfPerShare.fmt(fmpMap.fcfPerShare.v),source:"FMP"};
       if(!snapshot.revGrowth&&fmpMap.revGrowth.v!=null)snapshot.revGrowth={label:"Rev Growth YoY",value:fmpMap.revGrowth.fmt(fmpMap.revGrowth.v),positive:fmpMap.revGrowth.v>=0,source:"FMP"};
       if(!snapshot.epsGrowth&&fmpMap.epsGrowth.v!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:fmpMap.epsGrowth.fmt(fmpMap.epsGrowth.v),positive:fmpMap.epsGrowth.v>=0,source:"FMP"};
       // Extra FMP-only metrics for snapshot
@@ -585,6 +585,9 @@ async function fetchEarnings(co,kpis){
       if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
       if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
       if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
+      // FCF Yield direct from FMP (freeCashFlowYieldTTM) — no price derivation needed
+      if(km.freeCashFlowYieldTTM!=null&&!snapshot.fcfYield){var _fmpFcfY=km.freeCashFlowYieldTTM*100;snapshot.fcfYield={label:"FCF Yield",numVal:_fmpFcfY,value:_fmpFcfY.toFixed(1)+"%",source:"FMP"};
+        fhMap.fcfYield={v:_fmpFcfY,label:_fmpFcfY.toFixed(1)+"%"}}
       // Newly-added FMP metrics → snapshot
       if(km.priceToSalesRatioTTM!=null&&!snapshot.ps)snapshot.ps={label:"P/S",value:km.priceToSalesRatioTTM.toFixed(2),source:"FMP"};
       if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
@@ -2491,7 +2494,7 @@ function TrackerApp(props){
     {id:"pe",label:"P/E Ratio",desc:"Price to earnings. Lower = cheaper relative to profits.",unit:"x",defaultRule:"lte",defaultVal:25,snap:"pe",calc:null},
     {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:"peg",calc:function(s){if(s.peg&&s.peg.numVal!=null)return s.peg.numVal;var pe=s.pe&&s.pe.numVal?s.pe.numVal:(s.pe?parseFloat(String(s.pe.value).replace(/[^0-9.]/g,""))||0:0);var g=s.epsGrowth&&s.epsGrowth.numVal?Math.abs(s.epsGrowth.numVal):(s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0);return(pe>0&&g>1)?(pe/g):null}},
     {id:"pb",label:"P/B Ratio",desc:"Price to book value. Below 1 means trading below asset value.",unit:"x",defaultRule:"lte",defaultVal:3,snap:"pb",calc:null},
-    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;var pr=p>0?p:(s.livePrice&&s.livePrice.numVal?s.livePrice.numVal:0);return(fcf!==0&&pr>0)?(fcf/pr*100):null}},
+    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcfN=s.fcf&&s.fcf.numVal!=null?s.fcf.numVal:null;var fcf=fcfN!=null?fcfN:(s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,""))||0:0);var pr=p>0?p:(s.livePrice&&s.livePrice.numVal?s.livePrice.numVal:0);return(fcf!==0&&pr>0)?(fcf/pr*100):null}},
     {id:"earningsYield",label:"Earnings Yield",desc:"Inverse of P/E (earnings/price). Compare to bond yields.",unit:"%",defaultRule:"gte",defaultVal:5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;return pe>0?(1/pe*100):null}},
     {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:"evEbitda",calc:null},
     {id:"divYield",label:"Dividend Yield",desc:"Annual dividend / price. Income return on investment.",unit:"%",defaultRule:"gte",defaultVal:2,snap:null,calc:function(s,p,c){var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return(dps>0&&p>0)?(dps*mult/p*100):null}},
