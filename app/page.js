@@ -961,6 +961,23 @@ function TrackerApp(props){
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
+  // Onboarding form state — kept at parent level so OnboardingFlow re-renders don't wipe it
+  var _oTicker=useState(""),oTicker=_oTicker[0],setOTicker=_oTicker[1];
+  var _oName=useState(""),oName=_oName[0],setOName=_oName[1];
+  var _oSector=useState(""),oSector=_oSector[0],setOSector=_oSector[1];
+  var _oLook=useState("idle"),oLook=_oLook[0],setOLook=_oLook[1];
+  var _oDomain=useState(""),oDomain=_oDomain[0],setODomain=_oDomain[1];
+  var _oIndustry=useState(""),oIndustry=_oIndustry[0],setOIndustry=_oIndustry[1];
+  var _oPrice=useState(0),oPrice=_oPrice[0],setOPrice=_oPrice[1];
+  var _oStyle=useState(""),oStyle=_oStyle[0],setOStyle=_oStyle[1];
+  var _oTCore=useState(""),oTCore=_oTCore[0],setOTCore=_oTCore[1];
+  var _oTMoat=useState(""),oTMoat=_oTMoat[0],setOTMoat=_oTMoat[1];
+  var _oTRisk=useState(""),oTRisk=_oTRisk[0],setOTRisk=_oTRisk[1];
+  var _oTSell=useState(""),oTSell=_oTSell[0],setOTSell=_oTSell[1];
+  var _oKpiSel=useState([]),oKpiSel=_oKpiSel[0],setOKpiSel=_oKpiSel[1];
+  var _oKpiTargets=useState({}),oKpiTargets=_oKpiTargets[0],setOKpiTargets=_oKpiTargets[1];
+  var _oCoId=useState(null),oCoId=_oCoId[0],setOCoId=_oCoId[1];
+  var _oTmrRef=useRef(null);
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
@@ -2476,25 +2493,8 @@ function TrackerApp(props){
     var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
 
     // ── Local state ──────────────────────────────────────────
-    var _ot=useState(""),oTicker=_ot[0],setOTicker=_ot[1];
-    var _on=useState(""),oName=_on[0],setOName=_on[1];
-    var _os=useState(""),oSector=_os[0],setOSector=_os[1];
-    var _ol=useState("idle"),oLook=_ol[0],setOLook=_ol[1];
-    var _od=useState(""),oDomain=_od[0],setODomain=_od[1];
-    var _oi=useState(""),oIndustry=_oi[0],setOIndustry=_oi[1];
-    var _op=useState(0),oPrice=_op[0],setOPrice=_op[1];
-    var _ost=useState(""),oStyle=_ost[0],setOStyle=_ost[1];
-    var _oTmr=useRef(null),oTmr=_oTmr;
-    // Thesis sections
-    var _tc=useState(""),oTCore=_tc[0],setOTCore=_tc[1];
-    var _tm=useState(""),oTMoat=_tm[0],setOTMoat=_tm[1];
-    var _tr=useState(""),oTRisk=_tr[0],setOTRisk=_tr[1];
-    var _ts=useState(""),oTSell=_ts[0],setOTSell=_ts[1];
-    // KPI selection
-    var _oKs=useState([]),oKpiSel=_oKs[0],setOKpiSel=_oKs[1];
-    var _oKt=useState({}),oKpiTargets=_oKt[0],setOKpiTargets=_oKt[1];
-    // Added company ref
-    var _oCoId=useState(null),oCoId=_oCoId[0],setOCoId=_oCoId[1];
+    // All form state lives in parent — see declarations near obPath
+    var oTmr=_oTmrRef;
 
     function onTickerChange(v){setOTicker(v);if(oTmr.current)clearTimeout(oTmr.current);
       if(v.length>=1&&v.length<=6&&/^[A-Za-z.]+$/.test(v)){setOLook("loading");oTmr.current=setTimeout(async function(){
