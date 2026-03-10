@@ -789,6 +789,8 @@ function TrackerApp(props){
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
+  var _rl=useState(function(){try{var s=localStorage.getItem("ta-readinglist");return s?JSON.parse(s):[]}catch(e){return[]}}),readingList=_rl[0],setReadingList=_rl[1];
+  function saveRL(next){setReadingList(next);try{localStorage.setItem("ta-readinglist",JSON.stringify(next))}catch(e){}}
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
@@ -1295,6 +1297,7 @@ function TrackerApp(props){
         setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",tooHardReason:"",parkedAt:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
         if(cloudData.notifs)setNotifs(cloudData.notifs);
         if(cloudData.trial){saveTrial(cloudData.trial)}
+        if(cloudData.readingList){saveRL(cloudData.readingList)}
         if(cloudData.profile){
           if(cloudData.profile.username){setUsername(cloudData.profile.username);try{localStorage.setItem("ta-username",cloudData.profile.username)}catch(e){}}
           if(cloudData.profile.avatar){setAvatarUrl(cloudData.profile.avatar);try{localStorage.setItem("ta-avatar",cloudData.profile.avatar)}catch(e){}}
@@ -1487,12 +1490,12 @@ function TrackerApp(props){
       // Generate and show
       setTimeout(function(){setShowQLetter(qKey)},3000)}
   },[loaded,cos.length]);
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP,questData,theme]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP,questData,theme,readingList]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -2632,7 +2635,7 @@ function TrackerApp(props){
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
     {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
@@ -4529,7 +4532,7 @@ function TrackerApp(props){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -5162,6 +5165,130 @@ function TrackerApp(props){
       </div>}
 
       {/* ═══ HOW IT WORKS TAB ═══ */}
+      {ht==="reading"&&(function(){
+        var RL_TYPES=["Book","Article","Annual Report","Letter","Podcast","Video","Thread","Other"];
+        var RL_TYPE_COLORS={Book:K.acc,Article:K.blue,AnnualReport:K.grn,"Annual Report":K.grn,Letter:K.amb,Podcast:"#EC4899",Video:"#EF4444",Thread:"#8B5CF6",Other:K.dim};
+        var _rlFilter=useState("unread"),rlFilter=_rlFilter[0],setRlFilter=_rlFilter[1];
+        var _rlAdd=useState(false),rlAdd=_rlAdd[0],setRlAdd=_rlAdd[1];
+        var _rlForm=useState({title:"",url:"",type:"Article",ticker:"",notes:""}),rlForm=_rlForm[0],setRlForm=_rlForm[1];
+        var _rlTake=useState(null),rlTakeId=_rlTake[0],setRlTakeId=_rlTake[1];
+        var _rlTakeText=useState(""),rlTakeText=_rlTakeText[0],setRlTakeText=_rlTakeText[1];
+        function setRlF(k,v){setRlForm(function(p){return Object.assign({},p,{[k]:v})})}
+        function addItem(){
+          if(!rlForm.title.trim())return;
+          var item={id:Date.now(),title:rlForm.title.trim(),url:rlForm.url.trim(),type:rlForm.type,ticker:rlForm.ticker.trim().toUpperCase(),notes:rlForm.notes.trim(),takeaways:"",addedAt:new Date().toISOString().split("T")[0],readAt:null,status:"unread"};
+          saveRL([item].concat(readingList));
+          setRlForm({title:"",url:"",type:"Article",ticker:"",notes:""});setRlAdd(false);
+          showToast("Added to reading list","info",2000)}
+        function cycleStatus(id){
+          var next=readingList.map(function(it){if(it.id!==id)return it;var s=it.status==="unread"?"reading":it.status==="reading"?"read":"unread";var readAt=s==="read"?new Date().toISOString().split("T")[0]:null;if(s==="read"){setRlTakeId(id);setRlTakeText(it.takeaways||"")}return Object.assign({},it,{status:s,readAt:readAt})});
+          saveRL(next)}
+        function saveTakeaways(id){
+          saveRL(readingList.map(function(it){return it.id!==id?it:Object.assign({},it,{takeaways:rlTakeText})}));
+          setRlTakeId(null);showToast("Takeaways saved","info",2000)}
+        function removeItem(id){saveRL(readingList.filter(function(it){return it.id!==id}))}
+        var counts={unread:readingList.filter(function(i){return i.status==="unread"}).length,reading:readingList.filter(function(i){return i.status==="reading"}).length,read:readingList.filter(function(i){return i.status==="read"}).length};
+        var shown=readingList.filter(function(i){return i.status===rlFilter});
+        var tickers=cos.map(function(c){return c.ticker}).sort();
+        return<div>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Reading List</div>
+              <div style={{fontSize:12,color:K.dim}}>{readingList.length} items · {counts.read} read · {counts.unread} to read</div>
+            </div>
+            <button onClick={function(){setRlAdd(!rlAdd)}} style={Object.assign({},S.btnP,{padding:"8px 16px",fontSize:12})}>{rlAdd?"Cancel":"+ Add"}</button>
+          </div>
+          {/* Add form */}
+          {rlAdd&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:12,padding:"20px 22px",marginBottom:20}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",marginBottom:12}}>
+              <div style={{gridColumn:"1/-1"}}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Title *</div>
+                <input value={rlForm.title} onChange={function(e){setRlF("title",e.target.value)}} placeholder="e.g. The Outsiders — Thorndike" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fb,outline:"none"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>URL (optional)</div>
+                <input value={rlForm.url} onChange={function(e){setRlF("url",e.target.value)}} placeholder="https://..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fb,outline:"none"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Type</div>
+                <select value={rlForm.type} onChange={function(e){setRlF("type",e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fb,outline:"none"}}>
+                  {RL_TYPES.map(function(t){return<option key={t} value={t}>{t}</option>})}
+                </select>
+              </div>
+              <div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Company (optional)</div>
+                <select value={rlForm.ticker} onChange={function(e){setRlF("ticker",e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fb,outline:"none"}}>
+                  <option value="">— General —</option>
+                  {tickers.map(function(t){return<option key={t} value={t}>{t}</option>})}
+                </select>
+              </div>
+              <div style={{gridColumn:"1/-1"}}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Notes (optional)</div>
+                <input value={rlForm.notes} onChange={function(e){setRlF("notes",e.target.value)}} placeholder="Why add this? What do you want to get out of it?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fb,outline:"none"}}/>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+              <button onClick={function(){setRlAdd(false)}} style={S.btn}>Cancel</button>
+              <button onClick={addItem} style={Object.assign({},S.btnP,{opacity:rlForm.title.trim()?1:.4})}>Add to list</button>
+            </div>
+          </div>}
+          {/* Filter pills */}
+          <div style={{display:"flex",gap:8,marginBottom:16}}>
+            {[{k:"unread",l:"To Read"},{k:"reading",l:"In Progress"},{k:"read",l:"Done"}].map(function(f){return<button key={f.k} onClick={function(){setRlFilter(f.k)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(rlFilter===f.k?K.acc+"50":K.bdr),background:rlFilter===f.k?K.acc+"15":"transparent",color:rlFilter===f.k?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:rlFilter===f.k?700:400}}>
+              {f.l} {counts[f.k]>0&&<span style={{fontSize:10,opacity:.7}}>({counts[f.k]})</span>}
+            </button>})}
+          </div>
+          {/* Takeaways prompt */}
+          {rlTakeId&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:12,padding:"16px 20px",marginBottom:16}}>
+            <div style={{fontSize:12,fontWeight:600,color:K.grn,marginBottom:8}}>🎉 Finished! What were your key takeaways?</div>
+            <textarea value={rlTakeText} onChange={function(e){setRlTakeText(e.target.value)}} placeholder="Write 2-3 key lessons, ideas, or things to revisit..." rows={3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 12px",fontSize:12,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+            <div style={{display:"flex",gap:8,marginTop:8,justifyContent:"flex-end"}}>
+              <button onClick={function(){setRlTakeId(null)}} style={Object.assign({},S.btn,{fontSize:11})}>Skip</button>
+              <button onClick={function(){saveTakeaways(rlTakeId)}} style={Object.assign({},S.btnP,{fontSize:11})}>Save takeaways</button>
+            </div>
+          </div>}
+          {/* Empty state */}
+          {shown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 24px",textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:12}}>{rlFilter==="unread"?"📚":rlFilter==="reading"?"📖":"✅"}</div>
+            <div style={{fontSize:13,color:K.dim}}>{rlFilter==="unread"?"Nothing queued up yet. Add books, articles, or letters to track what you want to read.":rlFilter==="reading"?"Nothing in progress. Click the status badge on an item to start reading.":"Nothing finished yet. Keep going."}</div>
+          </div>}
+          {/* Items */}
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {shown.map(function(item){
+              var typeColor=RL_TYPE_COLORS[item.type]||K.dim;
+              var co=item.ticker?cos.find(function(c){return c.ticker===item.ticker}):null;
+              var statusNext=item.status==="unread"?"reading":item.status==="reading"?"read":"unread";
+              var statusLabel=item.status==="unread"?"To Read":item.status==="reading"?"Reading":"Done";
+              var statusColor=item.status==="read"?K.grn:item.status==="reading"?K.acc:K.dim;
+              return<div key={item.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                      <span style={{fontSize:10,fontWeight:700,color:typeColor,background:typeColor+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,flexShrink:0}}>{item.type}</span>
+                      {co&&<span style={{display:"flex",alignItems:"center",gap:4}}><CoLogo domain={co.domain} ticker={co.ticker} size={14}/><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.ticker}</span></span>}
+                      {item.readAt&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Read {item.readAt}</span>}
+                      {!item.readAt&&item.addedAt&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Added {item.addedAt}</span>}
+                    </div>
+                    {item.url
+                      ?<a href={item.url} target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:600,color:K.txt,textDecoration:"none",display:"block",marginBottom:item.notes||item.takeaways?6:0}} onMouseEnter={function(e){e.target.style.color=K.acc}} onMouseLeave={function(e){e.target.style.color=K.txt}}>{item.title} ↗</a>
+                      :<div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:item.notes||item.takeaways?6:0}}>{item.title}</div>}
+                    {item.notes&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,marginBottom:item.takeaways?8:0}}>{item.notes}</div>}
+                    {item.takeaways&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"10px 14px",marginTop:6}}>
+                      <div style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:700,letterSpacing:.5,marginBottom:5}}>KEY TAKEAWAYS</div>
+                      <div style={{fontSize:12,color:K.mid,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{item.takeaways}</div>
+                    </div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+                    <button onClick={function(){cycleStatus(item.id)}} style={{background:statusColor+"12",border:"1px solid "+statusColor+"35",borderRadius:6,padding:"5px 10px",fontSize:10,color:statusColor,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{statusLabel} →</button>
+                    <button onClick={function(){removeItem(item.id)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"5px 10px",fontSize:10,color:K.dim,cursor:"pointer",fontFamily:fm}}>Remove</button>
+                  </div>
+                </div>
+              </div>})}
+          </div>
+        </div>
+      })()}
+
       {ht==="goals"&&<div>
         {!isPro&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:32,marginBottom:16}}>{String.fromCodePoint(0x1F4CA)}</div>
