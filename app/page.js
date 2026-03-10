@@ -772,40 +772,111 @@ function TrackerApp(props){
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
   var _bn=useState(null),briefNews=_bn[0],setBriefNews=_bn[1];
   var _bnl=useState(false),briefNewsLoading=_bnl[0],setBriefNewsLoading=_bnl[1];
-  function tagHeadline(h){var s=h.toLowerCase();
-    if(/acqui|merger|takeover|buyout/.test(s))return{label:"M&A",color:"#8B5CF6"};
-    if(/buyback|repurchase|share repurchase/.test(s))return{label:"Buyback",color:"#4ade80"};
-    if(/insider|director.*buy|officer.*sell|insider.*buy/.test(s))return{label:"Insider",color:"#fbbf24"};
-    if(/partnership|collaboration|agreement|joint venture|deal|contract|wins\b/.test(s))return{label:"Deal",color:"#6ea8fe"};
-    if(/dividend|payout|distribution/.test(s))return{label:"Dividend",color:"#4ade80"};
-    if(/guidance|raises|raised|beat|beats|forecast|outlook|reaffirm/.test(s))return{label:"Guidance",color:"#a0a0a0"};
-    if(/fda|approval|approved|clears|cleared|launches|launch/.test(s))return{label:"Product",color:"#06B6D4"};
-    if(/downgrade|upgrade|initiates|overweight|underweight|price target/.test(s))return{label:"Analyst",color:"#EC4899"};
-    if(/earnings|revenue|profit|loss|quarter|quarterly|annual results/.test(s))return{label:"Earnings",color:"#fbbf24"};
-    return{label:"News",color:"#777"}}
-  async function loadBriefNews(tickers){
-    if(!tickers||tickers.length===0)return;
+  var _bnp=useState(function(){try{var s=localStorage.getItem('ta-news-prefs');return s?JSON.parse(s):{leadership:true,capital:true,earnings:true,deals:true,product:true,restructuring:true,legal:true,insider:true}}catch(e){return{leadership:true,capital:true,earnings:true,deals:true,product:true,restructuring:true,legal:true,insider:true}}}),briefNewsPrefs=_bnp[0],setBriefNewsPrefs=_bnp[1];
+  function saveBriefNewsPrefs(next){setBriefNewsPrefs(next);try{localStorage.setItem('ta-news-prefs',JSON.stringify(next))}catch(e){}}
+  var NEWS_CATS=[
+    {id:"leadership",label:"Leadership",desc:"CEO, exec changes, board moves",color:"#6ea8fe"},
+    {id:"capital",label:"Capital",desc:"Buybacks, dividends, repurchases",color:"#4ade80"},
+    {id:"earnings",label:"Earnings",desc:"Results, guidance, beat/miss",color:"#fbbf24"},
+    {id:"deals",label:"Deals",desc:"M&A, partnerships, contracts",color:"#8B5CF6"},
+    {id:"product",label:"Products",desc:"Launches, FDA, innovation",color:"#06B6D4"},
+    {id:"restructuring",label:"Restructuring",desc:"Layoffs, cost cuts, spin-offs",color:"#f87171"},
+    {id:"legal",label:"Legal",desc:"SEC, lawsuits, investigations",color:"#fbbf24"},
+    {id:"insider",label:"Insider",desc:"Insider buys and sells",color:"#EC4899"}
+  ];
+  function classifyNews(headline,ticker,companyName){
+    var h=headline||"";var hl=h.toLowerCase();var tl=(ticker||"").toLowerCase();
+    var nl=(companyName||"").toLowerCase().split(" ")[0]; // first word of company name
+    // ── Noise filters: discard these entirely ──────────────────────────────
+    var noisePatterns=[
+      /\d+\s+(stocks?|companies|shares|etfs?|funds?)\s+(to\s+)?(watch|buy|own|consider|know)/i,
+      /best\s+stocks?/i,/top\s+\d+\s+stocks?/i,/stocks?\s+that\s+(could|might|may|will)/i,
+      /stock\s+market\s+(today|week|update|wrap|recap|rally|selloff|plunge|surge)/i,
+      /market\s+(wrap|update|recap|roundup|briefing|movers|watch)/i,
+      /week(ly)?\s+(ahead|preview|roundup)/i,
+      /analyst[s']?\s+(price\s+target|rating)\s+(on\s+)?\d+\s+stocks?/i,
+      /etf\s+(investors?|holdings?|exposure)/i,
+      /here[''']s\s+(why|what|how)\s+.{0,30}(stock|shares?)/i,
+      /why\s+(investors?|analysts?)\s+(are|should|may)/i,
+      /\d+\s+reasons?\s+(to\s+)?(buy|sell|own|avoid)/i,
+      /should\s+you\s+(buy|sell|own)/i,
+      /is\s+[\w\s]{2,25}(a\s+)?(good|great|solid)\s+(buy|investment|stock)/i,
+      /warren\s+buffett|berkshire\s+hathaway/i, // unless it IS berkshire
+      /cathie\s+wood|ark\s+invest/i,
+      /hedge\s+fund[s']?\s+(bought|sold|added|trimmed)/i,
+      /reddit|wsb|wallstreetbets|retail\s+investor/i,
+      /penny\s+stock|meme\s+stock/i,
+      /cramer/i
+    ];
+    for(var ni=0;ni<noisePatterns.length;ni++){if(noisePatterns[ni].test(h))return null}
+    // ── Relevance: must be primarily ABOUT this company ────────────────────
+    // Check company name or ticker appears in first 80 chars
+    var first80=hl.substring(0,80);
+    var subjectScore=0;
+    if(first80.indexOf(tl)>=0)subjectScore+=3;
+    if(nl.length>3&&first80.indexOf(nl)>=0)subjectScore+=2;
+    // Hard pass: generic "company X and Y and Z" listicle pattern in headline
+    var otherTickers=0;
+    var tickerPattern=/\b[A-Z]{2,5}\b/g;var m;
+    while((m=tickerPattern.exec(h))!==null){if(m[0]!==ticker&&m[0].length>=2&&m[0]!==m[0].toLowerCase())otherTickers++}
+    if(otherTickers>=4)return null; // headline is about many companies, not this one
+    if(subjectScore===0&&otherTickers>=2)return null;
+    // ── Classify into owner-relevant categories ────────────────────────────
+    if(/\bceo\b|chief\s+exec|cfo\b|coo\b|cto\b|board\s+(chair|member|director)|appoints?|names?\s+(new\s+)?(ceo|cfo|president)|steps?\s+down|resign[s]?|succession|executive\s+(hire|depart|exit|change)|leadership/.test(hl))
+      return{cat:"leadership",label:"Leadership",color:"#6ea8fe"};
+    if(/buyback|share\s+repurchase|repurchase\s+program|return(s|ing)?\s+(capital|cash)\s+to|special\s+dividend|dividend\s+(hike|raise|increase|cut|suspend|initiates?|declar|payout)|distribut/.test(hl))
+      return{cat:"capital",label:"Capital",color:"#4ade80"};
+    if(/insider\s+(buy|sell|purchas|acquir)|director\s+(buy|purchas|acquir|sell)|officer\s+(sell|buy|purchas|acquir)|form\s+4|13[dg]\b/.test(hl))
+      return{cat:"insider",label:"Insider",color:"#EC4899"};
+    if(/acqui[sr]|merger|takeover|buyout|acqui[sz]|spinoff|spin.off|divest|sells?\s+(unit|division|business|subsidiary)|strategic\s+(review|alternative)|goes?\s+private/.test(hl))
+      return{cat:"deals",label:"M&A",color:"#8B5CF6"};
+    if(/partner(s|ship)|agreement|contract\s+(wins?|award|signed?)|joint\s+venture|collaboration|licensing|supply\s+(agreement|deal)|deal\s+with|wins?\s+(contract|bid)/.test(hl))
+      return{cat:"deals",label:"Deal",color:"#8B5CF6"};
+    if(/layoff|lay.off|cut[s]?\s+job|job[s]?\s+cut|redundanc|restruc|workforce\s+(reduc|cut)|headcount|cost.cutting|cost\s+cut|downsiz|eliminat[es]+\s+(job|position|role)|rif\b/.test(hl))
+      return{cat:"restructuring",label:"Restructuring",color:"#f87171"};
+    if(/fda\s+(approv|clear|reject|approv)|drug\s+(approv|applic|trial|data)|phase\s+[123]|clinical\s+trial|product\s+launch|launches?\s+(new|its?)|unveil|announc[es]+\s+(new\s+)?(product|platform|service|feature)|new\s+(product|model|version|platform)/.test(hl))
+      return{cat:"product",label:"Product",color:"#06B6D4"};
+    if(/sec\s+(investigat|charg|subpoena|fine|settl)|class\s+action|lawsuit|litigation|regulat(or|ory)\s+(fine|penalt|action|order|investigat)|antitrust|doj\b|ftc\b|whistleblow|fraud|accounting\s+(irreg|error|restat)/.test(hl))
+      return{cat:"legal",label:"Legal",color:"#fbbf24"};
+    if(/earnings|quarterly\s+(results?|report)|annual\s+results?|q[1234]\s+(results?|earnings?|revenue)|revenue\s+(beats?|misses?|tops?|falls?|rises?|grew)|guidance\s+(raises?|cuts?|lower|higher|above|below)|beat[s]?\s+(estimate|expectation|consensus)|miss[es]+\s+(estimate|expectation)|outlook\s+(raise|cut|maintain)|reaffirm[s]?\s+guidance/.test(hl))
+      return{cat:"earnings",label:"Earnings",color:"#fbbf24"};
+    // If it passed noise filters and mentions the company but doesn't fit a category → skip
+    // (better to show nothing than generic noise)
+    if(subjectScore===0)return null;
+    return null}
+  async function loadBriefNews(companies){
+    if(!companies||companies.length===0)return;
+    var tickers=companies.map(function(c){return c.ticker});
     var CACHE_KEY="ta-brief-news";var CACHE_TTL=3600000;
     try{var cached=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
-      var cTickers=cached&&cached.tickers?cached.tickers.slice().sort().join(","):"";
-      var nowTickers=tickers.slice().sort().join(",");
-      if(cached&&cached.ts&&(Date.now()-cached.ts)<CACHE_TTL&&cTickers===nowTickers){setBriefNews(cached.items);return}}catch(e){}
+      var cKey=tickers.slice().sort().join(",");
+      if(cached&&cached.ts&&(Date.now()-cached.ts)<CACHE_TTL&&cached.key===cKey){setBriefNews(cached.items);return}}catch(e){}
     setBriefNewsLoading(true);
     try{
       var to=new Date().toISOString().slice(0,10);
-      var from=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-      var results=await Promise.all(tickers.map(function(t){return finnhub("company-news?symbol="+t+"&from="+from+"&to="+to).then(function(news){return(news||[]).slice(0,12).map(function(n){return{ticker:t,headline:n.headline,url:n.url,source:n.source,datetime:n.datetime,tag:tagHeadline(n.headline||"")}})}).catch(function(){return[]})}));
+      var from=new Date(Date.now()-14*86400000).toISOString().slice(0,10); // 14 days to get enough signal
+      var results=await Promise.all(companies.map(function(co){
+        return finnhub("company-news?symbol="+co.ticker+"&from="+from+"&to="+to)
+          .then(function(news){
+            if(!news||!news.length)return[];
+            var classified=[];
+            news.slice(0,25).forEach(function(n){ // check up to 25, keep best
+              var cat=classifyNews(n.headline,co.ticker,co.name);
+              if(!cat)return;
+              classified.push({ticker:co.ticker,headline:n.headline,url:n.url,source:n.source,datetime:n.datetime,cat:cat.cat,label:cat.label,color:cat.color})});
+            return classified})
+          .catch(function(){return[]})}));
       var all=[].concat.apply([],results);
-      // Deduplicate by headline similarity (first 60 chars)
-      var seen={};var deduped=all.filter(function(n){var key=n.headline.substring(0,60).toLowerCase();if(seen[key])return false;seen[key]=true;return true});
-      // Sort newest first
+      // Deduplicate by normalised headline (first 70 chars, lowercase)
+      var seen={};
+      var deduped=all.filter(function(n){var key=n.headline.substring(0,70).toLowerCase().replace(/[^a-z0-9]/g,"");if(seen[key])return false;seen[key]=true;return true});
       deduped.sort(function(a,b){return b.datetime-a.datetime});
-      var items=deduped.slice(0,30);
+      var items=deduped.slice(0,40);
       setBriefNews(items);
-      try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),tickers:tickers,items:items}))}catch(e){}
+      try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),key:tickers.slice().sort().join(","),items:items}))}catch(e){}
     }catch(e){console.warn("Brief news load error:",e)}
     setBriefNewsLoading(false)}
-  function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
+    function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
     addXP(25,"Weekly review");updateStreak(true);
     if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
     return n})}
@@ -1250,8 +1321,8 @@ function TrackerApp(props){
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
   // Load portfolio news for morning briefing
   useEffect(function(){if(!loaded||cos.length===0)return;
-    var portfolioTickers=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return c.ticker}).filter(Boolean);
-    if(portfolioTickers.length>0)loadBriefNews(portfolioTickers)},[loaded,cos.length]);
+    var portfolioCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    if(portfolioCos.length>0)loadBriefNews(portfolioCos)},[loaded,cos.length]);
   // Auto-fetch dividend data for ALL users
   useEffect(function(){if(!loaded||cos.length===0)return;
     var needsDiv=cos.filter(function(c){
@@ -6617,31 +6688,63 @@ function TrackerApp(props){
               <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>{"— "+quote.a}</div></div>
           </div></div>
         {/* ── Portfolio News Feed ── */}
-        {(briefNews&&briefNews.filter(function(n){return portfolio.some(function(c2){return c2.ticker===n.ticker})}).length>0||briefNewsLoading)&&<div style={{borderTop:"1px solid "+K.bdr}}>
-          <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Portfolio News
+        {(function(){
+          var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
+          var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
+          var shown=(briefNews||[]).filter(function(n){
+            if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
+            return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
+          if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
+          return<div style={{borderTop:"1px solid "+K.bdr}}>
+            <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
+              {/* Header row */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                  <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Portfolio News
+                  {briefNews&&briefNews.length>0&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,padding:"2px 9px",letterSpacing:.3,display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
+                  </button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"\u21ba"}</button>
+                </div>
               </div>
-              <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio.map(function(c2){return c2.ticker}))}} style={{background:"none",border:"none",color:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,padding:"2px 6px",borderRadius:4,letterSpacing:.5}} title="Refresh news">{"↺ Refresh"}</button>
-            </div>
-            {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{fontSize:11,color:K.dim,padding:"4px 0"}}>{"Fetching news for your holdings…"}</div>}
-            {briefNews&&(function(){
-              var shown=briefNews.filter(function(n){return portfolio.some(function(c2){return c2.ticker===n.ticker})}).slice(0,8);
-              if(shown.length===0)return null;
-              return<div>{shown.map(function(n,i){
+              {/* Filter panel */}
+              {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{fontSize:10,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about\u2026"}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
+                    {cat.label}
+                  </button>})}
+                </div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
+              </div>}
+              {/* Loading */}
+              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:8,height:8,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:11,color:K.dim}}>{"Scanning news for your holdings\u2026"}</span></div>}
+              {/* Stories */}
+              {shown.length>0&&<div>{shown.map(function(n,i){
                 var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
-                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:8,padding:"7px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"25":"none",textDecoration:"none"}}
-                  onMouseEnter={function(e){e.currentTarget.style.opacity=".7"}} onMouseLeave={function(e){e.currentTarget.style.opacity="1"}}>
-                  <span style={{flexShrink:0,fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"18",padding:"2px 7px",borderRadius:999,fontFamily:fm,marginTop:2,whiteSpace:"nowrap"}}>{n.ticker}</span>
-                  <span style={{flex:1,fontSize:11,color:K.mid,lineHeight:1.45}}>{n.headline}</span>
-                  <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:58}}>
-                    <span style={{fontSize:9,fontWeight:700,color:n.tag.color,background:n.tag.color+"18",padding:"1px 6px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap"}}>{n.tag.label}</span>
-                    <span style={{fontSize:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
+                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
+                  {co&&<div style={{flexShrink:0,marginTop:1}}><CoLogo domain={co.domain} ticker={co.ticker} size={18}/></div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:9,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
+                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{n.source}</span>
+                      <span style={{fontSize:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                    </div>
                   </div>
-                </a>})}</div>})()}
-          </div>
-        </div>}
+                  <span style={{flexShrink:0,fontSize:9,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                </a>})}
+              </div>}
+              {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:11,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days. Try enabling more categories or check back later."}</div>}
+            </div>
+          </div>})()}
       </div>})()}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
