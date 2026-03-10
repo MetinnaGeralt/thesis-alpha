@@ -2494,321 +2494,6 @@ function TrackerApp(props){
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
     setTimeout(function(){refreshPrices()},500)}
-  function OnboardingFlow(){
-    var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
-    var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
-
-    // ── Local state ──────────────────────────────────────────
-    // All form state lives in parent — see declarations near obPath
-    var oTmr=_oTmrRef;
-
-    function onTickerChange(v){setOTicker(v);if(oTmr.current)clearTimeout(oTmr.current);
-      if(v.length>=1&&v.length<=6&&/^[A-Za-z.]+$/.test(v)){setOLook("loading");oTmr.current=setTimeout(async function(){
-        try{var r=await lookupTicker(v);
-          if(r&&r.name){setOName(r.name);setOSector(r.sector||"");setOIndustry(r.industry||"");setODomain(r.domain||"");setOPrice(r.currentPrice||0);setOLook("done")}
-          else{setOLook("error");setOName("")}}
-        catch(e){setOLook("error")}},500)}
-      else{setOLook("idle");setOName("")}}
-
-    function addOnboardingCompany(){
-      if(!oTicker.trim()||!oName.trim())return;
-      var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:parseFloat(oShares)||0,avgCost:parseFloat(oAvgCost)||0,currentPrice:oPrice},purchaseDate:oPurchDate||null,conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setOCoId(nc.id);setObStep(3)}
-
-    function saveThesisAndContinue(){
-      var coId=oCoId;
-      if(coId){
-        var parts=[];
-        if(oTCore.trim())parts.push(oTCore.trim());
-        if(oTMoat.trim())parts.push("## MOAT\n"+oTMoat.trim());
-        if(oTRisk.trim())parts.push("## RISKS\n"+oTRisk.trim());
-        if(oTSell.trim())parts.push("## SELL CRITERIA\n"+oTSell.trim());
-        var combined=parts.join("\n\n");
-        if(combined.trim()){
-          upd(coId,function(c){return Object.assign({},c,{thesisNote:combined,thesisUpdatedAt:new Date().toISOString()})})}}
-      setObStep(4)}
-
-    function saveKpisAndFinish(){
-      var coId=oCoId;
-      if(coId&&oKpiSel.length>0){
-        var newKpis=oKpiSel.map(function(kid,i){
-          var met=METRIC_MAP[kid];
-          var tv=oKpiTargets[kid]||"";
-          return{id:i+1,name:met?met.label:kid,target:"≥"+tv+(met?met.unit||"":""),rule:"gte",value:parseFloat(tv)||0,unit:met?met.unit||"":"",period:"Next Q",notes:"",lastResult:null}});
-        upd(coId,function(c){return Object.assign({},c,{kpis:newKpis})})}
-      finishOnboarding();
-      if(coId){setSelId(coId);setDetailTab("dossier");setGuidedSetup(coId);setTimeout(function(){setTourStep(1)},900)}}
-
-    // ── Step dots ─────────────────────────────────────────────
-    function stepDots(){return<div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:28}}>
-      {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
-
-    // ─────────────────────────────────────────────────────────
-    // STEP 1 — Identity welcome
-    // ─────────────────────────────────────────────────────────
-    if(obStep===1)return<div style={overlay}><div style={card}>
-      {stepDots()}
-      <div style={{textAlign:"center",marginBottom:28}}>
-        <TLogo size={40} dark={isDark}/>
-        <h1 style={{fontSize:26,fontWeight:700,color:K.txt,fontFamily:fh,margin:"16px 0 10px",lineHeight:1.2}}>You did the research.<br/>Now keep the conviction.</h1>
-        <p style={{fontSize:14,color:K.mid,lineHeight:1.7,margin:0,maxWidth:360,marginLeft:"auto",marginRight:"auto"}}>ThesisAlpha is where your investment thinking lives — thesis, KPIs, earnings checks, all in one place.</p>
-      </div>
-      <div style={{background:K.bg,borderRadius:10,padding:"14px 18px",marginBottom:24,border:"1px solid "+K.bdr}}>
-        <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>What you'll do in the next 3 minutes</div>
-        {[{n:"1",c:K.grn,t:"Add a company you own"},
-          {n:"2",c:K.blue,t:"Write a one-paragraph thesis"},
-          {n:"3",c:K.acc,t:"Pick 2 KPIs to track at earnings"}
-        ].map(function(r){return<div key={r.n} style={{display:"flex",alignItems:"center",gap:12,padding:"6px 0"}}>
-          <div style={{width:22,height:22,borderRadius:"50%",background:r.c+"20",border:"1px solid "+r.c+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <span style={{fontSize:11,fontWeight:700,color:r.c,fontFamily:fm}}>{r.n}</span></div>
-          <span style={{fontSize:13,color:K.mid,fontWeight:500}}>{r.t}</span>
-        </div>})}</div>
-      <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15,marginBottom:10})}>Start with a company I own →</button>
-      <button onClick={function(){setObPath("demo");setCos(SAMPLE);finishOnboarding();setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)}} style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"8px",fontFamily:fb}}>Explore with demo data first</button>
-    </div></div>;
-
-    // ─────────────────────────────────────────────────────────
-    // STEP 2 — Add first company (no skip)
-    // ─────────────────────────────────────────────────────────
-    if(obStep===2)return<div style={overlay}><div style={card}>
-      {stepDots()}
-      <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>Which company do you own?</h2>
-      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px",lineHeight:1.6}}>Pick one you've already thought about. This becomes your first thesis.</p>
-      <div style={{marginBottom:16}}>
-        <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker symbol</label>
-        <div style={{display:"flex",gap:12,alignItems:"center"}}>
-          <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false}/>
-          {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
-          {oLook==="done"&&<span style={{fontSize:13,color:K.grn,fontFamily:fm}}>{"✓"} Found — {oName}</span>}
-          {oLook==="error"&&<span style={{fontSize:13,color:K.amb}}>Not found — enter name below</span>}
-        </div></div>
-      {(oLook==="done"||oLook==="error")&&<div style={{marginBottom:16}}>
-        <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Company name</label>
-        <input value={oName} onChange={function(e){setOName(e.target.value)}} placeholder="Apple Inc." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none"}}/>
-      </div>}
-      {(oLook==="done"||oLook==="error")&&oName.trim()&&<div style={{marginBottom:20}}>
-        <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>How do you invest in this?</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {INVEST_STYLES.map(function(st){var isSel=oStyle===st.id;return<button key={st.id} onClick={function(){setOStyle(isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
-            <IC name={st.icon} size={9} color={isSel?st.color:K.dim}/>{st.label}</button>})}
-        </div>
-        {oStyle&&STYLE_MAP[oStyle]&&<div style={{fontSize:11,color:K.dim,marginTop:6,lineHeight:1.5}}>{STYLE_MAP[oStyle].desc}</div>}
-      </div>}
-      {(oLook==="done"||oName.trim())&&<div style={{marginBottom:20}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-          <label style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Position</label>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"1px 6px",borderRadius:4,border:"1px solid "+K.bdr}}>optional</span>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          <div>
-            <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Shares owned</label>
-            <input value={oShares} onChange={function(e){setOShares(e.target.value)}} placeholder="100" type="number" min="0" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
-          </div>
-          <div>
-            <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Avg cost {cSym}</label>
-            <input value={oAvgCost} onChange={function(e){setOAvgCost(e.target.value)}} placeholder="142.50" type="number" min="0" step="0.01" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
-          </div>
-          <div>
-            <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Purchase date</label>
-            <input value={oPurchDate} onChange={function(e){setOPurchDate(e.target.value)}} type="date" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none",colorScheme:isDark?"dark":"light"}}/>
-          </div>
-        </div>
-      </div>}
-      <div style={{display:"flex",gap:12,justifyContent:"space-between",marginTop:8}}>
-        <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
-        <button onClick={addOnboardingCompany} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13,opacity:oTicker.trim()&&oName.trim()?1:.35})} disabled={!oTicker.trim()||!oName.trim()}>Add & Write Thesis {"→"}</button>
-      </div>
-    </div></div>;
-
-    // ─────────────────────────────────────────────────────────
-    // STEP 3 — Write thesis inline
-    // ─────────────────────────────────────────────────────────
-    if(obStep===3){
-      var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
-      var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
-      var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
-      return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
-        {stepDots()}
-        <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>Why do you own {oName||oTicker}?</h2>
-        <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 20px",lineHeight:1.6}}>Write as much or as little as you want. You can always edit this later.</p>
-        <div style={{display:"grid",gap:12,marginBottom:20}}>
-          {[{key:"core",label:"Core thesis",placeholder:sty3?sty3.thesisPrompt:"Why do you own this business? What's the key insight?",color:K.grn,val:oTCore,set:setOTCore},
-            {key:"moat",label:"Moat",placeholder:sty3?sty3.moatPrompt:"What protects this business from competition?",color:K.blue,val:oTMoat,set:setOTMoat},
-            {key:"risk",label:"Risks",placeholder:sty3?sty3.riskPrompt:"What could go wrong? What am I watching?",color:K.amb,val:oTRisk,set:setOTRisk},
-            {key:"sell",label:"Sell criteria",placeholder:sty3?sty3.sellPrompt:"What specific event or number would make me sell?",color:K.red,val:oTSell,set:setOTSell}
-          ].map(function(sec){return<div key={sec.key}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-              <div style={{width:8,height:8,borderRadius:2,background:sec.color,flexShrink:0}}/>
-              <label style={{fontSize:11,fontWeight:600,color:sec.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{sec.label}</label>
-            </div>
-            <textarea value={sec.val} onChange={function(e){sec.set(e.target.value)}} placeholder={sec.placeholder} style={taStyle}/>
-          </div>})}
-        </div>
-        <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-          <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={function(){setObStep(4)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip for now</button>
-            <button onClick={saveThesisAndContinue} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:hasAny?1:.5})} disabled={!hasAny}>Save & Continue {"→"}</button>
-          </div>
-        </div>
-      </div></div>}
-
-    // ─────────────────────────────────────────────────────────
-    // STEP 4 — Pick KPIs
-    // ─────────────────────────────────────────────────────────
-    if(obStep===4){
-      var sty4=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
-      var sugIds=sty4?sty4.kpis.slice(0,4):["revGrowth","grossMargin","opMargin","fcfPerShare"];
-      var sugMetrics=sugIds.map(function(id){return METRIC_MAP[id]}).filter(Boolean);
-      return<div style={overlay}><div style={Object.assign({},card,{maxWidth:500})}>
-        {stepDots()}
-        <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>What numbers prove your thesis?</h2>
-        <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 20px",lineHeight:1.6}}>Pick 2 KPIs. At each earnings report, ThesisAlpha checks them automatically.</p>
-        <div style={{display:"grid",gap:8,marginBottom:20}}>
-          {sugMetrics.map(function(met){
-            var isSel=oKpiSel.indexOf(met.id)>=0;
-            var tv=oKpiTargets[met.id]||"";
-            return<div key={met.id} style={{borderRadius:10,border:"2px solid "+(isSel?K.acc:K.bdr),background:isSel?K.acc+"08":K.bg,padding:"12px 14px",cursor:"pointer",transition:"all .15s"}} onClick={function(){setOKpiSel(function(p){return p.indexOf(met.id)>=0?p.filter(function(x){return x!==met.id}):p.concat([met.id])})}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{met.label}</div>
-                  <div style={{fontSize:11,color:K.dim,marginTop:2}}>{met.desc||""}</div>
-                </div>
-                {isSel?<div style={{width:20,height:20,borderRadius:"50%",background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:10,color:"#fff",fontWeight:700}}>{"✓"}</span></div>
-                :<div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+K.bdr,flexShrink:0}}/>}
-              </div>
-              {isSel&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:8}} onClick={function(e){e.stopPropagation()}}>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Target ≥</span>
-                <input value={tv} onChange={function(e){var v=e.target.value;setOKpiTargets(function(p){var n=Object.assign({},p);n[met.id]=v;return n})}} placeholder="e.g. 15" style={{width:80,background:K.card,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"5px 8px",fontSize:13,fontFamily:fm,outline:"none"}}/>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{met.unit||""}</span>
-              </div>}
-            </div>})}
-        </div>
-        <div style={{background:K.acc+"0a",border:"1px solid "+K.acc+"25",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.6}}>
-          <strong style={{color:K.acc}}>{"💡"} Tip:</strong> Don{"'"}t overthink the target. A rough number beats no number. You can refine after the first earnings check.
-        </div>
-        <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-          <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={saveKpisAndFinish} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip</button>
-            <button onClick={saveKpisAndFinish} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:oKpiSel.length>0?1:.45})} disabled={oKpiSel.length===0}>Add {oKpiSel.length>0?oKpiSel.length+" KPI"+(oKpiSel.length>1?"s":""):"KPIs"} & Finish {"→"}</button>
-          </div>
-        </div>
-      </div></div>}
-
-    // ─────────────────────────────────────────────────────────
-    // STEP 5 — Celebration + what happens next
-    // ─────────────────────────────────────────────────────────
-    if(obStep===5){
-      var co5=cos.find(function(c){return c.id===oCoId})||cos[cos.length-1];
-      var kpiCount5=co5?co5.kpis.length:oKpiSel.length;
-      var hasThesis5=co5&&co5.thesisNote&&co5.thesisNote.trim().length>10;
-      var pts=0;if(hasThesis5)pts+=15;if(kpiCount5>0)pts+=10;
-      return<div style={overlay}><div style={card}>
-        {stepDots()}
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:44,marginBottom:8}}>{"🎯"}</div>
-          <h2 style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>Foundation set.</h2>
-          <p style={{fontSize:14,color:K.mid,margin:0,lineHeight:1.6}}>You{"'"}ve done more than most investors ever will.</p>
-        </div>
-        <div style={{display:"grid",gap:8,marginBottom:20}}>
-          {[{label:"Company added",done:!!co5,icon:"✓"},
-            {label:"Thesis written",done:hasThesis5,icon:"✓"},
-            {label:kpiCount5+" KPI"+(kpiCount5!==1?"s":"")+" to track at earnings",done:kpiCount5>0,icon:"✓"}
-          ].map(function(row){return<div key={row.label} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:8,background:row.done?K.grn+"08":K.bg,border:"1px solid "+(row.done?K.grn+"25":K.bdr)}}>
-            <div style={{width:22,height:22,borderRadius:"50%",background:row.done?K.grn+"20":"transparent",border:"1px solid "+(row.done?K.grn+"40":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:K.grn,fontWeight:700}}>{row.done?row.icon:""}</div>
-            <span style={{fontSize:13,fontWeight:row.done?600:400,color:row.done?K.txt:K.dim}}>{row.label}</span>
-            {row.done&&pts>0&&row.label.indexOf("Company")>=0&&<span style={{marginLeft:"auto",fontSize:11,color:K.acc,fontFamily:fm,fontWeight:600}}>+{pts} pts</span>}
-          </div>})}
-        </div>
-        <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.7}}>
-          <strong style={{color:K.txt,display:"block",marginBottom:4}}>What happens next</strong>
-          ThesisAlpha will remind you before the next earnings report. When results drop, open the app and run a 1-click earnings check — your KPIs vs real numbers, instant verdict.
-        </div>
-        <button onClick={function(){finishOnboarding();if(co5){setSelId(co5.id);setDetailTab("dossier");setGuidedSetup(co5.id)}}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15})}>Take me to my portfolio {"→"}</button>
-      </div></div>}
-
-    return null}
-
-
-  // ── Dossier Spotlight Tour ────────────────────────────────
-  function DossierTour(){
-    if(!tourStep||tourStep<1)return null;
-    var co=cos.find(function(c){return c.id===oCoId})||sel;
-    var tick=co?co.ticker:"your company";
-
-    var TOUR=[
-      {step:1,sectionId:"ds-ledger",color:"#F59E0B",icon:"trending",
-       title:"Rate your conviction",
-       body:"How confident are you in this investment, 1–10? Conviction tracking is the habit that separates great investors from reactive ones. Update it every quarter and after every earnings report.",
-       action:"Rate Conviction",onAction:function(){setModal({type:"conviction"})}},
-      {step:2,sectionId:"ds-evidence",color:"#3B82F6",icon:"target",
-       title:"Check the first earnings report",
-       body:"When "+tick+" reports next quarter, hit Check Earnings. ThesisAlpha fetches the results and instantly compares them to your KPIs. One click, instant verdict.",
-       action:"See how it works",onAction:null},
-      {step:3,sectionId:null,color:"#22C55E",icon:"castle",
-       title:"Classify the moat",
-       body:"What actually protects "+tick+" from competition? Network effects? Switching costs? Brand? The Moat Tracker scores 8 dimensions and builds a composite moat strength — the most underused tool for long-term investors.",
-       action:"Open Moat Tracker",onAction:function(){setSubPage("moat")}},
-      {step:4,sectionId:"ds-score",color:"#8B5CF6",icon:"shield",
-       title:"Your Owner's Score",
-       body:"This radar shows how well you understand "+tick+". Thesis depth, KPI discipline, conviction, fundamentals, moat, monitoring — all in one view. The goal isn't 100. It's making sure no section is dangerously low.",
-       action:null,onAction:null},
-    ];
-
-    var cur=TOUR.find(function(t){return t.step===tourStep});
-    if(!cur)return null;
-    var isLast=tourStep===TOUR.length;
-
-    function advance(){
-      if(isLast){setTourStep(0);showToast("You know your way around. Go build something worth owning.","info",4000)}
-      else{
-        // Scroll section into view
-        var nextT=TOUR.find(function(t){return t.step===tourStep+1});
-        if(nextT&&nextT.sectionId){
-          var el=document.getElementById(nextT.sectionId);
-          if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
-        setTourStep(function(s){return s+1})}}
-
-    function dismiss(){setTourStep(0)}
-
-    // Highlight the current section
-    var hlStyle=cur.sectionId?{outline:"2px solid "+cur.color,outlineOffset:3,borderRadius:12,transition:"outline .3s"}:{};
-    // We apply the highlight via a global style injection trick
-    var styleId="ta-tour-style";
-    var existing=document.getElementById(styleId);
-    if(!existing){var s2=document.createElement("style");s2.id=styleId;document.head.appendChild(s2)}
-    var styleEl=document.getElementById(styleId);
-    if(styleEl){
-      styleEl.textContent=cur.sectionId?
-        "#"+cur.sectionId+"{outline:2px solid "+cur.color+";outline-offset:4px;border-radius:12px;transition:outline .3s}"+
-        "@keyframes ta-tour-pulse{0%,100%{outline-color:"+cur.color+"}50%{outline-color:"+cur.color+"88}}"+
-        "#"+cur.sectionId+"{animation:ta-tour-pulse 1.6s ease-in-out infinite}"
-        :""}
-
-    return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
-      {/* colour bar */}
-      <div style={{height:3,background:cur.color,width:(tourStep/TOUR.length*100)+"%",transition:"width .4s ease"}}/>
-      <div style={{padding:"16px 18px"}}>
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:30,height:30,borderRadius:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <IC name={cur.icon} size={14} color={cur.color}/>
-            </div>
-            <div>
-              <div style={{fontSize:12,fontWeight:700,color:cur.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{tourStep} of {TOUR.length}</div>
-              <div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.2}}>{cur.title}</div>
-            </div>
-          </div>
-          <button onClick={dismiss} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>{"×"}</button>
-        </div>
-        <p style={{fontSize:12,color:K.mid,lineHeight:1.65,margin:"0 0 14px"}}>{cur.body}</p>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          {cur.action&&cur.onAction&&<button onClick={function(){cur.onAction();advance()}} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 12px",color:cur.color,borderColor:cur.color+"40",flex:1})}>{cur.action}</button>}
-          <button onClick={advance} style={Object.assign({},S.btnP,{fontSize:12,padding:"7px 16px",flex:cur.action&&cur.onAction?0:1,background:cur.color,borderColor:cur.color})}>{isLast?"Done ✓":"Next →"}</button>
-        </div>
-      </div>
-    </div>}
 
   // ── Sidebar + TopBar ──────────────────────────────────────
   var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
@@ -7822,7 +7507,7 @@ function TrackerApp(props){
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow/>}{tourStep>0&&<DossierTour/>}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
     {/* === QUARTERLY LETTER POPUP === */}
@@ -8069,6 +7754,324 @@ function TrackerApp(props){
       return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div></div>)}
 
 // ═══ ROOT ═══
+function OnboardingFlow(p){
+  var {K,S,fm,fb,fh,isDark,isMobile,cSym,nId,cos,setCos,selId,setSelId,obStep,setObStep,obPath,setObPath,oTicker,setOTicker,oName,setOName,oSector,setOSector,oLook,setOLook,oDomain,setODomain,oIndustry,setOIndustry,oPrice,setOPrice,oStyle,setOStyle,oTCore,setOTCore,oTMoat,setOTMoat,oTRisk,setOTRisk,oTSell,setOTSell,oKpiSel,setOKpiSel,oKpiTargets,setOKpiTargets,oCoId,setOCoId,oShares,setOShares,oAvgCost,setOAvgCost,oPurchDate,setOPurchDate,oTmrRef,upd,lookupTicker,finishOnboarding,setDetailTab,setGuidedSetup,setTourStep,INVEST_STYLES,STYLE_MAP,METRIC_MAP,SAMPLE,IC,TLogo}=p;
+  var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
+  var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
+
+  // ── Local state ──────────────────────────────────────────
+  // All form state lives in parent — see declarations near obPath
+  var oTmr=oTmrRef;
+
+  function onTickerChange(v){setOTicker(v);if(oTmr.current)clearTimeout(oTmr.current);
+    if(v.length>=1&&v.length<=6&&/^[A-Za-z.]+$/.test(v)){setOLook("loading");oTmr.current=setTimeout(async function(){
+      try{var r=await lookupTicker(v);
+        if(r&&r.name){setOName(r.name);setOSector(r.sector||"");setOIndustry(r.industry||"");setODomain(r.domain||"");setOPrice(r.currentPrice||0);setOLook("done")}
+        else{setOLook("error");setOName("")}}
+      catch(e){setOLook("error")}},500)}
+    else{setOLook("idle");setOName("")}}
+
+  function addOnboardingCompany(){
+    if(!oTicker.trim()||!oName.trim())return;
+    var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:parseFloat(oShares)||0,avgCost:parseFloat(oAvgCost)||0,currentPrice:oPrice},purchaseDate:oPurchDate||null,conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+    setCos(function(p){return p.concat([nc])});setSelId(nc.id);setOCoId(nc.id);setObStep(3)}
+
+  function saveThesisAndContinue(){
+    var coId=oCoId;
+    if(coId){
+      var parts=[];
+      if(oTCore.trim())parts.push(oTCore.trim());
+      if(oTMoat.trim())parts.push("## MOAT\n"+oTMoat.trim());
+      if(oTRisk.trim())parts.push("## RISKS\n"+oTRisk.trim());
+      if(oTSell.trim())parts.push("## SELL CRITERIA\n"+oTSell.trim());
+      var combined=parts.join("\n\n");
+      if(combined.trim()){
+        upd(coId,function(c){return Object.assign({},c,{thesisNote:combined,thesisUpdatedAt:new Date().toISOString()})})}}
+    setObStep(4)}
+
+  function saveKpisAndFinish(){
+    var coId=oCoId;
+    if(coId&&oKpiSel.length>0){
+      var newKpis=oKpiSel.map(function(kid,i){
+        var met=METRIC_MAP[kid];
+        var tv=oKpiTargets[kid]||"";
+        return{id:i+1,name:met?met.label:kid,target:"≥"+tv+(met?met.unit||"":""),rule:"gte",value:parseFloat(tv)||0,unit:met?met.unit||"":"",period:"Next Q",notes:"",lastResult:null}});
+      upd(coId,function(c){return Object.assign({},c,{kpis:newKpis})})}
+    finishOnboarding();
+    if(coId){setSelId(coId);setDetailTab("dossier");setGuidedSetup(coId);setTimeout(function(){setTourStep(1)},900)}}
+
+  // ── Step dots ─────────────────────────────────────────────
+  function stepDots(){return<div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:28}}>
+    {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 1 — Identity welcome
+  // ─────────────────────────────────────────────────────────
+  if(obStep===1)return<div style={overlay}><div style={card}>
+    {stepDots()}
+    <div style={{textAlign:"center",marginBottom:28}}>
+      <TLogo size={40} dark={isDark}/>
+      <h1 style={{fontSize:26,fontWeight:700,color:K.txt,fontFamily:fh,margin:"16px 0 10px",lineHeight:1.2}}>You did the research.<br/>Now keep the conviction.</h1>
+      <p style={{fontSize:14,color:K.mid,lineHeight:1.7,margin:0,maxWidth:360,marginLeft:"auto",marginRight:"auto"}}>ThesisAlpha is where your investment thinking lives — thesis, KPIs, earnings checks, all in one place.</p>
+    </div>
+    <div style={{background:K.bg,borderRadius:10,padding:"14px 18px",marginBottom:24,border:"1px solid "+K.bdr}}>
+      <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>What you'll do in the next 3 minutes</div>
+      {[{n:"1",c:K.grn,t:"Add a company you own"},
+        {n:"2",c:K.blue,t:"Write a one-paragraph thesis"},
+        {n:"3",c:K.acc,t:"Pick 2 KPIs to track at earnings"}
+      ].map(function(r){return<div key={r.n} style={{display:"flex",alignItems:"center",gap:12,padding:"6px 0"}}>
+        <div style={{width:22,height:22,borderRadius:"50%",background:r.c+"20",border:"1px solid "+r.c+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <span style={{fontSize:11,fontWeight:700,color:r.c,fontFamily:fm}}>{r.n}</span></div>
+        <span style={{fontSize:13,color:K.mid,fontWeight:500}}>{r.t}</span>
+      </div>})}</div>
+    <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15,marginBottom:10})}>Start with a company I own →</button>
+    <button onClick={function(){setObPath("demo");setCos(SAMPLE);finishOnboarding();setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)}} style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"8px",fontFamily:fb}}>Explore with demo data first</button>
+  </div></div>;
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 2 — Add first company (no skip)
+  // ─────────────────────────────────────────────────────────
+  if(obStep===2)return<div style={overlay}><div style={card}>
+    {stepDots()}
+    <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>Which company do you own?</h2>
+    <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px",lineHeight:1.6}}>Pick one you've already thought about. This becomes your first thesis.</p>
+    <div style={{marginBottom:16}}>
+      <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker symbol</label>
+      <div style={{display:"flex",gap:12,alignItems:"center"}}>
+        <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false}/>
+        {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
+        {oLook==="done"&&<span style={{fontSize:13,color:K.grn,fontFamily:fm}}>{"✓"} Found — {oName}</span>}
+        {oLook==="error"&&<span style={{fontSize:13,color:K.amb}}>Not found — enter name below</span>}
+      </div></div>
+    {(oLook==="done"||oLook==="error")&&<div style={{marginBottom:16}}>
+      <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Company name</label>
+      <input value={oName} onChange={function(e){setOName(e.target.value)}} placeholder="Apple Inc." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none"}}/>
+    </div>}
+    {(oLook==="done"||oLook==="error")&&oName.trim()&&<div style={{marginBottom:20}}>
+      <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>How do you invest in this?</label>
+      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+        {INVEST_STYLES.map(function(st){var isSel=oStyle===st.id;return<button key={st.id} onClick={function(){setOStyle(isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
+          <IC name={st.icon} size={9} color={isSel?st.color:K.dim}/>{st.label}</button>})}
+      </div>
+      {oStyle&&STYLE_MAP[oStyle]&&<div style={{fontSize:11,color:K.dim,marginTop:6,lineHeight:1.5}}>{STYLE_MAP[oStyle].desc}</div>}
+    </div>}
+    {(oLook==="done"||oName.trim())&&<div style={{marginBottom:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+        <label style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Position</label>
+        <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"1px 6px",borderRadius:4,border:"1px solid "+K.bdr}}>optional</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+        <div>
+          <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Shares owned</label>
+          <input value={oShares} onChange={function(e){setOShares(e.target.value)}} placeholder="100" type="number" min="0" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+        </div>
+        <div>
+          <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Avg cost {cSym}</label>
+          <input value={oAvgCost} onChange={function(e){setOAvgCost(e.target.value)}} placeholder="142.50" type="number" min="0" step="0.01" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+        </div>
+        <div>
+          <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Purchase date</label>
+          <input value={oPurchDate} onChange={function(e){setOPurchDate(e.target.value)}} type="date" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none",colorScheme:isDark?"dark":"light"}}/>
+        </div>
+      </div>
+    </div>}
+    <div style={{display:"flex",gap:12,justifyContent:"space-between",marginTop:8}}>
+      <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
+      <button onClick={addOnboardingCompany} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13,opacity:oTicker.trim()&&oName.trim()?1:.35})} disabled={!oTicker.trim()||!oName.trim()}>Add & Write Thesis {"→"}</button>
+    </div>
+  </div></div>;
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 3 — Write thesis inline
+  // ─────────────────────────────────────────────────────────
+  if(obStep===3){
+    var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
+    var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
+    var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
+    return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
+      {stepDots()}
+      <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>Why do you own {oName||oTicker}?</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 20px",lineHeight:1.6}}>Write as much or as little as you want. You can always edit this later.</p>
+      <div style={{display:"grid",gap:12,marginBottom:20}}>
+        {[{key:"core",label:"Core thesis",placeholder:sty3?sty3.thesisPrompt:"Why do you own this business? What's the key insight?",color:K.grn,val:oTCore,set:setOTCore},
+          {key:"moat",label:"Moat",placeholder:sty3?sty3.moatPrompt:"What protects this business from competition?",color:K.blue,val:oTMoat,set:setOTMoat},
+          {key:"risk",label:"Risks",placeholder:sty3?sty3.riskPrompt:"What could go wrong? What am I watching?",color:K.amb,val:oTRisk,set:setOTRisk},
+          {key:"sell",label:"Sell criteria",placeholder:sty3?sty3.sellPrompt:"What specific event or number would make me sell?",color:K.red,val:oTSell,set:setOTSell}
+        ].map(function(sec){return<div key={sec.key}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+            <div style={{width:8,height:8,borderRadius:2,background:sec.color,flexShrink:0}}/>
+            <label style={{fontSize:11,fontWeight:600,color:sec.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{sec.label}</label>
+          </div>
+          <textarea value={sec.val} onChange={function(e){sec.set(e.target.value)}} placeholder={sec.placeholder} style={taStyle}/>
+        </div>})}
+      </div>
+      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
+        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setObStep(4)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip for now</button>
+          <button onClick={saveThesisAndContinue} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:hasAny?1:.5})} disabled={!hasAny}>Save & Continue {"→"}</button>
+        </div>
+      </div>
+    </div></div>}
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 4 — Pick KPIs
+  // ─────────────────────────────────────────────────────────
+  if(obStep===4){
+    var sty4=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
+    var sugIds=sty4?sty4.kpis.slice(0,4):["revGrowth","grossMargin","opMargin","fcfPerShare"];
+    var sugMetrics=sugIds.map(function(id){return METRIC_MAP[id]}).filter(Boolean);
+    return<div style={overlay}><div style={Object.assign({},card,{maxWidth:500})}>
+      {stepDots()}
+      <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>What numbers prove your thesis?</h2>
+      <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 20px",lineHeight:1.6}}>Pick 2 KPIs. At each earnings report, ThesisAlpha checks them automatically.</p>
+      <div style={{display:"grid",gap:8,marginBottom:20}}>
+        {sugMetrics.map(function(met){
+          var isSel=oKpiSel.indexOf(met.id)>=0;
+          var tv=oKpiTargets[met.id]||"";
+          return<div key={met.id} style={{borderRadius:10,border:"2px solid "+(isSel?K.acc:K.bdr),background:isSel?K.acc+"08":K.bg,padding:"12px 14px",cursor:"pointer",transition:"all .15s"}} onClick={function(){setOKpiSel(function(p){return p.indexOf(met.id)>=0?p.filter(function(x){return x!==met.id}):p.concat([met.id])})}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{met.label}</div>
+                <div style={{fontSize:11,color:K.dim,marginTop:2}}>{met.desc||""}</div>
+              </div>
+              {isSel?<div style={{width:20,height:20,borderRadius:"50%",background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><span style={{fontSize:10,color:"#fff",fontWeight:700}}>{"✓"}</span></div>
+              :<div style={{width:20,height:20,borderRadius:"50%",border:"2px solid "+K.bdr,flexShrink:0}}/>}
+            </div>
+            {isSel&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:8}} onClick={function(e){e.stopPropagation()}}>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Target ≥</span>
+              <input value={tv} onChange={function(e){var v=e.target.value;setOKpiTargets(function(p){var n=Object.assign({},p);n[met.id]=v;return n})}} placeholder="e.g. 15" style={{width:80,background:K.card,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"5px 8px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{met.unit||""}</span>
+            </div>}
+          </div>})}
+      </div>
+      <div style={{background:K.acc+"0a",border:"1px solid "+K.acc+"25",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.6}}>
+        <strong style={{color:K.acc}}>{"💡"} Tip:</strong> Don{"'"}t overthink the target. A rough number beats no number. You can refine after the first earnings check.
+      </div>
+      <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={saveKpisAndFinish} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip</button>
+          <button onClick={saveKpisAndFinish} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:oKpiSel.length>0?1:.45})} disabled={oKpiSel.length===0}>Add {oKpiSel.length>0?oKpiSel.length+" KPI"+(oKpiSel.length>1?"s":""):"KPIs"} & Finish {"→"}</button>
+        </div>
+      </div>
+    </div></div>}
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 5 — Celebration + what happens next
+  // ─────────────────────────────────────────────────────────
+  if(obStep===5){
+    var co5=cos.find(function(c){return c.id===oCoId})||cos[cos.length-1];
+    var kpiCount5=co5?co5.kpis.length:oKpiSel.length;
+    var hasThesis5=co5&&co5.thesisNote&&co5.thesisNote.trim().length>10;
+    var pts=0;if(hasThesis5)pts+=15;if(kpiCount5>0)pts+=10;
+    return<div style={overlay}><div style={card}>
+      {stepDots()}
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{fontSize:44,marginBottom:8}}>{"🎯"}</div>
+        <h2 style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 6px"}}>Foundation set.</h2>
+        <p style={{fontSize:14,color:K.mid,margin:0,lineHeight:1.6}}>You{"'"}ve done more than most investors ever will.</p>
+      </div>
+      <div style={{display:"grid",gap:8,marginBottom:20}}>
+        {[{label:"Company added",done:!!co5,icon:"✓"},
+          {label:"Thesis written",done:hasThesis5,icon:"✓"},
+          {label:kpiCount5+" KPI"+(kpiCount5!==1?"s":"")+" to track at earnings",done:kpiCount5>0,icon:"✓"}
+        ].map(function(row){return<div key={row.label} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:8,background:row.done?K.grn+"08":K.bg,border:"1px solid "+(row.done?K.grn+"25":K.bdr)}}>
+          <div style={{width:22,height:22,borderRadius:"50%",background:row.done?K.grn+"20":"transparent",border:"1px solid "+(row.done?K.grn+"40":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:K.grn,fontWeight:700}}>{row.done?row.icon:""}</div>
+          <span style={{fontSize:13,fontWeight:row.done?600:400,color:row.done?K.txt:K.dim}}>{row.label}</span>
+          {row.done&&pts>0&&row.label.indexOf("Company")>=0&&<span style={{marginLeft:"auto",fontSize:11,color:K.acc,fontFamily:fm,fontWeight:600}}>+{pts} pts</span>}
+        </div>})}
+      </div>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.7}}>
+        <strong style={{color:K.txt,display:"block",marginBottom:4}}>What happens next</strong>
+        ThesisAlpha will remind you before the next earnings report. When results drop, open the app and run a 1-click earnings check — your KPIs vs real numbers, instant verdict.
+      </div>
+      <button onClick={function(){finishOnboarding();if(co5){setSelId(co5.id);setDetailTab("dossier");setGuidedSetup(co5.id)}}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15})}>Take me to my portfolio {"→"}</button>
+    </div></div>}
+
+  return null}
+
+
+// ── Dossier Spotlight Tour ────────────────────────────────
+function DossierTour(){
+  if(!tourStep||tourStep<1)return null;
+  var co=cos.find(function(c){return c.id===oCoId})||sel;
+  var tick=co?co.ticker:"your company";
+
+  var TOUR=[
+    {step:1,sectionId:"ds-ledger",color:"#F59E0B",icon:"trending",
+     title:"Rate your conviction",
+     body:"How confident are you in this investment, 1–10? Conviction tracking is the habit that separates great investors from reactive ones. Update it every quarter and after every earnings report.",
+     action:"Rate Conviction",onAction:function(){setModal({type:"conviction"})}},
+    {step:2,sectionId:"ds-evidence",color:"#3B82F6",icon:"target",
+     title:"Check the first earnings report",
+     body:"When "+tick+" reports next quarter, hit Check Earnings. ThesisAlpha fetches the results and instantly compares them to your KPIs. One click, instant verdict.",
+     action:"See how it works",onAction:null},
+    {step:3,sectionId:null,color:"#22C55E",icon:"castle",
+     title:"Classify the moat",
+     body:"What actually protects "+tick+" from competition? Network effects? Switching costs? Brand? The Moat Tracker scores 8 dimensions and builds a composite moat strength — the most underused tool for long-term investors.",
+     action:"Open Moat Tracker",onAction:function(){setSubPage("moat")}},
+    {step:4,sectionId:"ds-score",color:"#8B5CF6",icon:"shield",
+     title:"Your Owner's Score",
+     body:"This radar shows how well you understand "+tick+". Thesis depth, KPI discipline, conviction, fundamentals, moat, monitoring — all in one view. The goal isn't 100. It's making sure no section is dangerously low.",
+     action:null,onAction:null},
+  ];
+
+  var cur=TOUR.find(function(t){return t.step===tourStep});
+  if(!cur)return null;
+  var isLast=tourStep===TOUR.length;
+
+  function advance(){
+    if(isLast){setTourStep(0);showToast("You know your way around. Go build something worth owning.","info",4000)}
+    else{
+      // Scroll section into view
+      var nextT=TOUR.find(function(t){return t.step===tourStep+1});
+      if(nextT&&nextT.sectionId){
+        var el=document.getElementById(nextT.sectionId);
+        if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
+      setTourStep(function(s){return s+1})}}
+
+  function dismiss(){setTourStep(0)}
+
+  // Highlight the current section
+  var hlStyle=cur.sectionId?{outline:"2px solid "+cur.color,outlineOffset:3,borderRadius:12,transition:"outline .3s"}:{};
+  // We apply the highlight via a global style injection trick
+  var styleId="ta-tour-style";
+  var existing=document.getElementById(styleId);
+  if(!existing){var s2=document.createElement("style");s2.id=styleId;document.head.appendChild(s2)}
+  var styleEl=document.getElementById(styleId);
+  if(styleEl){
+    styleEl.textContent=cur.sectionId?
+      "#"+cur.sectionId+"{outline:2px solid "+cur.color+";outline-offset:4px;border-radius:12px;transition:outline .3s}"+
+      "@keyframes ta-tour-pulse{0%,100%{outline-color:"+cur.color+"}50%{outline-color:"+cur.color+"88}}"+
+      "#"+cur.sectionId+"{animation:ta-tour-pulse 1.6s ease-in-out infinite}"
+      :""}
+
+  return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
+    {/* colour bar */}
+    <div style={{height:3,background:cur.color,width:(tourStep/TOUR.length*100)+"%",transition:"width .4s ease"}}/>
+    <div style={{padding:"16px 18px"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{width:30,height:30,borderRadius:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <IC name={cur.icon} size={14} color={cur.color}/>
+          </div>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:cur.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{tourStep} of {TOUR.length}</div>
+            <div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.2}}>{cur.title}</div>
+          </div>
+        </div>
+        <button onClick={dismiss} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"0 2px",lineHeight:1,flexShrink:0}}>{"×"}</button>
+      </div>
+      <p style={{fontSize:12,color:K.mid,lineHeight:1.65,margin:"0 0 14px"}}>{cur.body}</p>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        {cur.action&&cur.onAction&&<button onClick={function(){cur.onAction();advance()}} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 12px",color:cur.color,borderColor:cur.color+"40",flex:1})}>{cur.action}</button>}
+        <button onClick={advance} style={Object.assign({},S.btnP,{fontSize:12,padding:"7px 16px",flex:cur.action&&cur.onAction?0:1,background:cur.color,borderColor:cur.color})}>{isLast?"Done ✓":"Next →"}</button>
+      </div>
+    </div>
+  </div>}
+
+
 export default function App(){
   var _user=useState(null),user=_user[0],setUser=_user[1];
   var _ready=useState(false),ready=_ready[0],setReady=_ready[1];
