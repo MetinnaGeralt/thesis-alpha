@@ -592,7 +592,7 @@ async function fetchEarnings(co,kpis){
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
 
   // Step 2b: Computed derived metrics
-  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&co.position&&co.position.currentPrice>0){var _fcfY=fhMap.fcfPerShare.v/co.position.currentPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"}}
+  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&co.position&&co.position.currentPrice>0){var _fcfY=fhMap.fcfPerShare.v/co.position.currentPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
   if(fhMap.pe&&fhMap.pe.v!=null&&fhMap.pe.v>0){var _ey=1/fhMap.pe.v*100;fhMap.earningsYield={v:_ey,label:_ey.toFixed(1)+"%"}}
   if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&fhMap.fcfPerShare.v>0&&co.position&&co.position.currentPrice>0){var _pFcf=co.position.currentPrice/fhMap.fcfPerShare.v;fhMap.priceToFcf={v:_pFcf,label:_pFcf.toFixed(1)+"x"}}
 
@@ -2441,7 +2441,7 @@ function TrackerApp(props){
     {id:"pe",label:"P/E Ratio",desc:"Price to earnings. Lower = cheaper relative to profits.",unit:"x",defaultRule:"lte",defaultVal:25,snap:"pe",calc:null},
     {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;var g=s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0;return(pe>0&&g>1)?(pe/g):null}},
     {id:"pb",label:"P/B Ratio",desc:"Price to book value. Below 1 means trading below asset value.",unit:"x",defaultRule:"lte",defaultVal:3,snap:"pb",calc:null},
-    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:null,calc:function(s,p){var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(fcf/p*100):null}},
+    {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(fcf/p*100):null}},
     {id:"earningsYield",label:"Earnings Yield",desc:"Inverse of P/E (earnings/price). Compare to bond yields.",unit:"%",defaultRule:"gte",defaultVal:5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;return pe>0?(1/pe*100):null}},
     {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:null,calc:null},
     {id:"divYield",label:"Dividend Yield",desc:"Annual dividend / price. Income return on investment.",unit:"%",defaultRule:"gte",defaultVal:2,snap:null,calc:function(s,p,c){var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return(dps>0&&p>0)?(dps*mult/p*100):null}},
@@ -2494,7 +2494,56 @@ function TrackerApp(props){
         <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={S.btnP} onClick={doSave}>Save Framework</button></div>
     </Modal>}
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
+  function EarningsReportModal(){
+    if(!sel)return null;var c=sel;
+    var idx=modal&&modal.data!=null?modal.data:0;
+    var entries=c.earningsHistory||[];
+    var e=entries[idx];
+    if(!e)return<Modal title="Earnings Report" onClose={function(){setModal(null)}} w={540} K={K}><div style={{color:K.dim,fontSize:13,textAlign:"center",padding:"32px 0"}}>No earnings data yet. Hit Check Earnings first.</div></Modal>;
+    var snap=c.financialSnapshot||{};
+    var snapItems=[];
+    var snapKeys=["eps","grossMargin","opMargin","netMargin","roe","roic","revGrowth","epsGrowth","fcf","pe","pb","debtEquity","currentRatio","divYield","revPerShare"];
+    snapKeys.forEach(function(k2){if(snap[k2]&&snap[k2].value)snapItems.push({l:snap[k2].label,v:snap[k2].value,beat:snap[k2].beat})});
+    return<Modal title={(e.quarter||"Latest")+" — "+c.ticker+" Earnings"} onClose={function(){setModal(null)}} w={560} K={K}>
+      {/* Quarter nav */}
+      {entries.length>1&&<div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+        {entries.map(function(eq,qi){return<button key={qi} onClick={function(){setModal({type:"earningsReport",data:qi})}} style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontFamily:fm,fontWeight:qi===idx?700:400,background:qi===idx?K.acc+"18":"transparent",border:"1px solid "+(qi===idx?K.acc:K.bdr),color:qi===idx?K.acc:K.mid,cursor:"pointer"}}>{eq.quarter||"Q?"}</button>})}
+      </div>}
+      {/* Summary */}
+      {e.summary&&<div style={{background:K.bg,borderRadius:10,padding:"14px 16px",marginBottom:16,fontSize:13,color:K.txt,lineHeight:1.7,border:"1px solid "+K.bdr}}>{e.summary}</div>}
+      {/* KPI results */}
+      {e.results&&e.results.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>KPI Scorecard</div>
+        {e.results.map(function(r2,ri){
+          var col=r2.status==="met"?K.grn:r2.status==="unclear"?K.dim:K.red;
+          var icon=r2.status==="met"?"✓":r2.status==="unclear"?"?":"✗";
+          return<div key={ri} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{width:20,height:20,borderRadius:"50%",background:col+"15",border:"1px solid "+col+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:10,fontWeight:700,color:col}}>{icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:600,color:K.txt}}>{r2.kpi_name}</div>
+              {r2.excerpt&&<div style={{fontSize:11,color:K.dim,marginTop:1,lineHeight:1.4}}>{r2.excerpt}</div>}
+            </div>
+            {r2.actual_value!=null&&<div style={{fontSize:13,fontWeight:700,color:col,fontFamily:fm,flexShrink:0}}>{(function(){var v=r2.actual_value;var abs=Math.abs(v);return(abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2))})()}</div>}
+          </div>})}
+      </div>}
+      {/* Financial snapshot */}
+      {snapItems.length>0&&<div>
+        <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Financial Snapshot</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+          {snapItems.map(function(si,i){return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr}}>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{si.l}</span>
+            <span style={{fontSize:12,fontWeight:600,color:si.beat===true?K.grn:si.beat===false?K.red:K.txt,fontFamily:fm}}>{si.v}</span>
+          </div>})}
+        </div>
+      </div>}
+      {/* Source */}
+      {e.sourceUrl&&<div style={{marginTop:16,paddingTop:12,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span style={{fontSize:11,color:K.dim}}>{e.sourceLabel||"Source"}</span>
+        <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.blue,textDecoration:"none"}}>Open source ↗</a>
+      </div>}
+    </Modal>}
+
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -3925,7 +3974,7 @@ function TrackerApp(props){
                 <div style={{width:7,height:7,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim,flexShrink:0}}/>
                 <span style={{fontSize:12,color:K.txt,flex:1}}>{k.name}</span>
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}</span>
-                {k.lastResult&&<span style={{fontSize:11,fontWeight:600,color:k.lastResult.status==="met"?K.grn:K.red,fontFamily:fm}}>{k.lastResult.actual}{METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:""}</span>}
+                {k.lastResult&&k.lastResult.actual!=null&&<span style={{fontSize:11,fontWeight:600,color:k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red,fontFamily:fm}}>{(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";if(typeof v!=="number")return v+(u||"");var abs=Math.abs(v);var s=abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2);return s+(u||"")})()}</span>}
                 {hist.length>=2&&<div style={{display:"flex",gap:2}}>{hist.slice(0,4).reverse().map(function(hh,hi){return<div key={hi} style={{width:4,height:12,borderRadius:1,background:hh.s==="met"?K.grn:K.red}}/>})}</div>}
                 <IC name="edit" size={10} color={K.dim}/>
               </div>})}
@@ -3935,8 +3984,9 @@ function TrackerApp(props){
             <div style={{fontSize:13,color:K.dim,marginBottom:6}}>No KPIs tracked yet</div>
             <button onClick={function(){setModal({type:"kpi"})}} style={Object.assign({},S.btn,{fontSize:11,padding:"5px 12px"})}>+ Add KPIs</button></div>}
           {/* Earnings check */}
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
+          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
             <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:12,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
+            {c.earningsHistory&&c.earningsHistory.length>0&&<button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"earningsReport",data:0})}}>Read Report</button>}
             <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
           {/* Latest earnings card from journal */}
           {(function(){var latestEarnings=(c.decisions||[]).find(function(d2){return d2.cardType==="earnings_review"});
