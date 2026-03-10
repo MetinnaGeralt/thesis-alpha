@@ -536,7 +536,7 @@ async function fetchEarnings(co,kpis){
         netMargin:{v:ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
         roe:{v:ra.returnOnEquityTTM!=null?ra.returnOnEquityTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
         roa:{v:ra.returnOnAssetsTTM!=null?ra.returnOnAssetsTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
-        roic:{v:ra.returnOnCapitalEmployedTTM!=null?ra.returnOnCapitalEmployedTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roic:{v:km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:ra.returnOnCapitalEmployedTTM!=null?ra.returnOnCapitalEmployedTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
         pe:{v:km.peRatioTTM!=null?km.peRatioTTM:null,fmt:function(v){return v.toFixed(1)}},
         pb:{v:km.priceToBookRatioTTM!=null?km.priceToBookRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
         currentRatio:{v:ra.currentRatioTTM!=null?ra.currentRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
@@ -590,6 +590,11 @@ async function fetchEarnings(co,kpis){
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
       console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
+
+  // Step 2b: Computed derived metrics
+  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&co.position&&co.position.currentPrice>0){var _fcfY=fhMap.fcfPerShare.v/co.position.currentPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"}}
+  if(fhMap.pe&&fhMap.pe.v!=null&&fhMap.pe.v>0){var _ey=1/fhMap.pe.v*100;fhMap.earningsYield={v:_ey,label:_ey.toFixed(1)+"%"}}
+  if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&fhMap.fcfPerShare.v>0&&co.position&&co.position.currentPrice>0){var _pFcf=co.position.currentPrice/fhMap.fcfPerShare.v;fhMap.priceToFcf={v:_pFcf,label:_pFcf.toFixed(1)+"x"}}
 
   // Step 3: Match user's tracked KPIs from merged map
   if(kpis&&kpis.length){kpis.forEach(function(k){
@@ -1579,7 +1584,7 @@ function TrackerApp(props){
         var newEntry={quarter:r.quarter||"Latest",summary:stripCite(r.summary||""),results:(r.results||[]).map(function(x){return{kpi_name:x.kpi_name,actual_value:x.actual_value,status:x.status,excerpt:stripCite(x.excerpt||"")}}),sourceUrl:r.sourceUrl,sourceLabel:stripCite(r.sourceLabel||""),checkedAt:new Date().toISOString()};
         var exists=earningsHistory.findIndex(function(h){return h.quarter===newEntry.quarter});
         if(exists>=0){earningsHistory=earningsHistory.slice();earningsHistory[exists]=newEntry}else{earningsHistory=[newEntry].concat(earningsHistory)}
-        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var mid=resolveMetricId(k);var m=r.results.find(function(x){return x.kpi_name===mid||x.kpi_name===(k.metricId||k.name)});return m&&m.actual_value!=null?Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}}):k})})})});
+        return Object.assign({},c,{lastChecked:new Date().toISOString(),earningSummary:stripCite(r.summary||c.earningSummary),sourceUrl:r.sourceUrl||c.sourceUrl,sourceLabel:stripCite(r.sourceLabel||c.sourceLabel||""),earningsHistory:earningsHistory.slice(0,20),financialSnapshot:r.snapshot||c.financialSnapshot||{},latestNews:news.length?news:c.latestNews||[],kpis:c.kpis.map(function(k){var mid=resolveMetricId(k);var m=r.results.find(function(x){return x.kpi_name===mid||x.kpi_name===(k.metricId||k.name)});if(m&&m.actual_value!=null)return Object.assign({},k,{lastResult:{actual:m.actual_value,status:eS(k.rule,k.value,m.actual_value),excerpt:stripCite(m.excerpt||"")}});if(m&&m.status==="unclear")return Object.assign({},k,{lastResult:{actual:null,status:"unclear",excerpt:m.excerpt||"Not available"}});return k})})})});
         setCheckSt(function(p){var n=Object.assign({},p);n[cid]="found";return n});
         // Auto-log earnings review journal entry
         var kpiResults=(r.results||[]);var metCount=kpiResults.filter(function(x){return x.status==="met"}).length;var totalKpis=kpiResults.length;
@@ -2516,6 +2521,10 @@ function TrackerApp(props){
        title:"Your Owner\'s Score",
        body:"This radar shows how well you understand "+tick+". Thesis depth, KPI discipline, conviction, fundamentals, moat, monitoring — all in one view.",
        action:null,onAction:null},
+      {step:5,sectionId:null,color:"#EC4899",icon:"lightbulb",
+       title:"Two more powerful tools",
+       body:"Set a valuation framework — what price is actually fair for "+tick+"? And run a conviction stress test — what single event would make you sell? Investors who pre-commit to these answers make far better decisions in the heat of earnings season.",
+       action:"Set Valuation",onAction:function(){setModal({type:"valuation"})}},
     ];
     var cur=TOUR.find(function(t){return t.step===tourStep});
     // Style injection side-effect — runs after paint, safe
@@ -7823,7 +7832,7 @@ function TrackerApp(props){
 // ═══ ROOT ═══
 function OnboardingFlow(p){
   var {K,S,fm,fb,fh,isDark,isMobile,cSym,nId,cos,setCos,selId,setSelId,obStep,setObStep,obPath,setObPath,oTicker,setOTicker,oName,setOName,oSector,setOSector,oLook,setOLook,oDomain,setODomain,oIndustry,setOIndustry,oPrice,setOPrice,oStyle,setOStyle,oTCore,setOTCore,oTMoat,setOTMoat,oTRisk,setOTRisk,oTSell,setOTSell,oKpiSel,setOKpiSel,oKpiTargets,setOKpiTargets,oCoId,setOCoId,oShares,setOShares,oAvgCost,setOAvgCost,oPurchDate,setOPurchDate,oTmrRef,upd,lookupTicker,finishOnboarding,setDetailTab,setGuidedSetup,setTourStep,INVEST_STYLES,STYLE_MAP,METRIC_MAP,SAMPLE,IC,TLogo}=p;
-  var overlay={position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
+  var overlay={position:"fixed",inset:0,background:isDark?"rgba(10,10,15,.97)":"rgba(245,245,250,.97)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
   var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
 
   // ── Local state ──────────────────────────────────────────
@@ -7831,11 +7840,13 @@ function OnboardingFlow(p){
   var oTmr=oTmrRef;
 
   function onTickerChange(v){setOTicker(v);if(oTmr.current)clearTimeout(oTmr.current);
-    if(v.length>=1&&v.length<=6&&/^[A-Za-z.]+$/.test(v)){setOLook("loading");oTmr.current=setTimeout(async function(){
-      try{var r=await lookupTicker(v);
-        if(r&&r.name){setOName(r.name);setOSector(r.sector||"");setOIndustry(r.industry||"");setODomain(r.domain||"");setOPrice(r.currentPrice||0);setOLook("done")}
-        else{setOLook("error");setOName("")}}
-      catch(e){setOLook("error")}},500)}
+    if(v.length>=1&&v.length<=6&&/^[A-Za-z.]+$/.test(v)){
+      setOLook("loading");setOName("");setOSector("");setODomain("");
+      oTmr.current=setTimeout(async function(){
+        try{var r=await lookupTicker(v);
+          if(r&&r.name){setOName(r.name);setOSector(r.sector||"");setOIndustry(r.industry||"");setODomain(r.domain||"");setOPrice(r.currentPrice||0);setOLook("done")}
+          else{setOLook("error")}}
+        catch(e){setOLook("error")}},500)}
     else{setOLook("idle");setOName("")}}
 
   function addOnboardingCompany(){
