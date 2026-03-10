@@ -478,20 +478,20 @@ async function fetchEarnings(co,kpis){
     console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
     if(met&&met.metric){var m=met.metric;
       // Build raw snapshot for display regardless of KPIs
-      if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
-      if(m["revenuePerShareTTM"])snapshot.revPerShare={label:"Revenue/Share",value:"$"+m["revenuePerShareTTM"].toFixed(2)};
+      if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",numVal:earn[0].actual,value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
+      if(m["revenuePerShareTTM"])snapshot.revPerShare={label:"Revenue/Share",numVal:m["revenuePerShareTTM"],value:"$"+m["revenuePerShareTTM"].toFixed(2)};
       if(m["grossMarginTTM"]!=null)snapshot.grossMargin={label:"Gross Margin",numVal:m["grossMarginTTM"],value:(m["grossMarginTTM"]).toFixed(1)+"%"};
       if(m["operatingMarginTTM"]!=null)snapshot.opMargin={label:"Operating Margin",numVal:m["operatingMarginTTM"],value:(m["operatingMarginTTM"]).toFixed(1)+"%"};
       if(m["netProfitMarginTTM"]!=null)snapshot.netMargin={label:"Net Margin",numVal:m["netProfitMarginTTM"],value:(m["netProfitMarginTTM"]).toFixed(1)+"%"};
       if(m["roeTTM"]!=null)snapshot.roe={label:"ROE",numVal:m["roeTTM"],value:(m["roeTTM"]).toFixed(1)+"%"};
       if(m["roicTTM"]!=null)snapshot.roic={label:"ROIC",numVal:m["roicTTM"],value:(m["roicTTM"]).toFixed(1)+"%"};
-      if(m["currentRatioQuarterly"])snapshot.currentRatio={label:"Current Ratio",value:m["currentRatioQuarterly"].toFixed(2)};
+      if(m["currentRatioQuarterly"])snapshot.currentRatio={label:"Current Ratio",numVal:m["currentRatioQuarterly"],value:m["currentRatioQuarterly"].toFixed(2)};
       if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",numVal:m["totalDebt/totalEquityQuarterly"],value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
       if(m["peTTM"])snapshot.pe={label:"P/E",numVal:m["peTTM"],value:m["peTTM"].toFixed(1)};
-      if(m["pbQuarterly"])snapshot.pb={label:"P/B",value:m["pbQuarterly"].toFixed(2)};
+      if(m["pbQuarterly"])snapshot.pb={label:"P/B",numVal:m["pbQuarterly"],value:m["pbQuarterly"].toFixed(2)};
       if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",numVal:m["freeCashFlowPerShareTTM"],value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
       if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",numVal:m["revenueGrowthTTMYoy"],value:(m["revenueGrowthTTMYoy"]).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
-      if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
+      if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",numVal:m["epsGrowthTTMYoy"],value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
       if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
       // Map Finnhub data to predefined metric IDs
@@ -558,7 +558,7 @@ async function fetchEarnings(co,kpis){
         revPerShare:{v:km.revenuePerShareTTM!=null?km.revenuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
         fcfPerShare:{v:km.freeCashFlowPerShareTTM!=null?km.freeCashFlowPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
         bvps:{v:km.bookValuePerShareTTM!=null?km.bookValuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
-        ebitdaPerShare:{v:km.enterpriseValueOverEBITDATTM!=null?km.enterpriseValueOverEBITDATTM:null,fmt:function(v){return v.toFixed(2)}},
+        ebitdaPerShare:{v:null,fmt:function(v){return"$"+v.toFixed(2)}}, // FMP TTM endpoints don't provide EBITDA/share; Finnhub ebitdPerShareTTM is used instead
         revGrowth:{v:ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(km.revenueGrowthTTM!=null?km.revenueGrowthTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
         epsGrowth:{v:km.earningsGrowthTTM!=null?km.earningsGrowthTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
         eps:{v:km.netIncomePerShareTTM!=null?km.netIncomePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
@@ -573,8 +573,8 @@ async function fetchEarnings(co,kpis){
         fcfMargin:{v:(km.freeCashFlowPerShareTTM!=null&&km.revenuePerShareTTM!=null&&km.revenuePerShareTTM>0)?km.freeCashFlowPerShareTTM/km.revenuePerShareTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
         rndMargin:{v:ra.researchAndDevelopementToRevenueTTM!=null?ra.researchAndDevelopementToRevenueTTM*100:(ra.researchAndDevelopmentToRevenueTTM!=null?ra.researchAndDevelopmentToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
         sgaMargin:{v:ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM!=null?ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM*100:(ra.sgaToRevenueTTM!=null?ra.sgaToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
-        cashOnHand:{v:km.cashPerShareTTM!=null&&km.revenuePerShareTTM!=null?(km.cashPerShareTTM):null,fmt:function(v){return"$"+v.toFixed(2)+"/sh"}},
-        totalDebt:{v:km.debtToEquityTTM!=null&&km.bookValuePerShareTTM!=null?(km.debtToEquityTTM*km.bookValuePerShareTTM):null,fmt:function(v){return"$"+v.toFixed(2)+"/sh"}}};
+        cashOnHand:{v:km.cashPerShareTTM!=null?km.cashPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        totalDebt:{v:(km.debtToEquityTTM!=null&&km.bookValuePerShareTTM!=null&&km.bookValuePerShareTTM>0)?(km.debtToEquityTTM*km.bookValuePerShareTTM):null,fmt:function(v){return"$"+v.toFixed(2)}}};
       // Fill gaps: merge FMP into fhMap where Finnhub returned null
       var fmpFilled=0;
       Object.keys(fmpMap).forEach(function(key){
@@ -583,25 +583,25 @@ async function fetchEarnings(co,kpis){
             fhMap[key]={v:fmpMap[key].v,label:fmpMap[key].fmt(fmpMap[key].v)+" (FMP)"};fmpFilled++}
         }});
       // Enrich snapshot with FMP data where Finnhub didn't have it
-      if(!snapshot.grossMargin&&fmpMap.grossMargin.v!=null)snapshot.grossMargin={label:"Gross Margin",value:fmpMap.grossMargin.fmt(fmpMap.grossMargin.v),source:"FMP"};
-      if(!snapshot.opMargin&&fmpMap.opMargin.v!=null)snapshot.opMargin={label:"Operating Margin",value:fmpMap.opMargin.fmt(fmpMap.opMargin.v),source:"FMP"};
-      if(!snapshot.netMargin&&fmpMap.netMargin.v!=null)snapshot.netMargin={label:"Net Margin",value:fmpMap.netMargin.fmt(fmpMap.netMargin.v),source:"FMP"};
-      if(!snapshot.roe&&fmpMap.roe.v!=null)snapshot.roe={label:"ROE",value:fmpMap.roe.fmt(fmpMap.roe.v),source:"FMP"};
-      if(!snapshot.roic&&fmpMap.roic.v!=null)snapshot.roic={label:"ROIC",value:fmpMap.roic.fmt(fmpMap.roic.v),source:"FMP"};
-      if(!snapshot.pe&&fmpMap.pe.v!=null)snapshot.pe={label:"P/E",value:fmpMap.pe.fmt(fmpMap.pe.v),source:"FMP"};
-      if(!snapshot.pb&&fmpMap.pb.v!=null)snapshot.pb={label:"P/B",value:fmpMap.pb.fmt(fmpMap.pb.v),source:"FMP"};
-      if(!snapshot.currentRatio&&fmpMap.currentRatio.v!=null)snapshot.currentRatio={label:"Current Ratio",value:fmpMap.currentRatio.fmt(fmpMap.currentRatio.v),source:"FMP"};
-      if(!snapshot.debtEquity&&fmpMap.debtEquity.v!=null)snapshot.debtEquity={label:"Debt/Equity",value:fmpMap.debtEquity.fmt(fmpMap.debtEquity.v),source:"FMP"};
+      if(!snapshot.grossMargin&&fmpMap.grossMargin.v!=null)snapshot.grossMargin={label:"Gross Margin",numVal:fmpMap.grossMargin.v,value:fmpMap.grossMargin.fmt(fmpMap.grossMargin.v),source:"FMP"};
+      if(!snapshot.opMargin&&fmpMap.opMargin.v!=null)snapshot.opMargin={label:"Operating Margin",numVal:fmpMap.opMargin.v,value:fmpMap.opMargin.fmt(fmpMap.opMargin.v),source:"FMP"};
+      if(!snapshot.netMargin&&fmpMap.netMargin.v!=null)snapshot.netMargin={label:"Net Margin",numVal:fmpMap.netMargin.v,value:fmpMap.netMargin.fmt(fmpMap.netMargin.v),source:"FMP"};
+      if(!snapshot.roe&&fmpMap.roe.v!=null)snapshot.roe={label:"ROE",numVal:fmpMap.roe.v,value:fmpMap.roe.fmt(fmpMap.roe.v),source:"FMP"};
+      if(!snapshot.roic&&fmpMap.roic.v!=null)snapshot.roic={label:"ROIC",numVal:fmpMap.roic.v,value:fmpMap.roic.fmt(fmpMap.roic.v),source:"FMP"};
+      if(!snapshot.pe&&fmpMap.pe.v!=null)snapshot.pe={label:"P/E",numVal:fmpMap.pe.v,value:fmpMap.pe.fmt(fmpMap.pe.v),source:"FMP"};
+      if(!snapshot.pb&&fmpMap.pb.v!=null)snapshot.pb={label:"P/B",numVal:fmpMap.pb.v,value:fmpMap.pb.fmt(fmpMap.pb.v),source:"FMP"};
+      if(!snapshot.currentRatio&&fmpMap.currentRatio.v!=null)snapshot.currentRatio={label:"Current Ratio",numVal:fmpMap.currentRatio.v,value:fmpMap.currentRatio.fmt(fmpMap.currentRatio.v),source:"FMP"};
+      if(!snapshot.debtEquity&&fmpMap.debtEquity.v!=null)snapshot.debtEquity={label:"Debt/Equity",numVal:fmpMap.debtEquity.v,value:fmpMap.debtEquity.fmt(fmpMap.debtEquity.v),source:"FMP"};
       if(!snapshot.fcf&&fmpMap.fcfPerShare.v!=null)snapshot.fcf={label:"FCF/Share",numVal:fmpMap.fcfPerShare.v,value:fmpMap.fcfPerShare.fmt(fmpMap.fcfPerShare.v),source:"FMP"};
-      if(!snapshot.revGrowth&&fmpMap.revGrowth.v!=null)snapshot.revGrowth={label:"Rev Growth YoY",value:fmpMap.revGrowth.fmt(fmpMap.revGrowth.v),positive:fmpMap.revGrowth.v>=0,source:"FMP"};
-      if(!snapshot.epsGrowth&&fmpMap.epsGrowth.v!=null)snapshot.epsGrowth={label:"EPS Growth YoY",value:fmpMap.epsGrowth.fmt(fmpMap.epsGrowth.v),positive:fmpMap.epsGrowth.v>=0,source:"FMP"};
+      if(!snapshot.revGrowth&&fmpMap.revGrowth.v!=null)snapshot.revGrowth={label:"Rev Growth YoY",numVal:fmpMap.revGrowth.v,value:fmpMap.revGrowth.fmt(fmpMap.revGrowth.v),positive:fmpMap.revGrowth.v>=0,source:"FMP"};
+      if(!snapshot.epsGrowth&&fmpMap.epsGrowth.v!=null)snapshot.epsGrowth={label:"EPS Growth YoY",numVal:fmpMap.epsGrowth.v,value:fmpMap.epsGrowth.fmt(fmpMap.epsGrowth.v),positive:fmpMap.epsGrowth.v>=0,source:"FMP"};
       // Extra FMP-only metrics for snapshot
-      if(km.marketCapTTM!=null&&!snapshot.mktCap)snapshot.mktCap={label:"Market Cap",value:"$"+(km.marketCapTTM/1e9).toFixed(1)+"B",source:"FMP"};
-      if(km.evToSalesTTM!=null&&!snapshot.evSales)snapshot.evSales={label:"EV/Sales",value:km.evToSalesTTM.toFixed(1)+"x",source:"FMP"};
-      if(km.evToFreeCashFlowTTM!=null&&!snapshot.evFcf)snapshot.evFcf={label:"EV/FCF",value:km.evToFreeCashFlowTTM.toFixed(1)+"x",source:"FMP"};
-      if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
-      if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
-      if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
+      if(km.marketCapTTM!=null&&!snapshot.mktCap){var _mc=km.marketCapTTM/1e9;snapshot.mktCap={label:"Market Cap",numVal:_mc,value:"$"+(_mc>=1000?(_mc/1000).toFixed(2)+"T":_mc.toFixed(1)+"B"),source:"FMP"};}
+      if(km.evToSalesTTM!=null&&!snapshot.evSales)snapshot.evSales={label:"EV/Sales",numVal:km.evToSalesTTM,value:km.evToSalesTTM.toFixed(1)+"x",source:"FMP"};
+      if(km.evToFreeCashFlowTTM!=null&&!snapshot.evFcf)snapshot.evFcf={label:"EV/FCF",numVal:km.evToFreeCashFlowTTM,value:km.evToFreeCashFlowTTM.toFixed(1)+"x",source:"FMP"};
+      if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",numVal:ra.payoutRatioTTM*100,value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
+      if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",numVal:km.tangibleBookValuePerShareTTM,value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
+      if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",numVal:km.grahamNumberTTM,value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
       // FCF Yield — try multiple FMP field name variants, then compute from fcfPerShare/price
       var _rawFcfYield=km.freeCashFlowYieldTTM!=null?km.freeCashFlowYieldTTM:(km.freeCashFlowYield!=null?km.freeCashFlowYield:(ra.freeCashFlowYieldTTM!=null?ra.freeCashFlowYieldTTM:null));
       // FMP returns this as a decimal (e.g. 0.035 = 3.5%) — multiply by 100
@@ -613,28 +613,25 @@ async function fetchEarnings(co,kpis){
         if(_fcfFallbackPrice>0){var _fcfYf=fhMap.fcfPerShare.v/_fcfFallbackPrice*100;snapshot.fcfYield={label:"FCF Yield",numVal:_fcfYf,value:_fcfYf.toFixed(1)+"%",source:"computed"};
           fhMap.fcfYield={v:_fcfYf,label:_fcfYf.toFixed(1)+"%"}}}
       // Newly-added FMP metrics → snapshot
-      if(km.priceToSalesRatioTTM!=null&&!snapshot.ps)snapshot.ps={label:"P/S",value:km.priceToSalesRatioTTM.toFixed(2),source:"FMP"};
-      if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
-      if(km.evToSalesTTM!=null&&!snapshot.evRevenue)snapshot.evRevenue={label:"EV/Revenue",value:km.evToSalesTTM.toFixed(2)+"x",source:"FMP"};
+      if(km.priceToSalesRatioTTM!=null&&!snapshot.ps)snapshot.ps={label:"P/S",numVal:km.priceToSalesRatioTTM,value:km.priceToSalesRatioTTM.toFixed(2),source:"FMP"};
+      if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",numVal:km.enterpriseValueOverEBITDATTM,value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
+      if(km.evToSalesTTM!=null&&!snapshot.evRevenue)snapshot.evRevenue={label:"EV/Revenue",numVal:km.evToSalesTTM,value:km.evToSalesTTM.toFixed(2)+"x",source:"FMP"};
       if(ra.interestCoverageTTM!=null&&!snapshot.interestCoverage)snapshot.interestCoverage={label:"Interest Coverage",numVal:ra.interestCoverageTTM,value:ra.interestCoverageTTM.toFixed(1)+"x",source:"FMP"};
-      if(ra.quickRatioTTM!=null&&!snapshot.quickRatio)snapshot.quickRatio={label:"Quick Ratio",value:ra.quickRatioTTM.toFixed(2),source:"FMP"};
-      if(ra.netDebtToEBITDATTM!=null&&!snapshot.netDebtEbitda)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",value:ra.netDebtToEBITDATTM.toFixed(2)+"x",source:"FMP"};
+      if(ra.quickRatioTTM!=null&&!snapshot.quickRatio)snapshot.quickRatio={label:"Quick Ratio",numVal:ra.quickRatioTTM,value:ra.quickRatioTTM.toFixed(2),source:"FMP"};
+      if(ra.netDebtToEBITDATTM!=null&&!snapshot.netDebtEbitda)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",numVal:ra.netDebtToEBITDATTM,value:ra.netDebtToEBITDATTM.toFixed(2)+"x",source:"FMP"};
       if(ra.priceEarningsToGrowthRatioTTM!=null&&!snapshot.peg)snapshot.peg={label:"PEG",numVal:ra.priceEarningsToGrowthRatioTTM,value:ra.priceEarningsToGrowthRatioTTM.toFixed(2),source:"FMP"};
       if(fmpMap.fcfMargin&&fmpMap.fcfMargin.v!=null&&!snapshot.fcfMargin)snapshot.fcfMargin={label:"FCF Margin",numVal:fmpMap.fcfMargin.v,value:fmpMap.fcfMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.rndMargin&&fmpMap.rndMargin.v!=null&&!snapshot.rndMargin)snapshot.rndMargin={label:"R&D / Revenue",numVal:fmpMap.rndMargin.v,value:fmpMap.rndMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.sgaMargin&&fmpMap.sgaMargin.v!=null&&!snapshot.sgaMargin)snapshot.sgaMargin={label:"SG&A / Revenue",numVal:fmpMap.sgaMargin.v,value:fmpMap.sgaMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.cashOnHand&&fmpMap.cashOnHand.v!=null&&!snapshot.cashOnHand)snapshot.cashOnHand={label:"Cash/Share",numVal:fmpMap.cashOnHand.v,value:"$"+fmpMap.cashOnHand.v.toFixed(2),source:"FMP"};
+      // Dividend growth — compute from FMP earningsGrowth or Finnhub divs history
+      if(!snapshot.divGrowth){var _dg=ra.dividendGrowthTTM!=null?ra.dividendGrowthTTM*100:(km.dividendGrowthTTM!=null?km.dividendGrowthTTM*100:null);
+        if(_dg!=null){snapshot.divGrowth={label:"Div Growth YoY",numVal:_dg,value:(_dg>=0?"+":"")+_dg.toFixed(1)+"%",source:"FMP"};
+          fhMap.divGrowth={v:_dg,label:(_dg>=0?"+":"")+_dg.toFixed(1)+"%"}}}
       // Dividend yield — ensure it's in snapshot as a number
       if(km.dividendYieldTTM!=null&&!snapshot.divYield)snapshot.divYield={label:"Dividend Yield",value:(km.dividendYieldTTM*100).toFixed(2)+"%",numVal:km.dividendYieldTTM*100,source:"FMP"};
       if(!snapshot.divYield&&fhMap.divYield&&fhMap.divYield.v!=null)snapshot.divYield={label:"Dividend Yield",value:fhMap.divYield.v.toFixed(2)+"%",numVal:fhMap.divYield.v,source:"Finnhub"};
-      // Buyback yield — estimate from payout ratio and cash flow data
-      if(ra.payoutRatioTTM!=null&&km.dividendYieldTTM!=null){
-        var totalYield=km.dividendYieldTTM*100;var payoutPct=ra.payoutRatioTTM*100;
-        // If payout ratio < 100%, company retains earnings; estimate buyback from retained
-        // This is approximate — real buyback yield requires cash flow statement
-        if(payoutPct<80&&payoutPct>=0){var retainedPct=1-ra.payoutRatioTTM;var estBuyback=Math.max(0,retainedPct*totalYield*0.5);
-          if(estBuyback>0.2)snapshot.buybackYield={label:"Est. Buyback Yield",value:estBuyback.toFixed(1)+"%",numVal:estBuyback,source:"FMP est."}}
-      }
+      // Buyback yield removed — estimate was not mathematically sound; requires actual buyback cash flow data
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
       console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
@@ -2519,13 +2516,13 @@ function TrackerApp(props){
   // ── Valuation Modal ──
   var VALUATION_METRICS=[
     {id:"pe",label:"P/E Ratio",desc:"Price to earnings. Lower = cheaper relative to profits.",unit:"x",defaultRule:"lte",defaultVal:25,snap:"pe",calc:null},
-    {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:"peg",calc:function(s){if(s.peg&&s.peg.numVal!=null)return s.peg.numVal;var pe=s.pe&&s.pe.numVal?s.pe.numVal:(s.pe?parseFloat(String(s.pe.value).replace(/[^0-9.]/g,""))||0:0);var g=s.epsGrowth&&s.epsGrowth.numVal?Math.abs(s.epsGrowth.numVal):(s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0);return(pe>0&&g>1)?(pe/g):null}},
+    {id:"peg",label:"PEG Ratio",desc:"P/E divided by growth rate. Below 1 suggests undervalued growth.",unit:"x",defaultRule:"lte",defaultVal:1.5,snap:"peg",calc:function(s){if(s.peg&&s.peg.numVal!=null)return s.peg.numVal;var pe=s.pe&&s.pe.numVal?s.pe.numVal:(s.pe?parseFloat(String(s.pe.value).replace(/[^0-9.]/g,""))||0:0);var g=s.epsGrowth&&s.epsGrowth.numVal?Math.abs(s.epsGrowth.numVal):(s.revGrowth&&s.revGrowth.numVal?Math.abs(s.revGrowth.numVal):0);return(pe>0&&g>0)?(pe/g):null}},
     {id:"pb",label:"P/B Ratio",desc:"Price to book value. Below 1 means trading below asset value.",unit:"x",defaultRule:"lte",defaultVal:3,snap:"pb",calc:null},
     {id:"fcfYield",label:"FCF Yield",desc:"Free cash flow per share / price. Higher = more cash generated per dollar invested.",unit:"%",defaultRule:"gte",defaultVal:4,snap:"fcfYield",calc:function(s,p){var fcy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;if(fcy!=null)return fcy;var fcfN=s.fcf&&s.fcf.numVal!=null?s.fcf.numVal:null;var fcf=fcfN!=null?fcfN:(s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,""))||0:0);var pr=p>0?p:(s.livePrice&&s.livePrice.numVal?s.livePrice.numVal:0);return(fcf!==0&&pr>0)?(fcf/pr*100):null}},
     {id:"earningsYield",label:"Earnings Yield",desc:"Inverse of P/E (earnings/price). Compare to bond yields.",unit:"%",defaultRule:"gte",defaultVal:5,snap:null,calc:function(s){var pe=s.pe&&s.pe.numVal?s.pe.numVal:0;return pe>0?(1/pe*100):null}},
     {id:"evEbitda",label:"EV/EBITDA",desc:"Enterprise value to EBITDA. Lower = cheaper on a cash flow basis.",unit:"x",defaultRule:"lte",defaultVal:15,snap:"evEbitda",calc:null},
     {id:"divYield",label:"Dividend Yield",desc:"Annual dividend / price. Income return on investment.",unit:"%",defaultRule:"gte",defaultVal:2,snap:null,calc:function(s,p,c){var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;return(dps>0&&p>0)?(dps*mult/p*100):null}},
-    {id:"priceToFcf",label:"Price / FCF",desc:"Price to free cash flow per share. Lower = cheaper.",unit:"x",defaultRule:"lte",defaultVal:20,snap:null,calc:function(s,p){var fcf=s.fcf?parseFloat(String(s.fcf.value).replace(/[^0-9.\-]/g,"")):0;return(fcf>0&&p>0)?(p/fcf):null}},
+    {id:"priceToFcf",label:"Price / FCF",desc:"Price to free cash flow per share. Lower = cheaper.",unit:"x",defaultRule:"lte",defaultVal:20,snap:null,calc:function(s,p){var fcf=s.fcf&&s.fcf.numVal!=null?s.fcf.numVal:(s.fcf?parseFloat(String(s.fcf.value||"").replace(/[^0-9.\-]/g,""))||null:null);return(fcf!=null&&fcf>0&&p>0)?(p/fcf):null}},
     {id:"grossMargin",label:"Gross Margin",desc:"Pricing power indicator. Higher = stronger moat.",unit:"%",defaultRule:"gte",defaultVal:40,snap:"grossMargin",calc:null},
     {id:"roic",label:"ROIC",desc:"Return on invested capital. Measures capital efficiency.",unit:"%",defaultRule:"gte",defaultVal:15,snap:"roic",calc:null},
     {id:"debtEquity",label:"Debt / Equity",desc:"Financial leverage. Lower = less risk.",unit:"x",defaultRule:"lte",defaultVal:1,snap:"debtEquity",calc:null}
@@ -3241,7 +3238,7 @@ function TrackerApp(props){
           metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
     // 2. REVENUE GROWTH
     var revs=vals(recent,"revenue");
-    if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){growths.push((revs[gi]-revs[gi-1])/Math.abs(revs[gi-1])*100)}
+    if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){if(revs[gi-1]>0){growths.push((revs[gi]-revs[gi-1])/revs[gi-1]*100)}}
       var grAvg=avg(growths);var grStd=stdDev(growths);
       metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (±"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"trending",desc:"Consistent growth signals durable demand"})}
     // 3. OPERATING LEVERAGE
@@ -3261,7 +3258,7 @@ function TrackerApp(props){
       if(opInc!=null&&ic&&ic>0)roics.push(opInc/ic*100)}
       if(roics.length>=2){metrics.push({id:"roic",name:"Return on Invested Capital",score:Math.min(10,Math.max(1,Math.round(avg(roics)>30?9:avg(roics)>20?8:avg(roics)>15?7:avg(roics)>10?6:avg(roics)>5?4:2))),value:avg(roics).toFixed(1)+"%",detail:"Avg ROIC "+avg(roics).toFixed(1)+"% over "+roics.length+"yr",trend:roics,icon:"target",desc:"High ROIC is the hallmark of a true moat"})}}
     // 5. FCF CONVERSION
-    if(recentCf.length>=2&&recent.length>=2){var fcfC=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){var fcf=recentCf[fi].freeCashFlow||recentCf[fi].operatingCashFlow;var ni=recent[fi].netIncome;if(fcf!=null&&ni&&ni>0)fcfC.push(fcf/ni*100)}
+    if(recentCf.length>=2&&recent.length>=2){var fcfC=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){var fcf=recentCf[fi].freeCashFlow!=null?recentCf[fi].freeCashFlow:((recentCf[fi].operatingCashFlow!=null&&recentCf[fi].capitalExpenditure!=null)?(recentCf[fi].operatingCashFlow+Math.min(0,recentCf[fi].capitalExpenditure)):null);var ni=recent[fi].netIncome;if(fcf!=null&&ni&&ni>0)fcfC.push(fcf/ni*100)}
       if(fcfC.length>=2){metrics.push({id:"fcfConversion",name:"FCF Conversion",score:Math.min(10,Math.max(1,Math.round(avg(fcfC)>120?9:avg(fcfC)>100?8:avg(fcfC)>80?7:avg(fcfC)>50?5:avg(fcfC)>0?3:1))),value:avg(fcfC).toFixed(0)+"%",detail:"FCF/NI ratio avg "+avg(fcfC).toFixed(0)+"%",trend:fcfC,icon:"dollar",desc:"High FCF relative to net income shows earnings quality"})}}
     // 6. FINANCIAL FORTRESS
     if(recentBal.length>=1&&recent.length>=1){var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
