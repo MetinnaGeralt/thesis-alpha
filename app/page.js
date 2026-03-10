@@ -2537,7 +2537,7 @@ function TrackerApp(props){
       <div style={{display:"grid",gap:12,marginBottom:24}}>
         {cos.filter(function(c){return c.status==="portfolio"}).map(function(c){return<div key={c.id} style={{display:"flex",alignItems:"center",gap:14,background:K.bg,borderRadius:10,padding:"14px 18px",border:"1px solid "+K.bdr}}>
           <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
-          <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:12,color:K.dim}}>{c.name}</div></div>
+          <div style={{flex:1}}><div style={{fontSize:isMobile?15:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:12,color:K.dim}}>{c.name}</div></div>
           <div style={{textAlign:"right"}}><div style={{fontSize:11,color:K.mid,fontFamily:fm}}>{c.kpis.length} KPIs tracked</div>
             {c.thesisNote&&<div style={{fontSize:10,color:K.grn,fontFamily:fm}}>Thesis written</div>}</div></div>})}
         {cos.filter(function(c){return c.status==="watchlist"}).length>0&&<div style={{fontSize:11,color:K.dim,textAlign:"center"}}>+ {cos.filter(function(c){return c.status==="watchlist"}).length} on watchlist</div>}
@@ -7126,14 +7126,14 @@ function TrackerApp(props){
                   onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
                   {co&&<div style={{flexShrink:0,marginTop:1}}><CoLogo domain={co.domain} ticker={co.ticker} size={18}/></div>}
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:11,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
+                    <div style={{fontSize:isMobile?13:11,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:9,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
-                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{n.source}</span>
-                      <span style={{fontSize:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                      <span style={{fontSize:isMobile?11:9,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
+                      <span style={{fontSize:isMobile?11:9,color:K.dim,fontFamily:fm}}>{n.source}</span>
+                      <span style={{fontSize:isMobile?10:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
                     </div>
                   </div>
-                  <span style={{flexShrink:0,fontSize:9,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                  <span style={{flexShrink:0,fontSize:isMobile?11:9,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
                 </a>})}
               </div>}
               {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:11,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days. Try enabling more categories or check back later."}</div>}
@@ -7219,7 +7219,7 @@ function TrackerApp(props){
           {!isMobile&&<span style={{width:85,textAlign:"right"}}>{sideTab==="watchlist"?"Gap":"Value"}</span>}
           <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?"Sector":"Allocation"}</span>
           {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];var hw={conviction:{w:40,a:"center",l:"C"},kpis:{w:55,a:"right",l:"KPIs",d:true},earnings:{w:60,a:"right",l:"Earn.",d:true},price:{w:70,a:"right",l:"Price",d:true},mastery:{w:55,a:"center",l:"Mastery"}};return oo.map(function(k2){var h2=hw[k2];if(!h2)return null;if(!(dashSet.listCols||{})[k2])return null;if(h2.d&&isMobile)return null;return<span key={k2} style={{width:h2.w,textAlign:h2.a}}>{h2.l}</span>})})()}
-          <span style={{width:28,position:"relative"}}><button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>
+          <span style={{width:isMobile?0:28,position:"relative",overflow:"hidden"}}>{!isMobile&&<button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>}
             {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
               <div style={{padding:"4px 12px 6px",fontSize:10,color:K.dim,fontWeight:600}}>Show columns</div>
               {(function(){var allCols=[{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"price",l:"Current Price"},{k:"mastery",l:"Mastery Stars"}];
@@ -7266,7 +7266,7 @@ function TrackerApp(props){
               if(k2==="price"&&!isMobile)return<span key={k2} style={{width:70,textAlign:"right",fontSize:11,color:K.txt,fontFamily:fm}}>{p2.currentPrice>0?"$"+p2.currentPrice.toFixed(2):"—"}</span>;
               if(k2==="mastery")return<span key={k2} style={{width:55,textAlign:"center",display:"flex",justifyContent:"center",gap:1}}>{(function(){var _ml=calcMastery(cc);return[1,2,3,4,5,6].map(function(s){return<svg key={s} width="7" height="7" viewBox="0 0 12 12"><polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" fill={s<=_ml.stars?_ml.color:K.bdr}/></svg>})})()}</span>;
               return null})})()}
-            <span style={{width:28}}/>
+            {!isMobile&&<span style={{width:28}}/>}
           </div>})}
       </div>})()}
     {/* Card view */}
@@ -7274,7 +7274,7 @@ function TrackerApp(props){
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:isMobile?15:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:12}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:isMobile?12:11,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
           {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
             <span style={{fontSize:11,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
