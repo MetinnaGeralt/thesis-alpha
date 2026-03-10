@@ -2577,7 +2577,7 @@ function TrackerApp(props){
       <div style={{marginBottom:16}}>
         <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker symbol</label>
         <div style={{display:"flex",gap:12,alignItems:"center"}}>
-          <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false} autoFocus/>
+          <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false}/>
           {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
           {oLook==="done"&&<span style={{fontSize:13,color:K.grn,fontFamily:fm}}>{"✓"} Found — {oName}</span>}
           {oLook==="error"&&<span style={{fontSize:13,color:K.amb}}>Not found — enter name below</span>}
