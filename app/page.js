@@ -770,6 +770,41 @@ function TrackerApp(props){
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   var _lib=useState(function(){try{var s=localStorage.getItem('ta-library');return s?JSON.parse(s):{folders:[],items:[]}}catch(e){return{folders:[],items:[]}}}),library=_lib[0],setLibrary=_lib[1];
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
+  var _bn=useState(null),briefNews=_bn[0],setBriefNews=_bn[1];
+  var _bnl=useState(false),briefNewsLoading=_bnl[0],setBriefNewsLoading=_bnl[1];
+  function tagHeadline(h){var s=h.toLowerCase();
+    if(/acqui|merger|takeover|buyout/.test(s))return{label:"M&A",color:"#8B5CF6"};
+    if(/buyback|repurchase|share repurchase/.test(s))return{label:"Buyback",color:"#4ade80"};
+    if(/insider|director.*buy|officer.*sell|insider.*buy/.test(s))return{label:"Insider",color:"#fbbf24"};
+    if(/partnership|collaboration|agreement|joint venture|deal|contract|wins\b/.test(s))return{label:"Deal",color:"#6ea8fe"};
+    if(/dividend|payout|distribution/.test(s))return{label:"Dividend",color:"#4ade80"};
+    if(/guidance|raises|raised|beat|beats|forecast|outlook|reaffirm/.test(s))return{label:"Guidance",color:"#a0a0a0"};
+    if(/fda|approval|approved|clears|cleared|launches|launch/.test(s))return{label:"Product",color:"#06B6D4"};
+    if(/downgrade|upgrade|initiates|overweight|underweight|price target/.test(s))return{label:"Analyst",color:"#EC4899"};
+    if(/earnings|revenue|profit|loss|quarter|quarterly|annual results/.test(s))return{label:"Earnings",color:"#fbbf24"};
+    return{label:"News",color:"#777"}}
+  async function loadBriefNews(tickers){
+    if(!tickers||tickers.length===0)return;
+    var CACHE_KEY="ta-brief-news";var CACHE_TTL=3600000;
+    try{var cached=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
+      var cTickers=cached&&cached.tickers?cached.tickers.slice().sort().join(","):"";
+      var nowTickers=tickers.slice().sort().join(",");
+      if(cached&&cached.ts&&(Date.now()-cached.ts)<CACHE_TTL&&cTickers===nowTickers){setBriefNews(cached.items);return}}catch(e){}
+    setBriefNewsLoading(true);
+    try{
+      var to=new Date().toISOString().slice(0,10);
+      var from=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+      var results=await Promise.all(tickers.map(function(t){return finnhub("company-news?symbol="+t+"&from="+from+"&to="+to).then(function(news){return(news||[]).slice(0,12).map(function(n){return{ticker:t,headline:n.headline,url:n.url,source:n.source,datetime:n.datetime,tag:tagHeadline(n.headline||"")}})}).catch(function(){return[]})}));
+      var all=[].concat.apply([],results);
+      // Deduplicate by headline similarity (first 60 chars)
+      var seen={};var deduped=all.filter(function(n){var key=n.headline.substring(0,60).toLowerCase();if(seen[key])return false;seen[key]=true;return true});
+      // Sort newest first
+      deduped.sort(function(a,b){return b.datetime-a.datetime});
+      var items=deduped.slice(0,30);
+      setBriefNews(items);
+      try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),tickers:tickers,items:items}))}catch(e){}
+    }catch(e){console.warn("Brief news load error:",e)}
+    setBriefNewsLoading(false)}
   function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
     addXP(25,"Weekly review");updateStreak(true);
     if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
@@ -1213,6 +1248,10 @@ function TrackerApp(props){
   // Auto-refresh prices on load
   useEffect(function(){if(!loaded||cos.length===0)return;
     var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
+  // Load portfolio news for morning briefing
+  useEffect(function(){if(!loaded||cos.length===0)return;
+    var portfolioTickers=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return c.ticker}).filter(Boolean);
+    if(portfolioTickers.length>0)loadBriefNews(portfolioTickers)},[loaded,cos.length]);
   // Auto-fetch dividend data for ALL users
   useEffect(function(){if(!loaded||cos.length===0)return;
     var needsDiv=cos.filter(function(c){
@@ -6577,6 +6616,32 @@ function TrackerApp(props){
               <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
               <div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>{"— "+quote.a}</div></div>
           </div></div>
+        {/* ── Portfolio News Feed ── */}
+        {(briefNews&&briefNews.filter(function(n){return portfolio.some(function(c2){return c2.ticker===n.ticker})}).length>0||briefNewsLoading)&&<div style={{borderTop:"1px solid "+K.bdr}}>
+          <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Portfolio News
+              </div>
+              <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio.map(function(c2){return c2.ticker}))}} style={{background:"none",border:"none",color:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,padding:"2px 6px",borderRadius:4,letterSpacing:.5}} title="Refresh news">{"↺ Refresh"}</button>
+            </div>
+            {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{fontSize:11,color:K.dim,padding:"4px 0"}}>{"Fetching news for your holdings…"}</div>}
+            {briefNews&&(function(){
+              var shown=briefNews.filter(function(n){return portfolio.some(function(c2){return c2.ticker===n.ticker})}).slice(0,8);
+              if(shown.length===0)return null;
+              return<div>{shown.map(function(n,i){
+                var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
+                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:8,padding:"7px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"25":"none",textDecoration:"none"}}
+                  onMouseEnter={function(e){e.currentTarget.style.opacity=".7"}} onMouseLeave={function(e){e.currentTarget.style.opacity="1"}}>
+                  <span style={{flexShrink:0,fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"18",padding:"2px 7px",borderRadius:999,fontFamily:fm,marginTop:2,whiteSpace:"nowrap"}}>{n.ticker}</span>
+                  <span style={{flex:1,fontSize:11,color:K.mid,lineHeight:1.45}}>{n.headline}</span>
+                  <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:58}}>
+                    <span style={{fontSize:9,fontWeight:700,color:n.tag.color,background:n.tag.color+"18",padding:"1px 6px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap"}}>{n.tag.label}</span>
+                    <span style={{fontSize:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                  </div>
+                </a>})}</div>})()}
+          </div>
+        </div>}
       </div>})()}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
