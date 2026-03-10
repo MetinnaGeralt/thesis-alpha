@@ -235,28 +235,101 @@ function calcOwnerScore(cos){
   var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
   return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
 function classifyPortfolio(portfolio){
-  var styles={};var divPayerCount=0;var totalDivYield=0;var avgGrowth=0;var growthCount=0;
-  portfolio.forEach(function(c2){var s=c2.investStyle||"";if(s)styles[s]=(styles[s]||0)+1;
-    var dps=c2.divPerShare||c2.lastDiv||0;var pos2=c2.position||{};
-    var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
-    var yld=pos2.currentPrice>0?(dps*mult/pos2.currentPrice*100):0;
-    if(yld>=2){divPayerCount++;totalDivYield+=yld}
-    var snap=c2.financialSnapshot||{};if(snap.revGrowth&&snap.revGrowth.numVal!=null){avgGrowth+=snap.revGrowth.numVal;growthCount++}});
-  var topStyle=Object.keys(styles).sort(function(a,b){return styles[b]-styles[a]})[0]||"";
-  var topStylePct=topStyle&&portfolio.length>0?(styles[topStyle]/portfolio.length):0;
-  var meanDivYield=divPayerCount>0?totalDivYield/divPayerCount:0;
-  var divDominant=divPayerCount>=Math.ceil(portfolio.length*0.6)&&meanDivYield>=3;
-  var meanGrowth=growthCount>0?avgGrowth/growthCount:0;
-  if(divDominant&&meanDivYield>=4)return"Income-Focused";
-  if(topStylePct>=0.5&&(topStyle==="growth"||topStyle==="aggressive"))return"Growth-Oriented";
-  if(topStylePct>=0.5&&(topStyle==="value"||topStyle==="contrarian"))return"Value-Oriented";
-  if(topStylePct>=0.5&&(topStyle==="quality"||topStyle==="compounder"))return"Quality Compounder";
-  if(topStylePct>=0.5&&(topStyle==="income"||topStyle==="dividend"))return"Income-Focused";
-  if(meanGrowth>20)return"Growth-Oriented";
-  if(divDominant)return"Income & Growth";
-  if(portfolio.length>=6)return"Diversified";
-  if(portfolio.length<=3)return"Concentrated";
-  return"Balanced"}
+  if(!portfolio||portfolio.length===0)return{label:"Concentrated",color:"#8B5CF6",desc:"Add more holdings to see your portfolio character.",confidence:0};
+  if(portfolio.length<=2)return{label:"Concentrated",color:"#8B5CF6",desc:"Fewer than 3 holdings — sizing risk is the dominant characteristic.",confidence:1};
+  // ── Per-company signal extraction (position-weighted where possible) ────
+  var totalWeight=0;
+  var wGrowth=0,wYield=0,wROIC=0,wGrossMargin=0,wPE=0;
+  var growthN=0,yieldN=0,roicN=0,marginN=0,peN=0;
+  portfolio.forEach(function(c){
+    var pos=c.position||{};
+    var posVal=(pos.shares||0)*(pos.currentPrice||0);
+    var w=posVal>0?posVal:1; // fall back to equal weight if no position data
+    totalWeight+=w;
+    var snap=c.financialSnapshot||{};
+    // Revenue growth — primary signal
+    if(snap.revGrowth&&snap.revGrowth.numVal!=null){wGrowth+=snap.revGrowth.numVal*w;growthN+=w}
+    // Effective dividend yield — ONLY counts if genuinely meaningful (≥ 1.5%)
+    var dps=c.divPerShare||c.lastDiv||0;
+    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+    var divYld=pos.currentPrice>0?(dps*mult/pos.currentPrice*100):0;
+    if(divYld>=1.5){wYield+=divYld*w;yieldN+=w}
+    // ROIC — quality signal
+    if(snap.roic&&snap.roic.numVal!=null){wROIC+=snap.roic.numVal*w;roicN+=w}
+    // Gross margin — pricing power / quality
+    if(snap.grossMargin&&snap.grossMargin.numVal!=null){wGrossMargin+=snap.grossMargin.numVal*w;marginN+=w}
+    // P/E — valuation signal (ignore negatives / extreme outliers)
+    if(snap.pe&&snap.pe.numVal!=null&&snap.pe.numVal>0&&snap.pe.numVal<100){wPE+=snap.pe.numVal*w;peN+=w}
+  });
+  var avgGrowth  = growthN>0 ? wGrowth/growthN   : null;
+  var avgYield   = yieldN>0  ? wYield/yieldN      : 0;
+  var avgROIC    = roicN>0   ? wROIC/roicN        : null;
+  var avgMargin  = marginN>0 ? wGrossMargin/marginN : null;
+  var avgPE      = peN>0     ? wPE/peN            : null;
+  // What fraction of the portfolio has meaningful dividends (yield ≥ 1.5%)?
+  var divPayerCount=portfolio.filter(function(c){
+    var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
+    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+    return pos.currentPrice>0&&(dps*mult/pos.currentPrice*100)>=1.5}).length;
+  var divFraction=divPayerCount/portfolio.length;
+  // ── investStyle tally (secondary tiebreaker only) ───────────────────────
+  var styleCounts={};
+  portfolio.forEach(function(c){var s=c.investStyle||"";if(s)styleCounts[s]=(styleCounts[s]||0)+1});
+  var topStyle=Object.keys(styleCounts).sort(function(a,b){return styleCounts[b]-styleCounts[a]})[0]||"";
+  var topStylePct=topStyle&&portfolio.length>0?styleCounts[topStyle]/portfolio.length:0;
+  // ── Confidence: how much financial data do we actually have? ────────────
+  var dataPoints=[growthN,roicN,marginN].filter(function(n){return n>0}).length;
+  var confidence=Math.min(1,dataPoints/3);
+  // ── Classification (fundamentals first, style tags as tiebreaker) ───────
+  // RULE: avgGrowth ≥ 18% overrides dividend presence if avgYield < 2.5%
+  // This prevents NVDA (0.03% yield) from being classified as income.
+  var isHighGrowth   = avgGrowth!==null && avgGrowth>=18;
+  var isMidGrowth    = avgGrowth!==null && avgGrowth>=10 && avgGrowth<18;
+  var isLowGrowth    = avgGrowth!==null && avgGrowth<10;
+  var isQualityROIC  = avgROIC!==null && avgROIC>=15;
+  var isQualityMgn   = avgMargin!==null && avgMargin>=40;
+  var isDeepIncome   = avgYield>=3.5 && divFraction>=0.55;
+  var isDivGrowth    = avgYield>=2.0 && divFraction>=0.4 && !isHighGrowth;
+  var isValue        = avgPE!==null && avgPE<15 && !isHighGrowth && !isMidGrowth;
+  // 1. Quality Compounder: high ROIC + good margins + moderate-to-high growth
+  if(isQualityROIC && isQualityMgn && (isHighGrowth||isMidGrowth))
+    return{label:"Quality Compounder",color:"#22C55E",
+      desc:"High-ROIC businesses with durable margins and steady growth. The classic compounder profile.",confidence:confidence};
+  // 2. Pure Growth: high revenue growth dominates — dividends are symbolic
+  if(isHighGrowth && avgYield<2.5)
+    return{label:"Growth",color:"#6ea8fe",
+      desc:"Revenue growth is the dominant driver. Any dividends paid are incidental, not the thesis.",confidence:confidence};
+  // 3. Dividend Growth: meaningful yield + healthy growth = dividend compounders
+  if(isDivGrowth && isMidGrowth)
+    return{label:"Dividend Growth",color:"#4ade80",
+      desc:"Growing companies that also return capital via dividends. Income is rising, not static.",confidence:confidence};
+  // 4. Income-Focused: high yield + low growth = classic income portfolio
+  if(isDeepIncome && (isLowGrowth||avgGrowth===null))
+    return{label:"Income-Focused",color:"#fbbf24",
+      desc:"Yield is the primary return driver. Capital appreciation is a bonus, not the thesis.",confidence:confidence};
+  // 5. Value: low P/E + subdued growth
+  if(isValue)
+    return{label:"Value-Oriented",color:"#f87171",
+      desc:"Below-market valuations with limited near-term growth expectations. Patience required.",confidence:confidence};
+  // 6. Income + Growth (mixed): meaningful dividends but growth is present
+  if(isDivGrowth)
+    return{label:"Income & Growth",color:"#a3e635",
+      desc:"A blend of yield and growth — income today, capital appreciation tomorrow.",confidence:confidence};
+  // 7. Style-tag tiebreaker (only if dominant and data is thin)
+  if(confidence<0.4&&topStylePct>=0.5){
+    if(topStyle==="growth"||topStyle==="aggressive")return{label:"Growth",color:"#6ea8fe",desc:"Classified from your investment style tags.",confidence:0.3};
+    if(topStyle==="value"||topStyle==="contrarian")return{label:"Value-Oriented",color:"#f87171",desc:"Classified from your investment style tags.",confidence:0.3};
+    if(topStyle==="quality"||topStyle==="compounder")return{label:"Quality Compounder",color:"#22C55E",desc:"Classified from your investment style tags.",confidence:0.3};
+    if(topStyle==="income"||topStyle==="dividend")return{label:"Income-Focused",color:"#fbbf24",desc:"Classified from your investment style tags.",confidence:0.3};
+  }
+  // 8. Concentrated (3–4 holdings — style signal unclear regardless)
+  if(portfolio.length<=4)
+    return{label:"Concentrated",color:"#8B5CF6",
+      desc:"Too few holdings to classify style. Concentration is the dominant portfolio characteristic.",confidence:0.5};
+  // 9. Balanced / not enough data
+  return{label:"Balanced",color:"#a0a0a0",
+    desc:"Mixed signals across your holdings — no single style dominates.",confidence:confidence}
+}
 function calcMastery(c){
   var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
   // Star 2: Thesis written (core + at least 1 section)
@@ -5163,8 +5236,11 @@ function TrackerApp(props){
           // Approximation of normal CDF
           var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
           // No artificial floors — let the math speak
-          // Portfolio character
-          var character=portPred>=70?"Predictable Compounder Portfolio":portPred>=50?"Balanced Growth Portfolio":portPred>=30?"Growth-Oriented Portfolio":"Speculative Growth Portfolio";
+          // Portfolio character — unified with morning brief classification
+          var portClass2=classifyPortfolio(portfolio);
+          var character=portClass2.label;
+          var characterDesc=portClass2.desc;
+          var characterColor=portClass2.color;
           // Sort by contribution
           holdingReturns.sort(function(a,b){return(b.weight/100*b.expected)-(a.weight/100*a.expected)});
           return<div>
@@ -5182,8 +5258,11 @@ function TrackerApp(props){
                     <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:prob>=60?K.grn:prob>=40?K.amb:K.red,fontFamily:fm}}>{prob}%</div></div></div>
                 <div style={{textAlign:"right"}}>
                   <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Portfolio Character</div>
-                  <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{character}</div>
-                  <div style={{fontSize:11,color:K.dim,marginTop:4}}>Predictability: {portPred.toFixed(0)}/100</div></div></div>
+                  <div style={{display:"flex",justifyContent:"flex-end",marginBottom:4}}>
+                    <span style={{fontSize:11,fontWeight:700,color:characterColor,background:characterColor+"18",padding:"3px 12px",borderRadius:999,fontFamily:fm}}>{character}</span>
+                  </div>
+                  <div style={{fontSize:10,color:K.dim,marginTop:4,maxWidth:180,textAlign:"right",lineHeight:1.5}}>{characterDesc}</div>
+                  <div style={{fontSize:10,color:K.dim,marginTop:6}}>Predictability: {portPred.toFixed(0)}/100</div></div></div>
               {/* Bell curve visualization */}
               <div style={{marginBottom:16}}>
                 <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
@@ -6630,6 +6709,8 @@ function TrackerApp(props){
       ];
       var dayIdx=Math.floor(now.getTime()/86400000)%quotes.length;
       var quote=quotes[dayIdx];
+      // Portfolio character classification
+      var portClass=classifyPortfolio(portfolio);
       // Earnings urgency color
       var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
       var earningsTomorrow=upcoming.filter(function(c2){return dU(c2.earningsDate)===1}).length;
@@ -6639,7 +6720,11 @@ function TrackerApp(props){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
             <div style={{minWidth:0}}>
               <div style={{fontSize:isMobile?16:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
-              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div></div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
+                <div style={{fontSize:11,color:K.dim}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
+                <span style={{fontSize:9,fontWeight:700,color:portClass.color,background:portClass.color+"18",padding:"2px 9px",borderRadius:999,fontFamily:fm,letterSpacing:.5,cursor:"default"}} title={portClass.desc}>{portClass.label}</span>
+              </div>
+            </div>
             {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
               <div style={{fontSize:12,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
@@ -7072,6 +7157,7 @@ function TrackerApp(props){
       var cut3=new Date(qYear,(qNum-1)*3,1).toISOString();var cutEnd=new Date(qYear,qNum*3,0).toISOString();
       var portfolio2=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"});
       var portChar=classifyPortfolio(portfolio2);
+      var portCharLabel=portChar.label;var portCharColor=portChar.color;var portCharDesc=portChar.desc;
       var qRevs=weeklyReviews.filter(function(r2){return r2.date>=cut3&&r2.date<=cutEnd});
       var qDecs=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d2){if(d2.date&&d2.date>=cut3&&d2.date<=cutEnd)qDecs.push(Object.assign({},d2,{ticker:c2.ticker}))})});
       var buys2=qDecs.filter(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
@@ -7117,7 +7203,7 @@ function TrackerApp(props){
       if(withDate.length>0){var avgDays=Math.round(withDate.reduce(function(s,c2){return s+Math.ceil((new Date()-new Date(c2.purchaseDate))/864e5)},0)/withDate.length);if(avgDays>365)obs.push("Your average holding period is "+Math.round(avgDays/30)+" months. Long-term ownership is where compounding happens.")}
       // PDF export
       function exportPDF(){var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+'</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"><style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7}.page{max-width:680px;margin:0 auto;padding:40px}h1{font-family:Playfair Display,serif;font-size:36px;font-weight:800;letter-spacing:-1px}.sh{font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:JetBrains Mono,monospace;font-weight:800;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #1a1a2e}.kstats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin:16px 0 20px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}.ks-v{font-family:JetBrains Mono,monospace;font-size:20px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:7px 10px;border-bottom:1px solid #f3f4f6}.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}.pc{padding:10px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}.pc-v{font-family:JetBrains Mono,monospace;font-size:16px;font-weight:800}.pc-l{font-size:8px;color:#9ca3af;margin-top:2px}.footer{margin-top:36px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:8px;color:#9ca3af}</style></head><body><div class="page">';
-        h+='<div style="border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px"><div style="display:flex;justify-content:space-between"><div><h1>Quarterly Letter</h1><div style="font-size:13px;color:#6b7280;margin-top:4px">'+qTitle+' \u2014 '+qRange+'</div><div style="font-size:10px;color:#6b4ce6;font-family:JetBrains Mono,monospace;font-weight:600;margin-top:6px">'+portChar+'</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af">Owner\'s Report</div></div></div></div>';
+        h+='<div style="border-bottom:3px solid #1a1a2e;padding-bottom:16px;margin-bottom:24px"><div style="display:flex;justify-content:space-between"><div><h1>Quarterly Letter</h1><div style="font-size:13px;color:#6b7280;margin-top:4px">'+qTitle+' \u2014 '+qRange+'</div><div style="font-size:10px;color:'+portCharColor+';font-family:JetBrains Mono,monospace;font-weight:800;margin-top:6px;letter-spacing:1px">'+portCharLabel+'</div><div style="font-size:9px;color:#9ca3af;margin-top:3px">'+portCharDesc+'</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af">Owner\'s Report</div></div></div></div>';
         h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">Dear '+(username||"Investor")+',</p>';
         h+='<p style="font-size:12px;line-height:1.8;margin-bottom:16px">This quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions, <strong>'+earningsChecked+'</strong> earnings checked. Portfolio: <strong>'+portfolio2.length+'</strong> holdings.</p>';
         h+='<div class="kstats"><div class="ks"><div class="ks-l">Total Return</div><div class="ks-v '+(totalRet2>=0?"grn":"red")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</div></div>';
@@ -7137,7 +7223,9 @@ function TrackerApp(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>Quarterly Letter</div>
                 <div style={{fontSize:13,color:K.dim,marginTop:4}}>{qTitle+" \u2014 "+qRange}</div>
-                <div style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600,marginTop:6}}>{portChar}</div></div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
+                  <span style={{fontSize:10,color:portCharColor,fontFamily:fm,fontWeight:700,letterSpacing:.5,background:portCharColor+"18",padding:"2px 10px",borderRadius:999}}>{portCharLabel}</span>
+                </div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:10,fontWeight:800,letterSpacing:3,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
                 <div style={{fontSize:9,color:K.dim,letterSpacing:1,textTransform:"uppercase"}}>{"Owner\u2019s Report"}</div>
                 <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:6}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
