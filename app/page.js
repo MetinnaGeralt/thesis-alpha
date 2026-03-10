@@ -548,7 +548,16 @@ async function fetchEarnings(co,kpis){
         ebitdaPerShare:{v:km.enterpriseValueOverEBITDATTM!=null?km.enterpriseValueOverEBITDATTM:null,fmt:function(v){return v.toFixed(2)}},
         revGrowth:{v:ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(km.revenueGrowthTTM!=null?km.revenueGrowthTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
         epsGrowth:{v:km.earningsGrowthTTM!=null?km.earningsGrowthTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
-        eps:{v:km.netIncomePerShareTTM!=null?km.netIncomePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}}};
+        eps:{v:km.netIncomePerShareTTM!=null?km.netIncomePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        // Additional metrics missing from Finnhub — FMP fills these
+        ps:{v:km.priceToSalesRatioTTM!=null?km.priceToSalesRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        evEbitda:{v:km.enterpriseValueOverEBITDATTM!=null?km.enterpriseValueOverEBITDATTM:null,fmt:function(v){return v.toFixed(1)+"x"}},
+        evRevenue:{v:km.evToSalesTTM!=null?km.evToSalesTTM:null,fmt:function(v){return v.toFixed(2)+"x"}},
+        interestCoverage:{v:ra.interestCoverageTTM!=null?ra.interestCoverageTTM:null,fmt:function(v){return v.toFixed(1)+"x"}},
+        quickRatio:{v:ra.quickRatioTTM!=null?ra.quickRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        netDebtEbitda:{v:ra.netDebtToEBITDATTM!=null?ra.netDebtToEBITDATTM:null,fmt:function(v){return v.toFixed(2)+"x"}},
+        peg:{v:ra.priceEarningsToGrowthRatioTTM!=null?ra.priceEarningsToGrowthRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        fcfMargin:{v:(km.freeCashFlowPerShareTTM!=null&&km.revenuePerShareTTM!=null&&km.revenuePerShareTTM>0)?km.freeCashFlowPerShareTTM/km.revenuePerShareTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}}};
       // Fill gaps: merge FMP into fhMap where Finnhub returned null
       var fmpFilled=0;
       Object.keys(fmpMap).forEach(function(key){
@@ -576,6 +585,15 @@ async function fetchEarnings(co,kpis){
       if(ra.payoutRatioTTM!=null&&!snapshot.payoutRatio)snapshot.payoutRatio={label:"Payout Ratio",value:(ra.payoutRatioTTM*100).toFixed(0)+"%",source:"FMP"};
       if(km.tangibleBookValuePerShareTTM!=null&&!snapshot.tangBvps)snapshot.tangBvps={label:"Tangible BV/Share",value:"$"+km.tangibleBookValuePerShareTTM.toFixed(2),source:"FMP"};
       if(km.grahamNumberTTM!=null&&!snapshot.graham)snapshot.graham={label:"Graham Number",value:"$"+km.grahamNumberTTM.toFixed(2),source:"FMP"};
+      // Newly-added FMP metrics → snapshot
+      if(km.priceToSalesRatioTTM!=null&&!snapshot.ps)snapshot.ps={label:"P/S",value:km.priceToSalesRatioTTM.toFixed(2),source:"FMP"};
+      if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
+      if(km.evToSalesTTM!=null&&!snapshot.evRevenue)snapshot.evRevenue={label:"EV/Revenue",value:km.evToSalesTTM.toFixed(2)+"x",source:"FMP"};
+      if(ra.interestCoverageTTM!=null&&!snapshot.interestCoverage)snapshot.interestCoverage={label:"Interest Coverage",numVal:ra.interestCoverageTTM,value:ra.interestCoverageTTM.toFixed(1)+"x",source:"FMP"};
+      if(ra.quickRatioTTM!=null&&!snapshot.quickRatio)snapshot.quickRatio={label:"Quick Ratio",value:ra.quickRatioTTM.toFixed(2),source:"FMP"};
+      if(ra.netDebtToEBITDATTM!=null&&!snapshot.netDebtEbitda)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",value:ra.netDebtToEBITDATTM.toFixed(2)+"x",source:"FMP"};
+      if(ra.priceEarningsToGrowthRatioTTM!=null&&!snapshot.peg)snapshot.peg={label:"PEG",numVal:ra.priceEarningsToGrowthRatioTTM,value:ra.priceEarningsToGrowthRatioTTM.toFixed(2),source:"FMP"};
+      if(fmpMap.fcfMargin&&fmpMap.fcfMargin.v!=null&&!snapshot.fcfMargin)snapshot.fcfMargin={label:"FCF Margin",numVal:fmpMap.fcfMargin.v,value:fmpMap.fcfMargin.v.toFixed(1)+"%",source:"FMP"};
       // Dividend yield — ensure it's in snapshot as a number
       if(km.dividendYieldTTM!=null&&!snapshot.divYield)snapshot.divYield={label:"Dividend Yield",value:(km.dividendYieldTTM*100).toFixed(2)+"%",numVal:km.dividendYieldTTM*100,source:"FMP"};
       if(!snapshot.divYield&&fhMap.divYield&&fhMap.divYield.v!=null)snapshot.divYield={label:"Dividend Yield",value:fhMap.divYield.v.toFixed(2)+"%",numVal:fhMap.divYield.v,source:"Finnhub"};
@@ -4164,14 +4182,16 @@ function TrackerApp(props){
           if(snap.fcf)valuation.push({l:"FCF/Share",v:snap.fcf.value,tip:"Free cash flow per share"});
           if(snap.evSales)valuation.push({l:"EV/Sales",v:snap.evSales.value});
           if(snap.evFcf)valuation.push({l:"EV/FCF",v:snap.evFcf.value});
-          // PEG ratio estimate
-          var peVal=snap.pe?parseFloat(String(snap.pe.value).replace(/[^0-9.]/g,""))||0:0;
-          var egVal=snap.revGrowth?Math.abs(parseFloat(String(snap.revGrowth.value).replace(/[^0-9.]/g,""))||0):0;
-          if(peVal>0&&egVal>1){var peg2=peVal/egVal;valuation.push({l:"PEG",v:peg2.toFixed(2),isGood:peg2<1.5,isNeutral:peg2>=1.5&&peg2<3})}
+          // PEG ratio — prefer fetched value, fall back to P/E ÷ EPS growth
+          var peVal=snap.pe?parseFloat(String(snap.pe.value).replace(/[^0-9.\-]/g,""))||0:0;
+          if(snap.peg&&snap.peg.numVal!=null){var pegV=snap.peg.numVal;valuation.push({l:"PEG",v:pegV.toFixed(2),isGood:pegV<1.5,isNeutral:pegV>=1.5&&pegV<3})}
+          else{var egVal=snap.epsGrowth?Math.abs(parseFloat(String(snap.epsGrowth.value).replace(/[^0-9.]/g,""))||0):(snap.revGrowth?Math.abs(parseFloat(String(snap.revGrowth.value).replace(/[^0-9.]/g,""))||0):0);
+            if(peVal>0&&egVal>1){var peg2=peVal/egVal;valuation.push({l:"PEG",v:peg2.toFixed(2),isGood:peg2<1.5,isNeutral:peg2>=1.5&&peg2<3})}}
           // Earnings yield
           if(peVal>0){var ey2=(1/peVal*100);valuation.push({l:"Earnings Yield",v:ey2.toFixed(1)+"%",isGood:ey2>5})}
-          // FCF yield
-          if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.]/g,""))||0;if(fcfVal2>0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
+          // FCF yield — use pre-computed snap.fcfYield (numVal) if available; avoids string-parse sign errors
+          if(snap.fcfYield&&snap.fcfYield.numVal!=null){valuation.push({l:"FCF Yield",v:snap.fcfYield.value,isGood:snap.fcfYield.numVal>4})}
+          else if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.\-]/g,""))||0;if(fcfVal2!==0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
           if(snap.hi52&&snap.lo52){var cp=pos.currentPrice||0;if(cp>0){var pctOfHi=((cp/parseFloat(snap.hi52.value.replace("$","")))*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}
           if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,tip:"Return on invested capital",isGood:parseFloat(snap.roic.value)>=12});
           if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,tip:"Return on equity",isGood:parseFloat(snap.roe.value)>=15});
@@ -4196,6 +4216,9 @@ function TrackerApp(props){
           if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
           if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
           if(snap.mktCap)health.push({l:"Market Cap",v:snap.mktCap.value});
+          if(snap.quickRatio)health.push({l:"Quick Ratio",v:snap.quickRatio.value,isGood:parseFloat(snap.quickRatio.value)>=1});
+          if(snap.interestCoverage)health.push({l:"Interest Coverage",v:snap.interestCoverage.value,isGood:snap.interestCoverage.numVal>=3});
+          if(snap.netDebtEbitda)health.push({l:"Net Debt/EBITDA",v:snap.netDebtEbitda.value,isGood:parseFloat(snap.netDebtEbitda.value)<3});
           if(snap.buybackYield)health.push({l:"Buyback Yield",v:snap.buybackYield.value,isGood:true});
           var sections=[];
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
