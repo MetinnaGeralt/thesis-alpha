@@ -867,7 +867,7 @@ function TrackerApp(props){
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
   // ── Quick-Access FAB ──
   var _fabO=useState(false),fabOpen=_fabO[0],setFabOpen=_fabO[1];
-  var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");return s?JSON.parse(s):["trail","thesis","review","add"]}catch(e){return["trail","thesis","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
+  var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");return s?JSON.parse(s):["trail","hub","review","add"]}catch(e){return["trail","hub","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
   var _fabCust=useState(false),fabCustomize=_fabCust[0],setFabCustomize=_fabCust[1];
   function saveFabCfg(v){setFabCfg(v);try{localStorage.setItem("ta-fab-cfg",JSON.stringify(v))}catch(e){}}
   // ── Subscription / Tier ──
@@ -8270,19 +8270,22 @@ function TrackerApp(props){
     {/* ── Desktop Quick-Access FAB ── */}
     {!isMobile&&(function(){
       // All available shortcuts
+      var fabPortfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+      var fabTgt=sel||(fabPortfolio[0]||null);
+      function goCompany(fn){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(fn,80)}else{showToast("Add a holding first","info",3000)}}
       var FAB_ALL=[
+        {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
         {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
-        {id:"thesis",label:"Why I Own",icon:"lightbulb",color:K.grn,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"thesis"})},80)}else{showToast("Add a holding first to write your thesis","info",3000)}}},
+        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
         {id:"review",label:"Weekly Review",icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
         {id:"add",label:"Add Holding",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setModal({type:"add"})}},
-        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
-        {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
-        {id:"conviction",label:"Rate Conviction",icon:"star",color:K.amb,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setPage("dashboard");setTimeout(function(){setModal({type:"conviction"})},80)}else{showToast("Add a holding first","info",3000)}}},
         {id:"calendar",label:"Earnings Calendar",icon:"calendar",color:K.red,action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
         {id:"analytics",label:"Analytics",icon:"bar",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("analytics")}},
         {id:"library",label:"Library",icon:"video",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("library")}},
-        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("research");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
-        {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
+        {id:"thesis",label:"Why I Own",icon:"lightbulb",color:K.grn,action:function(){goCompany(function(){setModal({type:"thesis"})})}},
+        {id:"conviction",label:"Rate Conviction",icon:"star",color:K.amb,action:function(){goCompany(function(){setModal({type:"conviction"})})}},
+        {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
+        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("research");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
       ];
       var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
       return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
