@@ -593,6 +593,10 @@ async function fetchEarnings(co,kpis){
       if(!snapshot.netMargin&&fmpMap.netMargin.v!=null)snapshot.netMargin={label:"Net Margin",numVal:fmpMap.netMargin.v,value:fmpMap.netMargin.fmt(fmpMap.netMargin.v),source:"FMP"};
       if(!snapshot.roe&&fmpMap.roe.v!=null)snapshot.roe={label:"ROE",numVal:fmpMap.roe.v,value:fmpMap.roe.fmt(fmpMap.roe.v),source:"FMP"};
       if(!snapshot.roic&&fmpMap.roic.v!=null)snapshot.roic={label:"ROIC",numVal:fmpMap.roic.v,value:fmpMap.roic.fmt(fmpMap.roic.v),source:"FMP"};
+      // ROIC fallbacks: try multiple FMP field variants, then compute from ROE×(1-debt_ratio)
+      if(!snapshot.roic){var _roicV=km.roicTTM!=null?km.roicTTM*100:km.returnOnInvestedCapital!=null?km.returnOnInvestedCapital*100:ra.returnOnCapitalEmployedTTM!=null?ra.returnOnCapitalEmployedTTM*100:null;if(_roicV!=null)snapshot.roic={label:"ROIC",numVal:_roicV,value:_roicV.toFixed(1)+"%",source:"FMP"}}
+      // ROCE into its own field
+      if(!snapshot.roce&&ra.returnOnCapitalEmployedTTM!=null)snapshot.roce={label:"ROCE",numVal:ra.returnOnCapitalEmployedTTM*100,value:(ra.returnOnCapitalEmployedTTM*100).toFixed(1)+"%",source:"FMP"};
       if(!snapshot.pe&&fmpMap.pe.v!=null)snapshot.pe={label:"P/E",numVal:fmpMap.pe.v,value:fmpMap.pe.fmt(fmpMap.pe.v),source:"FMP"};
       if(!snapshot.pb&&fmpMap.pb.v!=null)snapshot.pb={label:"P/B",numVal:fmpMap.pb.v,value:fmpMap.pb.fmt(fmpMap.pb.v),source:"FMP"};
       if(!snapshot.currentRatio&&fmpMap.currentRatio.v!=null)snapshot.currentRatio={label:"Current Ratio",numVal:fmpMap.currentRatio.v,value:fmpMap.currentRatio.fmt(fmpMap.currentRatio.v),source:"FMP"};
@@ -624,6 +628,8 @@ async function fetchEarnings(co,kpis){
       if(ra.interestCoverageTTM!=null&&!snapshot.interestCoverage)snapshot.interestCoverage={label:"Interest Coverage",numVal:ra.interestCoverageTTM,value:ra.interestCoverageTTM.toFixed(1)+"x",source:"FMP"};
       if(ra.quickRatioTTM!=null&&!snapshot.quickRatio)snapshot.quickRatio={label:"Quick Ratio",numVal:ra.quickRatioTTM,value:ra.quickRatioTTM.toFixed(2),source:"FMP"};
       if(ra.netDebtToEBITDATTM!=null&&!snapshot.netDebtEbitda)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",numVal:ra.netDebtToEBITDATTM,value:ra.netDebtToEBITDATTM.toFixed(2)+"x",source:"FMP"};
+      // netDebtEbitda fallbacks: try all FMP field name variants
+      if(!snapshot.netDebtEbitda){var _ndeb=km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:km.netDebtToEbitda!=null?km.netDebtToEbitda:ra.netDebtToEbitdaTTM!=null?ra.netDebtToEbitdaTTM:ra.netDebtEBITDARatioTTM!=null?ra.netDebtEBITDARatioTTM:null;if(_ndeb!=null)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",numVal:_ndeb,value:_ndeb.toFixed(2)+"x",source:"FMP"}}
       if(ra.priceEarningsToGrowthRatioTTM!=null&&!snapshot.peg)snapshot.peg={label:"PEG",numVal:ra.priceEarningsToGrowthRatioTTM,value:ra.priceEarningsToGrowthRatioTTM.toFixed(2),source:"FMP"};
       if(fmpMap.fcfMargin&&fmpMap.fcfMargin.v!=null&&!snapshot.fcfMargin)snapshot.fcfMargin={label:"FCF Margin",numVal:fmpMap.fcfMargin.v,value:fmpMap.fcfMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.rndMargin&&fmpMap.rndMargin.v!=null&&!snapshot.rndMargin)snapshot.rndMargin={label:"R&D / Revenue",numVal:fmpMap.rndMargin.v,value:fmpMap.rndMargin.v.toFixed(1)+"%",source:"FMP"};
@@ -933,7 +939,8 @@ function TrackerApp(props){
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
   var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
-  var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
+  var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
+if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   var _streakData=useState(function(){try{var s=localStorage.getItem('ta-streak');return s?JSON.parse(s):{current:0,best:0}}catch(e){return{current:0,best:0}}}),streakData=_streakData[0],setStreakData=_streakData[1];
@@ -6811,20 +6818,28 @@ function TrackerApp(props){
         return wN>0?wSum/wN:null;
       });
 
-      var COL_W=isMobile?60:72;
+      var COL_W=isMobile?54:68;
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         {/* Table header */}
-        <div style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+K.bdr,gap:0,position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid "+K.bdr,gap:0}}>
           <div style={{flex:1,minWidth:isMobile?90:120}}>
             <span style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>Company</span>
           </div>
           {activeCols.map(function(m){return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
-            <span style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}} title={m.tip}>{isMobile?m.short:m.label}</span>
+            <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}} title={m.tip}>{m.short}</span>
           </div>})}
-          <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
-            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":"transparent"),borderRadius:5,cursor:"pointer",padding:"3px 5px",display:"flex",alignItems:"center",gap:3}} title="Customize columns">
-              <IC name="gear" size={11} color={showFundCfg?K.acc:K.dim}/>
-              {!isMobile&&<span style={{fontSize:9,color:showFundCfg?K.acc:K.dim,fontFamily:fm}}>Edit</span>}
+          <div style={{width:isMobile?24:56,flexShrink:0,display:"flex",justifyContent:"flex-end",gap:4,position:"relative"}}>
+            {!isMobile&&<button onClick={function(){
+              var toRefresh=filtered.filter(function(c2){return c2.ticker});
+              if(toRefresh.length===0)return;
+              toRefresh.forEach(function(c2){upd(c2.id,{lastChecked:null})});
+              showToast("Refreshing fundamentals for "+toRefresh.length+" holdings…","info",3000);
+              setTimeout(function(){toRefresh.forEach(function(c2){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:res.snapshot,lastChecked:new Date().toISOString()})})})},100);
+            }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:5,cursor:"pointer",padding:"3px 7px",display:"flex",alignItems:"center",gap:3,fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}} title="Refresh fundamental data for all holdings">
+              ↺ Refresh all
+            </button>}
+            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
+              <IC name="gear" size={10} color={showFundCfg?K.acc:K.dim}/>
             </button>
             {/* Column picker dropdown */}
             {showFundCfg&&<div style={{position:"absolute",right:0,top:30,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 14px",boxShadow:"0 6px 24px rgba(0,0,0,.25)",zIndex:60,minWidth:260,maxHeight:380,overflowY:"auto"}} onClick={function(e){e.stopPropagation()}}>
