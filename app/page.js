@@ -4328,13 +4328,14 @@ function TrackerApp(props){
           else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
             divInfo.push({l:"Dividend",v:"None",isNeutral:true})}
           // Shareholder yield = div yield + buyback yield
-          if(snap.fcfYield&&snap.fcfYield.numVal!=null){
-            var _divY=divInfo.find(function(d){return d.l==="Yield"});var _divYV=_divY?parseFloat(_divY.v):0;
-            var _bbyV=snap.buybackYield&&snap.buybackYield.numVal!=null?snap.buybackYield.numVal:0;
-            var _shy=_divYV+_bbyV;
-            if(_shy>0.5)divInfo.push({l:"Shareholder Yield",v:_shy.toFixed(1)+"%",isGood:_shy>5,tip:"Div yield + buyback yield"});
-          }
-          if(snap.divGrowth&&snap.divGrowth.numVal!=null&&Math.abs(snap.divGrowth.numVal)<100)divInfo.push({l:"Div Growth YoY",v:(snap.divGrowth.numVal>=0?"+":"")+snap.divGrowth.numVal.toFixed(1)+"%",isGood:snap.divGrowth.numVal>0});
+          try{
+          var _divYEntry=divInfo.find(function(d){return d.l==="Yield"});
+          var _divYVNum=_divYEntry?Number(parseFloat(_divYEntry.v)||0):0;
+          var _bbyVNum=snap.buybackYield&&snap.buybackYield.numVal!=null&&!isNaN(snap.buybackYield.numVal)?Number(snap.buybackYield.numVal):0;
+          var _shyNum=_divYVNum+_bbyVNum;
+          if(_shyNum>0.5&&isFinite(_shyNum))divInfo.push({l:"Shareholder Yield",v:_shyNum.toFixed(1)+"%",isGood:_shyNum>5,tip:"Div yield + buyback yield"});
+          }catch(shyErr){}
+          try{if(snap.divGrowth&&snap.divGrowth.numVal!=null&&!isNaN(snap.divGrowth.numVal)&&Math.abs(snap.divGrowth.numVal)<100)divInfo.push({l:"Div Growth",v:(snap.divGrowth.numVal>=0?"+":"")+Number(snap.divGrowth.numVal).toFixed(1)+"%",isGood:snap.divGrowth.numVal>0});}catch(dgErr){}
           if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
           if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
           if(snap.mktCap)health.push({l:"Market Cap",v:snap.mktCap.value});
@@ -4344,17 +4345,16 @@ function TrackerApp(props){
           if(snap.buybackYield)health.push({l:"Buyback Yield",v:snap.buybackYield.value,isGood:true});
           // Price vs Value section
           var pvSection=[];
-          var _cp=pos.currentPrice||0;
-          // Target price upside
-          if(c.targetPrice>0&&_cp>0){var _tgap=((c.targetPrice-_cp)/_cp*100);pvSection.push({l:"Target Price",v:cSym+c.targetPrice.toFixed(2),isGood:_tgap>10,isNeutral:Math.abs(_tgap)<=10,tip:(_tgap>0?"↑"+_tgap.toFixed(0)+"% upside":"↓"+Math.abs(_tgap).toFixed(0)+"% above target")})}
-          // Graham number
-          var _gn=snap.grahamNum&&snap.grahamNum.numVal?snap.grahamNum.numVal:0;
-          if(_gn>0&&_cp>0&&_gn<_cp*5){var _gg=((_gn-_cp)/_cp*100);pvSection.push({l:"Graham Number",v:cSym+_gn.toFixed(2),isGood:_cp<=_gn,isNeutral:_cp>_gn&&_cp<_gn*1.3,tip:_cp<=_gn?"Trading below Graham value":Math.abs(_gg).toFixed(0)+"% above Graham"})}
-          // P/E-based fair value (15× earnings = Buffett rule of thumb)
-          var _eps=snap.eps&&snap.eps.numVal!=null?snap.eps.numVal:0;
-          if(_eps>0&&_cp>0){var _fv15=_eps*15;var _fvUp=((_fv15-_cp)/_cp*100);if(Math.abs(_fvUp)<200)pvSection.push({l:"15× Earnings FV",v:cSym+_fv15.toFixed(2),isGood:_cp<=_fv15,isNeutral:_cp>_fv15&&_cp<_fv15*1.2,tip:"Buffett heuristic: 15× normalized EPS = "+(_fvUp>0?"↑"+_fvUp.toFixed(0)+"% upside":"↓"+Math.abs(_fvUp).toFixed(0)+"% premium")})}
-          // FCF-based fair value: FCF yield ≥ 6% = fair
-          if(snap.fcfYield&&snap.fcfYield.numVal!=null&&snap.fcf&&snap.fcf.numVal!=null&&_cp>0){var _fcfFV=snap.fcf.numVal/0.05;if(_fcfFV>0&&Math.abs((_fcfFV-_cp)/_cp)<5)pvSection.push({l:"FCF @ 5% Yield",v:cSym+_fcfFV.toFixed(2),isGood:_cp<=_fcfFV,tip:"Price at which FCF yield = 5%"})}
+          try{
+          var _cp=pos&&pos.currentPrice>0?pos.currentPrice:0;
+          if(c.targetPrice>0&&_cp>0){var _tgap=((c.targetPrice-_cp)/_cp*100);pvSection.push({l:"vs Target",v:(_tgap>0?"+":"")+_tgap.toFixed(0)+"%",isGood:_tgap>0,tip:"Target: "+cSym+Number(c.targetPrice).toFixed(2)})}
+          var _gnVal=snap.grahamNum&&snap.grahamNum.numVal!=null?Number(snap.grahamNum.numVal):0;
+          if(_gnVal>0&&_cp>0&&_gnVal<_cp*10){var _gg=((_gnVal-_cp)/_cp*100);pvSection.push({l:"Graham #",v:cSym+_gnVal.toFixed(2),isGood:_cp<=_gnVal,tip:(_cp<=_gnVal?"Below":"Above")+" Graham by "+Math.abs(_gg).toFixed(0)+"%"})}
+          var _epsVal=snap.eps&&snap.eps.numVal!=null&&!isNaN(snap.eps.numVal)?Number(snap.eps.numVal):0;
+          if(_epsVal>0&&_cp>0){var _fv15=_epsVal*15;var _fvUp=((_fv15-_cp)/_cp*100);if(Math.abs(_fvUp)<300)pvSection.push({l:"15x EPS FV",v:cSym+_fv15.toFixed(2),isGood:_cp<_fv15,tip:"15x earnings = "+cSym+_fv15.toFixed(2)+(_fvUp>0?" ("+_fvUp.toFixed(0)+"% upside)":"")})}
+          var _fcfVal=snap.fcf&&snap.fcf.numVal!=null&&!isNaN(snap.fcf.numVal)?Number(snap.fcf.numVal):0;
+          if(_fcfVal>0&&_cp>0){var _fcfFV=_fcfVal/0.05;if(_fcfFV>0&&_fcfFV<_cp*10)pvSection.push({l:"FCF@5% FV",v:cSym+_fcfFV.toFixed(2),isGood:_cp<_fcfFV,tip:"Price implied by 5% FCF yield"})}
+          }catch(pvErr){pvSection=[];}
           var sections=[];
           if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
