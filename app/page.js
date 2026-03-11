@@ -870,6 +870,11 @@ function TrackerApp(props){
   var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");return s?JSON.parse(s):["trail","hub","review","add"]}catch(e){return["trail","hub","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
   var _fabCust=useState(false),fabCustomize=_fabCust[0],setFabCustomize=_fabCust[1];
   function saveFabCfg(v){setFabCfg(v);try{localStorage.setItem("ta-fab-cfg",JSON.stringify(v))}catch(e){}}
+  // ── Command Palette ──
+  var _cmd=useState(false),cmdOpen=_cmd[0],setCmdOpen=_cmd[1];
+  var _cmdQ=useState(""),cmdQuery=_cmdQ[0],setCmdQuery=_cmdQ[1];
+  var _cmdIdx=useState(0),cmdIdx=_cmdQ[0],setCmdIdx=_cmdIdx[1];
+  var cmdInputRef=useRef(null);
   // ── Subscription / Tier ──
   var FREE_LIMIT=3;var TRIAL_BASE=14;var TRIAL_BONUS=16;var TRIAL_TOTAL=TRIAL_BASE+TRIAL_BONUS;var THESIS_UNLOCK=3;
   var _plan=useState(function(){try{return localStorage.getItem("ta-plan")||"free"}catch(e){return"free"}}),plan=_plan[0],setPlan=_plan[1];
@@ -1302,6 +1307,17 @@ function TrackerApp(props){
   useEffect(function(){if(!fabOpen)return;function closeOnOutside(){setFabOpen(false);setFabCustomize(false)}
     var t=setTimeout(function(){window.addEventListener("click",closeOnOutside)},50);
     return function(){clearTimeout(t);window.removeEventListener("click",closeOnOutside)}},[fabOpen]);
+  // ⌘K / Ctrl+K global keyboard handler
+  useEffect(function(){
+    function onKey(e){
+      if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0)}return!o});return}
+      if(!cmdOpen)return;
+      if(e.key==="Escape"){setCmdOpen(false);return}
+    }
+    window.addEventListener("keydown",onKey);
+    return function(){window.removeEventListener("keydown",onKey)}
+  },[cmdOpen]);
+  useEffect(function(){if(cmdOpen&&cmdInputRef.current){setTimeout(function(){cmdInputRef.current&&cmdInputRef.current.focus()},30)}},[cmdOpen]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   // ── Inject global CSS for animations & polish ──
   useEffect(function(){
@@ -2782,6 +2798,13 @@ function TrackerApp(props){
     return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
     <div style={{width:isMobile?300:isThesis?268:240,minWidth:isMobile?300:isThesis?268:240,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":isThesis?"4px 0 40px rgba(0,0,0,.2)":"none",transition:"transform .2s ease"}}>
     <div style={{padding:isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:isThesis?15:13,fontWeight:isThesis?800:600,color:sideText,letterSpacing:isThesis?"-0.3px":1.5,fontFamily:fm}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
+    {!isMobile&&<div style={{padding:"10px 14px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr)}} onClick={function(e){e.stopPropagation();setCmdOpen(true);setCmdQuery("");setCmdIdx(0)}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,background:sideDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)",borderRadius:isThesis?10:6,padding:"7px 12px",cursor:"text",border:"1px solid "+(sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"),transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"50"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}}>
+        <IC name="search" size={13} color={sideDim2}/>
+        <span style={{flex:1,fontSize:12,color:sideDim2,fontFamily:fm}}>Search…</span>
+        <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
+      </div>
+    </div>}
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
     {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
@@ -8267,6 +8290,109 @@ function TrackerApp(props){
         <span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400}}>{item.label}</span>
       </button>})}
     </div>}
+    {/* ── ⌘K Command Palette ── */}
+    {cmdOpen&&(function(){
+      var q=cmdQuery.toLowerCase().trim();
+      var cmdPortfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+      // Build result groups
+      var results=[];
+      // 1. Companies — match ticker or name
+      var coMatches=cos.filter(function(c){return!q||(c.ticker.toLowerCase().indexOf(q)>=0||c.name.toLowerCase().indexOf(q)>=0)}).slice(0,q?6:5);
+      if(coMatches.length){results.push({group:"Holdings",items:coMatches.map(function(c){
+        var h=gH(c.kpis);var pos2=c.position||{};var isPort=(c.status||"portfolio")==="portfolio";
+        return{id:"co-"+c.id,label:c.ticker,sub:c.name,badge:isPort?null:"watchlist",badgeColor:K.amb,
+          meta:pos2.currentPrice>0?cSym+pos2.currentPrice.toFixed(2):null,
+          icon:"overview",color:K.blue,
+          action:function(){setCmdOpen(false);setCmdQuery("");setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}
+      })})}
+      // 2. Pages
+      var PAGES=[
+        {id:"pg-dash",label:"Portfolio Overview",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("dashboard")}},
+        {id:"pg-hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
+        {id:"pg-trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
+        {id:"pg-review",label:"Weekly Review",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
+        {id:"pg-calendar",label:"Earnings Calendar",icon:"target",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("calendar")}},
+        {id:"pg-analytics",label:"Analytics",icon:"bar",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("analytics")}},
+        {id:"pg-divs",label:"Dividend Hub",icon:"dollar",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("dividends")}},
+        {id:"pg-assets",label:"All Assets",icon:"trending",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("assets")}},
+        {id:"pg-library",label:"Library",icon:"video",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("library")}},
+        {id:"pg-timeline",label:"Timeline",icon:"clock",color:K.mid,action:function(){setCmdOpen(false);setSelId(null);setPage("timeline")}},
+        {id:"pg-lenses",label:"Investor Lenses",icon:"search",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("lenses")}},
+      ];
+      var pgMatches=PAGES.filter(function(p){return!q||(p.label.toLowerCase().indexOf(q)>=0)});
+      if(pgMatches.length)results.push({group:"Pages",items:pgMatches.slice(0,q?8:5)});
+      // 3. Actions
+      var CMD_ACTIONS=[
+        {id:"act-add",label:"Add New Holding",icon:"plus",color:K.acc,action:function(){setCmdOpen(false);setModal({type:"add"})}},
+        {id:"act-review",label:"Start Weekly Review",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
+        {id:"act-theme",label:"Switch Theme",icon:"gear",color:K.mid,action:function(){setCmdOpen(false);cycleTheme()}},
+      ];
+      // Context-sensitive actions — use selected or first company
+      var cmdTgt=sel||(cmdPortfolio[0]||null);
+      if(cmdTgt){
+        CMD_ACTIONS.push({id:"act-thesis",label:"Write Thesis — "+cmdTgt.ticker,icon:"lightbulb",color:K.grn,action:function(){setCmdOpen(false);setSelId(cmdTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"thesis"})},80)}});
+        CMD_ACTIONS.push({id:"act-kpi",label:"Edit KPIs — "+cmdTgt.ticker,icon:"target",color:K.amb,action:function(){setCmdOpen(false);setSelId(cmdTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"kpi"})},80)}});
+        CMD_ACTIONS.push({id:"act-conv",label:"Rate Conviction — "+cmdTgt.ticker,icon:"star",color:K.amb,action:function(){setCmdOpen(false);setSelId(cmdTgt.id);setPage("dashboard");setTimeout(function(){setModal({type:"conviction"})},80)}});
+      }
+      var actMatches=CMD_ACTIONS.filter(function(a){return!q||(a.label.toLowerCase().indexOf(q)>=0)});
+      if(actMatches.length)results.push({group:"Actions",items:actMatches.slice(0,q?8:4)});
+      // Flatten for keyboard nav
+      var flat=results.reduce(function(acc,g){return acc.concat(g.items)},[]);
+      var selIdx=Math.min(cmdIdx,flat.length-1);
+      function runSelected(){if(flat[selIdx])flat[selIdx].action()}
+      function onInputKey(e){
+        if(e.key==="ArrowDown"){e.preventDefault();setCmdIdx(function(i){return Math.min(i+1,flat.length-1)})}
+        else if(e.key==="ArrowUp"){e.preventDefault();setCmdIdx(function(i){return Math.max(i-1,0)})}
+        else if(e.key==="Enter"){e.preventDefault();runSelected()}
+      }
+      var globalIdx=0;
+      return<div style={{position:"fixed",inset:0,zIndex:9000,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:"14vh",background:"rgba(0,0,0,.55)",backdropFilter:"blur(6px)",animation:"fadeInFast .1s ease"}} onClick={function(){setCmdOpen(false)}}>
+        <div style={{width:"100%",maxWidth:560,background:K.card,borderRadius:isThesis?20:12,border:"1px solid "+K.bdr2,boxShadow:"0 32px 80px rgba(0,0,0,.5)",overflow:"hidden",animation:"slideUp .18s ease-out both"}} onClick={function(e){e.stopPropagation()}}>
+          {/* Search input */}
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",borderBottom:"1px solid "+K.bdr}}>
+            <IC name="search" size={18} color={K.dim}/>
+            <input ref={cmdInputRef} value={cmdQuery} onChange={function(e){setCmdQuery(e.target.value);setCmdIdx(0)}} onKeyDown={onInputKey}
+              placeholder="Search companies, pages, actions…"
+              style={{flex:1,background:"none",border:"none",outline:"none",fontSize:16,color:K.txt,fontFamily:fm,caretColor:K.acc}}/>
+            {cmdQuery&&<button onClick={function(){setCmdQuery("");setCmdIdx(0);cmdInputRef.current&&cmdInputRef.current.focus()}} style={{background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"2px 6px",borderRadius:4,fontFamily:fm}}>✕</button>}
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:5,padding:"2px 7px",flexShrink:0}}>Esc</span>
+          </div>
+          {/* Results */}
+          {flat.length>0?<div style={{maxHeight:380,overflowY:"auto",padding:"8px 0"}}>
+            {results.map(function(group){return<div key={group.group}>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,padding:"10px 20px 5px",fontWeight:600}}>{group.group}</div>
+              {group.items.map(function(item){var gi=globalIdx++;var isActive=gi===selIdx;
+                return<div key={item.id} onMouseEnter={function(){setCmdIdx(gi)}} onClick={item.action}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"9px 20px",cursor:"pointer",background:isActive?(K.acc+"18"):("transparent"),transition:"background .08s"}}>
+                  <div style={{width:32,height:32,borderRadius:isThesis?10:7,background:item.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <IC name={item.icon} size={15} color={item.color}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,color:isActive?K.txt:K.txt,fontFamily:fm,fontWeight:isActive?600:400,display:"flex",alignItems:"center",gap:7}}>
+                      {item.label}
+                      {item.badge&&<span style={{fontSize:9,fontFamily:fm,color:item.badgeColor,background:item.badgeColor+"18",border:"1px solid "+item.badgeColor+"30",borderRadius:4,padding:"1px 5px",fontWeight:700,textTransform:"uppercase"}}>{item.badge}</span>}
+                    </div>
+                    {item.sub&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.sub}</div>}
+                  </div>
+                  {item.meta&&<span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{item.meta}</span>}
+                  {isActive&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:5,padding:"2px 7px",flexShrink:0}}>↵</span>}
+                </div>
+              })}
+            </div>})}
+          </div>:<div style={{padding:"32px 20px",textAlign:"center",color:K.dim,fontSize:13,fontFamily:fm}}>No results for "{cmdQuery}"</div>}
+          {/* Footer hint */}
+          <div style={{borderTop:"1px solid "+K.bdr,padding:"8px 20px",display:"flex",gap:16}}>
+            {[["↑↓","Navigate"],["↵","Open"],["Esc","Close"]].map(function(h){return<span key={h[0]} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:K.dim,fontFamily:fm}}>
+              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 6px",fontSize:10}}>{h[0]}</span>{h[1]}
+            </span>})}
+            <span style={{marginLeft:"auto",fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 5px",fontSize:10}}>⌘K</span>to open
+            </span>
+          </div>
+        </div>
+      </div>
+    })()}
     {/* ── Desktop Quick-Access FAB ── */}
     {!isMobile&&(function(){
       // All available shortcuts
