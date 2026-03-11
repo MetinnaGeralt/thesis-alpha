@@ -1011,7 +1011,7 @@ function TrackerApp(props){
     setBriefNewsLoading(false)}
     function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
     addXP(25,"Weekly review");updateStreak(true);
-    if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
+    if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");setTimeout(checkAchievements,600);showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
     return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
   var currentWeekReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
@@ -1078,6 +1078,81 @@ function TrackerApp(props){
   // Track milestones for first-time celebrations
   var _milestones=useState(function(){try{var s=localStorage.getItem('ta-milestones');return s?JSON.parse(s):{}}catch(e){return{}}}),milestones=_milestones[0],setMilestones=_milestones[1];
   function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}showToast(msg,"milestone",5000);return true}return false}
+
+  // ── Achievement Badges ──
+  var ACHIEVEMENT_BADGES=[
+    {id:"first_blood",icon:"🎯",name:"First Blood",desc:"Added your first holding",hint:"Add a company to your portfolio",rarity:"bronze",
+      check:function(d){return d.cos.length>=1}},
+    {id:"the_novelist",icon:"📖",name:"The Novelist",desc:"Wrote a thesis with all 4 sections — Core, Moat, Risks & Sell criteria",hint:"Write a complete thesis with all 4 sections filled",rarity:"silver",
+      check:function(d){return!!d.milestones.thesis4}},
+    {id:"the_architect",icon:"🏗️",name:"The Architect",desc:"Defined KPIs for every portfolio holding",hint:"Add KPIs to all your portfolio companies (min 3 companies)",rarity:"silver",
+      check:function(d){return d.portfolio.length>=3&&d.withKpis.length>=d.portfolio.length}},
+    {id:"conviction_king",icon:"👑",name:"Conviction King",desc:"Rated conviction on every portfolio holding",hint:"Set a conviction rating on all companies (min 3 companies)",rarity:"silver",
+      check:function(d){return d.portfolio.length>=3&&d.withConviction.length>=d.portfolio.length}},
+    {id:"castle_builder",icon:"🏰",name:"Castle Builder",desc:"Classified moat type on 3 or more holdings",hint:"Use the Moat Classifier on 3 companies",rarity:"silver",
+      check:function(d){return d.withMoat.length>=3}},
+    {id:"the_analyst",icon:"🔬",name:"The Analyst",desc:"Tracking 10 or more KPIs across your portfolio",hint:"Add KPIs across your holdings until you reach 10 total",rarity:"gold",
+      check:function(d){return d.totalKpis>=10}},
+    {id:"the_historian",icon:"📚",name:"The Historian",desc:"Logged 10 or more research trail entries",hint:"Add research documents until you reach 10 total",rarity:"silver",
+      check:function(d){return d.totalDocs>=10}},
+    {id:"the_hawk",icon:"🦅",name:"The Hawk",desc:"Checked earnings results 3 or more times",hint:"Use Check Earnings on 3 separate reports",rarity:"silver",
+      check:function(d){return d.totalEarningsChecked>=3}},
+    {id:"clean_sweep",icon:"🧹",name:"Clean Sweep",desc:"Completed 4 consecutive weekly reviews",hint:"Maintain a 4-week review streak",rarity:"silver",
+      check:function(d){return d.reviewStreak>=4}},
+    {id:"the_gardener",icon:"🌱",name:"The Gardener",desc:"Maintained an 8-week review streak",hint:"Maintain a review streak for 8 consecutive weeks",rarity:"gold",
+      check:function(d){return d.reviewStreak>=8}},
+    {id:"the_prepper",icon:"⚡",name:"The Prepper",desc:"Completed the pre-earnings ritual 3 times",hint:"Work through the pre-earnings checklist before 3 reports",rarity:"gold",
+      check:function(d){return d.ritualCount>=3}},
+    {id:"thesis_collector",icon:"✍️",name:"Thesis Collector",desc:"Wrote investment theses for 5 or more holdings",hint:"Write theses until you have 5 companies covered",rarity:"gold",
+      check:function(d){return d.withThesis.length>=5}},
+    {id:"diamond_hands",icon:"💎",name:"Diamond Hands",desc:"Held a position for 365 days or more",hint:"Hold any position for a full year",rarity:"gold",
+      check:function(d){return d.hasDiamondHands}},
+    {id:"the_stoic",icon:"🪨",name:"The Stoic",desc:"Kept conviction unchanged through a 15%+ drawdown on any holding",hint:"Don't change your conviction rating during a major drawdown",rarity:"platinum",
+      check:function(d){return!!d.milestones.stoic}},
+    {id:"the_contrarian",icon:"⚔️",name:"The Contrarian",desc:"Added a holding while it was down 20% or more",hint:"Buy the fear — add a company during a significant drawdown",rarity:"platinum",
+      check:function(d){return!!d.milestones.contrarian}},
+  ];
+  var RARITY_STYLE={
+    bronze:{bg:"#CD7F3215",border:"#CD7F3240",glow:"#CD7F32",label:"Bronze"},
+    silver:{bg:"#94A3B815",border:"#94A3B840",glow:"#94A3B8",label:"Silver"},
+    gold:{bg:"#F59E0B15",border:"#F59E0B40",glow:"#F59E0B",label:"Gold"},
+    platinum:{bg:"#8B5CF615",border:"#8B5CF640",glow:"#8B5CF6",label:"Platinum"},
+  };
+  var _achievements=useState(function(){try{var s=localStorage.getItem("ta-achievements");return s?JSON.parse(s):{}}catch(e){return{}}}),achievements=_achievements[0],setAchievements=_achievements[1];
+  function checkAchievements(extraMilestones){
+    var mls=extraMilestones||milestones;
+    var port=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var rituals={};try{var rs=localStorage.getItem("ta-rituals");rituals=rs?JSON.parse(rs):{}}catch(e){}
+    var now2=new Date();
+    var d2={
+      cos:cos,portfolio:port,milestones:mls,reviewStreak:reviewStreak,
+      withKpis:port.filter(function(c){return c.kpis.length>=1}),
+      withConviction:port.filter(function(c){return c.conviction>0}),
+      withMoat:cos.filter(function(c){return Object.keys(c.moatTypes||{}).some(function(k){return c.moatTypes[k]&&c.moatTypes[k].active})}),
+      withThesis:cos.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>50}),
+      totalKpis:cos.reduce(function(s,c){return s+c.kpis.length},0),
+      totalDocs:cos.reduce(function(s,c){return s+(c.docs||[]).length},0),
+      totalEarningsChecked:cos.reduce(function(s,c){return s+(c.earningsHistory||[]).length},0),
+      ritualCount:Object.keys(rituals).length,
+      hasDiamondHands:cos.some(function(c){var pd=c.purchaseDate||c.addedAt;if(!pd)return false;return Math.floor((now2-new Date(pd))/86400000)>=365}),
+    };
+    var newlyEarned=[];
+    ACHIEVEMENT_BADGES.forEach(function(b){
+      if(!achievements[b.id]){
+        try{if(b.check(d2)){newlyEarned.push(b)}}catch(e){}
+      }
+    });
+    if(newlyEarned.length>0){
+      var na=Object.assign({},achievements);
+      newlyEarned.forEach(function(b){na[b.id]=new Date().toISOString()});
+      setAchievements(na);
+      try{localStorage.setItem("ta-achievements",JSON.stringify(na))}catch(e){}
+      // Celebrate first unlocked badge
+      var b0=newlyEarned[0];
+      var rs=RARITY_STYLE[b0.rarity]||RARITY_STYLE.silver;
+      showCelebration(b0.icon+" "+b0.name,b0.desc+(newlyEarned.length>1?" (+"+(newlyEarned.length-1)+" more badges!)":""),null,rs.glow);
+    }
+  }
   var toastTimer=useRef(null);
   var _prevStreak=useRef(0);
   function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
@@ -1627,6 +1702,8 @@ function TrackerApp(props){
       // Generate and show
       setTimeout(function(){setShowQLetter(qKey)},3000)}
   },[loaded,cos.length]);
+  // Check achievements whenever relevant data changes
+  useEffect(function(){if(!loaded)return;checkAchievements()},[loaded,cos.length,reviewStreak,milestones.thesis4,milestones.first_moat,milestones.stoic,milestones.contrarian]);
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
@@ -1733,7 +1810,11 @@ function TrackerApp(props){
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
       var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString(),purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
-      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
+      setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};
+      // Contrarian badge — added while down 20%+
+      var _p=nc.position;if(_p.currentPrice>0&&_p.avgCost>0&&((_p.currentPrice-_p.avgCost)/_p.avgCost)<=-0.2){checkMilestone("contrarian","⚔️ Contrarian move — bought during a 20%+ drawdown!")}
+      setTimeout(checkAchievements,300);
+      setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
@@ -1886,7 +1967,7 @@ function TrackerApp(props){
         {!isChanged&&<div/>}
         <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
               // Auto-log thesis snapshot
-              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis")}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
+              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis");setTimeout(checkAchievements,200)}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
         var numMissed=kpiResults.filter(function(x){return x.status==="missed"}).length;
         if(totalKpis>0&&numMissed>0&&!allMet){showToast(co.ticker+": "+numMissed+" KPI"+(numMissed>1?"s":"")+" missed — review the thesis?","warn",5000)}
         if(totalKpis>0&&allMet){launchConfetti(3000);showCelebration(co.ticker+" KPIs: All Met!","Every metric hit its target. Your thesis is being confirmed by the numbers.",null,K.grn)}
@@ -1913,7 +1994,7 @@ function TrackerApp(props){
         upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd2):k})})})
       } else if(added.length>0){
         upd(selId,function(c){var newKpis=c.kpis;added.forEach(function(kd3){newKpis=newKpis.concat([Object.assign({id:nId(newKpis),lastResult:null},kd3)])});
-          if(c.kpis.length===0&&newKpis.length>=1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+          if(c.kpis.length===0&&newKpis.length>=1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.");setTimeout(checkAchievements,400)},300);
           addXP(5*added.length,"KPIs added");
           if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
           return Object.assign({},c,{kpis:newKpis})})}
@@ -2145,6 +2226,10 @@ function TrackerApp(props){
     var delta=prevRating!==null?r-prevRating:null;
     function toggleFlag(id){setFlags(function(p){var n=Object.assign({},p);n[id]=!p[id];return n})}
     function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
+      // Stoic badge — conviction unchanged (delta 0) while holding is down 15%+
+      var pos2=sel.position||{};var drawdown=pos2.currentPrice>0&&pos2.avgCost>0?((pos2.currentPrice-pos2.avgCost)/pos2.avgCost):0;
+      if(delta===0&&drawdown<=-0.15){checkMilestone("stoic","🪨 The Stoic — conviction held through a 15%+ drawdown");setTimeout(checkAchievements,300)}
+      else{setTimeout(checkAchievements,300)}
       var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);addXP(8,"Conviction rated");setModal(null)}
     if(step==="checklist")return<Modal title={null} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{marginBottom:20}}>
@@ -2935,6 +3020,199 @@ function TrackerApp(props){
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
   // ── Research Links (paste URLs per holding) ──
+  // ── Curated Sources — RSS/Substack/Twitter feed system ──
+  var feedCache=useRef({});
+  function substackRSS(handle){var h=handle.trim().replace(/^@/,"").replace(/https?:\/\/(www\.)?/,"").replace(/\.substack\.com.*/,"");return"https://"+h+".substack.com/feed"}
+  function twitterURL(handle){var h=handle.trim().replace(/^@/,"");return"https://x.com/"+h}
+  function sourceRSSUrl(src){
+    if(src.type==="substack")return substackRSS(src.handle);
+    if(src.type==="rss")return src.handle;
+    if(src.type==="youtube"){var cid=src.handle.trim();return"https://www.youtube.com/feeds/videos.xml?channel_id="+cid}
+    return null;
+  }
+  async function fetchFeed(src){
+    var rssUrl=sourceRSSUrl(src);
+    if(!rssUrl)return[];
+    var cacheKey=rssUrl;
+    if(feedCache.current[cacheKey]&&feedCache.current[cacheKey].ts>Date.now()-300000)return feedCache.current[cacheKey].items;
+    try{
+      var proxyUrl="https://api.allorigins.win/get?url="+encodeURIComponent(rssUrl);
+      var res=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)});
+      var json=await res.json();
+      var xml=json.contents;
+      var parser=new DOMParser();
+      var doc=parser.parseFromString(xml,"application/xml");
+      var items=[];
+      // RSS 2.0
+      doc.querySelectorAll("item").forEach(function(el){
+        var title=(el.querySelector("title")||{}).textContent||"";
+        var link=(el.querySelector("link")||{}).textContent||(el.querySelector("guid")||{}).textContent||"";
+        var pubDate=(el.querySelector("pubDate")||{}).textContent||"";
+        var desc=(el.querySelector("description")||{}).textContent||"";
+        var content=el.querySelector("content\\:encoded");
+        var body=content?content.textContent:desc;
+        // Strip HTML tags from excerpt
+        var excerpt=body.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().substring(0,240);
+        if(excerpt.length===240)excerpt+="…";
+        items.push({title:title.trim(),link:link.trim(),date:pubDate?new Date(pubDate):null,excerpt:excerpt,source:src});
+      });
+      // Atom
+      if(items.length===0){
+        doc.querySelectorAll("entry").forEach(function(el){
+          var title=(el.querySelector("title")||{}).textContent||"";
+          var linkEl=el.querySelector("link[rel='alternate'],link");
+          var link=linkEl?linkEl.getAttribute("href")||"":(el.querySelector("id")||{}).textContent||"";
+          var published=(el.querySelector("published")||el.querySelector("updated")||{}).textContent||"";
+          var summary=(el.querySelector("summary")||el.querySelector("content")||{}).textContent||"";
+          var excerpt=summary.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().substring(0,240);
+          if(excerpt.length===240)excerpt+="…";
+          items.push({title:title.trim(),link:link.trim(),date:published?new Date(published):null,excerpt:excerpt,source:src});
+        });
+      }
+      items.sort(function(a,b){return(b.date||0)-(a.date||0)});
+      feedCache.current[cacheKey]={items:items.slice(0,30),ts:Date.now()};
+      return items.slice(0,30);
+    }catch(e){console.warn("[ThesisAlpha] Feed fetch error:",e);return[]}
+  }
+
+  function CuratedSources(p){
+    var c=p.company;
+    var compact=p.compact||false;
+    var sources=c.curatedSources||[];
+    var _adding=useState(false),addingS=_adding[0],setAddingS=_adding[1];
+    var _type=useState("substack"),srcType=_type[0],setSrcType=_type[1];
+    var _handle=useState(""),handle=_handle[0],setHandle=_handle[1];
+    var _label=useState(""),srcLabel=_label[0],setSrcLabel=_label[1];
+    var _feeds=useState({}),feeds=_feeds[0],setFeeds=_feeds[1];
+    var _loading=useState({}),loadingFeeds=_loading[0],setLoadingFeeds=_loading[1];
+    var _expanded=useState(null),expandedSrc=_expanded[0],setExpandedSrc=_expanded[1];
+    var SOURCE_TYPES=[
+      {v:"substack",l:"Substack",icon:"book",color:"#FF6719",ph:"authorname or full URL"},
+      {v:"rss",l:"RSS / Blog",icon:"news",color:K.acc,ph:"https://example.com/feed"},
+      {v:"twitter",l:"Twitter / X",icon:"msg",color:"#1DA1F2",ph:"@username"},
+      {v:"youtube",l:"YouTube",icon:"video",color:"#FF0000",ph:"Channel ID (UCxxxxxx)"},
+    ];
+    var typeInfo=SOURCE_TYPES.find(function(t){return t.v===srcType})||SOURCE_TYPES[0];
+    function addSource(){
+      if(!handle.trim())return;
+      var autoLabel=srcLabel.trim();
+      if(!autoLabel){
+        var h2=handle.trim().replace(/^@/,"");
+        if(srcType==="substack")autoLabel=h2.replace(/\.substack\.com.*/,"")+" (Substack)";
+        else if(srcType==="twitter")autoLabel="@"+h2.replace(/^@/,"");
+        else if(srcType==="youtube")autoLabel="YouTube: "+h2.substring(0,20);
+        else{try{autoLabel=new URL(handle.trim().startsWith("http")?handle.trim():"https://"+handle.trim()).hostname.replace("www.","")}catch(e){autoLabel=handle.trim()}}
+      }
+      var ns={id:Date.now(),type:srcType,handle:handle.trim(),label:autoLabel,enabled:true,addedAt:new Date().toISOString()};
+      upd(c.id,function(prev){return Object.assign({},prev,{curatedSources:(prev.curatedSources||[]).concat([ns])})});
+      setHandle("");setSrcLabel("");setAddingS(false);
+    }
+    function removeSource(sid){upd(c.id,function(prev){return Object.assign({},prev,{curatedSources:(prev.curatedSources||[]).filter(function(s){return s.id!==sid})})})}
+    function toggleSource(sid){upd(c.id,function(prev){return Object.assign({},prev,{curatedSources:(prev.curatedSources||[]).map(function(s){return s.id===sid?Object.assign({},s,{enabled:!s.enabled}):s})})})}
+    useEffect(function(){
+      sources.filter(function(s){return s.enabled&&sourceRSSUrl(s)}).forEach(function(s){
+        if(feeds[s.id]!==undefined||loadingFeeds[s.id])return;
+        setLoadingFeeds(function(p2){return Object.assign({},p2,{[s.id]:true})});
+        fetchFeed(s).then(function(items){
+          setFeeds(function(p2){return Object.assign({},p2,{[s.id]:items})});
+          setLoadingFeeds(function(p2){var n=Object.assign({},p2);delete n[s.id];return n});
+        });
+      });
+    },[sources.map(function(s){return s.id+s.enabled}).join(",")]);
+    var hasSources=sources.length>0;
+    var feedItems=[];
+    sources.filter(function(s){return s.enabled&&feeds[s.id]}).forEach(function(s){
+      (feeds[s.id]||[]).slice(0,5).forEach(function(item){feedItems.push(Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,srcColor:SOURCE_TYPES.find(function(t){return t.v===s.type})?.color||K.acc}))});
+    });
+    feedItems.sort(function(a,b){return(b.date||0)-(a.date||0)});
+    return<div style={{marginBottom:20}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={Object.assign({},S.sec,{display:"flex",alignItems:"center",gap:8})}>
+          <IC name="news" size={14} color={K.dim}/>Curated Sources
+          {hasSources&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 6px"}}>{sources.length}</span>}
+        </div>
+        <button style={Object.assign({},S.btnP,{padding:"5px 12px",fontSize:12})} onClick={function(){setAddingS(!addingS)}}>+ Add Source</button>
+      </div>
+      {/* Add form */}
+      {addingS&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+        <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+          {SOURCE_TYPES.map(function(t){return<button key={t.v} onClick={function(){setSrcType(t.v)}} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(srcType===t.v?t.color:K.bdr),background:srcType===t.v?t.color+"15":"transparent",color:srcType===t.v?t.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:srcType===t.v?700:400}}>
+            <IC name={t.icon} size={11} color={srcType===t.v?t.color:K.dim}/>{t.l}
+          </button>})}
+        </div>
+        <Inp label={typeInfo.l+" handle / URL"} value={handle} onChange={setHandle} placeholder={typeInfo.ph} K={K}/>
+        <Inp label="Display name (optional)" value={srcLabel} onChange={setSrcLabel} placeholder={"e.g. Catzee, Not Boring, Stratechery…"} K={K}/>
+        {srcType==="twitter"&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:K.amb,fontFamily:fm}}>
+          Twitter/X requires a paid API — we'll link directly to their profile instead of fetching tweets.
+        </div>}
+        {srcType==="youtube"&&<div style={{background:K.blue+"08",border:"1px solid "+K.blue+"25",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:K.blue,fontFamily:fm}}>
+          Paste the channel ID from the YouTube URL (e.g. UCxxxxxx). Find it in the channel URL.
+        </div>}
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+          <button style={S.btn} onClick={function(){setAddingS(false);setHandle("");setSrcLabel("")}}>Cancel</button>
+          <button style={Object.assign({},S.btnP,{opacity:handle.trim()?1:.4})} onClick={addSource}>Save</button>
+        </div>
+      </div>}
+      {/* Source chips */}
+      {hasSources&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:feedItems.length>0?12:0}}>
+        {sources.map(function(s){
+          var ti=SOURCE_TYPES.find(function(t){return t.v===s.type})||SOURCE_TYPES[0];
+          var isLoading=loadingFeeds[s.id];
+          var isExpanded=expandedSrc===s.id;
+          return<div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:8,background:s.enabled?ti.color+"12":K.bg,border:"1px solid "+(s.enabled?ti.color+"35":K.bdr),opacity:s.enabled?1:.55,transition:"all .15s"}}>
+            <IC name={ti.icon} size={11} color={s.enabled?ti.color:K.dim}/>
+            <span style={{fontSize:11,fontWeight:600,color:s.enabled?K.txt:K.dim,fontFamily:fm}}>{s.label}</span>
+            {isLoading&&<span style={{fontSize:9,color:K.dim,animation:"pulse 1.2s infinite"}}>…</span>}
+            {feeds[s.id]&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{feeds[s.id].length}</span>}
+            <button onClick={function(){toggleSource(s.id)}} title={s.enabled?"Pause":"Enable"} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:K.dim,padding:"0 2px",opacity:.7}}>{s.enabled?"⏸":"▶"}</button>
+            {s.type!=="twitter"&&feeds[s.id]&&<button onClick={function(){setExpandedSrc(isExpanded?null:s.id)}} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:K.dim,padding:"0 2px"}}>{isExpanded?"▲":"▼"}</button>}
+            <button onClick={function(){removeSource(s.id)}} style={{background:"none",border:"none",cursor:"pointer",fontSize:11,color:K.dim,padding:"0 2px",opacity:.5}}>✕</button>
+          </div>
+        })}
+      </div>}
+      {/* Twitter link cards (no feed) */}
+      {sources.filter(function(s){return s.type==="twitter"&&s.enabled}).map(function(s){
+        return<a key={s.id} href={twitterURL(s.handle)} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,textDecoration:"none",marginBottom:4}}>
+          <IC name="msg" size={13} color="#1DA1F2"/>
+          <span style={{fontSize:12,color:K.txt,fontFamily:fm,flex:1}}>@{s.handle.replace(/^@/,"")}</span>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Open on X →</span>
+        </a>
+      })}
+      {/* Expanded single-source feed */}
+      {expandedSrc&&feeds[expandedSrc]&&<FeedItemList items={feeds[expandedSrc].slice(0,8)} K={K} fm={fm} fh={fh} isDark={isDark}/>}
+      {/* Combined recent feed (when not expanded) */}
+      {!expandedSrc&&feedItems.length>0&&<div>
+        <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8,marginTop:4}}>Recent Posts</div>
+        <FeedItemList items={feedItems.slice(0,6)} K={K} fm={fm} fh={fh} isDark={isDark} showSource/>
+      </div>}
+      {!hasSources&&!addingS&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
+        <div style={{fontSize:13,color:K.dim,marginBottom:4}}>Follow Substacks, RSS feeds & creators about {c.ticker}</div>
+        <div style={{fontSize:11,color:K.dim,opacity:.7}}>Posts appear here and in your global feed</div>
+      </div>}
+    </div>
+  }
+
+  function FeedItemList(p){var items=p.items||[];var K2=p.K;var fm2=p.fm;var isDark2=p.isDark;var showSource=p.showSource;
+    function fmtDate(d){if(!d)return"";var now=new Date();var diff=Math.floor((now-d)/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<7)return diff+"d ago";if(diff<30)return Math.floor(diff/7)+"w ago";return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
+    return<div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {items.map(function(item,i){
+        var srcColor=item.srcColor||K2.acc;
+        return<a key={i} href={item.link} target="_blank" rel="noreferrer" style={{display:"block",textDecoration:"none",background:K2.card,border:"1px solid "+K2.bdr,borderRadius:10,padding:"12px 14px",transition:"border-color .15s",borderLeft:"3px solid "+srcColor+"50"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=srcColor+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K2.bdr}}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
+            <div style={{fontSize:13,fontWeight:600,color:K2.txt,fontFamily:fm2,lineHeight:1.4,flex:1}}>{item.title}</div>
+            <span style={{fontSize:10,color:K2.dim,fontFamily:fm2,whiteSpace:"nowrap",marginTop:2}}>{fmtDate(item.date)}</span>
+          </div>
+          {item.excerpt&&<div style={{fontSize:11,color:K2.mid,fontFamily:fm2,lineHeight:1.6,marginBottom:showSource?6:0}}>{item.excerpt}</div>}
+          {showSource&&item.srcLabel&&<div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
+            <div style={{width:6,height:6,borderRadius:"50%",background:srcColor,flexShrink:0}}/>
+            <span style={{fontSize:10,color:K2.dim,fontFamily:fm2}}>{item.srcLabel}</span>
+            {item.source&&item.source.ticker&&<span style={{fontSize:10,color:K2.acc,fontFamily:fm2,fontWeight:600}}>· {item.source.ticker}</span>}
+          </div>}
+        </a>
+      })}
+    </div>
+  }
+
   function ResearchLinks(p){var c=p.company;var links=c.researchLinks||[];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
     var _url=useState(""),url=_url[0],setUrl=_url[1];var _label=useState(""),label=_label[0],setLabel=_label[1];var _cat=useState("article"),cat=_cat[0],setCat=_cat[1];
@@ -3579,7 +3857,7 @@ function TrackerApp(props){
           next[tid]=Object.assign({},cur,{active:!cur.active,strength:cur.strength||3,note:cur.note||""});
           upd(c.id,{moatTypes:next});
           if(!wasActive){var anyPrevMoats=false;cos.forEach(function(cc){var mt2=cc.moatTypes||{};Object.keys(mt2).forEach(function(k){if(mt2[k]&&mt2[k].active)anyPrevMoats=true})});
-            if(!anyPrevMoats)setTimeout(function(){checkMilestone("first_moat",String.fromCodePoint(0x1F3F0)+" First moat classified! Understanding competitive advantages is key.")},300)}}
+            if(!anyPrevMoats)setTimeout(function(){checkMilestone("first_moat",String.fromCodePoint(0x1F3F0)+" First moat classified! Understanding competitive advantages is key.");setTimeout(checkAchievements,400)},300)}}
         function setStrength(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
           next[tid]=Object.assign({},prev[tid]||{},  {strength:val});upd(c.id,{moatTypes:next})}
         function setNote(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
@@ -4736,6 +5014,8 @@ function TrackerApp(props){
         <DecisionJournal company={c}/>
         {/* Documents — memos, clips, notes */}
         <ThesisVault company={c}/>
+        {/* Curated Sources — RSS/Substack feeds */}
+        <CuratedSources company={c}/>
         {/* Research links */}
         <ResearchLinks company={c}/>
         {/* Stats */}
@@ -4913,7 +5193,10 @@ function TrackerApp(props){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
+        var earnedCount=ACHIEVEMENT_BADGES.filter(function(b){return!!achievements[b.id]}).length;
+        var allSources=cos.reduce(function(acc,c){return acc.concat((c.curatedSources||[]).filter(function(s){return s.enabled}).map(function(s){return Object.assign({},s,{ticker:c.ticker,coId:c.id})}));},[]);
+        var feedSourceCount=allSources.filter(function(s){return s.type!=="twitter"}).length;
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"feed",l:"My Feed",icon:"news",dot:feedSourceCount},{id:"badges",l:"Badges",icon:"shield",dot:earnedCount},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -4924,7 +5207,7 @@ function TrackerApp(props){
         </div>}
         return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
           {tabs.map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
-            <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}</button>})}</div>
+            <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}{tab.dot>0&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:K.grn,borderRadius:999,padding:"1px 5px",marginLeft:2,lineHeight:1.4}}>{tab.dot}</span>}</button>})}</div>
       })()}
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
@@ -5320,6 +5603,173 @@ function TrackerApp(props){
               <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{f2}</div></div>})}</div>
         </div>
       </div>}
+
+      {/* ═══ MY FEED TAB ═══ */}
+      {ht==="feed"&&(function(){
+        var _feedFilter=useState("all"),feedFilter=_feedFilter[0],setFeedFilter=_feedFilter[1];
+        var _allItems=useState([]),allFeedItems=_allItems[0],setAllFeedItems=_allItems[1];
+        var _feedLoading=useState(true),feedLoading=_feedLoading[0],setFeedLoading=_feedLoading[1];
+        var _refreshAt=useState(0),refreshAt=_refreshAt[0],setRefreshAt=_refreshAt[1];
+        // Collect all RSS sources across all companies
+        var allRSSSources=cos.reduce(function(acc,c){
+          return acc.concat((c.curatedSources||[]).filter(function(s){return s.enabled&&s.type!=="twitter"}).map(function(s){return Object.assign({},s,{ticker:c.ticker,coName:c.name,coId:c.id})}));
+        },[]);
+        var tickers=[...new Set(allRSSSources.map(function(s){return s.ticker}))];
+        useEffect(function(){
+          if(allRSSSources.length===0){setFeedLoading(false);return}
+          setFeedLoading(true);
+          Promise.all(allRSSSources.map(function(s){
+            return fetchFeed(s).then(function(items){
+              return items.map(function(item){return Object.assign({},item,{ticker:s.ticker,coName:s.coName,coId:s.coId,srcLabel:s.label,srcType:s.type,srcColor:(function(){var t={substack:"#FF6719",rss:K.acc,youtube:"#FF0000"};return t[s.type]||K.acc}())})})
+            }).catch(function(){return[]})
+          })).then(function(results){
+            var merged=results.reduce(function(a,b){return a.concat(b)},[]);
+            merged.sort(function(a,b){return(b.date||0)-(a.date||0)});
+            setAllFeedItems(merged.slice(0,120));
+            setFeedLoading(false);
+          });
+        },[allRSSSources.map(function(s){return s.id}).join(","),refreshAt]);
+        var filtered=feedFilter==="all"?allFeedItems:allFeedItems.filter(function(i){return i.ticker===feedFilter});
+        if(allRSSSources.length===0)return<div style={{textAlign:"center",padding:"60px 20px"}}>
+          <div style={{fontSize:40,marginBottom:16}}>📡</div>
+          <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>Your Feed is Empty</div>
+          <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto 24px"}}>Add Substack writers, RSS blogs, or YouTube channels to individual companies in their Research tab. They'll all appear here in one chronological feed.</div>
+          <button onClick={function(){if(cos.length>0){setSelId(cos[0].id);setDetailTab("research");setPage("dashboard")}}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Go add a source →</button>
+        </div>;
+        return<div>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>My Feed</div>
+              <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginTop:2}}>{allRSSSources.length} source{allRSSSources.length!==1?"s":""} · {allFeedItems.length} posts</div>
+            </div>
+            <button onClick={function(){feedCache.current={};setRefreshAt(Date.now())}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
+              <IC name="trending" size={11} color={K.mid}/>Refresh
+            </button>
+          </div>
+          {/* Ticker filter pills */}
+          {tickers.length>1&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+            <button onClick={function(){setFeedFilter("all")}} style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+(feedFilter==="all"?K.acc:K.bdr),background:feedFilter==="all"?K.acc+"15":"transparent",color:feedFilter==="all"?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter==="all"?700:400}}>All</button>
+            {tickers.map(function(t){return<button key={t} onClick={function(){setFeedFilter(t)}} style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+(feedFilter===t?K.acc:K.bdr),background:feedFilter===t?K.acc+"15":"transparent",color:feedFilter===t?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter===t?700:400}}>{t}</button>})}
+          </div>}
+          {/* Feed */}
+          {feedLoading?<div style={{textAlign:"center",padding:40,color:K.dim,fontSize:13,fontFamily:fm}}>Loading your feed…</div>
+          :filtered.length===0?<div style={{textAlign:"center",padding:40,color:K.dim,fontSize:13,fontFamily:fm}}>No posts found{feedFilter!=="all"?" for "+feedFilter:""}.</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {filtered.map(function(item,i){
+              var srcColor=item.srcColor||K.acc;
+              function fmtDate(d){if(!d)return"";var now=new Date();var diff=Math.floor((now-d)/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<7)return diff+"d ago";if(diff<30)return Math.floor(diff/7)+"w ago";return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:diff>365?"numeric":undefined})}
+              return<a key={i} href={item.link} target="_blank" rel="noreferrer" style={{display:"block",textDecoration:"none",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",transition:"border-color .15s",borderLeft:"3px solid "+srcColor+"60"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=srcColor+"80"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:6}}>
+                  <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.4,flex:1}}>{item.title}</div>
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap",marginTop:3,flexShrink:0}}>{fmtDate(item.date)}</span>
+                </div>
+                {item.excerpt&&<div style={{fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65,marginBottom:8}}>{item.excerpt}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:srcColor,flexShrink:0}}/>
+                  <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.srcLabel}</span>
+                  <span style={{fontSize:11,color:K.acc,fontFamily:fm,fontWeight:700,background:K.acc+"12",borderRadius:4,padding:"1px 6px"}}>{item.ticker}</span>
+                </div>
+              </a>
+            })}
+          </div>}
+          {/* Sources summary */}
+          <div style={{marginTop:24,padding:"16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>Sources ({allRSSSources.length})</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {allRSSSources.map(function(s){
+                var srcColor={substack:"#FF6719",rss:K.acc,youtube:"#FF0000"}[s.type]||K.acc;
+                return<div key={s.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:srcColor,flexShrink:0}}/>
+                  <span style={{fontSize:12,color:K.txt,fontFamily:fm,flex:1}}>{s.label}</span>
+                  <span style={{fontSize:11,color:K.acc,fontFamily:fm,fontWeight:600}}>{s.ticker}</span>
+                  <button onClick={function(){setSelId(s.coId);setDetailTab("research");setPage("dashboard")}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"2px 6px"}}>Edit →</button>
+                </div>
+              })}
+            </div>
+          </div>
+        </div>
+      })()}
+
+      {/* ═══ BADGES TAB ═══ */}
+      {ht==="badges"&&(function(){
+        var earned=ACHIEVEMENT_BADGES.filter(function(b){return!!achievements[b.id]});
+        var locked=ACHIEVEMENT_BADGES.filter(function(b){return!achievements[b.id]});
+        var pct=Math.round(earned.length/ACHIEVEMENT_BADGES.length*100);
+        var byRarity=["platinum","gold","silver","bronze"];
+        return<div>
+          {/* Header — progress bar */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px",marginBottom:24,display:"flex",gap:20,alignItems:"center"}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:2}}>{earned.length} <span style={{fontSize:14,fontWeight:500,color:K.dim}}>/ {ACHIEVEMENT_BADGES.length} badges earned</span></div>
+              <div style={{height:6,background:K.bdr,borderRadius:999,overflow:"hidden",marginTop:8,marginBottom:6}}>
+                <div style={{height:"100%",width:pct+"%",borderRadius:999,background:"linear-gradient(90deg,"+K.acc+","+K.grn+")",transition:"width .6s ease"}}/>
+              </div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pct}% complete · {locked.length} remaining</div>
+            </div>
+            <div style={{textAlign:"center",flexShrink:0}}>
+              <div style={{fontSize:40,lineHeight:1}}>{pct===100?"🏆":pct>=75?"🥇":pct>=50?"🥈":pct>=25?"🥉":"🎖️"}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,textTransform:"uppercase",letterSpacing:1}}>{pct===100?"Legend":pct>=75?"Expert":pct>=50?"Adept":pct>=25?"Learner":"Beginner"}</div>
+            </div>
+          </div>
+          {/* Rarity breakdown */}
+          <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
+            {byRarity.map(function(r){
+              var rs=RARITY_STYLE[r];
+              var total=ACHIEVEMENT_BADGES.filter(function(b){return b.rarity===r}).length;
+              var got=ACHIEVEMENT_BADGES.filter(function(b){return b.rarity===r&&achievements[b.id]}).length;
+              return<div key={r} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:got===total&&total>0?rs.bg:"transparent",border:"1px solid "+(got===total&&total>0?rs.border:K.bdr),borderRadius:8,flex:1,minWidth:100}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:got>0?rs.glow:K.dim,boxShadow:got>0?"0 0 6px "+rs.glow:"none",flexShrink:0}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:600,color:got>0?K.txt:K.dim,fontFamily:fm,textTransform:"capitalize"}}>{rs.label}</div>
+                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{got}/{total}</div>
+                </div>
+              </div>
+            })}
+          </div>
+          {/* Earned badges */}
+          {earned.length>0&&<div style={{marginBottom:28}}>
+            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:700,marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{width:24,height:1,background:K.grn+"40",display:"inline-block"}}/>Earned ({earned.length})<span style={{width:24,height:1,background:K.grn+"40",display:"inline-block"}}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+              {earned.map(function(b){
+                var rs=RARITY_STYLE[b.rarity]||RARITY_STYLE.silver;
+                var earnedDate=achievements[b.id]?new Date(achievements[b.id]):null;
+                var dStr=earnedDate?earnedDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+                return<div key={b.id} style={{background:rs.bg,border:"1px solid "+rs.border,borderRadius:12,padding:"16px",position:"relative",overflow:"hidden",boxShadow:"0 0 20px "+rs.glow+"15"}}>
+                  {/* Rarity glow top edge */}
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,"+rs.glow+",transparent)"}}/>
+                  <div style={{fontSize:32,marginBottom:8,lineHeight:1}}>{b.icon}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{b.name}</div>
+                  <div style={{fontSize:11,color:K.mid,fontFamily:fm,lineHeight:1.5,marginBottom:8}}>{b.desc}</div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <span style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:rs.glow,fontFamily:fm}}>{rs.label}</span>
+                    {dStr&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{dStr}</span>}
+                  </div>
+                </div>
+              })}
+            </div>
+          </div>}
+          {/* Locked badges */}
+          {locked.length>0&&<div>
+            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{width:24,height:1,background:K.dim+"40",display:"inline-block"}}/>Locked ({locked.length})<span style={{width:24,height:1,background:K.dim+"40",display:"inline-block"}}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+              {locked.map(function(b){
+                var rs=RARITY_STYLE[b.rarity]||RARITY_STYLE.silver;
+                return<div key={b.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px",opacity:0.65,position:"relative",overflow:"hidden"}}>
+                  <div style={{fontSize:32,marginBottom:8,lineHeight:1,filter:"grayscale(1) opacity(0.4)"}}>{b.icon}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:K.dim,fontFamily:fm,marginBottom:3}}>{b.name}</div>
+                  <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>{b.hint}</div>
+                  <span style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:K.dim,fontFamily:fm,opacity:.6}}>{rs.label}</span>
+                </div>
+              })}
+            </div>
+          </div>}
+        </div>
+      })()}
 
       {/* ═══ INVESTOR LENSES TAB ═══ */}
       {ht==="lenses"&&<div>
@@ -8425,6 +8875,7 @@ function TrackerApp(props){
         {id:"pg-assets",label:"All Assets",icon:"trending",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("assets")}},
         {id:"pg-library",label:"Library",icon:"video",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("library")}},
         {id:"pg-timeline",label:"Timeline",icon:"clock",color:K.mid,action:function(){setCmdOpen(false);setSelId(null);setPage("timeline")}},
+        {id:"pg-feed",label:"My Feed",icon:"news",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("feed")}},
         {id:"pg-lenses",label:"Investor Lenses",icon:"search",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("lenses")}},
       ];
       var pgMatches=PAGES.filter(function(p){return!q||(p.label.toLowerCase().indexOf(q)>=0)});
