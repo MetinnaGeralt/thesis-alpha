@@ -5303,6 +5303,101 @@ function TrackerApp(props){
       </div>}
     </div>}
 
+  // ── All Assets ────────────────────────────────────────────
+  function AllAssets(){
+    var all=cos;
+    var portfolio=all.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var watchlist=all.filter(function(c){return c.status==="watchlist"});
+    var toohard=all.filter(function(c){return c.status==="toohard"});
+    var _tab=useState("portfolio"),tab=_tab[0],setTab=_tab[1];
+    var _q=useState(""),q=_q[0],setQ=_q[1];
+    var list=tab==="portfolio"?portfolio:tab==="watchlist"?watchlist:toohard;
+    var filtered=q?list.filter(function(c){return c.ticker.toLowerCase().indexOf(q.toLowerCase())>=0||c.name.toLowerCase().indexOf(q.toLowerCase())>=0}):list;
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:900}}>
+      <div style={{padding:isMobile?"20px 0 16px":"28px 0 24px"}}>
+        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>All Assets</div>
+        <div style={{fontSize:13,color:K.dim}}>{all.length} companies tracked</div>
+      </div>
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{display:"flex",gap:4}}>
+          {[["portfolio","Portfolio",portfolio.length],["watchlist","Watchlist",watchlist.length],["toohard","Too Hard",toohard.length]].map(function(tb){return<button key={tb[0]} onClick={function(){setTab(tb[0])}} style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+(tab===tb[0]?K.acc:K.bdr),background:tab===tb[0]?K.acc+"18":"transparent",color:tab===tb[0]?K.acc:K.dim,fontSize:12,fontWeight:tab===tb[0]?600:400,cursor:"pointer",fontFamily:fm}}>{tb[1]} ({tb[2]})</button>})}
+        </div>
+        <input value={q} onChange={function(e){setQ(e.target.value)}} placeholder="Search..." style={{flex:1,minWidth:120,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"6px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/>
+      </div>
+      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No companies in this list yet.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {filtered.map(function(c){
+          var pos=c.position||{};var ret=pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
+          return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
+            <CoLogo ticker={c.ticker} domain={c.domain} size={36}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
+                <span style={{fontSize:12,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+              </div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {c.sector&&<span style={{fontSize:10,color:K.dim,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 6px"}}>{c.sector}</span>}
+                {hasThesis&&<span style={{fontSize:10,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"1px 6px"}}>Thesis</span>}
+                {(c.kpis||[]).length>0&&<span style={{fontSize:10,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:4,padding:"1px 6px"}}>{c.kpis.length} KPIs</span>}
+                {c.conviction>0&&<span style={{fontSize:10,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"1px 6px"}}>Conv {c.conviction}/10</span>}
+              </div>
+            </div>
+            {ret!==null&&<div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontSize:15,fontWeight:700,color:ret>=0?K.grn:K.red,fontFamily:fm}}>{ret>=0?"+":""}{ret.toFixed(1)}%</div>
+              <div style={{fontSize:10,color:K.dim}}>return</div>
+            </div>}
+          </div>
+        })}
+      </div>
+    </div>
+  }
+
+  // ── Portfolio Timeline ─────────────────────────────────────
+  function PortfolioTimeline(){
+    var allDecs=[];
+    cos.forEach(function(c){(c.decisions||[]).forEach(function(d){allDecs.push(Object.assign({},d,{ticker:c.ticker,companyId:c.id,domain:c.domain}))})});
+    allDecs.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
+    var allJournal=[];
+    cos.forEach(function(c){(c.journalEntries||[]).forEach(function(e){allJournal.push(Object.assign({},e,{ticker:c.ticker,companyId:c.id}))})});
+    allJournal.sort(function(a,b){return(b.date||b.createdAt||"")>(a.date||a.createdAt||"")?1:-1});
+    var combined=allDecs.map(function(d){return{type:"decision",date:d.date,data:d}})
+      .concat(allJournal.slice(0,30).map(function(e){return{type:"journal",date:e.date||e.createdAt,data:e}}));
+    combined.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:800}}>
+      <div style={{padding:isMobile?"20px 0 16px":"28px 0 24px"}}>
+        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Portfolio Timeline</div>
+        <div style={{fontSize:13,color:K.dim}}>{allDecs.length} decisions · {allJournal.length} journal entries</div>
+      </div>
+      {combined.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No activity yet. Log decisions and journal entries in company pages.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:0}}>
+        {combined.slice(0,60).map(function(item,i){
+          var d=item.data;var dt=item.date?new Date(item.date):null;
+          var ds=dt?dt.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+          var isDecision=item.type==="decision";
+          var clr=isDecision?(d.action==="buy"?K.grn:d.action==="sell"?K.red:K.acc):K.blue;
+          return<div key={i} style={{display:"flex",gap:14,paddingBottom:16}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:20,flexShrink:0}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:clr,flexShrink:0,marginTop:4}}/>
+              {i<combined.length-1&&<div style={{width:2,flex:1,background:K.bdr,marginTop:4}}/>}
+            </div>
+            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                {isDecision&&<span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"15",border:"1px solid "+clr+"30",borderRadius:4,padding:"2px 7px",textTransform:"uppercase"}}>{d.action||"note"}</span>}
+                {!isDecision&&<span style={{fontSize:10,fontWeight:700,color:K.blue,background:K.blue+"15",border:"1px solid "+K.blue+"30",borderRadius:4,padding:"2px 7px"}}>Journal</span>}
+                <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(d.companyId);setPage("dashboard")}}>{d.ticker}</span>
+                <span style={{fontSize:11,color:K.dim,marginLeft:"auto"}}>{ds}</span>
+              </div>
+              {isDecision&&d.reasoning&&<div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{d.reasoning.substring(0,200)}{d.reasoning.length>200?"…":""}</div>}
+              {!isDecision&&d.content&&<div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{(d.content||"").substring(0,200)}{(d.content||"").length>200?"…":""}</div>}
+              {!isDecision&&d.title&&<div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d.title}</div>}
+            </div>
+          </div>
+        })}
+      </div>
+    </div>
+  }
+
   // ── Portfolio Analytics (Munger-focused) ─────────────────
   function PortfolioAnalytics(){
     var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
