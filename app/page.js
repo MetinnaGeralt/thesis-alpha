@@ -5236,17 +5236,13 @@ function TrackerApp(props){
       </div>}
 
       {step==="done"&&<div>
-        {/* ── This week's reward ── */}
-        {(latestWeeklyReward||)&&(function(){
-          var reward=latestWeeklyReward;
-          var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
-          var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
+        {/* ── Review complete card ── */}
+        {(function(){
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"28px 24px",marginBottom:20}}>
             <div style={{textAlign:"center",marginBottom:20}}>
-              <div style={{fontSize:48,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 12px rgba(255,215,0,.4))"}}>{String.fromCodePoint(0x1F3C6)}</div>
-              <div style={{fontSize:14,fontWeight:600,color:"#FFD700",fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
+              <div style={{fontSize:48,marginBottom:8,display:"inline-block"}}>{"✓"}</div>
+              <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
               <div style={{fontSize:13,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
-            {/* Conviction trend chart across last 8 weeks */}
             {weeklyReviews.length>=2&&(function(){
               var last8=weeklyReviews.slice(0,8).reverse();
               return<div style={{background:K.bg,borderRadius:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
@@ -5259,30 +5255,6 @@ function TrackerApp(props){
                     </div>})}
                 </div>
               </div>})()}
-            {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"WEEKLY INSIGHT"}</div>
-              <div style={{fontSize:36,marginBottom:6}}>{reward.icon}</div>
-              <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>{reward.label}</div>
-              <div style={{fontSize:13,color:K.mid,lineHeight:1.6,maxWidth:300,margin:"0 auto"}}>{reward.desc}</div>
-              {reward.author&&<div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginTop:4}}>{"— "+reward.author}</div>}
-              {reward.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"3px 10px",marginTop:8}}>
-                </div>}
-            </div>}
-            {/* Previously earned rewards */}
-            {
-              <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>INSIGHT HISTORY</div>
-              <div style={{maxHeight:180,overflow:"auto"}}>
-              {,20).map(function(h,hi){
-                var tc=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
-                var d=h.date?new Date(h.date):null;
-                var dateStr=d?d.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
-                return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:hi<Math.min(,20)-1?"1px solid "+K.bdr+"30":"none"}}>
-                  <div style={{width:6,height:6,borderRadius:"50%",background:tc,flexShrink:0}}/>
-                  <div style={{fontSize:12,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
-                  <div style={{fontSize:10,color:tc,fontWeight:600,fontFamily:fm,textTransform:"uppercase"}}>{h.tier}</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dateStr}</div>
-                </div>})}</div>
-            </div>}
           </div>})()}
 
         {/* Past reviews */}
