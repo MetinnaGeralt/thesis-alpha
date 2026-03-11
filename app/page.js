@@ -854,6 +854,7 @@ function TrackerApp(props){
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
+  var _qL=useState(function(){try{var s=localStorage.getItem("ta-qletters");return s?JSON.parse(s):{}}catch(e){return{}}}),qLetters=_qL[0],setQLetters=_qL[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
@@ -4305,7 +4306,7 @@ function TrackerApp(props){
         {/* ═══ 7-DAY QUEST ═══ */}
         {(function(){
           var wk=getWeekId();
-          var qCompleted=
+          var qCompleted=[];
           // Generate quests: mix of portfolio-gap fixes + rotating challenges
           var quests=[];
           var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
@@ -4355,7 +4356,7 @@ function TrackerApp(props){
           var allDone2=doneCount===quests.length&&quests.length>0;
           var questPct=quests.length>0?Math.round(doneCount/quests.length*100):0;
           // Check if quest chest already claimed this week
-          var questChestClaimed=
+          var questChestClaimed=false;
           return<div style={{marginBottom:20}}>
             {/* Focus header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
