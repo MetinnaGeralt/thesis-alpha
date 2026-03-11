@@ -1727,7 +1727,7 @@ function TrackerApp(props){
     setFeedLoading(true);setFeedLoaded(false);
     Promise.all(rssSourceList.map(function(s){
       return fetchFeed(s).then(function(items){
-        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:SOURCE_COLORS[s.type]||"#6366F1"})})'
+        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:SOURCE_COLORS[s.type]||"#6366F1"})})
       }).catch(function(e){console.warn("[Feed] failed:",s.label,e);return[]})
     })).then(function(results){
       var merged=results.reduce(function(a,b){return a.concat(b)},[]);
