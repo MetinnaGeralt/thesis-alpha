@@ -6974,7 +6974,6 @@ function TrackerApp(props){
       var totalKpis=portfolio.reduce(function(s,c){return s+c.kpis.length},0);
       var totalDecisions=0;cos.forEach(function(c){totalDecisions+=(c.decisions||[]).length});
       var reviewCount=weeklyReviews.length;
-      var xpToNext=xpLevel.xpForNext-xp.total;
       return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":360,maxHeight:"80vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"24px"}} onClick={function(e){e.stopPropagation()}}>
         {/* Avatar + Level */}
         <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
@@ -7011,30 +7010,6 @@ function TrackerApp(props){
               <IC name={s.icon} size={12} color={K.dim}/>
               <span style={{fontSize:12,color:K.mid,flex:1}}>{s.label}</span>
               <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
-        
-        {/* Badges */}
-        {().length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {().map(function(b){return<div key={b.id} title={b.desc} style={{display:"flex",alignItems:"center",gap:4,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 10px"}}>
-              <span style={{fontSize:14}}>{b.icon}</span>
-              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{b.label}</span></div>})}</div></div>}
-        {/* Collected Quotes */}
-        {().length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({().length})</div>
-          <div style={{maxHeight:120,overflowY:"auto"}}>
-            {().slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
-              <div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{"“"+q.q+"”"}</div>
-              <div style={{fontSize:10,color:K.dim,textAlign:"right"}}>{"— "+q.a}</div></div>})}</div></div>}
-        {/* Recent Activity history */}
-        {xp.history.length>0&&<div>
-          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Recent Activity</div>
-          <div style={{maxHeight:140,overflowY:"auto"}}>
-            {xp.history.slice(0,10).map(function(h,i){return<div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
-              <span style={{fontSize:12,color:K.mid}}>{h.label}</span>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>+{h.amount}</span>
-                <span style={{fontSize:10,color:K.dim}}>{fD(h.date)}</span></div></div>})}</div></div>}
         <div style={{marginTop:16,textAlign:"center"}}>
           <button onClick={function(){setShowProfile(false)}} style={S.btn}>Close</button></div>
       </div>})()}
