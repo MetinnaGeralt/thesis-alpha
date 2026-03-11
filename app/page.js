@@ -6572,21 +6572,54 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* LEFT — business events ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
 
-            {/* Conviction health */}
-            <div style={{marginBottom:14}}>\
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:7}}>Conviction Health</div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>\
-                <div style={{flex:1,height:5,borderRadius:3,background:K.bdr}}>\
-                  <div style={{height:"100%",borderRadius:3,background:convHealthColor,width:convHealthPct+"%",transition:"width .4s ease"}}/>\
-                </div>\
-                <span style={{fontSize:11,fontWeight:700,color:convHealthColor,fontFamily:fm,flexShrink:0}}>{convHealthPct}%</span>\
-              </div>\
-              <div style={{display:"flex",gap:12,fontSize:10,color:K.dim,fontFamily:fm}}>\
-                <span><span style={{color:K.grn,fontWeight:600}}>{convReviewed}</span> reviewed ≤60d</span>\
-                {convStale>0&&<span><span style={{color:K.red,fontWeight:600}}>{convStale}</span> stale &gt;90d</span>}\
-                <span style={{color:K.dim}}>{convTotal} holdings</span>\
-              </div>\
-            </div>\
+            {/* ── Look-through portfolio table (Terry Smith / Fundsmith style) ── */}
+            {(function(){
+              // S&P 500 rough TTM benchmarks (hardcoded, updated periodically)
+              var SP500={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9};
+              // Compute position-weighted portfolio averages
+              var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+              function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
+              // Cash conversion = FCF margin / Op margin * 100 (proxy for FCF/NOPAT)
+              var roceV=wavg(function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null});
+              var grossV=wavg(function(s){return s.grossMargin?s.grossMargin.numVal:null});
+              var opV=wavg(function(s){return s.opMargin?s.opMargin.numVal:null});
+              var cashConvV=wavg(function(s){return(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)?s.fcfMargin.numVal/s.opMargin.numVal*100:null});
+              var intCovV=wavg(function(s){return s.interestCoverage?s.interestCoverage.numVal:null});
+              var rows=[
+                {label:"ROCE",pv:roceV,bv:SP500.roce,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
+                {label:"Gross margin",pv:grossV,bv:SP500.grossMargin,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
+                {label:"Op margin",pv:opV,bv:SP500.opMargin,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
+                {label:"Cash conversion",pv:cashConvV,bv:SP500.cashConv,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
+                {label:"Interest cover",pv:intCovV,bv:SP500.interestCover,fmt:function(v){return v.toFixed(0)+"x"},higherBetter:true},
+              ];
+              var hasAny=rows.some(function(r){return r.pv!=null});
+              return<div style={{marginBottom:16}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:9}}>Portfolio Look-Through</div>
+                <div style={{borderRadius:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+                  {/* Header row */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                    <div style={{padding:"5px 10px",fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5}}/>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center",letterSpacing:.3}}>Portfolio</div>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",letterSpacing:.3}}>S&P 500</div>
+                  </div>
+                  {rows.map(function(r,i){
+                    var beat=r.pv!=null&&r.bv!=null&&(r.higherBetter?r.pv>r.bv:r.pv<r.bv);
+                    var pvColor=r.pv==null?K.dim:beat?K.grn:K.amb;
+                    return<div key={r.label} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",borderBottom:i<rows.length-1?"1px solid "+K.bdr+"60":"none",background:i%2===0?"transparent":K.acc+"03"}}>
+                      <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
+                      <div style={{padding:"7px 0",textAlign:"center"}}>
+                        {r.pv!=null
+                          ?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(r.pv)}</span>
+                          :<span style={{fontSize:10,color:K.bdr}}>—</span>}
+                      </div>
+                      <div style={{padding:"7px 0",textAlign:"center"}}>
+                        <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
+                      </div>
+                    </div>})}
+                </div>
+                {!hasAny&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Refresh financial data on your holdings to populate.</div>}
+              </div>
+            })()}
 
             {/* Post-earnings review needed */}
             {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
