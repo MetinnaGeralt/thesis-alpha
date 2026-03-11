@@ -873,7 +873,7 @@ function TrackerApp(props){
   // ── Command Palette ──
   var _cmd=useState(false),cmdOpen=_cmd[0],setCmdOpen=_cmd[1];
   var _cmdQ=useState(""),cmdQuery=_cmdQ[0],setCmdQuery=_cmdQ[1];
-  var _cmdIdx=useState(0),cmdIdx=_cmdQ[0],setCmdIdx=_cmdIdx[1];
+  var _cmdIdx=useState(0),cmdIdx=_cmdIdx[0],setCmdIdx=_cmdIdx[1];
   var cmdInputRef=useRef(null);
   // ── Subscription / Tier ──
   var FREE_LIMIT=3;var TRIAL_BASE=14;var TRIAL_BONUS=16;var TRIAL_TOTAL=TRIAL_BASE+TRIAL_BONUS;var THESIS_UNLOCK=3;
@@ -1307,16 +1307,34 @@ function TrackerApp(props){
   useEffect(function(){if(!fabOpen)return;function closeOnOutside(){setFabOpen(false);setFabCustomize(false)}
     var t=setTimeout(function(){window.addEventListener("click",closeOnOutside)},50);
     return function(){clearTimeout(t);window.removeEventListener("click",closeOnOutside)}},[fabOpen]);
-  // ⌘K / Ctrl+K global keyboard handler
+  // ⌘K / Ctrl+K global keyboard handler + app shortcuts
   useEffect(function(){
     function onKey(e){
+      var tag=document.activeElement?document.activeElement.tagName:"";
+      var typing=tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||document.activeElement.contentEditable==="true";
+      // ⌘K / Ctrl+K — always intercept
       if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0)}return!o});return}
-      if(!cmdOpen)return;
-      if(e.key==="Escape"){setCmdOpen(false);return}
+      if(cmdOpen){if(e.key==="Escape"){setCmdOpen(false);return}return}
+      if(typing)return;
+      // Single-key shortcuts (only when not typing)
+      if(e.key==="n"||e.key==="N"){e.preventDefault();setModal({type:"add"});return}
+      if(e.key==="r"||e.key==="R"){e.preventDefault();setSelId(null);setPage("review");return}
+      if(e.key==="Escape"&&selId){e.preventDefault();setSelId(null);return}
+      // T — open thesis for selected company
+      if((e.key==="t"||e.key==="T")&&selId){e.preventDefault();setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"thesis"})},50);return}
+      // Arrow keys — navigate between companies in sidebar
+      if(e.key==="ArrowDown"||e.key==="ArrowUp"){
+        var allCos2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+        if(allCos2.length===0)return;
+        e.preventDefault();
+        var curIdx=selId?allCos2.findIndex(function(c){return c.id===selId}):-1;
+        var nextIdx=e.key==="ArrowDown"?Math.min(curIdx+1,allCos2.length-1):Math.max(curIdx-1,0);
+        if(nextIdx>=0){setSelId(allCos2[nextIdx].id);setDetailTab("dossier");setPage("dashboard")}
+        return}
     }
     window.addEventListener("keydown",onKey);
     return function(){window.removeEventListener("keydown",onKey)}
-  },[cmdOpen]);
+  },[cmdOpen,selId,cos]);
   useEffect(function(){if(cmdOpen&&cmdInputRef.current){setTimeout(function(){cmdInputRef.current&&cmdInputRef.current.focus()},30)}},[cmdOpen]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   // ── Inject global CSS for animations & polish ──
@@ -1714,7 +1732,7 @@ function TrackerApp(props){
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
       if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
-      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString(),purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -2841,6 +2859,11 @@ function TrackerApp(props){
         <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
       </select>
       {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/>}</div>
+    {!isMobile&&pCos.length>0&&<div style={{padding:"4px 16px 0",display:"flex",gap:8,flexWrap:"wrap"}}>
+      {[["↑↓","Navigate"],["N","Add"],["R","Review"],["T","Thesis"]].map(function(h){return<span key={h[0]} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:sideDim2,fontFamily:fm}}>
+        <span style={{background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)",borderRadius:3,padding:"1px 4px",fontWeight:600}}>{h[0]}</span>{h[1]}
+      </span>})}
+    </div>}
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
       var pos=c.position||{};var hasPrice=pos.currentPrice>0;var hasTarget=c.targetPrice>0&&hasPrice;
       var pctToTarget=hasTarget?((c.targetPrice-pos.currentPrice)/pos.currentPrice*100):0;
@@ -2858,15 +2881,16 @@ function TrackerApp(props){
           {hasPrice&&<div style={{fontSize:11,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</div>}
           {isWatchlist&&hasTarget&&<div style={{fontSize:10,color:pctToTarget>0?K.grn:K.amb,fontFamily:fm}}>{pctToTarget>0?pctToTarget.toFixed(0)+"% below":"At target"}</div>}
           {!isWatchlist&&hasPrice&&pos.avgCost>0&&<div style={{fontSize:10,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</div>}
-          {!hasPrice&&d>=0&&d<=7&&<div style={{fontSize:10,color:K.amb,fontWeight:600,fontFamily:fm}}>{d}d</div>}
-          {!hasPrice&&c.earningsDate==="TBD"&&<div style={{fontSize:10,color:sideDim2,fontFamily:fm}}>TBD</div>}
+          {d>=0&&d<=7&&<div style={{fontSize:10,color:d<=2?K.red:K.amb,fontWeight:700,fontFamily:fm,background:(d<=2?K.red:K.amb)+"15",borderRadius:4,padding:"1px 5px"}}>{d===0?"Today":d===1?"Tmrw":d+"d"}</div>}
+          {d>7&&d<=14&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d}d</div>}
+          {!hasPrice&&(c.earningsDate==="TBD"||!c.earningsDate)&&<div style={{fontSize:10,color:sideDim2,fontFamily:fm}}>TBD</div>}
           <div style={{width:20,height:4,borderRadius:2,background:h.c,opacity:isDark?0.8:1,marginTop:1,boxShadow:isDark?"none":"0 0 0 1px "+h.c+"30"}}/></div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
       {isMobile&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
         {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
         {isDark?"Switch to Light":"Switch to Dark"}</button>}
       <div style={{display:"flex",gap:6}}>
-        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}}>+ Add</button>
+        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}} title="Add holding (N)">+ Add</button>
         <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:12})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div></div>}
   function TopBar(){
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50}}>
@@ -3952,6 +3976,7 @@ function TrackerApp(props){
     var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
     // Moat data for dossier display
     var _moatD=useState(null),dossierMoat=_moatD[0],setDossierMoat=_moatD[1];
+    var _mktOpen=useState(true),dossierMktOpen=_mktOpen[0],setDossierMktOpen=_mktOpen[1];
     var _keyFin=useState(null),keyFin=_keyFin[0],setKeyFin=_keyFin[1];
     var _hovD=useState(null),hovD=_hovD[0],setHovD=_hovD[1];
     var _descExp=useState(false),descExpanded=_descExp[0],setDescExpanded=_descExp[1];
@@ -4028,6 +4053,10 @@ function TrackerApp(props){
       {detailTab==="dossier"&&<div className="ta-fade">
         {/* Guided Setup Flow */}
         {guidedSetup===c.id&&(function(){
+          // Only show guided setup within 48h of adding company
+          var addedAt=c.addedAt||c.purchaseDate||null;
+          var hoursOld=addedAt?Math.floor((new Date()-new Date(addedAt))/3600000):0;
+          if(addedAt&&hoursOld>48){setGuidedSetup(null);return null}
           var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
           var hasKpis=c.kpis.length>=2;
           var hasConviction=c.conviction>0;
@@ -4158,12 +4187,70 @@ function TrackerApp(props){
         </div>}
 
         {/* Pre-Earnings Briefing */}
-        {dashSet.showPreEarnings&&c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=14&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name="target" size={16} color={K.amb}/><span style={{fontSize:14,fontWeight:600,color:K.amb}}>Earnings in {dU(c.earningsDate)}d</span><span style={{fontSize:11,color:K.amb,fontFamily:fm,marginLeft:"auto"}}>{fD(c.earningsDate)} {c.earningsTime}</span></div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {c.kpis.map(function(k){return<div key={k.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
-              <div style={{width:6,height:6,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim}}/>{k.name} <span style={{color:K.dim}}>Target: {k.target}</span></div>})}
-          </div></div>}
+        {/* ── PRE-EARNINGS RITUAL ── */}
+        {c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7&&(function(){
+          var daysOut=dU(c.earningsDate);
+          var urgency=daysOut<=2?K.red:daysOut<=4?K.amb:K.amb;
+          var ritualKey="ritual-"+c.id+"-"+c.earningsDate;
+          var ritualDone=(function(){try{var s=localStorage.getItem("ta-rituals");var r=s?JSON.parse(s):{};return r[ritualKey]||{}}catch(e){return{}}})();
+          var checklist=[
+            {id:"thesis",label:"Thesis reviewed",done:!!ritualDone.thesis||(c.thesisNote&&c.thesisNote.length>50),icon:"lightbulb"},
+            {id:"kpis",label:"KPIs confirmed",done:!!ritualDone.kpis||(c.kpis.length>=1),icon:"target"},
+            {id:"conviction",label:"Conviction noted",done:!!ritualDone.conviction||(c.conviction>0),icon:"star"},
+            {id:"bias",label:"Checked for bias",done:!!ritualDone.bias,icon:"shield"},
+          ];
+          var doneCount=checklist.filter(function(it){return it.done}).length;
+          var allDone=doneCount>=checklist.length;
+          function tickItem(id){try{var s=localStorage.getItem("ta-rituals");var r=s?JSON.parse(s):{};r[ritualKey]=Object.assign({},r[ritualKey]||{});r[ritualKey][id]=true;localStorage.setItem("ta-rituals",JSON.stringify(r))}catch(e){}}
+          return<div style={{background:urgency+"08",border:"2px solid "+urgency+"30",borderRadius:14,padding:"18px 20px",marginBottom:24,position:"relative",overflow:"hidden"}}>
+            {/* Countdown pulse */}
+            {daysOut<=2&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+urgency+","+urgency+"60,"+urgency+")",animation:"shimmer 2s infinite"}}/>}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{width:38,height:38,borderRadius:10,background:urgency+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name="target" size={18} color={urgency}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:800,color:urgency,fontFamily:fm,letterSpacing:.3}}>
+                  {daysOut===0?"EARNINGS TODAY":daysOut===1?"EARNINGS TOMORROW":"EARNINGS IN "+daysOut+" DAYS"}
+                </div>
+                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginTop:1}}>{fD(c.earningsDate)} · {c.earningsTime==="BMO"?"Before market open":c.earningsTime==="AMC"?"After market close":c.earningsTime||"Time TBD"}</div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:20,fontWeight:900,color:allDone?K.grn:urgency,fontFamily:fm,lineHeight:1}}>{doneCount}/{checklist.length}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ready</div>
+              </div>
+            </div>
+            {/* Checklist */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14}}>
+              {checklist.map(function(it){return<div key={it.id} onClick={function(){if(!it.done){tickItem(it.id);showToast(it.label+" ✓","info",2000);upd(c.id,{})}}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:it.done?(K.grn+"10"):(K.card),border:"1px solid "+(it.done?(K.grn+"30"):K.bdr),cursor:it.done?"default":"pointer",transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=urgency+"60"}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+                <div style={{width:18,height:18,borderRadius:5,background:it.done?K.grn:"transparent",border:"2px solid "+(it.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
+                  {it.done&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
+                </div>
+                <span style={{fontSize:11,color:it.done?K.grn:K.mid,fontFamily:fm,fontWeight:it.done?600:400}}>{it.label}</span>
+              </div>})}
+            </div>
+            {/* KPI targets */}
+            {c.kpis.length>0&&<div style={{marginBottom:10}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Watch These Numbers</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {c.kpis.map(function(k){return<div key={k.id} style={{padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{color:K.txt,fontWeight:600}}>{k.name}</span>
+                  <span style={{color:K.dim}}>→ {k.target}</span>
+                </div>})}
+              </div>
+            </div>}
+            {/* Conviction + quick thesis preview */}
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
+                <IC name="star" size={11} color={K.amb}/>
+                <span style={{color:K.mid}}>Conviction</span>
+                <span style={{color:K.txt,fontWeight:700}}>{c.conviction}/10</span>
+              </div>}
+              <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"1px solid "+urgency+"30",borderRadius:6,padding:"4px 10px",fontSize:11,color:urgency,fontFamily:fm,cursor:"pointer"}}>Review thesis →</button>
+              {allDone&&<span style={{marginLeft:"auto",fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>✓ You're prepared</span>}
+            </div>
+          </div>
+        })()}
 
         {/* ── 1. THE STORY ── */}
         <div style={{marginBottom:24}}>
@@ -4317,6 +4404,25 @@ function TrackerApp(props){
             <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4,marginTop:6}}>Define your valuation framework</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you — FCF yield, P/E, PEG, earnings yield — and set your own thresholds for what constitutes good value.</div></div>}
         </div>})()}
+        {/* ── MARKET DATA DIVIDER ── */}
+        {(function(){
+          var hasSnap=Object.keys(c.financialSnapshot||{}).length>0;
+          var hasEarnings=c.earningSummary||c.earningsHistory&&c.earningsHistory.length>0;
+          if(!hasSnap&&!hasEarnings)return null;
+          var mktOpen=dossierMktOpen!==false;
+          return<div style={{marginBottom:mktOpen?20:0}}>
+            <div onClick={function(){setDossierMktOpen(function(v){return v===false?true:false})}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 0",marginBottom:mktOpen?16:0,userSelect:"none"}}>
+              <div style={{flex:1,height:1,background:K.bdr}}/>
+              <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:999,background:K.card,border:"1px solid "+K.bdr,flexShrink:0}}>
+                <IC name="bar" size={11} color={K.dim}/>
+                <span style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Market Data</span>
+                <span style={{fontSize:11,color:K.dim,transform:mktOpen?"rotate(0)":"rotate(-90deg)",transition:"transform .2s",display:"inline-block",lineHeight:1}}>▾</span>
+              </div>
+              <div style={{flex:1,height:1,background:K.bdr}}/>
+            </div>
+          </div>
+        })()}
+        {dossierMktOpen!==false&&<div>
         {/* ── OWNER'S NUMBERS ── */}
         {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
           if(!hasSnap)return null;
@@ -4615,6 +4721,7 @@ function TrackerApp(props){
         {/* Charts & analyst data (collapsible) */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
         {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
+        </div>}
       </div>}
 
       {/* ═══ RESEARCH TAB — chronological timeline ═══ */}
@@ -7392,7 +7499,7 @@ function TrackerApp(props){
       for(var i=0;i<tickers.length;i++){var t=tickers[i];
         try{setStatus("Looking up "+t+" ("+(i+1)+"/"+tickers.length+")...");
           var r=await lookupTicker(t);
-          if(r&&!r.error){var nc={id:nId(cos.concat(res.filter(function(x){return x.ok}).map(function(x){return x.co}))),ticker:t,name:r.name,sector:r.sector||"",industry:r.industry||"",domain:r.domain||"",irUrl:r.irUrl||"",earningsDate:r.earningsDate||"TBD",earningsTime:r.earningsTime||"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:r.price||0},conviction:0,convictionHistory:[],status:"watchlist",investStyle:"",lastDiv:r.lastDiv||0,divPerShare:r.lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+          if(r&&!r.error){var nc={id:nId(cos.concat(res.filter(function(x){return x.ok}).map(function(x){return x.co}))),ticker:t,name:r.name,sector:r.sector||"",industry:r.industry||"",domain:r.domain||"",irUrl:r.irUrl||"",earningsDate:r.earningsDate||"TBD",earningsTime:r.earningsTime||"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:0,avgCost:0,currentPrice:r.price||0},conviction:0,convictionHistory:[],status:"watchlist",investStyle:"",lastDiv:r.lastDiv||0,divPerShare:r.lastDiv||0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString()};
             res.push({ticker:t,ok:true,name:r.name,co:nc})}
           else{res.push({ticker:t,ok:false,err:r.error||"Not found"})}}
         catch(e){res.push({ticker:t,ok:false,err:"Lookup failed"})}
@@ -8478,7 +8585,7 @@ function OnboardingFlow(p){
 
   function addOnboardingCompany(){
     if(!oTicker.trim()||!oName.trim())return;
-    var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:parseFloat(oShares)||0,avgCost:parseFloat(oAvgCost)||0,currentPrice:oPrice},purchaseDate:oPurchDate||null,conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:""};
+    var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:parseFloat(oShares)||0,avgCost:parseFloat(oAvgCost)||0,currentPrice:oPrice},purchaseDate:oPurchDate||null,conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString()};
     setCos(function(p){return p.concat([nc])});setSelId(nc.id);setOCoId(nc.id);setObStep(3)}
 
   function saveThesisAndContinue(){
