@@ -6776,10 +6776,38 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <IC name={opt.icon} size={10} color={active?K.acc:K.dim}/>{opt.label}
         </button>})}
       </div>
+      {(dashSet.portfolioView==="fundamentals"||!dashSet.portfolioView)&&!isMobile&&<button onClick={function(){
+        var toRefresh=filtered.filter(function(c2){return c2.ticker});
+        if(toRefresh.length===0)return;
+        showToast("Refreshing fundamentals…","info",3000);
+        toRefresh.forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)});
+      }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:5,cursor:"pointer",padding:"4px 10px",display:"flex",alignItems:"center",gap:4,fontSize:10,color:K.dim,fontFamily:fm}}>
+        <IC name="refresh" size={9} color={K.dim}/> Refresh fundamentals
+      </button>}
     </div>}
 
     {/* ── FUNDAMENTALS VIEW ── */}
     {filtered.length>0&&sideTab!=="toohard"&&(dashSet.portfolioView==="fundamentals"||!dashSet.portfolioView)&&(function(){
+      // ── Auto-refresh holdings missing key fundamentals ─────────────────────
+      var _autoRef=useRef(false);
+      useEffect(function(){
+        if(_autoRef.current)return;
+        _autoRef.current=true;
+        var needsRefresh=filtered.filter(function(c2){
+          var s=c2.financialSnapshot||{};
+          // Missing ROIC or ND/EBITDA and hasn't been fetched in last 7 days
+          var staleDays=c2.lastChecked?Math.ceil((Date.now()-new Date(c2.lastChecked))/864e5):999;
+          return (s.roic==null||s.netDebtEbitda==null)&&staleDays>1;
+        });
+        if(needsRefresh.length===0)return;
+        needsRefresh.forEach(function(c2,i){
+          setTimeout(function(){
+            fetchEarnings(c2,c2.kpis).then(function(res){
+              if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()});
+            }).catch(function(){});
+          },i*800); // stagger to avoid rate limits
+        });
+      },[]);
       // ── Metric library ────────────────────────────────────────────────────
       var FUND_METRICS=[
         {id:"revGrowth",  label:"Rev Growth",  short:"Rev Gr",  unit:"%", cat:"Growth",   get:function(s){return s.revGrowth?s.revGrowth.numVal:null},  good:function(v){return v>=10}, ok:function(v){return v>=0},  fmt:function(v){return(v>=0?"+":"")+v.toFixed(1)+"%"}, tip:"Revenue growth YoY (TTM)"},
@@ -6828,16 +6856,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {activeCols.map(function(m){return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
             <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}} title={m.tip}>{m.short}</span>
           </div>})}
-          <div style={{width:isMobile?24:56,flexShrink:0,display:"flex",justifyContent:"flex-end",gap:4,position:"relative"}}>
-            {!isMobile&&<button onClick={function(){
-              var toRefresh=filtered.filter(function(c2){return c2.ticker});
-              if(toRefresh.length===0)return;
-              toRefresh.forEach(function(c2){upd(c2.id,{lastChecked:null})});
-              showToast("Refreshing fundamentals for "+toRefresh.length+" holdings…","info",3000);
-              setTimeout(function(){toRefresh.forEach(function(c2){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:res.snapshot,lastChecked:new Date().toISOString()})})})},100);
-            }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:5,cursor:"pointer",padding:"3px 7px",display:"flex",alignItems:"center",gap:3,fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}} title="Refresh fundamental data for all holdings">
-              ↺ Refresh all
-            </button>}
+          <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
             <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
               <IC name="gear" size={10} color={showFundCfg?K.acc:K.dim}/>
             </button>
