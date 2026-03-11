@@ -331,7 +331,7 @@ function calcMastery(c){
 
 // Legacy name → metricId mapping for existing user data
 var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
-var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","fcf margin":"fcfMargin","free cash flow margin":"fcfMargin","r&d margin":"rndMargin","r&d to revenue":"rndMargin","sga margin":"sgaMargin","sga to revenue":"sgaMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","p/s":"ps","price to sales":"ps","ev/ebitda":"evEbitda","ev/fcf":"evFcf","ev/revenue":"evRevenue","peg":"peg","peg ratio":"peg","current ratio":"currentRatio","quick ratio":"quickRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","net debt/ebitda":"netDebtEbitda","interest coverage":"interestCoverage","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf yield":"fcfYield","fcf per share":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth","shareholder yield":"shareholderYield","total shareholder yield":"shareholderYield","buyback yield":"buybackYield","graham number":"grahamNum","graham":"grahamNum","vs graham":"grahamDiscount"};
+var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","fcf margin":"fcfMargin","free cash flow margin":"fcfMargin","r&d margin":"rndMargin","r&d to revenue":"rndMargin","sga margin":"sgaMargin","sga to revenue":"sgaMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","p/s":"ps","price to sales":"ps","ev/ebitda":"evEbitda","ev/fcf":"evFcf","ev/revenue":"evRevenue","peg":"peg","peg ratio":"peg","current ratio":"currentRatio","quick ratio":"quickRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","net debt/ebitda":"netDebtEbitda","interest coverage":"interestCoverage","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf yield":"fcfYield","fcf per share":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth"};
 Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
 function resolveMetricId(kpi){if(kpi.metricId)return kpi.metricId;var n=kpi.name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return LEGACY_MAP[n]||null}
 function isCustomKpi(name){if(METRIC_MAP[name])return false;var n=name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return!LEGACY_MAP[n]}
@@ -497,8 +497,6 @@ async function fetchEarnings(co,kpis){
       if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",numVal:m["epsGrowthTTMYoy"],value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
       if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
       if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
-      // 52w range position — where in the range is current price?
-      if(m["52WeekHigh"]&&m["52WeekLow"]&&co.position&&co.position.currentPrice>0){var _rng=m["52WeekHigh"]-m["52WeekLow"];if(_rng>0){var _pPos=((co.position.currentPrice-m["52WeekLow"])/_rng*100);snapshot.rangePos={label:"52w Position",numVal:_pPos,value:_pPos.toFixed(0)+"% of range",positive:_pPos<40}}}
       // Map Finnhub data to predefined metric IDs
       fhMap={
         eps:{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
@@ -636,12 +634,7 @@ async function fetchEarnings(co,kpis){
       // Dividend yield — ensure it's in snapshot as a number
       if(km.dividendYieldTTM!=null&&!snapshot.divYield)snapshot.divYield={label:"Dividend Yield",value:(km.dividendYieldTTM*100).toFixed(2)+"%",numVal:km.dividendYieldTTM*100,source:"FMP"};
       if(!snapshot.divYield&&fhMap.divYield&&fhMap.divYield.v!=null)snapshot.divYield={label:"Dividend Yield",value:fhMap.divYield.v.toFixed(2)+"%",numVal:fhMap.divYield.v,source:"Finnhub"};
-      // Shareholder yield = div yield + buyback yield (from FMP key-metrics)
-      var _bbY=km.buybackYieldTTM!=null?km.buybackYieldTTM*100:null;
-      if(_bbY==null&&km.stockBasedCompensationToRevenueTTM!=null)_bbY=null; // no fallback
-      var _divY=snapshot.divYield?snapshot.divYield.numVal:0;
-      if(_bbY!=null&&!snapshot.buybackYield){snapshot.buybackYield={label:"Buyback Yield",numVal:Math.max(0,_bbY),value:Math.max(0,_bbY).toFixed(2)+"%",source:"FMP"};fhMap.buybackYield={v:Math.max(0,_bbY),label:Math.max(0,_bbY).toFixed(2)+"%"}}
-      if(!snapshot.shareholderYield){var _sy=_divY+(snapshot.buybackYield?snapshot.buybackYield.numVal:0);if(_sy>0){snapshot.shareholderYield={label:"Shareholder Yield",numVal:_sy,value:_sy.toFixed(2)+"%",source:"FMP"};fhMap.shareholderYield={v:_sy,label:_sy.toFixed(2)+"%"}}}
+      // Buyback yield removed — estimate was not mathematically sound; requires actual buyback cash flow data
       if(!srcLabel&&fmpFilled>0){srcUrl="https://financialmodelingprep.com";srcLabel="FMP"}
       console.log("[ThesisAlpha] FMP enriched "+co.ticker+": "+fmpFilled+" gaps filled, snapshot now "+Object.keys(snapshot).length+" keys");
     }}catch(e){console.warn("FMP metrics enrichment:",e)}
@@ -652,11 +645,6 @@ async function fetchEarnings(co,kpis){
   if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&_implPrice>0&&!snapshot.fcfYield){var _fcfY=fhMap.fcfPerShare.v/_implPrice*100;fhMap.fcfYield={v:_fcfY,label:_fcfY.toFixed(1)+"%"};snapshot.fcfYield={label:"FCF Yield",numVal:_fcfY,value:_fcfY.toFixed(1)+"%"}}
   if(fhMap.pe&&fhMap.pe.v!=null&&fhMap.pe.v>0){var _ey=1/fhMap.pe.v*100;fhMap.earningsYield={v:_ey,label:_ey.toFixed(1)+"%"}}
   if(fhMap.fcfPerShare&&fhMap.fcfPerShare.v!=null&&fhMap.fcfPerShare.v>0&&co.position&&co.position.currentPrice>0){var _pFcf=co.position.currentPrice/fhMap.fcfPerShare.v;fhMap.priceToFcf={v:_pFcf,label:_pFcf.toFixed(1)+"x"}}
-  // Graham number: sqrt(22.5 * EPS * BVPS) — classic intrinsic value estimate
-  var _eps=snapshot.eps?snapshot.eps.numVal:null;
-  var _bvps=fhMap.bvps&&fhMap.bvps.v!=null?fhMap.bvps.v:(fhMap.pb&&fhMap.pb.v>0&&_implPrice>0?_implPrice/fhMap.pb.v:null);
-  if(_eps!=null&&_eps>0&&_bvps!=null&&_bvps>0){var _graham=Math.sqrt(22.5*_eps*_bvps);snapshot.grahamNum={label:"Graham Number",numVal:_graham,value:"$"+_graham.toFixed(2),source:"calc"};fhMap.grahamNum={v:_graham,label:"$"+_graham.toFixed(2)}}
-  if(_implPrice>0&&snapshot.grahamNum){var _gDisc=(_implPrice-snapshot.grahamNum.numVal)/snapshot.grahamNum.numVal*100;snapshot.grahamDiscount={label:"vs Graham",numVal:_gDisc,value:(_gDisc>0?"+":"")+_gDisc.toFixed(0)+"%",positive:_gDisc<0,source:"calc"}}
 
   // Step 3: Match user's tracked KPIs from merged map
   if(kpis&&kpis.length){kpis.forEach(function(k){
@@ -3133,42 +3121,12 @@ function TrackerApp(props){
       {/* Financial grid */}
       {hasSnap&&<div style={{padding:"16px 24px",borderBottom:hasNews?"1px solid "+K.bdr:"none"}}>
         <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Key Financials</div>
-        {(function(){
-          // Group snapshot keys into categories for cleaner display
-          var SNAP_GROUPS=[
-            {label:"Valuation",keys:["pe","pb","ps","evEbitda","evRevenue","peg","fcfYield","grahamDiscount","grahamNum"],icon:"chart"},
-            {label:"Margins",keys:["grossMargin","opMargin","netMargin","fcfMargin","rndMargin","sgaMargin"],icon:"trending"},
-            {label:"Returns",keys:["roe","roic","roa","revGrowth","epsGrowth"],icon:"star"},
-            {label:"Income",keys:["divYield","divGrowth","payoutRatio","shareholderYield","buybackYield"],icon:"dollar"},
-            {label:"Balance Sheet",keys:["debtEquity","currentRatio","quickRatio","netDebtEbitda","interestCoverage","cashOnHand","rangePos"],icon:"shield"},
-            {label:"Per Share",keys:["eps","bvps","fcfPerShare","revPerShare"],icon:"target"},
-          ];
-          var rendered=new Set();
-          var groups=SNAP_GROUPS.map(function(g){
-            var items=g.keys.filter(function(k){return snap[k]&&snap[k].value&&!rendered.has(k)});
-            items.forEach(function(k){rendered.add(k)});
-            return{label:g.label,icon:g.icon,items:items}
-          }).filter(function(g){return g.items.length>0});
-          // Any keys not in groups
-          var leftover=Object.keys(snap).filter(function(k){return !rendered.has(k)&&snap[k]&&snap[k].value});
-          if(leftover.length)groups.push({label:"Other",icon:"overview",items:leftover});
-          return groups.map(function(g){return<div key={g.label} style={{marginBottom:16}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-              <IC name={g.icon} size={10} color={K.dim}/>{g.label}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:6}}>
-              {g.items.map(function(k){var item=snap[k];
-                var isGood=item.positive!=null?item.positive:item.beat!=null?item.beat:null;
-                var valColor=isGood===true?K.grn:isGood===false?K.red:K.txt;
-                return<div key={k} style={{background:K.bg,borderRadius:8,padding:"9px 11px",position:"relative",overflow:"hidden"}}>
-                  {isGood!=null&&<div style={{position:"absolute",top:0,left:0,bottom:0,width:2,borderRadius:"2px 0 0 2px",background:isGood?K.grn:K.red}}/>}
-                  <div style={{fontSize:9,color:K.dim,marginBottom:3,fontFamily:fm,lineHeight:1.2}}>{item.label}</div>
-                  <div style={{fontSize:14,fontWeight:700,color:valColor,fontFamily:fm,lineHeight:1}}>{item.value}</div>
-                  {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}
-                </div>})}
-            </div>
-          </div>})})()}
-        </div></div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:8}}>
+          {Object.keys(snap).map(function(k){var item=snap[k];
+            return<div key={k} style={{background:K.bg,borderRadius:8,padding:"10px 12px"}}>
+              <div style={{fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>{item.label}</div>
+              <div style={{fontSize:14,fontWeight:600,color:item.positive!=null?(item.positive?K.grn:K.red):item.beat!=null?(item.beat?K.grn:K.red):K.txt,fontFamily:fm}}>{item.value}</div>
+              {item.detail&&<div style={{fontSize:10,color:K.dim,marginTop:2}}>{item.detail}</div>}</div>})}</div></div>}
       {!hasSnap&&hasSummary&&<div style={{padding:"12px 24px",fontSize:12,color:K.dim}}>Click Check Earnings again if financial details don't appear — Finnhub may have rate-limited this request.</div>}
       {/* Recent news */}
       {hasNews&&<div style={{padding:"12px 24px"}}>
@@ -4170,12 +4128,7 @@ function TrackerApp(props){
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {snap.shareholderYield&&snap.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}}>{snap.shareholderYield.value} SH yield</span>}
-                {snap.grahamDiscount&&Math.abs(snap.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:snap.grahamDiscount.numVal<0?K.grn:K.amb,background:(snap.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number: "+(snap.grahamNum?snap.grahamNum.value:"—")}>{snap.grahamDiscount.numVal<0?Math.abs(snap.grahamDiscount.numVal).toFixed(0)+"% below Graham":snap.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}
-                <span style={S.badge(h.c)}>{h.l}</span>
-              </div>
-            </div>
+              <span style={S.badge(h.c)}>{h.l}</span></div>
             {c.kpis.map(function(k){
               var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results.find(function(r){return r.kpi_name===mid||r.kpi_name===k.name||(k.metricId&&r.kpi_name===k.metricId)});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
               hist.sort(function(a,b){return a.q>b.q?1:-1});
@@ -4327,14 +4280,6 @@ function TrackerApp(props){
             if(c.exDivDate)divInfo.push({l:"Next Ex-Div",v:fD(c.exDivDate)})}
           else if(c.divFrequency==="none"||(!c.divPerShare&&!c.lastDiv)){
             divInfo.push({l:"Dividend",v:"None",isNeutral:true})}
-          // Shareholder yield = div yield + buyback yield
-          if(snap.fcfYield&&snap.fcfYield.numVal!=null){
-            var _divY=divInfo.find(function(d){return d.l==="Yield"});var _divYV=_divY?parseFloat(_divY.v):0;
-            var _bbyV=snap.buybackYield&&snap.buybackYield.numVal!=null?snap.buybackYield.numVal:0;
-            var _shy=_divYV+_bbyV;
-            if(_shy>0.5)divInfo.push({l:"Shareholder Yield",v:_shy.toFixed(1)+"%",isGood:_shy>5,tip:"Div yield + buyback yield"});
-          }
-          if(snap.divGrowth&&snap.divGrowth.numVal!=null&&Math.abs(snap.divGrowth.numVal)<100)divInfo.push({l:"Div Growth YoY",v:(snap.divGrowth.numVal>=0?"+":"")+snap.divGrowth.numVal.toFixed(1)+"%",isGood:snap.divGrowth.numVal>0});
           if(snap.currentRatio)health.push({l:"Current Ratio",v:snap.currentRatio.value,isGood:parseFloat(snap.currentRatio.value)>=1.5});
           if(snap.debtEquity)health.push({l:"Debt/Equity",v:snap.debtEquity.value,isGood:parseFloat(snap.debtEquity.value)<1});
           if(snap.mktCap)health.push({l:"Market Cap",v:snap.mktCap.value});
@@ -4342,21 +4287,7 @@ function TrackerApp(props){
           if(snap.interestCoverage)health.push({l:"Interest Coverage",v:snap.interestCoverage.value,isGood:snap.interestCoverage.numVal>=3});
           if(snap.netDebtEbitda)health.push({l:"Net Debt/EBITDA",v:snap.netDebtEbitda.value,isGood:parseFloat(snap.netDebtEbitda.value)<3});
           if(snap.buybackYield)health.push({l:"Buyback Yield",v:snap.buybackYield.value,isGood:true});
-          // Price vs Value section
-          var pvSection=[];
-          var _cp=pos.currentPrice||0;
-          // Target price upside
-          if(c.targetPrice>0&&_cp>0){var _tgap=((c.targetPrice-_cp)/_cp*100);pvSection.push({l:"Target Price",v:cSym+c.targetPrice.toFixed(2),isGood:_tgap>10,isNeutral:Math.abs(_tgap)<=10,tip:(_tgap>0?"↑"+_tgap.toFixed(0)+"% upside":"↓"+Math.abs(_tgap).toFixed(0)+"% above target")})}
-          // Graham number
-          var _gn=snap.grahamNum&&snap.grahamNum.numVal?snap.grahamNum.numVal:0;
-          if(_gn>0&&_cp>0&&_gn<_cp*5){var _gg=((_gn-_cp)/_cp*100);pvSection.push({l:"Graham Number",v:cSym+_gn.toFixed(2),isGood:_cp<=_gn,isNeutral:_cp>_gn&&_cp<_gn*1.3,tip:_cp<=_gn?"Trading below Graham value":Math.abs(_gg).toFixed(0)+"% above Graham"})}
-          // P/E-based fair value (15× earnings = Buffett rule of thumb)
-          var _eps=snap.eps&&snap.eps.numVal!=null?snap.eps.numVal:0;
-          if(_eps>0&&_cp>0){var _fv15=_eps*15;var _fvUp=((_fv15-_cp)/_cp*100);if(Math.abs(_fvUp)<200)pvSection.push({l:"15× Earnings FV",v:cSym+_fv15.toFixed(2),isGood:_cp<=_fv15,isNeutral:_cp>_fv15&&_cp<_fv15*1.2,tip:"Buffett heuristic: 15× normalized EPS = "+(_fvUp>0?"↑"+_fvUp.toFixed(0)+"% upside":"↓"+Math.abs(_fvUp).toFixed(0)+"% premium")})}
-          // FCF-based fair value: FCF yield ≥ 6% = fair
-          if(snap.fcfYield&&snap.fcfYield.numVal!=null&&snap.fcf&&snap.fcf.numVal!=null&&_cp>0){var _fcfFV=snap.fcf.numVal/0.05;if(_fcfFV>0&&Math.abs((_fcfFV-_cp)/_cp)<5)pvSection.push({l:"FCF @ 5% Yield",v:cSym+_fcfFV.toFixed(2),isGood:_cp<=_fcfFV,tip:"Price at which FCF yield = 5%"})}
           var sections=[];
-          if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
           if(returns.length>0)sections.push({title:"RETURNS & GROWTH",items:returns,color:K.grn});
           if(divInfo.length>0)sections.push({title:"DIVIDENDS",items:divInfo,color:K.amb});
@@ -4368,9 +4299,9 @@ function TrackerApp(props){
               {sections.map(function(sec,si){return<div key={si} style={{marginBottom:si<sections.length-1?14:0}}>
                 <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>{sec.title}</div>
                 <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:"6px 16px"}}>
-                  {sec.items.map(function(item,ii){return<div key={ii} title={item.tip||""} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid "+K.bdr+"30",cursor:item.tip?"help":"default"}}>
-                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.l}{item.tip&&<span style={{color:K.dim,fontSize:9,marginLeft:3}}>ⓘ</span>}</span>
-                    <span style={{fontSize:12,fontWeight:700,fontFamily:fm,color:item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt}}>{item.v}</span></div>})}</div></div>})}</div></div>})()}
+                  {sec.items.map(function(item,ii){return<div key={ii} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:"1px solid "+K.bdr+"30"}}>
+                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.l}</span>
+                    <span style={{fontSize:12,fontWeight:600,fontFamily:fm,color:item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt}}>{item.v}</span></div>})}</div></div>})}</div></div>})()}
 
 
                 {/* -- INSIDER ACTIVITY -- */}
@@ -6278,34 +6209,6 @@ function TrackerApp(props){
               <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>CURRENT CONVICTION</div>
               <div style={{fontSize:22,fontWeight:700,color:c.conviction>=7?K.grn:c.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c.conviction||"—"}/10</div></div>
           </div>
-          {/* Prior review comparison */}
-          {(function(){var prevWeek=weeklyReviews.length>0?weeklyReviews[0]:null;var prevEntry=prevWeek?prevWeek.entries.find(function(e){return e.id===c.id}):null;
-            if(!prevEntry)return null;
-            var delta=c.conviction-(prevEntry.prev||0);
-            var prevAction=prevEntry.action||"hold";
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:3}}>LAST WEEK</div>
-                <div style={{fontSize:12,color:K.mid}}>Conviction: <strong style={{color:K.txt}}>{prevEntry.prev}→{prevEntry.new}</strong>{prevEntry.note?" · "+prevEntry.note.substring(0,60):""}</div>
-              </div>
-              {prevAction!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb,background:(prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb)+"15",padding:"3px 8px",borderRadius:4,fontFamily:fm,textTransform:"uppercase",flexShrink:0}}>{prevAction}</span>}
-            </div>})()}
-          {/* Conviction history sparkline */}
-          {(function(){var ch=c.convictionHistory||[];if(ch.length<2)return null;var pts=ch.slice(-8);var maxV=10;var minV=1;
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5}}>CONVICTION HISTORY</div>
-                <div style={{display:"flex",alignItems:"flex-end",gap:3,height:24}}>
-                  {pts.map(function(p,pi){var h=Math.max(3,Math.round((p.rating/10)*24));var isLast=pi===pts.length-1;var clr=p.rating>=7?K.grn:p.rating>=4?K.amb:K.red;
-                    return<div key={pi} title={(p.date||"")+": "+p.rating} style={{width:16,height:h,borderRadius:2,background:isLast?clr:clr+"60",transition:"height .2s",flexShrink:0}}/>})}
-                </div>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                {(function(){var first=pts[0].rating;var last=pts[pts.length-1].rating;var delta=last-first;
-                  return<><div style={{fontSize:18,fontWeight:800,color:last>=7?K.grn:last>=4?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{last}</div>
-                  {delta!==0&&<div style={{fontSize:10,fontWeight:700,color:delta>0?K.grn:K.red,fontFamily:fm}}>{delta>0?"+":""}{delta} vs {pts.length} wks ago</div>}</>})()}
-              </div>
-            </div>})()}
           {/* Quick thesis reminder */}
           {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR THESIS</div>
@@ -6358,31 +6261,11 @@ function TrackerApp(props){
             <div style={{fontSize:13,color:K.dim,lineHeight:1.6}}>Confirm to save convictions and claim your weekly insight.</div>
           </div>
           {/* Stats row */}
-          {(function(){
-            var changed=Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction});
-            var ups=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)>(co2.conviction||0)}).length;
-            var downs=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)<(co2.conviction||0)}).length;
-            var actCount=Object.values(actions).filter(function(a){return a!=="hold"}).length;
-            var avgNew=Math.round(portfolio.map(function(c2){return revs[c2.id]!=null?revs[c2.id]:(c2.conviction||0)}).reduce(function(s,v){return s+v},0)/Math.max(portfolio.length,1)*10)/10;
-            // Pattern insight — multi-signal detection
-            var pats=[];
-            if(weeklyReviews.length>=3){var neverLowered=weeklyReviews.slice(0,5).every(function(r){return r.entries.every(function(e){return e.new>=e.prev})});if(neverLowered&&downs===0)pats.push({c:K.amb,t:"You haven't lowered conviction in recent reviews. Healthy investing requires honest reassessment."})}
-            var raisedButFlag=Object.keys(revs).filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)>(co2.conviction||0)&&(actions[k]==="sell"||actions[k]==="review")});
-            if(raisedButFlag.length>0)pats.push({c:K.amb,t:"Raised conviction but flagged for review on "+raisedButFlag.length+" holding(s)."}); 
-            if(pats.length===0&&ups>downs&&ups>=2)pats.push({c:K.grn,t:"Building conviction across "+ups+" holding"+(ups>1?"s":"")+" this week."});
-            if(pats.length===0&&downs>ups&&downs>=2)pats.push({c:K.red,t:"Conviction fell on "+downs+" holding"+(downs>1?"s":"")+". Follow your process."});
-            if(weeklyReviews.length>=2){var prevAvg=(weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||0;var avgDelta=avgNew-prevAvg;if(Math.abs(avgDelta)>=0.5&&pats.length<2)pats.push({c:avgDelta>0?K.grn:K.amb,t:"Portfolio avg conviction "+(avgDelta>0?"rose":"fell")+" from "+prevAvg+" to "+avgNew+" this week."})}
-            var pat=pats[0]||null;
-            return<div>
-              <div style={{display:"flex",justifyContent:"center",gap:20,marginBottom:12}}>
-                <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{portfolio.length}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Reviewed</div></div>
-                {ups>0&&<div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>↑{ups}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Raised</div></div>}
-                {downs>0&&<div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:800,color:K.red,fontFamily:fm,lineHeight:1}}>↓{downs}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Lowered</div></div>}
-                <div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:800,color:K.acc,fontFamily:fm,lineHeight:1}}>{avgNew}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Avg conv</div></div>
-                {actCount>0&&<div style={{textAlign:"center"}}><div style={{fontSize:26,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{actCount}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Actions</div></div>}
-              </div>
-              {pats.slice(0,2).map(function(p2,pi){return<div key={pi} style={{background:p2.c+"10",border:"1px solid "+p2.c+"30",borderRadius:8,padding:"8px 14px",marginBottom:6,fontSize:12,color:p2.c,textAlign:"center",fontStyle:"italic"}}>{p2.t}</div>})}
-            </div>})()}
+          <div style={{display:"flex",justifyContent:"center",gap:24,marginBottom:20}}>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{portfolio.length}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Reviewed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm,lineHeight:1}}>{Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction}).length}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Changed</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{Object.values(actions).filter(function(a){return a!=="hold"}).length}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Actions</div></div>
+          </div>
           {/* Compact holdings — horizontal wrap pills */}
           <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginBottom:24,maxHeight:120,overflow:"auto"}}>
             {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var changed=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
@@ -6414,19 +6297,6 @@ function TrackerApp(props){
               <div style={{fontSize:48,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 12px rgba(255,215,0,.4))"}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:"#FFD700",fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
               <div style={{fontSize:13,color:K.dim}}>Come back next week to keep the streak alive.</div></div>
-            {/* Conviction trend chart across last 8 weeks */}
-            {weeklyReviews.length>=2&&(function(){
-              var last8=weeklyReviews.slice(0,8).reverse();
-              return<div style={{background:K.bg,borderRadius:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>CONVICTION TREND (8 WEEKS)</div>
-                <div style={{display:"flex",alignItems:"flex-end",gap:4,height:40,justifyContent:"center"}}>
-                  {last8.map(function(rev,ri){var avg=rev.summary?rev.summary.avgConv:0;var h=Math.max(4,Math.round((avg/10)*40));var isLatest=ri===last8.length-1;var clr=avg>=7?K.grn:avg>=4?K.acc:K.red;
-                    return<div key={ri} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                      <div style={{width:"100%",height:h,borderRadius:2,background:isLatest?clr:clr+"50",transition:"height .3s"}} title={"Wk "+rev.weekId+": avg "+avg}/>
-                      {isLatest&&<span style={{fontSize:7,color:clr,fontFamily:fm,fontWeight:700}}>{avg}</span>}
-                    </div>})}
-                </div>
-              </div>})()}
             {reward&&<div style={{textAlign:"center",padding:"20px 16px",background:K.bg,borderRadius:12,border:"1px solid "+(tierColors[reward.tier]||K.bdr)+"40",marginBottom:16}}>
               <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:tierColors[reward.tier]||K.dim,fontFamily:fm,marginBottom:6}}>{"WEEKLY INSIGHT"}</div>
               <div style={{fontSize:36,marginBottom:6}}>{reward.icon}</div>
@@ -6457,30 +6327,14 @@ function TrackerApp(props){
         {weeklyReviews.length>0&&<div style={{marginTop:12}}>
           <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Review History</div>
           {weeklyReviews.slice(0,12).map(function(r,ri){
-            var increases=r.entries.filter(function(e){return e.new>e.prev});
-            var decreases=r.entries.filter(function(e){return e.new<e.prev});
-            var actions=r.entries.filter(function(e){return e.action&&e.action!=="hold"});
             return<div key={ri} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Week of {r.weekId}</div>
-                <div style={{display:"flex",gap:6}}>
-                  {increases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>↑{increases.length}</span>}
-                  {decreases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.red,background:K.red+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>↓{decreases.length}</span>}
-                  {actions.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.acc,background:K.acc+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{actions.length} action{actions.length>1?"s":""}</span>}
-                </div>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>avg {r.summary.avgConv}/10</span>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {r.entries.map(function(e){var changed=e.prev!==e.new;var isUp=e.new>e.prev;var isDown=e.new<e.prev;
-                  return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:4,background:changed?(isUp?K.grn+"12":K.red+"12"):K.bg,border:"1px solid "+(changed?(isUp?K.grn+"30":K.red+"30"):K.bdr),fontSize:11,fontFamily:fm,color:changed?(isUp?K.grn:K.red):K.dim,display:"flex",alignItems:"center",gap:3}}>
-                    <span style={{fontWeight:600}}>{e.ticker}</span>
-                    {changed&&<span>{isUp?"↑":"↓"}{e.prev}→{e.new}</span>}
-                    {!changed&&<span style={{color:K.dim}}>{e.new}</span>}
-                    {e.action&&e.action!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:e.action==="add"?K.grn:e.action==="sell"?K.red:K.amb,textTransform:"uppercase",marginLeft:2}}>{e.action}</span>}
-                  </div>})}</div>
-              {r.entries.some(function(e){return e.note&&e.note.length>0})&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid "+K.bdr+"50"}}>
-                {r.entries.filter(function(e){return e.note}).map(function(e){return<div key={e.ticker} style={{fontSize:11,color:K.mid,marginBottom:2}}><strong style={{color:K.txt}}>{e.ticker}:</strong> {e.note}</div>})}
-              </div>}
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.summary.total} holdings · {r.summary.changed} changes · avg {r.summary.avgConv}/10</div></div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {r.entries.map(function(e){var changed=e.prev!==e.new;
+                  return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:4,background:changed?K.acc+"12":K.bg,border:"1px solid "+(changed?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm,color:changed?K.acc:K.dim}}>
+                    {e.ticker} {changed?e.prev+"→"+e.new:e.new}</div>})}</div>
             </div>})}</div>}
       </div>}
     </div>}
@@ -7631,38 +7485,24 @@ function TrackerApp(props){
       var totalValue=held.reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
       var totalReturn=totalValue-totalCost;var totalReturnPct=totalCost>0?(totalReturn/totalCost*100):0;
       var isUp=totalReturn>=0;
-      var best=null,worst=null;held.forEach(function(c){var pct=(c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100;if(!best||pct>best.pct)best={ticker:c.ticker,pct:pct,id:c.id};if(!worst||pct<worst.pct)worst={ticker:c.ticker,pct:pct,id:c.id}});
-      // Day P&L across portfolio
-      var dayPnl=held.reduce(function(s,c){var p2=c.position||{};var d=c._dayChangePct||0;var mv=p2.shares*p2.currentPrice;return s+(mv*d/100)},0);
-      var dayPnlPct=totalValue>0?(dayPnl/totalValue*100):0;
-      var isDayUp=dayPnl>=0;
-      // Holdings in buy zone (below target price)
-      var inBuyZone=held.filter(function(c){return c.targetPrice>0&&c.position&&c.position.currentPrice>0&&c.position.currentPrice<c.targetPrice}).length;
-      return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:isMobile?8:16,marginBottom:20}}>
+      var best=null,worst=null;held.forEach(function(c){var pct=(c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100;if(!best||pct>best.pct)best={ticker:c.ticker,pct:pct};if(!worst||pct<worst.pct)worst={ticker:c.ticker,pct:pct}});
+      return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?8:16,marginBottom:20}}>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
-          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Portfolio Value</div>
+          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Value</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.15}}>{cSym}{totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-          <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Invested: {cSym}{totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Cost: {cSym}{totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Return</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
-          <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}{cSym}{Math.abs(totalReturn).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
+          <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}{cSym}{totalReturn.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
-          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Today</div>
-          {dayPnl!==0?<>
-            <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isDayUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isDayUp?"+":""}{dayPnlPct.toFixed(2)}%</div>
-            <div style={{fontSize:11,color:isDayUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isDayUp?"+":""}{cSym}{Math.abs(dayPnl).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-          </>:<div style={{fontSize:isMobile?14:18,fontWeight:500,color:K.dim,fontFamily:fm,lineHeight:1.15,marginTop:4}}>Refresh prices</div>}</div>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden",cursor:"pointer"}} onClick={function(){if(best)setSelId(best.id)}}>
-          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Leader / Laggard</div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-            <div><div style={{fontSize:isMobile?14:16,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.15}}>{best?best.ticker:"—"}</div>
-              <div style={{fontSize:11,color:K.grn,marginTop:2,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
-            <div style={{textAlign:"right"}}><div style={{fontSize:isMobile?14:16,fontWeight:700,color:K.red,fontFamily:fm,lineHeight:1.15}}>{worst?worst.ticker:"—"}</div>
-              <div style={{fontSize:11,color:K.red,marginTop:2,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
-          </div>
-          {inBuyZone>0&&<div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,marginTop:4,background:K.grn+"12",padding:"2px 6px",borderRadius:3,display:"inline-block"}}>{inBuyZone} in buy zone</div>}
-        </div>
+          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Best</div>
+          <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.15}}>{best?best.ticker:"—"}</div>
+          <div style={{fontSize:11,color:K.grn,marginTop:4,fontFamily:fm}}>{best?(best.pct>=0?"+":"")+best.pct.toFixed(1)+"%":""}</div></div>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+          <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Worst</div>
+          <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.red,fontFamily:fm,lineHeight:1.15}}>{worst?worst.ticker:"—"}</div>
+          <div style={{fontSize:11,color:K.red,marginTop:4,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
       </div>}()}
     {/* Analytics quick link */}
 
@@ -7678,7 +7518,7 @@ function TrackerApp(props){
           <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
           <span style={{width:75,textAlign:"right"}}>{sideTab==="watchlist"?"Price":"Avg Price"}</span>
-          <span style={{width:65,textAlign:"right"}}>{sideTab==="watchlist"?"Target":"Ret / Day"}</span>
+          <span style={{width:65,textAlign:"right"}}>{sideTab==="watchlist"?"Target":"Return"}</span>
           {!isMobile&&<span style={{width:85,textAlign:"right"}}>{sideTab==="watchlist"?"Gap":"Value"}</span>}
           <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?"Sector":"Allocation"}</span>
           {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];var hw={conviction:{w:40,a:"center",l:"C"},kpis:{w:55,a:"right",l:"KPIs",d:true},earnings:{w:60,a:"right",l:"Earn.",d:true},price:{w:70,a:"right",l:"Price",d:true},mastery:{w:55,a:"center",l:"Mastery"}};return oo.map(function(k2){var h2=hw[k2];if(!h2)return null;if(!(dashSet.listCols||{})[k2])return null;if(h2.d&&isMobile)return null;return<span key={k2} style={{width:h2.w,textAlign:h2.a}}>{h2.l}</span>})})()}
@@ -7709,8 +7549,7 @@ function TrackerApp(props){
               <div style={{fontSize:13,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cc.name}</div></div>
             <div style={{textAlign:"right",flexShrink:0}}>
               <div style={{fontSize:15,fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>
-              {(cc._dayChangePct||0)!==0&&<div style={{fontSize:11,fontWeight:600,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}% today</div>}
-              <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginTop:1}}>{weight>0?weight.toFixed(1)+"% alloc":"—"}</div></div>
+              <div style={{fontSize:13,color:K.mid,fontFamily:fm,marginTop:2}}>{weight>0?weight.toFixed(1)+"% alloc":"—"}</div></div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>}
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
@@ -7720,11 +7559,7 @@ function TrackerApp(props){
               <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
             <span style={{width:75,textAlign:"right",fontSize:12,color:K.mid,fontFamily:fm}}>{sideTab==="watchlist"?(p2.currentPrice>0?cSym+p2.currentPrice.toFixed(2):"—"):(p2.avgCost>0?cSym+p2.avgCost.toFixed(2):"—")}</span>
-            <span style={{width:65,textAlign:"right",fontSize:12,fontFamily:fm}}>
-              {sideTab==="watchlist"?(cc.targetPrice>0?<span style={{fontWeight:600,color:K.txt}}>{cSym}{cc.targetPrice.toFixed(0)}</span>:<span style={{color:K.dim}}>—</span>):
-              <div><div style={{fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontSize:12}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>
-              {(cc._dayChangePct||0)!==0&&<div style={{fontSize:10,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}%</div>}</div>}
-            </span>
+            <span style={{width:65,textAlign:"right",fontSize:13,fontWeight:600,fontFamily:fm,color:sideTab==="watchlist"?(cc.targetPrice>0?K.txt:K.dim):(ret!=null?(ret>=0?K.grn:K.red):K.dim)}}>{sideTab==="watchlist"?(cc.targetPrice>0?cSym+cc.targetPrice.toFixed(0):"—"):(ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—")}</span>
             {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:12,fontFamily:fm}}>{sideTab==="watchlist"?(function(){if(!cc.targetPrice||!p2.currentPrice)return<span style={{color:K.dim}}>{"—"}</span>;var gap=((cc.targetPrice-p2.currentPrice)/p2.currentPrice*100);return<span style={{color:gap>0?K.grn:K.red,fontWeight:600}}>{gap>0?gap.toFixed(0)+"% below":"At target"}</span>})():<span style={{color:K.txt}}>{val>0?cSym+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}</span>}
             <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{cc.sector||""}</span>:weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:10,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
             {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];return oo.map(function(k2){if(!(dashSet.listCols||{})[k2])return null;
@@ -7740,43 +7575,13 @@ function TrackerApp(props){
     {/* Card view */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="cards"&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
       {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
-        var _snap=c.financialSnapshot||{};
-        var _dayChg=c._dayChangePct||0;var _dayChgAbs=c._dayChangeAbs||0;
-        var _totalRet=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
-        var _tgtGap=c.targetPrice>0&&pos.currentPrice>0?((c.targetPrice-pos.currentPrice)/pos.currentPrice*100):null;
-        var _mktVal=pos.shares>0&&pos.currentPrice>0?pos.shares*pos.currentPrice:0;
-        var _graham=_snap.grahamNum?_snap.grahamNum.numVal:0;
-        var _gDisc=_graham>0&&pos.currentPrice>0?((_graham-pos.currentPrice)/pos.currentPrice*100):null;
-        var _fy=_snap.fairValue?_snap.fairValue.numVal:0;
-        var _pvfv=_fy>0&&pos.currentPrice>0?((_fy-pos.currentPrice)/pos.currentPrice*100):null;
         return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
-              <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
-              {dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym}{pos.currentPrice.toFixed(2)}</span>}
-              {_dayChg!==0&&<span style={{fontSize:11,fontWeight:600,color:_dayChg>=0?K.grn:K.red,fontFamily:fm}}>({_dayChg>=0?"+":""}{_dayChg.toFixed(2)}%)</span>}
-            </div>
-            <div style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0}}>
-            <span style={S.badge(h.c)}>{h.l}</span>
-            {_totalRet!=null&&<span style={{fontSize:10,fontWeight:700,color:_totalRet>=0?K.grn:K.red,fontFamily:fm}}>{_totalRet>=0?"+":""}{_totalRet.toFixed(1)}%</span>}
-          </div>
-        </div>
-        {/* Price vs value row */}
-        {dashSet.showPrices&&((_tgtGap!=null)||(_gDisc!=null&&Math.abs(_gDisc)<100))&&<div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
-          {_tgtGap!=null&&<span style={{fontSize:10,background:_tgtGap>0?K.grn+"12":K.red+"12",color:_tgtGap>0?K.grn:K.red,padding:"2px 7px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{_tgtGap>0?"↑":"↓"}{Math.abs(_tgtGap).toFixed(0)}% to target</span>}
-          {_gDisc!=null&&Math.abs(_gDisc)<100&&<span style={{fontSize:10,background:_gDisc>0?K.grn+"10":K.amb+"10",color:_gDisc>0?K.grn:K.amb,padding:"2px 7px",borderRadius:4,fontFamily:fm}}>{_gDisc>0?Math.abs(_gDisc).toFixed(0)+"% below Graham":""+Math.abs(_gDisc).toFixed(0)+"% above Graham"}</span>}
-        </div>}
-          {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{marginBottom:10,padding:"8px 12px",background:K.bg,borderRadius:8}}>
-            <div style={{display:"flex",gap:10,justifyContent:"space-between"}}>
-              <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{pos.shares>=1000?(pos.shares/1000).toFixed(1)+"k":pos.shares} sh</span>
-              <span style={{fontSize:12,fontWeight:700,color:_totalRet!=null&&_totalRet>=0?K.grn:K.red,fontFamily:fm}}>{_totalRet!=null?(_totalRet>=0?"+":"")+_totalRet.toFixed(1)+"%":"—"}</span>
-              <span style={{fontSize:12,color:K.txt,fontFamily:fm,fontWeight:600}}>{cSym}{(_mktVal>=1000?(_mktVal/1000).toFixed(1)+"k":_mktVal.toFixed(0))}</span>
-              {_dayChg!==0&&_dayChgAbs!==0&&<span style={{fontSize:11,color:_dayChg>=0?K.grn:K.red,fontFamily:fm}}>{_dayChg>=0?"+":""}{(pos.shares*_dayChgAbs).toFixed(0)} today</span>}
-            </div>
-          </div>}
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1}}><div style={{fontSize:isMobile?15:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}{dashSet.showPrices&&pos.currentPrice>0&&<span style={{fontWeight:400,color:K.dim,marginLeft:8,fontSize:13}}>${pos.currentPrice.toFixed(2)}</span>}</div><div style={{fontSize:isMobile?12:12,color:K.dim}}>{c.name}</div></div><span style={S.badge(h.c)}>{h.l}</span></div>
+          {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{display:"flex",gap:12,marginBottom:10,padding:"8px 10px",background:K.bg,borderRadius:6}}>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{pos.shares} shares</span>
+            <span style={{fontSize:12,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontWeight:600,fontFamily:fm}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}%</span>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{cSym}{(pos.shares*pos.currentPrice).toLocaleString(undefined,{maximumFractionDigits:0})}</span></div>}
           {/* Investment style + Moat type micro-badges */}
           {c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",gap:4,marginBottom:8}}>
             <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
@@ -7800,18 +7605,11 @@ function TrackerApp(props){
                   <div style={{width:16,height:16,borderRadius:"50%",background:s.done?s.color:K.bdr,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:s.done?"#fff":K.dim,fontWeight:700}}>{s.done?"✓":(i+1)}</div>
                   <span style={{fontSize:8,color:s.done?s.color:K.dim,fontFamily:fm}}>{s.label}</span></div>,
                 i<4&&<div style={{width:8,height:1,background:s.done?s.color:K.bdr}}/>)})}</div>})()}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:10,borderTop:"1px solid "+K.bdr}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-              <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d")}</span>
-              {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}
-              {_snap.shareholderYield&&_snap.shareholderYield.numVal>0.5&&<span style={{fontSize:10,color:K.grn,fontFamily:fm,background:K.grn+"10",padding:"2px 6px",borderRadius:3}}>{_snap.shareholderYield.value} yield</span>}
-            </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {total>0&&<span style={{fontSize:11,color:met===total&&total>0?K.grn:K.dim,fontFamily:fm,fontWeight:met===total&&total>0?700:400}}>{met}/{total} KPIs</span>}
-              {total===0&&c.kpis.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.kpis.length} KPIs</span>}
-              {cs2==="checking"&&<span style={{fontSize:10,color:K.dim}}>⏳</span>}
-            </div>
-          </div></div>})}</div>}
+              <span style={{fontSize:12,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d — "+fD(c.earningsDate))}</span>
+              {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{total>0?met+"/"+total+" met":c.kpis.length+" KPIs"}{cs2==="checking"?" ⏳":""}</div></div></div>})}</div>}
     {/* Mastery Overview */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var items=filtered.map(function(cc2){return{ticker:cc2.ticker,id:cc2.id,m:calcMastery(cc2),domain:cc2.domain}}).sort(function(a,b){return a.m.stars-b.m.stars});
