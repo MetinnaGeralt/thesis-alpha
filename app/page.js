@@ -4957,6 +4957,42 @@ function TrackerApp(props){
         </div>
       })()}
 
+      {ht==="reading"&&<div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:600,color:K.txt}}>Reading List</div>
+          <button onClick={function(){setModal({type:"addReading"})}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Add Book</button>
+        </div>
+        {readingList.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
+          <div style={{marginBottom:8}}>No books yet</div>
+          <div style={{fontSize:12}}>Add books, articles, and resources that shape your investment thinking.</div>
+        </div>}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+          {readingList.map(function(item,i){
+            var statusColor=item.status==="read"?K.grn:item.status==="reading"?K.acc:K.dim;
+            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 18px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:600,color:K.txt,marginBottom:2}}>{item.title}</div>
+                  {item.author&&<div style={{fontSize:11,color:K.dim,marginBottom:6}}>{item.author}</div>}
+                  {item.notes&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{item.notes}</div>}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                  <select value={item.status||"want"} onChange={function(e){var updated=readingList.map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r});saveRL(updated)}} style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:6,color:statusColor,fontSize:11,padding:"2px 6px",fontFamily:fm,cursor:"pointer"}}>
+                    <option value="want">Want to read</option>
+                    <option value="reading">Reading</option>
+                    <option value="read">Read</option>
+                  </select>
+                  <button onClick={function(){saveRL(readingList.filter(function(_,j){return j!==i}))}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:11,padding:0}}>Remove</button>
+                </div>
+              </div>
+            </div>
+          })}
+        </div>
+      </div>}
+
+    </div>
+  }
+
 
   // ── Weekly Owner's Review ──────────────────────────────
   function WeeklyReview(){
