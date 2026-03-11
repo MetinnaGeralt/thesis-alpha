@@ -3475,7 +3475,9 @@ function TrackerApp(props){
       {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:2}}>
         {[{label:"Thesis",anchor:"ds-story"},{label:"Evidence",anchor:"ds-evidence"},{label:"Numbers",anchor:"ds-numbers"},{label:"Research",anchor:"ds-research"}].map(function(s){return<button key={s.anchor} onClick={function(){var el=document.getElementById(s.anchor);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}} style={{flexShrink:0,padding:"6px 14px",borderRadius:999,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:12,fontFamily:fm,cursor:"pointer"}}>{s.label}</button>})}
       </div>}
-      {/* ── Single scrollable company view (no tabs) ── */}
+      {/* ── Company view (dossier always shown, no tab UI) ── */}
+      {detailTab==="dossier"&&<div className="ta-fade">
+        {!subPage&&<div>
         {/* Guided Setup Flow */}
         {guidedSetup===c.id&&(function(){
           // Only show guided setup within 48h of adding company
@@ -4192,6 +4194,8 @@ function TrackerApp(props){
         {/* Attribution */}
         <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
         </div>{/* end research trail */}
+        </div>}
+      </div>}
     </div>
   }
   // ── Owner's Hub ─────────────────────────────────────────
