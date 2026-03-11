@@ -6569,24 +6569,37 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>}
 
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
-          {/* LEFT — thesis signals + earnings ── */}
+          {/* LEFT — business events ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
 
             {/* Conviction health */}
-            <div style={{marginBottom:14}}>
+            <div style={{marginBottom:14}}>\
               <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:7}}>Conviction Health</div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                <div style={{flex:1,height:5,borderRadius:3,background:K.bdr}}>
-                  <div style={{height:"100%",borderRadius:3,background:convHealthColor,width:convHealthPct+"%",transition:"width .4s ease"}}/>
-                </div>
-                <span style={{fontSize:11,fontWeight:700,color:convHealthColor,fontFamily:fm,flexShrink:0}}>{convHealthPct}%</span>
-              </div>
-              <div style={{display:"flex",gap:12,fontSize:10,color:K.dim,fontFamily:fm}}>
-                <span><span style={{color:K.grn,fontWeight:600}}>{convReviewed}</span> reviewed ≤60d</span>
-                {convStale>0&&<span><span style={{color:K.red,fontWeight:600}}>{convStale}</span> stale &gt;90d</span>}
-                <span style={{color:K.dim}}>{convTotal} holdings</span>
-              </div>
-            </div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>\
+                <div style={{flex:1,height:5,borderRadius:3,background:K.bdr}}>\
+                  <div style={{height:"100%",borderRadius:3,background:convHealthColor,width:convHealthPct+"%",transition:"width .4s ease"}}/>\
+                </div>\
+                <span style={{fontSize:11,fontWeight:700,color:convHealthColor,fontFamily:fm,flexShrink:0}}>{convHealthPct}%</span>\
+              </div>\
+              <div style={{display:"flex",gap:12,fontSize:10,color:K.dim,fontFamily:fm}}>\
+                <span><span style={{color:K.grn,fontWeight:600}}>{convReviewed}</span> reviewed ≤60d</span>\
+                {convStale>0&&<span><span style={{color:K.red,fontWeight:600}}>{convStale}</span> stale &gt;90d</span>}\
+                <span style={{color:K.dim}}>{convTotal} holdings</span>\
+              </div>\
+            </div>\
+
+            {/* Post-earnings review needed */}
+            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+              if(needReview.length===0)return null;
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
+                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
+                </div>})}
+              </div>})()}
 
             {/* Upcoming earnings */}
             {upcoming.length>0&&<div style={{marginBottom:14}}>
@@ -6612,27 +6625,30 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
           </div>
 
-          {/* RIGHT — holdings (price as context, not headline) ── */}
+          {/* RIGHT — ownership health (no prices) ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
-            {held.length>0&&<div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Holdings</div>
-                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}>
-                  <span style={{width:40,textAlign:"right"}}>Today</span>
-                  <span style={{width:44,textAlign:"right"}}>Return</span>
-                </div>
-              </div>
-              {held.map(function(c2){var p2=c2.position||{};var ret=p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;var dayChg=c2._dayChangePct||0;var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"18"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  {/* Conviction dot — the primary signal */}
-                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0}}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{c2.ticker}</span>
-                  <span style={{fontSize:10,color:K.dim,flex:1}}>${p2.currentPrice.toFixed(p2.currentPrice<10?2:0)}</span>
-                  <span style={{width:40,textAlign:"right",fontSize:10,color:dayChg>0?K.grn:dayChg<0?K.red:K.dim,fontFamily:fm}}>{dayChg!==0?(dayChg>0?"+":"")+dayChg.toFixed(1)+"%":priceLoading?"···":"—"}</span>
-                  <span style={{width:44,textAlign:"right",fontSize:10,fontWeight:500,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</span>
-                </div>})}
-            </div>}
-            {held.length===0&&portfolio.length>0&&<div style={{fontSize:12,color:K.dim,lineHeight:1.6,paddingTop:4}}>Add position data to your holdings to see returns here.</div>}
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
+            {portfolio.map(function(c2){
+              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
+              var convLabel=c2.conviction>=7?"High":c2.conviction>=4?"Mid":c2.conviction>0?"Low":"—";
+              var thesisAge=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):null;
+              var thesisColor=thesisAge==null?K.dim:thesisAge<=60?K.grn:thesisAge<=90?K.amb:K.red;
+              var thesisLabel=thesisAge==null?"No thesis":thesisAge<=60?thesisAge+"d ago":thesisAge<=90?thesisAge+"d — review":thesisAge+"d — stale";
+              var kpiH=gH(c2.kpis);
+              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
+              return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:0,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                {/* Conviction dot */}
+                <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                {/* Ticker */}
+                <CoLogo domain={c2.domain} ticker={c2.ticker} size={18}/>
+                <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,width:46,marginLeft:6}}>{c2.ticker}</span>
+                {/* Thesis age */}
+                <span style={{flex:1,fontSize:10,color:thesisColor,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{thesisLabel}</span>
+                {/* Earnings badge if soon */}
+                {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                {/* KPI badge */}
+                {c2.kpis.length>0&&<span style={{fontSize:9,fontWeight:700,color:kpiH.c,background:kpiH.c+"15",padding:"1px 5px",borderRadius:4,flexShrink:0,fontFamily:fm}}>{kpiH.l}</span>}
+              </div>})}
           </div>
         </div>
 
