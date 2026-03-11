@@ -860,6 +860,8 @@ function TrackerApp(props){
   var _editN=useState(false),editingName=_editN[0],setEditingName=_editN[1];
   var _nameI=useState(""),nameInput=_nameI[0],setNameInput=_nameI[1];
   var avatarFileRef=useRef(null);
+  var saveTimer=useRef(null);
+  var cloudTimer=useRef(null);
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var chestOverlay=null;function setChestOverlay(){}
@@ -4594,7 +4596,7 @@ function TrackerApp(props){
               <div style={{flex:1}}>
                 <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>YOUR PROCESS SCORE</div>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{fontSize:36,fontWeight:800,color:globalOS.total>=70?K.grn:globalOS.total>=40?K.amb:K.red,fontFamily:fm}}>{globalOS.total}</div>
+                  <div style={{fontSize:36,fontWeight:800,color:os.total>=70?K.grn:os.total>=40?K.amb:K.red,fontFamily:fm}}>{os.total}</div>
                   <div>
                     <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{currentLevel.icon} {currentLevel.name}</div>
                     <div style={{fontSize:12,color:K.dim}}>Top investors maintain 70+ process scores</div></div></div>
