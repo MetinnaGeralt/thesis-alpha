@@ -1075,6 +1075,26 @@ function TrackerApp(props){
   // Dossier spotlight tour
   var _tourStep=useState(0),tourStep=_tourStep[0],setTourStep=_tourStep[1];
   var _mob=useState(false),isMobile=_mob[0],setIsMobile=_mob[1];
+  // Auto-trigger onboarding for brand-new users
+  useEffect(function(){
+    try{
+      if(localStorage.getItem("ta-onboarded"))return;
+      var t=setTimeout(function(){
+        setCos(function(current){
+          if(current.length===0)setObStep(1);
+          return current;
+        });
+      },700);
+      return function(){clearTimeout(t)};
+    }catch(e){}
+  },[]);
+  // Responsive: track screen width
+  useEffect(function(){
+    function onResize(){setIsMobile(window.innerWidth<768);}
+    onResize();
+    window.addEventListener("resize",onResize);
+    return function(){window.removeEventListener("resize",onResize);};
+  },[]);
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
   function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
@@ -6802,17 +6822,50 @@ function TrackerApp(props){
         </div>
       </div>}())}
     {sideTab==="toohard"&&filtered.length===0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:13,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"}</div></div>}
-    {/* Enhanced empty state */}
-    {filtered.length===0&&<div className="ta-fade" style={{padding:"60px 20px",textAlign:"center",maxWidth:480,margin:"0 auto"}}>
-      <div style={{width:56,height:56,borderRadius:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name={sideTab==="portfolio"?"trending":sideTab==="watchlist"?"search":"alert"} size={24} color={K.acc}/></div>
-      <h3 style={{fontSize:20,fontWeight:400,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{sideTab==="portfolio"?"Your portfolio is empty":sideTab==="watchlist"?"Nothing on your watchlist yet":"Too-Hard Pile is empty"}</h3>
-      <p style={{fontSize:14,color:K.dim,lineHeight:1.7,margin:"0 0 24px"}}>{sideTab==="portfolio"?"Add the companies you own. Write a thesis for each one, track the KPIs that matter, and check them when earnings drop.":sideTab==="watchlist"?"Add companies you're researching but haven't bought yet. When your thesis is clear and the price is right, promote them to your portfolio.":"Companies you've decided are outside your circle of competence. It takes wisdom to know what you don't know."}</p>
-      <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:14})}>+ Add Your First Company</button>
-      {sideTab==="portfolio"&&<div className="ta-grid-2col" style={{marginTop:32,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,textAlign:"left"}}>
-        {[{icon:"lightbulb",title:"Thesis-driven",desc:"Every position needs a written reason to own it"},{icon:"target",title:"KPI tracking",desc:"Define metrics that prove or disprove your thesis"},{icon:"bar",title:"Earnings autopilot",desc:"Auto-check results against your KPIs"},{icon:"castle",title:"Moat analysis",desc:"Score competitive advantages with real data"}].map(function(f){return<div key={f.title} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
-          <IC name={f.icon} size={14} color={K.acc} style={{marginTop:2,flexShrink:0}}/>
-          <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{f.title}</div>
-            <div style={{fontSize:11,color:K.dim,lineHeight:1.4,marginTop:2}}>{f.desc}</div></div></div>})}</div>}
+    {/* Empty state — warm welcome */}
+    {filtered.length===0&&<div className="ta-fade" style={{padding:isMobile?"40px 4px 100px":"60px 20px",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
+      {sideTab==="portfolio"&&(function(){
+        return<div>
+          {/* Hero */}
+          <div style={{marginBottom:isMobile?28:32}}>
+            <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,"+K.acc+"30,"+K.acc+"08)",border:"1px solid "+K.acc+"30",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="trending" size={28} color={K.acc}/></div>
+            <h3 style={{fontSize:isMobile?22:24,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 10px",lineHeight:1.25}}>{"Think like an owner."}</h3>
+            <p style={{fontSize:isMobile?14:14,color:K.dim,lineHeight:1.7,margin:"0 auto",maxWidth:360}}>{"Your first company takes 3 minutes to set up. Thesis, KPIs, and a plan — then you're in the system."}</p>
+          </div>
+          {/* 3-step path */}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28,textAlign:"left",background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:isMobile?"18px 16px":"20px 24px"}}>
+            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>{"Your first 3 minutes"}</div>
+            {[
+              {n:"1",color:K.grn,icon:"plus",title:"Add a company you own",desc:"We auto-fill name, sector & earnings date"},
+              {n:"2",color:K.acc,icon:"lightbulb",title:"Write a one-paragraph thesis",desc:"Why do you own it? What needs to stay true?"},
+              {n:"3",color:K.blue,icon:"target",title:"Pick 2 KPIs to track",desc:"We check them automatically at earnings"}
+            ].map(function(step){return<div key={step.n} style={{display:"flex",alignItems:"center",gap:14,padding:"10px 0",borderBottom:"1px solid "+K.bdr+":last-child{border:none}"}}>
+              <div style={{width:32,height:32,borderRadius:"50%",background:step.color+"18",border:"1px solid "+step.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:13,fontWeight:700,color:step.color,fontFamily:fm}}>{step.n}</span>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{step.title}</div>
+                <div style={{fontSize:12,color:K.dim,lineHeight:1.4}}>{step.desc}</div>
+              </div>
+            </div>})}
+          </div>
+          {/* CTAs */}
+          <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btnP,{width:"100%",padding:isMobile?"14px":"12px 24px",fontSize:15,borderRadius:12,marginBottom:10})}>{"Get started →"}</button>
+          <button onClick={function(){setCos(SAMPLE);try{localStorage.setItem("ta-onboarded","true")}catch(e){}setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)}} style={{display:"block",width:"100%",background:"none",border:"1px solid "+K.bdr,borderRadius:12,color:K.dim,fontSize:13,cursor:"pointer",padding:isMobile?"12px":"10px",fontFamily:fb}}>{"Explore with demo data first"}</button>
+        </div>
+      })()}
+      {sideTab==="watchlist"&&<div>
+        <div style={{width:56,height:56,borderRadius:16,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="search" size={24} color={K.acc}/></div>
+        <h3 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{"Nothing on your watchlist yet"}</h3>
+        <p style={{fontSize:14,color:K.dim,lineHeight:1.7,margin:"0 0 24px",maxWidth:340,marginLeft:"auto",marginRight:"auto"}}>{"Add companies you're researching but haven't bought yet. When the thesis is clear and price is right, promote them to your portfolio."}</p>
+        <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:14,borderRadius:10})}>{"+ Add to Watchlist"}</button>
+      </div>}
+      {sideTab==="toohard"&&<div>
+        <div style={{width:56,height:56,borderRadius:16,background:K.red+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="alert" size={24} color={K.red}/></div>
+        <h3 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{"Too-Hard Pile is empty"}</h3>
+        <p style={{fontSize:14,color:K.dim,lineHeight:1.7,margin:"0 0 4px",maxWidth:340,marginLeft:"auto",marginRight:"auto"}}>{"Companies outside your circle of competence. It takes wisdom to know what you don't know."}</p>
+        <p style={{fontSize:13,color:K.dim,fontStyle:"italic",margin:"0 0 24px"}}>{"— Munger"}</p>
+      </div>}
     </div>}
     {sideTab==="portfolio"&&filtered.length>0&&(dashSet.showHeatmap||dashSet.showSectors||dashSet.showDividends)&&<div style={{marginBottom:28}}>
       {/* Portfolio Heatmap */}
