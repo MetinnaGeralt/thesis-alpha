@@ -901,41 +901,7 @@ function TrackerApp(props){
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
-  var _cs=useState(function(){try{var s=localStorage.getItem('ta-curated-sources');return s?JSON.parse(s):[]}catch(e){return[]}}),curatedSources=_cs[0],setCuratedSources=_cs[1];
-  function saveCuratedSources(v){setCuratedSources(v);try{localStorage.setItem('ta-curated-sources',JSON.stringify(v))}catch(e){}}
-  // Normalize any badly-stored sources on mount (fixes handles saved before parser was correct)
-  useEffect(function(){
-    if(!curatedSources.length)return;
-    var changed=false;
-    var fixed=curatedSources.map(function(s){
-      if(s.type!=="substack")return s;
-      var h=s.handle.trim();
-      // Extract clean username from any format
-      var m1=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);
-      var m2=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);
-      var username=m1?m1[1]:m2?m2[1]:h.replace(/^@/,"").replace(/https?:\/\/.*/,"").replace(/\/.*/,"").trim();
-      if(!username)return s;
-      var cleanHandle=username;
-      // Fix label if it's just one char (bad extraction) or empty
-      var cleanLabel=(s.label&&s.label.length>1)?s.label:username;
-      if(s.handle!==cleanHandle||s.label!==cleanLabel){changed=true;return Object.assign({},s,{handle:cleanHandle,label:cleanLabel});}
-      return s;
-    });
-    if(changed)saveCuratedSources(fixed);
-  },[]);
-  // Feed state — must live at top level (hooks can't be inside conditional IIFEs)
-  var _fi=useState([]),feedItems=_fi[0],setFeedItems=_fi[1];
-  var _fl=useState(false),feedLoading=_fl[0],setFeedLoading=_fl[1];
-  var _fld=useState(false),feedLoaded=_fld[0],setFeedLoaded=_fld[1];
-  var _frk=useState(0),feedRefreshKey=_frk[0],setFeedRefreshKey=_frk[1];
-  var _fv=useState("feed"),feedView=_fv[0],setFeedView=_fv[1];
-  var _fas=useState(false),feedAddingSource=_fas[0],setFeedAddingSource=_fas[1];
-  var _fnt=useState("substack"),feedNewType=_fnt[0],setFeedNewType=_fnt[1];
-  var _fnh=useState(""),feedNewHandle=_fnh[0],setFeedNewHandle=_fnh[1];
-  var _fnl=useState(""),feedNewLabel=_fnl[0],setFeedNewLabel=_fnl[1];
-  var _fntags=useState([]),feedNewTags=_fntags[0],setFeedNewTags=_fntags[1];
-  var _ff=useState("all"),feedFilter=_ff[0],setFeedFilter=_ff[1];
-  var _fei=useState(null),feedEditingId=_fei[0],setFeedEditingId=_fei[1];
+
   var _lib=useState(function(){try{var s=localStorage.getItem('ta-library');return s?JSON.parse(s):{folders:[],items:[]}}catch(e){return{folders:[],items:[]}}}),library=_lib[0],setLibrary=_lib[1];
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
   var _bn=useState(null),briefNews=_bn[0],setBriefNews=_bn[1];
@@ -1739,22 +1705,6 @@ function TrackerApp(props){
   },[loaded,cos.length]);
   // Check achievements whenever relevant data changes
   useEffect(function(){if(!loaded)return;checkAchievements()},[loaded,cos.length,reviewStreak,milestones.thesis4,milestones.first_moat,milestones.stoic,milestones.contrarian]);
-  // Feed loader — top level so hooks are stable across renders
-  useEffect(function(){
-    var SOURCE_COLORS={substack:"#FF6719",rss:"#6366F1"};
-    var rssSourceList=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"});
-    if(rssSourceList.length===0){setFeedItems([]);setFeedLoaded(true);setFeedLoading(false);return}
-    setFeedLoading(true);setFeedLoaded(false);
-    Promise.all(rssSourceList.map(function(s){
-      return fetchFeed(s).then(function(items){
-        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:SOURCE_COLORS[s.type]||"#6366F1"})})
-      }).catch(function(e){console.warn("[Feed] failed:",s.label,e);return[]})
-    })).then(function(results){
-      var merged=results.reduce(function(a,b){return a.concat(b)},[]);
-      merged.sort(function(a,b){return(b.date||0)-(a.date||0)});
-      setFeedItems(merged);setFeedLoading(false);setFeedLoaded(true);
-    });
-  },[curatedSources.map(function(s){return s.id+(s.enabled?"1":"0")+JSON.stringify(s.tags||[])}).join("|"),feedRefreshKey]);
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
@@ -3071,106 +3021,6 @@ function TrackerApp(props){
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
   // ── Research Links (paste URLs per holding) ──
-  // ── Global Curated Feed system ──
-  var feedCache=useRef({});
-  function substackRSS(handle){
-    var h=handle.trim();
-    // Format: https://substack.com/@username or https://substack.com/p/...
-    var m1=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);
-    if(m1)return"https://"+m1[1]+".substack.com/feed";
-    // Format: https://username.substack.com or username.substack.com
-    var m2=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);
-    if(m2)return"https://"+m2[1]+".substack.com/feed";
-    // Format: @username or plain username
-    var m3=h.replace(/^@/,"").replace(/\//g,"").trim();
-    if(m3&&/^[A-Za-z0-9_-]+$/.test(m3))return"https://"+m3+".substack.com/feed";
-    // Fallback — try as-is
-    return"https://"+h.replace(/^@/,"")+".substack.com/feed";
-  }
-  function twitterURL(handle){var h=handle.trim().replace(/^@/,"");return"https://x.com/"+h}
-  function sourceRSSUrl(src){
-    if(src.type==="substack")return substackRSS(src.handle);
-    if(src.type==="rss")return src.handle.startsWith("http")?src.handle:"https://"+src.handle;
-    return null;
-  }
-  async function fetchFeed(src){
-    var cacheKey=src.type+":"+src.handle;
-    if(feedCache.current[cacheKey]&&feedCache.current[cacheKey].ts>Date.now()-300000)return feedCache.current[cacheKey].items;
-    try{
-      var items=[];
-      if(src.type==="substack"){
-        // Use Substack's own public JSON API — no proxy, no CORS issues
-        var slug=src.handle.trim().replace(/^@/,"");
-        var apiUrl="https://"+slug+".substack.com/api/v1/posts/?limit=20&offset=0";
-        var ctrl=new AbortController();
-        var tId=setTimeout(function(){ctrl.abort()},12000);
-        var res=await fetch(apiUrl,{signal:ctrl.signal});
-        clearTimeout(tId);
-        if(!res.ok)throw new Error("Substack API HTTP "+res.status);
-        var posts=await res.json();
-        if(!Array.isArray(posts))throw new Error("Unexpected Substack response");
-        items=posts.map(function(p){
-          var raw=(p.subtitle||p.description||"").replace(/<[^>]*>/g," ").trim();
-          var excerpt=raw.substring(0,280);if(raw.length>280)excerpt+="…";
-          return{
-            title:(p.title||"").trim(),
-            link:p.canonical_url||("https://"+slug+".substack.com/p/"+(p.slug||"")),
-            date:p.post_date?new Date(p.post_date):null,
-            excerpt:excerpt
-          };
-        }).filter(function(it){return it.title&&it.link});
-      } else if(src.type==="rss"){
-        // For RSS blogs use allorigins as CORS proxy, fall back to rss2json
-        var rssUrl=src.handle.startsWith("http")?src.handle:"https://"+src.handle;
-        var tried=false;
-        // Try allorigins first
-        try{
-          var ctrl2=new AbortController();
-          var tId2=setTimeout(function(){ctrl2.abort()},10000);
-          var proxyUrl="https://api.allorigins.win/get?url="+encodeURIComponent(rssUrl);
-          var res2=await fetch(proxyUrl,{signal:ctrl2.signal});
-          clearTimeout(tId2);
-          var j2=await res2.json();
-          if(j2&&j2.contents&&j2.contents.includes("<item")){
-            var parser=new DOMParser();
-            var doc=parser.parseFromString(j2.contents,"text/xml");
-            doc.querySelectorAll("item").forEach(function(el){
-              var title=(el.querySelector("title")||{}).textContent||"";
-              var link=(el.querySelector("link")||{}).textContent||(el.querySelector("guid")||{}).textContent||"";
-              var pub=(el.querySelector("pubDate")||{}).textContent||"";
-              var desc=(el.querySelector("description")||{}).textContent||"";
-              var raw=desc.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
-              var excerpt=raw.substring(0,280);if(raw.length>280)excerpt+="…";
-              if(title.trim())items.push({title:title.trim(),link:link.trim(),date:pub?new Date(pub):null,excerpt:excerpt});
-            });
-            tried=true;
-          }
-        }catch(e2){console.warn("[Feed] allorigins failed, trying rss2json",e2.message)}
-        // Fall back to rss2json
-        if(!tried||items.length===0){
-          var ctrl3=new AbortController();
-          var tId3=setTimeout(function(){ctrl3.abort()},12000);
-          var r2url="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(rssUrl)+"&count=30";
-          var res3=await fetch(r2url,{signal:ctrl3.signal});
-          clearTimeout(tId3);
-          var j3=await res3.json();
-          if(j3&&j3.status==="ok"&&Array.isArray(j3.items)){
-            items=j3.items.map(function(it){
-              var raw=(it.content||it.description||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
-              var excerpt=raw.substring(0,280);if(raw.length>280)excerpt+="…";
-              return{title:(it.title||"").trim(),link:it.link||it.guid||"",date:it.pubDate?new Date(it.pubDate):null,excerpt:excerpt};
-            }).filter(function(it){return it.title&&it.link});
-          }
-        }
-      }
-      console.log("[ThesisAlpha Feed] loaded",items.length,"items from",src.label,"("+src.type+")");
-      feedCache.current[cacheKey]={items:items,ts:Date.now()};
-      return items;
-    }catch(e){
-      console.warn("[ThesisAlpha Feed] FAILED for",src.label,":",e.message);
-      return[];
-    }
-  }
 
   function ResearchLinks(p){var c=p.company;var links=c.researchLinks||[];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
@@ -5151,8 +5001,7 @@ function TrackerApp(props){
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
         var earnedCount=ACHIEVEMENT_BADGES.filter(function(b){return!!achievements[b.id]}).length;
-        var feedSourceCount=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"}).length;
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"feed",l:"My Feed",icon:"news",dot:feedSourceCount},{id:"badges",l:"Badges",icon:"shield",dot:earnedCount},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"badges",l:"Badges",icon:"shield",dot:earnedCount},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -5559,163 +5408,6 @@ function TrackerApp(props){
               <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{f2}</div></div>})}</div>
         </div>
       </div>}
-
-      {/* ═══ MY FEED TAB ═══ */}
-      {ht==="feed"&&(function(){
-        var SOURCE_TYPES=[
-          {v:"substack",l:"Substack",icon:"book",color:"#FF6719",ph:"author handle or substack.com URL"},
-          {v:"rss",l:"RSS / Blog",icon:"news",color:K.acc,ph:"https://example.com/feed"},
-          {v:"twitter",l:"Twitter / X",icon:"msg",color:"#1DA1F2",ph:"@username"},
-        ];
-        // All state is top-level — referenced here, not created here
-        var typeInfo=SOURCE_TYPES.find(function(t){return t.v===feedNewType})||SOURCE_TYPES[0];
-        var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-        var rssSourceList=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"});
-        var allTickers=[...new Set(curatedSources.reduce(function(acc,s){return acc.concat(s.tags||[])},[])) ];
-        var filtered=feedFilter==="all"?feedItems:feedItems.filter(function(item){return(item.tags||[]).some(function(t){return t===feedFilter})});
-        function fmtDate(d){if(!d)return"";var now=new Date();var diff=Math.floor((now-d)/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<7)return diff+"d ago";if(diff<30)return Math.floor(diff/7)+"w ago";return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-        function addSource(){
-          if(!feedNewHandle.trim())return;
-          var autoLabel=feedNewLabel.trim();
-          if(!autoLabel){
-            var h=feedNewHandle.trim().replace(/^@/,"");
-            if(feedNewType==="substack"){var m1a=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);var m2a=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);autoLabel=m1a?m1a[1]:m2a?m2a[1]:h.replace(/^@/,"").replace(/\/.*/,"").trim()||h;}
-            else if(feedNewType==="twitter")autoLabel="@"+h.replace(/^@/,"");
-            else{try{autoLabel=new URL(h.startsWith("http")?h:"https://"+h).hostname.replace("www.","")}catch(e){autoLabel=h.substring(0,30)}}
-          }
-          var ns={id:Date.now(),type:feedNewType,handle:feedNewHandle.trim(),label:autoLabel,tags:feedNewTags,enabled:true,addedAt:new Date().toISOString()};
-          saveCuratedSources(curatedSources.concat([ns]));
-          setFeedNewHandle("");setFeedNewLabel("");setFeedNewTags([]);setFeedAddingSource(false);
-        }
-        function removeSource(id){saveCuratedSources(curatedSources.filter(function(s){return s.id!==id}))}
-        function toggleSource(id){saveCuratedSources(curatedSources.map(function(s){return s.id===id?Object.assign({},s,{enabled:!s.enabled}):s}))}
-        function updateTags(id,tags){saveCuratedSources(curatedSources.map(function(s){return s.id===id?Object.assign({},s,{tags:tags}):s}))}
-
-        return<div>
-          {/* Header */}
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>My Feed</div>
-              <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginTop:2}}>{curatedSources.length} source{curatedSources.length!==1?"s":""}{feedItems.length>0?" · "+feedItems.length+" posts":""}</div>
-            </div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={function(){setFeedView(feedView==="feed"?"sources":"feed")}} style={Object.assign({},feedView==="sources"?S.btnP:S.btn,{padding:"6px 14px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
-                <IC name={feedView==="sources"?"news":"gear"} size={11} color={feedView==="sources"?K.acc:K.mid}/>{feedView==="sources"?"View Feed":"Manage Sources"}
-              </button>
-              {feedView==="feed"&&rssSourceList.length>0&&<button onClick={function(){feedCache.current={};setFeedRefreshKey(function(k){return k+1})}} title="Refresh feed" style={Object.assign({},S.btn,{padding:"6px 10px"})}><IC name="trending" size={13} color={K.mid}/></button>}
-              {feedView==="sources"&&<button onClick={function(){setFeedAddingSource(!feedAddingSource)}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Add Source</button>}
-            </div>
-          </div>
-
-          {/* ── SOURCES VIEW ── */}
-          {feedView==="sources"&&<div>
-            {feedAddingSource&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px",marginBottom:16}}>
-              <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:14}}>Add Source</div>
-              <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-                {SOURCE_TYPES.map(function(t){return<button key={t.v} onClick={function(){setFeedNewType(t.v)}} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,border:"1px solid "+(feedNewType===t.v?t.color:K.bdr),background:feedNewType===t.v?t.color+"15":"transparent",color:feedNewType===t.v?t.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:feedNewType===t.v?700:400}}>
-                  <IC name={t.icon} size={11} color={feedNewType===t.v?t.color:K.dim}/>{t.l}
-                </button>})}
-              </div>
-              <Inp label={typeInfo.l+" — "+typeInfo.ph} value={feedNewHandle} onChange={setFeedNewHandle} placeholder={typeInfo.ph} K={K}/>
-              <Inp label="Display name (optional)" value={feedNewLabel} onChange={setFeedNewLabel} placeholder={"e.g. Catzee, Not Boring, Stratechery…"} K={K}/>
-              {portfolio2.length>0&&<div style={{marginBottom:12}}>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Tag to companies (optional — for filtering)</div>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {portfolio2.map(function(c){var tagged=feedNewTags.includes(c.ticker);return<button key={c.id} onClick={function(){setFeedNewTags(tagged?feedNewTags.filter(function(t){return t!==c.ticker}):feedNewTags.concat([c.ticker]))}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(tagged?K.acc:K.bdr),background:tagged?K.acc+"15":"transparent",color:tagged?K.acc:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:tagged?700:400}}>{c.ticker}</button>})}
-                </div>
-              </div>}
-              {feedNewType==="twitter"&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:K.amb,fontFamily:fm,lineHeight:1.5}}>Twitter/X doesn't allow public feed access — this saves a quick-link to their profile so you can visit with one click.</div>}
-              <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:4}}>
-                <button style={S.btn} onClick={function(){setFeedAddingSource(false);setFeedNewHandle("");setFeedNewLabel("");setFeedNewTags([])}}>Cancel</button>
-                <button style={Object.assign({},S.btnP,{opacity:feedNewHandle.trim()?1:.4})} onClick={addSource}>Save Source</button>
-              </div>
-            </div>}
-            {curatedSources.length===0&&!feedAddingSource&&<div style={{textAlign:"center",padding:"48px 20px",background:K.card,border:"1px dashed "+K.bdr,borderRadius:14}}>
-              <div style={{fontSize:32,marginBottom:12}}>📡</div>
-              <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>No sources yet</div>
-              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substack writers or RSS feeds — posts will appear in your feed automatically. Tag them to companies to filter by ticker.</div>
-              <button onClick={function(){setFeedAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add your first source</button>
-            </div>}
-            {curatedSources.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {curatedSources.map(function(s){
-                var ti=SOURCE_TYPES.find(function(t){return t.v===s.type})||SOURCE_TYPES[0];
-                var isEditing=feedEditingId===s.id;
-                return<div key={s.id} style={{background:K.card,border:"1px solid "+(s.enabled?ti.color+"30":K.bdr),borderRadius:12,padding:"14px 16px",opacity:s.enabled?1:.55,transition:"all .15s"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:34,height:34,borderRadius:9,background:ti.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      <IC name={ti.icon} size={15} color={ti.color}/>
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.label}</div>
-                      <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ti.l} · {s.handle}</div>
-                    </div>
-                    {(s.tags||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                      {(s.tags||[]).map(function(t){return<span key={t} style={{fontSize:10,color:K.acc,background:K.acc+"12",borderRadius:4,padding:"1px 6px",fontFamily:fm,fontWeight:700}}>{t}</span>})}
-                    </div>}
-                    <div style={{display:"flex",gap:4,flexShrink:0}}>
-                      <button onClick={function(){setFeedEditingId(isEditing?null:s.id)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 8px",fontSize:11,color:K.dim,fontFamily:fm}}>{isEditing?"Done":"Tags"}</button>
-                      <button onClick={function(){toggleSource(s.id)}} title={s.enabled?"Pause":"Enable"} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 7px",color:K.dim}}><IC name={s.enabled?"check":"plus"} size={11} color={s.enabled?K.grn:K.dim}/></button>
-                      <button onClick={function(){removeSource(s.id)}} title="Remove" style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 7px"}}><IC name="alert" size={11} color={K.red}/></button>
-                    </div>
-                  </div>
-                  {isEditing&&portfolio2.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
-                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Tag to companies</div>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {portfolio2.map(function(c){var tagged=(s.tags||[]).includes(c.ticker);return<button key={c.id} onClick={function(){var t2=tagged?(s.tags||[]).filter(function(t){return t!==c.ticker}):(s.tags||[]).concat([c.ticker]);updateTags(s.id,t2)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(tagged?K.acc:K.bdr),background:tagged?K.acc+"15":"transparent",color:tagged?K.acc:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:tagged?700:400}}>{c.ticker}</button>})}
-                    </div>
-                  </div>}
-                  {s.type==="twitter"&&s.enabled&&<div style={{marginTop:8}}>
-                    <a href={"https://x.com/"+s.handle.replace(/^@/,"")} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1DA1F2",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}><IC name="msg" size={11} color="#1DA1F2"/>Open @{s.handle.replace(/^@/,"")} on X →</a>
-                  </div>}
-                  {s.type!=="twitter"&&s.enabled&&<div style={{marginTop:6,fontSize:10,color:K.dim,fontFamily:fm,opacity:.6}}>Fetching: {sourceRSSUrl(s)}</div>}
-                </div>
-              })}
-            </div>}
-          </div>}
-
-          {/* ── FEED VIEW ── */}
-          {feedView==="feed"&&<div>
-            {/* No sources at all */}
-            {curatedSources.filter(function(s){return s.type!=="twitter"}).length===0&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-              <div style={{fontSize:32,marginBottom:12}}>📡</div>
-              <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Your feed is empty</div>
-              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substack newsletters or RSS feeds — posts from your favourite writers will appear here automatically.</div>
-              <button onClick={function(){setFeedView("sources");setFeedAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add a source</button>
-            </div>}
-            {/* Ticker filter pills */}
-            {allTickers.length>1&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
-              <button onClick={function(){setFeedFilter("all")}} style={{padding:"5px 14px",borderRadius:999,border:"1px solid "+(feedFilter==="all"?K.acc:K.bdr),background:feedFilter==="all"?K.acc+"15":"transparent",color:feedFilter==="all"?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter==="all"?700:400}}>All</button>
-              {allTickers.map(function(t){return<button key={t} onClick={function(){setFeedFilter(t)}} style={{padding:"5px 14px",borderRadius:999,border:"1px solid "+(feedFilter===t?K.acc:K.bdr),background:feedFilter===t?K.acc+"15":"transparent",color:feedFilter===t?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter===t?700:400}}>{t}</button>})}
-            </div>}
-            {/* Loading */}
-            {feedLoading&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"48px 20px",color:K.dim,fontSize:13,fontFamily:fm}}>
-              <div style={{width:16,height:16,border:"2px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>Loading your feed…
-            </div>}
-            {/* Empty after load */}
-            {feedLoaded&&!feedLoading&&filtered.length===0&&rssSourceList.length>0&&<div style={{textAlign:"center",padding:40,color:K.dim,fontSize:13,fontFamily:fm}}>
-              {feedFilter!=="all"?"No posts tagged to "+feedFilter+". Try removing the filter.":"No posts found. Check your source handles or try refreshing."}
-            </div>}
-            {/* Posts */}
-            {!feedLoading&&filtered.length>0&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {filtered.map(function(item,i){
-                var sc=item.srcColor||K.acc;
-                return<a key={i} href={item.link} target="_blank" rel="noreferrer" style={{display:"block",textDecoration:"none",background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+sc+"80",borderRadius:12,padding:"16px 18px",transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=sc}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
-                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:6}}>
-                    <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.45,flex:1}}>{item.title}</div>
-                    <span style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap",marginTop:2,flexShrink:0}}>{fmtDate(item.date)}</span>
-                  </div>
-                  {item.excerpt&&<div style={{fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65,marginBottom:8}}>{item.excerpt}</div>}
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <div style={{width:7,height:7,borderRadius:"50%",background:sc,flexShrink:0}}/>
-                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.srcLabel}</span>
-                    {(item.tags||[]).map(function(t){return<span key={t} style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:700,background:K.acc+"12",borderRadius:4,padding:"1px 6px"}}>{t}</span>})}
-                  </div>
-                </a>
-              })}
-            </div>}
-          </div>}
-        </div>
-      })()}
 
       {/* ═══ BADGES TAB ═══ */}
       {ht==="badges"&&(function(){
