@@ -4194,7 +4194,8 @@ function TrackerApp(props){
         <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
         </div>{/* end research trail */}
       </div>{/* end single scroll view */}
-    </div>}
+    </div>
+  }
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
