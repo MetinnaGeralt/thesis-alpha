@@ -863,6 +863,7 @@ function TrackerApp(props){
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var chestOverlay=null;function setChestOverlay(){}
+  var xpFloat=null;
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
