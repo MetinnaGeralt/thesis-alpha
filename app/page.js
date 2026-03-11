@@ -3168,7 +3168,7 @@ function TrackerApp(props){
                 </div>})}
             </div>
           </div>})})()}
-        </div></div>}
+        </div>}
       {!hasSnap&&hasSummary&&<div style={{padding:"12px 24px",fontSize:12,color:K.dim}}>Click Check Earnings again if financial details don't appear — Finnhub may have rate-limited this request.</div>}
       {/* Recent news */}
       {hasNews&&<div style={{padding:"12px 24px"}}>
