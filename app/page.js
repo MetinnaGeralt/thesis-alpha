@@ -840,7 +840,7 @@ function TrackerApp(props){
   var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
   var sideDark=isDark||theme==="forest"||theme==="paypal";
   var sideText=sideDark?"#ffffff":K.txt;var sideMid=sideDark?"#ffffffcc":K.mid;var sideDim2=sideDark?"#ffffff88":K.dim;
-  function cycleTheme(){var streakWeeks=(typeof streakData!=="undefined"&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
@@ -854,7 +854,6 @@ function TrackerApp(props){
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
-  var _qLetters=useState(function(){try{return JSON.parse(localStorage.getItem("ta-qletters"))||{}}catch(e){return{}}}),qLetters=_qLetters[0],setQLetters=_qLetters[1];
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
@@ -901,6 +900,7 @@ function TrackerApp(props){
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
+  var _streakData=useState(function(){try{var s=localStorage.getItem('ta-streak');return s?JSON.parse(s):{current:0,best:0}}catch(e){return{current:0,best:0}}}),streakData=_streakData[0],setStreakData=_streakData[1];
 
   var _lib=useState(function(){try{var s=localStorage.getItem('ta-library');return s?JSON.parse(s):{folders:[],items:[]}}catch(e){return{folders:[],items:[]}}}),library=_lib[0],setLibrary=_lib[1];
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
@@ -1011,8 +1011,8 @@ function TrackerApp(props){
     }catch(e){console.warn("Brief news load error:",e)}
     setBriefNewsLoading(false)}
     function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
-    addXP(25,"Weekly review");updateStreak(true);
-    if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");setTimeout(checkAchievements,600);showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
+    ;updateStreak(true);
+    if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
     return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
   var currentWeekReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
@@ -1081,636 +1081,13 @@ function TrackerApp(props){
   function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}showToast(msg,"milestone",5000);return true}return false}
 
   // ── Achievement Badges ──
-  var ACHIEVEMENT_BADGES=[
-    {id:"first_blood",icon:"🎯",name:"First Blood",desc:"Added your first holding",hint:"Add a company to your portfolio",rarity:"bronze",
-      check:function(d){return d.cos.length>=1}},
-    {id:"the_novelist",icon:"📖",name:"The Novelist",desc:"Wrote a thesis with all 4 sections — Core, Moat, Risks & Sell criteria",hint:"Write a complete thesis with all 4 sections filled",rarity:"silver",
-      check:function(d){return!!d.milestones.thesis4}},
-    {id:"the_architect",icon:"🏗️",name:"The Architect",desc:"Defined KPIs for every portfolio holding",hint:"Add KPIs to all your portfolio companies (min 3 companies)",rarity:"silver",
-      check:function(d){return d.portfolio.length>=3&&d.withKpis.length>=d.portfolio.length}},
-    {id:"conviction_king",icon:"👑",name:"Conviction King",desc:"Rated conviction on every portfolio holding",hint:"Set a conviction rating on all companies (min 3 companies)",rarity:"silver",
-      check:function(d){return d.portfolio.length>=3&&d.withConviction.length>=d.portfolio.length}},
-    {id:"castle_builder",icon:"🏰",name:"Castle Builder",desc:"Classified moat type on 3 or more holdings",hint:"Use the Moat Classifier on 3 companies",rarity:"silver",
-      check:function(d){return d.withMoat.length>=3}},
-    {id:"the_analyst",icon:"🔬",name:"The Analyst",desc:"Tracking 10 or more KPIs across your portfolio",hint:"Add KPIs across your holdings until you reach 10 total",rarity:"gold",
-      check:function(d){return d.totalKpis>=10}},
-    {id:"the_historian",icon:"📚",name:"The Historian",desc:"Logged 10 or more research trail entries",hint:"Add research documents until you reach 10 total",rarity:"silver",
-      check:function(d){return d.totalDocs>=10}},
-    {id:"the_hawk",icon:"🦅",name:"The Hawk",desc:"Checked earnings results 3 or more times",hint:"Use Check Earnings on 3 separate reports",rarity:"silver",
-      check:function(d){return d.totalEarningsChecked>=3}},
-    {id:"clean_sweep",icon:"🧹",name:"Clean Sweep",desc:"Completed 4 consecutive weekly reviews",hint:"Maintain a 4-week review streak",rarity:"silver",
-      check:function(d){return d.reviewStreak>=4}},
-    {id:"the_gardener",icon:"🌱",name:"The Gardener",desc:"Maintained an 8-week review streak",hint:"Maintain a review streak for 8 consecutive weeks",rarity:"gold",
-      check:function(d){return d.reviewStreak>=8}},
-    {id:"the_prepper",icon:"⚡",name:"The Prepper",desc:"Completed the pre-earnings ritual 3 times",hint:"Work through the pre-earnings checklist before 3 reports",rarity:"gold",
-      check:function(d){return d.ritualCount>=3}},
-    {id:"thesis_collector",icon:"✍️",name:"Thesis Collector",desc:"Wrote investment theses for 5 or more holdings",hint:"Write theses until you have 5 companies covered",rarity:"gold",
-      check:function(d){return d.withThesis.length>=5}},
-    {id:"diamond_hands",icon:"💎",name:"Diamond Hands",desc:"Held a position for 365 days or more",hint:"Hold any position for a full year",rarity:"gold",
-      check:function(d){return d.hasDiamondHands}},
-    {id:"the_stoic",icon:"🪨",name:"The Stoic",desc:"Kept conviction unchanged through a 15%+ drawdown on any holding",hint:"Don't change your conviction rating during a major drawdown",rarity:"platinum",
-      check:function(d){return!!d.milestones.stoic}},
-    {id:"the_contrarian",icon:"⚔️",name:"The Contrarian",desc:"Added a holding while it was down 20% or more",hint:"Buy the fear — add a company during a significant drawdown",rarity:"platinum",
-      check:function(d){return!!d.milestones.contrarian}},
-  ];
-  var RARITY_STYLE={
-    bronze:{bg:"#CD7F3215",border:"#CD7F3240",glow:"#CD7F32",label:"Bronze"},
-    silver:{bg:"#94A3B815",border:"#94A3B840",glow:"#94A3B8",label:"Silver"},
-    gold:{bg:"#F59E0B15",border:"#F59E0B40",glow:"#F59E0B",label:"Gold"},
-    platinum:{bg:"#8B5CF615",border:"#8B5CF640",glow:"#8B5CF6",label:"Platinum"},
-  };
-  var _achievements=useState(function(){try{var s=localStorage.getItem("ta-achievements");return s?JSON.parse(s):{}}catch(e){return{}}}),achievements=_achievements[0],setAchievements=_achievements[1];
-  function checkAchievements(extraMilestones){
-    var mls=extraMilestones||milestones;
-    var port=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-    var rituals={};try{var rs=localStorage.getItem("ta-rituals");rituals=rs?JSON.parse(rs):{}}catch(e){}
-    var now2=new Date();
-    var d2={
-      cos:cos,portfolio:port,milestones:mls,reviewStreak:reviewStreak,
-      withKpis:port.filter(function(c){return c.kpis.length>=1}),
-      withConviction:port.filter(function(c){return c.conviction>0}),
-      withMoat:cos.filter(function(c){return Object.keys(c.moatTypes||{}).some(function(k){return c.moatTypes[k]&&c.moatTypes[k].active})}),
-      withThesis:cos.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>50}),
-      totalKpis:cos.reduce(function(s,c){return s+c.kpis.length},0),
-      totalDocs:cos.reduce(function(s,c){return s+(c.docs||[]).length},0),
-      totalEarningsChecked:cos.reduce(function(s,c){return s+(c.earningsHistory||[]).length},0),
-      ritualCount:Object.keys(rituals).length,
-      hasDiamondHands:cos.some(function(c){var pd=c.purchaseDate||c.addedAt;if(!pd)return false;return Math.floor((now2-new Date(pd))/86400000)>=365}),
-    };
-    var newlyEarned=[];
-    ACHIEVEMENT_BADGES.forEach(function(b){
-      if(!achievements[b.id]){
-        try{if(b.check(d2)){newlyEarned.push(b)}}catch(e){}
-      }
-    });
-    if(newlyEarned.length>0){
-      var na=Object.assign({},achievements);
-      newlyEarned.forEach(function(b){na[b.id]=new Date().toISOString()});
-      setAchievements(na);
-      try{localStorage.setItem("ta-achievements",JSON.stringify(na))}catch(e){}
-      // Celebrate first unlocked badge
-      var b0=newlyEarned[0];
-      var rs=RARITY_STYLE[b0.rarity]||RARITY_STYLE.silver;
-      showCelebration(b0.icon+" "+b0.name,b0.desc+(newlyEarned.length>1?" (+"+(newlyEarned.length-1)+" more badges!)":""),null,rs.glow);
-    }
-  }
-  var toastTimer=useRef(null);
-  var _prevStreak=useRef(0);
-  function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(function(){setToast(null)},duration||5000)}
-  // Owner's Score expanded state on dashboard
-  var _osExp=useState(false),osExpanded=_osExp[0],setOsExpanded=_osExp[1];
-  // ── XP System ──
-  var _xp=useState(function(){try{return JSON.parse(localStorage.getItem("ta-xp"))||{total:0,history:[]}}catch(e){return{total:0,history:[]}}}),xp=_xp[0],setXp=_xp[1];
-  var _xpFloat=useState(null),xpFloat=_xpFloat[0],setXpFloat=_xpFloat[1];
-  var _showProfile=useState(false),showProfile=_showProfile[0],setShowProfile=_showProfile[1];
-  var _avatarUrl=useState(function(){try{return localStorage.getItem("ta-avatar")||""}catch(e){return""}}),avatarUrl=_avatarUrl[0],setAvatarUrl=_avatarUrl[1];
-  var avatarFileRef=useRef(null);
-  var _username=useState(function(){try{return localStorage.getItem("ta-username")||""}catch(e){return""}}),username=_username[0],setUsername=_username[1];
-  var _editingName=useState(false),editingName=_editingName[0],setEditingName=_editingName[1];
-  var _nameInput=useState(""),nameInput=_nameInput[0],setNameInput=_nameInput[1];
-  function saveUsername(){var n=nameInput.trim();if(!n)return;setUsername(n);try{localStorage.setItem("ta-username",n)}catch(e){}setEditingName(false);showToast("Username set to "+n,"info",3000)}
-  // ── Owner's Chest System ──
-  var INVESTOR_QUOTES=[
-    {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
-    {q:"In the short run, the market is a voting machine but in the long run, it is a weighing machine.",a:"Benjamin Graham"},
-    {q:"The best investment you can make is in yourself.",a:"Warren Buffett"},
-    {q:"Risk comes from not knowing what you are doing.",a:"Warren Buffett"},
-    {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
-    {q:"It is remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid, instead of trying to be very intelligent.",a:"Charlie Munger"},
-    {q:"Spend each day trying to be a little wiser than you were when you woke up.",a:"Charlie Munger"},
-    {q:"The big money is not in the buying and selling, but in the waiting.",a:"Charlie Munger"},
-    {q:"Knowing what you don't know is more useful than being brilliant.",a:"Charlie Munger"},
-    {q:"Go to bed smarter than when you woke up.",a:"Charlie Munger"},
-    {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
-    {q:"The person that turns over the most rocks wins the game.",a:"Peter Lynch"},
-    {q:"Never invest in any idea you can't illustrate with a crayon.",a:"Peter Lynch"},
-    {q:"Behind every stock is a company. Find out what it's doing.",a:"Peter Lynch"},
-    {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
-    {q:"The four most dangerous words in investing are: this time it's different.",a:"John Templeton"},
-    {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
-    {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
-    {q:"Only buy something that you'd be perfectly happy to hold if the market shut down for 10 years.",a:"Warren Buffett"},
-    {q:"The goal of each investor should be to create a portfolio of look-through earnings that delivers the highest possible total a decade from now.",a:"Warren Buffett"},
-    {q:"You make most of your money in a bear market, you just don't realize it at the time.",a:"Shelby Cullom Davis"},
-    {q:"Investing without research is like playing stud poker and never looking at the cards.",a:"Peter Lynch"},
-    {q:"Compound interest is the eighth wonder of the world.",a:"Albert Einstein"},
-    {q:"The market is not a casino. Stocks represent fractional ownership of real businesses.",a:"Joel Greenblatt"},
-    {q:"Buying good businesses at bargain prices is the secret to making lots of money.",a:"Joel Greenblatt"},
-    {q:"We look for businesses that can compound at 15%+ with minimal risk.",a:"Dev Kantesaria"},
-    {q:"Only invest in good companies, don't overpay, do nothing.",a:"Terry Smith"},
-    {q:"We invest in quality businesses with strong free cash flow.",a:"Chris Hohn"},
-    {q:"The trick is not to pick the right company. The trick is to essentially buy the whole stock market.",a:"John Bogle"},
-    {q:"Do not take yearly results too seriously. Instead, focus on four or five year averages.",a:"Warren Buffett"}
-  ];
-  var BADGE_POOL=[
-    {id:"disciplined_owner",label:"Disciplined Owner",icon:String.fromCodePoint(0x1F3AF),desc:"Completed 4+ weekly reviews"},
-    {id:"consistent_compounder",label:"Consistent Compounder",icon:String.fromCodePoint(0x1F4C8),desc:"Maintained a 4+ week streak"},
-    {id:"thesis_architect",label:"Thesis Architect",icon:String.fromCodePoint(0x1F4DD),desc:"Written theses for 5+ holdings"},
-    {id:"conviction_caller",label:"Conviction Caller",icon:String.fromCodePoint(0x1F525),desc:"Rated conviction on all holdings"},
-    {id:"process_master",label:"Process Master",icon:String.fromCodePoint(0x2B50),desc:"Reached level 10+"},
-    {id:"iron_hand",label:"Iron Hand",icon:String.fromCodePoint(0x1F91D),desc:"8+ week streak without a freeze"},
-    {id:"early_bird",label:"Early Bird",icon:String.fromCodePoint(0x1F426),desc:"Reviewed on Friday before market close"},
-    {id:"deep_diver",label:"Deep Diver",icon:String.fromCodePoint(0x1F30A),desc:"Tracked 20+ KPIs across portfolio"}
-  ];
-  var _chestRewards=useState(function(){try{return JSON.parse(localStorage.getItem("ta-chest"))||{quotes:[],badges:[],history:[]}}catch(e){return{quotes:[],badges:[],history:[]}}}),chestRewards=_chestRewards[0],setChestRewards=_chestRewards[1];
-  var _doubleXP=useState(function(){try{var d=localStorage.getItem("ta-doublexp");return d&&new Date(d)>new Date()?d:null}catch(e){return null}}),doubleXP=_doubleXP[0],setDoubleXP=_doubleXP[1];
-  var _chestOverlay=useState(null),chestOverlay=_chestOverlay[0],setChestOverlay=_chestOverlay[1];
-  var _latestWeeklyReward=useState(null),latestWeeklyReward=_latestWeeklyReward[0],setLatestWeeklyReward=_latestWeeklyReward[1];
-  var isDoubleXP=doubleXP&&new Date(doubleXP)>new Date();
-  // ── Weekly Focus System ──
-  var _questData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-quests"))||{weekId:null,completed:[]}}catch(e){return{weekId:null,completed:[]}}}),questData=_questData[0],setQuestData=_questData[1];
-  function completeQuest(qid){
-    setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),completed:(p.completed||[]).concat([qid])});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});
-    addXP(8,"Action completed")}
-  function openQuestChest(){
-    // Guaranteed uncommon or better
-    var roll=Math.random();var reward;
-    if(roll<0.15){
-      var locked=[{w:4,n:"Warren Buffett"},{w:8,n:"Joel Greenblatt"},{w:12,n:"Peter Lynch"},{w:16,n:"Shelby Cullom Davis"},{w:20,n:"Chris Hohn"}];
-      var nextLens=locked.find(function(l){return l.w>(streakData.current||0)});
-      if(nextLens){reward={type:"lens",tier:"rare",label:"New Perspective",desc:nextLens.n+" lens unlocked one week early!",icon:String.fromCodePoint(0x1F513),xp:30,lensWeek:nextLens.w}}
-      else{reward={type:"xp",tier:"rare",label:"Deep Insight",desc:"You completed every weekly action",icon:String.fromCodePoint(0x1F4B0),xp:50}}
-    }else if(roll<0.5){
-      reward={type:"doublexp",tier:"uncommon",label:"Focus Mode",desc:"Take time this week to revisit your oldest thesis",icon:String.fromCodePoint(0x26A1),xp:0}
-    }else if(roll<0.75){
-      var unearned=BADGE_POOL.filter(function(b){return!(chestRewards.badges||[]).find(function(eb){return eb.id===b.id})});
-      if(unearned.length>0){var badge=unearned[Math.floor(Math.random()*unearned.length)];
-        reward={type:"badge",tier:"uncommon",label:"Achievement",desc:badge.label+" — "+badge.desc,icon:badge.icon,xp:15,badge:badge}}
-      else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"A thoughtful review compounds over time",icon:String.fromCodePoint(0x2728),xp:25}}
-    }else{
-      var available=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).find(function(eq){return eq.q===q.q})});
-      if(available.length>0){var quote=available[Math.floor(Math.random()*available.length)];
-        reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:10,quote:quote}}
-      else{reward={type:"xp",tier:"uncommon",label:"Investor Insight",desc:"Discipline is the bridge between goals and results",icon:String.fromCodePoint(0x2728),xp:20}}}
-    // Apply
-    setChestRewards(function(p){
-      var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
-      if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
-      if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
-      try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
-    if(reward.xp>0)addXP(reward.xp,"Weekly focus: "+reward.label);
-    if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
-    if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
-    if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
-    setChestOverlay(reward)}
-  function rollChestReward(){
-    var reward;var streakWeeks=streakData.current||0;
-    if(plan==="pro"){
-      // PRO: Always investor wisdom + portfolio health
-      var wisdomPool=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).some(function(cq){return cq.q===q.q})});
-      if(wisdomPool.length===0)wisdomPool=INVESTOR_QUOTES;
-      var quote=wisdomPool[Math.floor(Math.random()*wisdomPool.length)];
-      // Build health report
-      var stale=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
-      var unchecked=cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&!c2.lastChecked&&c2.earningsDate&&c2.earningsDate!=="TBD"});
-      var healthNote=stale.length>0?"Thesis refresh needed: "+stale.map(function(c2){return c2.ticker}).join(", ")+". ":"";
-      healthNote+=unchecked.length>0?"Earnings unchecked: "+unchecked.map(function(c2){return c2.ticker}).join(", ")+".":"";
-      if(!healthNote)healthNote="All holdings are well-maintained. Keep it up.";
-      reward={type:"wisdom",tier:"rare",label:"Weekly Reflection",desc:quote.q,author:quote.a,icon:String.fromCodePoint(0x1F4DC),xp:0,quote:quote,healthNote:healthNote}
-    } else {
-      // FREE: Unlock features progressively
-      var themeUnlocks=[{w:1,id:"forest",label:"Forest Theme"},{w:3,id:"paypal",label:"PayPal Blue Theme"},{w:6,id:"purple",label:"Purple Theme"},{w:10,id:"bloomberg",label:"Bloomberg Theme"}];
-      var lensUnlocks=[{w:2,label:"Munger Lens"},{w:4,label:"Buffett Lens"},{w:8,label:"Greenblatt Lens"},{w:12,label:"Lynch Lens"},{w:16,label:"Davis Lens"},{w:20,label:"Hohn Lens"}];
-      var allUnlocks=themeUnlocks.concat(lensUnlocks).sort(function(a,b){return a.w-b.w});
-      var nextUnlock=allUnlocks.find(function(u){return u.w>streakWeeks});
-      if(nextUnlock&&nextUnlock.w===streakWeeks+1){
-        reward={type:"unlock",tier:"rare",label:"Feature Unlocked!",desc:nextUnlock.label+" is now available",icon:String.fromCodePoint(0x1F513),xp:0}
-      } else {
-        // Give wisdom quote
-        var wisdomPool2=INVESTOR_QUOTES.filter(function(q){return!(chestRewards.quotes||[]).some(function(cq){return cq.q===q.q})});
-        if(wisdomPool2.length===0)wisdomPool2=INVESTOR_QUOTES;
-        var quote2=wisdomPool2[Math.floor(Math.random()*wisdomPool2.length)];
-        var weeksToNext=nextUnlock?nextUnlock.w-streakWeeks-1:0;
-        var teaser=nextUnlock?" "+weeksToNext+" more week"+(weeksToNext!==1?"s":"")+" until "+nextUnlock.label+".":"";
-        reward={type:"quote",tier:"uncommon",label:"Investor Wisdom",desc:quote2.q,author:quote2.a,icon:String.fromCodePoint(0x1F4DC),xp:0,quote:quote2,teaser:teaser}
-      }
-    }
-    return reward}
 
-  function openChest(){
-    var reward=rollChestReward();
-    // Apply reward
-    setChestRewards(function(p){
-      var n=Object.assign({},p,{history:[{reward:reward.label,tier:reward.tier,date:new Date().toISOString()}].concat((p.history||[]).slice(0,50))});
-      if(reward.type==="quote"&&reward.quote)n.quotes=(p.quotes||[]).concat([reward.quote]).slice(-30);
-      if(reward.type==="badge"&&reward.badge)n.badges=(p.badges||[]).concat([reward.badge]);
-      try{localStorage.setItem("ta-chest",JSON.stringify(n))}catch(e){}return n});
-    if(reward.xp>0)addXP(reward.xp,"Reward: "+reward.label);
-    if(reward.type==="freeze")setStreakData(function(p){var n=Object.assign({},p,{freezes:(p.freezes||0)+1});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n});
-    if(reward.type==="doublexp"){var exp=new Date(Date.now()+86400000).toISOString();setDoubleXP(exp);try{localStorage.setItem("ta-doublexp",exp)}catch(e){}}
-    if(reward.type==="lens"&&reward.lensWeek){setStreakData(function(p){var n=Object.assign({},p,{current:Math.max(p.current||0,reward.lensWeek)});try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}return n})}
-    setChestOverlay(reward);setLatestWeeklyReward(reward)}
-  function handleAvatarUpload(e){var f=e.target.files[0];if(!f)return;
-    // Compress avatar to max 128x128 to keep cloud payload small
-    var reader=new FileReader();reader.onload=function(ev){
-      var img=new Image();img.onload=function(){
-        var canvas=document.createElement("canvas");var sz=128;canvas.width=sz;canvas.height=sz;
-        var ctx=canvas.getContext("2d");
-        // Crop to square center
-        var s=Math.min(img.width,img.height);var sx=(img.width-s)/2;var sy=(img.height-s)/2;
-        ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz);
-        var url=canvas.toDataURL("image/jpeg",0.8);
-        setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}
-      };img.src=ev.target.result};reader.readAsDataURL(f)}
-  // ── XP Level Curve (Pokemon Go-inspired exponential) ──
-  var XP_LEVELS=[0,50,120,200,300,500,750,1050,1400,1800,2300,2900,3600,4500,5600,7000,8700,10800,13500,17000,21000,26000,32000,39000,47000,56000,66000,78000,92000,108000,126000,147000,171000,198000,229000,264000,303000,347000,396000,451000,500000];
-  function getXPLevel(totalXP){for(var i=XP_LEVELS.length-1;i>=0;i--){if(totalXP>=XP_LEVELS[i])return{level:i+1,xpForLevel:XP_LEVELS[i],xpForNext:i<XP_LEVELS.length-1?XP_LEVELS[i+1]:XP_LEVELS[i]*1.2,current:totalXP}}return{level:1,xpForLevel:0,xpForNext:50,current:0}}
-  var xpLevel=getXPLevel(xp.total);
-  var xpPct=xpLevel.xpForNext>xpLevel.xpForLevel?Math.round((xp.total-xpLevel.xpForLevel)/(xpLevel.xpForNext-xpLevel.xpForLevel)*100):100;
-  function addXP(amount,label){
-    var actualAmount=isDoubleXP?amount*2:amount;
-    var prevLevel=getXPLevel(xp.total).level;
-    trackDailyActivity();
-    setXp(function(p){var n={total:p.total+actualAmount,history:[{amount:actualAmount,label:label+(isDoubleXP?" (2×)":""),date:new Date().toISOString()}].concat(p.history).slice(0,100)};try{localStorage.setItem("ta-xp",JSON.stringify(n))}catch(e){}
-      var newLevel=getXPLevel(n.total).level;
-      // level change handled silently
-      return n});/* mastery replaces XP float */}
-  // ── Weekly Streak with Freeze ──
-  var _streakData=useState(function(){try{return JSON.parse(localStorage.getItem("ta-streak"))||{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}catch(e){return{current:0,best:0,freezes:0,lastWeek:null,frozenWeek:null}}}),streakData=_streakData[0],setStreakData=_streakData[1];
-  // ── Daily Activity Streak ──
-  var _dailyStreak=useState(function(){try{return JSON.parse(localStorage.getItem("ta-daily"))||{current:0,best:0,lastDate:null}}catch(e){return{current:0,best:0,lastDate:null}}}),dailyStreak=_dailyStreak[0],setDailyStreak=_dailyStreak[1];
-  var todayStr=new Date().toISOString().slice(0,10);
-  var didActivityToday=dailyStreak.lastDate===todayStr;
-  function trackDailyActivity(){
-    setDailyStreak(function(p){
-      if(p.lastDate===todayStr)return p; // Already tracked today
-      var yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
-      var consecutive=p.lastDate===yesterday?(p.current||0)+1:1;
-      var n={current:consecutive,best:Math.max(consecutive,p.best||0),lastDate:todayStr};
-      try{localStorage.setItem("ta-daily",JSON.stringify(n))}catch(e){}
-
-      return n})}
-  function updateStreak(completed){setStreakData(function(p){var thisWeek=getWeekId();if(p.lastWeek===thisWeek)return p;var n=Object.assign({},p);
-    // Calculate weeks gap since last review
-    var weeksGap=0;
-    if(p.lastWeek){try{var lastMon=new Date(p.lastWeek);var thisMon=new Date(thisWeek);weeksGap=Math.round((thisMon-lastMon)/604800000)}catch(e){weeksGap=99}}
-    else{weeksGap=99}
-    if(completed){
-      if(weeksGap===1){
-        // Consecutive week — extend streak
-        n.current=(p.current||0)+1
-      } else if(weeksGap===2&&(p.freezes||0)>0){
-        // Missed 1 week but have a freeze — preserve streak
-        n.current=(p.current||0)+1;n.freezes=(p.freezes||1)-1;n.frozenWeek=thisWeek
-      } else if(weeksGap===0||!p.lastWeek){
-        // First ever review or same week
-        n.current=Math.max(p.current||0,1)
-      } else {
-        // Gap too large — reset to 1 (this review counts as week 1)
-        n.current=1
-      }
-      n.lastWeek=thisWeek;if(n.current>(n.best||0))n.best=n.current;if(n.current>0&&n.current%4===0&&n.current>(p.current||0))n.freezes=(n.freezes||0)+1
-    }else{n.current=0}
-    try{localStorage.setItem("ta-streak",JSON.stringify(n))}catch(e){}
-      // Check for new lens unlocks
-      var newUnlock=null;[{w:4,n:"Warren Buffett"},{w:8,n:"Joel Greenblatt"},{w:12,n:"Peter Lynch"},{w:16,n:"Shelby Cullom Davis"},{w:20,n:"Chris Hohn"}].forEach(function(u){if(n.current>=u.w&&(p.current||0)<u.w)newUnlock=u});
-      if(newUnlock)setTimeout(function(){showToast("New lens unlocked: "+newUnlock.n+"! "+newUnlock.w+"-week streak reward.","milestone",6000)},1000);
-      // Early streak rewards
-      if(n.current>=1&&(p.current||0)<1)setTimeout(function(){showToast("Week 1 streak! Forest and Purple themes unlocked. Click the theme toggle to try them.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=2&&(p.current||0)<2)setTimeout(function(){showToast("Week 2 streak! Research Export Pack unlocked. Export your thesis + data for AI analysis.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=3&&(p.current||0)<3)setTimeout(function(){showToast("Week 3 streak! PayPal Blue theme unlocked. The crisp, professional blue look.","milestone",5000)},newUnlock?7500:1000);
-      if(n.current>=5&&(p.current||0)<5)setTimeout(function(){showToast("Week 5 streak! Bloomberg Terminal theme unlocked. The iconic black & orange look is yours.","milestone",6000)},newUnlock?7500:1000);
-      return n})}
-  // Track score for milestone detection
-  var prevScoreLevel=useRef(null);
-  var globalOS=calcOwnerScore(cos);var currentLevel=getLevel(globalOS.total);
-  useEffect(function(){if(!loaded||cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length===0)return;
-    var os=calcOwnerScore(cos);var lv=getLevel(os.total);
-    prevScoreLevel.current=lv.name},[cos,loaded]);
-  useEffect(function(){if(typeof window==="undefined")return;
-    function check(){setIsMobile(window.innerWidth<768)}
-    check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
-  useEffect(function(){if(!fabOpen)return;function closeOnOutside(){setFabOpen(false);setFabCustomize(false)}
-    var t=setTimeout(function(){window.addEventListener("click",closeOnOutside)},50);
-    return function(){clearTimeout(t);window.removeEventListener("click",closeOnOutside)}},[fabOpen]);
-  // ⌘K / Ctrl+K global keyboard handler + app shortcuts
-  useEffect(function(){
-    function onKey(e){
-      var tag=document.activeElement?document.activeElement.tagName:"";
-      var typing=tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||document.activeElement.contentEditable==="true";
-      // ⌘K / Ctrl+K — always intercept
-      if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0)}return!o});return}
-      if(cmdOpen){if(e.key==="Escape"){setCmdOpen(false);return}return}
-      if(typing)return;
-      // Single-key shortcuts (only when not typing)
-      if(e.key==="n"||e.key==="N"){e.preventDefault();setModal({type:"add"});return}
-      if(e.key==="r"||e.key==="R"){e.preventDefault();setSelId(null);setPage("review");return}
-      if(e.key==="Escape"&&selId){e.preventDefault();setSelId(null);return}
-      // T — open thesis for selected company
-      if((e.key==="t"||e.key==="T")&&selId){e.preventDefault();setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"thesis"})},50);return}
-      // Arrow keys — navigate between companies in sidebar
-      if(e.key==="ArrowDown"||e.key==="ArrowUp"){
-        var allCos2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-        if(allCos2.length===0)return;
-        e.preventDefault();
-        var curIdx=selId?allCos2.findIndex(function(c){return c.id===selId}):-1;
-        var nextIdx=e.key==="ArrowDown"?Math.min(curIdx+1,allCos2.length-1):Math.max(curIdx-1,0);
-        if(nextIdx>=0){setSelId(allCos2[nextIdx].id);setDetailTab("dossier");setPage("dashboard")}
-        return}
-    }
-    window.addEventListener("keydown",onKey);
-    return function(){window.removeEventListener("keydown",onKey)}
-  },[cmdOpen,selId,cos]);
-  useEffect(function(){if(cmdOpen&&cmdInputRef.current){setTimeout(function(){cmdInputRef.current&&cmdInputRef.current.focus()},30)}},[cmdOpen]);
-  var saveTimer=useRef(null);var cloudTimer=useRef(null);
-  // ── Inject global CSS for animations & polish ──
-  useEffect(function(){
-    if(typeof document==="undefined")return;
-    var id="ta-global-css";var prev=document.getElementById(id);if(prev)prev.remove();
-    var style=document.createElement("style");style.id=id;
-    var hov=isDark?"rgba(255,255,255,.05)":"rgba(0,0,0,.04)";
-    var hovTxt=isDark?"#eeeeee":"#1a1a1a";
-    var scrollT=isDark?"rgba(255,255,255,.1)":"rgba(0,0,0,.12)";
-    var scrollH=isDark?"rgba(255,255,255,.2)":"rgba(0,0,0,.2)";
-    var focusC=isThesis?K.acc:isDark?"rgba(255,255,255,.25)":"rgba(0,0,0,.15)";
-    var focusS=isThesis?K.acc+"30":isDark?"rgba(255,255,255,.06)":"rgba(0,0,0,.06)";
-    var shimC=isDark?"rgba(255,255,255,.04)":"rgba(0,0,0,.04)";
-    var cardR=isThesis?"20px":"6px";
-    var cardSh=isThesis?(isDark?"0 2px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.08), 0 0 0 1px rgba(0,0,0,0.04)"):(isDark?"0 4px 20px rgba(0,0,0,.2)":"0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,0.04)");
-    var cardShHov=isThesis?(isDark?"0 16px 48px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.3)":"0 12px 40px rgba(0,0,0,0.14), 0 4px 16px rgba(107,76,230,0.12), 0 0 0 1px rgba(0,0,0,0.06)"):(isDark?"0 8px 32px rgba(0,0,0,.3)":"0 8px 32px rgba(0,0,0,.12)");
-    style.textContent=[
-      "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
-      "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
-      "@keyframes fabSlideIn{from{opacity:0;transform:translateX(12px) scale(.85)}to{opacity:1;transform:translateX(0) scale(1)}}",
-      "@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}",
-      "@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}",
-      "@keyframes spin{to{transform:rotate(360deg)}}",
-      "@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}",
-      "@keyframes confettiFall{0%{transform:translateY(-100vh) rotate(0deg);opacity:1}70%{opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}",
-      "@keyframes celebratePop{0%{transform:scale(0) rotate(-10deg);opacity:0}50%{transform:scale(1.15) rotate(3deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}",
-      "@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(255,215,0,.3)}50%{box-shadow:0 0 24px rgba(255,215,0,.6)}}",
-      "@keyframes streakFlame{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}",
-      ".ta-celebrate{animation:celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both}",
-      ".ta-glow{animation:glowPulse 2s ease-in-out infinite}",
-      ".ta-fade{animation:fadeIn .3s ease-out both}",
-      ".ta-slide{animation:slideUp .35s ease-out both}",
-      ".ta-card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;border-radius:"+cardR+";box-shadow:"+cardSh+"}",
-      ".ta-card:hover{box-shadow:"+cardShHov+";transform:translateY(-2px)}",
-      ".ta-btn{transition:all .15s ease}",
-      ".ta-btn:hover{filter:brightness(1.15)}",
-      ".ta-btn:active{transform:translateY(0.5px)}",
-      ".ta-skel{background:linear-gradient(90deg,transparent 0%,"+shimC+" 50%,transparent 100%);background-size:200% 100%;animation:shimmer 1.8s ease-in-out infinite;border-radius:"+cardR+"}",
-      "::-webkit-scrollbar{width:6px;height:6px}",
-      "::-webkit-scrollbar-track{background:transparent}",
-      "::-webkit-scrollbar-thumb{background:"+scrollT+";border-radius:3px}",
-      "::-webkit-scrollbar-thumb:hover{background:"+scrollH+"}",
-      "input:focus,textarea:focus,select:focus{border-color:"+focusC+"!important;box-shadow:0 0 0 3px "+focusS+"!important;outline:none!important;transition:all .15s ease}",
-      "button{transition:all .12s ease;border-radius:"+(isThesis?"999px":"8px")+"}",
-      "select{transition:border-color .15s ease}",
-      ".ta-side-item{transition:background .15s ease,border-color .15s ease}",
-      ".ta-side-item:hover{background:"+hov+"}",
-      ".ta-tab{transition:all .15s ease;position:relative}",
-      ".ta-tab:hover{color:"+hovTxt+"}",
-      isThesis?"*{font-family:'Outfit',sans-serif!important;letter-spacing:-0.2px} h1{font-size:32px!important;font-weight:900!important;letter-spacing:-1px!important} h2{font-size:22px!important;font-weight:800!important;letter-spacing:-0.5px!important} h3{font-weight:700!important;letter-spacing:-0.3px!important} input,textarea,select{border-radius:14px!important;font-weight:500!important} button{border-radius:999px!important;font-weight:700!important}":"",
-      bm?"*{font-family:'Consolas','Courier New',monospace!important}h1,h2,h3{font-family:'Consolas','Courier New',monospace!important;text-transform:uppercase;letter-spacing:1px}":"",
-      isForest?"*{font-family:'Nunito','DM Sans','Helvetica Neue',sans-serif!important;letter-spacing:0}h1,h2,h3{font-family:'Nunito','DM Sans',sans-serif!important;font-weight:800!important;letter-spacing:-0.5px!important}button{border-radius:12px!important;font-family:'Nunito',sans-serif!important;font-weight:700!important}input,textarea,select{border-radius:10px!important;font-family:'Nunito',sans-serif!important}":"",
-      "@media(max-width:767px){",
-      "  .ta-card:hover{box-shadow:none!important;transform:none!important}",
-      "  .ta-side-item:hover{background:transparent!important}",
-      "  .ta-modal-inner{width:100vw!important;max-width:100vw!important;max-height:100vh!important;height:100vh!important;border-radius:0!important;border:none!important;padding:20px 16px!important;box-shadow:none!important}",
-      "  .ta-mob-1col{grid-template-columns:1fr!important}",
-      "  .ta-detail-pad{padding:0 16px 40px!important}",
-      "  .ta-detail-head{flex-direction:column!important;align-items:flex-start!important;gap:12px!important}",
-      "  .ta-detail-actions{flex-wrap:wrap!important}",
-      "  .ta-ob-card{width:100%!important;max-width:100%!important;padding:24px 20px!important}",
-      "  .ta-ob-pillars{flex-direction:column!important;gap:12px!important}",
-      "  .ta-login-box{width:100%!important;max-width:100%!important;padding:32px 20px!important;border-radius:12px!important}",
-      "  .ta-notif-panel{width:calc(100vw - 24px)!important;right:12px!important;left:12px!important;max-height:70vh!important}",
-      "  .ta-analytics-4col{grid-template-columns:1fr 1fr!important}",
-      "  .ta-form-row{grid-template-columns:1fr!important}",
-      "  .ta-form-3col{grid-template-columns:1fr!important}",
-      "  .ta-grid-cards{grid-template-columns:1fr!important}",
-      "  .ta-grid-2col{grid-template-columns:1fr!important}",
-      "  .ta-grid-4col{grid-template-columns:1fr 1fr!important}",
-      "  .ta-grid-docs{grid-template-columns:1fr!important}",
-      "  .ta-onboard-steps{grid-template-columns:1fr!important}",
-      "  .ta-page-pad{padding:0 12px 40px!important}",
-      "  .ta-detail-tabs{overflow-x:auto!important;-webkit-overflow-scrolling:touch}",
-      "  .ta-detail-tabs button{white-space:nowrap!important;flex-shrink:0!important;padding:12px 14px!important}",
-      "  .ta-summary-grid{grid-template-columns:1fr 1fr!important}",
-      "  .ta-style-wrap{flex-wrap:wrap!important}",
-      "  .ta-page-pad{padding:0 16px 80px!important}",
-      "  body{font-size:15px!important}",
-      "  input,textarea,select,button{font-size:15px!important;min-height:44px}",
-      "}",
-    ].join("\n");
-    document.head.appendChild(style);
-    // Load theme-specific fonts via link tag
-    var fontId="ta-theme-font";var prevFont=document.getElementById(fontId);if(prevFont)prevFont.remove();
-    var fontId2="ta-theme-font2";var prevFont2=document.getElementById(fontId2);if(prevFont2)prevFont2.remove();
-    if(isForest){var lnk=document.createElement("link");lnk.id=fontId;lnk.rel="stylesheet";lnk.href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap";document.head.appendChild(lnk)}
-    if(isThesis){var lnk2=document.createElement("link");lnk2.id=fontId2;lnk2.rel="stylesheet";lnk2.href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap";document.head.appendChild(lnk2)}
-    return function(){var el=document.getElementById(id);if(el)el.remove();var fl=document.getElementById(fontId);if(fl)fl.remove();var fl2=document.getElementById(fontId2);if(fl2)fl2.remove()}},[isDark,isThesis,theme]);
-  // ── Load data ──
-  useEffect(function(){
-    // Load: try cloud first (cross-device), then localStorage (offline cache), then SAMPLE
-    async function loadData(){
-      var cloudData=await cloudLoad(props.userId);
-      if(cloudData&&cloudData.cos&&cloudData.cos.length>0){
-        setCos(cloudData.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",tooHardReason:"",parkedAt:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
-        if(cloudData.notifs)setNotifs(cloudData.notifs);
-        if(cloudData.trial){saveTrial(cloudData.trial)}
-        if(cloudData.readingList){saveRL(cloudData.readingList)}
-        if(cloudData.profile){
-          if(cloudData.profile.username){setUsername(cloudData.profile.username);try{localStorage.setItem("ta-username",cloudData.profile.username)}catch(e){}}
-          if(cloudData.profile.avatar){setAvatarUrl(cloudData.profile.avatar);try{localStorage.setItem("ta-avatar",cloudData.profile.avatar)}catch(e){}}
-          if(cloudData.profile.xp){setXp(cloudData.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(cloudData.profile.xp))}catch(e){}}
-          if(cloudData.profile.streak){setStreakData(cloudData.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(cloudData.profile.streak))}catch(e){}}
-          if(cloudData.profile.dailyStreak){setDailyStreak(cloudData.profile.dailyStreak);try{localStorage.setItem("ta-daily",JSON.stringify(cloudData.profile.dailyStreak))}catch(e){}}
-          if(cloudData.profile.milestones){setMilestones(cloudData.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(cloudData.profile.milestones))}catch(e){}}
-          if(cloudData.profile.weeklyReviews){setWeeklyReviews(cloudData.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(cloudData.profile.weeklyReviews))}catch(e){}}
-          if(cloudData.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,cloudData.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(cloudData.profile.dashSettings))}catch(e){}}
-          if(cloudData.profile.theme){var ct=cloudData.profile.theme;if(ct==="light")ct="thesis_light";if(ct==="dark")ct="thesis_dark";setTheme(ct);try{localStorage.setItem("ta-theme",ct)}catch(e){}}
-          if(cloudData.profile.chest){setChestRewards(cloudData.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(cloudData.profile.chest))}catch(e){}}
-          if(cloudData.profile.quests){setQuestData(cloudData.profile.quests);try{localStorage.setItem("ta-quests",JSON.stringify(cloudData.profile.quests))}catch(e){}}
-          if(cloudData.profile.doubleXP){setDoubleXP(cloudData.profile.doubleXP);try{localStorage.setItem("ta-doublexp",cloudData.profile.doubleXP)}catch(e){}}
-        }
-        svS("ta-data",cloudData);// cache locally
-        setLoaded(true);return}
-      // Fallback to localStorage
-      var local=await ldS("ta-data");
-      if(local&&local.cos&&local.cos.length>0){
-        setCos(local.cos.map(function(c){return Object.assign({docs:[],earningsHistory:[],position:{shares:0,avgCost:0,currentPrice:0},conviction:0,convictionHistory:[],status:"portfolio",industry:"",tooHardReason:"",parkedAt:"",lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,investStyle:"",moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",purchaseDate:""},c)}));
-        if(local.notifs)setNotifs(local.notifs);
-        if(local.trial){saveTrial(local.trial)}
-        if(local.profile){
-          if(local.profile.username){setUsername(local.profile.username);try{localStorage.setItem("ta-username",local.profile.username)}catch(e){}}
-          if(local.profile.avatar){setAvatarUrl(local.profile.avatar);try{localStorage.setItem("ta-avatar",local.profile.avatar)}catch(e){}}
-          if(local.profile.xp){setXp(local.profile.xp);try{localStorage.setItem("ta-xp",JSON.stringify(local.profile.xp))}catch(e){}}
-          if(local.profile.streak){setStreakData(local.profile.streak);try{localStorage.setItem("ta-streak",JSON.stringify(local.profile.streak))}catch(e){}}
-          if(local.profile.dailyStreak){setDailyStreak(local.profile.dailyStreak);try{localStorage.setItem("ta-daily",JSON.stringify(local.profile.dailyStreak))}catch(e){}}
-          if(local.profile.milestones){setMilestones(local.profile.milestones);try{localStorage.setItem("ta-milestones",JSON.stringify(local.profile.milestones))}catch(e){}}
-          if(local.profile.weeklyReviews){setWeeklyReviews(local.profile.weeklyReviews);try{localStorage.setItem("ta-weekly-reviews",JSON.stringify(local.profile.weeklyReviews))}catch(e){}}
-          if(local.profile.dashSettings){setDashSet(Object.assign({},DEFAULT_DASH,local.profile.dashSettings));try{localStorage.setItem("ta-dashsettings",JSON.stringify(local.profile.dashSettings))}catch(e){}}
-          if(local.profile.theme){var lt=local.profile.theme;if(lt==="light")lt="thesis_light";if(lt==="dark")lt="thesis_dark";setTheme(lt);try{localStorage.setItem("ta-theme",lt)}catch(e){}}
-          if(local.profile.chest){setChestRewards(local.profile.chest);try{localStorage.setItem("ta-chest",JSON.stringify(local.profile.chest))}catch(e){}}
-          if(local.profile.quests){setQuestData(local.profile.quests);try{localStorage.setItem("ta-quests",JSON.stringify(local.profile.quests))}catch(e){}}
-          if(local.profile.doubleXP){setDoubleXP(local.profile.doubleXP);try{localStorage.setItem("ta-doublexp",local.profile.doubleXP)}catch(e){}}
-        }
-        // First login on this account — push local data to cloud
-        cloudSave(props.userId,local);
-        setLoaded(true);return}
-      // Brand new user — use sample data
-      try{if(!localStorage.getItem("ta-onboarded"))setObStep(1)}catch(e){setObStep(1)}
-      // Start trial for new users
-      if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}
-      setLoaded(true)}
-    loadData();
-    // Load subscription status
-    if(supabase&&props.userId){supabase.from("subscriptions").select("plan,status,stripe_customer_id,current_period_end").eq("user_id",props.userId).single().then(function(res){
-      if(res.data&&res.data.plan){var isActive=res.data.status==="active"||res.data.status==="trialing";var notExpired=!res.data.current_period_end||new Date(res.data.current_period_end)>new Date();
-        var p=(isActive&&notExpired&&res.data.plan==="pro")?"pro":"free";setPlan(p);try{localStorage.setItem("ta-plan",p)}catch(e){}
-        if(res.data.stripe_customer_id)setStripeCustomerId(res.data.stripe_customer_id)}}).catch(function(){})}
-    // Handle Stripe redirect (?upgraded=true)
-    if(typeof window!=="undefined"){var sp=new URLSearchParams(window.location.search);
-      if(sp.get("upgraded")==="true"){window.history.replaceState({},"",window.location.pathname);
-        // Poll for webhook to complete (Stripe webhook may arrive within seconds)
-        var attempts=0;var poll=setInterval(function(){attempts++;if(attempts>10){clearInterval(poll);return}
-          if(supabase&&props.userId){supabase.from("subscriptions").select("plan,status,stripe_customer_id").eq("user_id",props.userId).single().then(function(res2){
-            if(res2.data&&res2.data.plan==="pro"){clearInterval(poll);setPlan("pro");try{localStorage.setItem("ta-plan","pro")}catch(e){}
-              if(res2.data.stripe_customer_id)setStripeCustomerId(res2.data.stripe_customer_id);
-              celebrate("✨ Welcome to Pro! All data features unlocked.","levelup",6000);showCelebration("⚡ Pro Activated","You now have access to earnings data, moat analysis, financial statements, and more. Happy investing!",null,"#4ade80")}})
-            .catch(function(){})}},2000)}}
-    },[]);
-  // ── Trial: auto-start for existing users who don't have one ──
-  useEffect(function(){if(!loaded||plan==="pro")return;
-    if(!trial||!trial.start){saveTrial({start:new Date().toISOString(),bonusEarned:false,bonusEarnedAt:null})}},[loaded,plan]);
-  // ── Trial: watch for thesis unlock bonus ──
-  useEffect(function(){if(!loaded||!trial||!trial.start||trial.bonusEarned||plan==="pro")return;
-    if(completeTheses>=THESIS_UNLOCK){
-      saveTrial(Object.assign({},trial,{bonusEarned:true,bonusEarnedAt:new Date().toISOString()}));
-      celebrate(String.fromCodePoint(0x1F3C6)+" "+TRIAL_BONUS+" additional days of Pro access earned. Your discipline unlocked this.","milestone",8000);
-      showCelebration(String.fromCodePoint(0x1F3C6)+" Ownership Earned","You logged "+THESIS_UNLOCK+" complete investment theses. "+TRIAL_BONUS+" additional days of full Pro access have been unlocked. Now, let’s stress-test the rest of your portfolio.",null,"#4ade80");
-      setNotifs(function(p){return[{id:Date.now(),type:"milestone",ticker:"",msg:TRIAL_BONUS+" Pro days earned — "+THESIS_UNLOCK+" theses written",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}},[loaded,completeTheses,trial]);
-  // Auto-refresh prices on load
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var t=setTimeout(function(){refreshPrices()},2000);return function(){clearTimeout(t)}},[loaded]);
-  // Load portfolio news for morning briefing
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var portfolioCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-    if(portfolioCos.length>0)loadBriefNews(portfolioCos)},[loaded,cos.length]);
-  // Auto-fetch dividend data for ALL users
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var needsDiv=cos.filter(function(c){
-      if(!c._divChecked&&(!c.divPerShare||c.divPerShare===0))return true;
-      if(c.divFrequency==="quarterly"&&KNOWN_MONTHLY.indexOf(c.ticker.toUpperCase())>=0)return true;
-      return false});
-    if(needsDiv.length===0)return;
-    var t=setTimeout(function(){(async function(){
-      for(var i=0;i<needsDiv.length;i++){var c=needsDiv[i];
-        try{
-          var fmpData=await fetchPrice(c.ticker);var fmpLD=fmpData?fmpData.lastDiv:0;
-          if(fmpData&&fmpData.price){upd(c.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position,{currentPrice:fmpData.price}),_dayChange:fmpData.changes||0,_dayChangePct:fmpData.changesPercentage||0})})}
-          var fhDiv=await fetchDivFromFinnhub(c.ticker,fmpLD);
-          if(fhDiv&&fhDiv.payer){
-            upd(c.id,function(prev){return Object.assign({},prev,{
-              divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,
-              divFrequency:fhDiv.divFrequency,divYield:fhDiv.divYield,_divChecked:true})})}
-          else{upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none",divPerShare:0,lastDiv:0,_divChecked:true})})}
-        }catch(e){}
-        await new Promise(function(res){setTimeout(res,500)})}
-    })()},2500);return function(){clearTimeout(t)}},[loaded]);
-  // Auto-notify: when earnings date has passed, automatically check them
-  var autoCheckDone=useRef({});
-  useEffect(function(){if(!loaded||!autoNotify||!isPro)return;
-    cos.forEach(function(c){if(c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<=0&&dU(c.earningsDate)>=-3){
-      // Auto-check if not already checked and not already in progress
-      var key=c.ticker+"-"+c.earningsDate;
-      if((!c.lastChecked||(!c.earningSummary&&c.lastChecked&&(Date.now()-new Date(c.lastChecked).getTime())>86400000))&&!autoCheckDone.current[key]&&!checkSt[c.id]){
-        autoCheckDone.current[key]=true;
-        setTimeout(function(){checkOne(c.id).then(function(){
-          // Send browser push if enabled
-          if(typeof Notification!=="undefined"&&Notification.permission==="granted"){
-            try{new Notification("ThesisAlpha: "+c.ticker,{body:"Earnings results are now available",icon:"/logo.png"})}catch(e){}}
-          // Queue email alert notification (non-disruptive — user clicks to open)
-          if(emailNotify&&c.kpis.length>0){setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"email-alert",ticker:c.ticker,msg:"KPI results ready — click to email summary",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}
-        })},Math.random()*3000+1000)}// Stagger 1-4s
-      else if(!c.lastChecked&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="ready"})){
-        setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"ready",ticker:c.ticker,msg:"Earnings released — click Check Earnings to view",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}});
-    return undefined},[loaded,autoNotify,cos]);
-  // Send earnings email via mailto (free, no backend needed)
-  function buildEmailHTML(p){
-    var accent="#6366F1";var bg="#111113";var card="#18181b";var bdr="#2a2a2e";var txt="#e5e7eb";var dim="#9ca3af";var grn="#22c55e";var red="#ef4444";var amb="#f59e0b";
-    var h='<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>';
-    h+='<body style="margin:0;padding:0;background:'+bg+';font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif">';
-    h+='<div style="max-width:560px;margin:0 auto;padding:32px 24px">';
-    // Header
-    h+='<div style="margin-bottom:28px"><div style="font-size:13px;font-weight:700;color:'+accent+';letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">ThesisAlpha</div>';
-    h+='<div style="font-size:20px;font-weight:600;color:'+txt+'">'+p.title+'</div>';
-    if(p.subtitle)h+='<div style="font-size:13px;color:'+dim+';margin-top:4px">'+p.subtitle+'</div>';
-    h+='</div>';
-    // Body sections
-    if(p.summary)h+='<div style="background:'+card+';border:1px solid '+bdr+';border-radius:8px;padding:16px 20px;margin-bottom:16px;font-size:13px;color:'+txt+';line-height:1.6">'+p.summary+'</div>';
-    // KPI table
-    if(p.kpis&&p.kpis.length>0){
-      h+='<div style="background:'+card+';border:1px solid '+bdr+';border-radius:8px;overflow:hidden;margin-bottom:16px">';
-      h+='<div style="padding:12px 16px;border-bottom:1px solid '+bdr+';font-size:11px;font-weight:600;color:'+dim+';letter-spacing:1px;text-transform:uppercase">KPI Results</div>';
-      p.kpis.forEach(function(k){
-        var sc=k.status==="met"?grn:k.status==="missed"?red:amb;
-        h+='<div style="padding:10px 16px;border-bottom:1px solid '+bdr+';display:flex;justify-content:space-between;align-items:center">';
-        h+='<span style="font-size:13px;color:'+txt+'">'+k.name+'</span>';
-        h+='<span style="font-size:13px;font-weight:600;color:'+sc+'">'+k.actual+(k.unit||"")+" "+(k.status==="met"?String.fromCodePoint(0x2705):k.status==="missed"?String.fromCodePoint(0x274C):String.fromCodePoint(0x23F3))+'</span>';
-        h+='</div>'});
-      h+='<div style="padding:10px 16px;font-size:12px;font-weight:600;color:'+(p.metCount===p.totalCount?grn:p.metCount===0?red:amb)+'">';
-      h+=p.metCount+'/'+p.totalCount+' KPIs met</div></div>'}
-    // Custom HTML block
-    if(p.html)h+=p.html;
-    // CTA
-    h+='<div style="margin-top:24px;text-align:center"><a href="https://thesisalpha.io" style="display:inline-block;background:'+accent+';color:#fff;text-decoration:none;padding:10px 28px;border-radius:6px;font-size:13px;font-weight:600">Open ThesisAlpha</a></div>';
-    // Footer
-    h+='<div style="margin-top:32px;padding-top:16px;border-top:1px solid '+bdr+';text-align:center">';
-    h+='<div style="font-size:11px;color:#4b5563">ThesisAlpha — invest with conviction, not impulse.</div>';
-    h+='<div style="font-size:10px;color:#374151;margin-top:4px">You received this because you have KPI alerts enabled for this holding.</div>';
-    h+='</div></div></body></html>';
-    return h}
-  function sendEarningsEmail(c){if(!c.kpis||c.kpis.length===0){showToast("Add KPIs to "+c.ticker+" first — email alerts track your KPI targets against earnings","info",5000);return}
-    var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
-    var total=c.kpis.filter(function(k){return k.lastResult}).length;
-    if(total===0){showToast(c.ticker+" KPIs not yet checked — run an earnings check first","info",4000);return}
-    var kpiData=c.kpis.filter(function(k){return k.lastResult}).map(function(k){return{name:k.name,actual:k.lastResult.actual,unit:k.unit||"",status:k.lastResult.status||"pending"}});
-    var html=buildEmailHTML({
-      title:c.ticker+" — KPI Results",
-      subtitle:c.name+(c.sector?" · "+c.sector:"")+" · "+new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
-      summary:c.earningSummary||null,
-      kpis:kpiData,
-      metCount:met,
-      totalCount:total
-    });
-    var sub="ThesisAlpha: "+c.ticker+" — "+met+"/"+total+" KPIs met";
-    authFetch("/api/send-email",{method:"POST",body:JSON.stringify({to:props.user,subject:sub,html:html,type:"earnings"})}).then(function(r){return r.json()}).then(function(d){
-      if(d.success)showToast("Earnings summary emailed to "+props.user,"milestone",4000);
-      else showToast("Email failed — "+(d.error||"try again"),"info",4000)
-    }).catch(function(){showToast("Could not send email — check connection","info",4000)})}
-  function sendQuarterlyLetterEmail(htmlContent,qTitle){
-    var sub="ThesisAlpha: Your "+qTitle+" Quarterly Letter";
-    var wrapped=buildEmailHTML({title:qTitle+" — Quarterly Letter",subtitle:"Your ownership process, reviewed.",html:'<div style="background:#18181b;border:1px solid #2a2a2e;border-radius:8px;padding:20px;margin-bottom:16px;font-size:13px;color:#e5e7eb;line-height:1.6">'+htmlContent+'</div>'});
-    authFetch("/api/send-email",{method:"POST",body:JSON.stringify({to:props.user,subject:sub,html:wrapped,type:"quarterly"})}).then(function(r){return r.json()}).then(function(d){
-      if(d.success)showToast("Quarterly letter emailed","milestone",4000);
-      else showToast("Email failed — "+(d.error||"try again"),"info",4000)
-    }).catch(function(){showToast("Could not send email","info",4000)})}
-  // Request browser notification permission
-  function requestPushPermission(){if(typeof Notification!=="undefined"&&Notification.permission==="default"){Notification.requestPermission()}}
-  // DEBOUNCED SAVE — localStorage fast (500ms), cloud slower (2s)
-
-  // Quarterly letter auto-trigger
-  useEffect(function(){if(!loaded||cos.length===0)return;
-    var now=new Date();var qm=Math.floor(now.getMonth()/3);var qy=now.getFullYear();
-    // Trigger in first 14 days of new quarter
-    var prevQ=qm===0?{q:4,y:qy-1}:{q:qm,y:qy};
-    var qKey="Q"+prevQ.q+"-"+prevQ.y;
-    var dayOfQ=now.getDate()+(now.getMonth()%3)*30;
-    if(dayOfQ<=14&&weeklyReviews.length>=1&&!qLetters[qKey]){
-      // Generate and show
-      setTimeout(function(){setShowQLetter(qKey)},3000)}
-  },[loaded,cos.length]);
-  // Check achievements whenever relevant data changes
-  useEffect(function(){if(!loaded)return;checkAchievements()},[loaded,cos.length,reviewStreak,milestones.thesis4,milestones.first_moat,milestones.stoic,milestones.contrarian]);
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,quests:}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,streakData,dailyStreak,milestones,weeklyReviews,dashSet,chestRewards,doubleXP,questData,theme,readingList]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,xp,milestones,weeklyReviews,dashSet,,theme,readingList]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -1814,7 +1191,7 @@ function TrackerApp(props){
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};
       // Contrarian badge — added while down 20%+
       var _p=nc.position;if(_p.currentPrice>0&&_p.avgCost>0&&((_p.currentPrice-_p.avgCost)/_p.avgCost)<=-0.2){checkMilestone("contrarian","⚔️ Contrarian move — bought during a 20%+ drawdown!")}
-      setTimeout(checkAchievements,300);
+      
       setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
@@ -1968,12 +1345,12 @@ function TrackerApp(props){
         {!isChanged&&<div/>}
         <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
               // Auto-log thesis snapshot
-              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.");addXP(20,"Complete thesis");setTimeout(checkAchievements,200)}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
+              logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.")}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
         var numMissed=kpiResults.filter(function(x){return x.status==="missed"}).length;
         if(totalKpis>0&&numMissed>0&&!allMet){showToast(co.ticker+": "+numMissed+" KPI"+(numMissed>1?"s":"")+" missed — review the thesis?","warn",5000)}
         if(totalKpis>0&&allMet){launchConfetti(3000);showCelebration(co.ticker+" KPIs: All Met!","Every metric hit its target. Your thesis is being confirmed by the numbers.",null,K.grn)}
         else if(totalKpis>0&&allMiss){showToast(co.ticker+" KPIs need attention - "+metCount+"/"+totalKpis+" met. Review your thesis.","info",6000)}
-        else{showToast(co.ticker+" earnings checked - "+metCount+"/"+totalKpis+" KPIs met","info",4000)}addXP(10,"Thesis updated")};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+        else{showToast(co.ticker+" earnings checked - "+metCount+"/"+totalKpis+" KPIs met","info",4000)}};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];
     var _kpiS=useState(""),kpiSearch=_kpiS[0],setKpiSearch=_kpiS[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
@@ -1995,8 +1372,8 @@ function TrackerApp(props){
         upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===kid?Object.assign({},k,kd2):k})})})
       } else if(added.length>0){
         upd(selId,function(c){var newKpis=c.kpis;added.forEach(function(kd3){newKpis=newKpis.concat([Object.assign({id:nId(newKpis),lastResult:null},kd3)])});
-          if(c.kpis.length===0&&newKpis.length>=1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.");setTimeout(checkAchievements,400)},300);
-          addXP(5*added.length,"KPIs added");
+          if(c.kpis.length===0&&newKpis.length>=1)setTimeout(function(){checkMilestone("first_kpi",""+String.fromCodePoint(0x1F3AF)+" First KPI tracked! You're measuring what matters.")},300);
+          ;
           if(!c.conviction||c.conviction===0)setTimeout(function(){showToast("Nice! Now rate your conviction 1-10 → click the Conviction card","info",5000)},2000);
           return Object.assign({},c,{kpis:newKpis})})}
       setModal(null)}
@@ -2067,7 +1444,7 @@ function TrackerApp(props){
     function saveMemo(){
       var content="## WHY NOW\n"+f.whyNow+"\n\n## VALUATION\n"+f.valuation+"\n\n## POSITION SIZING\n"+f.sizing+"\n\n## RISKS I\'M WATCHING\n"+f.risksWatching+"\n\n## 12-MONTH OUTLOOK\n"+f.outlook;
       upd(selId,function(prev){return Object.assign({},prev,{docs:prev.docs.concat([{id:nId(prev.docs),title:"Investment Memo — "+new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),content:content,folder:"my-writeups",updatedAt:new Date().toISOString(),isMemo:true,memoData:{whyNow:f.whyNow,valuation:f.valuation,sizing:f.sizing,risksWatching:f.risksWatching,outlook:f.outlook}}])})});
-      addXP(15,"Investment memo");showToast("\u2713 Investment memo saved for "+c2.ticker,"info",3000);setModal(null)}
+      ;showToast("\u2713 Investment memo saved for "+c2.ticker,"info",3000);setModal(null)}
     function exportMemoPDF(){
       var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c2.ticker+' Investment Memo \u2014 ThesisAlpha</title>';
       html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">';
@@ -2141,7 +1518,7 @@ function TrackerApp(props){
     function saveClip(){if(!f.title.trim()&&!f.url.trim())return;
       var title=f.title.trim()||f.url.trim();
       upd(selId,function(prev){return Object.assign({},prev,{docs:prev.docs.concat([{id:nId(prev.docs),title:title,content:f.takeaway.trim(),folder:"deep-dives",updatedAt:new Date().toISOString(),isClip:true,clipData:{url:f.url.trim(),source:f.source.trim(),thesisImpact:f.thesisImpact,savedAt:new Date().toISOString()}}])})});
-      addXP(5,"Research clipped");showToast("\u2713 Research clipped for "+c2.ticker,"info",3000);setModal(null)}
+      ;showToast("\u2713 Research clipped for "+c2.ticker,"info",3000);setModal(null)}
     return<Modal title={"Clip Research — "+c2.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{display:"flex",gap:12,marginBottom:14}}>
         <div style={{width:40,height:40,borderRadius:10,background:K.blue+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="link" size={18} color={K.blue}/></div>
@@ -2229,9 +1606,8 @@ function TrackerApp(props){
     function saveConviction(){var hist=(sel.convictionHistory||[]).slice();var biasArr=BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label});hist.push({date:new Date().toISOString().split("T")[0],rating:r,note:n2.trim(),biasFlags:biasArr});upd(selId,{conviction:r,convictionHistory:hist.slice(-20)});
       // Stoic badge — conviction unchanged (delta 0) while holding is down 15%+
       var pos2=sel.position||{};var drawdown=pos2.currentPrice>0&&pos2.avgCost>0?((pos2.currentPrice-pos2.avgCost)/pos2.avgCost):0;
-      if(delta===0&&drawdown<=-0.15){checkMilestone("stoic","🪨 The Stoic — conviction held through a 15%+ drawdown");setTimeout(checkAchievements,300)}
-      else{setTimeout(checkAchievements,300)}
-      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);addXP(8,"Conviction rated");setModal(null)}
+      if(delta===0&&drawdown<=-0.15){checkMilestone("stoic","🪨 The Stoic — conviction held through a 15%+ drawdown")}
+      var deltaMsg=delta!==null&&delta!==0?(delta>0?" (+"+delta+")":"  ("+delta+")"):"";showToast("✓ "+sel.ticker+" conviction: "+r+"/10"+deltaMsg,"info",3000);setModal(null)}
     if(step==="checklist")return<Modal title={null} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{marginBottom:20}}>
         <div style={{fontSize:11,fontWeight:700,color:K.acc,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>PRE-FLIGHT CHECKLIST</div>
@@ -2635,7 +2011,7 @@ function TrackerApp(props){
     var activePrompt=prompts.find(function(p2){return p2.id===selPrompt});
     function doSave(){if(!selPrompt||!resp.trim())return;var entry={id:existing?existing.id:nId(scenarios),promptId:selPrompt,prompt:activePrompt?activePrompt.q:"",category:activePrompt?activePrompt.cat:"",response:resp.trim(),answeredAt:new Date().toISOString()};
       if(existing){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).map(function(s){return s.id===existing.id?entry:s})})})}
-      else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})});addXP(10,"Scenario planned")}
+      else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})})}
       setModal(null)}
     return<Modal title={"Stress Test \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
       <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:16}}>Plan your response to difficult situations before they happen — when your mind is clear and emotions are quiet.</div>
@@ -3119,7 +2495,7 @@ function TrackerApp(props){
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
     function addDecision(){if(!f.reasoning.trim())return;
       logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
-      addXP(8,"Decision logged");
+      ;
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
       if(allDecCount<=1)setTimeout(function(){showToast("\u2713 First decision logged","info",3000)},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
@@ -3320,97 +2696,6 @@ function TrackerApp(props){
           <span style={{fontSize:12,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
           <span style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",fontFamily:fm}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</span></a>})}</div>}</div>}
 
-  // ── Analyst & Insider Section (all FREE endpoints) ──
-  function AnalystInsiders(p){var c=p.company;
-    if(!isPro){return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:16}}>
-      <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Analyst Targets & Insider Activity</div>
-      <div style={{background:K.bg,borderRadius:8,padding:"24px 20px",textAlign:"center"}}>
-        <div style={{fontSize:13,color:K.mid,marginBottom:8}}>Analyst price targets, recommendations, insider transactions, SEC filings & company news</div>
-        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("analysts")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 16px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Upgrade to Unlock</button>
-      </div></div>}
-    var _recs=useState(null),recs=_recs[0],setRecs=_recs[1];
-    var _eps=useState(null),eps=_eps[0],setEps=_eps[1];
-    var _txns=useState(null),txns=_txns[0],setTxns=_txns[1];
-    var _peers=useState(null),peers=_peers[0],setPeers=_peers[1];
-    var _pt=useState(null),pt=_pt[0],setPt=_pt[1];
-    var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
-    useEffect(function(){setLd(true);
-      Promise.all([fetchRecommendations(c.ticker).catch(function(){return[]}),fetchEPSHistory(c.ticker).catch(function(){return[]}),fetchInsiders(c.ticker).catch(function(){return[]}),fetchPeers(c.ticker).catch(function(){return[]}),fetchPriceTarget(c.ticker).catch(function(){return null})]).then(function(res){setRecs(res[0]);setEps(res[1]);setTxns(res[2]);setPeers(res[3]);setPt(res[4]);setLd(false)}).catch(function(e){console.warn("[ThesisAlpha] AnalystInsiders error:",e);setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:12,color:K.dim}}>Loading...</div></div>;
-    var hasRecs=recs&&recs.length>0;var hasEps=eps&&eps.length>0;var hasTxns=txns&&txns.length>0;var hasPeers=peers&&peers.length>0;var hasPt=pt&&pt.targetMean;
-    if(!hasRecs&&!hasEps&&!hasTxns&&!hasPeers&&!hasPt)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>Market Intelligence</div><div style={{fontSize:13,color:K.dim,padding:"8px 0"}}>No Finnhub data available for {c.ticker}.</div></div>;
-    // Beat streak
-    var beatStreak=0;if(hasEps){for(var bi=0;bi<eps.length;bi++){if(eps[bi].actual!=null&&eps[bi].estimate!=null&&eps[bi].actual>=eps[bi].estimate)beatStreak++;else break}}
-    var curPrice=(c.position&&c.position.currentPrice)?c.position.currentPrice:0;
-    return<div style={{marginBottom:20}}>
-      {/* Price Target bar */}
-      {hasPt&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Price Target</div>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>
-              <span>Low ${pt.targetLow?pt.targetLow.toFixed(0):"?"}</span><span>Mean ${pt.targetMean.toFixed(0)}</span><span>High ${pt.targetHigh?pt.targetHigh.toFixed(0):"?"}</span></div>
-            {function(){var lo=pt.targetLow||pt.targetMean*0.7;var hi=pt.targetHigh||pt.targetMean*1.3;var range=hi-lo;if(!range)return null;
-              var meanPct=Math.max(0,Math.min(100,(pt.targetMean-lo)/range*100));
-              var curPct=curPrice?Math.max(0,Math.min(100,(curPrice-lo)/range*100)):null;
-              return<div style={{position:"relative",height:8,borderRadius:4,background:K.bdr,marginBottom:6}}>
-                <div style={{position:"absolute",left:0,top:0,height:"100%",width:meanPct+"%",borderRadius:4,background:K.acc+"40"}}/>
-                {curPct!=null&&<div style={{position:"absolute",top:-4,left:"calc("+curPct+"% - 4px)",width:8,height:16,borderRadius:2,background:curPrice<=pt.targetMean?K.grn:K.red,border:"2px solid "+K.card}} title={"Current: $"+curPrice.toFixed(2)}/>}
-                <div style={{position:"absolute",top:-3,left:"calc("+meanPct+"% - 1px)",width:2,height:14,background:K.acc}} title={"Target: $"+pt.targetMean.toFixed(0)}/></div>}()}</div>
-          {curPrice>0&&<div style={{textAlign:"right",minWidth:80}}>
-            <div style={{fontSize:16,fontWeight:600,color:pt.targetMean>curPrice?K.grn:K.red,fontFamily:fm}}>{pt.targetMean>curPrice?"+":""}{((pt.targetMean-curPrice)/curPrice*100).toFixed(0)}%</div>
-            <div style={{fontSize:10,color:K.dim}}>upside</div></div>}</div>
-        <div style={{fontSize:11,color:K.dim,marginTop:4}}>{pt.lastUpdated?"Updated "+pt.lastUpdated:""}</div></div>}
-      {/* Beat streak badge */}
-      {hasEps&&beatStreak>=2&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:12,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-        <IC name="trending" size={16} color={K.grn}/>
-        <span style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{beatStreak} Quarter Beat Streak</span>
-        <span style={{fontSize:12,color:K.dim}}>Consecutively beat EPS estimates</span></div>}
-      {/* Analyst + EPS row */}
-      <div style={{display:"grid",gridTemplateColumns:hasRecs&&hasEps?"1fr 1fr":"1fr",gap:12,marginBottom:12}}>
-        {hasRecs&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Analyst Consensus</div>
-          {function(){var r=recs[0];var total=(r.buy||0)+(r.hold||0)+(r.sell||0)+(r.strongBuy||0)+(r.strongSell||0);if(!total)return null;
-            var buys=(r.strongBuy||0)+(r.buy||0);var sells=(r.strongSell||0)+(r.sell||0);
-            return<div><div style={{display:"flex",height:8,borderRadius:4,overflow:"hidden",marginBottom:8}}>
-              {r.strongBuy>0&&<div style={{width:(r.strongBuy/total*100)+"%",background:"#00C853"}}/>}
-              {r.buy>0&&<div style={{width:(r.buy/total*100)+"%",background:"#66BB6A"}}/>}
-              {r.hold>0&&<div style={{width:(r.hold/total*100)+"%",background:K.amb}}/>}
-              {r.sell>0&&<div style={{width:(r.sell/total*100)+"%",background:"#EF5350"}}/>}
-              {r.strongSell>0&&<div style={{width:(r.strongSell/total*100)+"%",background:"#C62828"}}/>}</div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,fontFamily:fm}}>
-                <span style={{color:K.grn}}>Buy: {buys}</span><span style={{color:K.amb}}>Hold: {r.hold||0}</span><span style={{color:K.red}}>Sell: {sells}</span></div>
-              <div style={{fontSize:11,color:K.dim,marginTop:4}}>{r.period} · {total} analysts</div></div>}()}</div>}
-        {hasEps&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>EPS History</div>
-          {eps.slice(0,4).map(function(e,i){var beat=e.actual!=null&&e.estimate!=null?e.actual>=e.estimate:null;var pct=e.estimate?((e.actual-e.estimate)/Math.abs(e.estimate)*100):0;
-            return<div key={i} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm,width:50}}>Q{e.quarter} {String(e.year).slice(2)}</span>
-              <span style={{fontSize:12,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.txt,fontFamily:fm,width:50}}>${e.actual!=null?e.actual.toFixed(2):"?"}</span>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>est ${e.estimate!=null?e.estimate.toFixed(2):"?"}</span>
-              <span style={{fontSize:10,fontWeight:600,color:beat?K.grn:beat===false?K.red:K.dim,fontFamily:fm,marginLeft:"auto"}}>{beat!=null?(pct>=0?"+":"")+pct.toFixed(1)+"%":""}</span></div>})}</div>}</div>
-      {/* Insider Transactions */}
-      {hasTxns&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:12}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Insider Transactions</div>
-        {txns.slice(0,8).map(function(t,i){
-          // Finnhub transactionType: P=Purchase, S=Sale, A=Award/Grant, M=Option Exercise, etc
-          var txType=t.transactionType||"";
-          var isBuy=txType==="P"||txType==="A"||txType==="M"?true:txType==="S"||txType==="D"||txType==="F"?false:t.change>0;
-          var label=txType==="P"?"BUY":txType==="S"?"SELL":txType==="A"?"GRANT":txType==="M"?"EXER":txType==="F"?"TAX":txType==="D"?"DISP":t.change>0?"BUY":"SELL";
-          var labelColor=txType==="P"?K.grn:txType==="S"||txType==="D"||txType==="F"?K.red:txType==="A"||txType==="M"?K.blue:isBuy?K.grn:K.red;
-          var shares=Math.abs(t.share||t.change||0);
-          return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,fontSize:12}}>
-            <span style={{color:labelColor,fontWeight:600,fontFamily:fm,width:40,fontSize:10}}>{label}</span>
-            <span style={{color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.name}</span>
-            <span style={{color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{Math.abs(t.change||0).toLocaleString()} sh</span>
-            <span style={{color:K.dim,fontFamily:fm,fontSize:11}}>{t.transactionDate}</span></div>})}</div>}
-      {/* Peers */}
-      {hasPeers&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:8,fontFamily:fm}}>Peer Companies</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{peers.map(function(p,i){return<span key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"3px 10px",fontSize:12,color:K.mid,fontFamily:fm}}>{p}</span>})}</div></div>}
-    </div>}
-
-  // ── Moat Calculator (shared) ────────────────────────────
   function calcMoatFromData(finData){
     if(!finData)return null;
     var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
@@ -3666,7 +2951,7 @@ function TrackerApp(props){
           next[tid]=Object.assign({},cur,{active:!cur.active,strength:cur.strength||3,note:cur.note||""});
           upd(c.id,{moatTypes:next});
           if(!wasActive){var anyPrevMoats=false;cos.forEach(function(cc){var mt2=cc.moatTypes||{};Object.keys(mt2).forEach(function(k){if(mt2[k]&&mt2[k].active)anyPrevMoats=true})});
-            if(!anyPrevMoats)setTimeout(function(){checkMilestone("first_moat",String.fromCodePoint(0x1F3F0)+" First moat classified! Understanding competitive advantages is key.");setTimeout(checkAchievements,400)},300)}}
+            if(!anyPrevMoats)setTimeout(function(){checkMilestone("first_moat",String.fromCodePoint(0x1F3F0)+" First moat classified! Understanding competitive advantages is key.")},300)}}
         function setStrength(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
           next[tid]=Object.assign({},prev[tid]||{},  {strength:val});upd(c.id,{moatTypes:next})}
         function setNote(tid,val){var prev=c.moatTypes||{};var next=Object.assign({},prev);
@@ -4807,7 +4092,6 @@ function TrackerApp(props){
 
         {/* Charts & analyst data (collapsible) */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
-        {dashSet.showAnalyst&&<AnalystInsiders company={c}/>}
         </div>}
       </div>}
 
@@ -5000,8 +4284,7 @@ function TrackerApp(props){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var earnedCount=ACHIEVEMENT_BADGES.filter(function(b){return!!achievements[b.id]}).length;
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"badges",l:"Badges",icon:"shield",dot:earnedCount},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"trending"},{id:"community",l:"Community",icon:"users"},{id:"guide",l:"How It Works",icon:"lightbulb"}];
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -5022,7 +4305,7 @@ function TrackerApp(props){
         {/* ═══ 7-DAY QUEST ═══ */}
         {(function(){
           var wk=getWeekId();
-          var qCompleted=questData.weekId===wk?(questData.completed||[]):[];
+          var qCompleted=
           // Generate quests: mix of portfolio-gap fixes + rotating challenges
           var quests=[];
           var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
@@ -5072,7 +4355,7 @@ function TrackerApp(props){
           var allDone2=doneCount===quests.length&&quests.length>0;
           var questPct=quests.length>0?Math.round(doneCount/quests.length*100):0;
           // Check if quest chest already claimed this week
-          var questChestClaimed=questData.weekId===wk&&(questData.chestClaimed||false);
+          var questChestClaimed=
           return<div style={{marginBottom:20}}>
             {/* Focus header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
@@ -5323,172 +4606,6 @@ function TrackerApp(props){
         </div>
       </div>}
 
-      {/* ═══ COMMUNITY TAB ═══ */}
-      {ht==="community"&&<div>
-        {/* Community header */}
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:6}}>Community Benchmarks</div>
-          <div style={{fontSize:13,color:K.dim,lineHeight:1.7}}>See how your process compares to other ThesisAlpha owners. All data is anonymous — only aggregate scores are shared.</div></div>
-
-        {/* ── Process Score Benchmark ── */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-            <IC name="bar" size={16} color={K.acc}/>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Process Score Ranking</div></div>
-          {/* Your score */}
-          <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:10,marginBottom:16}}>
-            <div style={{position:"relative",width:48,height:48,flexShrink:0}}>
-              <svg width={48} height={48} viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="24" cy="24" r="20" fill="none" stroke={os.total>=70?K.grn:os.total>=40?K.amb:K.acc} strokeWidth="3" strokeDasharray={Math.round(os.total/100*126)+" 126"} strokeLinecap="round" transform="rotate(-90 24 24)"/></svg>
-              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:os.total>=70?K.grn:os.total>=40?K.amb:K.acc,fontFamily:fm}}>{os.total}</div></div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt}}>Your Process Score</div>
-              <div style={{fontSize:12,color:K.dim}}>{currentLevel.name} — {os.total>=80?"Top-tier discipline":os.total>=50?"Building strong habits":"Room to grow"}</div></div></div>
-          {/* Benchmark placeholder — honest pre-launch state */}
-          <div style={{background:K.bg,borderRadius:10,padding:"24px 20px",textAlign:"center",border:"1px dashed "+K.bdr}}>
-            <div style={{fontSize:28,marginBottom:8,opacity:.6}}>{String.fromCodePoint(0x1F4CA)}</div>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>Benchmarks coming soon</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:340,margin:"0 auto"}}>Once more owners join ThesisAlpha, you'll see how your process score ranks against the community — percentile, average, and distribution.</div></div>
-        </div>
-
-        {/* ── Conviction Consensus ── */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-            <IC name="trending" size={16} color={K.grn}/>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Conviction Consensus</div></div>
-          <div style={{fontSize:12,color:K.dim,marginBottom:16,lineHeight:1.6}}>See how other owners rate their conviction on the same companies you hold. Are you more bullish or cautious than the crowd?</div>
-          {/* Per-holding conviction comparison */}
-          {portfolio.length>0?<div>
-            {portfolio.map(function(c2){var conv2=c2.conviction||0;
-              return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+K.bdr+"30"}}>
-                <CoLogo domain={c2.domain} ticker={c2.ticker} size={24}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</div>
-                  <div style={{fontSize:11,color:K.dim}}>{c2.name}</div></div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:14,fontWeight:700,color:conv2>=7?K.grn:conv2>=4?K.amb:K.red,fontFamily:fm}}>{conv2>0?conv2+"/10":"—"}</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Your rating</div></div>
-                <div style={{textAlign:"right",minWidth:60}}>
-                  <div style={{fontSize:13,color:K.dim,fontFamily:fm}}>—</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Community</div></div>
-              </div>})}
-            <div style={{textAlign:"center",padding:"12px 0",fontSize:11,color:K.dim,fontStyle:"italic"}}>Community averages will appear as more owners rate these companies.</div>
-          </div>:<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:13}}>Add companies to your portfolio to see conviction comparisons.</div>}
-        </div>
-
-        {/* ── Community Activity ── */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-            <IC name="users" size={16} color={K.blue}/>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Community Activity</div></div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:16}}>
-            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
-              <div style={{fontSize:10,color:K.dim,marginTop:4}}>Active Owners</div></div>
-            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
-              <div style={{fontSize:10,color:K.dim,marginTop:4}}>Reviews This Week</div></div>
-            <div style={{textAlign:"center",padding:"16px 12px",background:K.bg,borderRadius:8}}>
-              <div style={{fontSize:22,fontWeight:700,color:K.dim,fontFamily:fm}}>—</div>
-              <div style={{fontSize:10,color:K.dim,marginTop:4}}>Theses Written</div></div>
-          </div>
-          <div style={{background:K.acc+"06",border:"1px solid "+K.acc+"15",borderRadius:8,padding:"12px 16px",textAlign:"center"}}>
-            <div style={{fontSize:12,color:K.acc,fontWeight:600,marginBottom:2}}>You're an early adopter</div>
-            <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Community features are building as more investors join. Your early activity helps shape how benchmarks work for everyone.</div></div>
-        </div>
-
-        {/* ── Shared Thesis Library (future) ── */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <IC name="book" size={16} color={"#9333EA"}/>
-            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Thesis Library</div>
-            <span style={{fontSize:10,color:"#9333EA",background:"#9333EA15",padding:"2px 8px",borderRadius:4,fontFamily:fm,fontWeight:600}}>COMING SOON</span></div>
-          <div style={{fontSize:13,color:K.dim,lineHeight:1.7,marginBottom:12}}>Read how other owners think about the companies you hold. No price targets — just investment reasoning, moat analysis, and sell criteria shared by real owners.</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-            {["Share your thesis","Read others' reasoning","Learn new frameworks"].map(function(f2){return<div key={f2} style={{padding:"10px 12px",background:K.bg,borderRadius:6,textAlign:"center"}}>
-              <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{f2}</div></div>})}</div>
-        </div>
-      </div>}
-
-      {/* ═══ BADGES TAB ═══ */}
-      {ht==="badges"&&(function(){
-        var earned=ACHIEVEMENT_BADGES.filter(function(b){return!!achievements[b.id]});
-        var locked=ACHIEVEMENT_BADGES.filter(function(b){return!achievements[b.id]});
-        var pct=Math.round(earned.length/ACHIEVEMENT_BADGES.length*100);
-        var byRarity=["platinum","gold","silver","bronze"];
-        return<div>
-          {/* Header — progress bar */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px",marginBottom:24,display:"flex",gap:20,alignItems:"center"}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:2}}>{earned.length} <span style={{fontSize:14,fontWeight:500,color:K.dim}}>/ {ACHIEVEMENT_BADGES.length} badges earned</span></div>
-              <div style={{height:6,background:K.bdr,borderRadius:999,overflow:"hidden",marginTop:8,marginBottom:6}}>
-                <div style={{height:"100%",width:pct+"%",borderRadius:999,background:"linear-gradient(90deg,"+K.acc+","+K.grn+")",transition:"width .6s ease"}}/>
-              </div>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{pct}% complete · {locked.length} remaining</div>
-            </div>
-            <div style={{textAlign:"center",flexShrink:0}}>
-              <div style={{fontSize:40,lineHeight:1}}>{pct===100?"🏆":pct>=75?"🥇":pct>=50?"🥈":pct>=25?"🥉":"🎖️"}</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,textTransform:"uppercase",letterSpacing:1}}>{pct===100?"Legend":pct>=75?"Expert":pct>=50?"Adept":pct>=25?"Learner":"Beginner"}</div>
-            </div>
-          </div>
-          {/* Rarity breakdown */}
-          <div style={{display:"flex",gap:8,marginBottom:24,flexWrap:"wrap"}}>
-            {byRarity.map(function(r){
-              var rs=RARITY_STYLE[r];
-              var total=ACHIEVEMENT_BADGES.filter(function(b){return b.rarity===r}).length;
-              var got=ACHIEVEMENT_BADGES.filter(function(b){return b.rarity===r&&achievements[b.id]}).length;
-              return<div key={r} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:got===total&&total>0?rs.bg:"transparent",border:"1px solid "+(got===total&&total>0?rs.border:K.bdr),borderRadius:8,flex:1,minWidth:100}}>
-                <div style={{width:10,height:10,borderRadius:"50%",background:got>0?rs.glow:K.dim,boxShadow:got>0?"0 0 6px "+rs.glow:"none",flexShrink:0}}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:600,color:got>0?K.txt:K.dim,fontFamily:fm,textTransform:"capitalize"}}>{rs.label}</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{got}/{total}</div>
-                </div>
-              </div>
-            })}
-          </div>
-          {/* Earned badges */}
-          {earned.length>0&&<div style={{marginBottom:28}}>
-            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:700,marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-              <span style={{width:24,height:1,background:K.grn+"40",display:"inline-block"}}/>Earned ({earned.length})<span style={{width:24,height:1,background:K.grn+"40",display:"inline-block"}}/>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
-              {earned.map(function(b){
-                var rs=RARITY_STYLE[b.rarity]||RARITY_STYLE.silver;
-                var earnedDate=achievements[b.id]?new Date(achievements[b.id]):null;
-                var dStr=earnedDate?earnedDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
-                return<div key={b.id} style={{background:rs.bg,border:"1px solid "+rs.border,borderRadius:12,padding:"16px",position:"relative",overflow:"hidden",boxShadow:"0 0 20px "+rs.glow+"15"}}>
-                  {/* Rarity glow top edge */}
-                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,"+rs.glow+",transparent)"}}/>
-                  <div style={{fontSize:32,marginBottom:8,lineHeight:1}}>{b.icon}</div>
-                  <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{b.name}</div>
-                  <div style={{fontSize:11,color:K.mid,fontFamily:fm,lineHeight:1.5,marginBottom:8}}>{b.desc}</div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <span style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:rs.glow,fontFamily:fm}}>{rs.label}</span>
-                    {dStr&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{dStr}</span>}
-                  </div>
-                </div>
-              })}
-            </div>
-          </div>}
-          {/* Locked badges */}
-          {locked.length>0&&<div>
-            <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-              <span style={{width:24,height:1,background:K.dim+"40",display:"inline-block"}}/>Locked ({locked.length})<span style={{width:24,height:1,background:K.dim+"40",display:"inline-block"}}/>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
-              {locked.map(function(b){
-                var rs=RARITY_STYLE[b.rarity]||RARITY_STYLE.silver;
-                return<div key={b.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px",opacity:0.65,position:"relative",overflow:"hidden"}}>
-                  <div style={{fontSize:32,marginBottom:8,lineHeight:1,filter:"grayscale(1) opacity(0.4)"}}>{b.icon}</div>
-                  <div style={{fontSize:13,fontWeight:700,color:K.dim,fontFamily:fm,marginBottom:3}}>{b.name}</div>
-                  <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>{b.hint}</div>
-                  <span style={{fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:K.dim,fontFamily:fm,opacity:.6}}>{rs.label}</span>
-                </div>
-              })}
-            </div>
-          </div>}
-        </div>
-      })()}
-
       {/* ═══ INVESTOR LENSES TAB ═══ */}
       {ht==="lenses"&&<div>
         {(function(){
@@ -5713,759 +4830,6 @@ function TrackerApp(props){
         </div>
       </div>}
 
-      {/* ═══ HOW IT WORKS TAB ═══ */}
-      {ht==="reading"&&(function(){
-        var RL_TYPES=["Book","Article","Annual Report","Letter","Podcast","Video","Thread","Other"];
-        var RL_TYPE_COLORS={Book:K.acc,Article:K.blue,AnnualReport:K.grn,"Annual Report":K.grn,Letter:K.amb,Podcast:"#EC4899",Video:"#EF4444",Thread:"#8B5CF6",Other:K.dim};
-        var _rlFilter=useState("unread"),rlFilter=_rlFilter[0],setRlFilter=_rlFilter[1];
-        var _rlAdd=useState(false),rlAdd=_rlAdd[0],setRlAdd=_rlAdd[1];
-        var _rlForm=useState({title:"",url:"",type:"Article",ticker:"",notes:""}),rlForm=_rlForm[0],setRlForm=_rlForm[1];
-        var _rlTake=useState(null),rlTakeId=_rlTake[0],setRlTakeId=_rlTake[1];
-        var _rlTakeText=useState(""),rlTakeText=_rlTakeText[0],setRlTakeText=_rlTakeText[1];
-        function setRlF(k,v){setRlForm(function(p){return Object.assign({},p,{[k]:v})})}
-        function addItem(){
-          if(!rlForm.title.trim())return;
-          var item={id:Date.now(),title:rlForm.title.trim(),url:rlForm.url.trim(),type:rlForm.type,ticker:rlForm.ticker.trim().toUpperCase(),notes:rlForm.notes.trim(),takeaways:"",addedAt:new Date().toISOString().split("T")[0],readAt:null,status:"unread"};
-          saveRL([item].concat(readingList));
-          setRlForm({title:"",url:"",type:"Article",ticker:"",notes:""});setRlAdd(false);
-          showToast("Added to reading list","info",2000)}
-        function cycleStatus(id){
-          var next=readingList.map(function(it){if(it.id!==id)return it;var s=it.status==="unread"?"reading":it.status==="reading"?"read":"unread";var readAt=s==="read"?new Date().toISOString().split("T")[0]:null;if(s==="read"){setRlTakeId(id);setRlTakeText(it.takeaways||"")}return Object.assign({},it,{status:s,readAt:readAt})});
-          saveRL(next)}
-        function saveTakeaways(id){
-          saveRL(readingList.map(function(it){return it.id!==id?it:Object.assign({},it,{takeaways:rlTakeText})}));
-          setRlTakeId(null);showToast("Takeaways saved","info",2000)}
-        function removeItem(id){saveRL(readingList.filter(function(it){return it.id!==id}))}
-        var counts={unread:readingList.filter(function(i){return i.status==="unread"}).length,reading:readingList.filter(function(i){return i.status==="reading"}).length,read:readingList.filter(function(i){return i.status==="read"}).length};
-        var shown=readingList.filter(function(i){return i.status===rlFilter});
-        var tickers=cos.map(function(c){return c.ticker}).sort();
-        return<div>
-          {/* Header */}
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Reading List</div>
-              <div style={{fontSize:13,color:K.dim}}>{readingList.length} items · {counts.read} read · {counts.unread} to read</div>
-            </div>
-            <button onClick={function(){setRlAdd(!rlAdd)}} style={Object.assign({},S.btnP,{padding:"8px 16px",fontSize:13})}>{rlAdd?"Cancel":"+ Add"}</button>
-          </div>
-          {/* Add form */}
-          {rlAdd&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:12,padding:"20px 22px",marginBottom:20}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px 16px",marginBottom:12}}>
-              <div style={{gridColumn:"1/-1"}}>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Title *</div>
-                <input value={rlForm.title} onChange={function(e){setRlF("title",e.target.value)}} placeholder="e.g. The Outsiders — Thorndike" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:14,fontFamily:fb,outline:"none"}}/>
-              </div>
-              <div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>URL (optional)</div>
-                <input value={rlForm.url} onChange={function(e){setRlF("url",e.target.value)}} placeholder="https://..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:14,fontFamily:fb,outline:"none"}}/>
-              </div>
-              <div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Type</div>
-                <select value={rlForm.type} onChange={function(e){setRlF("type",e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:14,fontFamily:fb,outline:"none"}}>
-                  {RL_TYPES.map(function(t){return<option key={t} value={t}>{t}</option>})}
-                </select>
-              </div>
-              <div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Company (optional)</div>
-                <select value={rlForm.ticker} onChange={function(e){setRlF("ticker",e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:14,fontFamily:fb,outline:"none"}}>
-                  <option value="">— General —</option>
-                  {tickers.map(function(t){return<option key={t} value={t}>{t}</option>})}
-                </select>
-              </div>
-              <div style={{gridColumn:"1/-1"}}>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Notes (optional)</div>
-                <input value={rlForm.notes} onChange={function(e){setRlF("notes",e.target.value)}} placeholder="Why add this? What do you want to get out of it?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"9px 12px",fontSize:14,fontFamily:fb,outline:"none"}}/>
-              </div>
-            </div>
-            <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
-              <button onClick={function(){setRlAdd(false)}} style={S.btn}>Cancel</button>
-              <button onClick={addItem} style={Object.assign({},S.btnP,{opacity:rlForm.title.trim()?1:.4})}>Add to list</button>
-            </div>
-          </div>}
-          {/* Filter pills */}
-          <div style={{display:"flex",gap:8,marginBottom:16}}>
-            {[{k:"unread",l:"To Read"},{k:"reading",l:"In Progress"},{k:"read",l:"Done"}].map(function(f){return<button key={f.k} onClick={function(){setRlFilter(f.k)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(rlFilter===f.k?K.acc+"50":K.bdr),background:rlFilter===f.k?K.acc+"15":"transparent",color:rlFilter===f.k?K.acc:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:rlFilter===f.k?700:400}}>
-              {f.l} {counts[f.k]>0&&<span style={{fontSize:11,opacity:.7}}>({counts[f.k]})</span>}
-            </button>})}
-          </div>
-          {/* Takeaways prompt */}
-          {rlTakeId&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:12,padding:"16px 20px",marginBottom:16}}>
-            <div style={{fontSize:13,fontWeight:600,color:K.grn,marginBottom:8}}>🎉 Finished! What were your key takeaways?</div>
-            <textarea value={rlTakeText} onChange={function(e){setRlTakeText(e.target.value)}} placeholder="Write 2-3 key lessons, ideas, or things to revisit..." rows={3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
-            <div style={{display:"flex",gap:8,marginTop:8,justifyContent:"flex-end"}}>
-              <button onClick={function(){setRlTakeId(null)}} style={Object.assign({},S.btn,{fontSize:12})}>Skip</button>
-              <button onClick={function(){saveTakeaways(rlTakeId)}} style={Object.assign({},S.btnP,{fontSize:12})}>Save takeaways</button>
-            </div>
-          </div>}
-          {/* Empty state */}
-          {shown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"40px 24px",textAlign:"center"}}>
-            <div style={{fontSize:24,marginBottom:12}}>{rlFilter==="unread"?"📚":rlFilter==="reading"?"📖":"✅"}</div>
-            <div style={{fontSize:14,color:K.dim}}>{rlFilter==="unread"?"Nothing queued up yet. Add books, articles, or letters to track what you want to read.":rlFilter==="reading"?"Nothing in progress. Click the status badge on an item to start reading.":"Nothing finished yet. Keep going."}</div>
-          </div>}
-          {/* Items */}
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {shown.map(function(item){
-              var typeColor=RL_TYPE_COLORS[item.type]||K.dim;
-              var co=item.ticker?cos.find(function(c){return c.ticker===item.ticker}):null;
-              var statusNext=item.status==="unread"?"reading":item.status==="reading"?"read":"unread";
-              var statusLabel=item.status==="unread"?"To Read":item.status==="reading"?"Reading":"Done";
-              var statusColor=item.status==="read"?K.grn:item.status==="reading"?K.acc:K.dim;
-              return<div key={item.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
-                      <span style={{fontSize:11,fontWeight:700,color:typeColor,background:typeColor+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,flexShrink:0}}>{item.type}</span>
-                      {co&&<span style={{display:"flex",alignItems:"center",gap:4}}><CoLogo domain={co.domain} ticker={co.ticker} size={14}/><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.ticker}</span></span>}
-                      {item.readAt&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Read {item.readAt}</span>}
-                      {!item.readAt&&item.addedAt&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Added {item.addedAt}</span>}
-                    </div>
-                    {item.url
-                      ?<a href={item.url} target="_blank" rel="noopener noreferrer" style={{fontSize:14,fontWeight:600,color:K.txt,textDecoration:"none",display:"block",marginBottom:item.notes||item.takeaways?6:0}} onMouseEnter={function(e){e.target.style.color=K.acc}} onMouseLeave={function(e){e.target.style.color=K.txt}}>{item.title} ↗</a>
-                      :<div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:item.notes||item.takeaways?6:0}}>{item.title}</div>}
-                    {item.notes&&<div style={{fontSize:13,color:K.dim,lineHeight:1.5,marginBottom:item.takeaways?8:0}}>{item.notes}</div>}
-                    {item.takeaways&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"10px 14px",marginTop:6}}>
-                      <div style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:700,letterSpacing:.5,marginBottom:5}}>KEY TAKEAWAYS</div>
-                      <div style={{fontSize:13,color:K.mid,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{item.takeaways}</div>
-                    </div>}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
-                    <button onClick={function(){cycleStatus(item.id)}} style={{background:statusColor+"12",border:"1px solid "+statusColor+"35",borderRadius:6,padding:"5px 10px",fontSize:11,color:statusColor,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>{statusLabel} →</button>
-                    <button onClick={function(){removeItem(item.id)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"5px 10px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}>Remove</button>
-                  </div>
-                </div>
-              </div>})}
-          </div>
-        </div>
-      })()}
-
-      {ht==="goals"&&<div>
-        {!isPro&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:32,marginBottom:16}}>{String.fromCodePoint(0x1F4CA)}</div>
-          <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>Performance & Goals</div>
-          <div style={{fontSize:14,color:K.mid,lineHeight:1.7,maxWidth:420,margin:"0 auto 24px"}}>See your expected portfolio CAGR, probability analysis, scenario modeling, and per-holding return attribution.</div>
-          <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("goals")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Upgrade to Unlock</button>
-        </div>}
-        {isPro&&<div>{/* Disclaimer */}
-        <div style={{background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
-          <div style={{fontSize:12,color:K.amb,lineHeight:1.6}}>This is a reasoning framework based on historical fundamentals and current valuations, not a forecast. Past performance does not predict future results. Not financial advice. Verify all assumptions independently.</div></div>
-        {/* Goal Setting */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
-          <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:12}}>Your Portfolio Goal</div>
-          <div style={{display:"flex",gap:16,alignItems:"flex-end"}}>
-            <div><div style={{fontSize:11,color:K.dim,marginBottom:4,fontFamily:fm}}>Target Annual CAGR</div>
-              <div style={{display:"flex",alignItems:"center",gap:4}}><input type="number" defaultValue={goals.targetCAGR} onBlur={function(e){var v=parseFloat(e.target.value);if(!isNaN(v)&&v>0)saveGoals(Object.assign({},goals,{targetCAGR:v}))}} onKeyDown={function(e){if(e.key==="Enter"){e.target.blur()}}} style={{width:80,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:16,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/><span style={{fontSize:14,color:K.dim,fontFamily:fm}}>%</span></div></div>
-            <div><div style={{fontSize:11,color:K.dim,marginBottom:4,fontFamily:fm}}>Time Horizon</div>
-              <div style={{display:"flex",gap:4}}>{[5,10,15,20].map(function(y){return<button key={y} onClick={function(){saveGoals(Object.assign({},goals,{horizon:y}))}} style={{padding:"8px 14px",borderRadius:6,border:"1px solid "+(goals.horizon===y?K.acc:K.bdr),background:goals.horizon===y?K.acc+"15":"transparent",color:goals.horizon===y?K.acc:K.mid,fontSize:13,fontWeight:goals.horizon===y?700:400,cursor:"pointer",fontFamily:fm}}>{y}y</button>})}</div></div></div></div>
-        </div>}
-        {/* Compute portfolio expected returns */}
-        {isPro&&(function(){
-          var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
-          if(held.length===0)return<div style={{textAlign:"center",padding:"40px",color:K.dim}}>Add holdings with position data to see projections</div>;
-          var totalVal=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
-          // Per-holding expected return — Compounding TSR Model
-          var holdingReturns=held.map(function(c2){
-            var p2=c2.position;var weight=p2.shares*p2.currentPrice/totalVal;
-            var fs=c2.financialSnapshot||{};
-            function pv(f2){if(!fs[f2])return 0;if(fs[f2].numVal!=null)return fs[f2].numVal;var v2=fs[f2].value;if(typeof v2==="number")return v2;if(typeof v2==="string")return parseFloat(v2.replace(/[^\d.\-]/g,""))||0;return 0}
-            // ── 1. EARNINGS GROWTH ──
-            var rawGrowth=0;var egSource="";
-            var snapGrowth=pv("revGrowth")||pv("epsGrowth");
-            var kpiGrowth=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth"||k.metricId==="orgGrowth")&&k.value>0});
-            var kpiActual=c2.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
-            if(snapGrowth&&snapGrowth!==0){rawGrowth=snapGrowth;egSource="historical"}
-            else if(kpiActual){rawGrowth=kpiActual.lastResult.actual;egSource="kpi result"}
-            else if(kpiGrowth){rawGrowth=kpiGrowth.value;egSource="kpi target"}
-            else{var styleEst={growth:18,aggressive:22,quality:12,value:8,income:6,contrarian:10,compounder:14,speculative:25,turnaround:15,dividend:5};rawGrowth=styleEst[c2.investStyle]||10;egSource="estimate"}
-            // Market cap mean reversion
-            var mc=c2.mktCap||0;
-            var baseRate=mc>500e9?9:mc>100e9?11:mc>50e9?13:mc>10e9?15:mc>1e9?17:20;
-            var capGrowth=mc>500e9?15:mc>100e9?20:mc>50e9?25:mc>10e9?35:mc>1e9?45:60;
-            rawGrowth=Math.min(rawGrowth,capGrowth);
-            var bw=mc>500e9?0.55:mc>100e9?0.4:mc>50e9?0.3:mc>10e9?0.2:0.1;
-            rawGrowth=rawGrowth*(1-bw)+baseRate*bw;
-            if(rawGrowth>baseRate){var decay=mc>500e9?0.08:mc>100e9?0.06:0.04;rawGrowth=baseRate+(rawGrowth-baseRate)*Math.pow(1-decay,goals.horizon/2)}
-            // ── QUALITY HAIRCUT (multiplicative) ──
-            var roic=pv("roic")||pv("roe")||0;
-            var qualityScore=roic>25?1.15:roic>20?1.1:roic>15?1.0:roic>10?0.9:roic>5?0.75:0.6;
-            var gm=pv("grossMargin");if(gm>60)qualityScore=Math.min(1.2,qualityScore+0.05);
-            var nm=pv("netMargin");if(nm>20)qualityScore=Math.min(1.2,qualityScore+0.03);
-            if(!roic&&!gm)qualityScore=0.85;// no data = haircut
-            var eg=rawGrowth*qualityScore;
-            // ── 2. MULTIPLE FADE (terminal PE) ──
-            var pe=pv("pe");
-            // Terminal growth in Year 10 decays toward base rate
-            var terminalGrowth=baseRate+(eg-baseRate)*Math.pow(0.92,goals.horizon);
-            var terminalPE=terminalGrowth>20?28:terminalGrowth>15?25:terminalGrowth>10?20:terminalGrowth>5?16:terminalGrowth>0?13:10;
-            var multChange=0;
-            if(pe>0&&pe<200){multChange=(Math.pow(terminalPE/pe,1/goals.horizon)-1)*100;multChange=Math.max(-15,Math.min(10,multChange))}
-            // ── 3. SHAREHOLDER YIELD ──
-            // Dividends
-            var dy=0;var dySnap=fs.divYield;if(dySnap&&dySnap.numVal)dy=dySnap.numVal;
-            else dy=pv("divYield")||(c2.divYield||0)||(c2.lastDiv>0&&p2.currentPrice>0?(c2.lastDiv*4/p2.currentPrice*100):0);
-            dy=Math.min(dy,12);
-            // Buybacks boost EPS growth (not additive)
-            var buybackYield=0;
-            var bbSnap=fs.buybackYield;if(bbSnap&&bbSnap.numVal)buybackYield=Math.min(bbSnap.numVal,8);
-            if(!buybackYield){var bbKpi=c2.kpis.find(function(k){return(k.metricId==="buybackYield"||k.metricId==="shareholderYield")&&k.lastResult});
-              if(bbKpi)buybackYield=Math.min(bbKpi.lastResult.actual||0,8)}
-            if(!buybackYield&&c2.financialStatements){var cfs=c2.financialStatements;
-              if(cfs&&cfs.cashflow&&cfs.cashflow.length>0){var latest=cfs.cashflow[0];var repurch=Math.abs(latest.commonStockRepurchased||0);
-                if(repurch>0&&c2.mktCap>0)buybackYield=Math.min(repurch/c2.mktCap*100,8)}}
-            // ── MULTIPLICATIVE TSR ──
-            // TSR = (1+EPS_growth+Buyback_boost) * (1+Multiple_change) + Dividend_yield - 1
-            var epsGrowthPlusBuyback=eg/100+buybackYield/100;
-            var multFactor=1+multChange/100;
-            var expectedReturn=((1+epsGrowthPlusBuyback)*multFactor-1)*100+dy;
-            // ── REQUIRED GROWTH reverse-engineer ──
-            var reqGrowth=0;
-            if(pe>0){var targetMult=1+goals.targetCAGR/100;var multContrib=Math.pow(terminalPE/pe,1/goals.horizon);
-              var neededFromGrowth=targetMult/multContrib-1-dy/100;reqGrowth=Math.max(0,neededFromGrowth*100)}
-            // Predictability
-            var pred=30;
-            if(gm>60)pred+=6;else if(gm>40)pred+=3;
-            if(roic>20)pred+=6;else if(roic>12)pred+=3;
-            var de=pv("debtEquity")||999;if(de<0.5)pred+=5;else if(de<1.5)pred+=2;else if(de>3)pred-=10;
-            if(nm>20)pred+=3;else if(nm>10)pred+=1;
-            if(c2.investStyle==="quality"||c2.investStyle==="compounder")pred+=5;
-            if(c2.investStyle==="speculative"||c2.investStyle==="aggressive")pred-=15;
-            if(c2.conviction>=8)pred+=3;if(c2.conviction>=5)pred+=2;
-            if(egSource==="historical")pred+=5;else if(egSource==="kpi result")pred+=4;else if(egSource==="kpi target")pred+=2;
-            if((c2.earningsHistory||[]).length>=3)pred+=4;else if((c2.earningsHistory||[]).length>=1)pred+=2;
-            if(mc<10e9&&eg>20)pred-=8;
-            pred=Math.max(10,Math.min(75,pred));
-            return{ticker:c2.ticker,id:c2.id,weight:weight*100,eg:eg,rawGrowth:rawGrowth,qualityScore:qualityScore,dy:dy,buyback:buybackYield,multChange:multChange,expected:expectedReturn,predictability:pred,pe:pe,terminalPE:terminalPE,reqGrowth:reqGrowth,domain:c2.domain,egSource:egSource}});
-          // Portfolio weighted expected CAGR
-          var portCAGR=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.expected},0);
-          var portPred=holdingReturns.reduce(function(s2,h2){return s2+h2.weight/100*h2.predictability},0);
-          // Range based on predictability — wider spreads for realism
-          var uncertainty=(100-portPred)/100;
-          var spread=Math.max(portCAGR*0.4,6)*uncertainty+4;// wider base spread
-          var lowCAGR=portCAGR-spread*1.4;var highCAGR=portCAGR+spread*0.7;// asymmetric — more downside
-          // Probability using cumulative normal approximation
-          var diff=portCAGR-goals.targetCAGR;var sigma=spread*0.9||1;
-          var t2=diff/sigma;
-          // Approximation of normal CDF
-          var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
-          // No artificial floors — let the math speak
-          // Portfolio character — unified with morning brief classification
-          var portClass2=classifyPortfolio(portfolio);
-          var character=portClass2.summary||portClass2.label;
-          var characterColor=portClass2.color;
-          // Sort by contribution
-          holdingReturns.sort(function(a,b){return(b.weight/100*b.expected)-(a.weight/100*a.expected)});
-          return<div>
-            {/* Main projection card */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
-              <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Expected Portfolio CAGR</div>
-                  <div style={{fontSize:36,fontWeight:800,color:portCAGR>=goals.targetCAGR?K.grn:K.amb,fontFamily:fm}}>{portCAGR>=0?"+":""}{portCAGR.toFixed(1)}%</div>
-                  <div style={{fontSize:13,color:K.dim,marginTop:4}}>Range: {lowCAGR.toFixed(1)}% to {highCAGR.toFixed(1)}%</div></div>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Probability of {goals.targetCAGR}%+</div>
-                  <div style={{position:"relative",width:80,height:80,margin:"0 auto"}}>
-                    <svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke={K.bdr} strokeWidth="6"/><circle cx="40" cy="40" r="34" fill="none" stroke={prob>=60?K.grn:prob>=40?K.amb:K.red} strokeWidth="6" strokeDasharray={Math.round(prob/100*214)+" 214"} strokeLinecap="round" transform="rotate(-90 40 40)"/></svg>
-                    <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:prob>=60?K.grn:prob>=40?K.amb:K.red,fontFamily:fm}}>{prob}%</div></div></div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Portfolio Character</div>
-                  <div style={{fontSize:13,fontWeight:500,color:characterColor,fontStyle:"italic",textAlign:"right",maxWidth:200,lineHeight:1.5}}>{character}</div>
-                  <div style={{fontSize:11,color:K.dim,marginTop:6}}>Predictability: {portPred.toFixed(0)}/100</div></div></div>
-              {/* Bell curve visualization */}
-              <div style={{marginBottom:16}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Expected Outcome Distribution</div>
-                <svg width="100%" viewBox="0 0 500 130" style={{display:"block"}}>
-                  {/* Bell curve */}
-                  {(function(){var pts=[];var sigma=0.15+(1-portPred/100)*0.12;var peakY=1/(sigma*Math.sqrt(2*Math.PI));for(var i=0;i<=100;i++){var x=i/100;var mu=0.5;var y=Math.exp(-0.5*Math.pow((x-mu)/sigma,2))/(sigma*Math.sqrt(2*Math.PI));pts.push({x:30+x*440,y:110-y/peakY*90})}
-                    var path="M"+pts.map(function(p){return p.x.toFixed(1)+","+p.y.toFixed(1)}).join(" L");
-                    var fill=path+" L470,110 L30,110 Z";
-                    // Map CAGR values to x positions
-                    var cagrMin=lowCAGR-spread;var cagrMax=highCAGR+spread;var range2=cagrMax-cagrMin||1;
-                    var targetX=30+Math.max(0,Math.min(1,(goals.targetCAGR-cagrMin)/range2))*440;
-                    var expectedX=30+Math.max(0,Math.min(1,(portCAGR-cagrMin)/range2))*440;
-                    return<g><path d={fill} fill={K.acc+"15"} stroke="none"/><path d={path} fill="none" stroke={K.acc} strokeWidth="2"/>
-                      <line x1={targetX} y1="10" x2={targetX} y2="110" stroke={K.amb} strokeWidth="1.5" strokeDasharray="4 3"/>
-                      <text x={targetX} y="8" fill={K.amb} fontSize="9" fontFamily={fm} textAnchor="middle">Target {goals.targetCAGR}%</text>
-                      <line x1={expectedX} y1="15" x2={expectedX} y2="110" stroke={K.grn} strokeWidth="2"/>
-                      <text x={expectedX} y="8" fill={K.grn} fontSize="9" fontFamily={fm} textAnchor="middle">Expected {portCAGR.toFixed(1)}%</text>
-                      <text x="30" y="125" fill={K.dim} fontSize="8" fontFamily={fm}>{cagrMin.toFixed(0)}%</text>
-                      <text x="470" y="125" fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="end">{cagrMax.toFixed(0)}%</text></g>})()}
-                </svg></div>
-              {/* Goal comparison */}
-              <div style={{padding:"12px 16px",borderRadius:8,background:portCAGR>=goals.targetCAGR?K.grn+"08":K.amb+"08",border:"1px solid "+(portCAGR>=goals.targetCAGR?K.grn:K.amb)+"20"}}>
-                <div style={{fontSize:13,fontWeight:600,color:portCAGR>=goals.targetCAGR?K.grn:K.amb}}>{portCAGR>=goals.targetCAGR?"Your portfolio is on track to meet your "+goals.targetCAGR+"% target":"Your portfolio's expected "+portCAGR.toFixed(1)+"% is below your "+goals.targetCAGR+"% target"}</div>
-                <div style={{fontSize:12,color:K.mid,marginTop:4}}>{portCAGR>=goals.targetCAGR?"Based on current fundamentals, there's a "+prob+"% probability of achieving "+goals.targetCAGR+"%+ over "+goals.horizon+" years.":"Consider whether your target is realistic given current holdings, or whether portfolio changes could improve the outlook."}</div></div></div>
-            {/* Per-holding breakdown */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Return Attribution by Holding</div>
-              <div style={{fontSize:10,display:"flex",color:K.dim,fontFamily:fm,padding:"6px 0",borderBottom:"2px solid "+K.bdr,marginBottom:4,gap:0}}>
-                <span style={{width:36}}/>
-                <span style={{flex:1}}>Company</span>
-                <span style={{width:50,textAlign:"right"}}>Weight</span>
-                <span style={{width:55,textAlign:"right"}}>Growth</span>
-                <span style={{width:40,textAlign:"right"}}>Qual</span>
-                <span style={{width:50,textAlign:"right"}}>Yield</span>
-                <span style={{width:55,textAlign:"right"}}>PE Fade</span>
-                <span style={{width:65,textAlign:"right"}}>TSR</span>
-                <span style={{width:55,textAlign:"right"}}>Needed</span></div>
-              {holdingReturns.map(function(h2){var contrib=h2.weight/100*h2.expected;
-                return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"8px 0",borderBottom:"1px solid "+K.bdr+"40",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
-                  <span style={{width:36}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={20}/></span>
-                  <span style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
-                  <span style={{width:50,textAlign:"right",fontSize:11,color:K.dim,fontFamily:fm}}>{h2.weight.toFixed(1)}%</span>
-                  <span style={{width:55,textAlign:"right",fontSize:11,color:h2.eg>=10?K.grn:K.txt,fontFamily:fm}}>{h2.eg>=0?"+":""}{h2.eg.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{h2.egSource}</div></span>
-                  <span style={{width:40,textAlign:"right",fontSize:11,color:h2.qualityScore>=1.0?K.grn:h2.qualityScore>=0.8?K.txt:K.red,fontFamily:fm}}>{h2.qualityScore.toFixed(2)}x</span>
-                  <span style={{width:50,textAlign:"right",fontSize:11,color:h2.dy>0||h2.buyback>0?K.grn:K.dim,fontFamily:fm}}>{(h2.dy+h2.buyback)>0?"+"+(h2.dy+h2.buyback).toFixed(1)+"%":"--"}</span>
-                  <span style={{width:55,textAlign:"right",fontSize:11,fontFamily:fm}}>{h2.pe>0?<span style={{color:h2.multChange>=0?K.grn:K.red}}>{h2.multChange>=0?"+":""}{h2.multChange.toFixed(1)}%<div style={{fontSize:7,color:K.dim}}>{Math.round(h2.pe)}{"→"}{h2.terminalPE}</div></span>:<span style={{color:K.dim}}>--</span>}</span>
-                  <span style={{width:65,textAlign:"right",fontSize:12,fontWeight:600,color:h2.expected>=goals.targetCAGR?K.grn:h2.expected>=0?K.amb:K.red,fontFamily:fm}}>{h2.expected>=0?"+":""}{h2.expected.toFixed(1)}%</span>
-                  <span style={{width:55,textAlign:"right",fontSize:11,color:h2.reqGrowth>30?K.red:h2.reqGrowth>15?K.amb:K.grn,fontFamily:fm}}>{h2.pe>0?h2.reqGrowth.toFixed(0)+"%":"--"}</span></div>})}
-              {/* Math explanation */}
-              <div style={{marginTop:12,padding:"10px 12px",background:K.bg,borderRadius:6}}>
-                <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>Compounding TSR Model</div>
-                <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>TSR = (1 + EPS Growth + Buyback Yield) × (1 + Multiple Change) + Dividend Yield - 1. Growth is adjusted by a Quality Score (ROIC, margins) — high-quality companies earn full credit, low-ROIC companies get haircut. Multiple Change uses terminal P/E based on Year 10 growth rate (growth decays toward market base rate). "Needed" shows the organic growth required to hit your target CAGR given current valuation — red means the target is likely unrealistic.</div></div></div>
-            {/* What-if scenarios */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:14}}>Scenario Analysis</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                {[{label:"Bull Case",desc:"Growth accelerates 20%",factor:1.2,color:K.grn},{label:"Base Case",desc:"Current trajectory continues",factor:1.0,color:K.acc},{label:"Slowdown",desc:"Growth halves from here",factor:0.5,color:K.amb},{label:"Bear Case",desc:"Growth stalls, margins compress",factor:0.2,color:K.red}].map(function(sc){
-                  var scCAGR=holdingReturns.reduce(function(s2,h2){var adjG=h2.eg*sc.factor/100+h2.buyback/100;var mf=1+h2.multChange/100*(sc.factor>0.5?1:0.5);return s2+h2.weight/100*(((1+adjG)*mf-1)*100+h2.dy)},0);
-                  return<div key={sc.label} style={{padding:"12px 14px",borderRadius:8,background:K.bg,border:"1px solid "+K.bdr}}>
-                    <div style={{fontSize:12,fontWeight:600,color:sc.color}}>{sc.label}</div>
-                    <div style={{fontSize:11,color:K.dim,marginTop:2}}>{sc.desc}</div>
-                    <div style={{fontSize:18,fontWeight:700,color:scCAGR>=goals.targetCAGR?K.grn:scCAGR>=0?K.amb:K.red,fontFamily:fm,marginTop:6}}>{scCAGR>=0?"+":""}{scCAGR.toFixed(1)}%</div></div>})}</div></div>
-          </div>})()}
-      </div>}
-
-      {ht==="guide"&&<div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:20}}>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>The Owner's Mindset</div>
-          <div style={{fontSize:14,color:K.mid,lineHeight:1.8,marginBottom:16}}>Your Owner's Score (0-100) reflects how well you understand your holdings. It measures 6 things: thesis quality, KPI tracking, decision journaling, conviction hygiene, moat analysis, and portfolio balance. The score decays if you neglect your holdings — because understanding fades without maintenance.</div>
-          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-            {[{icon:"lightbulb",color:K.acc,title:"Thesis Quality",desc:"Write a thesis with 4 sections: why you own it, competitive moat, key risks, and sell criteria. Version it over time. Keep it fresh — stale theses lose points."},
-              {icon:"target",color:K.blue,title:"KPI Discipline",desc:"Track 2+ KPIs per holding (revenue growth, margins, ROIC, etc). Check earnings when they drop. Build a track record of measured results."},
-              {icon:"book",color:K.grn,title:"Journal Consistency",desc:"Log every BUY, SELL, ADD, TRIM with written reasoning. Tag outcomes later (right/wrong/mixed). This is how you learn from mistakes."},
-              {icon:"trending",color:K.amb,title:"Conviction Hygiene",desc:"Rate conviction 1–10 for each position. Update quarterly. Run bias checks (confirmation, anchoring, FOMO, sunk cost). Track how conviction evolves."},
-              {icon:"castle",color:"#9333EA",title:"Moat Vigilance",desc:"Classify moat types (brand, switching costs, network effects, etc). Add Morningstar's rating for reference. Track whether the moat is strengthening or eroding."},
-              {icon:"bar",color:K.mid,title:"Portfolio Balance",desc:"Diversify across 3+ holdings, keep sector concentration below 40%, and use 2+ investment styles. This isn't about returns — it's about thoughtful construction."}
-            ].map(function(item){return<div key={item.title} style={{padding:"14px 16px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}><IC name={item.icon} size={14} color={item.color}/>
-                <span style={{fontSize:13,fontWeight:600,color:item.color,fontFamily:fm}}>{item.title}</span></div>
-              <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>{item.desc}</div></div>})}
-          </div>
-        </div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px"}}>
-          <div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh,marginBottom:12}}>Process Level System</div>
-          <div style={{fontSize:14,color:K.mid,lineHeight:1.8,marginBottom:16}}>Every action builds your process score — writing theses, tracking KPIs, rating conviction, completing weekly reviews. Show up consistently and watch your score grow.</div>
-          <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",background:K.acc+"08",border:"1px solid "+K.acc+"30",borderRadius:10,marginBottom:12}}>
-            <div style={{fontSize:28,fontWeight:800,color:K.acc,fontFamily:fm}}>{currentLevel.icon+" "+currentLevel.name}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,color:K.mid,marginBottom:4}}>{weeklyReviews.length} reviews completed</div>
-              <div style={{height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:xpPct+"%",borderRadius:3,background:K.acc}}/></div></div></div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[{label:"Write thesis",xp:"",sub:"(+20 if all 4 sections)"},{label:"Add KPI",xp:"Research saved",sub:""},{label:"Rate conviction",xp:"Action logged",sub:""},{label:"Weekly review",xp:"",sub:"(biggest reward)"}].map(function(r){return<div key={r.label} style={{padding:"8px 12px",background:K.bg,borderRadius:6}}>
-              <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:12,color:K.mid}}>{r.label}</span><span style={{fontSize:12,fontWeight:600,color:K.grn,fontFamily:fm}}>{r.xp}</span></div>
-              {r.sub&&<div style={{fontSize:10,color:K.dim}}>{r.sub}</div>}</div>})}</div>
-        </div>
-      </div>}
-    </div>}
-
-
-  // ── Portfolio Analytics ─────────────────────────────────
-
-
-
-  // ── All Assets — Net Worth Tracker ──────────────────────
-  function AllAssets(){
-    var _addOpen=useState(false),addOpen=_addOpen[0],setAddOpen=_addOpen[1];
-    var _editId=useState(null),editId=_editId[0],setEditId=_editId[1];
-    var _form=useState({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""}),form=_form[0],setForm=_form[1];
-    var _hovIdx=useState(null),hovIdx=_hovIdx[0],setHovIdx=_hovIdx[1];
-    var _chartRange=useState("ALL"),chartRange=_chartRange[0],setChartRange=_chartRange[1];
-
-    var positions=assets.positions||[];
-    var snapshots=(assets.snapshots||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date)});
-
-    // Compute stock portfolio value from ThesisAlpha holdings
-    var stockValue=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&c.position&&c.position.shares>0&&c.position.currentPrice>0}).reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
-
-    // Total value per class
-    var classTotals={};positions.forEach(function(p){if(!classTotals[p.classId])classTotals[p.classId]=0;classTotals[p.classId]+=p.value||0});
-    // Auto-include stock portfolio if user hasn't manually added stocks
-    var hasManualStocks=positions.some(function(p){return p.classId==="stocks"});
-    if(!hasManualStocks&&stockValue>0){classTotals["stocks"]=(classTotals["stocks"]||0)+stockValue}
-    var totalValue=Object.values(classTotals).reduce(function(s,v){return s+v},0);
-
-    // Allocation data for pie chart
-    var allocData=ASSET_CLASSES.filter(function(ac){return classTotals[ac.id]>0}).map(function(ac){return{id:ac.id,label:ac.label,value:classTotals[ac.id],color:ac.color,pct:totalValue>0?classTotals[ac.id]/totalValue*100:0}}).sort(function(a,b){return b.value-a.value});
-
-    // Auto-snapshot: once per month
-    useEffect(function(){if(positions.length===0&&stockValue===0)return;
-      var today=new Date().toISOString().split("T")[0].substring(0,7);
-      var lastSnap=snapshots.length>0?snapshots[snapshots.length-1]:null;
-      if(!lastSnap||lastSnap.date.substring(0,7)!==today){
-        var snap={date:new Date().toISOString().split("T")[0],values:Object.assign({},classTotals),total:totalValue};
-        saveAssets(function(prev){return Object.assign({},prev,{snapshots:(prev.snapshots||[]).concat([snap]).slice(-120)})})}},[positions.length,totalValue]);
-
-    // Build stacked chart data
-    var chartData=snapshots.slice();
-    // Add current point
-    if(totalValue>0){var today2=new Date().toISOString().split("T")[0];
-      if(!chartData.length||chartData[chartData.length-1].date!==today2){chartData.push({date:today2,values:Object.assign({},classTotals),total:totalValue})}}
-    // Filter by range
-    if(chartRange!=="ALL"&&chartData.length>0){
-      var cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-({M3:3,M6:6,Y1:12,Y2:24,Y5:60}[chartRange]||1200));
-      var cutStr=cutoff.toISOString().split("T")[0];chartData=chartData.filter(function(d){return d.date>=cutStr})}
-
-    // Get unique class IDs across all snapshots
-    var chartClasses=[];var seenClasses={};chartData.forEach(function(d){Object.keys(d.values||{}).forEach(function(k){if(!seenClasses[k]){seenClasses[k]=true;chartClasses.push(k)}})});
-    chartClasses=ASSET_CLASSES.filter(function(ac){return seenClasses[ac.id]});
-
-    // SVG stacked area chart — responsive width
-    var cW=isMobile?320:700,cH=isMobile?200:260,padL=50,padR=12,padT=16,padB=28;
-    var plotW=cW-padL-padR,plotH=cH-padT-padB;
-    var maxTotal=Math.max.apply(null,chartData.map(function(d){return d.total||0}).concat([1]));
-
-    function cx(i){return padL+(chartData.length>1?i/(chartData.length-1)*plotW:plotW/2)}
-    function cy(v){return padT+plotH-Math.min(v/maxTotal,1)*plotH}
-
-    // Build stacked paths
-    var stackedPaths=[];
-    if(chartData.length>=2){
-      // Build cumulative layers
-      chartClasses.forEach(function(ac,li){
-        var pts=chartData.map(function(d,di){
-          var below=0;for(var bi=0;bi<li;bi++){below+=(d.values||{})[chartClasses[bi].id]||0}
-          var val=below+((d.values||{})[ac.id]||0);
-          return{x:cx(di),yTop:cy(val),yBot:cy(below)}});
-        var topLine=pts.map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.yTop.toFixed(1)}).join(" ");
-        var botLine=pts.slice().reverse().map(function(p,i){return(i===0?"M":"L")+p.x.toFixed(1)+","+p.yBot.toFixed(1)}).join(" ");
-        var areaPath=topLine+" "+botLine.replace("M","L")+" Z";
-        stackedPaths.push({path:areaPath,color:ac.color,label:ac.label,id:ac.id})})}
-
-    // Y axis labels
-    var yLabels=[];for(var yi=0;yi<=4;yi++){var yv=maxTotal*yi/4;yLabels.push({v:yv,y:cy(yv),label:yv>=1e6?(yv/1e6).toFixed(1)+"M":yv>=1e3?Math.round(yv/1e3)+"k":""+Math.round(yv)})}
-    // X axis labels
-    var xLabels=[];if(chartData.length>0){var step2=Math.max(1,Math.floor(chartData.length/6));
-      for(var xi=0;xi<chartData.length;xi+=step2){xLabels.push({x:cx(xi),label:chartData[xi].date.substring(0,7)})}}
-
-    // Hovered point data
-    var hovData=hovIdx!==null&&chartData[hovIdx]?chartData[hovIdx]:null;
-
-    // Donut/Pie chart SVG
-    function PieChart(){
-      var r=80,cx2=90,cy2=90,thick=28;
-      var total2=allocData.reduce(function(s,d){return s+d.value},0);
-      var angle=0;
-      var arcs=allocData.map(function(d){
-        var sweep=total2>0?d.value/total2*Math.PI*2:0;
-        var startA=angle;angle+=sweep;
-        var midR=r-thick/2;
-        var x1=cx2+r*Math.cos(startA-Math.PI/2);var y1=cy2+r*Math.sin(startA-Math.PI/2);
-        var x2=cx2+r*Math.cos(startA+sweep-Math.PI/2);var y2=cy2+r*Math.sin(startA+sweep-Math.PI/2);
-        var ix1=cx2+(r-thick)*Math.cos(startA-Math.PI/2);var iy1=cy2+(r-thick)*Math.sin(startA-Math.PI/2);
-        var ix2=cx2+(r-thick)*Math.cos(startA+sweep-Math.PI/2);var iy2=cy2+(r-thick)*Math.sin(startA+sweep-Math.PI/2);
-        var large=sweep>Math.PI?1:0;
-        if(sweep<0.01)return null;
-        var path="M"+x1.toFixed(1)+","+y1.toFixed(1)+" A"+r+","+r+" 0 "+large+" 1 "+x2.toFixed(1)+","+y2.toFixed(1)+" L"+ix2.toFixed(1)+","+iy2.toFixed(1)+" A"+(r-thick)+","+(r-thick)+" 0 "+large+" 0 "+ix1.toFixed(1)+","+iy1.toFixed(1)+" Z";
-        return{path:path,color:d.color,label:d.label,pct:d.pct}}).filter(Boolean);
-
-      return<svg width={180} height={180} viewBox="0 0 180 180">
-        {arcs.map(function(a,i){return<path key={i} d={a.path} fill={a.color} opacity={0.85}><title>{a.label}: {a.pct.toFixed(1)}%</title></path>})}
-        <text x={cx2} y={cy2-6} textAnchor="middle" fill={K.txt} fontSize="14" fontWeight="700" fontFamily="JetBrains Mono">{totalValue>=1e6?(totalValue/1e6).toFixed(1)+"M":totalValue>=1e3?Math.round(totalValue/1e3)+"k":Math.round(totalValue)}</text>
-        <text x={cx2} y={cy2+10} textAnchor="middle" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">TOTAL</text>
-      </svg>}
-
-    function addPosition(){
-      if(!form.name.trim()||!form.value)return;
-      var newPos={id:Date.now(),classId:form.classId,name:form.name.trim(),value:parseFloat(form.value)||0,currency:form.currency||"USD",note:form.note,startDate:form.startDate||null,addedAt:new Date().toISOString()};
-      saveAssets(function(prev){
-        var newPositions=(prev.positions||[]).concat([newPos]);
-        var newSnaps=(prev.snapshots||[]).slice();
-        // If startDate provided, backfill monthly snapshots
-        if(form.startDate){
-          var start=new Date(form.startDate+"-01");var now=new Date();
-          var allPos=newPositions;
-          while(start<=now){
-            var mKey=start.toISOString().split("T")[0].substring(0,7)+"-01";
-            var exists=newSnaps.some(function(s){return s.date.substring(0,7)===mKey.substring(0,7)});
-            if(!exists){
-              var snapVals={};allPos.forEach(function(p2){
-                var pStart=p2.startDate?p2.startDate+"-01":p2.addedAt.substring(0,10);
-                if(mKey>=pStart){if(!snapVals[p2.classId])snapVals[p2.classId]=0;snapVals[p2.classId]+=p2.value||0}});
-              // Include auto stocks
-              var hasManual=allPos.some(function(p2){return p2.classId==="stocks"&&(!p2.startDate||mKey>=p2.startDate+"-01")});
-              if(!hasManual&&stockValue>0)snapVals["stocks"]=(snapVals["stocks"]||0)+stockValue;
-              var snapTotal=Object.values(snapVals).reduce(function(s,v){return s+v},0);
-              if(snapTotal>0)newSnaps.push({date:mKey,values:snapVals,total:snapTotal})}
-            start.setMonth(start.getMonth()+1)}}
-        newSnaps.sort(function(a,b){return a.date.localeCompare(b.date)});
-        return Object.assign({},prev,{positions:newPositions,snapshots:newSnaps.slice(-120)})});
-      setForm({classId:"stocks",name:"",value:"",currency:"USD",note:"",startDate:""});setAddOpen(false);
-      showToast("✓ Asset added","info",2000)}
-
-    function updatePosition(id,updates){
-      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).map(function(p){return p.id===id?Object.assign({},p,updates):p})})})}
-
-    function removePosition(id){
-      saveAssets(function(prev){return Object.assign({},prev,{positions:(prev.positions||[]).filter(function(p){return p.id!==id})})})}
-
-    function fmtVal(v){if(v>=1e6)return(v/1e6).toFixed(2)+"M";if(v>=1e3)return(v/1e3).toFixed(1)+"k";return Math.round(v).toLocaleString()}
-
-    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1000}}>
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}>
-        <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh}}>All Assets</h1>
-        <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>Your complete net worth — every asset class in one view</p></div>
-
-      {/* Summary Cards */}
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:isMobile?8:12,marginBottom:20}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>NET WORTH</div>
-          <div style={{fontSize:isMobile?17:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.1}}>{fmtVal(totalValue)}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:3}}>{positions.length+(stockValue>0&&!hasManualStocks?1:0)} positions</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>CLASSES</div>
-          <div style={{fontSize:isMobile?17:22,fontWeight:700,color:K.acc,fontFamily:fm,lineHeight:1.1}}>{allocData.length}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:3}}>diversified across</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>LARGEST</div>
-          <div style={{fontSize:isMobile?13:14,fontWeight:700,color:allocData[0]?allocData[0].color:K.dim,fontFamily:fm,lineHeight:1.2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{allocData[0]?allocData[0].label:"—"}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:3}}>{allocData[0]?allocData[0].pct.toFixed(1)+"%":"Add assets"}</div></div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 20px",minWidth:0}}>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:0.5,marginBottom:6}}>STOCKS</div>
-          <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.2}}>{stockValue>0?fmtVal(stockValue):"—"}</div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:3}}>{!hasManualStocks&&stockValue>0?"ThesisAlpha":"—"}</div></div>
-      </div>
-
-      {/* Stacked Chart + Pie */}
-      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 220px",gap:20,marginBottom:24}}>
-        {/* Stacked Area Chart */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:isMobile?"flex-start":"center",marginBottom:14,flexDirection:isMobile?"column":"row",gap:isMobile?8:0}}>
-            <div style={S.sec}><IC name="chart" size={14} color={K.dim}/>Portfolio Value Over Time</div>
-            <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
-              {["M3","M6","Y1","Y2","Y5","ALL"].map(function(r){return<button key={r} onClick={function(){setChartRange(r)}}
-                style={{padding:"4px 10px",fontSize:isMobile?11:10,fontFamily:fm,background:chartRange===r?K.acc+"18":"transparent",color:chartRange===r?K.acc:K.dim,border:"1px solid "+(chartRange===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
-
-          {chartData.length<2?<div style={{padding:"60px 20px",textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:12}}>{String.fromCodePoint(0x1F4C8)}</div>
-            <div style={{fontSize:14,color:K.dim}}>Add assets below to start tracking your net worth.</div>
-            <div style={{fontSize:12,color:K.dim,marginTop:4}}>The chart builds over time as monthly snapshots are recorded.</div></div>:
-          <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-            <svg width={cW} height={cH} viewBox={"0 0 "+cW+" "+cH} style={{display:"block",minWidth:isMobile?280:undefined}} onMouseLeave={function(){setHovIdx(null)}}>
-              <defs>{chartClasses.map(function(ac){return<linearGradient key={ac.id} id={"ag-"+ac.id} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={ac.color} stopOpacity="0.7"/>
-                <stop offset="100%" stopColor={ac.color} stopOpacity="0.2"/></linearGradient>})}</defs>
-              {/* Grid lines */}
-              {yLabels.map(function(yl,i){return<g key={i}><line x1={padL} y1={yl.y} x2={cW-padR} y2={yl.y} stroke={K.bdr} strokeWidth="0.5"/>
-                <text x={padL-8} y={yl.y+3} textAnchor="end" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">{yl.label}</text></g>})}
-              {/* Stacked areas */}
-              {stackedPaths.map(function(sp,i){return<path key={sp.id} d={sp.path} fill={"url(#ag-"+sp.id+")"} stroke={sp.color} strokeWidth="1.5" strokeLinejoin="round"/>})}
-              {/* Hover detection */}
-              {chartData.map(function(d,i){return<rect key={i} x={cx(i)-Math.max(2,plotW/chartData.length/2)} y={padT} width={Math.max(4,plotW/chartData.length)} height={plotH} fill="transparent"
-                onMouseEnter={function(){setHovIdx(i)}}/>})}
-              {/* Hover line */}
-              {hovIdx!==null&&<line x1={cx(hovIdx)} y1={padT} x2={cx(hovIdx)} y2={padT+plotH} stroke={K.dim} strokeWidth="0.5" strokeDasharray="3,3"/>}
-              {/* X axis labels */}
-              {xLabels.map(function(xl,i){return<text key={i} x={xl.x} y={cH-4} textAnchor="middle" fill={K.dim} fontSize="9" fontFamily="JetBrains Mono">{xl.label}</text>})}
-            </svg>
-            {/* Hover tooltip */}
-            {hovData&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginTop:8}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{hovData.date} — Total: {fmtVal(hovData.total)}</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-                {ASSET_CLASSES.filter(function(ac){return(hovData.values||{})[ac.id]>0}).map(function(ac){return<div key={ac.id} style={{display:"flex",alignItems:"center",gap:4}}>
-                  <div style={{width:8,height:8,borderRadius:2,background:ac.color}}/>
-                  <span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{ac.label}: {fmtVal((hovData.values||{})[ac.id])}</span></div>})}</div></div>}
-          </div>}
-          {/* Legend */}
-          <div style={{display:"flex",flexWrap:"wrap",gap:10,marginTop:12}}>
-            {chartClasses.map(function(ac){return<div key={ac.id} style={{display:"flex",alignItems:"center",gap:4}}>
-              <div style={{width:10,height:10,borderRadius:2,background:ac.color}}/>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{ac.label}</span></div>})}</div>
-        </div>
-
-        {/* Pie Chart + Allocation */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
-          <div style={Object.assign({},S.sec,{marginBottom:14})}><IC name="target" size={14} color={K.dim}/>Allocation</div>
-          {allocData.length===0?<div style={{padding:"40px 0",textAlign:"center",color:K.dim,fontSize:12}}>No assets yet</div>:
-          <div>
-            <div style={{display:"flex",justifyContent:"center",marginBottom:14}}><PieChart/></div>
-            {allocData.map(function(d){return<div key={d.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"50"}}>
-              <div style={{width:8,height:8,borderRadius:2,background:d.color,flexShrink:0}}/>
-              <div style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{d.label}</div>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{d.pct.toFixed(1)}%</div>
-            </div>})}</div>}
-        </div>
-      </div>
-
-      {/* Positions list */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <div style={S.sec}><IC name="dollar" size={14} color={K.dim}/>Your Assets</div>
-        <button onClick={function(){setAddOpen(!addOpen);setEditId(null)}} style={Object.assign({},S.btnP,{fontSize:12,padding:"6px 16px"})}>{addOpen?"Cancel":"+ Add Asset"}</button></div>
-
-      {/* Add form */}
-      {addOpen&&<div style={{background:K.card,border:"1px solid "+K.acc+"40",borderRadius:12,padding:isMobile?"16px":"20px 24px",marginBottom:16}}>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>ASSET CLASS</div>
-            <select value={form.classId} onChange={function(e){setForm(Object.assign({},form,{classId:e.target.value}))}}
-              style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}>
-              {ASSET_CLASSES.map(function(ac){return<option key={ac.id} value={ac.id}>{ac.label}</option>})}</select></div>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>NAME</div>
-            <input value={form.name} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder="e.g. Bitcoin, Gold ETF, Rental property..."
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div></div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 2fr",gap:12,marginBottom:12}}>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>VALUE</div>
-            <input value={form.value} onChange={function(e){setForm(Object.assign({},form,{value:e.target.value}))}} placeholder="100000" type="number"
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>CURRENCY</div>
-            <select value={form.currency} onChange={function(e){setForm(Object.assign({},form,{currency:e.target.value}))}}
-              style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}>
-              {["USD","EUR","NOK","GBP","SEK","DKK","CHF","JPY","CAD","AUD"].map(function(c2){return<option key={c2} value={c2}>{c2}</option>})}</select></div>
-          {isMobile?null:<div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>OWNED SINCE</div>
-            <input value={form.startDate} onChange={function(e){setForm(Object.assign({},form,{startDate:e.target.value}))}} type="month"
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>}
-          {isMobile?null:<div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
-            <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>}</div>
-        {isMobile&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>OWNED SINCE</div>
-            <input value={form.startDate} onChange={function(e){setForm(Object.assign({},form,{startDate:e.target.value}))}} type="month"
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>
-          <div><div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>NOTE (optional)</div>
-            <input value={form.note} onChange={function(e){setForm(Object.assign({},form,{note:e.target.value}))}} placeholder="Any details..."
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/></div></div>}
-        <button onClick={addPosition} style={Object.assign({},S.btnP,{width:"100%"})}>Add Asset</button></div>}
-
-      {/* Auto-synced stocks card */}
-      {!hasManualStocks&&stockValue>0&&<div style={{background:K.card,border:"1px solid "+ASSET_CLASSES[0].color+"30",borderLeft:"4px solid "+ASSET_CLASSES[0].color,borderRadius:12,padding:"14px 20px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:10,height:10,borderRadius:2,background:ASSET_CLASSES[0].color}}/>
-        <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Stocks (ThesisAlpha Portfolio)</div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>Auto-synced from your {cos.filter(function(c2){return(c2.status||"portfolio")==="portfolio"&&c2.position&&c2.position.shares>0}).length} portfolio holdings</div></div>
-        <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(stockValue)}</div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{totalValue>0?(stockValue/totalValue*100).toFixed(1)+"%":""}
-          </div></div></div>}
-
-      {/* Position cards */}
-      {positions.map(function(p){
-        var ac=ASSET_CLASSES.find(function(a){return a.id===p.classId})||ASSET_CLASSES[ASSET_CLASSES.length-1];
-        var isEditing=editId===p.id;
-        return<div key={p.id} style={{background:K.card,border:"1px solid "+(isEditing?K.acc+"40":K.bdr),borderLeft:"4px solid "+ac.color,borderRadius:12,padding:"14px 20px",marginBottom:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:10,height:10,borderRadius:2,background:ac.color}}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{p.name}</div>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{ac.label}{p.startDate?" · Since "+p.startDate:""}{p.note?" · "+p.note:""}{p.currency&&p.currency!=="USD"?" · "+p.currency:""}</div></div>
-            <div style={{textAlign:"right",marginRight:8}}>
-              {isEditing?<input value={p.value} onChange={function(e){updatePosition(p.id,{value:parseFloat(e.target.value)||0})}} type="number"
-                style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:14,fontFamily:fm,textAlign:"right",outline:"none"}}/>:
-              <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtVal(p.value)}</div>}
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{totalValue>0?(p.value/totalValue*100).toFixed(1)+"%":""}</div></div>
-            <div style={{display:"flex",gap:4}}>
-              <button onClick={function(){setEditId(isEditing?null:p.id)}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:12,fontFamily:fm,padding:4}}>{isEditing?"Done":"Edit"}</button>
-              <button onClick={function(){removePosition(p.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:4,opacity:.5}}>{"✕"}</button></div>
-          </div></div>})}
-
-      {positions.length===0&&stockValue===0&&<div style={{textAlign:"center",padding:"48px 20px",color:K.dim}}>
-        <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F3E0)}</div>
-        <div style={{fontSize:14}}>Track your complete net worth</div>
-        <div style={{fontSize:13,marginTop:4}}>Add all your assets — stocks, crypto, real estate, gold, pension — to see the full picture.</div>
-        <div style={{fontSize:12,marginTop:8,color:K.acc}}>Stock positions from your ThesisAlpha portfolio are included automatically.</div></div>}
-
-      {/* Monthly snapshot prompt */}
-      {positions.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginTop:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <IC name="target" size={14} color={K.dim}/>
-          <div style={{flex:1}}><div style={{fontSize:12,color:K.mid,fontFamily:fm}}>Update your asset values monthly to build your net worth chart. Snapshots are saved automatically when values change.</div></div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{snapshots.length} snapshot{snapshots.length!==1?"s":""} recorded</div></div></div>}
-    </div>}
-
-  // ── Portfolio Timeline / Memory ──────────────────────────
-  function PortfolioTimeline(){
-    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"||c.decisions&&c.decisions.length>0});
-    var _filter=useState("all"),filter=_filter[0],setFilter=_filter[1];
-
-    // Collect all events across all companies
-    var events=[];
-    portfolio.forEach(function(c){
-      // Thesis versions
-      (c.thesisVersions||[]).forEach(function(v){events.push({type:"thesis",date:v.date,ticker:c.ticker,domain:c.domain,id:c.id,
-        title:"Thesis updated",detail:v.summary||"Updated thesis",icon:"lightbulb",color:K.acc})});
-      // Conviction changes
-      (c.convictionHistory||[]).forEach(function(v){events.push({type:"conviction",date:v.date,ticker:c.ticker,domain:c.domain,id:c.id,
-        title:"Conviction → "+v.rating+"/10",detail:v.note||"",icon:"trending",color:v.rating>=7?K.grn:v.rating>=4?K.amb:K.red,rating:v.rating})});
-      // Decisions
-      (c.decisions||[]).forEach(function(d){events.push({type:"decision",date:d.date,ticker:c.ticker,domain:c.domain,id:c.id,
-        title:d.action+" — "+c.ticker,detail:d.note||"",icon:d.action==="BUY"||d.action==="ADD"?"trending":d.action==="SELL"?"target":"shield",
-        color:d.action==="BUY"||d.action==="ADD"?K.grn:d.action==="SELL"?K.red:K.amb,action:d.action,
-        conviction:d.conviction,horizon:d.horizon})});
-      // Earnings checks
-      (c.earningsHistory||[]).forEach(function(e){events.push({type:"earnings",date:e.checkedAt?e.checkedAt.split("T")[0]:null,ticker:c.ticker,domain:c.domain,id:c.id,
-        title:e.quarter+" earnings checked",detail:e.summary?e.summary.substring(0,120):"",icon:"target",color:K.blue,
-        kpisMet:e.results?e.results.filter(function(r){return r.status==="met"}).length:0,
-        kpisTotal:e.results?e.results.length:0})});
-    });
-    // Weekly reviews
-    weeklyReviews.forEach(function(r){events.push({type:"review",date:r.date?r.date.split("T")[0]:r.weekId,ticker:"ALL",domain:"",id:null,
-      title:"Weekly review completed",detail:r.summary.total+" holdings, "+r.summary.changed+" conviction changes, avg "+r.summary.avgConv+"/10",
-      icon:"shield",color:K.grn,entries:r.entries})});
-
-    // Sort by date descending
-    events=events.filter(function(e){return e.date}).sort(function(a,b){return b.date.localeCompare(a.date)});
-
-    // Filter
-    var filtered=filter==="all"?events:events.filter(function(e){return e.type===filter});
-
-    // Group by month
-    var months={};filtered.forEach(function(e){var key=e.date.substring(0,7);if(!months[key])months[key]=[];months[key].push(e)});
-
-    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:800}}>
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Portfolio Timeline</h1>
-        <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{events.length} events across {portfolio.length} holdings — your investment memory</p></div>
-
-      {/* Filters */}
-      <div style={{display:"flex",gap:6,marginBottom:24,flexWrap:"wrap"}}>
-        {[{id:"all",l:"All Events",n:events.length},{id:"decision",l:"Decisions",n:events.filter(function(e){return e.type==="decision"}).length},
-          {id:"conviction",l:"Conviction",n:events.filter(function(e){return e.type==="conviction"}).length},
-          {id:"thesis",l:"Thesis",n:events.filter(function(e){return e.type==="thesis"}).length},
-          {id:"earnings",l:"Earnings",n:events.filter(function(e){return e.type==="earnings"}).length},
-          {id:"review",l:"Reviews",n:events.filter(function(e){return e.type==="review"}).length}
-        ].map(function(f){return<button key={f.id} onClick={function(){setFilter(f.id)}}
-          style={{padding:"5px 14px",borderRadius:6,border:"1px solid "+(filter===f.id?K.acc:K.bdr),
-            background:filter===f.id?K.acc+"12":"transparent",color:filter===f.id?K.acc:K.dim,
-            fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{f.l} ({f.n})</button>})}</div>
-
-      {filtered.length===0&&<div style={{textAlign:"center",padding:60,color:K.dim}}>
-        <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F4AD)}</div>
-        <div style={{fontSize:14}}>No events yet</div>
-        <div style={{fontSize:13,marginTop:4}}>Your timeline will fill as you log decisions, update convictions, and check earnings.</div></div>}
-
-      {/* Timeline */}
-      {Object.keys(months).sort().reverse().map(function(monthKey){
-        var monthEvents=months[monthKey];
-        var monthLabel=new Date(monthKey+"-01").toLocaleDateString("en-US",{year:"numeric",month:"long"});
-        return<div key={monthKey} style={{marginBottom:32}}>
-          <div style={{fontSize:12,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:12,paddingBottom:8,borderBottom:"1px solid "+K.bdr}}>{monthLabel} · {monthEvents.length} event{monthEvents.length!==1?"s":""}</div>
-          {monthEvents.map(function(ev,ei){
-            return<div key={ei} style={{display:"flex",gap:14,marginBottom:2}}>
-              {/* Timeline line */}
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:24,flexShrink:0}}>
-                <div style={{width:10,height:10,borderRadius:"50%",background:ev.color,border:"2px solid "+K.card,flexShrink:0,marginTop:6,zIndex:1}}/>
-                {ei<monthEvents.length-1&&<div style={{width:1,flex:1,background:K.bdr}}/>}
-              </div>
-              {/* Event card */}
-              <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:8,cursor:ev.id?"pointer":"default"}}
-                onClick={ev.id?function(){setSelId(ev.id);setPage("dashboard")}:undefined}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  {ev.domain&&<CoLogo domain={ev.domain} ticker={ev.ticker} size={18}/>}
-                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{ev.ticker!=="ALL"?ev.ticker+" — ":""}{ev.title}</div>
-                  <div style={{marginLeft:"auto",fontSize:11,color:K.dim,fontFamily:fm}}>{fD(ev.date)}</div>
-                </div>
-                {ev.detail&&<div style={{fontSize:12,color:K.mid,marginTop:4,lineHeight:1.5}}>{ev.detail}</div>}
-                {ev.type==="decision"&&ev.conviction&&<div style={{display:"flex",gap:8,marginTop:6}}>
-                  <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>C:{ev.conviction}</span>
-                  {ev.horizon&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{ev.horizon}</span>}</div>}
-                {ev.type==="earnings"&&ev.kpisTotal>0&&<div style={{fontSize:11,color:ev.kpisMet===ev.kpisTotal?K.grn:K.amb,fontFamily:fm,marginTop:4}}>{ev.kpisMet}/{ev.kpisTotal} KPIs met</div>}
-              </div>
-            </div>})}</div>})}
-    </div>}
 
   // ── Weekly Owner's Review ──────────────────────────────
   function WeeklyReview(){
@@ -6555,14 +4919,14 @@ function TrackerApp(props){
           :<div style={{textAlign:"center",marginTop:16}}>
             <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Start Review</button></div>}
           {/* Reward history */}
-          {chestRewards.history&&chestRewards.history.length>1&&<div style={{maxWidth:360,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
+          {,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
             <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>PAST INSIGHTS</div>
             <div style={{maxHeight:140,overflow:"auto"}}>
-            {chestRewards.history.slice(1,15).map(function(h,hi){
+            {,15).map(function(h,hi){
               var tc2=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
               var d2=h.date?new Date(h.date):null;
               var ds2=d2?d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
-              return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(chestRewards.history.length-1,14)-1?"1px solid "+K.bdr+"30":"none"}}>
+              return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(,14)-1?"1px solid "+K.bdr+"30":"none"}}>
                 <div style={{width:5,height:5,borderRadius:"50%",background:tc2,flexShrink:0}}/>
                 <div style={{fontSize:11,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
                 <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{ds2}</div>
@@ -6711,7 +5075,7 @@ function TrackerApp(props){
 
       {step==="done"&&<div>
         {/* ── This week's reward ── */}
-        {(latestWeeklyReward||chestRewards.history.length>0)&&(function(){
+        {(latestWeeklyReward||)&&(function(){
           var reward=latestWeeklyReward;
           var tierColors={rare:"#FFD700",uncommon:"#a78bfa",common:K.mid};
           var tierLabels={rare:"Rare",uncommon:"Uncommon",common:"Common"};
@@ -6743,14 +5107,14 @@ function TrackerApp(props){
                 </div>}
             </div>}
             {/* Previously earned rewards */}
-            {chestRewards.history.length>0&&<div>
+            {
               <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>INSIGHT HISTORY</div>
               <div style={{maxHeight:180,overflow:"auto"}}>
-              {chestRewards.history.slice(0,20).map(function(h,hi){
+              {,20).map(function(h,hi){
                 var tc=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
                 var d=h.date?new Date(h.date):null;
                 var dateStr=d?d.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
-                return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:hi<Math.min(chestRewards.history.length,20)-1?"1px solid "+K.bdr+"30":"none"}}>
+                return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:hi<Math.min(,20)-1?"1px solid "+K.bdr+"30":"none"}}>
                   <div style={{width:6,height:6,borderRadius:"50%",background:tc,flexShrink:0}}/>
                   <div style={{fontSize:12,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
                   <div style={{fontSize:10,color:tc,fontWeight:600,fontFamily:fm,textTransform:"uppercase"}}>{h.tier}</div>
@@ -8515,17 +6879,17 @@ function TrackerApp(props){
               <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
         
         {/* Badges */}
-        {(chestRewards.badges||[]).length>0&&<div style={{marginBottom:16}}>
+        {().length>0&&<div style={{marginBottom:16}}>
           <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Badges</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {(chestRewards.badges||[]).map(function(b){return<div key={b.id} title={b.desc} style={{display:"flex",alignItems:"center",gap:4,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 10px"}}>
+            {().map(function(b){return<div key={b.id} title={b.desc} style={{display:"flex",alignItems:"center",gap:4,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 10px"}}>
               <span style={{fontSize:14}}>{b.icon}</span>
               <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{b.label}</span></div>})}</div></div>}
         {/* Collected Quotes */}
-        {(chestRewards.quotes||[]).length>0&&<div style={{marginBottom:16}}>
-          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({(chestRewards.quotes||[]).length})</div>
+        {().length>0&&<div style={{marginBottom:16}}>
+          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>Collected Wisdom ({().length})</div>
           <div style={{maxHeight:120,overflowY:"auto"}}>
-            {(chestRewards.quotes||[]).slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
+            {().slice(-5).reverse().map(function(q,i){return<div key={i} style={{padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40"}}>
               <div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{"“"+q.q+"”"}</div>
               <div style={{fontSize:10,color:K.dim,textAlign:"right"}}>{"— "+q.a}</div></div>})}</div></div>}
         {/* Recent Activity history */}
