@@ -4171,8 +4171,7 @@ function TrackerApp(props){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {snap.shareholderYield&&snap.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}}>{snap.shareholderYield.value} SH yield</span>}
-                {snap.grahamDiscount&&Math.abs(snap.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:snap.grahamDiscount.numVal<0?K.grn:K.amb,background:(snap.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number: "+(snap.grahamNum?snap.grahamNum.value:"—")}>{snap.grahamDiscount.numVal<0?Math.abs(snap.grahamDiscount.numVal).toFixed(0)+"% below Graham":snap.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}
+                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
@@ -4306,7 +4305,7 @@ function TrackerApp(props){
           // FCF yield — use pre-computed snap.fcfYield (numVal) if available; avoids string-parse sign errors
           if(snap.fcfYield&&snap.fcfYield.numVal!=null){valuation.push({l:"FCF Yield",v:snap.fcfYield.value,isGood:snap.fcfYield.numVal>4})}
           else if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.\-]/g,""))||0;if(fcfVal2!==0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
-          if(snap.hi52&&snap.lo52){var cp=pos.currentPrice||0;if(cp>0){var pctOfHi=((cp/parseFloat(snap.hi52.value.replace("$","")))*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}
+          if(snap.hi52&&snap.lo52&&snap.hi52.value){var cp=pos.currentPrice||0;if(cp>0){var _h52=parseFloat(String(snap.hi52.value).replace(/[^0-9.]/g,""))||0;if(_h52>0){var pctOfHi=((cp/_h52)*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}}
           if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,tip:"Return on invested capital",isGood:parseFloat(snap.roic.value)>=12});
           if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,tip:"Return on equity",isGood:parseFloat(snap.roe.value)>=15});
           if(snap.roce&&snap.roce.value)returns.push({l:"ROCE",v:snap.roce.value,isGood:parseFloat(snap.roce.value)>=12});
