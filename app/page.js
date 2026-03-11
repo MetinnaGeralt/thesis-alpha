@@ -1079,12 +1079,15 @@ function TrackerApp(props){
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
   // Toast system for celebrations
   var _toast=useState(null),toast=_toast[0],setToast=_toast[1];
+  function showToast(msg,type,duration){setToast({msg:msg,type:type||"info"});setTimeout(function(){setToast(null)},duration||3000)}
   var _confetti=useState(false),showConfetti=_confetti[0],setConfetti=_confetti[1];
   function launchConfetti(duration){setConfetti(true);setTimeout(function(){setConfetti(false)},duration||3000)}
   function celebrate(msg,type,duration){showToast(msg,type||"levelup",duration||6000);launchConfetti(duration||3000)}
   // Celebration overlay for big moments
   var _celebOverlay=useState(null),celebOverlay=_celebOverlay[0],setCelebOverlay=_celebOverlay[1];
   function showCelebration(title,subtitle,icon,color){setCelebOverlay({title:title,subtitle:subtitle,icon:icon,color:color||K.acc});setTimeout(function(){setCelebOverlay(null)},4500)}
+  // Profile panel
+  var _showProf=useState(false),showProfile=_showProf[0],setShowProfile=_showProf[1];
   // Track milestones for first-time celebrations
   var _milestones=useState(function(){try{var s=localStorage.getItem('ta-milestones');return s?JSON.parse(s):{}}catch(e){return{}}}),milestones=_milestones[0],setMilestones=_milestones[1];
   function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}showToast(msg,"milestone",5000);return true}return false}
