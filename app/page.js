@@ -932,7 +932,7 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"list",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");return s?Object.assign({},DEFAULT_DASH,JSON.parse(s)):DEFAULT_DASH}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
@@ -6763,11 +6763,151 @@ function TrackerApp(props){
     {/* Analytics quick link */}
 
     {/* View toggle */}
-    {filtered.length>0&&<div style={{display:"flex",justifyContent:"flex-end",gap:4,marginBottom:12}}>
-      <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"list"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"18":"transparent",color:dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="file" size={10} color={dashSet.portfolioView==="list"||!dashSet.portfolioView?K.acc:K.dim}/> List</button>
-      <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"cards"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:dashSet.portfolioView==="cards"?K.acc+"18":"transparent",color:dashSet.portfolioView==="cards"?K.acc:K.dim,border:"1px solid "+(dashSet.portfolioView==="cards"?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer"}}><IC name="overview" size={10} color={dashSet.portfolioView==="cards"?K.acc:K.dim}/> Cards</button></div>}
+    {filtered.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+      <div style={{display:"flex",gap:4}}>
+        {[{v:"fundamentals",label:"Fundamentals",icon:"chart"},{v:"list",label:"Holdings",icon:"file"},{v:"cards",label:"Cards",icon:"overview"}].map(function(opt){var active=dashSet.portfolioView===opt.v||(opt.v==="fundamentals"&&!dashSet.portfolioView);return<button key={opt.v} onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:opt.v});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:active?K.acc+"18":"transparent",color:active?K.acc:K.dim,border:"1px solid "+(active?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+          <IC name={opt.icon} size={10} color={active?K.acc:K.dim}/>{opt.label}
+        </button>})}
+      </div>
+    </div>}
+
+    {/* ── FUNDAMENTALS VIEW ── */}
+    {filtered.length>0&&sideTab!=="toohard"&&(dashSet.portfolioView==="fundamentals"||!dashSet.portfolioView)&&(function(){
+      // ── Metric library ────────────────────────────────────────────────────
+      var FUND_METRICS=[
+        {id:"revGrowth",  label:"Rev Growth",  short:"Rev Gr",  unit:"%", cat:"Growth",   get:function(s){return s.revGrowth?s.revGrowth.numVal:null},  good:function(v){return v>=10}, ok:function(v){return v>=0},  fmt:function(v){return(v>=0?"+":"")+v.toFixed(1)+"%"}, tip:"Revenue growth YoY (TTM)"},
+        {id:"epsGrowth",  label:"EPS Growth",  short:"EPS Gr",  unit:"%", cat:"Growth",   get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null},  good:function(v){return v>=15},ok:function(v){return v>=0},  fmt:function(v){return(v>=0?"+":"")+v.toFixed(1)+"%"}, tip:"EPS growth YoY (TTM)"},
+        {id:"grossMargin",label:"Gross Margin",short:"Gross M", unit:"%", cat:"Margins",  get:function(s){return s.grossMargin?s.grossMargin.numVal:null},good:function(v){return v>=40},ok:function(v){return v>=20}, fmt:function(v){return v.toFixed(1)+"%"},              tip:"Gross margin (TTM)"},
+        {id:"opMargin",   label:"Op Margin",   short:"Op M",    unit:"%", cat:"Margins",  get:function(s){return s.opMargin?s.opMargin.numVal:null},     good:function(v){return v>=20},ok:function(v){return v>=8},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Operating margin (TTM)"},
+        {id:"netMargin",  label:"Net Margin",  short:"Net M",   unit:"%", cat:"Margins",  get:function(s){return s.netMargin?s.netMargin.numVal:null},   good:function(v){return v>=15},ok:function(v){return v>=5},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Net profit margin (TTM)"},
+        {id:"fcfMargin",  label:"FCF Margin",  short:"FCF M",   unit:"%", cat:"Margins",  get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null},   good:function(v){return v>=15},ok:function(v){return v>=5},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Free cash flow margin"},
+        {id:"roic",       label:"ROIC",        short:"ROIC",    unit:"%", cat:"Returns",  get:function(s){return s.roic?s.roic.numVal:null},             good:function(v){return v>=15},ok:function(v){return v>=8},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Return on invested capital"},
+        {id:"roce",       label:"ROCE",        short:"ROCE",    unit:"%", cat:"Returns",  get:function(s){return s.roce?s.roce.numVal:null},             good:function(v){return v>=15},ok:function(v){return v>=8},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Return on capital employed"},
+        {id:"roe",        label:"ROE",         short:"ROE",     unit:"%", cat:"Returns",  get:function(s){return s.roe?s.roe.numVal:null},               good:function(v){return v>=15},ok:function(v){return v>=8},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Return on equity"},
+        {id:"fcfYield",   label:"FCF Yield",   short:"FCF Y",   unit:"%", cat:"Value",    get:function(s){return s.fcfYield?s.fcfYield.numVal:null},     good:function(v){return v>=5}, ok:function(v){return v>=2},  fmt:function(v){return v.toFixed(1)+"%"},              tip:"Free cash flow yield"},
+        {id:"divYield",   label:"Div Yield",   short:"Div Y",   unit:"%", cat:"Value",    get:function(s){return s.divYield?s.divYield.numVal:null},     good:function(v){return v>=2}, ok:function(v){return v>=0.5},fmt:function(v){return v.toFixed(1)+"%"},              tip:"Dividend yield"},
+        {id:"netDebtEbitda",label:"ND/EBITDA", short:"ND/EB",   unit:"x", cat:"Health",   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},good:function(v){return v<1.5},ok:function(v){return v<3},fmt:function(v){return v.toFixed(1)+"x"},           tip:"Net Debt / EBITDA — lower is better",lowerBetter:true},
+        {id:"debtEquity", label:"Debt/Equity", short:"D/E",     unit:"x", cat:"Health",   get:function(s){return s.debtEquity?s.debtEquity.numVal:null}, good:function(v){return v<0.5},ok:function(v){return v<1.5},fmt:function(v){return v.toFixed(1)+"x"},              tip:"Debt to equity — lower is better",lowerBetter:true},
+        {id:"currentRatio",label:"Curr Ratio", short:"Curr R",  unit:"x", cat:"Health",   get:function(s){return s.currentRatio?s.currentRatio.numVal:null},good:function(v){return v>=2},ok:function(v){return v>=1},fmt:function(v){return v.toFixed(1)+"x"},             tip:"Current ratio"},
+        {id:"pe",         label:"P/E",         short:"P/E",     unit:"x", cat:"Price",    get:function(s){return s.pe?parseFloat(String(s.pe.value).replace(/[^0-9.\-]/g,"")):null},good:function(v){return v>0&&v<18},ok:function(v){return v<30},fmt:function(v){return v.toFixed(1)+"x"},tip:"Price to earnings",lowerBetter:true},
+      ];
+      // Default column set: revGrowth, grossMargin, opMargin, roic, netDebtEbitda
+      var DEFAULT_FUND_COLS=["revGrowth","grossMargin","opMargin","roic","netDebtEbitda"];
+      var activeCols=(dashSet.fundCols||DEFAULT_FUND_COLS).map(function(id){return FUND_METRICS.find(function(m){return m.id===id})}).filter(Boolean);
+      var _fcfgState=useState(false),showFundCfg=_fcfgState[0],setShowFundCfg=_fcfgState[1];
+
+      // ── Color helper ──────────────────────────────────────────────────────
+      function metricColor(m,v){if(v==null)return K.dim;if(m.good(v))return K.grn;if(m.ok(v))return K.amb;return K.red;}
+
+      // ── Portfolio aggregate row (weighted by position value) ──────────────
+      var totalVal2=filtered.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+      var aggRow=activeCols.map(function(m){
+        var wSum=0,wN=0;
+        filtered.forEach(function(c2){
+          var snap=c2.financialSnapshot||{};var v=m.get(snap);
+          var p2=c2.position||{};var w=totalVal2>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal2):1/filtered.length;
+          if(v!=null){wSum+=v*w;wN+=w}
+        });
+        return wN>0?wSum/wN:null;
+      });
+
+      var COL_W=isMobile?60:72;
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
+        {/* Table header */}
+        <div style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+K.bdr,gap:0,position:"relative"}}>
+          <div style={{flex:1,minWidth:isMobile?90:120}}>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>Company</span>
+          </div>
+          {activeCols.map(function(m){return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}} title={m.tip}>{isMobile?m.short:m.label}</span>
+          </div>})}
+          <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
+            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":"transparent"),borderRadius:5,cursor:"pointer",padding:"3px 5px",display:"flex",alignItems:"center",gap:3}} title="Customize columns">
+              <IC name="gear" size={11} color={showFundCfg?K.acc:K.dim}/>
+              {!isMobile&&<span style={{fontSize:9,color:showFundCfg?K.acc:K.dim,fontFamily:fm}}>Edit</span>}
+            </button>
+            {/* Column picker dropdown */}
+            {showFundCfg&&<div style={{position:"absolute",right:0,top:30,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 14px",boxShadow:"0 6px 24px rgba(0,0,0,.25)",zIndex:60,minWidth:260,maxHeight:380,overflowY:"auto"}} onClick={function(e){e.stopPropagation()}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.txt,marginBottom:10}}>Customize columns</div>
+              <div style={{fontSize:10,color:K.dim,marginBottom:10}}>Pick up to 6 metrics for your look-through view</div>
+              {["Growth","Margins","Returns","Value","Health","Price"].map(function(cat){
+                var catMs=FUND_METRICS.filter(function(m){return m.cat===cat});
+                return<div key={cat} style={{marginBottom:10}}>
+                  <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:5}}>{cat}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {catMs.map(function(m){
+                      var on=(dashSet.fundCols||DEFAULT_FUND_COLS).indexOf(m.id)>=0;
+                      return<button key={m.id} title={m.tip} onClick={function(){
+                        setDashSet(function(p){
+                          var cur=p.fundCols||DEFAULT_FUND_COLS;
+                          var next=on?cur.filter(function(x){return x!==m.id}):cur.length<6?cur.concat([m.id]):cur;
+                          var n=Object.assign({},p,{fundCols:next});
+                          try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n;
+                        });
+                      }} style={{padding:"4px 10px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"14":"transparent",color:on?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400}}>
+                        {m.label}
+                      </button>})}
+                  </div>
+                </div>})}
+              <div style={{fontSize:9,color:K.dim,marginTop:8}}>{(dashSet.fundCols||DEFAULT_FUND_COLS).length}/6 selected · data via FMP</div>
+            </div>}
+          </div>
+        </div>
+
+        {/* Portfolio aggregate row */}
+        {totalVal2>0&&<div style={{display:"flex",alignItems:"center",padding:"8px 16px",background:K.acc+"07",borderBottom:"2px solid "+K.bdr,gap:0}}>
+          <div style={{flex:1,minWidth:isMobile?90:120}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>Portfolio avg</div>
+            <div style={{fontSize:9,color:K.dim}}>weighted by value</div>
+          </div>
+          {aggRow.map(function(v,i){var m=activeCols[i];return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
+            {v!=null?<span style={{fontSize:12,fontWeight:700,color:metricColor(m,v),fontFamily:fm}}>{m.fmt(v)}</span>
+            :<span style={{fontSize:11,color:K.dim}}>—</span>}
+          </div>})}
+          <div style={{width:28}}/>
+        </div>}
+
+        {/* Company rows */}
+        {filtered.slice().sort(function(a,b){var va=(a.position&&a.position.shares>0&&a.position.currentPrice>0)?a.position.shares*a.position.currentPrice:0;var vb=(b.position&&b.position.shares>0&&b.position.currentPrice>0)?b.position.shares*b.position.currentPrice:0;return vb-va}).map(function(cc){
+          var snap=cc.financialSnapshot||{};
+          var convColor=cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:cc.conviction>0?K.red:K.bdr;
+          var hasAny=activeCols.some(function(m){return m.get(snap)!=null});
+          return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:isMobile?"10px 14px":"10px 16px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",transition:"background .1s",gap:0}}
+            onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+            <div style={{flex:1,minWidth:isMobile?90:120,display:"flex",alignItems:"center",gap:8,overflow:"hidden"}}>
+              <CoLogo domain={cc.domain} ticker={cc.ticker} size={isMobile?22:26}/>
+              <div style={{minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{cc.ticker}</span>
+                  <div title={"Conviction: "+(cc.conviction||"unset")} style={{width:5,height:5,borderRadius:"50%",background:convColor,flexShrink:0}}/>
+                </div>
+                {!isMobile&&<div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:130}}>{cc.name}</div>}
+              </div>
+            </div>
+            {activeCols.map(function(m){var v=m.get(snap);var color=metricColor(m,v);
+              return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
+                {v!=null
+                  ?<span style={{fontSize:isMobile?11:12,fontWeight:600,color:color,fontFamily:fm,background:color+"10",padding:"2px 6px",borderRadius:4}}>{m.fmt(v)}</span>
+                  :<span style={{fontSize:11,color:K.bdr,fontFamily:fm}}>{"—"}</span>}
+              </div>})}
+            {!isMobile&&<div style={{width:28,display:"flex",justifyContent:"flex-end"}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>}
+          </div>})}
+
+        {/* No data nudge */}
+        {filtered.length>0&&!filtered.some(function(c2){var s=c2.financialSnapshot||{};return activeCols.some(function(m){return m.get(s)!=null})})&&<div style={{padding:"16px 20px",textAlign:"center",fontSize:12,color:K.dim}}>
+          No fundamental data yet. Tap a company → refresh financial data to populate.
+        </div>}
+      </div>
+    })()}
+
     {/* Nordnet-style list view */}
-    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView!=="cards"&&(function(){
+    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="list"&&(function(){
+    {/* Nordnet-style list view */}
+    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="list"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
