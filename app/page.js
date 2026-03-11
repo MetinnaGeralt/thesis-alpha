@@ -865,6 +865,11 @@ function TrackerApp(props){
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
   var _em=useState(function(){try{return localStorage.getItem("ta-emailnotify")==="true"}catch(e){return false}}),emailNotify=_em[0],setEmailNotify=_em[1];
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
+  // ── Quick-Access FAB ──
+  var _fabO=useState(false),fabOpen=_fabO[0],setFabOpen=_fabO[1];
+  var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");return s?JSON.parse(s):["trail","thesis","review","add"]}catch(e){return["trail","thesis","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
+  var _fabCust=useState(false),fabCustomize=_fabCust[0],setFabCustomize=_fabCust[1];
+  function saveFabCfg(v){setFabCfg(v);try{localStorage.setItem("ta-fab-cfg",JSON.stringify(v))}catch(e){}}
   // ── Subscription / Tier ──
   var FREE_LIMIT=3;var TRIAL_BASE=14;var TRIAL_BONUS=16;var TRIAL_TOTAL=TRIAL_BASE+TRIAL_BONUS;var THESIS_UNLOCK=3;
   var _plan=useState(function(){try{return localStorage.getItem("ta-plan")||"free"}catch(e){return"free"}}),plan=_plan[0],setPlan=_plan[1];
@@ -1294,6 +1299,9 @@ function TrackerApp(props){
   useEffect(function(){if(typeof window==="undefined")return;
     function check(){setIsMobile(window.innerWidth<768)}
     check();window.addEventListener("resize",check);return function(){window.removeEventListener("resize",check)}},[]);
+  useEffect(function(){if(!fabOpen)return;function closeOnOutside(){setFabOpen(false);setFabCustomize(false)}
+    var t=setTimeout(function(){window.addEventListener("click",closeOnOutside)},50);
+    return function(){clearTimeout(t);window.removeEventListener("click",closeOnOutside)}},[fabOpen]);
   var saveTimer=useRef(null);var cloudTimer=useRef(null);
   // ── Inject global CSS for animations & polish ──
   useEffect(function(){
@@ -1313,6 +1321,7 @@ function TrackerApp(props){
     style.textContent=[
       "@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes fadeInFast{from{opacity:0}to{opacity:1}}",
+      "@keyframes fabSlideIn{from{opacity:0;transform:translateX(12px) scale(.85)}to{opacity:1;transform:translateX(0) scale(1)}}",
       "@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}",
       "@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.8}}",
       "@keyframes spin{to{transform:rotate(360deg)}}",
@@ -8258,6 +8267,64 @@ function TrackerApp(props){
         <span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400}}>{item.label}</span>
       </button>})}
     </div>}
+    {/* ── Desktop Quick-Access FAB ── */}
+    {!isMobile&&(function(){
+      // All available shortcuts
+      var FAB_ALL=[
+        {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"thesis",label:"Why I Own",icon:"lightbulb",color:K.grn,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"thesis"})},80)}else{showToast("Add a holding first to write your thesis","info",3000)}}},
+        {id:"review",label:"Weekly Review",icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
+        {id:"add",label:"Add Holding",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setModal({type:"add"})}},
+        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
+        {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
+        {id:"conviction",label:"Rate Conviction",icon:"star",color:K.amb,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setPage("dashboard");setTimeout(function(){setModal({type:"conviction"})},80)}else{showToast("Add a holding first","info",3000)}}},
+        {id:"calendar",label:"Earnings Calendar",icon:"calendar",color:K.red,action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
+        {id:"analytics",label:"Analytics",icon:"bar",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("analytics")}},
+        {id:"library",label:"Library",icon:"video",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("library")}},
+        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);var tgt=sel||(portfolio[0]||null);if(tgt){setSelId(tgt.id);setDetailTab("research");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
+        {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
+      ];
+      var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
+      return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
+        {/* Customize panel */}
+        {fabCustomize&&<div style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:16,padding:"20px 22px",boxShadow:"0 16px 48px rgba(0,0,0,.35)",width:260,marginBottom:6}} onClick={function(e){e.stopPropagation()}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:.5}}>CUSTOMIZE SHORTCUTS</span>
+            <button onClick={function(){setFabCustomize(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:"2px 6px",borderRadius:6}}>✕</button>
+          </div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts. Drag to reorder.</div>
+          {FAB_ALL.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
+            <div style={{width:28,height:28,borderRadius:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <IC name={s.icon} size={13} color={s.color}/>
+            </div>
+            <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{s.label}</span>
+            <div style={{width:18,height:18,borderRadius:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+              {on&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
+            </div>
+          </div>})}
+          <div style={{marginTop:12,fontSize:10,color:K.dim,fontFamily:fm,textAlign:"center"}}>{fabCfg.length}/5 selected</div>
+        </div>}
+        {/* Action pills — fan upward when open */}
+        {fabOpen&&activeShortcuts.map(function(s,si){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,animation:"fabSlideIn "+(0.06+si*0.04)+"s ease-out both",transformOrigin:"right center"}}>
+          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:999,padding:"5px 14px",fontSize:12,fontFamily:fm,color:K.txt,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,.18)",cursor:"pointer"}} onClick={s.action} onMouseEnter={function(e){e.currentTarget.style.background=s.color+"15";e.currentTarget.style.color=s.color}} onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.color=K.txt}}>{s.label}</span>
+          <div onClick={s.action} style={{width:40,height:40,borderRadius:"50%",background:s.color,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 16px "+s.color+"50",flexShrink:0,transition:"transform .12s"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.1)"}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)"}}>
+            <IC name={s.icon} size={16} color="#fff"/>
+          </div>
+        </div>})}
+        {/* Gear button — only when open */}
+        {fabOpen&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:-2}}>
+          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:999,padding:"5px 14px",fontSize:11,fontFamily:fm,color:K.dim,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.15)",cursor:"pointer"}} onClick={function(){setFabCustomize(!fabCustomize)}}>Customize shortcuts</span>
+          <div onClick={function(){setFabCustomize(!fabCustomize)}} style={{width:40,height:40,borderRadius:"50%",background:fabCustomize?K.acc:K.bdr,border:"1px solid "+K.bdr2,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,transition:"all .15s"}}>
+            <IC name="gear" size={16} color={fabCustomize?"#fff":K.dim}/>
+          </div>
+        </div>}
+        {/* Main FAB button */}
+        <div style={{position:"relative"}}>
+          <button onClick={function(e){e.stopPropagation();setFabOpen(!fabOpen);if(fabOpen)setFabCustomize(false)}} style={{width:54,height:54,borderRadius:"50%",background:fabOpen?K.mid:K.acc,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:fabOpen?"0 4px 20px rgba(0,0,0,.3)":"0 6px 24px "+K.acc+"60",transition:"all .2s",outline:"none"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.07)"}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)"}}>
+            <span style={{fontSize:22,lineHeight:1,color:"#fff",display:"block",transform:fabOpen?"rotate(45deg)":"rotate(0deg)",transition:"transform .2s"}}>+</span>
+          </button>
+        </div>
+      </div>})()}
     </div>)}
 
 // ═══ ROOT ═══
