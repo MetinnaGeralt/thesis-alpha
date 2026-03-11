@@ -1720,14 +1720,14 @@ function TrackerApp(props){
   // Check achievements whenever relevant data changes
   useEffect(function(){if(!loaded)return;checkAchievements()},[loaded,cos.length,reviewStreak,milestones.thesis4,milestones.first_moat,milestones.stoic,milestones.contrarian]);
   // Feed loader — top level so hooks are stable across renders
-  var FEED_SOURCE_COLORS={substack:"#FF6719",rss:K.acc};
   useEffect(function(){
+    var SOURCE_COLORS={substack:"#FF6719",rss:"#6366F1"};
     var rssSourceList=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"});
     if(rssSourceList.length===0){setFeedItems([]);setFeedLoaded(true);setFeedLoading(false);return}
     setFeedLoading(true);setFeedLoaded(false);
     Promise.all(rssSourceList.map(function(s){
       return fetchFeed(s).then(function(items){
-        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:FEED_SOURCE_COLORS[s.type]||K.acc})})
+        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:SOURCE_COLORS[s.type]||"#6366F1"})})'
       }).catch(function(e){console.warn("[Feed] failed:",s.label,e);return[]})
     })).then(function(results){
       var merged=results.reduce(function(a,b){return a.concat(b)},[]);
@@ -3063,46 +3063,32 @@ function TrackerApp(props){
   async function fetchFeed(src){
     var rssUrl=sourceRSSUrl(src);
     if(!rssUrl)return[];
-    var cacheKey=rssUrl;
-    if(feedCache.current[cacheKey]&&feedCache.current[cacheKey].ts>Date.now()-300000)return feedCache.current[cacheKey].items;
+    if(feedCache.current[rssUrl]&&feedCache.current[rssUrl].ts>Date.now()-300000)return feedCache.current[rssUrl].items;
     try{
-      var proxyUrl="https://api.allorigins.win/get?url="+encodeURIComponent(rssUrl);
-      var ctrl=new AbortController();var tId=setTimeout(function(){ctrl.abort()},10000);
-      var res=await fetch(proxyUrl,{signal:ctrl.signal});
+      // rss2json.com — converts any RSS/Atom to clean JSON, handles Substack natively
+      var apiUrl="https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(rssUrl)+"&count=40";
+      var ctrl=new AbortController();
+      var tId=setTimeout(function(){ctrl.abort()},12000);
+      var res=await fetch(apiUrl,{signal:ctrl.signal});
       clearTimeout(tId);
+      if(!res.ok)throw new Error("HTTP "+res.status);
       var json=await res.json();
-      var xml=json.contents;
-      if(!xml)return[];
-      var parser=new DOMParser();
-      var doc=parser.parseFromString(xml,"application/xml");
-      var items=[];
-      doc.querySelectorAll("item").forEach(function(el){
-        var title=(el.querySelector("title")||{}).textContent||"";
-        var link=(el.querySelector("link")||{}).textContent||(el.querySelector("guid")||{}).textContent||"";
-        var pubDate=(el.querySelector("pubDate")||{}).textContent||"";
-        var desc=(el.querySelector("description")||{}).textContent||"";
-        var content=el.querySelector("content\\:encoded");
-        var body=content?content.textContent:desc;
-        var excerpt=body.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().substring(0,260);
-        if(excerpt.length===260)excerpt+="…";
-        if(title.trim())items.push({title:title.trim(),link:link.trim(),date:pubDate?new Date(pubDate):null,excerpt:excerpt});
-      });
-      if(items.length===0){
-        doc.querySelectorAll("entry").forEach(function(el){
-          var title=(el.querySelector("title")||{}).textContent||"";
-          var linkEl=el.querySelector("link[rel='alternate'],link");
-          var link=linkEl?(linkEl.getAttribute("href")||""):(el.querySelector("id")||{}).textContent||"";
-          var published=(el.querySelector("published")||el.querySelector("updated")||{}).textContent||"";
-          var summary=(el.querySelector("summary")||el.querySelector("content")||{}).textContent||"";
-          var excerpt=summary.replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().substring(0,260);
-          if(excerpt.length===260)excerpt+="…";
-          if(title.trim())items.push({title:title.trim(),link:link.trim(),date:published?new Date(published):null,excerpt:excerpt});
-        });
+      if(!json||json.status!=="ok"||!Array.isArray(json.items)){
+        console.warn("[ThesisAlpha Feed]",src.label,"rss2json status:",json&&json.status,json&&json.message);
+        return[];
       }
-      items.sort(function(a,b){return(b.date||0)-(a.date||0)});
-      feedCache.current[cacheKey]={items:items.slice(0,40),ts:Date.now()};
-      return items.slice(0,40);
-    }catch(e){console.warn("[ThesisAlpha] Feed fetch:",src.label,e.message);return[]}
+      var items=json.items.map(function(it){
+        var raw=(it.content||it.description||"").replace(/<[^>]*>/g," ").replace(/&[a-z]+;/gi," ").replace(/\s+/g," ").trim();
+        var excerpt=raw.substring(0,280);if(raw.length>280)excerpt+="…";
+        return{title:(it.title||"").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim(),link:it.link||it.guid||"",date:it.pubDate?new Date(it.pubDate):null,excerpt:excerpt};
+      }).filter(function(it){return it.title&&it.link});
+      console.log("[ThesisAlpha Feed] loaded",items.length,"items from",src.label);
+      feedCache.current[rssUrl]={items:items,ts:Date.now()};
+      return items;
+    }catch(e){
+      console.warn("[ThesisAlpha Feed] failed for",src.label,":",e.message);
+      return[];
+    }
   }
 
   function ResearchLinks(p){var c=p.company;var links=c.researchLinks||[];
