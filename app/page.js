@@ -5586,7 +5586,7 @@ function TrackerApp(props){
                       <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.label}</div>
                       <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ti.l} · {s.handle}</div>
                     </div>
-                    {(s.tags||[]).length>0&&<div style={{display:"flex",gap:4",flexWrap:"wrap"}}>
+                    {(s.tags||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                       {(s.tags||[]).map(function(t){return<span key={t} style={{fontSize:10,color:K.acc,background:K.acc+"12",borderRadius:4,padding:"1px 6px",fontFamily:fm,fontWeight:700}}>{t}</span>})}
                     </div>}
                     <div style={{display:"flex",gap:4,flexShrink:0}}>
