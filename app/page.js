@@ -903,6 +903,26 @@ function TrackerApp(props){
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   var _cs=useState(function(){try{var s=localStorage.getItem('ta-curated-sources');return s?JSON.parse(s):[]}catch(e){return[]}}),curatedSources=_cs[0],setCuratedSources=_cs[1];
   function saveCuratedSources(v){setCuratedSources(v);try{localStorage.setItem('ta-curated-sources',JSON.stringify(v))}catch(e){}}
+  // Normalize any badly-stored sources on mount (fixes handles saved before parser was correct)
+  useEffect(function(){
+    if(!curatedSources.length)return;
+    var changed=false;
+    var fixed=curatedSources.map(function(s){
+      if(s.type!=="substack")return s;
+      var h=s.handle.trim();
+      // Extract clean username from any format
+      var m1=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);
+      var m2=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);
+      var username=m1?m1[1]:m2?m2[1]:h.replace(/^@/,"").replace(/https?:\/\/.*/,"").replace(/\/.*/,"").trim();
+      if(!username)return s;
+      var cleanHandle=username;
+      // Fix label if it's just one char (bad extraction) or empty
+      var cleanLabel=(s.label&&s.label.length>1)?s.label:username;
+      if(s.handle!==cleanHandle||s.label!==cleanLabel){changed=true;return Object.assign({},s,{handle:cleanHandle,label:cleanLabel});}
+      return s;
+    });
+    if(changed)saveCuratedSources(fixed);
+  },[]);
   // Feed state — must live at top level (hooks can't be inside conditional IIFEs)
   var _fi=useState([]),feedItems=_fi[0],setFeedItems=_fi[1];
   var _fl=useState(false),feedLoading=_fl[0],setFeedLoading=_fl[1];
@@ -3053,7 +3073,20 @@ function TrackerApp(props){
   // ── Research Links (paste URLs per holding) ──
   // ── Global Curated Feed system ──
   var feedCache=useRef({});
-  function substackRSS(handle){var h=handle.trim().replace(/^@/,"").replace(/https?:\/\/(www\.)?/,"").replace(/\.substack\.com.*/,"");return"https://"+h+".substack.com/feed"}
+  function substackRSS(handle){
+    var h=handle.trim();
+    // Format: https://substack.com/@username or https://substack.com/p/...
+    var m1=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);
+    if(m1)return"https://"+m1[1]+".substack.com/feed";
+    // Format: https://username.substack.com or username.substack.com
+    var m2=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);
+    if(m2)return"https://"+m2[1]+".substack.com/feed";
+    // Format: @username or plain username
+    var m3=h.replace(/^@/,"").replace(/\//g,"").trim();
+    if(m3&&/^[A-Za-z0-9_-]+$/.test(m3))return"https://"+m3+".substack.com/feed";
+    // Fallback — try as-is
+    return"https://"+h.replace(/^@/,"")+".substack.com/feed";
+  }
   function twitterURL(handle){var h=handle.trim().replace(/^@/,"");return"https://x.com/"+h}
   function sourceRSSUrl(src){
     if(src.type==="substack")return substackRSS(src.handle);
@@ -5498,7 +5531,7 @@ function TrackerApp(props){
           var autoLabel=feedNewLabel.trim();
           if(!autoLabel){
             var h=feedNewHandle.trim().replace(/^@/,"");
-            if(feedNewType==="substack")autoLabel=h.replace(/\.substack\.com.*/,"").split("/").pop();
+            if(feedNewType==="substack"){var m1a=h.match(/substack\.com\/@([A-Za-z0-9_-]+)/);var m2a=h.match(/([A-Za-z0-9_-]+)\.substack\.com/);autoLabel=m1a?m1a[1]:m2a?m2a[1]:h.replace(/^@/,"").replace(/\/.*/,"").trim()||h;}
             else if(feedNewType==="twitter")autoLabel="@"+h.replace(/^@/,"");
             else{try{autoLabel=new URL(h.startsWith("http")?h:"https://"+h).hostname.replace("www.","")}catch(e){autoLabel=h.substring(0,30)}}
           }
@@ -5586,6 +5619,7 @@ function TrackerApp(props){
                   {s.type==="twitter"&&s.enabled&&<div style={{marginTop:8}}>
                     <a href={"https://x.com/"+s.handle.replace(/^@/,"")} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1DA1F2",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}><IC name="msg" size={11} color="#1DA1F2"/>Open @{s.handle.replace(/^@/,"")} on X →</a>
                   </div>}
+                  {s.type!=="twitter"&&s.enabled&&<div style={{marginTop:6,fontSize:10,color:K.dim,fontFamily:fm,opacity:.6}}>Fetching: {sourceRSSUrl(s)}</div>}
                 </div>
               })}
             </div>}
