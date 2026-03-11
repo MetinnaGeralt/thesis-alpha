@@ -862,6 +862,30 @@ function TrackerApp(props){
   var avatarFileRef=useRef(null);
   var saveTimer=useRef(null);
   var cloudTimer=useRef(null);
+  // ── Initial data load ──────────────────────────────────────────────────
+  useEffect(function(){
+    async function load(){
+      var cloud=await cloudLoad(props.userId);
+      var local=await ldS("ta-data");
+      var d=cloud||local;
+      if(d){
+        if(d.cos&&d.cos.length>0)setCos(d.cos.map(function(c){return Object.assign({kpis:[],decisions:[],docs:[],scenarios:[]},c)}));
+        if(d.notifs)setNotifs(d.notifs);
+        if(d.trial)setTrial(d.trial);
+        if(d.readingList)setReadingList(d.readingList);
+        if(d.profile){
+          if(d.profile.username)setUsername(d.profile.username);
+          if(d.profile.avatar)setAvatarUrl(d.profile.avatar);
+          if(d.profile.milestones)setMilestones(d.profile.milestones);
+          if(d.profile.weeklyReviews)setWeeklyReviews(d.profile.weeklyReviews);
+          if(d.profile.dashSettings)setDashSet(Object.assign({},DEFAULT_DASH,d.profile.dashSettings));
+          if(d.profile.theme){var t=d.profile.theme;setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}
+        }
+      }
+      setLoaded(true);
+    }
+    load();
+  },[]);
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var chestOverlay=null;function setChestOverlay(){}
