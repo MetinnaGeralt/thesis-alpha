@@ -3638,6 +3638,28 @@ function TrackerApp(props){
           :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
             <div style={{fontSize:14,color:K.acc,fontWeight:600,marginBottom:4}}>Write your thesis</div>
             <div style={{fontSize:12,color:K.dim}}>Why do you own {c.ticker}? What’s the moat? When would you sell?</div></div>}
+          {/* Thesis Timeline */}
+          {(function(){
+            var tevents=[];
+            var addedAt=c.addedAt||c.purchaseDate||null;
+            if(addedAt)tevents.push({label:"Added",date:addedAt,color:K.dim});
+            if(c.thesisVersions&&c.thesisVersions.length>0){var firstV=c.thesisVersions[0];tevents.push({label:"Thesis",date:firstV.savedAt||firstV.date||addedAt,color:K.acc})}
+            else if(c.thesisUpdatedAt)tevents.push({label:"Thesis",date:c.thesisUpdatedAt,color:K.acc});
+            if(c.thesisVersions&&c.thesisVersions.length>1)tevents.push({label:"Rev "+c.thesisVersions.length,date:c.thesisVersions[c.thesisVersions.length-1].savedAt,color:K.blue});
+            if(c.thesisUpdatedAt)tevents.push({label:"Updated",date:c.thesisUpdatedAt,color:_thesisStale?K.amb:K.grn});
+            tevents.push({label:"Today",date:null,color:K.mid,today:true});
+            if(tevents.length<3)return null;
+            return<div style={{marginTop:10,padding:"8px 12px",background:K.bg+"80",borderRadius:8}}>
+              <div style={{display:"flex",alignItems:"flex-start",position:"relative"}}>
+                <div style={{position:"absolute",left:"5%",right:"5%",height:1,background:K.bdr,top:4}}/>
+                {tevents.map(function(ev,ei){return<div key={ei} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:ev.today?K.bg:ev.color,border:"1.5px solid "+(ev.today?K.dim:ev.color)}}/>
+                  <div style={{fontSize:8,color:ev.color,fontFamily:fm,textAlign:"center",lineHeight:1.2}}>{ev.label}</div>
+                  {!ev.today&&ev.date&&<div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{ev.date.slice(0,7)}</div>}
+                </div>})}
+              </div>
+            </div>
+          })()}
         </div>
 
         {/* Investment style */}
@@ -3724,22 +3746,38 @@ function TrackerApp(props){
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
+            {/* KPI Tile Grid */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4}}>
             {c.kpis.map(function(k){
               var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results.find(function(r){return r.kpi_name===mid||r.kpi_name===k.name||(k.metricId&&r.kpi_name===k.metricId)});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
               hist.sort(function(a,b){return a.q>b.q?1:-1});
-              return<div key={k.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){setModal({type:"kpi",data:k.id})}} title="Click to edit or delete">
-                <div style={{width:7,height:7,borderRadius:"50%",background:k.lastResult?k.lastResult.status==="met"?K.grn:K.red:K.dim,flexShrink:0}}/>
-                <span style={{fontSize:12,color:K.txt,flex:1}}>{k.name}</span>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{k.target}</span>
-                {k.lastResult&&k.lastResult.actual!=null&&<span style={{fontSize:11,fontWeight:600,color:k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red,fontFamily:fm}}>{(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";if(typeof v!=="number")return v+(u||"");var abs=Math.abs(v);var s=abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2);return s+(u||"")})()}</span>}
-                {hist.length>=1&&(function(){var streak=0;for(var si=hist.length-1;si>=0;si--){if(hist[si].s==="met")streak++;else break};var prev=hist.length>=2?hist[hist.length-2]:null;var delta=k.lastResult&&k.lastResult.actual!=null&&prev&&prev.v!=null?k.lastResult.actual-prev.v:null;return<div style={{display:"flex",alignItems:"center",gap:4}}>
-                  {hist.slice(-4).map(function(hh,hi){return<div key={hi} title={hh.q+": "+(hh.v!=null?hh.v:hh.s)} style={{width:5,height:14,borderRadius:2,background:hh.s==="met"?K.grn:hh.s==="unclear"?K.dim:K.red,opacity:.85}}/>})}
-                  {streak>=2&&<span style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,marginLeft:1}}>{streak}Q↑</span>}
-                  {delta!=null&&Math.abs(delta)>0.05&&<span style={{fontSize:9,fontWeight:600,color:delta>0?K.grn:K.red,fontFamily:fm}}>{delta>0?"+":""}{Math.abs(delta)>=100?delta.toFixed(0):Math.abs(delta)>=10?delta.toFixed(1):delta.toFixed(2)}</span>}
-                </div>})()} 
-                <IC name="edit" size={10} color={K.dim}/>
+              var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.bdr;
+              var statusLabel=k.lastResult?k.lastResult.status==="met"?"Met":k.lastResult.status==="unclear"?"N/A":"Missed":"—";
+              var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";if(typeof v!=="number")return v+(u||"");var abs=Math.abs(v);var s=abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2);return s+(u||"")})():null;
+              return<div key={k.id} style={{background:K.bg,borderRadius:10,padding:"10px 12px",cursor:"pointer",border:"1px solid "+K.bdr+"60",position:"relative",overflow:"hidden"}} onClick={function(){setModal({type:"kpi",data:k.id})}}>
+                {/* Status color strip */}
+                <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,borderRadius:"10px 0 0 10px",background:statusColor}}/>
+                <div style={{paddingLeft:6}}>
+                  <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.name}</div>
+                  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:4}}>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:800,color:statusColor,fontFamily:fm,lineHeight:1}}>{lastVal||"—"}</div>
+                      <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:1}}>{k.target||"no target"}</div>
+                    </div>
+                    {/* Sparkline bars */}
+                    {hist.length>0&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:22}}>
+                      {hist.slice(-5).map(function(hh,hi){return<div key={hi} title={hh.q} style={{width:5,borderRadius:1,height:hh.s==="met"?18:hh.s==="unclear"?10:6,background:hh.s==="met"?K.grn:hh.s==="unclear"?K.dim:K.red,opacity:.8}}/>})}
+                    </div>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:statusColor,flexShrink:0}}/>
+                    <span style={{fontSize:9,color:statusColor,fontFamily:fm,fontWeight:600}}>{statusLabel}</span>
+                    {(function(){var streak=0;for(var si=hist.length-1;si>=0;si--){if(hist[si].s==="met")streak++;else break};return streak>=2?<span style={{fontSize:9,color:K.grn,fontFamily:fm,marginLeft:2}}>{streak}Q↑</span>:null})()}
+                  </div>
+                </div>
               </div>})}
-            <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:8,padding:0}}>+ Add KPI</button>
+            </div>
+            <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
           </div>
           :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center",marginBottom:12}}>
             <div style={{fontSize:13,color:K.dim,marginBottom:6}}>No KPIs tracked yet</div>
@@ -3762,18 +3800,64 @@ function TrackerApp(props){
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>CONVICTION</span>
-                <span style={{fontSize:24,fontWeight:800,color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,fontFamily:fm}}>{conv||"—"}<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/10</span></span></div>
-              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:8}}>
-                {c.convictionHistory.slice(-12).map(function(ch,i){return<div key={i} style={{flex:1,height:Math.max(4,ch.rating*4),borderRadius:2,background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.7}}/>})}</div>}
+              {(function(){
+                var cx=60,cy=62,r=50;
+                var ang=function(v){return Math.PI*(1-v/10)};
+                var arcP=function(v1,v2){var a1=ang(v1);var a2=ang(v2);var x1=(cx+r*Math.cos(a1)).toFixed(1);var y1=(cy-r*Math.sin(a1)).toFixed(1);var x2=(cx+r*Math.cos(a2)).toFixed(1);var y2=(cy-r*Math.sin(a2)).toFixed(1);return"M"+x1+" "+y1+" A"+r+" "+r+" 0 0 1 "+x2+" "+y2};
+                var convColor=conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim;
+                var cv=Math.max(0.01,Math.min(conv,9.99));
+                var na=ang(cv);var nx=(cx+42*Math.cos(na)).toFixed(1);var ny=(cy-42*Math.sin(na)).toFixed(1);
+                return<div style={{textAlign:"center"}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:2,textTransform:"uppercase"}}>Conviction</div>
+                  <svg viewBox="0 0 120 68" style={{width:"100%",maxWidth:150,display:"block",margin:"0 auto"}}>
+                    <path d={arcP(0,3.5)} fill="none" stroke={K.red+"35"} strokeWidth="11"/>
+                    <path d={arcP(3.5,6.5)} fill="none" stroke={K.amb+"35"} strokeWidth="11"/>
+                    <path d={arcP(6.5,9.99)} fill="none" stroke={K.grn+"35"} strokeWidth="11"/>
+                    {conv>0&&<path d={arcP(0.01,cv)} fill="none" stroke={convColor} strokeWidth="11" strokeLinecap="round"/>}
+                    {conv>0&&<line x1={cx} y1={cy} x2={nx} y2={ny} stroke={K.txt} strokeWidth="2.5" strokeLinecap="round" opacity="0.9"/>}
+                    <circle cx={cx} cy={cy} r="4.5" fill={K.card} stroke={conv>0?convColor:K.bdr} strokeWidth="2"/>
+                  </svg>
+                  <div style={{marginTop:-4,lineHeight:1}}>
+                    <span style={{fontSize:22,fontWeight:800,color:convColor,fontFamily:fm}}>{conv||"—"}</span>
+                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>/10</span>
+                  </div>
+                  {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:6,justifyContent:"center",alignItems:"flex-end",height:14}}>
+                    {c.convictionHistory.slice(-8).map(function(ch,i2){return<div key={i2} style={{width:8,borderRadius:1,height:Math.max(2,Math.round(ch.rating/10*12))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.75}}/>})}
+                  </div>}
+                </div>
+              })()}
             </div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>POSITION</div>
+              <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:6,textTransform:"uppercase"}}>Position</div>
               {pos.shares>0?<div>
-                <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.shares} shares @ ${pos.avgCost}</div>
-                {pos.currentPrice>0&&<div style={{fontSize:13,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm,marginTop:2}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}% (${((pos.currentPrice-pos.avgCost)*pos.shares).toFixed(0)})</div>}
-              </div>:<div style={{fontSize:13,color:K.dim}}>Click to add position</div>}
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{pos.shares>=1000?(pos.shares/1000).toFixed(1)+"k":pos.shares}<span style={{fontSize:11,fontWeight:400,color:K.dim}}> sh @ {cSym}{pos.avgCost}</span></div>
+                {pos.currentPrice>0&&<div style={{fontSize:12,fontWeight:700,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm,marginBottom:8}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}% ({cSym}{Math.abs((pos.currentPrice-pos.avgCost)*pos.shares).toFixed(0)})</div>}
+              </div>:<div style={{fontSize:12,color:K.dim,marginBottom:10}}>Tap to add position</div>}
+              {/* Price vs Target bar */}
+              {(function(){
+                var price=pos.currentPrice;var tgt=c.targetPrice||0;
+                var snap_=c.financialSnapshot||{};var graham=snap_.grahamNum?snap_.grahamNum.numVal:0;
+                if(!price||(!tgt&&!graham))return null;
+                var lo=Math.min(price*0.55,graham>0?graham*0.8:price*0.55);
+                var hi=Math.max(price*1.45,tgt>0?tgt*1.25:price*1.45);
+                var pct=Math.max(2,Math.min(98,(price-lo)/(hi-lo)*100));
+                var tgtPct=tgt>0?Math.max(2,Math.min(98,(tgt-lo)/(hi-lo)*100)):null;
+                var gPct=graham>0?Math.max(2,Math.min(98,(graham-lo)/(hi-lo)*100)):null;
+                var priceColor=tgt>0?(price<tgt*0.85?K.grn:price<tgt*1.1?K.amb:K.red):K.mid;
+                return<div style={{marginTop:2}}>
+                  <div style={{position:"relative",height:6,borderRadius:3,background:"linear-gradient(90deg,"+K.grn+"55,"+K.amb+"55 50%,"+K.red+"55)",marginBottom:6}}>
+                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:1,background:K.blue+"bb"}} title={"Graham: "+cSym+graham.toFixed(2)}/>}
+                    {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:1,background:K.acc}} title={"Target: "+cSym+tgt}/>}
+                    <div style={{position:"absolute",top:"50%",left:pct+"%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:priceColor,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9,color:K.dim,fontFamily:fm}}>
+                    <span>Cheap</span>
+                    {tgtPct!=null&&<span style={{color:K.acc,fontSize:9}}>Target {cSym}{tgt}</span>}
+                    {tgtPct==null&&gPct!=null&&<span style={{color:K.blue,fontSize:9}}>Graham {cSym}{graham.toFixed(0)}</span>}
+                    <span>Pricey</span>
+                  </div>
+                </div>
+              })()}
             </div></div>
           {/* Recent decisions */}
           {(function(){var recent=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)}).slice(0,2);
