@@ -903,6 +903,19 @@ function TrackerApp(props){
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   var _cs=useState(function(){try{var s=localStorage.getItem('ta-curated-sources');return s?JSON.parse(s):[]}catch(e){return[]}}),curatedSources=_cs[0],setCuratedSources=_cs[1];
   function saveCuratedSources(v){setCuratedSources(v);try{localStorage.setItem('ta-curated-sources',JSON.stringify(v))}catch(e){}}
+  // Feed state — must live at top level (hooks can't be inside conditional IIFEs)
+  var _fi=useState([]),feedItems=_fi[0],setFeedItems=_fi[1];
+  var _fl=useState(false),feedLoading=_fl[0],setFeedLoading=_fl[1];
+  var _fld=useState(false),feedLoaded=_fld[0],setFeedLoaded=_fld[1];
+  var _frk=useState(0),feedRefreshKey=_frk[0],setFeedRefreshKey=_frk[1];
+  var _fv=useState("feed"),feedView=_fv[0],setFeedView=_fv[1];
+  var _fas=useState(false),feedAddingSource=_fas[0],setFeedAddingSource=_fas[1];
+  var _fnt=useState("substack"),feedNewType=_fnt[0],setFeedNewType=_fnt[1];
+  var _fnh=useState(""),feedNewHandle=_fnh[0],setFeedNewHandle=_fnh[1];
+  var _fnl=useState(""),feedNewLabel=_fnl[0],setFeedNewLabel=_fnl[1];
+  var _fntags=useState([]),feedNewTags=_fntags[0],setFeedNewTags=_fntags[1];
+  var _ff=useState("all"),feedFilter=_ff[0],setFeedFilter=_ff[1];
+  var _fei=useState(null),feedEditingId=_fei[0],setFeedEditingId=_fei[1];
   var _lib=useState(function(){try{var s=localStorage.getItem('ta-library');return s?JSON.parse(s):{folders:[],items:[]}}catch(e){return{folders:[],items:[]}}}),library=_lib[0],setLibrary=_lib[1];
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
   var _bn=useState(null),briefNews=_bn[0],setBriefNews=_bn[1];
@@ -1706,6 +1719,22 @@ function TrackerApp(props){
   },[loaded,cos.length]);
   // Check achievements whenever relevant data changes
   useEffect(function(){if(!loaded)return;checkAchievements()},[loaded,cos.length,reviewStreak,milestones.thesis4,milestones.first_moat,milestones.stoic,milestones.contrarian]);
+  // Feed loader — top level so hooks are stable across renders
+  var FEED_SOURCE_COLORS={substack:"#FF6719",rss:K.acc};
+  useEffect(function(){
+    var rssSourceList=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"});
+    if(rssSourceList.length===0){setFeedItems([]);setFeedLoaded(true);setFeedLoading(false);return}
+    setFeedLoading(true);setFeedLoaded(false);
+    Promise.all(rssSourceList.map(function(s){
+      return fetchFeed(s).then(function(items){
+        return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:FEED_SOURCE_COLORS[s.type]||K.acc})})
+      }).catch(function(e){console.warn("[Feed] failed:",s.label,e);return[]})
+    })).then(function(results){
+      var merged=results.reduce(function(a,b){return a.concat(b)},[]);
+      merged.sort(function(a,b){return(b.date||0)-(a.date||0)});
+      setFeedItems(merged);setFeedLoading(false);setFeedLoaded(true);
+    });
+  },[curatedSources.map(function(s){return s.id+(s.enabled?"1":"0")+JSON.stringify(s.tags||[])}).join("|"),feedRefreshKey]);
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,xp:xp,qLetters:qLetters,streak:streakData,dailyStreak:dailyStreak,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,chest:chestRewards,doubleXP:doubleXP,quests:questData}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
@@ -3038,7 +3067,9 @@ function TrackerApp(props){
     if(feedCache.current[cacheKey]&&feedCache.current[cacheKey].ts>Date.now()-300000)return feedCache.current[cacheKey].items;
     try{
       var proxyUrl="https://api.allorigins.win/get?url="+encodeURIComponent(rssUrl);
-      var res=await fetch(proxyUrl,{signal:AbortSignal.timeout(10000)});
+      var ctrl=new AbortController();var tId=setTimeout(function(){ctrl.abort()},10000);
+      var res=await fetch(proxyUrl,{signal:ctrl.signal});
+      clearTimeout(tId);
       var json=await res.json();
       var xml=json.contents;
       if(!xml)return[];
@@ -5465,67 +5496,36 @@ function TrackerApp(props){
       {/* ═══ MY FEED TAB ═══ */}
       {ht==="feed"&&(function(){
         var SOURCE_TYPES=[
-          {v:"substack",l:"Substack",icon:"book",color:"#FF6719",ph:"author handle or substack URL"},
-          {v:"rss",l:"RSS / Blog",icon:"news",color:K.acc,ph:"https://example.com/feed or blog URL"},
+          {v:"substack",l:"Substack",icon:"book",color:"#FF6719",ph:"author handle or substack.com URL"},
+          {v:"rss",l:"RSS / Blog",icon:"news",color:K.acc,ph:"https://example.com/feed"},
           {v:"twitter",l:"Twitter / X",icon:"msg",color:"#1DA1F2",ph:"@username"},
         ];
-        var _view=useState("feed"),feedView=_view[0],setFeedView=_view[1];
-        var _adding=useState(false),addingSource=_adding[0],setAddingSource=_adding[1];
-        var _srcType=useState("substack"),newType=_srcType[0],setNewType=_srcType[1];
-        var _handle=useState(""),newHandle=_handle[0],setNewHandle=_handle[1];
-        var _lbl=useState(""),newLabel=_lbl[0],setNewLabel=_lbl[1];
-        var _tags=useState([]),newTags=_tags[0],setNewTags=_tags[1];
-        var _items=useState([]),feedItems=_items[0],setFeedItems=_items[1];
-        var _loading=useState(false),feedLoading=_loading[0],setFeedLoading=_loading[1];
-        var _loaded=useState(false),feedLoaded=_loaded[0],setFeedLoaded=_loaded[1];
-        var _filter=useState("all"),feedFilter=_filter[0],setFeedFilter=_filter[1];
-        var _refreshKey=useState(0),refreshKey=_refreshKey[0],setRefreshKey=_refreshKey[1];
-        var _editId=useState(null),editingId=_editId[0],setEditingId=_editId[1];
-
+        // All state is top-level — referenced here, not created here
+        var typeInfo=SOURCE_TYPES.find(function(t){return t.v===feedNewType})||SOURCE_TYPES[0];
+        var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
         var rssSourceList=curatedSources.filter(function(s){return s.enabled&&s.type!=="twitter"});
-        var allTickers=[...new Set(curatedSources.filter(function(s){return(s.tags||[]).length>0}).reduce(function(acc,s){return acc.concat(s.tags||[])},[])) ];
-
-        // Load feed on mount / refresh
-        useEffect(function(){
-          if(rssSourceList.length===0){setFeedItems([]);setFeedLoaded(true);return}
-          setFeedLoading(true);
-          Promise.all(rssSourceList.map(function(s){
-            return fetchFeed(s).then(function(items){
-              return items.map(function(item){return Object.assign({},item,{srcId:s.id,srcLabel:s.label,srcType:s.type,tags:s.tags||[],srcColor:SOURCE_TYPES.find(function(t){return t.v===s.type})&&SOURCE_TYPES.find(function(t){return t.v===s.type}).color||K.acc})})
-            }).catch(function(){return[]})
-          })).then(function(results){
-            var merged=results.reduce(function(a,b){return a.concat(b)},[]);
-            merged.sort(function(a,b){return(b.date||0)-(a.date||0)});
-            setFeedItems(merged);setFeedLoading(false);setFeedLoaded(true);
-          });
-        },[rssSourceList.map(function(s){return s.id}).join(","),refreshKey]);
-
+        var allTickers=[...new Set(curatedSources.reduce(function(acc,s){return acc.concat(s.tags||[])},[])) ];
+        var filtered=feedFilter==="all"?feedItems:feedItems.filter(function(item){return(item.tags||[]).some(function(t){return t===feedFilter})});
+        function fmtDate(d){if(!d)return"";var now=new Date();var diff=Math.floor((now-d)/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<7)return diff+"d ago";if(diff<30)return Math.floor(diff/7)+"w ago";return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
         function addSource(){
-          if(!newHandle.trim())return;
-          var autoLabel=newLabel.trim();
+          if(!feedNewHandle.trim())return;
+          var autoLabel=feedNewLabel.trim();
           if(!autoLabel){
-            var h=newHandle.trim().replace(/^@/,"");
-            if(newType==="substack")autoLabel=h.replace(/\.substack\.com.*/,"").split("/").pop();
-            else if(newType==="twitter")autoLabel="@"+h.replace(/^@/,"");
+            var h=feedNewHandle.trim().replace(/^@/,"");
+            if(feedNewType==="substack")autoLabel=h.replace(/\.substack\.com.*/,"").split("/").pop();
+            else if(feedNewType==="twitter")autoLabel="@"+h.replace(/^@/,"");
             else{try{autoLabel=new URL(h.startsWith("http")?h:"https://"+h).hostname.replace("www.","")}catch(e){autoLabel=h.substring(0,30)}}
           }
-          var ns={id:Date.now(),type:newType,handle:newHandle.trim(),label:autoLabel,tags:newTags,enabled:true,addedAt:new Date().toISOString()};
+          var ns={id:Date.now(),type:feedNewType,handle:feedNewHandle.trim(),label:autoLabel,tags:feedNewTags,enabled:true,addedAt:new Date().toISOString()};
           saveCuratedSources(curatedSources.concat([ns]));
-          setNewHandle("");setNewLabel("");setNewTags([]);setAddingSource(false);
+          setFeedNewHandle("");setFeedNewLabel("");setFeedNewTags([]);setFeedAddingSource(false);
         }
         function removeSource(id){saveCuratedSources(curatedSources.filter(function(s){return s.id!==id}))}
         function toggleSource(id){saveCuratedSources(curatedSources.map(function(s){return s.id===id?Object.assign({},s,{enabled:!s.enabled}):s}))}
         function updateTags(id,tags){saveCuratedSources(curatedSources.map(function(s){return s.id===id?Object.assign({},s,{tags:tags}):s}))}
 
-        function fmtDate(d){if(!d)return"";var now=new Date();var diff=Math.floor((now-d)/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<7)return diff+"d ago";if(diff<30)return Math.floor(diff/7)+"w ago";return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-
-        var filtered=feedFilter==="all"?feedItems:feedItems.filter(function(item){return(item.tags||[]).some(function(t){return t===feedFilter})});
-
-        var typeInfo=SOURCE_TYPES.find(function(t){return t.v===newType})||SOURCE_TYPES[0];
-        var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-
         return<div>
-          {/* Header row */}
+          {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
             <div style={{flex:1}}>
               <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>My Feed</div>
@@ -5535,49 +5535,45 @@ function TrackerApp(props){
               <button onClick={function(){setFeedView(feedView==="feed"?"sources":"feed")}} style={Object.assign({},feedView==="sources"?S.btnP:S.btn,{padding:"6px 14px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
                 <IC name={feedView==="sources"?"news":"gear"} size={11} color={feedView==="sources"?K.acc:K.mid}/>{feedView==="sources"?"View Feed":"Manage Sources"}
               </button>
-              {feedView==="feed"&&<button onClick={function(){feedCache.current={};setRefreshKey(function(k){return k+1})}} title="Refresh feed" style={Object.assign({},S.btn,{padding:"6px 10px",fontSize:12})}><IC name="trending" size={13} color={K.mid}/></button>}
-              {feedView==="sources"&&<button onClick={function(){setAddingSource(!addingSource)}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Add Source</button>}
+              {feedView==="feed"&&rssSourceList.length>0&&<button onClick={function(){feedCache.current={};setFeedRefreshKey(function(k){return k+1})}} title="Refresh feed" style={Object.assign({},S.btn,{padding:"6px 10px"})}><IC name="trending" size={13} color={K.mid}/></button>}
+              {feedView==="sources"&&<button onClick={function(){setFeedAddingSource(!feedAddingSource)}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Add Source</button>}
             </div>
           </div>
 
           {/* ── SOURCES VIEW ── */}
           {feedView==="sources"&&<div>
-            {/* Add form */}
-            {addingSource&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px",marginBottom:16}}>
+            {feedAddingSource&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px",marginBottom:16}}>
               <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:14}}>Add Source</div>
-              {/* Type selector */}
-              <div style={{display:"flex",gap:6,marginBottom:14}}>
-                {SOURCE_TYPES.map(function(t){return<button key={t.v} onClick={function(){setNewType(t.v)}} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,border:"1px solid "+(newType===t.v?t.color:K.bdr),background:newType===t.v?t.color+"15":"transparent",color:newType===t.v?t.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:newType===t.v?700:400,transition:"all .15s"}}>
-                  <IC name={t.icon} size={11} color={newType===t.v?t.color:K.dim}/>{t.l}
+              <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+                {SOURCE_TYPES.map(function(t){return<button key={t.v} onClick={function(){setFeedNewType(t.v)}} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,border:"1px solid "+(feedNewType===t.v?t.color:K.bdr),background:feedNewType===t.v?t.color+"15":"transparent",color:feedNewType===t.v?t.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:feedNewType===t.v?700:400}}>
+                  <IC name={t.icon} size={11} color={feedNewType===t.v?t.color:K.dim}/>{t.l}
                 </button>})}
               </div>
-              <Inp label={typeInfo.l+" — "+typeInfo.ph} value={newHandle} onChange={setNewHandle} placeholder={typeInfo.ph} K={K}/>
-              <Inp label="Display name (optional)" value={newLabel} onChange={setNewLabel} placeholder={"e.g. Catzee, Not Boring, Stratechery…"} K={K}/>
-              {/* Tag to companies */}
+              <Inp label={typeInfo.l+" — "+typeInfo.ph} value={feedNewHandle} onChange={setFeedNewHandle} placeholder={typeInfo.ph} K={K}/>
+              <Inp label="Display name (optional)" value={feedNewLabel} onChange={setFeedNewLabel} placeholder={"e.g. Catzee, Not Boring, Stratechery…"} K={K}/>
               {portfolio2.length>0&&<div style={{marginBottom:12}}>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Tag to companies (optional)</div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Tag to companies (optional — for filtering)</div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {portfolio2.map(function(c){var tagged=newTags.includes(c.ticker);return<button key={c.id} onClick={function(){setNewTags(tagged?newTags.filter(function(t){return t!==c.ticker}):newTags.concat([c.ticker]))}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(tagged?K.acc:K.bdr),background:tagged?K.acc+"15":"transparent",color:tagged?K.acc:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:tagged?700:400}}>{c.ticker}</button>})}
+                  {portfolio2.map(function(c){var tagged=feedNewTags.includes(c.ticker);return<button key={c.id} onClick={function(){setFeedNewTags(tagged?feedNewTags.filter(function(t){return t!==c.ticker}):feedNewTags.concat([c.ticker]))}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(tagged?K.acc:K.bdr),background:tagged?K.acc+"15":"transparent",color:tagged?K.acc:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:tagged?700:400}}>{c.ticker}</button>})}
                 </div>
               </div>}
-              {newType==="twitter"&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:K.amb,fontFamily:fm,lineHeight:1.5}}>Twitter/X requires a paid API — this saves a quick-link to their profile instead.</div>}
+              {feedNewType==="twitter"&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:K.amb,fontFamily:fm,lineHeight:1.5}}>Twitter/X doesn't allow public feed access — this saves a quick-link to their profile so you can visit with one click.</div>}
               <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginTop:4}}>
-                <button style={S.btn} onClick={function(){setAddingSource(false);setNewHandle("");setNewLabel("");setNewTags([])}}>Cancel</button>
-                <button style={Object.assign({},S.btnP,{opacity:newHandle.trim()?1:.4})} onClick={addSource}>Save Source</button>
+                <button style={S.btn} onClick={function(){setFeedAddingSource(false);setFeedNewHandle("");setFeedNewLabel("");setFeedNewTags([])}}>Cancel</button>
+                <button style={Object.assign({},S.btnP,{opacity:feedNewHandle.trim()?1:.4})} onClick={addSource}>Save Source</button>
               </div>
             </div>}
-            {/* Sources list */}
-            {curatedSources.length===0&&!addingSource&&<div style={{textAlign:"center",padding:"48px 20px",background:K.card,border:"1px dashed "+K.bdr,borderRadius:14}}>
+            {curatedSources.length===0&&!feedAddingSource&&<div style={{textAlign:"center",padding:"48px 20px",background:K.card,border:"1px dashed "+K.bdr,borderRadius:14}}>
               <div style={{fontSize:32,marginBottom:12}}>📡</div>
               <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>No sources yet</div>
-              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substacks, RSS feeds, or Twitter handles. Optionally tag them to your holdings so you can filter by company.</div>
-              <button onClick={function(){setAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add your first source</button>
+              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substack writers or RSS feeds — posts will appear in your feed automatically. Tag them to companies to filter by ticker.</div>
+              <button onClick={function(){setFeedAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add your first source</button>
             </div>}
             {curatedSources.length>0&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
               {curatedSources.map(function(s){
                 var ti=SOURCE_TYPES.find(function(t){return t.v===s.type})||SOURCE_TYPES[0];
-                var isEditing=editingId===s.id;
-                return<div key={s.id} style={{background:K.card,border:"1px solid "+(s.enabled?ti.color+"30":K.bdr),borderRadius:12,padding:"14px 16px",opacity:s.enabled?1:.6,transition:"all .15s"}}>
+                var isEditing=feedEditingId===s.id;
+                return<div key={s.id} style={{background:K.card,border:"1px solid "+(s.enabled?ti.color+"30":K.bdr),borderRadius:12,padding:"14px 16px",opacity:s.enabled?1:.55,transition:"all .15s"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{width:34,height:34,borderRadius:9,background:ti.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                       <IC name={ti.icon} size={15} color={ti.color}/>
@@ -5590,21 +5586,19 @@ function TrackerApp(props){
                       {(s.tags||[]).map(function(t){return<span key={t} style={{fontSize:10,color:K.acc,background:K.acc+"12",borderRadius:4,padding:"1px 6px",fontFamily:fm,fontWeight:700}}>{t}</span>})}
                     </div>}
                     <div style={{display:"flex",gap:4,flexShrink:0}}>
-                      <button onClick={function(){setEditingId(isEditing?null:s.id)}} title="Edit tags" style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 8px",fontSize:11,color:K.dim,fontFamily:fm}}>{isEditing?"Done":"Tags"}</button>
+                      <button onClick={function(){setFeedEditingId(isEditing?null:s.id)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 8px",fontSize:11,color:K.dim,fontFamily:fm}}>{isEditing?"Done":"Tags"}</button>
                       <button onClick={function(){toggleSource(s.id)}} title={s.enabled?"Pause":"Enable"} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 7px",color:K.dim}}><IC name={s.enabled?"check":"plus"} size={11} color={s.enabled?K.grn:K.dim}/></button>
-                      <button onClick={function(){removeSource(s.id)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 7px",color:K.dim,opacity:.6}}><IC name="alert" size={11} color={K.red}/></button>
+                      <button onClick={function(){removeSource(s.id)}} title="Remove" style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,cursor:"pointer",padding:"4px 7px"}}><IC name="alert" size={11} color={K.red}/></button>
                     </div>
                   </div>
-                  {/* Inline tag editor */}
                   {isEditing&&portfolio2.length>0&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid "+K.bdr}}>
                     <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Tag to companies</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                       {portfolio2.map(function(c){var tagged=(s.tags||[]).includes(c.ticker);return<button key={c.id} onClick={function(){var t2=tagged?(s.tags||[]).filter(function(t){return t!==c.ticker}):(s.tags||[]).concat([c.ticker]);updateTags(s.id,t2)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(tagged?K.acc:K.bdr),background:tagged?K.acc+"15":"transparent",color:tagged?K.acc:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:tagged?700:400}}>{c.ticker}</button>})}
                     </div>
                   </div>}
-                  {/* Twitter direct link */}
                   {s.type==="twitter"&&s.enabled&&<div style={{marginTop:8}}>
-                    <a href={"https://x.com/"+s.handle.replace(/^@/,"")} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1DA1F2",fontFamily:fm,textDecoration:"none"}}>Open @{s.handle.replace(/^@/,"")} on X →</a>
+                    <a href={"https://x.com/"+s.handle.replace(/^@/,"")} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1DA1F2",fontFamily:fm,textDecoration:"none",display:"inline-flex",alignItems:"center",gap:4}}><IC name="msg" size={11} color="#1DA1F2"/>Open @{s.handle.replace(/^@/,"")} on X →</a>
                   </div>}
                 </div>
               })}
@@ -5613,26 +5607,31 @@ function TrackerApp(props){
 
           {/* ── FEED VIEW ── */}
           {feedView==="feed"&&<div>
+            {/* No sources at all */}
+            {curatedSources.filter(function(s){return s.type!=="twitter"}).length===0&&<div style={{textAlign:"center",padding:"48px 20px"}}>
+              <div style={{fontSize:32,marginBottom:12}}>📡</div>
+              <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Your feed is empty</div>
+              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substack newsletters or RSS feeds — posts from your favourite writers will appear here automatically.</div>
+              <button onClick={function(){setFeedView("sources");setFeedAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add a source</button>
+            </div>}
             {/* Ticker filter pills */}
-            {allTickers.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
+            {allTickers.length>1&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
               <button onClick={function(){setFeedFilter("all")}} style={{padding:"5px 14px",borderRadius:999,border:"1px solid "+(feedFilter==="all"?K.acc:K.bdr),background:feedFilter==="all"?K.acc+"15":"transparent",color:feedFilter==="all"?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter==="all"?700:400}}>All</button>
               {allTickers.map(function(t){return<button key={t} onClick={function(){setFeedFilter(t)}} style={{padding:"5px 14px",borderRadius:999,border:"1px solid "+(feedFilter===t?K.acc:K.bdr),background:feedFilter===t?K.acc+"15":"transparent",color:feedFilter===t?K.acc:K.dim,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:feedFilter===t?700:400}}>{t}</button>})}
             </div>}
-            {/* States */}
-            {curatedSources.filter(function(s){return s.type!=="twitter"}).length===0&&<div style={{textAlign:"center",padding:"48px 20px"}}>
-              <div style={{fontSize:32,marginBottom:12}}>📡</div>
-              <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Nothing to show yet</div>
-              <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:360,margin:"0 auto 20px"}}>Add Substack or RSS sources to start building your feed.</div>
-              <button onClick={function(){setFeedView("sources");setAddingSource(true)}} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13})}>Add a source</button>
-            </div>}
-            {feedLoading&&rssSourceList.length>0&&<div style={{textAlign:"center",padding:"40px",color:K.dim,fontSize:13,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+            {/* Loading */}
+            {feedLoading&&<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,padding:"48px 20px",color:K.dim,fontSize:13,fontFamily:fm}}>
               <div style={{width:16,height:16,border:"2px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>Loading your feed…
             </div>}
-            {feedLoaded&&!feedLoading&&filtered.length===0&&rssSourceList.length>0&&<div style={{textAlign:"center",padding:40,color:K.dim,fontSize:13,fontFamily:fm}}>No posts found{feedFilter!=="all"?" tagged to "+feedFilter:""}.</div>}
-            {feedLoaded&&!feedLoading&&filtered.length>0&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {/* Empty after load */}
+            {feedLoaded&&!feedLoading&&filtered.length===0&&rssSourceList.length>0&&<div style={{textAlign:"center",padding:40,color:K.dim,fontSize:13,fontFamily:fm}}>
+              {feedFilter!=="all"?"No posts tagged to "+feedFilter+". Try removing the filter.":"No posts found. Check your source handles or try refreshing."}
+            </div>}
+            {/* Posts */}
+            {!feedLoading&&filtered.length>0&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
               {filtered.map(function(item,i){
                 var sc=item.srcColor||K.acc;
-                return<a key={i} href={item.link} target="_blank" rel="noreferrer" style={{display:"block",textDecoration:"none",background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+sc+"70",borderRadius:12,padding:"16px 18px",transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=sc+"80"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+                return<a key={i} href={item.link} target="_blank" rel="noreferrer" style={{display:"block",textDecoration:"none",background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+sc+"80",borderRadius:12,padding:"16px 18px",transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=sc}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
                   <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,marginBottom:6}}>
                     <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.45,flex:1}}>{item.title}</div>
                     <span style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap",marginTop:2,flexShrink:0}}>{fmtDate(item.date)}</span>
