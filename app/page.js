@@ -4005,6 +4005,7 @@ function TrackerApp(props){
               <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
               <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div></div>}
         </div>}
+      </div>}{/* end dossierMktOpen */}
 
                 {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
