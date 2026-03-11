@@ -5081,17 +5081,16 @@ function TrackerApp(props){
             <div style={{fontSize:13,color:K.dim}}>Come back next week for your next insight</div></div>
           :<div style={{textAlign:"center",marginTop:16}}>
             <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>Start Review</button></div>}
-          {/* Reward history */}
-          {,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>PAST INSIGHTS</div>
+          {/* Review history */}
+          {weeklyReviews.length>1&&<div style={{maxWidth:360,margin:"16px auto 0",background:K.card,borderRadius:10,border:"1px solid "+K.bdr,padding:"14px 16px"}}>
+            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>PAST REVIEWS</div>
             <div style={{maxHeight:140,overflow:"auto"}}>
-            {,15).map(function(h,hi){
-              var tc2=h.tier==="rare"?"#FFD700":h.tier==="uncommon"?"#a78bfa":K.dim;
+            {weeklyReviews.slice(1,15).map(function(h,hi){
               var d2=h.date?new Date(h.date):null;
               var ds2=d2?d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
-              return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(,14)-1?"1px solid "+K.bdr+"30":"none"}}>
-                <div style={{width:5,height:5,borderRadius:"50%",background:tc2,flexShrink:0}}/>
-                <div style={{fontSize:11,color:K.txt,fontFamily:fm,flex:1}}>{h.reward}</div>
+              return<div key={hi} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:hi<Math.min(weeklyReviews.length-1,14)-1?"1px solid "+K.bdr+"30":"none"}}>
+                <div style={{width:5,height:5,borderRadius:"50%",background:K.grn,flexShrink:0}}/>
+                <div style={{fontSize:11,color:K.txt,fontFamily:fm,flex:1}}>Week reviewed</div>
                 <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{ds2}</div>
               </div>})}</div>
           </div>}
