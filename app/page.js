@@ -6906,8 +6906,6 @@ function TrackerApp(props){
 
     {/* Nordnet-style list view */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="list"&&(function(){
-    {/* Nordnet-style list view */}
-    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="list"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
