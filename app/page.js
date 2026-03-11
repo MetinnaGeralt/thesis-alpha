@@ -6494,110 +6494,142 @@ function TrackerApp(props){
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
       var greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-      // Portfolio value & change
-      var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
-      var totalVal=held.reduce(function(s,c2){return s+(c2.position.shares*c2.position.currentPrice)},0);
-      var totalCost=held.reduce(function(s,c2){return s+(c2.position.shares*(c2.position.avgCost||c2.position.currentPrice))},0);
-      var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
-      // Notable movers (any holding with position data)
-      var movers=held.filter(function(c2){return c2&&c2.position&&c2.position.currentPrice>0}).map(function(c2){var p2=c2.position||{};return{ticker:c2.ticker||"?",id:c2.id,ret:p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):0,price:p2.currentPrice||0,dayChg:c2._dayChangePct||0,hasPos:(p2.avgCost||0)>0}}).sort(function(a,b){return Math.abs(b.dayChg)-Math.abs(a.dayChg)});
-      var topMover=movers[0];var worstMover=movers.length>1?movers[movers.length-1]:null;
-      // Upcoming earnings
+
+      // ── Conviction health ───────────────────────────────────────────────
+      var convReviewed=portfolio.filter(function(c2){
+        if(!c2.thesisUpdatedAt&&!c2.thesisNote)return false;
+        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
+        return age<=60;
+      }).length;
+      var convStale=portfolio.filter(function(c2){
+        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
+        return age>90;
+      }).length;
+      var convTotal=portfolio.length;
+      var convHealthPct=convTotal>0?Math.round(convReviewed/convTotal*100):0;
+      var convHealthColor=convHealthPct>=70?K.grn:convHealthPct>=40?K.amb:K.red;
+
+      // ── Upcoming earnings ───────────────────────────────────────────────
       var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
-      // Recent insider buys (from cached transactions)
-      var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length})}});
-      // Pending actions
-      var actions=[];
-      if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,text:"Weekly review due"+(streakData.current>0?" \u2014 "+streakData.current+"wk streak on the line":""),onClick:function(){setPage("review")}});
-      var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-      if(unchecked.length>0)actions.push({icon:"target",color:K.amb,text:unchecked.map(function(c2){return c2.ticker}).join(", ")+" \u2014 earnings released, KPIs unchecked",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}});
-      var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
-      if(stale.length>0)actions.push({icon:"clock",color:K.red,text:stale.length+" thesis"+(stale.length>1?"es":"")+" older than 90 days",onClick:function(){setSelId(stale[0].id);setModal({type:"thesis"})}});
-      var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
-      if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.acc,text:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
-      var noScenario=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});
-      if(noScenario.length>0&&actions.length<4)actions.push({icon:"shield",color:"#9333EA",text:noScenario.length+" holding"+(noScenario.length>1?"s":"")+" without a crisis plan",onClick:function(){setSelId(noScenario[0].id);setModal({type:"scenario"})}});
-      // Investor quotes
-      var quotes=[
-        {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
-        {q:"Risk comes from not knowing what you're doing.",a:"Warren Buffett"},
-        {q:"The big money is not in the buying and selling, but in the waiting.",a:"Charlie Munger"},
-        {q:"In investing, what is comfortable is rarely profitable.",a:"Robert Arnott"},
-        {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
-        {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
-        {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
-        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
-        {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
-        {q:"It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
-        {q:"Our favorite holding period is forever.",a:"Warren Buffett"},
-        {q:"The four most dangerous words in investing are: this time it's different.",a:"John Templeton"}
-      ];
-      var dayIdx=Math.floor(now.getTime()/86400000)%quotes.length;
-      var quote=quotes[dayIdx];
-      // Portfolio character classification
-      var portClass=classifyPortfolio(portfolio);
-      // Earnings urgency color
       var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
-      var earningsTomorrow=upcoming.filter(function(c2){return dU(c2.earningsDate)===1}).length;
-      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden",maxWidth:"100%"}}>
-        {/* Header */}
-        <div style={{padding:isMobile?"16px 16px 12px":"20px 24px 16px",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-            <div style={{minWidth:0}}>
-              <div style={{fontSize:isMobile?16:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4,flexWrap:"wrap"}}>
-                <div style={{fontSize:12,color:K.dim}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
-                {portClass.summary&&<span style={{fontSize:12,color:portClass.color,fontFamily:fm,fontStyle:"italic"}}>{portClass.summary}</span>}
+
+      // ── ONE FOCUS — pick the single most urgent action ──────────────────
+      var focus=null;
+      // Priority 1: earnings TODAY with KPIs
+      var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0});
+      if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today",sub:"Check your "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
+      // Priority 2: unchecked earnings (released but not reviewed)
+      if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+        if(unchecked.length>0)focus={icon:"check",color:K.amb,title:"Review "+unchecked[0].ticker+" earnings",sub:unchecked.length+" holding"+(unchecked.length>1?"s have":"has")+" recent earnings with unchecked KPIs",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}}}
+      // Priority 3: stale thesis (>90 days)
+      if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
+        if(stale.length>0){var stalest=stale.sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)})[0];var daysAgo=Math.ceil((now-new Date(stalest.thesisUpdatedAt))/864e5);
+          focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"Last updated "+daysAgo+" days ago — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
+      // Priority 4: no thesis written
+      if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
+        if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Write a thesis for "+noThesis[0].ticker,sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
+      // Priority 5: no conviction set
+      if(!focus){var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
+        if(noConv.length>0)focus={icon:"dial",color:K.acc,title:"Set your conviction on "+noConv[0].ticker,sub:"Rate 1–10 how strongly you believe in this holding",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}}}
+      // Priority 6: weekly review
+      if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Weekly portfolio review"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
+      // Insider signals
+      var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length,id:c2.id})}});
+
+      // ── Holdings (price data — de-emphasised) ──────────────────────────
+      var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
+
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden"}}>
+        {/* ── Header: greeting only, no portfolio value ── */}
+        <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:isMobile?16:17,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
+          <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
+        </div>
+
+        {/* ── ONE FOCUS ── */}
+        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"07"}}>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>Today's Focus</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
+            <div style={{width:32,height:32,borderRadius:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <IC name={focus.icon} size={14} color={focus.color}/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,color:K.txt,marginBottom:1}}>{focus.title}</div>
+              <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{focus.sub}</div>
+            </div>
+            <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
+          </div>
+        </div>}
+
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
+          {/* LEFT — thesis signals + earnings ── */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
+
+            {/* Conviction health */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:7}}>Conviction Health</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
+                <div style={{flex:1,height:5,borderRadius:3,background:K.bdr}}>
+                  <div style={{height:"100%",borderRadius:3,background:convHealthColor,width:convHealthPct+"%",transition:"width .4s ease"}}/>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,color:convHealthColor,fontFamily:fm,flexShrink:0}}>{convHealthPct}%</span>
+              </div>
+              <div style={{display:"flex",gap:12,fontSize:10,color:K.dim,fontFamily:fm}}>
+                <span><span style={{color:K.grn,fontWeight:600}}>{convReviewed}</span> reviewed ≤60d</span>
+                {convStale>0&&<span><span style={{color:K.red,fontWeight:600}}>{convStale}</span> stale &gt;90d</span>}
+                <span style={{color:K.dim}}>{convTotal} holdings</span>
               </div>
             </div>
-            {totalVal>0&&<div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontSize:isMobile?16:20,fontWeight:700,color:K.txt,fontFamily:fm}}>${totalVal>=1e6?(totalVal/1e6).toFixed(2)+"M":totalVal>=1e3?(totalVal/1e3).toFixed(1)+"k":totalVal.toFixed(0)}</div>
-              <div style={{fontSize:13,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div></div>}</div></div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
-          {/* Left column — Market Intel */}
-          <div style={{padding:isMobile?"14px 16px":"16px 24px",borderRight:isMobile?"none":"1px solid "+(isDark?K.bdr:K.bdr2)}}>
+
             {/* Upcoming earnings */}
             {upcoming.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:600,marginBottom:8}}>{earningsToday>0?"REPORTING TODAY":earningsTomorrow>0?"REPORTING TOMORROW":"EARNINGS THIS WEEK"}</div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
+                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
+              </div>
               {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={18}/>
-                  <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
                   <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
-                  <span style={{marginLeft:"auto",fontSize:10,color:K.blue,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs"}</span></div>})}</div>}
-            {/* Notable movers */}
-            {movers.length>0&&<div style={{marginBottom:14}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                <div style={{fontSize:10,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700}}>Your Holdings</div>
-                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}><span style={{width:50,textAlign:"right"}}>Today</span><span style={{width:50,textAlign:"right"}}>Total</span></div></div>
-              {movers.slice(0,6).map(function(m){return<div key={m.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"20"}} onClick={function(){setSelId(m.id);setDetailTab("dossier")}}>
-                <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{m.ticker}</span>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>${m.price.toFixed(m.price<10?2:0)}</span>
-                <span style={{marginLeft:"auto"}}/>
-                <span style={{width:50,textAlign:"right",fontSize:11,fontWeight:600,color:m.dayChg>0?K.grn:m.dayChg<0?K.red:K.dim,fontFamily:fm}}>{m.dayChg!==0?(m.dayChg>0?"+":"")+m.dayChg.toFixed(1)+"%":priceLoading?"\u00B7\u00B7\u00B7":"0.0%"}</span>
-                <span style={{width:50,textAlign:"right",fontSize:11,fontWeight:500,color:m.hasPos?(m.ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{m.hasPos?(m.ret>=0?"+":"")+m.ret.toFixed(1)+"%":"\u2014"}</span></div>})}</div>}
-            {/* Insider signals */}
+                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
+                </div>})}
+            </div>}
+
+            {/* Insider buying signals */}
             {insiderSignals.length>0&&<div>
-              <div style={{fontSize:10,letterSpacing:isThesis?1:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
-              <div style={{fontSize:12,color:K.mid}}>{insiderSignals.map(function(s){return s.ticker+" ("+s.count+")"}).join(", ")}</div></div>}
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+              </div>
+            </div>}
+
           </div>
-          {/* Right column — Actions & Wisdom */}
-          <div style={{padding:isMobile?"14px 16px":"16px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
-            {actions.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:8}}>Action Items</div>
-              {actions.slice(0,3).map(function(a,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,marginBottom:4,background:a.color+"06",border:"1px solid "+a.color+"15",cursor:"pointer"}} onClick={a.onClick}>
-                <IC name={a.icon} size={12} color={a.color}/>
-                <span style={{fontSize:isMobile?12:12,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:isMobile?"nowrap":"normal"}}>{a.text}</span>
-                <span style={{fontSize:11,color:a.color,fontFamily:fm,flexShrink:0}}>{"→"}</span></div>})}</div>}
-            {actions.length===0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>All Clear</div>
-              <div style={{fontSize:12,color:K.mid}}>No urgent actions. Your portfolio is in good shape.</div></div>}
-            {/* Daily quote */}
-            <div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginTop:actions.length>0?0:8}}>
-              <div style={{fontSize:isMobile?13:13,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{"\u201C"+quote.q+"\u201D"}</div>
-              <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm}}>{"— "+quote.a}</div></div>
-          </div></div>
-        {/* ── Owner's Intel Feed ── */}
+
+          {/* RIGHT — holdings (price as context, not headline) ── */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
+            {held.length>0&&<div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Holdings</div>
+                <div style={{display:"flex",gap:8,fontSize:8,color:K.dim,fontFamily:fm}}>
+                  <span style={{width:40,textAlign:"right"}}>Today</span>
+                  <span style={{width:44,textAlign:"right"}}>Return</span>
+                </div>
+              </div>
+              {held.map(function(c2){var p2=c2.position||{};var ret=p2.avgCost>0?((p2.currentPrice-p2.avgCost)/p2.avgCost*100):null;var dayChg=c2._dayChangePct||0;var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",cursor:"pointer",borderBottom:"1px solid "+K.bdr+"18"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  {/* Conviction dot — the primary signal */}
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0}}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,width:44}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:K.dim,flex:1}}>${p2.currentPrice.toFixed(p2.currentPrice<10?2:0)}</span>
+                  <span style={{width:40,textAlign:"right",fontSize:10,color:dayChg>0?K.grn:dayChg<0?K.red:K.dim,fontFamily:fm}}>{dayChg!==0?(dayChg>0?"+":"")+dayChg.toFixed(1)+"%":priceLoading?"···":"—"}</span>
+                  <span style={{width:44,textAlign:"right",fontSize:10,fontWeight:500,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</span>
+                </div>})}
+            </div>}
+            {held.length===0&&portfolio.length>0&&<div style={{fontSize:12,color:K.dim,lineHeight:1.6,paddingTop:4}}>Add position data to your holdings to see returns here.</div>}
+          </div>
+        </div>
+
+        {/* ── Owner's Intel feed ── */}
         {(function(){
           var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
           var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
@@ -6607,22 +6639,20 @@ function TrackerApp(props){
           if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
           return<div style={{borderTop:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-              {/* Header row */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={10} color={isThesis?K.acc:K.dim}/>Owner’s Intel
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                  <IC name="news" size={9} color={isThesis?K.acc:K.dim}/>Owner's Intel
                   {briefNews&&briefNews.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",letterSpacing:.3,display:"flex",alignItems:"center",gap:4}}>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
                     <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"\u21ba"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"↺"}</button>
                 </div>
               </div>
-              {/* Filter panel */}
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about\u2026"}</div>
+                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
                     <div style={{width:6,height:6,borderRadius:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
@@ -6631,31 +6661,30 @@ function TrackerApp(props){
                 </div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
               </div>}
-              {/* Loading */}
-              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:8,height:8,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings\u2026"}</span></div>}
-              {/* Stories */}
+              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
               {shown.length>0&&<div>{shown.map(function(n,i){
                 var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
                 var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
                 return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
                   onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
                   onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
-                  {co&&<div style={{flexShrink:0,marginTop:1}}><CoLogo domain={co.domain} ticker={co.ticker} size={18}/></div>}
+                  {co&&<div style={{flexShrink:0,marginTop:2}}><CoLogo domain={co.domain} ticker={co.ticker} size={16}/></div>}
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:isMobile?11:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
-                      <span style={{fontSize:isMobile?11:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
-                      <span style={{fontSize:isMobile?10:8,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
+                      <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
+                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
                     </div>
                   </div>
-                  <span style={{flexShrink:0,fontSize:isMobile?11:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
                 </a>})}
               </div>}
-              {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:12,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days. Try enabling more categories or check back later."}</div>}
+              {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:12,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days."}</div>}
             </div>
           </div>})()}
       </div>})()}
+    {/* ── Owner's Checklist (persistent onboarding) ── */}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
       var portfolio=filtered;
