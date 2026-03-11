@@ -6302,8 +6302,8 @@ function TrackerApp(props){
               </div>
               <div style={{textAlign:"right",flexShrink:0}}>
                 {(function(){var first=pts[0].rating;var last=pts[pts.length-1].rating;var delta=last-first;
-                  return<><div style={{fontSize:18,fontWeight:800,color:last>=7?K.grn:last>=4?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{last}</div>
-                  {delta!==0&&<div style={{fontSize:10,fontWeight:700,color:delta>0?K.grn:K.red,fontFamily:fm}}>{delta>0?"+":""}{delta} vs {pts.length} wks ago</div>}</>})()}
+                  return<div><div style={{fontSize:18,fontWeight:800,color:last>=7?K.grn:last>=4?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{last}</div>
+                  {delta!==0&&<div style={{fontSize:10,fontWeight:700,color:delta>0?K.grn:K.red,fontFamily:fm}}>{delta>0?"+":""}{delta} vs {pts.length} wks ago</div>}</div>})()}
               </div>
             </div>})()}
           {/* Quick thesis reminder */}
@@ -7649,10 +7649,10 @@ function TrackerApp(props){
           <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}{cSym}{Math.abs(totalReturn).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Today</div>
-          {dayPnl!==0?<>
+          {dayPnl!==0?<div>
             <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isDayUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isDayUp?"+":""}{dayPnlPct.toFixed(2)}%</div>
             <div style={{fontSize:11,color:isDayUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isDayUp?"+":""}{cSym}{Math.abs(dayPnl).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
-          </>:<div style={{fontSize:isMobile?14:18,fontWeight:500,color:K.dim,fontFamily:fm,lineHeight:1.15,marginTop:4}}>Refresh prices</div>}</div>
+          </div>:<div style={{fontSize:isMobile?14:18,fontWeight:500,color:K.dim,fontFamily:fm,lineHeight:1.15,marginTop:4}}>Refresh prices</div>}</div>
         <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden",cursor:"pointer"}} onClick={function(){if(best)setSelId(best.id)}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Leader / Laggard</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
