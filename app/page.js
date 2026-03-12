@@ -575,7 +575,7 @@ async function fetchEarnings(co,kpis){
         quickRatio:{v:ra.quickRatioTTM!=null?ra.quickRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
         netDebtEbitda:{v:ra.netDebtToEBITDATTM!=null?ra.netDebtToEBITDATTM:null,fmt:function(v){return v.toFixed(2)+"x"}},
         peg:{v:ra.priceEarningsToGrowthRatioTTM!=null?ra.priceEarningsToGrowthRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
-        fcfMargin:{v:(km.freeCashFlowPerShareTTM!=null&&km.revenuePerShareTTM!=null&&km.revenuePerShareTTM>0)?km.freeCashFlowPerShareTTM/km.revenuePerShareTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        fcfMargin:{v:(km.freeCashFlowPerShareTTM!=null&&km.revenuePerShareTTM!=null&&km.revenuePerShareTTM>0)?km.freeCashFlowPerShareTTM/km.revenuePerShareTTM*100:(ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(ra.freeCashFlowToRevenueTTM!=null?ra.freeCashFlowToRevenueTTM*100:null)),fmt:function(v){return v.toFixed(1)+"%"}},
         rndMargin:{v:ra.researchAndDevelopementToRevenueTTM!=null?ra.researchAndDevelopementToRevenueTTM*100:(ra.researchAndDevelopmentToRevenueTTM!=null?ra.researchAndDevelopmentToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
         sgaMargin:{v:ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM!=null?ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM*100:(ra.sgaToRevenueTTM!=null?ra.sgaToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
         cashOnHand:{v:km.cashPerShareTTM!=null?km.cashPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
@@ -6572,52 +6572,83 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* LEFT — business events ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
 
-            {/* ── Look-through portfolio table (Terry Smith / Fundsmith style) ── */}
+            {/* ── Look-through portfolio table — preset switcher ── */}
             {(function(){
-              // S&P 500 rough TTM benchmarks (hardcoded, updated periodically)
-              var SP500={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9};
-              // Compute position-weighted portfolio averages
+              // ── S&P 500 benchmarks ─────────────────────────────────────
+              var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
+                      roic:12,fcfMargin:11,netDebtEbitda:2.1,roe:18,
+                      revGrowth:5,epsGrowth:8,pe:22,peg:2.1,fcfYield:4.5,divYield:1.4};
+
+              // ── Preset definitions ─────────────────────────────────────
+              var PRESETS=[
+                {id:"terry",label:"Terry",tip:"Fundsmith-style: quality compounders",rows:[
+                  {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)?s.fcfMargin.numVal/s.opMargin.numVal*100:null}},
+                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.interestCoverage?s.interestCoverage.numVal:null}},
+                ]},
+                {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
+                  {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"fcfm",     label:"FCF margin",       bv:SP.fcfMargin,   hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                ]},
+                {id:"garp",label:"GARP",tip:"Growth at a reasonable price",rows:[
+                  {key:"revgr",    label:"Rev growth",       bv:SP.revGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.revGrowth?s.revGrowth.numVal:null}},
+                  {key:"epsgr",    label:"EPS growth",       bv:SP.epsGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                ]},
+                {id:"value",label:"Value",tip:"Income and deep value lens",rows:[
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                  {key:"divy",     label:"Div yield",        bv:SP.divYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.divYield?s.divYield.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                ]},
+              ];
+
+              // ── State: active preset ───────────────────────────────────
+              var _ltp=useState("terry"),activePreset=_ltp[0],setActivePreset=_ltp[1];
+              var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
+
+              // ── Weighted avg helper ────────────────────────────────────
               var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
               function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
-              // Cash conversion = FCF margin / Op margin * 100 (proxy for FCF/NOPAT)
-              var roceV=wavg(function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null});
-              var grossV=wavg(function(s){return s.grossMargin?s.grossMargin.numVal:null});
-              var opV=wavg(function(s){return s.opMargin?s.opMargin.numVal:null});
-              var cashConvV=wavg(function(s){return(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)?s.fcfMargin.numVal/s.opMargin.numVal*100:null});
-              var intCovV=wavg(function(s){return s.interestCoverage?s.interestCoverage.numVal:null});
-              var rows=[
-                {label:"ROCE",pv:roceV,bv:SP500.roce,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
-                {label:"Gross margin",pv:grossV,bv:SP500.grossMargin,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
-                {label:"Op margin",pv:opV,bv:SP500.opMargin,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
-                {label:"Cash conversion",pv:cashConvV,bv:SP500.cashConv,fmt:function(v){return v.toFixed(0)+"%"},higherBetter:true},
-                {label:"Interest cover",pv:intCovV,bv:SP500.interestCover,fmt:function(v){return v.toFixed(0)+"x"},higherBetter:true},
-              ];
-              var hasAny=rows.some(function(r){return r.pv!=null});
+
               return<div style={{marginBottom:16}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:9}}>Portfolio Look-Through</div>
-                <div style={{borderRadius:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
-                  {/* Header row */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
-                    <div style={{padding:"5px 10px",fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5}}/>
-                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center",letterSpacing:.3}}>Portfolio</div>
-                    <div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",letterSpacing:.3}}>S&P 500</div>
+                {/* Section label + preset pills */}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
+                  <div style={{display:"flex",gap:3}}>
+                    {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
                   </div>
-                  {rows.map(function(r,i){
-                    var beat=r.pv!=null&&r.bv!=null&&(r.higherBetter?r.pv>r.bv:r.pv<r.bv);
-                    var pvColor=r.pv==null?K.dim:beat?K.grn:K.amb;
-                    return<div key={r.label} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px",borderBottom:i<rows.length-1?"1px solid "+K.bdr+"60":"none",background:i%2===0?"transparent":K.acc+"03"}}>
+                </div>
+
+                {/* Table */}
+                <div style={{borderRadius:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                    <div style={{padding:"5px 10px"}}/>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>
+                  </div>
+                  {preset.rows.map(function(r,i){
+                    var pv=wavg(r.get);
+                    var beat=pv!=null&&(r.hb?pv>r.bv:pv<r.bv);
+                    var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
+                    return<div key={r.key} style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
                       <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {r.pv!=null
-                          ?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(r.pv)}</span>
-                          :<span style={{fontSize:10,color:K.bdr}}>—</span>}
+                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr}}>—</span>}
                       </div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
                         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
                       </div>
                     </div>})}
                 </div>
-                {!hasAny&&<div style={{fontSize:10,color:K.dim,marginTop:6}}>Refresh financial data on your holdings to populate.</div>}
               </div>
             })()}
 
