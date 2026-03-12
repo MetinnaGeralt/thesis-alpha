@@ -761,7 +761,7 @@ function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
     lightbulb:"M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z",
     news:"M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1m2 13a2 2 0 0 1-2-2V7m2 13a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2",
     video:"M23 7l-7 5 7 5zM14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z",
-    msg:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+    msg:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",refresh:"M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
   };
   var d=paths[p.name]||paths.file;
   return<svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" style={p.style||{flexShrink:0}}><path d={d}/></svg>}
@@ -1618,7 +1618,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function SellCheckModal(){
     var c=sellCheckTgt;if(!c)return null;
     var pos=c.position||{};var isHeld=pos.shares>0&&pos.currentPrice>0;
-    var sellCriteria=c.thesisSell||"";
+    var sellCriteria=parseThesis(c.thesisNote).sell||"";
     var _q1=useState(null),q1=_q1[0],setQ1=_q1[1];
     var _q2=useState(null),q2=_q2[0],setQ2=_q2[1];
     var _q3=useState(null),q3=_q3[0],setQ3=_q3[1];
@@ -4630,10 +4630,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var pct=val/totalValue*100;
       var conviction=c.conviction||0;
       var hasThesis=c.thesisNote&&c.thesisNote.trim().length>40;
-      var hasSell=c.thesisSell&&c.thesisSell.trim().length>10;
+      var hasSell=(function(){var s=parseThesis(c.thesisNote);return s.sell&&s.sell.trim().length>10})();
       var convHistory=c.convictionHistory||[];
       var trend=convHistory.length>=2
-        ?convHistory[convHistory.length-1].score-convHistory[convHistory.length-2].score
+        ?convHistory[convHistory.length-1].rating-convHistory[convHistory.length-2].rating
         :0;
       var staleDays=c.lastReviewed
         ?Math.ceil((Date.now()-new Date(c.lastReviewed))/864e5)
@@ -4734,7 +4734,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(!isHeld)return;
       if(item.conviction<=0)return; // not set yet, not a trigger
       var hist=c2.convictionHistory||[];
-      var justDropped=hist.length>=2&&hist[hist.length-1].score<=4&&hist[hist.length-2].score>4;
+      var justDropped=hist.length>=2&&(hist[hist.length-1].rating||hist[hist.length-1].score||0)<=4&&(hist[hist.length-2].rating||hist[hist.length-2].score||0)>4;
       var hasSellCheck=(c2.decisions||[]).some(function(d){return d._isSellCheck&&d.date&&Math.ceil((Date.now()-new Date(d.date))/864e5)<30});
       if(justDropped&&!hasSellCheck){
         flags.push({type:"sell_trigger",severity:"high",color:K.red,ticker:c2.ticker,c:c2,
@@ -4755,7 +4755,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
 
   // ── Alignment Widget (shared, used in Dashboard + NW Hub) ─
-  function AlignmentWidget({signals, compact, onAI, onGo}){
+  function AlignmentWidget({signals, compact, onAI, onGo, onSellCheck}){
     var _open=useState(false),open=_open[0],setOpen=_open[1];
     var all=[].concat(signals.mismatches,signals.flags);
     if(all.length===0)return null;
@@ -4792,8 +4792,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
-              {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI Review</button>}
-              {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Go →</button>}
+              {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
+              {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI Review</button>}
+              {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Go →</button>}
             </div>
           </div>})}
         </div>}
@@ -4863,8 +4864,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
               </div>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
-                {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI</button>}
-                {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{item.ticker} →</button>}
+                {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
+                {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI</button>}
+                {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{item.ticker} →</button>}
               </div>
             </div>;
           })}
@@ -4938,11 +4940,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     portfolio.forEach(function(c){
       var hist = c.convictionHistory || [];
       if(hist.length < 2) return;
-      var last = hist[hist.length - 1].score;
-      var prev = hist[hist.length - 2].score;
+      var last = hist[hist.length - 1].rating;
+      var prev = hist[hist.length - 2].rating;
       var drop = prev - last;
       if(drop >= 2){
-        var hasSell = c.thesisSell && c.thesisSell.trim().length > 10;
+        var hasSell = (function(){var s=parseThesis(c.thesisNote);return s.sell&&s.sell.trim().length>10})();
         signals.push({
           layer: "conviction_drop",
           priority: 2,
@@ -5022,17 +5024,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var p=c.position||{};
     var ticker=c.ticker||"this company";
     var name=c.name||ticker;
+    var _parsedThesis=parseThesis(c.thesisNote);
     var thesis=c.thesisNote||"No thesis written yet.";
-    var thesisMoat=c.thesisMoat||"";
-    var thesisRisk=c.thesisRisk||"";
-    var thesisSell=c.thesisSell||"";
+    var thesisMoat=_parsedThesis.moat||"";
+    var thesisRisk=_parsedThesis.risks||"";
+    var thesisSell=_parsedThesis.sell||"";
     var conviction=c.conviction||0;
     var sector=c.sector||"Unknown sector";
     var style=(c.investStyle||"").replace(/_/g," ");
     var kpis=(c.kpis||[]).map(function(k){return"- "+k.label+(k.target?" (target: "+k.target+(k.unit||"")+")":"")+(k.results&&k.results.length>0?" — last result: "+k.results[k.results.length-1].value:"")}).join("\n")||"No KPIs defined yet.";
     var decisions=(c.decisions||[]).slice(-8).map(function(d){return"["+d.date+"] "+d.action.toUpperCase()+": "+(d.reasoning||"No reasoning logged")}).join("\n")||"No decisions logged.";
     var journal=(c.journalEntries||[]).slice(-5).map(function(e){return"["+((e.date||e.createdAt)||"").slice(0,10)+"] "+(e.title?e.title+": ":"")+((e.content||"").slice(0,300))}).join("\n")||"No journal entries yet.";
-    var convHistory=(c.convictionHistory||[]).slice(-6).map(function(h){return h.date.slice(0,10)+" → "+h.score+"/10"+(h.note?" ("+h.note+")":"")}).join("\n")||("Current: "+conviction+"/10");
+    var convHistory=(c.convictionHistory||[]).slice(-6).map(function(h){return h.date.slice(0,10)+" → "+(h.rating||h.score||0)+"/10"+(h.note?" ("+h.note+")":"")}).join("\n")||("Current: "+conviction+"/10");
     var posSize=p.shares>0&&p.currentPrice>0?(p.shares*p.currentPrice).toFixed(0):"unknown";
     var earnDate=c.earningsDate?c.earningsDate:"unknown date";
     var monthsHeld=p.purchaseDate?Math.round((Date.now()-new Date(p.purchaseDate))/(1000*60*60*24*30))+" months":"unknown duration";
@@ -5061,7 +5064,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0;
       var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
       var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
-      var hasSell=c.thesisSell&&c.thesisSell.trim().length>10;
+      var hasSell=(function(){var s=parseThesis(c.thesisNote);return s.sell&&s.sell.trim().length>10})();
       return{c:c,val:val,ret:ret,hasThesis:hasThesis,hasSell:hasSell};
     }).sort(function(a,b){return b.val-a.val});
     var totalVal=holdings.reduce(function(s,h){return s+h.val},0);
@@ -6751,6 +6754,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
             }}
             onGo={function(c){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+            onSellCheck={function(c){setSellCheckTgt(c)}}
           />;
         })()}
         {/* Main stock portfolio */}
@@ -8227,25 +8231,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       // ── Holdings (price data — de-emphasised) ──────────────────────────
       var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
 
-      {/* ── Sample portfolio banner ── */}
-      {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",border:"1px solid "+K.amb+"30",borderRadius:12,marginBottom:16}}>
-        <IC name="lightbulb" size={14} color={K.amb}/>
-        <div style={{flex:1}}>
-          <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
-          <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
-        </div>
-        <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
-      </div>}
-      {/* ── Sample portfolio banner ── */}
-      {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",border:"1px solid "+K.amb+"30",borderRadius:12,marginBottom:16}}>
-        <IC name="lightbulb" size={14} color={K.amb}/>
-        <div style={{flex:1}}>
-          <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
-          <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD show what a complete dossier looks like.</span>
-        </div>
-        <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
-      </div>}
       return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden"}}>
+        {/* ── Sample portfolio banner ── */}
+        {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",borderBottom:"1px solid "+K.amb+"30"}}>
+          <IC name="lightbulb" size={14} color={K.amb}/>
+          <div style={{flex:1}}>
+            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
+          </div>
+          <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+        </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
           <div style={{fontSize:isMobile?16:17,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
@@ -8507,7 +8502,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
                     <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"↺"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:999,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}} title="Refresh news"><IC name="refresh" size={9} color={K.dim}/>{"Refresh"}</button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
@@ -8640,6 +8635,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
         }}
         onGo={function(c){setSelId(c.id);setDetailTab("dossier");}}
+        onSellCheck={function(c){setSellCheckTgt(c)}}
       />;
     }()}
 
