@@ -873,6 +873,7 @@ function TrackerApp(props){
   var avatarFileRef=useRef(null);
   var saveTimer=useRef(null);
   var cloudTimer=useRef(null);
+  var _navFromPop=useRef(true); // true on mount so initial render doesn't double-push
   // ── Initial data load ──────────────────────────────────────────────────
   useEffect(function(){
     async function load(){
@@ -901,6 +902,23 @@ function TrackerApp(props){
     }
     load();
   },[]);
+  // ── Browser back/forward button support ────────────────────────────────
+  useEffect(function(){
+    history.replaceState({page:"dashboard",selId:null},"");
+    function onPop(e){
+      if(e.state){
+        _navFromPop.current=true;
+        setPage(e.state.page||"dashboard");
+        setSelId(e.state.selId||null);
+      }
+    }
+    window.addEventListener("popstate",onPop);
+    return function(){window.removeEventListener("popstate",onPop)};
+  },[]);
+  useEffect(function(){
+    if(_navFromPop.current){_navFromPop.current=false;return;}
+    history.pushState({page:page,selId:selId},"");
+  },[page,selId]);
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var chestOverlay=null;function setChestOverlay(){}
@@ -953,7 +971,7 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:true,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:true,showBuyZone:false,showPriceChart:true};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:true,showBuyZone:false,showPriceChart:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
 if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";if(saved.showHeatmap===undefined)saved.showHeatmap=false;return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -2176,7 +2194,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
     var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
-    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
@@ -3296,11 +3314,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <select value={c.moatTrend||""} onChange={function(e){upd(c.id,{moatTrend:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option><option value="Strengthening">▲ Strengthening</option><option value="Stable">─ Stable</option><option value="Eroding">▼ Eroding</option></select></div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>YOUR vs M★</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR vs M★</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginBottom:6,lineHeight:1.4}}>Your moat type count vs M★ analyst opinion</div>
               {(function(){var yourWidth=classified.length>=3?"Wide":classified.length>=1?"Narrow":"None";var mstar=c.morningstarMoat||"";
                 var agree=mstar&&yourWidth===mstar;var disagree=mstar&&mstar!=="Not Rated"&&yourWidth!==mstar;
-                return<div style={{fontSize:13,color:agree?K.grn:disagree?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>
-                  {!mstar?"Set Morningstar rating":agree?"✓ Aligned":disagree?"⚠ Divergent":"—"}</div>})()}</div></div>
+                return<div>
+                  <div style={{fontSize:13,color:agree?K.grn:disagree?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>
+                    {!mstar?"Set M★ rating first":agree?"✓ Aligned":disagree?"⚠ Divergent":"—"}</div>
+                  {disagree&&<div style={{fontSize:10,color:K.dim,fontFamily:fb,marginTop:4,lineHeight:1.4}}>{"You've identified "+classified.length+" type"+(classified.length!==1?"s":"")+", suggesting "+yourWidth.toLowerCase()+" moat. M★ says "+mstar.toLowerCase()+". Worth reflecting on."}</div>}
+                </div>})()}</div></div>
           {/* Active moat types */}
           {classified.length>0&&<div style={{marginBottom:16}}>
             {classified.map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
@@ -4396,10 +4418,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/10</div></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:15,fontWeight:600,color:mColor,fontFamily:fh}}>{mLabel}</div>
+                  <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Based on financial fundamentals — ROIC, margins, moat persistence</div>
                   <div style={{fontSize:11,color:K.dim}}>{dossierMoat.years}yr data · {dossierMoat.metrics.length} dimensions</div></div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {(function(){var mt2=c.moatTypes||{};return MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active}).map(function(t2){
-                    return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})})()}</div></div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                  {(function(){var mt2=c.moatTypes||{};var activeMts=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return activeMts.length>0?<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5}}>YOUR MOAT TYPES</div>
+                    <div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      {activeMts.map(function(t2){return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})}
+                    </div>
+                  </div>:<button onClick={function(){setSubPage("moat")}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm}}>+ Tag moat types</button>})()}</div></div>
               <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"4px 16px"}}>
                 {dossierMoat.metrics.slice(0,8).map(function(m){var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
                   return<div key={m.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
@@ -8486,17 +8513,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* ── Owner's Intel feed ── */}
         {(function(){
           var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
+          var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
           var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
           var shown=(briefNews||[]).filter(function(n){
             if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
             return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
+          var visible=newsExpanded?shown:shown.slice(0,3);
           if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
           return<div style={{borderTop:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
                 <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={9} color={isThesis?K.acc:K.dim}/>Owner's Intel
-                  {briefNews&&briefNews.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
+                  <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
+                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
                   <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
@@ -8516,7 +8545,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
               </div>}
               {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
-              {shown.length>0&&<div>{shown.map(function(n,i){
+              {shown.length>0&&<div>{visible.map(function(n,i){
                 var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
                 var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
                 return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
@@ -8534,6 +8563,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
                 </a>})}
               </div>}
+              {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
               {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:12,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days."}</div>}
             </div>
           </div>})()}
