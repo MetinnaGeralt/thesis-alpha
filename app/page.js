@@ -626,12 +626,16 @@ async function fetchEarnings(co,kpis){
       if(km.enterpriseValueOverEBITDATTM!=null&&!snapshot.evEbitda)snapshot.evEbitda={label:"EV/EBITDA",numVal:km.enterpriseValueOverEBITDATTM,value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x",source:"FMP"};
       if(km.evToSalesTTM!=null&&!snapshot.evRevenue)snapshot.evRevenue={label:"EV/Revenue",numVal:km.evToSalesTTM,value:km.evToSalesTTM.toFixed(2)+"x",source:"FMP"};
       if(ra.interestCoverageTTM!=null&&!snapshot.interestCoverage)snapshot.interestCoverage={label:"Interest Coverage",numVal:ra.interestCoverageTTM,value:ra.interestCoverageTTM.toFixed(1)+"x",source:"FMP"};
+      // Interest coverage fallbacks
+      if(!snapshot.interestCoverage){var _ic=km.interestCoverageTTM!=null?km.interestCoverageTTM:ra.interestCoverRatioTTM!=null?ra.interestCoverRatioTTM:null;if(_ic!=null)snapshot.interestCoverage={label:"Interest Coverage",numVal:_ic,value:_ic.toFixed(1)+"x",source:"FMP"};}
       if(ra.quickRatioTTM!=null&&!snapshot.quickRatio)snapshot.quickRatio={label:"Quick Ratio",numVal:ra.quickRatioTTM,value:ra.quickRatioTTM.toFixed(2),source:"FMP"};
       if(ra.netDebtToEBITDATTM!=null&&!snapshot.netDebtEbitda)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",numVal:ra.netDebtToEBITDATTM,value:ra.netDebtToEBITDATTM.toFixed(2)+"x",source:"FMP"};
       // netDebtEbitda fallbacks: try all FMP field name variants
       if(!snapshot.netDebtEbitda){var _ndeb=km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:km.netDebtToEbitda!=null?km.netDebtToEbitda:ra.netDebtToEbitdaTTM!=null?ra.netDebtToEbitdaTTM:ra.netDebtEBITDARatioTTM!=null?ra.netDebtEBITDARatioTTM:null;if(_ndeb!=null)snapshot.netDebtEbitda={label:"Net Debt/EBITDA",numVal:_ndeb,value:_ndeb.toFixed(2)+"x",source:"FMP"}}
       if(ra.priceEarningsToGrowthRatioTTM!=null&&!snapshot.peg)snapshot.peg={label:"PEG",numVal:ra.priceEarningsToGrowthRatioTTM,value:ra.priceEarningsToGrowthRatioTTM.toFixed(2),source:"FMP"};
       if(fmpMap.fcfMargin&&fmpMap.fcfMargin.v!=null&&!snapshot.fcfMargin)snapshot.fcfMargin={label:"FCF Margin",numVal:fmpMap.fcfMargin.v,value:fmpMap.fcfMargin.v.toFixed(1)+"%",source:"FMP"};
+      // FCF margin fallback: try FMP cash flow ratio fields
+      if(!snapshot.fcfMargin){var _fcfmv=ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:ra.cashFlowToRevenueTTM!=null?ra.cashFlowToRevenueTTM*100:null;if(_fcfmv!=null)snapshot.fcfMargin={label:"FCF Margin",numVal:_fcfmv,value:_fcfmv.toFixed(1)+"%",source:"FMP"};}
       if(fmpMap.rndMargin&&fmpMap.rndMargin.v!=null&&!snapshot.rndMargin)snapshot.rndMargin={label:"R&D / Revenue",numVal:fmpMap.rndMargin.v,value:fmpMap.rndMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.sgaMargin&&fmpMap.sgaMargin.v!=null&&!snapshot.sgaMargin)snapshot.sgaMargin={label:"SG&A / Revenue",numVal:fmpMap.sgaMargin.v,value:fmpMap.sgaMargin.v.toFixed(1)+"%",source:"FMP"};
       if(fmpMap.cashOnHand&&fmpMap.cashOnHand.v!=null&&!snapshot.cashOnHand)snapshot.cashOnHand={label:"Cash/Share",numVal:fmpMap.cashOnHand.v,value:"$"+fmpMap.cashOnHand.v.toFixed(2),source:"FMP"};
@@ -1126,6 +1130,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     window.addEventListener("resize",onResize);
     return function(){window.removeEventListener("resize",onResize);};
   },[]);
+  // Global keyboard shortcuts: Cmd/Ctrl+K opens command palette
+  useEffect(function(){
+    function onKey(e){
+      if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0);}return!o;});}
+      if(e.key==="Escape"&&cmdOpen){e.preventDefault();setCmdOpen(false);}
+    }
+    window.addEventListener("keydown",onKey);
+    return function(){window.removeEventListener("keydown",onKey);};
+  },[cmdOpen]);
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
   function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
@@ -2113,7 +2126,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {id:"priceToFcf",label:"Price / FCF",desc:"Price to free cash flow per share. Lower = cheaper.",unit:"x",defaultRule:"lte",defaultVal:20,snap:null,calc:function(s,p){var fcf=s.fcf&&s.fcf.numVal!=null?s.fcf.numVal:(s.fcf?parseFloat(String(s.fcf.value||"").replace(/[^0-9.\-]/g,""))||null:null);return(fcf!=null&&fcf>0&&p>0)?(p/fcf):null}},
     {id:"grossMargin",label:"Gross Margin",desc:"Pricing power indicator. Higher = stronger moat.",unit:"%",defaultRule:"gte",defaultVal:40,snap:"grossMargin",calc:null},
     {id:"roic",label:"ROIC",desc:"Return on invested capital. Measures capital efficiency.",unit:"%",defaultRule:"gte",defaultVal:15,snap:"roic",calc:null},
-    {id:"debtEquity",label:"Debt / Equity",desc:"Financial leverage. Lower = less risk.",unit:"x",defaultRule:"lte",defaultVal:1,snap:"debtEquity",calc:null}
+    {id:"debtEquity",label:"Debt / Equity",desc:"Financial leverage. Lower = less risk.",unit:"x",defaultRule:"lte",defaultVal:1,snap:"debtEquity",calc:null},
+    {id:"grahamDiscount",label:"vs Graham Number",desc:"How far the price is from Graham's intrinsic value floor: √(22.5 × EPS × Book Value). Works best for stable, asset-heavy businesses. Less meaningful for capital-light software or high-growth companies.",unit:"%",defaultRule:"lte",defaultVal:0,snap:"grahamDiscount",calc:null}
   ];
   function getValMetricValue(vm,snap,price,company){
     if(vm.calc){var v=vm.calc(snap,price,company);return v}
@@ -2121,7 +2135,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     return null}
   function ValuationModal(){if(!sel)return null;var c=sel;var snap=c.financialSnapshot||{};var price=(c.position||{}).currentPrice||(snap.livePrice&&snap.livePrice.numVal?snap.livePrice.numVal:0)||(snap.pe&&snap.eps?(parseFloat(String(snap.pe.value).replace(/[^0-9.]/g,""))||0)*(parseFloat(String(snap.eps.value).replace(/[^0-9.\-]/g,""))||0):0);
     var existing=c.valuation||{metrics:[]};
-    var _vm=useState(existing.metrics.length>0?existing.metrics:VALUATION_METRICS.slice(0,4).map(function(m){return{id:m.id,threshold:m.defaultVal,rule:m.defaultRule}})),vMetrics=_vm[0],setVMetrics=_vm[1];
+    var _vm=useState(existing.metrics.length>0?existing.metrics:[VALUATION_METRICS[0],VALUATION_METRICS[1],VALUATION_METRICS[3],VALUATION_METRICS[5]].map(function(m){return{id:m.id,threshold:m.defaultVal,rule:m.defaultRule}})),vMetrics=_vm[0],setVMetrics=_vm[1];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
     function toggleMetric(id){setVMetrics(function(prev){var exists=prev.find(function(m){return m.id===id});if(exists)return prev.filter(function(m){return m.id!==id});var def=VALUATION_METRICS.find(function(m){return m.id===id});return prev.concat([{id:id,threshold:def.defaultVal,rule:def.defaultRule}])})}
     function updateThreshold(id,val){setVMetrics(function(prev){return prev.map(function(m){return m.id===id?Object.assign({},m,{threshold:parseFloat(val)||0}):m})})}
@@ -3773,7 +3787,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
+                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number (sqrt(22.5×EPS×BVPS)) — conservative floor for asset-heavy businesses: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
