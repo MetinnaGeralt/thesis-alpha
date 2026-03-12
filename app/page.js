@@ -2185,13 +2185,91 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     navigator.clipboard.writeText(txt).then(function(){showToast("Research pack copied — paste into NotebookLM, ChatGPT, or any AI tool","milestone",4000)}).catch(function(){
       var blob=new Blob([txt],{type:"text/markdown"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download=c.ticker+"_research_export.md";a.click();URL.revokeObjectURL(url);showToast("Downloaded "+c.ticker+"_research_export.md","milestone",3000)})}
   function exportCSV(list){
-    var rows=[["Ticker","Company","Sector","Status","Shares","Avg Cost","Current Price","Return %","Market Value","Conviction","Earnings Date","KPIs Met","Target Price","Thesis"]];
-    list.forEach(function(c){var pos=c.position||{};var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(2):"";
+    // Research export: one section per company, properly formatted
+    function q(s){return '"'+(String(s||"")).replace(/"/g,"''")+'"'}
+    function row(){return Array.from(arguments).join(",")}
+    var today=new Date().toISOString().slice(0,10);
+    var lines=[];
+    lines.push(row("THESISALPHA RESEARCH EXPORT",today,""+(list.length)+" companies"));
+    lines.push("");
+    // Summary table first
+    lines.push(row("PORTFOLIO SUMMARY","","","","","","","","","",""));
+    lines.push(row("Ticker","Company","Sector","Status","Conviction","Shares","Avg Cost","Current Price","Return %","Market Value","Earnings Date","KPIs","Target Price","Moat Types","Thesis (summary)"));
+    list.forEach(function(c){
+      var pos=c.position||{};
+      var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"";
       var val=pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice).toFixed(0):"";
-      var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;
-      rows.push([c.ticker,'"'+c.name+'"',c.sector,c.status||"portfolio",pos.shares||"",pos.avgCost||"",pos.currentPrice||"",ret,val,c.conviction||"",c.earningsDate||"",total>0?met+"/"+total:"",c.targetPrice||"",'"'+(c.thesisNote||"").replace(/"/g,"''")+'"'])});
-    var csv=rows.map(function(r){return r.join(",")}).join("\n");
-    var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
+      var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;
+      var total=c.kpis.filter(function(k){return k.lastResult}).length;
+      var mt=c.moatTypes||{};var moats=Object.keys(mt).filter(function(k){return mt[k]&&mt[k].active}).join(" + ")||"None classified";
+      var sec=parseThesis(c.thesisNote);
+      var tSummary=(c.thesisNote||"").split("\n")[0].slice(0,100);
+      lines.push(row(c.ticker,q(c.name),q(c.sector),c.status||"portfolio",c.conviction||"",pos.shares||"",pos.avgCost?"+"+Number(pos.avgCost).toFixed(2):"",pos.currentPrice?"$"+pos.currentPrice:"",ret,val?"+"+val:"",c.earningsDate||"",total>0?met+"/"+total+" met":"",c.targetPrice?"$"+c.targetPrice:"",q(moats),q(tSummary)));
+    });
+    lines.push("");
+    // Detailed research per company
+    lines.push(row("DETAILED RESEARCH","",""));
+    list.forEach(function(c){
+      var pos=c.position||{};var sec=parseThesis(c.thesisNote);
+      lines.push("");
+      lines.push(row("══ "+c.ticker+" — "+c.name+" ══","",""));
+      lines.push(row("Sector",q(c.sector),"Industry",q(c.industry||"")));
+      lines.push(row("Status",c.status||"portfolio","Invest Style",c.investStyle||""));
+      if(pos.shares>0){
+        var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"";
+        lines.push(row("Position",pos.shares+" shares @ $"+(pos.avgCost||0),"Current","$"+(pos.currentPrice||0)+" ("+ret+")"));
+      }
+      lines.push(row("Conviction",c.conviction||"unrated","Earnings",c.earningsDate||""));
+      if(c.targetPrice)lines.push(row("Target Price","$"+c.targetPrice,"",""));
+      // Thesis sections
+      if(c.thesisNote&&c.thesisNote.trim()){
+        lines.push("");
+        lines.push(row("─ THESIS ─","",""));
+        var core=(c.thesisNote.split("## MOAT")[0]||c.thesisNote).trim();
+        if(core)lines.push(row("Core thesis",q(core)));
+        if(sec.moat)lines.push(row("Moat",q(sec.moat.trim())));
+        if(sec.risks)lines.push(row("Risks",q(sec.risks.trim())));
+        if(sec.sell)lines.push(row("Sell criteria",q(sec.sell.trim())));
+      }
+      // Moat classification
+      var mt=c.moatTypes||{};var activeMoats=Object.keys(mt).filter(function(k){return mt[k]&&mt[k].active});
+      if(activeMoats.length>0){
+        lines.push("");
+        lines.push(row("─ MOAT CLASSIFICATION ─","",""));
+        lines.push(row("Type","Strength","Note","M★ Rating",c.morningstarMoat||""));
+        activeMoats.forEach(function(k){var d=mt[k];lines.push(row(k,d.strength+"/5",q(d.note||""),"",""))});
+      }
+      // KPIs
+      if(c.kpis&&c.kpis.length>0){
+        lines.push("");
+        lines.push(row("─ KPIS ─","",""));
+        lines.push(row("KPI","Target","Last Result","Status","Quarter"));
+        c.kpis.forEach(function(k){
+          var lr=k.lastResult;
+          lines.push(row(q(k.name),q(k.target||""),lr?lr.actual:"",lr?lr.status:"",lr?q((c.earningsHistory&&c.earningsHistory[0]&&c.earningsHistory[0].quarter)||""): ""));
+        });
+      }
+      // Conviction history
+      if(c.convictionHistory&&c.convictionHistory.length>0){
+        lines.push("");
+        lines.push(row("─ CONVICTION HISTORY ─","",""));
+        lines.push(row("Date","Rating","Note"));
+        c.convictionHistory.slice(-8).forEach(function(h){lines.push(row(h.date,h.rating||"",q(h.note||"\")))});
+      }
+      // Key decisions
+      var decisions=(c.decisions||[]).filter(function(d){return d.action});
+      if(decisions.length>0){
+        lines.push("");
+        lines.push(row("─ RESEARCH JOURNAL ─","",""));
+        lines.push(row("Date","Action","Reasoning","Outcome"));
+        decisions.slice(0,10).forEach(function(d){lines.push(row(d.date?d.date.slice(0,10):"",q(d.action||""),q(d.reasoning||""),q(d.outcome||"")))});
+      }
+      lines.push(row("── end "+c.ticker+" ──","",""));
+    });
+    lines.push("");
+    lines.push(row("Exported from ThesisAlpha",today,""));
+    var csv=lines.join("\n");
+    var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-research-"+today+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
     var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
@@ -4318,6 +4396,54 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var _fcfVal=snap.fcf&&snap.fcf.numVal!=null&&!isNaN(snap.fcf.numVal)?Number(snap.fcf.numVal):0;
           if(_fcfVal>0&&_cp>0){var _fcfFV=_fcfVal/0.05;if(_fcfFV>0&&_fcfFV<_cp*10)pvSection.push({l:"FCF@5% FV",v:cSym+_fcfFV.toFixed(2),isGood:_cp<_fcfFV,tip:"Price implied by 5% FCF yield"})}
           }catch(pvErr){pvSection=[];}
+          // ── Investment framework scores ──────────────────────────────
+          var scoreItems=[];
+          try{
+            // — Piotroski F-Score (0-9) —
+            var _pF=0;var _pMax=0;var _pHints=[];
+            var _roa2=snap.roa&&snap.roa.numVal!=null?snap.roa.numVal:null;
+            if(_roa2!==null){_pMax+=3;if(_roa2>0){_pF++;} // F1: ROA>0
+              if(snap.fcfYield&&snap.fcfYield.numVal!=null&&snap.fcfYield.numVal>0){_pF++;} // F2: FCF>0 (proxy)
+              else _pMax--; // data missing
+              if(snap.roe&&snap.roe.numVal!=null&&snap.roe.numVal>_roa2*0.8){_pF++;} // F3: ROA improving proxy
+            }
+            if(snap.currentRatio&&snap.currentRatio.numVal!=null){_pMax++;var _cr=snap.currentRatio.numVal;if(_cr>1.5)_pF++;} // F4
+            if(snap.debtEquity&&snap.debtEquity.numVal!=null){_pMax++;var _de=snap.debtEquity.numVal;if(_de<1)_pF++;} // F5: leverage manageable
+            if(snap.grossMargin&&snap.grossMargin.numVal!=null){_pMax++;var _gm=snap.grossMargin.numVal;if(_gm>30)_pF++;} // F6: gross margin ok
+            if(snap.roic&&snap.roic.numVal!=null){_pMax++;var _ri=snap.roic.numVal;if(_ri>10)_pF++;} // F7: ROIC>10 proxy for efficiency
+            if(snap.opMargin&&snap.opMargin.numVal!=null){_pMax++;var _om=snap.opMargin.numVal;if(_om>0)_pF++;} // F8: positive operating margin
+            if(snap.fcfYield&&snap.fcfYield.numVal!=null){_pMax++;var _fcfy=snap.fcfYield.numVal;if(_fcfy>0)_pF++;} // F9: FCF positive
+            if(_pMax>=5){
+              var _pNorm=Math.round(_pF/_pMax*9);
+              var _pLabel=_pNorm>=7?"Strong ("+_pF+"/"+_pMax+")":_pNorm>=4?"Average ("+_pF+"/"+_pMax+")":"Weak ("+_pF+"/"+_pMax+")";
+              scoreItems.push({l:"Piotroski F",v:_pNorm+"/9",isGood:_pNorm>=7,isNeutral:_pNorm>=4&&_pNorm<7,tip:"Piotroski F-Score: 9-point quality check across profitability, leverage, and efficiency. 7-9 = strong, 4-6 = average, 0-3 = weak. Result: "+_pLabel})
+            }
+
+            // — Greenblatt Magic Formula (Earnings Yield + ROIC quality) —
+            var _ey=snap.pe&&snap.pe.numVal!=null&&snap.pe.numVal>0?Math.round(100/snap.pe.numVal*10)/10:
+                    (snap.fcfYield&&snap.fcfYield.numVal!=null?snap.fcfYield.numVal:null);
+            var _mfRoic=snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:null;
+            if(_ey!==null&&_mfRoic!==null){
+              var _mfScore=0;if(_ey>7)_mfScore+=2;else if(_ey>4)_mfScore+=1;
+              if(_mfRoic>25)_mfScore+=2;else if(_mfRoic>15)_mfScore+=1;
+              var _mfLabel=_mfScore>=4?"Top tier":_mfScore>=2?"Decent":"Below average";
+              scoreItems.push({l:"Magic Formula",v:_mfScore+"/4",isGood:_mfScore>=4,isNeutral:_mfScore>=2&&_mfScore<4,tip:"Greenblatt Magic Formula — Earnings yield: "+_ey.toFixed(1)+"% + ROIC: "+_mfRoic.toFixed(1)+"% = "+_mfLabel+". Higher earnings yield + higher ROIC = better value/quality combo. Best for profitable, non-financial companies."})
+            }
+
+            // — Buffett Quality Checklist (5 criteria) —
+            var _bScore=0;var _bTotal=0;var _bLines=[];
+            if(_mfRoic!==null){_bTotal++;if(_mfRoic>15){_bScore++;_bLines.push("ROIC>"+_mfRoic.toFixed(0)+"%")}}
+            if(snap.grossMargin&&snap.grossMargin.numVal!=null){_bTotal++;if(snap.grossMargin.numVal>40){_bScore++;_bLines.push("Gross margin>"+snap.grossMargin.numVal.toFixed(0)+"%")}}
+            if(snap.fcfYield&&snap.fcfYield.numVal!=null){_bTotal++;if(snap.fcfYield.numVal>0){_bScore++;_bLines.push("FCF positive")}}
+            if(snap.debtEquity&&snap.debtEquity.numVal!=null){_bTotal++;if(snap.debtEquity.numVal<0.5){_bScore++;_bLines.push("Low debt")}else if(snap.debtEquity.numVal<1.5){_bLines.push("Moderate debt (ok for moat co.)")}}
+            if(snap.revGrowth&&snap.revGrowth.numVal!=null){_bTotal++;if(snap.revGrowth.numVal>5){_bScore++;_bLines.push("Growing revenue")}}
+            if(_bTotal>=3){
+              var _bLabel=_bScore>=4?"Excellent":_bScore>=3?"Good":_bScore>=2?"Fair":"Weak";
+              scoreItems.push({l:"Buffett Criteria",v:_bScore+"/"+_bTotal,isGood:_bScore>=4,isNeutral:_bScore>=3&&_bScore<4,tip:"Buffett quality checklist — Criteria met: "+(_bLines.length>0?_bLines.join(", "):"few")+". Looking for: high ROIC, strong margins, FCF generation, modest debt, consistent growth."})
+            }
+          }catch(scoreErr){}
+          if(scoreItems.length>0)sections.push({title:"INVESTMENT SCORES",items:scoreItems,color:"#7C3AED"});
+
           var sections=[];
           if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
@@ -8488,24 +8614,37 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
             {portfolio.map(function(c2){
               var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
-              var convLabel=c2.conviction>=7?"High":c2.conviction>=4?"Mid":c2.conviction>0?"Low":"—";
-              var thesisAge=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):null;
-              var thesisColor=thesisAge==null?K.dim:thesisAge<=60?K.grn:thesisAge<=90?K.amb:K.red;
-              var thesisLabel=thesisAge==null?"No thesis":thesisAge<=60?thesisAge+"d ago":thesisAge<=90?thesisAge+"d — review":thesisAge+"d — stale";
-              var kpiH=gH(c2.kpis);
               var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
-              return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:0,padding:"6px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                {/* Conviction dot */}
-                <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
-                {/* Ticker */}
-                <CoLogo domain={c2.domain} ticker={c2.ticker} size={18}/>
-                <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,width:46,marginLeft:6}}>{c2.ticker}</span>
-                {/* Thesis age */}
-                <span style={{flex:1,fontSize:10,color:thesisColor,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{thesisLabel}</span>
-                {/* Earnings badge if soon */}
-                {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
-                {/* KPI badge — only meaningful alongside a thesis */}
-                {c2.kpis.length>0&&thesisAge!=null&&<span style={{fontSize:9,fontWeight:700,color:kpiH.c,background:kpiH.c+"15",padding:"1px 5px",borderRadius:4,flexShrink:0,fontFamily:fm}}>KPIs: {kpiH.l}</span>}
+              // --- Progress meter: 0-100 across 5 dimensions ---
+              var _th=c2.thesisNote||"";
+              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
+              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
+              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
+              var _convScore=(c2.conviction||0)*10;
+              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
+              var _moatScore=_hasMoat?100:0;
+              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
+              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
+              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
+              // Weakest dimension label
+              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
+              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
+              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
+              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
+                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
+                  <div style={{flex:1,height:3,borderRadius:2,background:K.bdr,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:_coverage+"%",borderRadius:2,background:_covColor,transition:"width .3s"}}/>
+                  </div>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
+                </div>
               </div>})}
           </div>
         </div>
