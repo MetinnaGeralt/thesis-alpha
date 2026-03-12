@@ -467,7 +467,13 @@ async function fetchFMPMetrics(ticker){
     if(!ratios&&!km)return null;
     var out={ratios:ratios||{},km:km||{}};
     _fmpmetricscache[ticker]=out;
-    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+    // Log the exact fields returned so we can see what's available for look-through metrics
+    var watchFields=["interestCoverageTTM","freeCashFlowPerRevenueTTM","freeCashFlowToRevenueTTM","netDebtToEBITDATTM","returnOnCapitalEmployedTTM","interestCoverRatioTTM","cashFlowToRevenueTTM"];
+    var kmWatchFields=["returnOnInvestedCapitalTTM","freeCashFlowPerShareTTM","revenuePerShareTTM","netDebtToEBITDATTM","interestCoverageTTM"];
+    var raHas=watchFields.filter(function(f){return out.ratios[f]!=null}).join(", ")||"none";
+    var kmHas=kmWatchFields.filter(function(f){return out.km[f]!=null}).join(", ")||"none";
+    console.log("[ThesisAlpha] FMP "+ticker+" ratios("+Object.keys(out.ratios).length+"): look-through fields="+raHas);
+    console.log("[ThesisAlpha] FMP "+ticker+" km("+Object.keys(out.km).length+"): look-through fields="+kmHas);
     return out;
   }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
 
@@ -1201,34 +1207,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d — "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
-  // ── Auto-refresh snapshots missing key look-through metrics ─────────────
-  var _snapRefRef=useRef(false);
-  useEffect(function(){
-    if(!loaded||_snapRefRef.current)return;
-    _snapRefRef.current=true;
-    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-    var stale=portfolio.filter(function(c){
-      var s=c.financialSnapshot||{};
-      var ageDays=c.lastChecked?Math.ceil((Date.now()-new Date(c.lastChecked))/864e5):999;
-      // Refresh if missing any of the 5 key look-through metrics, or data is >7 days old
-      var missingKey=!s.interestCoverage||!s.fcfMargin||!s.netDebtEbitda||!s.roic||!s.roce;
-      return missingKey&&ageDays>1;
-    });
-    if(stale.length===0)return;
-    console.log("[ThesisAlpha] Auto-refreshing "+stale.length+" holdings with missing look-through metrics");
-    stale.forEach(function(c,i){
-      setTimeout(function(){
-        fetchEarnings(c,c.kpis).then(function(res){
-          if(res&&res.snapshot){
-            // Log what we actually got back from FMP for debugging
-            var got=Object.keys(res.snapshot).filter(function(k){return["interestCoverage","fcfMargin","netDebtEbitda","roic","roce"].indexOf(k)>=0});
-            console.log("[ThesisAlpha] "+c.ticker+" snapshot refreshed. Got: "+got.join(", ")+(got.length===0?" (none — FMP may not have these fields for this ticker)":""));
-            upd(c.id,{financialSnapshot:Object.assign({},c.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()});
-          }
-        }).catch(function(e){console.warn("[ThesisAlpha] Refresh failed for "+c.ticker,e);});
-      },i*1200); // 1.2s stagger
-    });
-  },[loaded]);
+  // (auto-refresh moved to explicit button in look-through table)
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
@@ -6670,11 +6649,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
 
               return<div style={{marginBottom:16}}>
-                {/* Section label + preset pills */}
+                {/* Section label + preset pills + refresh */}
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
-                  <div style={{display:"flex",gap:3}}>
+                  <div style={{display:"flex",gap:4,alignItems:"center"}}>
                     {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
+                    <button title="Refresh financial data for all holdings" onClick={function(){
+                      portfolio.forEach(function(c2,i){setTimeout(function(){
+                        fetchEarnings(c2,c2.kpis||[]).then(function(res){
+                          if(res&&res.snapshot){
+                            console.log("[ThesisAlpha] Refreshed "+c2.ticker+": keys="+Object.keys(res.snapshot).join(", "));
+                            upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()});
+                          }
+                        }).catch(function(e){console.warn("Refresh failed",c2.ticker,e);});
+                      },i*1000)});
+                    }} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:3}}>
+                      <IC name="refresh" size={8} color={K.dim}/>Refresh
+                    </button>
                   </div>
                 </div>
 
@@ -6692,7 +6683,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     return<div key={r.key} style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
                       <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>↺</span>}
+                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:10,color:K.bdr,fontFamily:fm}} title="Hit Refresh above to fetch data">—</span>}
                       </div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
                         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
