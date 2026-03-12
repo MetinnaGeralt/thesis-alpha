@@ -7622,6 +7622,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var nonPayers=portfolio.filter(function(c){return(c.divPerShare||c.lastDiv||0)<=0});
     var _dht=useState("overview"),divTab=_dht[0],setDivTab=_dht[1];
     var _dhm=useState(null),hovMonth=_dhm[0],setHovMonth=_dhm[1];
+    var _rdst=useState("idle"),rdStatus=_rdst[0],setRdStatus=_rdst[1];
     var monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     var TICKER_COLORS=[K.acc,"#22C55E","#F59E0B","#EC4899","#8B5CF6","#06B6D4","#f87171","#a3e635","#fb923c","#38bdf8"];
     var freqLabel=function(f){return f==="monthly"?"Monthly":f==="semi"?"Semi-Annual":f==="annual"?"Annual":"Quarterly"};
@@ -7804,7 +7805,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* ── TAB: INCOME STREAM ── */}
       {divTab==="income"&&(function(){
         var nowMonth=new Date().getMonth();
-        var _rdst=useState("idle"),rdStatus=_rdst[0],setRdStatus=_rdst[1];
         var missingExDiv=divPayers.filter(function(c){return!c.exDivDate||c.exDivDate===""});
         return<div>
           {/* Ex-div date warning + refresh */}
