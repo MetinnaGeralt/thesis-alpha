@@ -942,9 +942,9 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:true,showPrices:true,showPositions:true,showHeatmap:false,showSectors:false,showDividends:true,showAnalyst:false,showBuyZone:false,showPriceChart:true,showOwnerScore:true,showPreEarnings:true};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:true,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:true,showBuyZone:false,showPriceChart:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
-if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
+if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";if(saved.showHeatmap===undefined)saved.showHeatmap=false;return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
   var _wr=useState(function(){try{var s=localStorage.getItem('ta-weekly-reviews');return s?JSON.parse(s):[]}catch(e){return[]}}),weeklyReviews=_wr[0],setWeeklyReviews=_wr[1];
   var _streakData=useState(function(){try{var s=localStorage.getItem('ta-streak');return s?JSON.parse(s):{current:0,best:0}}catch(e){return{current:0,best:0}}}),streakData=_streakData[0],setStreakData=_streakData[1];
@@ -1932,7 +1932,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-portfolio-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
     var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
-    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showOwnerScore",l:"Owner’s Score",d:"Process quality score"},{k:"showPriceChart",l:"Price Chart",d:"Historical price with entry points"},{k:"showPreEarnings",l:"Pre-Earnings Briefing",d:"Auto-generated when earnings within 14 days"},{k:"showPrices",l:"Stock Prices on Cards",d:"Show current price"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares, return %"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showDividends",l:"Dividend Overview",d:"Dividend income tracking"},{k:"showAnalyst",l:"Analyst & Insider Data",d:"Recommendations, price targets"},{k:"showBuyZone",l:"Buy Zone Indicators",d:"Show when price is below targets"}];
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total value, return, best/worst performer"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg",desc:"Terminal black & orange",color:"#000000",accent:"#ff8800",unlock:5}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
@@ -4045,7 +4045,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var _cp=pos&&pos.currentPrice>0?pos.currentPrice:0;
           if(c.targetPrice>0&&_cp>0){var _tgap=((c.targetPrice-_cp)/_cp*100);pvSection.push({l:"vs Target",v:(_tgap>0?"+":"")+_tgap.toFixed(0)+"%",isGood:_tgap>0,tip:"Target: "+cSym+Number(c.targetPrice).toFixed(2)})}
           var _gnVal=snap.grahamNum&&snap.grahamNum.numVal!=null?Number(snap.grahamNum.numVal):0;
-          if(_gnVal>0&&_cp>0&&_gnVal<_cp*10){var _gg=((_gnVal-_cp)/_cp*100);pvSection.push({l:"Graham #",v:cSym+_gnVal.toFixed(2),isGood:_cp<=_gnVal,tip:(_cp<=_gnVal?"Below":"Above")+" Graham by "+Math.abs(_gg).toFixed(0)+"%"})}
+          if(_gnVal>0&&_cp>0&&_gnVal<_cp*10){var _gg=((_gnVal-_cp)/_cp*100);pvSection.push({l:"Graham #",v:cSym+_gnVal.toFixed(2),isGood:_cp<=_gnVal,tip:"Graham Number: conservative floor (√22.5×EPS×BV) for asset-heavy co. Capital-light/tech: less relevant. "+(_cp<=_gnVal?"Below":"Above")+" by "+Math.abs(_gg).toFixed(0)+"%"})}
           var _epsVal=snap.eps&&snap.eps.numVal!=null&&!isNaN(snap.eps.numVal)?Number(snap.eps.numVal):0;
           if(_epsVal>0&&_cp>0){var _fv15=_epsVal*15;var _fvUp=((_fv15-_cp)/_cp*100);if(Math.abs(_fvUp)<300)pvSection.push({l:"15x EPS FV",v:cSym+_fv15.toFixed(2),isGood:_cp<_fv15,tip:"15x earnings = "+cSym+_fv15.toFixed(2)+(_fvUp>0?" ("+_fvUp.toFixed(0)+"% upside)":"")})}
           var _fcfVal=snap.fcf&&snap.fcf.numVal!=null&&!isNaN(snap.fcf.numVal)?Number(snap.fcf.numVal):0;
@@ -6599,8 +6599,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
                   {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
                   {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
-                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)?s.fcfMargin.numVal/s.opMargin.numVal*100:null}},
-                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.interestCoverage?s.interestCoverage.numVal:null}},
+                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
+  // FCF / Op profit — proxy for how much profit converts to cash
+  if(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)return s.fcfMargin.numVal/s.opMargin.numVal*100;
+  // Fallback: FCF margin alone if opMargin missing (less precise but shows something)
+  if(s.fcfMargin&&s.fcfMargin.numVal!=null)return s.fcfMargin.numVal;
+  return null;}},
+                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
+  if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
+  // Compute from EBIT/interest if we have opMargin & debtEquity as proxy
+  return null;}},
                 ]},
                 {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
                   {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
@@ -6656,7 +6664,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     return<div key={r.key} style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
                       <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr}}>—</span>}
+                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>↺</span>}
                       </div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
                         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
