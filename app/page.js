@@ -912,6 +912,7 @@ function TrackerApp(props){
   var _atgt=useState({}),assetTargets=_atgt[0],setAssetTargets=_atgt[1];
   var _fxRates=useState({}),fxRates=_fxRates[0],setFxRates=_fxRates[1];
   var _liab=useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
+  var _aiModal=useState(null),aiModal=_aiModal[0],setAiModal=_aiModal[1];
   var CURRENCIES=[{code:"USD",sym:"$",label:"US Dollar"},{code:"EUR",sym:"€",label:"Euro"},{code:"GBP",sym:"£",label:"British Pound"},{code:"NOK",sym:"kr ",label:"Norwegian Krone"},{code:"SEK",sym:"kr ",label:"Swedish Krona"},{code:"DKK",sym:"kr ",label:"Danish Krone"},{code:"CHF",sym:"CHF ",label:"Swiss Franc"},{code:"JPY",sym:"¥",label:"Japanese Yen"},{code:"AUD",sym:"A$",label:"Australian Dollar"},{code:"CAD",sym:"C$",label:"Canadian Dollar"},{code:"SGD",sym:"S$",label:"Singapore Dollar"},{code:"HKD",sym:"HK$",label:"Hong Kong Dollar"}];
   var cSym=(CURRENCIES.find(function(c){return c.code===currency})||CURRENCIES[0]).sym;
   var _rl=useState(function(){try{var s=localStorage.getItem("ta-readinglist");return s?JSON.parse(s):[]}catch(e){return[]}}),readingList=_rl[0],setReadingList=_rl[1];
@@ -2385,6 +2386,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="ai"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>AI Advisor</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
@@ -4332,11 +4334,307 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div></div></div>}
         {/* Attribution */}
         <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
+        {/* ── AI Position Review (dossier inline) ── */}
+        {(function(){
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
+          var DOSS_PROMPTS=[
+            {type:"challenge",label:"Challenge My Thesis",icon:"shield",color:K.red},
+            {type:"earnings",label:"Pre-Earnings Briefing",icon:"target",color:K.amb},
+            {type:"annual",label:"Annual Review",icon:"clock",color:K.acc},
+            {type:"bear",label:"Bear Case",icon:"alert",color:"#ef4444"},
+            {type:"sell",label:"Sell Discipline Check",icon:"check",color:K.grn},
+          ];
+          var FRAMING_DOSS={
+            challenge:{why:"ChatGPT has never seen your thesis. This prompt feeds it your thesis, conviction history, and KPIs — then asks it to attack your specific arguments.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+            earnings:{why:"Not a generic earnings preview. This prompt tells the AI exactly what YOU need to see — based on your specific thesis and sell criteria.",dataPoints:["Your thesis","Your KPIs","Your sell criteria","Earnings date"]},
+            annual:{why:"After months of ownership you have something no AI has ever seen: your own conviction trajectory, journal entries, and decisions. This prompt sends all of that and asks if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+            bear:{why:"You know the bull case — you wrote it. This prompt asks the AI to dismantle it as aggressively as possible using your own arguments.",dataPoints:["Your bull thesis","Your moat argument","Risks acknowledged","Conviction level"]},
+            sell:{why:"This prompt takes your sell criteria — written when you were calm — and asks the AI whether they have actually been triggered, or whether you are making an emotional decision.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+          };
+          return<div style={{marginTop:20,paddingTop:20,borderTop:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <IC name="lightbulb" size={14} color={K.acc}/>
+              <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fb,textTransform:"uppercase",letterSpacing:1}}>AI Position Review</div>
+            </div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:14,lineHeight:1.5}}>{hasThesis?"Generate a context-rich prompt built from your thesis, KPIs, and decisions — then open it in Claude, ChatGPT, or Gemini.":"Write a thesis first to unlock AI prompts for this holding."}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {DOSS_PROMPTS.map(function(dp){
+                var needsThesis=["challenge","annual","bear","sell"].indexOf(dp.type)>=0&&!hasThesis;
+                return<button key={dp.type} onClick={function(){
+                  if(needsThesis)return;
+                  var fr=FRAMING_DOSS[dp.type];
+                  setAiModal({title:dp.label+" — "+c.ticker,framing:fr,prompt:buildPrompt(dp.type,c)});
+                }} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 13px",borderRadius:8,border:"1px solid "+dp.color+(needsThesis?"20":"40"),background:dp.color+(needsThesis?"05":"0d"),color:dp.color,fontSize:12,fontWeight:600,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,opacity:needsThesis?0.4:1}}>
+                  <IC name={dp.icon} size={12} color={dp.color}/>{dp.label}
+                </button>;
+              })}
+            </div>
+          </div>;
+        })()}
+
         </div>{/* end research trail */}
         </div>}
       </div>}
     </div>
   }
+
+  // ── AI Prompt Builder utilities ───────────────────────────
+  function buildPrompt(type, c){
+    var p=c.position||{};
+    var ticker=c.ticker||"this company";
+    var name=c.name||ticker;
+    var thesis=c.thesisNote||"No thesis written yet.";
+    var thesisMoat=c.thesisMoat||"";
+    var thesisRisk=c.thesisRisk||"";
+    var thesisSell=c.thesisSell||"";
+    var conviction=c.conviction||0;
+    var sector=c.sector||"Unknown sector";
+    var style=(c.investStyle||"").replace(/_/g," ");
+    var kpis=(c.kpis||[]).map(function(k){return"- "+k.label+(k.target?" (target: "+k.target+(k.unit||"")+")":"")+(k.results&&k.results.length>0?" — last result: "+k.results[k.results.length-1].value:"")}).join("\n")||"No KPIs defined yet.";
+    var decisions=(c.decisions||[]).slice(-8).map(function(d){return"["+d.date+"] "+d.action.toUpperCase()+": "+(d.reasoning||"No reasoning logged")}).join("\n")||"No decisions logged.";
+    var journal=(c.journalEntries||[]).slice(-5).map(function(e){return"["+((e.date||e.createdAt)||"").slice(0,10)+"] "+(e.title?e.title+": ":"")+((e.content||"").slice(0,300))}).join("\n")||"No journal entries yet.";
+    var convHistory=(c.convictionHistory||[]).slice(-6).map(function(h){return h.date.slice(0,10)+" → "+h.score+"/10"+(h.note?" ("+h.note+")":"")}).join("\n")||("Current: "+conviction+"/10");
+    var posSize=p.shares>0&&p.currentPrice>0?(p.shares*p.currentPrice).toFixed(0):"unknown";
+    var earnDate=c.earningsDate?c.earningsDate:"unknown date";
+    var monthsHeld=p.purchaseDate?Math.round((Date.now()-new Date(p.purchaseDate))/(1000*60*60*24*30))+" months":"unknown duration";
+
+    if(type==="challenge"){
+      return"You are a rigorous investment analyst. I am not asking for general research on "+ticker+". I am asking you to challenge MY specific investment case using only my own words below.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nInvestment style: "+style+"\nConviction: "+conviction+"/10\nPosition held for: "+monthsHeld+"\n\nMY THESIS:\n"+thesis+"\n\nMY MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nRISKS I HAVE ACKNOWLEDGED:\n"+(thesisRisk||"Not written.")+"\n\nMY SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\nKPIs I TRACK:\n"+kpis+"\n\nRECENT DECISIONS:\n"+decisions+"\n\n--- YOUR TASK ---\n\n1. Identify the 3 weakest assumptions in my thesis above. Be specific — reference my own words.\n2. Present the strongest possible bear case. What do I most likely have wrong?\n3. List 3 questions I should be able to answer confidently but probably cannot.\n4. Rate my thesis quality 1–10 and explain exactly what would make it stronger.\n\nBe direct. Be uncomfortable. That is the point.";
+    }
+    if(type==="earnings"){
+      return"You are a focused investment analyst preparing a pre-earnings briefing.\n\nIMPORTANT: This is not a generic earnings preview. I want a briefing tailored entirely to my investment thesis and the specific metrics I track.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nEarnings date: "+earnDate+"\nMy conviction: "+conviction+"/10\nPosition value: $"+posSize+"\n\nMY THESIS (why I own this):\n"+thesis+"\n\nTHE SPECIFIC KPIs I TRACK:\n"+kpis+"\n\nMY SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\nRECENT DECISIONS:\n"+decisions+"\n\n--- YOUR TASK ---\n\n1. Based on MY thesis — not consensus estimates — what are the exact 2–3 numbers I must see to maintain conviction?\n2. What single question should I be listening for on the call that most investors will not think to ask?\n3. What result would force me to seriously revisit my sell criteria?\n4. What is the most likely way this earnings report could be misleading — strong headline numbers masking thesis deterioration?\n\nFocus only on what matters for my specific investment case. Ignore what does not.";
+    }
+    if(type==="annual"){
+      return"You are a disciplined long-term investor conducting an annual review. I need you to tell me honestly whether I should still own this.\n\n--- MY ORIGINAL INVESTMENT CASE ---\n\nCompany: "+name+" ("+ticker+")\nHeld for approximately: "+monthsHeld+"\nCurrent conviction: "+conviction+"/10\n\nORIGINAL THESIS:\n"+thesis+"\n\nORIGINAL MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nORIGINAL SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\n--- WHAT HAS HAPPENED ---\n\nCONVICTION HISTORY:\n"+convHistory+"\n\nDECISIONS (recent):\n"+decisions+"\n\nJOURNAL ENTRIES (recent):\n"+journal+"\n\nKPIs I TRACK:\n"+kpis+"\n\n--- YOUR TASK ---\n\n1. Based on my own words: is my original thesis intact, weakened, or broken? Be specific.\n2. What is the single most important thing that has changed since I invested?\n3. Am I holding for the right reasons, or showing signs of sunk cost bias? What evidence in my own notes points to which?\n4. If I did not already own this — knowing what I know now — would I buy it today at this price?\n5. What is the most important question I need to answer before my next annual review?\n\nBe honest. I can handle it.";
+    }
+    if(type==="bear"){
+      return"You are a short-seller conducting due diligence on a company I currently own.\n\nIMPORTANT: I believe in this investment. I am asking you to build the strongest possible case AGAINST it — not to make me sell, but to ensure I have genuinely stress-tested my position.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nMy conviction: "+conviction+"/10\n\nMY BULL CASE (what I believe):\n"+thesis+"\n\nMY MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nRISKS I HAVE ALREADY ACKNOWLEDGED:\n"+(thesisRisk||"None logged.")+"\n\n--- YOUR TASK ---\n\nBuild the most compelling bear case for "+ticker+". Structure it as follows:\n\n1. THE CORE BEAR THESIS — 2–3 sentences a short-seller would pitch to their fund.\n2. THE 3 FATAL FLAWS — attack my specific bull case arguments above.\n3. THE PATH TO -50% — what sequence of events gets us there from today?\n4. THE RED FLAGS I AM IGNORING — what signals am I likely rationalising away?\n5. THE QUESTIONS I CANNOT ANSWER — what would I need to disprove to sleep soundly?\n\nDo not be balanced. Be a bear. I already know the bull case.";
+    }
+    if(type==="sell"){
+      return"You are a trusted advisor helping me avoid an emotional investment decision.\n\nIMPORTANT: I am considering selling my position in "+ticker+". Before I act, I want you to challenge whether I am following my own investment framework or acting on emotion.\n\n--- MY INVESTMENT FRAMEWORK ---\n\nCompany: "+name+" ("+ticker+")\nCurrent conviction: "+conviction+"/10\nShares held: "+(p.shares||"unknown")+"\nHeld for: "+monthsHeld+"\n\nMY ORIGINAL THESIS:\n"+thesis+"\n\nMY SELL CRITERIA (written when I was calm and rational):\n"+(thesisSell||"No sell criteria written. This itself is a red flag.")+"\n\nRECENT DECISIONS AND REASONING:\n"+decisions+"\n\nRECENT JOURNAL ENTRIES:\n"+journal+"\n\n--- YOUR TASK ---\n\n1. Review my sell criteria above. Has any of them actually been triggered? Be specific — reference the criteria I wrote.\n2. What is the real reason I am likely considering selling — fear, boredom, recency bias, or a genuine thesis change? What evidence points to which?\n3. Ask me the 3 hardest questions I must answer honestly before I sell.\n4. If my sell criteria have NOT been triggered, what is the cost of selling early?\n5. What would a patient, rational investor do in this situation?\n\nHelp me think clearly — not feel better.";
+    }
+    return "";
+  }
+
+  function buildPortfolioPrompt(type, portCos){
+    var holdings=portCos.map(function(c){
+      var p=c.position||{};
+      var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0;
+      var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
+      var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
+      var hasSell=c.thesisSell&&c.thesisSell.trim().length>10;
+      return{c:c,val:val,ret:ret,hasThesis:hasThesis,hasSell:hasSell};
+    }).sort(function(a,b){return b.val-a.val});
+    var totalVal=holdings.reduce(function(s,h){return s+h.val},0);
+    var holdingLines=holdings.map(function(h){
+      var pct=totalVal>0?(h.val/totalVal*100).toFixed(1):0;
+      return"- "+h.c.ticker+" ("+pct+"% of portfolio, conviction "+h.c.conviction+"/10"+(h.ret!==null?", return "+(h.ret>=0?"+":"")+h.ret.toFixed(1)+"%":"")+", thesis: "+(h.hasThesis?"written":"MISSING")+", sell criteria: "+(h.hasSell?"written":"MISSING")+")";
+    }).join("\n");
+    var style=portCos.length>0?(portCos[0].investStyle||"not specified"):"not specified";
+
+    if(type==="port_health"){
+      return"You are a portfolio analyst conducting a rigorous review of my equity portfolio. I am not asking for stock picks or financial advice. I am asking you to evaluate the quality of my investment process.\n\n--- MY PORTFOLIO ---\n\nInvestment style: "+style.replace(/_/g," ")+"\nTotal holdings: "+portCos.length+"\n\n"+holdingLines+"\n\n--- YOUR TASK ---\n\n1. Where is my conviction inconsistent with my position sizing? (high conviction but small position, or vice versa)\n2. Which holdings have the most concerning combination of factors — low conviction, negative return, no thesis written?\n3. What does my portfolio say about my actual investment style vs my stated style?\n4. What are the top 3 actions I should take this week based on this data alone?\n5. What question about my portfolio am I probably not asking myself?";
+    }
+    if(type==="consistency"){
+      var theses=portCos.filter(function(c){return c.thesisNote&&c.thesisNote.length>50}).slice(0,5).map(function(c){return c.ticker+":\n"+c.thesisNote.slice(0,400)}).join("\n\n---\n\n");
+      return"You are an investment philosopher reviewing whether my portfolio is internally consistent.\n\n--- MY PORTFOLIO OVERVIEW ---\n\nInvestment style: "+style.replace(/_/g," ")+"\n\nHOLDINGS:\n"+holdingLines+"\n\n--- SAMPLE OF MY THESES ---\n\n"+theses+"\n\n--- YOUR TASK ---\n\n1. Are my theses consistent with each other and with my stated investment style? Where are the contradictions?\n2. Which holding looks most out of place in this portfolio? Why?\n3. What does the collection of companies I own reveal about my real mental models and biases?\n4. If this portfolio had a personality, how would you describe it in one paragraph?\n5. What type of holding is conspicuously absent — and should I care?";
+    }
+    if(type==="concentration"){
+      return"You are a risk manager reviewing my portfolio concentration.\n\n--- MY PORTFOLIO ---\n\n"+holdingLines+"\n\n--- YOUR TASK ---\n\n1. What are my top 3 concentration risks — by position size, sector, or correlated thesis?\n2. If my top 2 holdings dropped 40% simultaneously, how damaged would my portfolio be — financially and psychologically?\n3. Where is my diversification false — holdings that feel different but would likely fall together in a downturn?\n4. What is the optimal number of holdings for someone with my conviction levels?\n5. What should I do — add a position, trim a position, or do nothing? Justify it with the data above.";
+    }
+    return "";
+  }
+
+  // ── AI Prompt Modal ───────────────────────────────────────
+  function AIPromptModal(){
+    if(!aiModal)return null;
+    var _copied=useState(false),copied=_copied[0],setCopied=_copied[1];
+    var prompt=aiModal.prompt||"";
+    var framing=aiModal.framing||{};
+
+    function copyPrompt(){
+      try{navigator.clipboard.writeText(prompt).then(function(){setCopied(true);setTimeout(function(){setCopied(false)},2000)})}
+      catch(e){var ta=document.createElement("textarea");ta.value=prompt;document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);setCopied(true);setTimeout(function(){setCopied(false)},2000)}
+    }
+    function openIn(dest){
+      copyPrompt();
+      var urls={claude:"https://claude.ai/new",chatgpt:"https://chatgpt.com/",gemini:"https://gemini.google.com/app"};
+      setTimeout(function(){window.open(urls[dest],"_blank")},300);
+    }
+
+    return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(4px)"}} onClick={function(){setAiModal(null)}}>
+      <div style={{background:K.card,borderRadius:20,maxWidth:640,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.5)",border:"1px solid "+K.bdr}} onClick={function(e){e.stopPropagation()}}>
+
+        {/* Header */}
+        <div style={{padding:"24px 28px 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <IC name="lightbulb" size={16} color={K.acc}/>
+            <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fh,flex:1}}>{aiModal.title}</div>
+            <button onClick={function(){setAiModal(null)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}}>✕</button>
+          </div>
+
+          {/* The compelling framing — this is the key message */}
+          <div style={{background:K.acc+"0d",border:"1px solid "+K.acc+"30",borderRadius:12,padding:"16px 18px",marginBottom:20}}>
+            <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Why this is different</div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontFamily:fb}}>{framing.why}</div>
+            <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
+              {(framing.dataPoints||[]).map(function(dp){return<span key={dp} style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:20,padding:"3px 10px",fontFamily:fb}}>✓ {dp}</span>})}
+            </div>
+          </div>
+        </div>
+
+        {/* Prompt */}
+        <div style={{padding:"0 28px"}}>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Your generated prompt</div>
+          <textarea readOnly value={prompt} style={{width:"100%",height:220,background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,color:K.mid,padding:"14px 16px",fontSize:12,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}/>
+        </div>
+
+        {/* Actions */}
+        <div style={{padding:"16px 28px 24px"}}>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:12,textAlign:"center"}}>Copy the prompt, then open your preferred AI — it will be ready to paste</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",marginBottom:12}}>
+            <button onClick={copyPrompt} style={{flex:1,minWidth:120,padding:"11px 16px",borderRadius:10,border:"2px solid "+K.acc,background:copied?K.acc:K.acc+"15",color:copied?"#fff":K.acc,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
+              {copied?"Copied!":"Copy Prompt"}
+            </button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            {[{id:"claude",label:"Open in Claude",color:"#cc785c"},{id:"chatgpt",label:"Open in ChatGPT",color:"#10a37f"},{id:"gemini",label:"Open in Gemini",color:"#4285f4"}].map(function(ai){
+              return<button key={ai.id} onClick={function(){openIn(ai.id)}} style={{padding:"9px 8px",borderRadius:9,border:"1px solid "+ai.color+"40",background:ai.color+"0d",color:ai.color,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                {ai.label}
+              </button>;
+            })}
+          </div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fb,textAlign:"center",marginTop:10}}>These buttons copy your prompt and open the AI in a new tab. Just paste and send.</div>
+        </div>
+      </div>
+    </div>;
+  }
+
+  // ── AI Advisor (sidebar page) ─────────────────────────────
+  function AIAdvisor(){
+    var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var _sel=useState(null),selCo=_sel[0],setSelCo=_sel[1];
+
+    var FRAMING={
+      challenge:{title:"Challenge My Thesis",icon:"shield",color:K.red,
+        framing:{why:"ChatGPT has read every analyst report ever written about this company. But it has never seen your thesis. It doesn't know your conviction dropped from 8 to 6 last quarter. It can't read the journal entry where you wrote 'starting to doubt the margin story.' This prompt feeds it all of that — then asks it to attack your specific arguments, not a generic bull case.",
+        dataPoints:["Your thesis in your own words","Your exact KPIs and targets","Your conviction history","Your recent decisions log"]}},
+      earnings:{title:"Pre-Earnings Briefing",icon:"target",color:K.amb,
+        framing:{why:"Generic earnings previews tell you what consensus expects. This prompt tells the AI what YOU need to see — based on your thesis, your KPIs, and your sell criteria. The result is a briefing tailored to your investment case, not the market's. The AI will only flag what is thesis-relevant.",
+        dataPoints:["Your thesis","Your specific KPIs and targets","Your sell criteria","Your earnings date"]}},
+      annual:{title:"Annual Position Review",icon:"clock",color:K.acc,
+        framing:{why:"After a year of ownership you have something no AI has seen: your own conviction trajectory, your own decisions, your own journal entries written in real time. This prompt sends all of that to the AI and asks it to use your own words to tell you whether you should still own this stock.",
+        dataPoints:["12 months of decisions","Your conviction history","Your journal entries","Your original thesis"]}},
+      bear:{title:"Bear Case Generator",icon:"alert",color:"#ef4444",
+        framing:{why:"You already know the bull case — you wrote it. What you need is someone to attack it as hard as possible. This prompt tells the AI your exact thesis and asks it to dismantle it. Not to discourage you from owning it. To make sure you have genuinely stress-tested your position before putting capital at risk.",
+        dataPoints:["Your bull thesis","Your moat argument","Risks you acknowledged","Your conviction level"]}},
+      sell:{title:"Sell Discipline Check",icon:"check",color:K.grn,
+        framing:{why:"The most dangerous moment in investing is when you want to sell but your criteria haven't been triggered. This prompt takes your sell criteria — written when you were calm — and asks the AI whether they have actually been met, or whether you are about to make an emotional decision you will regret.",
+        dataPoints:["Your sell criteria (your own words)","Recent decisions and reasoning","Your journal entries","Conviction trajectory"]}},
+    };
+
+    var PORT_PROMPTS=[
+      {id:"port_health",title:"Portfolio Health Review",icon:"bar",color:K.acc,
+        desc:"Identify inconsistencies between conviction and position size, flag neglected holdings, and reveal what your portfolio says about your actual process.",
+        framing:{why:"This prompt sends the AI a complete picture of your portfolio — every holding's conviction score, return, position size, and whether you've written a thesis and sell criteria. It asks the AI to identify the gaps in your process that you can't see yourself because you're too close to the data.",
+        dataPoints:["All holdings with conviction scores","Position sizes and returns","Thesis and sell criteria status","Your investment style"]}},
+      {id:"consistency",title:"Portfolio Consistency Check",icon:"overview",color:"#8b5cf6",
+        desc:"Are all your holdings actually consistent with your investment philosophy? The AI reads your theses and tells you where your portfolio contradicts itself.",
+        framing:{why:"Most investors say they are quality-focused, long-term investors. Their portfolio tells a different story. This prompt sends the AI samples of your actual written theses and asks it to identify the contradictions — between holdings, and between what you say you believe and what you actually own.",
+        dataPoints:["Your stated investment style","Sample of your written theses","All holdings with conviction","Position sizes"]}},
+      {id:"concentration",title:"Concentration Risk Check",icon:"dice",color:K.amb,
+        desc:"Where are your hidden correlations? Which holdings would fall together in a downturn even though they look different on the surface?",
+        framing:{why:"Diversification is easy to fake. Holdings in different sectors can be correlated by the same macro thesis. This prompt gives the AI your full position breakdown and asks it to find the concentration risks you haven't noticed — not just by sector, but by thesis similarity and conviction-weighting.",
+        dataPoints:["All position sizes and weights","Sectors and conviction scores","Return history","Holdings count"]}},
+    ];
+
+    function genPortPrompt(p){
+      setAiModal({title:p.title,framing:p.framing,prompt:buildPortfolioPrompt(p.id,portCos)});
+    }
+    function genHoldingPrompt(type,c){
+      var f=FRAMING[type];
+      setAiModal({title:f.title+" — "+c.ticker,framing:f.framing,prompt:buildPrompt(type,c)});
+    }
+
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:900}}>
+      <AIPromptModal/>
+
+      {/* Header */}
+      <div style={{padding:isMobile?"20px 0 20px":"28px 0 24px"}}>
+        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>AI Position Review</div>
+        <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.6,maxWidth:620}}>
+          ChatGPT and Claude know everything written publicly about your holdings. They know nothing about you. These prompts change that — they feed your thesis, conviction history, KPIs, and decisions to any AI, and ask it to use your own context against you.
+        </div>
+      </div>
+
+      {/* Portfolio-wide section */}
+      <div style={{marginBottom:32}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+          <IC name="overview" size={14} color={K.dim}/>
+          <div style={{fontSize:12,fontWeight:700,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1}}>Portfolio-Wide Analysis</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {PORT_PROMPTS.map(function(pp){
+            return<div key={pp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"18px 22px",display:"flex",alignItems:"center",gap:16}}>
+              <div style={{width:40,height:40,borderRadius:10,background:pp.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name={pp.icon} size={18} color={pp.color}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{pp.title}</div>
+                <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{pp.desc}</div>
+              </div>
+              <button onClick={function(){genPortPrompt(pp)}} style={{flexShrink:0,padding:"9px 18px",borderRadius:10,border:"1px solid "+pp.color+"50",background:pp.color+"12",color:pp.color,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Generate</button>
+            </div>;
+          })}
+        </div>
+      </div>
+
+      {/* Per-holding section */}
+      <div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <IC name="trending" size={14} color={K.dim}/>
+          <div style={{fontSize:12,fontWeight:700,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1}}>Per Holding</div>
+        </div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:16}}>Select a holding, then choose the prompt type.</div>
+
+        {portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No portfolio holdings yet. Add companies from the dashboard.</div>}
+
+        {portCos.length>0&&<div>
+          {/* Holding picker */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:20}}>
+            {portCos.map(function(c){var active=selCo&&selCo.id===c.id;return<button key={c.id} onClick={function(){setSelCo(active?null:c)}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"12":"transparent",cursor:"pointer"}}>
+              <CoLogo ticker={c.ticker} domain={c.domain} size={20}/>
+              <span style={{fontSize:13,fontWeight:active?700:400,color:active?K.acc:K.mid,fontFamily:fm}}>{c.ticker}</span>
+              <span style={{fontSize:10,color:active?K.acc:K.dim,background:active?K.acc+"15":K.bg,borderRadius:4,padding:"1px 6px",fontFamily:fb}}>{c.conviction}/10</span>
+            </button>})}
+          </div>
+
+          {/* Prompt cards — only shown when holding is selected */}
+          {selCo&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {Object.entries(FRAMING).map(function(entry){
+              var type=entry[0],f=entry[1];
+              var hasThesis=selCo.thesisNote&&selCo.thesisNote.trim().length>30;
+              var hasSell=selCo.thesisSell&&selCo.thesisSell.trim().length>10;
+              var needsThesis=["challenge","annual","bear","sell"].indexOf(type)>=0&&!hasThesis;
+              var needsSell=type==="sell"&&!hasSell;
+              return<div key={type} style={{background:K.card,border:"1px solid "+(needsThesis?K.bdr:f.color+"30"),borderRadius:14,padding:"18px 22px",display:"flex",alignItems:"center",gap:16,opacity:needsThesis?0.6:1}}>
+                <div style={{width:40,height:40,borderRadius:10,background:f.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <IC name={f.icon} size={18} color={f.color}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{f.title}</div>
+                  <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>{needsThesis?"Write a thesis for "+selCo.ticker+" first to unlock this prompt":f.framing.why.slice(0,120)+"…"}</div>
+                </div>
+                <button onClick={function(){if(!needsThesis)genHoldingPrompt(type,selCo)}} disabled={needsThesis} style={{flexShrink:0,padding:"9px 18px",borderRadius:10,border:"1px solid "+f.color+(needsThesis?"20":"50"),background:f.color+(needsThesis?"05":"12"),color:f.color,fontSize:12,fontWeight:700,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,whiteSpace:"nowrap",opacity:needsThesis?0.5:1}}>Generate</button>
+              </div>;
+            })}
+          </div>}
+        </div>}
+      </div>
+    </div>;
+  }
+
+
   // ── Owner's Hub ─────────────────────────────────────────
   function OwnersHub(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
@@ -8099,7 +8397,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<AIPromptModal/>{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
     {/* === QUARTERLY LETTER POPUP === */}
@@ -8318,7 +8616,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {[{id:"dashboard",icon:"overview",label:"Portfolio"},{id:"calendar",icon:"calendar",label:"Calendar"},{id:"review",icon:"star",label:"Review"},{id:"hub",icon:"castle",label:"Hub"},{id:"library",icon:"book",label:"Library"}].map(function(item){var active=page===item.id&&!selId;return<button key={item.id} onClick={function(){setSelId(null);setPage(item.id)}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:0,color:active?K.acc:K.dim}}>
         <IC name={item.icon} size={18} color={active?K.acc:K.dim}/>
@@ -8352,6 +8650,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {id:"pg-divs",label:"Dividend Hub",icon:"dollar",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("dividends")}},
         {id:"pg-assets",label:"All Assets",icon:"trending",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("assets")}},
         {id:"pg-library",label:"Library",icon:"video",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("library")}},
+        {id:"pg-ai",label:"AI Advisor",icon:"lightbulb",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("ai")}},
         {id:"pg-timeline",label:"Timeline",icon:"clock",color:K.mid,action:function(){setCmdOpen(false);setSelId(null);setPage("timeline")}},
         {id:"pg-feed",label:"My Feed",icon:"news",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("feed")}},
         {id:"pg-lenses",label:"Investor Lenses",icon:"search",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("lenses")}},
