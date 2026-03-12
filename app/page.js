@@ -2254,7 +2254,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         lines.push("");
         lines.push(row("─ CONVICTION HISTORY ─","",""));
         lines.push(row("Date","Rating","Note"));
-        c.convictionHistory.slice(-8).forEach(function(h){lines.push(row(h.date,h.rating||"",q(h.note||"\")))});
+        c.convictionHistory.slice(-8).forEach(function(h){lines.push(row(h.date,h.rating||"",q(h.note||"")))});
       }
       // Key decisions
       var decisions=(c.decisions||[]).filter(function(d){return d.action});
