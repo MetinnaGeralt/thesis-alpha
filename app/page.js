@@ -883,6 +883,7 @@ function TrackerApp(props){
         if(d.notifs)setNotifs(d.notifs);
         if(d.trial)setTrial(d.trial);
         if(d.readingList)setReadingList(d.readingList);
+        if(d.otherAssets)setOtherAssets(d.otherAssets);
         if(d.profile){
           if(d.profile.username)setUsername(d.profile.username);
           if(d.profile.avatar)setAvatarUrl(d.profile.avatar);
@@ -903,6 +904,7 @@ function TrackerApp(props){
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
+  var _oa=useState([]),otherAssets=_oa[0],setOtherAssets=_oa[1];
   var CURRENCIES=[{code:"USD",sym:"$",label:"US Dollar"},{code:"EUR",sym:"€",label:"Euro"},{code:"GBP",sym:"£",label:"British Pound"},{code:"NOK",sym:"kr ",label:"Norwegian Krone"},{code:"SEK",sym:"kr ",label:"Swedish Krona"},{code:"DKK",sym:"kr ",label:"Danish Krone"},{code:"CHF",sym:"CHF ",label:"Swiss Franc"},{code:"JPY",sym:"¥",label:"Japanese Yen"},{code:"AUD",sym:"A$",label:"Australian Dollar"},{code:"CAD",sym:"C$",label:"Canadian Dollar"},{code:"SGD",sym:"S$",label:"Singapore Dollar"},{code:"HKD",sym:"HK$",label:"Hong Kong Dollar"}];
   var cSym=(CURRENCIES.find(function(c){return c.code===currency})||CURRENCIES[0]).sym;
   var _rl=useState(function(){try{var s=localStorage.getItem("ta-readinglist");return s?JSON.parse(s):[]}catch(e){return[]}}),readingList=_rl[0],setReadingList=_rl[1];
@@ -1161,12 +1163,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Achievement Badges ──
 
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,dashSet,theme,readingList]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,dashSet,theme,readingList,otherAssets]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -5478,53 +5480,376 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}
     </div>}
 
-  // ── All Assets ────────────────────────────────────────────
+  // ── All Assets / Net Worth Hub ────────────────────────────
   function AllAssets(){
-    var all=cos;
-    var portfolio=all.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-    var watchlist=all.filter(function(c){return c.status==="watchlist"});
-    var toohard=all.filter(function(c){return c.status==="toohard"});
-    var _tab=useState("portfolio"),tab=_tab[0],setTab=_tab[1];
-    var _q=useState(""),q=_q[0],setQ=_q[1];
-    var list=tab==="portfolio"?portfolio:tab==="watchlist"?watchlist:toohard;
-    var filtered=q?list.filter(function(c){return c.ticker.toLowerCase().indexOf(q.toLowerCase())>=0||c.name.toLowerCase().indexOf(q.toLowerCase())>=0}):list;
-    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:900}}>
-      <div style={{padding:isMobile?"20px 0 16px":"28px 0 24px"}}>
-        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>All Assets</div>
-        <div style={{fontSize:13,color:K.dim}}>{all.length} companies tracked</div>
-      </div>
-      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
-        <div style={{display:"flex",gap:4}}>
-          {[["portfolio","Portfolio",portfolio.length],["watchlist","Watchlist",watchlist.length],["toohard","Too Hard",toohard.length]].map(function(tb){return<button key={tb[0]} onClick={function(){setTab(tb[0])}} style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+(tab===tb[0]?K.acc:K.bdr),background:tab===tb[0]?K.acc+"18":"transparent",color:tab===tb[0]?K.acc:K.dim,fontSize:12,fontWeight:tab===tb[0]?600:400,cursor:"pointer",fontFamily:fm}}>{tb[1]} ({tb[2]})</button>})}
+    var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
+    var _form=useState({}),form=_form[0],setForm=_form[1];
+    var _prices=useState({}),livePrices=_prices[0],setLivePrices=_prices[1];
+    var _ftch=useState(false),fetching=_ftch[0],setFetching=_ftch[1];
+    var _p2form=useState({ticker:"",name:"",shares:"",avgCost:""}),p2form=_p2form[0],setP2form=_p2form[1];
+    var _expanded=useState({stocks:true}),expanded=_expanded[0],setExpanded=_expanded[1];
+    var _step=useState(0),step=_step[0],setStep=_step[1];
+
+    var ATYPES=[
+      {id:"real_estate",label:"Real Estate",color:"#8b5cf6",emoji:"🏠",manual:true,placeholder:"Current market value",unit:"value"},
+      {id:"etf",label:"ETFs & Funds",color:"#10b981",emoji:"📊",manual:false,placeholder:"e.g. VOO, QQQ",unit:"shares"},
+      {id:"gold",label:"Gold & Precious Metals",color:"#f59e0b",emoji:"🥇",manual:false,placeholder:"e.g. GLD, XAUUSD",unit:"oz/shares"},
+      {id:"crypto",label:"Crypto",color:"#f97316",emoji:"₿",manual:false,placeholder:"e.g. BTC, ETH, SOL",unit:"units"},
+      {id:"portfolio2",label:"2nd Stock Portfolio",color:"#06b6d4",emoji:"📈",manual:false,isPortfolio2:true},
+      {id:"cash",label:"Cash & Savings",color:"#22c55e",emoji:"💵",manual:true,placeholder:"Account balance",unit:"value"},
+      {id:"bonds",label:"Bonds & Fixed Income",color:"#6b7280",emoji:"📋",manual:true,placeholder:"Current market value",unit:"value"},
+      {id:"other",label:"Other Assets",color:"#94a3b8",emoji:"📦",manual:true,placeholder:"Estimated value",unit:"value"},
+    ];
+
+    var CRYPTO_IDS={BTC:"bitcoin",ETH:"ethereum",SOL:"solana",BNB:"binancecoin",ADA:"cardano",XRP:"ripple",DOGE:"dogecoin",MATIC:"matic-network",DOT:"polkadot",AVAX:"avalanche-2",LINK:"chainlink",UNI:"uniswap",LTC:"litecoin",ATOM:"cosmos",ALGO:"algorand"};
+
+    // Main portfolio computed values
+    var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var portValue=portCos.reduce(function(s,c){var p=c.position||{};return p.shares>0&&p.currentPrice>0?s+p.shares*p.currentPrice:s},0);
+    var portCost=portCos.reduce(function(s,c){var p=c.position||{};return p.shares>0&&p.avgCost>0?s+p.shares*p.avgCost:s},0);
+
+    function getAssetValue(a){
+      if(a.type==="portfolio2"){
+        return(a.holdings||[]).reduce(function(s,h){var px=livePrices[h.ticker]||h.avgCost||0;return s+h.shares*px},0);
+      }
+      if((a.type==="etf"||a.type==="gold")&&a.ticker&&a.quantity){
+        var lp=livePrices["FMP_"+a.ticker.toUpperCase()];
+        return lp?a.quantity*lp:Number(a.costBasis)||0;
+      }
+      if(a.type==="crypto"&&a.ticker&&a.quantity){
+        var cp=livePrices["CG_"+a.ticker.toUpperCase()];
+        return cp?a.quantity*cp:Number(a.costBasis)||0;
+      }
+      return Number(a.manualValue)||0;
+    }
+    function getAssetCost(a){
+      if(a.type==="portfolio2") return(a.holdings||[]).reduce(function(s,h){return s+h.shares*h.avgCost},0);
+      return Number(a.costBasis)||0;
+    }
+
+    async function refreshLivePrices(){
+      setFetching(true);
+      var fmpTickers=[];var cgTickers=[];
+      otherAssets.forEach(function(a){
+        if((a.type==="etf"||a.type==="gold")&&a.ticker) fmpTickers.push(a.ticker.toUpperCase());
+        if(a.type==="crypto"&&a.ticker) cgTickers.push(a.ticker.toUpperCase());
+        if(a.type==="portfolio2")(a.holdings||[]).forEach(function(h){if(h.ticker)fmpTickers.push(h.ticker.toUpperCase())});
+      });
+      fmpTickers=[...new Set(fmpTickers)];cgTickers=[...new Set(cgTickers)];
+      var newPrices=Object.assign({},livePrices);
+      if(fmpTickers.length>0){
+        try{
+          var results=await Promise.all(fmpTickers.map(function(t){return fmp("quote/"+t)}));
+          fmpTickers.forEach(function(t,i){var d=results[i];if(d&&d[0]&&d[0].price)newPrices["FMP_"+t]=d[0].price});
+        }catch(e){}
+      }
+      if(cgTickers.length>0){
+        try{
+          var cgIds=cgTickers.map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean);
+          var resp=await fetch("https://api.coingecko.com/api/v3/simple/price?ids="+cgIds.join(",")+"&vs_currencies=usd");
+          var cgData=await resp.json();
+          cgTickers.forEach(function(t){var id=CRYPTO_IDS[t]||t.toLowerCase();if(cgData[id])newPrices["CG_"+t]=cgData[id].usd});
+        }catch(e){}
+      }
+      setLivePrices(newPrices);setFetching(false);
+    }
+
+    // Auto-fetch on mount
+    useEffect(function(){refreshLivePrices()},[otherAssets.length]);
+
+    var totalValue=portValue+otherAssets.reduce(function(s,a){return s+getAssetValue(a)},0);
+    var totalCost=portCost+otherAssets.reduce(function(s,a){return s+getAssetCost(a)},0);
+    var totalGain=totalValue-totalCost;
+    var totalGainPct=totalCost>0?totalGain/totalCost*100:0;
+
+    // Allocation data
+    var allocData=[];
+    if(portValue>0) allocData.push({label:"Stock Portfolio",value:portValue,color:K.acc,id:"stocks"});
+    ATYPES.forEach(function(t){
+      var assets=otherAssets.filter(function(a){return a.type===t.id});
+      if(!assets.length) return;
+      var val=assets.reduce(function(s,a){return s+getAssetValue(a)},0);
+      if(val>0) allocData.push({label:t.label,value:val,color:t.color,id:t.id});
+    });
+
+    // Donut SVG
+    function donutPath(startDeg,endDeg,r,cx,cy){
+      function pt(deg){var rad=(deg-90)*Math.PI/180;return{x:(cx+r*Math.cos(rad)).toFixed(2),y:(cy+r*Math.sin(rad)).toFixed(2)}}
+      var s=pt(startDeg),e=pt(endDeg),large=endDeg-startDeg>180?1:0;
+      return"M "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+large+" 1 "+e.x+" "+e.y;
+    }
+    var donutR=56,donutCx=75,donutCy=75,donutSW=18;
+    var donutCum=0;
+    var donutSegments=allocData.map(function(d,i){
+      var frac=totalValue>0?d.value/totalValue:0;
+      var startDeg=donutCum*360;donutCum+=frac;var endDeg=donutCum*360-1.5;
+      return{d,frac,startDeg,endDeg:Math.max(startDeg+0.5,endDeg)};
+    });
+
+    function fmtMoney(v){if(!v||isNaN(v))return cSym+"0";var abs=Math.abs(v);var s=abs>=1e6?(abs/1e6).toFixed(2)+"M":abs>=1e3?(abs/1e3).toFixed(1)+"K":abs.toFixed(0);return(v<0?"-":"")+cSym+s}
+
+    function openAdd(type){setForm({type:type,name:"",ticker:"",quantity:"",costBasis:"",manualValue:""});setStep(1);setModal("add")}
+    function openEdit(a){setForm(Object.assign({},a));setModal("edit")}
+
+    function saveAsset(){
+      var a=Object.assign({},form);
+      if(!a.id) a.id="oa_"+Date.now();
+      if(a.quantity) a.quantity=Number(a.quantity);
+      if(a.costBasis) a.costBasis=Number(a.costBasis);
+      if(a.manualValue) a.manualValue=Number(a.manualValue);
+      if(!a.holdings) a.holdings=[];
+      if(modal==="edit"){
+        setOtherAssets(otherAssets.map(function(x){return x.id===a.id?a:x}));
+      } else {
+        setOtherAssets(otherAssets.concat([a]));
+      }
+      setModal(null);setForm({});setStep(0);
+    }
+
+    function deleteAsset(id){setOtherAssets(otherAssets.filter(function(a){return a.id!==id}))}
+
+    function addP2Holding(){
+      var t=p2form.ticker.toUpperCase().trim();if(!t||!p2form.shares||!p2form.avgCost)return;
+      var newH={id:"h_"+Date.now(),ticker:t,name:p2form.name||t,shares:Number(p2form.shares),avgCost:Number(p2form.avgCost),currentPrice:0};
+      setForm(Object.assign({},form,{holdings:(form.holdings||[]).concat([newH])}));
+      setP2form({ticker:"",name:"",shares:"",avgCost:""});
+    }
+
+    function removeP2Holding(hid){
+      setForm(Object.assign({},form,{holdings:(form.holdings||[]).filter(function(h){return h.id!==hid})}));
+    }
+
+    var atype=ATYPES.find(function(t){return t.id===form.type})||{};
+    var secLabel={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb};
+    var inputStyle={width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fm,outline:"none",boxSizing:"border-box"};
+
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:1000}}>
+
+      {/* ── Header ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:isMobile?"20px 0 20px":"28px 0 24px"}}>
+        <div>
+          <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Net Worth</div>
+          <div style={{fontSize:13,color:K.dim}}>{portCos.length} tracked stocks · {otherAssets.length} other assets</div>
         </div>
-        <input value={q} onChange={function(e){setQ(e.target.value)}} placeholder="Search..." style={{flex:1,minWidth:120,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"6px 12px",fontSize:12,fontFamily:fm,outline:"none"}}/>
+        <button onClick={function(){setStep(0);setModal("add")}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+          <span style={{fontSize:18,lineHeight:1}}>+</span> Add Asset
+        </button>
       </div>
-      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No companies in this list yet.</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {filtered.map(function(c){
-          var pos=c.position||{};var ret=pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
-          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
-          return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
-            <CoLogo ticker={c.ticker} domain={c.domain} size={36}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
-                <span style={{fontSize:12,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
-              </div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {c.sector&&<span style={{fontSize:10,color:K.dim,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 6px"}}>{c.sector}</span>}
-                {hasThesis&&<span style={{fontSize:10,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"1px 6px"}}>Thesis</span>}
-                {(c.kpis||[]).length>0&&<span style={{fontSize:10,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:4,padding:"1px 6px"}}>{c.kpis.length} KPIs</span>}
-                {c.conviction>0&&<span style={{fontSize:10,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"1px 6px"}}>Conv {c.conviction}/10</span>}
-              </div>
+
+      {/* ── Summary + Donut ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:isMobile?"20px":"24px 32px",marginBottom:24,display:"flex",flexWrap:"wrap",gap:24,alignItems:"center"}}>
+        {/* Donut chart */}
+        <div style={{flexShrink:0}}>
+          <svg width={150} height={150}>
+            {allocData.length===0&&<circle cx={donutCx} cy={donutCy} r={donutR} fill="none" stroke={K.bdr} strokeWidth={donutSW}/>}
+            {donutSegments.map(function(seg,i){
+              return<path key={seg.d.id} d={donutPath(seg.startDeg,seg.endDeg,donutR,donutCx,donutCy)} fill="none" stroke={seg.d.color} strokeWidth={donutSW} strokeLinecap="butt"/>;
+            })}
+            <text x={donutCx} y={donutCy-8} textAnchor="middle" fontSize={9} fill={K.dim} fontFamily={fb} letterSpacing="0.5">NET WORTH</text>
+            <text x={donutCx} y={donutCy+8} textAnchor="middle" fontSize={14} fill={K.txt} fontWeight={700} fontFamily={fm}>{fmtMoney(totalValue)}</text>
+          </svg>
+        </div>
+        {/* Stats */}
+        <div style={{flex:1,minWidth:200}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+            <div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Total Invested</div>
+              <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtMoney(totalCost)}</div>
             </div>
-            {ret!==null&&<div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:ret>=0?K.grn:K.red,fontFamily:fm}}>{ret>=0?"+":""}{ret.toFixed(1)}%</div>
-              <div style={{fontSize:10,color:K.dim}}>return</div>
-            </div>}
+            <div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Total Gain/Loss</div>
+              <div style={{fontSize:20,fontWeight:700,color:totalGain>=0?K.grn:K.red,fontFamily:fm}}>{totalGain>=0?"+":""}{fmtMoney(totalGain)} <span style={{fontSize:13,fontWeight:400}}>({totalGainPct>=0?"+":""}{totalGainPct.toFixed(1)}%)</span></div>
+            </div>
           </div>
-        })}
+          {/* Legend */}
+          <div style={{display:"flex",flexWrap:"wrap",gap:"8px 16px"}}>
+            {allocData.map(function(d){var pct=totalValue>0?(d.value/totalValue*100):0;return<div key={d.id} style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{width:10,height:10,borderRadius:2,background:d.color,flexShrink:0}}/>
+              <span style={{fontSize:12,color:K.mid,fontFamily:fb}}>{d.label}</span>
+              <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{pct.toFixed(1)}%</span>
+            </div>})}
+          </div>
+        </div>
+        {/* Refresh live prices */}
+        <button onClick={refreshLivePrices} disabled={fetching} style={{alignSelf:"flex-start",padding:"7px 14px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:6}}>
+          <span style={{display:"inline-block",animation:fetching?"spin 1s linear infinite":"none"}}>↺</span>{fetching?"Refreshing...":"Refresh prices"}
+        </button>
       </div>
+
+      {/* ── Stock Portfolio (main) ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{stocks:!expanded.stocks}))}}>
+          <div style={{width:10,height:10,borderRadius:2,background:K.acc,flexShrink:0}}/>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>📈 Stock Portfolio</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginTop:2}}>{portCos.length} holdings</div>
+          </div>
+          <div style={{textAlign:"right",marginRight:12}}>
+            <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtMoney(portValue)}</div>
+            {portCost>0&&<div style={{fontSize:12,color:portValue>=portCost?K.grn:K.red,fontFamily:fb}}>{portValue>=portCost?"+":""}{((portValue-portCost)/portCost*100).toFixed(1)}%</div>}
+          </div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb,minWidth:20,textAlign:"center"}}>{expanded.stocks?"▲":"▼"}</div>
+        </div>
+        {expanded.stocks&&portCos.length>0&&<div style={{borderTop:"1px solid "+K.bdr}}>
+          {portCos.map(function(c){
+            var p=c.position||{};var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:null;
+            var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
+            var pct=val&&portValue>0?val/portValue*100:null;
+            return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
+              <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fb,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
+              </div>
+              {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
+              {val!==null&&<div style={{textAlign:"right",minWidth:70}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fmtMoney(val)}</div>
+                {ret!==null&&<div style={{fontSize:11,color:ret>=0?K.grn:K.red,fontFamily:fb}}>{ret>=0?"+":""}{ret.toFixed(1)}%</div>}
+              </div>}
+            </div>;
+          })}
+        </div>}
+        {expanded.stocks&&portCos.length===0&&<div style={{padding:"20px",textAlign:"center",color:K.dim,fontSize:13,borderTop:"1px solid "+K.bdr}}>No portfolio positions yet. Add companies from the dashboard.</div>}
+      </div>
+
+      {/* ── Other Asset Sections ── */}
+      {ATYPES.map(function(atp){
+        var assets=otherAssets.filter(function(a){return a.type===atp.id});
+        var totalTypeVal=assets.reduce(function(s,a){return s+getAssetValue(a)},0);
+        var totalTypeCost=assets.reduce(function(s,a){return s+getAssetCost(a)},0);
+        var isOpen=expanded[atp.id];
+        return<div key={atp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{[atp.id]:!isOpen}))}}>
+            <div style={{width:10,height:10,borderRadius:2,background:atp.color,flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{atp.emoji} {atp.label}</div>
+              <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginTop:2}}>{assets.length} asset{assets.length!==1?"s":""}</div>
+            </div>
+            {totalTypeVal>0&&<div style={{textAlign:"right",marginRight:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtMoney(totalTypeVal)}</div>
+              {totalTypeCost>0&&<div style={{fontSize:12,color:totalTypeVal>=totalTypeCost?K.grn:K.red,fontFamily:fb}}>{totalTypeVal>=totalTypeCost?"+":""}{((totalTypeVal-totalTypeCost)/totalTypeCost*100).toFixed(1)}%</div>}
+            </div>}
+            <button onClick={function(e){e.stopPropagation();openAdd(atp.id)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+atp.color+"60",background:atp.color+"12",color:atp.color,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600,flexShrink:0}}>+ Add</button>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,minWidth:20,textAlign:"center"}}>{isOpen?"▲":"▼"}</div>
+          </div>
+          {isOpen&&<div style={{borderTop:"1px solid "+K.bdr}}>
+            {assets.length===0&&<div style={{padding:"20px 24px",color:K.dim,fontSize:13,textAlign:"center"}}>No {atp.label.toLowerCase()} added yet. <span style={{color:atp.color,cursor:"pointer"}} onClick={function(){openAdd(atp.id)}}>Add one →</span></div>}
+            {assets.map(function(a){
+              var val=getAssetValue(a);var cost=getAssetCost(a);var gain=val-cost;var gainPct=cost>0?gain/cost*100:0;
+              var pct=totalValue>0?val/totalValue*100:0;
+              return<div key={a.id} style={{padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"50",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
+                  <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:2}}>
+                    {a.ticker&&a.type!=="portfolio2"&&<span style={{marginRight:8,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:4}}>{a.ticker.toUpperCase()}</span>}
+                    {a.type==="portfolio2"&&<span>{(a.holdings||[]).length} holdings</span>}
+                    {(a.type==="etf"||a.type==="gold")&&a.quantity&&<span>{a.quantity} {atp.unit}</span>}
+                    {a.type==="crypto"&&a.quantity&&<span>{a.quantity} {a.ticker?a.ticker.toUpperCase():""}</span>}
+                  </div>
+                </div>
+                {pct>0&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
+                <div style={{textAlign:"right",minWidth:80}}>
+                  <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtMoney(val)}</div>
+                  {cost>0&&val>0&&<div style={{fontSize:11,color:gain>=0?K.grn:K.red,fontFamily:fb}}>{gain>=0?"+":""}{fmtMoney(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%)</div>}
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={function(){openEdit(a)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                  <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>✕</button>
+                </div>
+              </div>;
+            })}
+          </div>}
+        </div>;
+      })}
+
+      {/* ── Add/Edit Modal ── */}
+      {modal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setModal(null);setStep(0)}}>
+        <div style={{background:K.card,borderRadius:18,padding:"28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}} onClick={function(e){e.stopPropagation()}}>
+
+          {/* Step 0: choose type */}
+          {modal==="add"&&step===0&&<div>
+            <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Asset</div>
+            <div style={{fontSize:13,color:K.dim,marginBottom:20}}>What type of asset do you want to add?</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {ATYPES.map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
+                <div style={{fontSize:20,marginBottom:6}}>{t.emoji}</div>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</div>
+              </button>})}
+            </div>
+          </div>}
+
+          {/* Step 1: fill details */}
+          {(modal==="edit"||(modal==="add"&&step===1))&&<div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+              {modal==="add"&&<button onClick={function(){setStep(0)}} style={{background:"transparent",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"0 4px 0 0"}}>←</button>}
+              <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh}}>{modal==="edit"?"Edit Asset":atype.emoji+" "+atype.label}</div>
+            </div>
+
+            {/* Name */}
+            {!atype.isPortfolio2&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Name / Description</div>
+              <input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.label+" name"} style={inputStyle}/>
+            </div>}
+            {atype.isPortfolio2&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Portfolio Name</div>
+              <input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder="e.g. ISK Account, Pension Portfolio" style={inputStyle}/>
+            </div>}
+
+            {/* Ticker (for ETF/gold/crypto) */}
+            {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Ticker Symbol</div>
+              <input value={form.ticker||""} onChange={function(e){setForm(Object.assign({},form,{ticker:e.target.value.toUpperCase()}))}} placeholder={atype.placeholder} style={inputStyle}/>
+              {atype.id==="gold"&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Use GLD (ETF) or XAUUSD for spot gold price</div>}
+              {atype.id==="crypto"&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Supported: BTC, ETH, SOL, BNB, ADA, XRP, DOGE and more</div>}
+            </div>}
+
+            {/* Quantity (for ETF/gold/crypto) */}
+            {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Quantity ({atype.unit})</div>
+              <input type="number" value={form.quantity||""} onChange={function(e){setForm(Object.assign({},form,{quantity:e.target.value}))}} placeholder="0" style={inputStyle}/>
+            </div>}
+
+            {/* Manual value (for real_estate/cash/bonds/other) */}
+            {atype.manual&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Current Value ({cSym})</div>
+              <input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder={atype.placeholder} style={inputStyle}/>
+            </div>}
+
+            {/* Cost basis (all types except manual-only) */}
+            <div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:6})}>Cost Basis — Total Amount Invested ({cSym})</div>
+              <input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/>
+              <div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid, used to calculate your gain/loss</div>
+            </div>
+
+            {/* Portfolio 2 holdings */}
+            {atype.isPortfolio2&&<div style={{marginBottom:16}}>
+              <div style={Object.assign({},secLabel,{marginBottom:10})}>Holdings</div>
+              {(form.holdings||[]).map(function(h){
+                return<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.bg,borderRadius:8,marginBottom:6}}>
+                  <div style={{flex:1}}>
+                    <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h.ticker}</span>
+                    <span style={{fontSize:11,color:K.dim,marginLeft:8}}>{h.shares} shares @ {cSym}{h.avgCost}</span>
+                  </div>
+                  <button onClick={function(){removeP2Holding(h.id)}} style={{background:"transparent",border:"none",color:K.red,fontSize:14,cursor:"pointer",padding:"0 4px"}}>✕</button>
+                </div>;
+              })}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}>
+                <input value={p2form.ticker} onChange={function(e){setP2form(Object.assign({},p2form,{ticker:e.target.value.toUpperCase()}))}} placeholder="Ticker (e.g. AAPL)" style={inputStyle}/>
+                <input value={p2form.name} onChange={function(e){setP2form(Object.assign({},p2form,{name:e.target.value}))}} placeholder="Name (optional)" style={inputStyle}/>
+                <input type="number" value={p2form.shares} onChange={function(e){setP2form(Object.assign({},p2form,{shares:e.target.value}))}} placeholder="Shares" style={inputStyle}/>
+                <input type="number" value={p2form.avgCost} onChange={function(e){setP2form(Object.assign({},p2form,{avgCost:e.target.value}))}} placeholder={"Avg cost ("+cSym+")"} style={inputStyle}/>
+              </div>
+              <button onClick={addP2Holding} style={{marginTop:8,padding:"7px 14px",borderRadius:8,border:"1px solid "+K.acc+"60",background:K.acc+"12",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add Holding</button>
+            </div>}
+
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={function(){setModal(null);setStep(0)}} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
+              <button onClick={saveAsset} style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{modal==="edit"?"Save Changes":"Add Asset"}</button>
+            </div>
+          </div>}
+        </div>
+      </div>}
     </div>
   }
 
