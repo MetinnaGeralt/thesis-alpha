@@ -401,11 +401,21 @@ function estimatePayMonths(c){
   var freq=c.divFrequency||"quarterly";
   if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
   if(freq==="none")return[];
-  if(freq==="annual")return c.exDivDate?[new Date(c.exDivDate).getMonth()]:[5];
-  if(freq==="semi")return c.exDivDate?[new Date(c.exDivDate).getMonth(),(new Date(c.exDivDate).getMonth()+6)%12]:[2,8];
-  // Quarterly: if we have ex-div date, estimate 4 quarters from it
-  if(c.exDivDate){var m=new Date(c.exDivDate).getMonth();return[m,(m+3)%12,(m+6)%12,(m+9)%12]}
-  return[2,5,8,11]}
+  // Use actual ex-div date if available — most accurate
+  if(c.exDivDate&&c.exDivDate!=""){
+    var exM=new Date(c.exDivDate).getMonth();
+    // Advance to a future or recent ex-div (dates can be stale)
+    if(freq==="annual")return[exM];
+    if(freq==="semi")return[exM,(exM+6)%12];
+    // Quarterly: derive cycle from last known ex-div month
+    return[exM,(exM+3)%12,(exM+6)%12,(exM+9)%12]}
+  // No ex-div date: use ticker hash to spread companies across cycles
+  // so not every unknown payer lands in the same 3 months
+  if(freq==="annual")return[5]; // June default
+  if(freq==="semi")return[2,8]; // Mar/Sep default
+  // Quarterly: pick cycle based on ticker first char to spread load
+  var t=c.ticker||"A";var code=t.charCodeAt(0);var offset=code%3; // 0,1,2
+  return[offset,(offset+3)%12,(offset+6)%12,(offset+9)%12]}
 // FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
@@ -1276,6 +1286,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           try{var fhDiv=await fetchDivFromFinnhub(c.ticker,r.lastDiv);
             if(fhDiv&&fhDiv.payer){upd(c.id,function(prev){return Object.assign({},prev,{divPerShare:fhDiv.divPerShare,lastDiv:fhDiv.annualDiv||fhDiv.divPerShare,divFrequency:fhDiv.divFrequency})})}
             else if(fhDiv){upd(c.id,function(prev){return Object.assign({},prev,{divFrequency:"none"})})}}catch(e){}}
+        // Fetch real ex-div date for payers missing it
+        if((c.divPerShare>0||c.lastDiv>0)&&!c.exDivDate){
+          try{var dInfo=await fetchDividendInfo(c.ticker);
+            if(dInfo&&dInfo.exDivDate){upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency})})}}catch(e){}}
       }}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
@@ -7588,6 +7602,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
 
   // ── Dividend Hub ──────────────────────────────────────
+  async function refreshDivDates(setStatus){
+    if(setStatus)setStatus("loading");
+    var payers=cos.filter(function(c){return(c.divPerShare||c.lastDiv||0)>0});
+    var updated=0;
+    for(var i=0;i<payers.length;i++){var c=payers[i];
+      try{var dInfo=await fetchDividendInfo(c.ticker);
+        if(dInfo&&dInfo.exDivDate){
+          upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency})});
+          updated++}
+      }catch(e){}
+      await new Promise(function(res){setTimeout(res,400)})}
+    if(setStatus)setStatus("done:"+updated);
+    setTimeout(function(){if(setStatus)setStatus("idle")},3000)}
+
   function DividendHub(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var divPayers=portfolio.filter(function(c){return(c.divPerShare||c.lastDiv||0)>0});
@@ -7776,11 +7804,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* ── TAB: INCOME STREAM ── */}
       {divTab==="income"&&(function(){
         var nowMonth=new Date().getMonth();
+        var _rdst=useState("idle"),rdStatus=_rdst[0],setRdStatus=_rdst[1];
+        var missingExDiv=divPayers.filter(function(c){return!c.exDivDate||c.exDivDate===""});
         return<div>
+          {/* Ex-div date warning + refresh */}
+          {missingExDiv.length>0&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 16px",background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:10,marginBottom:16,flexWrap:"wrap"}}>
+            <span style={{fontSize:12,color:K.amb,fontFamily:fm}}><strong>{missingExDiv.length} holding{missingExDiv.length!==1?"s":""}</strong> missing ex-div date — bar chart uses estimated months ({missingExDiv.map(function(c){return c.ticker}).join(", ")})</span>
+            <button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:rdStatus==="loading"?K.bdr:K.amb,border:"none",color:rdStatus==="loading"?K.dim:"#000",padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:rdStatus==="loading"?"default":"pointer",fontFamily:fm,flexShrink:0}}>
+              {rdStatus==="loading"?"Fetching…":rdStatus.startsWith("done")?"✓ Updated "+rdStatus.split(":")[1]+" holding"+(rdStatus.split(":")[1]!=="1"?"s":"")+"!":"Fetch Real Dates"}
+            </button>
+          </div>}
           {/* Stacked bar chart */}
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px",marginBottom:20}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:4,fontFamily:fm,fontWeight:600}}>Monthly Income Stream</div>
-            <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Hover a month to see which holdings pay</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
+              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>Monthly Income Stream</div>
+              {missingExDiv.length===0&&<button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}} title="Re-fetch ex-div dates from FMP">{rdStatus==="loading"?"Refreshing…":rdStatus.startsWith("done")?"✓ Refreshed":"↻ Refresh dates"}</button>}
+            </div>
+            <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Hover a month to see which holdings pay{missingExDiv.length>0?" (estimated for "+missingExDiv.length+" holdings)":""}</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:isMobile?4:8,alignItems:"flex-end",height:160,marginBottom:8}}>
               {monthlyBreakdown.map(function(m){
                 var isNow=m.idx===nowMonth;var isHov=hovMonth===m.idx;var barH=m.income>0?Math.max(10,Math.round(m.income/maxMonthlyIncome*130)):3;
