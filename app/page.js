@@ -4397,6 +4397,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(_fcfVal>0&&_cp>0){var _fcfFV=_fcfVal/0.05;if(_fcfFV>0&&_fcfFV<_cp*10)pvSection.push({l:"FCF@5% FV",v:cSym+_fcfFV.toFixed(2),isGood:_cp<_fcfFV,tip:"Price implied by 5% FCF yield"})}
           }catch(pvErr){pvSection=[];}
           // ── Investment framework scores ──────────────────────────────
+          var sections=[];
           var scoreItems=[];
           try{
             // — Piotroski F-Score (0-9) —
@@ -4444,7 +4445,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           }catch(scoreErr){}
           if(scoreItems.length>0)sections.push({title:"INVESTMENT SCORES",items:scoreItems,color:"#7C3AED"});
 
-          var sections=[];
           if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
           if(returns.length>0)sections.push({title:"RETURNS & GROWTH",items:returns,color:K.grn});
