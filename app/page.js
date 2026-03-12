@@ -4628,6 +4628,117 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   }
 
 
+
+  // ── Morning Signals Engine — reads all 4 layers ───────────
+  function calcMorningSignals(portfolio, library){
+    var signals = [];
+    var now = Date.now();
+
+    // ── LAYER 1: Ownership × Process — alignment mismatches ──
+    var alignData = calcAlignmentSignals(portfolio);
+    if(alignData.mismatches.length > 0){
+      var top = alignData.mismatches[0];
+      signals.push({
+        layer: "alignment",
+        priority: top.severity === "high" ? 1 : 2,
+        icon: "alert",
+        color: top.color,
+        title: top.ticker + ": conviction/size mismatch",
+        sub: top.msg,
+        action: "AI Review",
+        onAction: {type: "ai", aiType: top.aiType, c: top.c},
+        secondary: "View holding",
+        onSecondary: {type: "go", c: top.c}
+      });
+    }
+
+    // ── LAYER 2: Process — KPI miss streak (2+ consecutive) ──
+    portfolio.forEach(function(c){
+      if(!c.kpis || c.kpis.length === 0) return;
+      c.kpis.forEach(function(kpi){
+        var results = kpi.results || [];
+        if(results.length < 2) return;
+        var last2 = results.slice(-2);
+        var bothMissed = last2.every(function(r){
+          if(!kpi.target || !r.value) return false;
+          var v = parseFloat(r.value);
+          var t = parseFloat(kpi.target);
+          if(isNaN(v) || isNaN(t)) return false;
+          return v < t;
+        });
+        if(bothMissed){
+          signals.push({
+            layer: "kpi_streak",
+            priority: 2,
+            icon: "bar",
+            color: K.red,
+            title: c.ticker + ": " + kpi.label + " missed 2 quarters",
+            sub: "Target " + kpi.target + (kpi.unit||"") + " — missed in both recent checks. Bear case?",
+            action: "Bear Case",
+            onAction: {type: "ai", aiType: "bear", c: c},
+            secondary: "View KPIs",
+            onSecondary: {type: "go", c: c}
+          });
+        }
+      });
+    });
+
+    // ── LAYER 3: Process — conviction drop alert ──────────────
+    portfolio.forEach(function(c){
+      var hist = c.convictionHistory || [];
+      if(hist.length < 2) return;
+      var last = hist[hist.length - 1].score;
+      var prev = hist[hist.length - 2].score;
+      var drop = prev - last;
+      if(drop >= 2){
+        var hasSell = c.thesisSell && c.thesisSell.trim().length > 10;
+        signals.push({
+          layer: "conviction_drop",
+          priority: 2,
+          icon: "trending",
+          color: K.amb,
+          title: c.ticker + ": conviction dropped " + drop + " points",
+          sub: prev + "/10 → " + last + "/10" + (hasSell ? ". Sell criteria written." : ". No sell criteria — write them now."),
+          action: hasSell ? "Sell Check" : "Add Sell Criteria",
+          onAction: hasSell
+            ? {type: "ai", aiType: "sell", c: c}
+            : {type: "go", c: c, modal: "thesis"},
+          secondary: "Challenge thesis",
+          onSecondary: {type: "ai", aiType: "challenge", c: c}
+        });
+      }
+    });
+
+    // ── LAYER 4: Library × Process — tagged items + earnings ──
+    var libItems = (library && library.items) || [];
+    var earningsSoon = portfolio.filter(function(c){
+      return c.earningsDate && c.earningsDate !== "TBD"
+        && dU(c.earningsDate) >= 0 && dU(c.earningsDate) <= 7;
+    });
+    earningsSoon.forEach(function(c){
+      var tagged = libItems.filter(function(it){return it.ticker === c.ticker});
+      if(tagged.length > 0){
+        signals.push({
+          layer: "library_earnings",
+          priority: 2,
+          icon: "book",
+          color: K.acc,
+          title: tagged.length + " saved item" + (tagged.length > 1 ? "s" : "") + " tagged to " + c.ticker,
+          sub: c.ticker + " reports in " + dU(c.earningsDate) + "d — review your saved material before the call",
+          action: "Open Library",
+          onAction: {type: "library"},
+          secondary: "Pre-Earnings AI",
+          onSecondary: {type: "ai", aiType: "earnings", c: c}
+        });
+      }
+    });
+
+    // Sort by priority, cap at 4
+    signals.sort(function(a, b){ return a.priority - b.priority });
+    return signals.slice(0, 4);
+  }
+
+
   // ── AI Prompt Builder utilities ───────────────────────────
   function buildPrompt(type, c){
     var p=c.position||{};
@@ -7483,6 +7594,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var _tp=useState(def.type||"Video"),type=_tp[0],setType=_tp[1];
       var _fo=useState(def.folder||""),folder=_fo[0],setFolder=_fo[1];
       var _no=useState(def.notes||""),notes=_no[0],setNotes=_no[1];
+      var _ltk=useState(def.ticker||""),libTicker=_ltk[0],setLibTicker=_ltk[1];
       var _fn=useState(""),folderName=_fn[0],setFolderName=_fn[1];
       var _fc=useState(FOLDER_COLORS[folders.length%FOLDER_COLORS.length]),folderColor=_fc[0],setFolderColor=_fc[1];
       var _nf=useState(false),newFolderMode=_nf[0],setNewFolderMode=_nf[1];
@@ -7494,8 +7606,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var nf={id:"f"+Date.now(),name:folderName.trim(),color:folderColor};
           nextFolders.push(nf);useFolder=nf.id}
         var nextItems=items.slice();
-        if(isNew){nextItems.unshift({id:"li"+Date.now(),title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),addedAt:new Date().toISOString()})}
-        else{nextItems=nextItems.map(function(it){return it.id===def.id?Object.assign({},it,{title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim()}):it})}
+        if(isNew){nextItems.unshift({id:"li"+Date.now(),title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker.trim().toUpperCase()||undefined,addedAt:new Date().toISOString()})}
+        else{nextItems=nextItems.map(function(it){return it.id===def.id?Object.assign({},it,{title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker.trim().toUpperCase()||undefined}):it})}
         saveLibrary({folders:nextFolders,items:nextItems});setLibModal(null);showToast(isNew?"Resource added":"Resource updated","info",2000)}
       var thumb=getThumb(url);
       return<Modal K={K} title={isNew?"Add Resource":"Edit Resource"} onClose={function(){setLibModal(null)}} w={520}>
@@ -7520,6 +7632,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}
         </div>
         <Inp K={K} label="Notes (optional)" value={notes} onChange={setNotes} ta={true} placeholder="Key takeaways, why you saved this..."/>
+        <div style={{marginBottom:16}}>
+          <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Link to holding (optional)</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <button onClick={function(){setLibTicker("")}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(libTicker===""?K.acc:K.bdr),background:libTicker===""?K.acc+"18":"transparent",color:libTicker===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
+            {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return<button key={c.id} onClick={function(){setLibTicker(libTicker===c.ticker?"":c.ticker)}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(libTicker===c.ticker?K.acc:K.bdr),background:libTicker===c.ticker?K.acc+"18":"transparent",color:libTicker===c.ticker?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTicker===c.ticker?700:400}}>{c.ticker}</button>})}
+          </div>
+          <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>Tagged items appear in your Morning Brief before earnings on that company.</div>
+        </div>
         <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
           <button onClick={function(){setLibModal(null)}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
           <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px"})}>{isNew?"Add":"Save"}</button>
@@ -7850,6 +7970,60 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
           </div>
         </div>}
+
+        {/* ── Today's Signals — cross-layer ── */}
+        {(function(){
+          var sigs=calcMorningSignals(portfolio,library);
+          if(sigs.length===0)return null;
+
+          function handleAction(act){
+            if(!act)return;
+            if(act.type==="ai"){
+              var FRAMING_BRIEF={
+                challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+                sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+                bear:{why:"Builds the strongest possible bear case using your own bull thesis as the target.",dataPoints:["Your bull thesis","Moat argument","Risks acknowledged","Conviction level"]},
+                earnings:{why:"Tailored entirely to your thesis and KPIs — not a generic earnings preview.",dataPoints:["Your thesis","Your KPIs","Your sell criteria","Earnings date"]},
+                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+              };
+              var fr=FRAMING_BRIEF[act.aiType]||FRAMING_BRIEF["challenge"];
+              var title={challenge:"Challenge My Thesis",sell:"Sell Discipline Check",bear:"Bear Case Generator",earnings:"Pre-Earnings Briefing",annual:"Annual Review"}[act.aiType]||"AI Review";
+              setAiModal({title:title+" — "+(act.c?act.c.ticker:""),framing:fr,prompt:buildPrompt(act.aiType,act.c)});
+            }
+            else if(act.type==="go"){
+              setSelId(act.c.id);setDetailTab("dossier");
+              if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
+            }
+            else if(act.type==="library"){setSelId(null);setPage("library")}
+          }
+
+          return<div style={{borderBottom:"1px solid "+K.bdr}}>
+            <div style={{padding:isMobile?"10px 16px 0":"12px 24px 0"}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Signals across your portfolio</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:0}}>
+              {sigs.map(function(sig,i){
+                return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:isMobile?"10px 16px":"10px 24px",borderTop:i===0?"none":"1px solid "+K.bdr+"50",background:"transparent"}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:sig.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <IC name={sig.icon} size={12} color={sig.color}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:1}}>{sig.title}</div>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:isMobile?"nowrap":"normal"}}>{sig.sub}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    {sig.secondary&&sig.onSecondary&&!isMobile&&<button onClick={function(){handleAction(sig.onSecondary)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
+                      {sig.secondary}
+                    </button>}
+                    <button onClick={function(){handleAction(sig.onAction)}} style={{padding:"4px 12px",borderRadius:6,border:"1px solid "+sig.color+"50",background:sig.color+"0d",color:sig.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
+                      {sig.action}
+                    </button>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
 
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
           {/* LEFT — business events ── */}
