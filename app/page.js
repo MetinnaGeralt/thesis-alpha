@@ -467,13 +467,7 @@ async function fetchFMPMetrics(ticker){
     if(!ratios&&!km)return null;
     var out={ratios:ratios||{},km:km||{}};
     _fmpmetricscache[ticker]=out;
-    // Log the exact fields returned so we can see what's available for look-through metrics
-    var watchFields=["interestCoverageTTM","freeCashFlowPerRevenueTTM","freeCashFlowToRevenueTTM","netDebtToEBITDATTM","returnOnCapitalEmployedTTM","interestCoverRatioTTM","cashFlowToRevenueTTM"];
-    var kmWatchFields=["returnOnInvestedCapitalTTM","freeCashFlowPerShareTTM","revenuePerShareTTM","netDebtToEBITDATTM","interestCoverageTTM"];
-    var raHas=watchFields.filter(function(f){return out.ratios[f]!=null}).join(", ")||"none";
-    var kmHas=kmWatchFields.filter(function(f){return out.km[f]!=null}).join(", ")||"none";
-    console.log("[ThesisAlpha] FMP "+ticker+" ratios("+Object.keys(out.ratios).length+"): look-through fields="+raHas);
-    console.log("[ThesisAlpha] FMP "+ticker+" km("+Object.keys(out.km).length+"): look-through fields="+kmHas);
+    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
     return out;
   }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
 
@@ -1207,7 +1201,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d — "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
-  // (auto-refresh moved to explicit button in look-through table)
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
@@ -6649,23 +6642,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
 
               return<div style={{marginBottom:16}}>
-                {/* Section label + preset pills + refresh */}
+                {/* Section label + preset pills */}
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
-                  <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:3}}>
                     {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
-                    <button title="Refresh financial data for all holdings" onClick={function(){
-                      portfolio.forEach(function(c2,i){setTimeout(function(){
-                        fetchEarnings(c2,c2.kpis||[]).then(function(res){
-                          if(res&&res.snapshot){
-                            console.log("[ThesisAlpha] Refreshed "+c2.ticker+": keys="+Object.keys(res.snapshot).join(", "));
-                            upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()});
-                          }
-                        }).catch(function(e){console.warn("Refresh failed",c2.ticker,e);});
-                      },i*1000)});
-                    }} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:9,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:3}}>
-                      <IC name="refresh" size={8} color={K.dim}/>Refresh
-                    </button>
                   </div>
                 </div>
 
@@ -6683,7 +6664,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     return<div key={r.key} style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
                       <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:10,color:K.bdr,fontFamily:fm}} title="Hit Refresh above to fetch data">—</span>}
+                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>↺</span>}
                       </div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
                         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
@@ -6767,22 +6748,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
           return<div style={{borderTop:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <IC name="news" size={13} color={K.acc}/>
-                  <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>Owner's Intel</span>
-                  {shown.length>0&&<span style={{fontSize:10,fontWeight:700,color:K.acc,background:K.acc+"15",padding:"1px 8px",borderRadius:999,fontFamily:fm}}>{shown.length}</span>}
-                  {briefNewsLoading&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>scanning…</span>}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                  <IC name="news" size={9} color={isThesis?K.acc:K.dim}/>Owner's Intel
+                  {briefNews&&briefNews.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}}
-                    style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 10px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="refresh" size={9} color={K.dim}/>Refresh
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}}
-                    style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:6,color:showNewsFilter?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 10px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>Filter
-                  </button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"↺"}</button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
