@@ -8043,14 +8043,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
                   {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
                   {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
-  // FCF / Op profit — proxy for how much profit converts to cash
-  if(s.fcfMargin&&s.fcfMargin.numVal!=null&&s.opMargin&&s.opMargin.numVal>0)return s.fcfMargin.numVal/s.opMargin.numVal*100;
-  // Fallback: FCF margin alone if opMargin missing (less precise but shows something)
-  if(s.fcfMargin&&s.fcfMargin.numVal!=null)return s.fcfMargin.numVal;
+  // Primary: FCF margin / Op margin = what % of operating profit converts to cash
+  var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;
+  var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;
+  if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);
+  // Fallback 1: FCF margin as direct proxy
+  if(fcf!=null)return Math.max(0,fcf);
   return null;}},
                   {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
+  // Primary: direct interest coverage ratio
   if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
-  // Compute from EBIT/interest if we have opMargin & debtEquity as proxy
+  // Fallback 1: net-cash company (netDebt negative) -> effectively very high coverage
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0)return 99;
+  // Fallback 2: near-zero leverage -> infer from ROIC
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0.5){
+    var rc=s.roce&&s.roce.numVal!=null?s.roce.numVal:(s.roic&&s.roic.numVal!=null?s.roic.numVal:null);
+    if(rc!=null&&rc>0)return Math.round(rc*2);}
+  // Fallback 3: very low debt/equity
+  if(s.debtEquity&&s.debtEquity.numVal!=null&&s.debtEquity.numVal<0.1)return 50;
   return null;}},
                 ]},
                 {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
@@ -8175,8 +8185,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <span style={{flex:1,fontSize:10,color:thesisColor,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{thesisLabel}</span>
                 {/* Earnings badge if soon */}
                 {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
-                {/* KPI badge */}
-                {c2.kpis.length>0&&<span style={{fontSize:9,fontWeight:700,color:kpiH.c,background:kpiH.c+"15",padding:"1px 5px",borderRadius:4,flexShrink:0,fontFamily:fm}}>{kpiH.l}</span>}
+                {/* KPI badge — only meaningful alongside a thesis */}
+                {c2.kpis.length>0&&thesisAge!=null&&<span style={{fontSize:9,fontWeight:700,color:kpiH.c,background:kpiH.c+"15",padding:"1px 5px",borderRadius:4,flexShrink:0,fontFamily:fm}}>KPIs: {kpiH.l}</span>}
               </div>})}
           </div>
         </div>
