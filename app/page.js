@@ -4378,6 +4378,256 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>
   }
 
+
+  // ── Conviction/Position Alignment Engine ─────────────────
+  function calcAlignmentSignals(portCos){
+    var held=portCos.filter(function(c){
+      var p=c.position||{};return p.shares>0&&p.currentPrice>0;
+    });
+    if(held.length<2)return{mismatches:[],flags:[],score:100};
+
+    var totalValue=held.reduce(function(s,c){
+      return s+c.position.shares*c.position.currentPrice;
+    },0);
+    if(totalValue<=0)return{mismatches:[],flags:[],score:100};
+
+    var items=held.map(function(c){
+      var val=c.position.shares*c.position.currentPrice;
+      var pct=val/totalValue*100;
+      var conviction=c.conviction||0;
+      var hasThesis=c.thesisNote&&c.thesisNote.trim().length>40;
+      var hasSell=c.thesisSell&&c.thesisSell.trim().length>10;
+      var convHistory=c.convictionHistory||[];
+      var trend=convHistory.length>=2
+        ?convHistory[convHistory.length-1].score-convHistory[convHistory.length-2].score
+        :0;
+      var staleDays=c.lastReviewed
+        ?Math.ceil((Date.now()-new Date(c.lastReviewed))/864e5)
+        :999;
+      return{c:c,val:val,pct:pct,conviction:conviction,hasThesis:hasThesis,hasSell:hasSell,trend:trend,staleDays:staleDays};
+    }).sort(function(a,b){return b.pct-a.pct});
+
+    // Compute conviction-weighted ideal allocation
+    // Ideal pct for each holding = conviction/sumConviction * 100
+    var sumConv=items.reduce(function(s,i){return s+(i.conviction||1)},0);
+    items=items.map(function(item){
+      var idealPct=sumConv>0?(item.conviction||1)/sumConv*100:100/items.length;
+      var drift=item.pct-idealPct;
+      return Object.assign({},item,{idealPct:idealPct,drift:drift});
+    });
+
+    var mismatches=[];
+    var flags=[];
+
+    items.forEach(function(item){
+      var ticker=item.c.ticker;
+      // High weight, low conviction
+      if(item.pct>=15&&item.conviction>0&&item.conviction<=4){
+        mismatches.push({
+          type:"overweight_low_conviction",
+          severity:"high",
+          color:"#ef4444",
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is "+item.pct.toFixed(1)+"% of your portfolio but conviction is only "+item.conviction+"/10",
+          action:"Review position size or rebuild conviction",
+          aiType:"challenge",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // Biggest position has falling conviction
+      else if(item===items[0]&&item.trend<=-2){
+        mismatches.push({
+          type:"top_holding_falling",
+          severity:"high",
+          color:"#ef4444",
+          ticker:ticker,
+          c:item.c,
+          msg:"Your largest holding "+ticker+" ("+item.pct.toFixed(1)+"%) had conviction drop "+Math.abs(item.trend)+" points last review",
+          action:"Sell discipline check or bear case",
+          aiType:"sell",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // High conviction, undersized
+      else if(item.conviction>=8&&item.pct<5&&items.length>=3){
+        mismatches.push({
+          type:"underweight_high_conviction",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is your highest conviction holding ("+item.conviction+"/10) but only "+item.pct.toFixed(1)+"% of portfolio",
+          action:"Consider whether sizing matches conviction",
+          aiType:"annual",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // Large position, no thesis written
+      if(item.pct>=10&&!item.hasThesis){
+        flags.push({
+          type:"no_thesis",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is "+item.pct.toFixed(1)+"% of portfolio but has no written thesis",
+          action:"Write a thesis"
+        });
+      }
+      // Falling conviction + no sell criteria
+      if(item.trend<=-2&&!item.hasSell){
+        flags.push({
+          type:"falling_no_sell",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" conviction is falling but no sell criteria are written",
+          action:"Define your exit before emotion does"
+        });
+      }
+    });
+
+    // Alignment score: 100 minus deductions
+    var deductions=mismatches.filter(function(m){return m.severity==="high"}).length*20
+      +mismatches.filter(function(m){return m.severity==="medium"}).length*10
+      +flags.filter(function(f){return f.severity==="medium"}).length*5;
+    var score=Math.max(0,100-deductions);
+
+    return{mismatches:mismatches,flags:flags,score:score,items:items};
+  }
+
+
+
+  // ── Alignment Widget (shared, used in Dashboard + NW Hub) ─
+  function AlignmentWidget({signals, compact, onAI, onGo}){
+    var _open=useState(false),open=_open[0],setOpen=_open[1];
+    var all=[].concat(signals.mismatches,signals.flags);
+    if(all.length===0)return null;
+
+    var high=signals.mismatches.filter(function(m){return m.severity==="high"});
+    var med=[].concat(
+      signals.mismatches.filter(function(m){return m.severity==="medium"}),
+      signals.flags
+    );
+    var scoreColor=signals.score>=80?K.grn:signals.score>=60?K.amb:K.red;
+    var headerColor=high.length>0?K.red:K.amb;
+
+    if(compact){
+      // Compact version for Net Worth Hub — inline banner
+      return<div style={{background:headerColor+"0d",border:"1px solid "+headerColor+"30",borderRadius:12,padding:"14px 18px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:open&&all.length>0?12:0}}>
+          <IC name="alert" size={14} color={headerColor}/>
+          <div style={{flex:1}}>
+            <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>Ownership Alignment</span>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fb,marginLeft:8}}>
+              {high.length>0?high.length+" issue"+(high.length>1?"s":"")+" need attention":med.length+" thing"+(med.length>1?"s":"")+" to consider"}
+            </span>
+          </div>
+          <div style={{fontSize:13,fontWeight:700,color:scoreColor,fontFamily:fm,marginRight:8}}>{signals.score}/100</div>
+          <button onClick={function(){setOpen(!open)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,padding:"4px 10px"}}>
+            {open?"Hide":"Details"}
+          </button>
+        </div>
+        {open&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {all.map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:item.color+"08",borderRadius:9,border:"1px solid "+item.color+"25"}}>
+            <IC name={item.severity==="high"?"alert":"check"} size={12} color={item.color} style={{marginTop:2,flexShrink:0}}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{item.msg}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
+            </div>
+            <div style={{display:"flex",gap:6,flexShrink:0}}>
+              {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI Review</button>}
+              {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Go →</button>}
+            </div>
+          </div>})}
+        </div>}
+      </div>;
+    }
+
+    // Full version for Dashboard
+    return<div style={{background:K.card,border:"1px solid "+(high.length>0?K.red+"40":K.amb+"40"),borderRadius:14,marginBottom:16,overflow:"hidden"}}>
+      {/* Header row */}
+      <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer",borderBottom:open?"1px solid "+K.bdr:"none"}} onClick={function(){setOpen(!open)}}>
+        <div style={{width:36,height:36,borderRadius:10,background:headerColor+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <IC name="alert" size={16} color={headerColor}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>Ownership Alignment</div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>
+            {high.length>0
+              ?high.length+" position"+(high.length>1?"s have":" has")+" a mismatch between conviction and size"
+              :med.length+" thing"+(med.length>1?"s":"")+" to consider across your portfolio"
+            }
+          </div>
+        </div>
+        {/* Score pill */}
+        <div style={{flexShrink:0,textAlign:"center",background:scoreColor+"12",border:"1px solid "+scoreColor+"30",borderRadius:10,padding:"6px 14px"}}>
+          <div style={{fontSize:18,fontWeight:800,color:scoreColor,fontFamily:fm,lineHeight:1}}>{signals.score}</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginTop:2}}>Alignment</div>
+        </div>
+        <IC name={open?"alert":"plus"} size={12} color={K.dim}/>
+      </div>
+
+      {open&&<div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
+        {/* High severity first */}
+        {high.length>0&&<div>
+          <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Needs attention</div>
+          {high.map(function(item,i){
+            return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:K.red+"08",borderRadius:10,border:"1px solid "+K.red+"25",marginBottom:8}}>
+              <IC name="alert" size={14} color={K.red} style={{flexShrink:0,marginTop:1}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.msg}</div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginBottom:8}}>{item.action}</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.acc+"50",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+                    <IC name="lightbulb" size={11} color={K.acc}/>Generate AI Review
+                  </button>}
+                  {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fb}}>
+                    Open {item.ticker} →
+                  </button>}
+                </div>
+              </div>
+              <div style={{flexShrink:0,textAlign:"right"}}>
+                <div style={{fontSize:18,fontWeight:800,color:item.pct>=0?K.txt:K.dim,fontFamily:fm}}>{item.pct?item.pct.toFixed(1)+"%":"—"}</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>of portfolio</div>
+                <div style={{fontSize:13,fontWeight:600,color:item.conviction<=4?K.red:item.conviction>=8?K.grn:K.amb,fontFamily:fm,marginTop:4}}>{item.conviction}/10</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>conviction</div>
+              </div>
+            </div>;
+          })}
+        </div>}
+        {/* Medium / flags */}
+        {med.length>0&&<div>
+          <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Worth considering</div>
+          {med.map(function(item,i){
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.amb+"08",borderRadius:9,border:"1px solid "+K.amb+"25",marginBottom:6}}>
+              <IC name="check" size={12} color={K.amb}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:1}}>{item.msg}</div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI</button>}
+                {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{item.ticker} →</button>}
+              </div>
+            </div>;
+          })}
+        </div>}
+
+        {/* If all clean for a section */}
+        {all.length===0&&<div style={{textAlign:"center",color:K.grn,fontSize:13,padding:"12px 0",fontFamily:fb}}>
+          ✓ Conviction and position sizing are well aligned
+        </div>}
+      </div>}
+    </div>;
+  }
+
+
   // ── AI Prompt Builder utilities ───────────────────────────
   function buildPrompt(type, c){
     var p=c.position||{};
@@ -6094,6 +6344,26 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ══ OVERVIEW TAB ══ */}
       {nwTab==="overview"&&<div>
+        {/* ── Conviction/Position Alignment Banner ── */}
+        {(function(){
+          if(portCos.length<2)return null;
+          var signals=calcAlignmentSignals(portCos);
+          if(signals.mismatches.length===0&&signals.flags.length===0)return null;
+          return<AlignmentWidget
+            signals={signals}
+            compact={true}
+            onAI={function(item){
+              var FRAMING_MAP={
+                challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+                sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+              };
+              var fr=FRAMING_MAP[item.aiType]||FRAMING_MAP["challenge"];
+              setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
+            }}
+            onGo={function(c){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+          />;
+        })()}
         {/* Main stock portfolio */}
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{stocks:!expanded.stocks}))}}>
@@ -6121,6 +6391,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
+                {(function(){
+                  var conv=c.conviction||0;if(!conv)return null;
+                  var cc=conv>=8?K.grn:conv>=5?K.amb:K.red;
+                  var portVal2=portCos.reduce(function(s,pc){var pp=pc.position||{};return pp.shares>0&&pp.currentPrice>0?s+pp.shares*pp.currentPrice:s},0);
+                  var myVal2=c.position&&c.position.shares>0&&c.position.currentPrice>0?c.position.shares*c.position.currentPrice:0;
+                  var myPct2=portVal2>0?myVal2/portVal2*100:0;
+                  var sumConv2=portCos.reduce(function(s,pc){return s+(pc.conviction||1)},0);
+                  var idealPct2=sumConv2>0?(conv||1)/sumConv2*100:0;
+                  var drift2=myPct2-idealPct2;
+                  var showDrift=Math.abs(drift2)>5&&myPct2>0;
+                  return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:38}}>
+                    <div style={{fontSize:11,fontWeight:700,color:cc,fontFamily:fm,background:cc+"15",borderRadius:4,padding:"1px 6px",whiteSpace:"nowrap"}}>{conv}/10</div>
+                    {showDrift&&<div style={{fontSize:9,color:drift2>0?K.red:K.grn,fontFamily:fb,whiteSpace:"nowrap"}}>{drift2>0?"↑ over":"↓ under"}</div>}
+                  </div>;
+                })()}
                 {val!==null&&<div style={{textAlign:"right",minWidth:70}}>
                   <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
                   {ret!==null&&<div style={{fontSize:11,color:ret>=0?K.grn:K.red,fontFamily:fb}}>{ret>=0?"+":""}{ret.toFixed(1)}%</div>}
@@ -7854,6 +8139,28 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
       </div>}()}
     {/* Analytics quick link */}
+
+    {/* ── Conviction/Position Alignment ── */}
+    {sideTab==="portfolio"&&function(){
+      var portCos2=filtered.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+      if(portCos2.length<2)return null;
+      var signals=calcAlignmentSignals(portCos2);
+      if(signals.mismatches.length===0&&signals.flags.length===0)return null;
+      return<AlignmentWidget
+        signals={signals}
+        compact={false}
+        onAI={function(item){
+          var FRAMING_MAP={
+            challenge:{why:"ChatGPT has never seen your thesis. This prompt feeds it your specific arguments and asks it to attack them.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+            sell:{why:"This prompt takes your sell criteria — written when you were calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+            annual:{why:"After months of ownership you have something no AI has seen: your own conviction trajectory and decisions. This asks if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+          };
+          var fr=FRAMING_MAP[item.aiType]||FRAMING_MAP["challenge"];
+          setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
+        }}
+        onGo={function(c){setSelId(c.id);setDetailTab("dossier");}}
+      />;
+    }()}
 
     {/* View toggle */}
     {filtered.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
