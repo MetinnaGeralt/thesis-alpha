@@ -1201,6 +1201,34 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d — "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
+  // ── Auto-refresh snapshots missing key look-through metrics ─────────────
+  var _snapRefRef=useRef(false);
+  useEffect(function(){
+    if(!loaded||_snapRefRef.current)return;
+    _snapRefRef.current=true;
+    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var stale=portfolio.filter(function(c){
+      var s=c.financialSnapshot||{};
+      var ageDays=c.lastChecked?Math.ceil((Date.now()-new Date(c.lastChecked))/864e5):999;
+      // Refresh if missing any of the 5 key look-through metrics, or data is >7 days old
+      var missingKey=!s.interestCoverage||!s.fcfMargin||!s.netDebtEbitda||!s.roic||!s.roce;
+      return missingKey&&ageDays>1;
+    });
+    if(stale.length===0)return;
+    console.log("[ThesisAlpha] Auto-refreshing "+stale.length+" holdings with missing look-through metrics");
+    stale.forEach(function(c,i){
+      setTimeout(function(){
+        fetchEarnings(c,c.kpis).then(function(res){
+          if(res&&res.snapshot){
+            // Log what we actually got back from FMP for debugging
+            var got=Object.keys(res.snapshot).filter(function(k){return["interestCoverage","fcfMargin","netDebtEbitda","roic","roce"].indexOf(k)>=0});
+            console.log("[ThesisAlpha] "+c.ticker+" snapshot refreshed. Got: "+got.join(", ")+(got.length===0?" (none — FMP may not have these fields for this ticker)":""));
+            upd(c.id,{financialSnapshot:Object.assign({},c.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()});
+          }
+        }).catch(function(e){console.warn("[ThesisAlpha] Refresh failed for "+c.ticker,e);});
+      },i*1200); // 1.2s stagger
+    });
+  },[loaded]);
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
@@ -6748,16 +6776,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
           return<div style={{borderTop:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={9} color={isThesis?K.acc:K.dim}/>Owner's Intel
-                  {briefNews&&briefNews.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,fontWeight:400,letterSpacing:0}}>{"(" + shown.length + " stories)"}</span>}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <IC name="news" size={13} color={K.acc}/>
+                  <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>Owner's Intel</span>
+                  {shown.length>0&&<span style={{fontSize:10,fontWeight:700,color:K.acc,background:K.acc+"15",padding:"1px 8px",borderRadius:999,fontFamily:fm}}>{shown.length}</span>}
+                  {briefNewsLoading&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>scanning…</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}}
+                    style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 10px",display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="refresh" size={9} color={K.dim}/>Refresh
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 4px"}} title="Refresh">{"↺"}</button>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}}
+                    style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:6,color:showNewsFilter?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 10px",display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>Filter
+                  </button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
