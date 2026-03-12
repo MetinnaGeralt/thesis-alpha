@@ -857,6 +857,7 @@ function TrackerApp(props){
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
+  var _scm=useState(null),sellCheckTgt=_scm[0],setSellCheckTgt=_scm[1]; // sell discipline check trigger
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
@@ -1330,6 +1331,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function joinThesis(s){var parts=[];if(s.core)parts.push(s.core);if(s.moat)parts.push("## MOAT\n"+s.moat);if(s.risks)parts.push("## RISKS\n"+s.risks);if(s.sell)parts.push("## SELL CRITERIA\n"+s.sell);return parts.join("\n\n")}
   function ThesisModal(){if(!sel)return null;var parsed=parseThesis(sel.thesisNote);
     var _f=useState(parsed),f=_f[0],setF=_f[1];
+    // Guided mode: fires when thesis is empty for the first time
+    var isFirstTime=!sel.thesisNote||sel.thesisNote.trim().length<20;
+    var _gd=useState(isFirstTime),guided=_gd[0],setGuided=_gd[1];
+    var _gstep=useState(0),gStep=_gstep[0],setGStep=_gstep[1];
+    var _gans=useState(["","","",""]),gAns=_gans[0],setGAns=_gans[1];
+    var GUIDED_QS=[
+      {label:"Why do you own it?",hint:"One or two sentences is fine. What's the core reason this company is in your portfolio?",placeholder:"e.g. They have the most efficient GPU platform for AI training, and switching costs are enormous.",section:"core"},
+      {label:"What's the moat?",hint:"Why can't a well-funded competitor just copy this business in 3 years?",placeholder:"e.g. The CUDA developer ecosystem took 15 years to build. Every ML framework is optimised for it.",section:"moat"},
+      {label:"What's your biggest worry?",hint:"Be honest — what's the thing that could make you wrong about this?",placeholder:"e.g. Custom silicon from hyperscalers could eventually replace NVIDIA in certain workloads.",section:"risks"},
+      {label:"What would make you sell?",hint:"Specific and measurable. Not 'if things look bad' — what exact condition ends the thesis?",placeholder:"e.g. Data Center revenue growth drops below 20% YoY for two consecutive quarters.",section:"sell"}
+    ];
+    function buildFromGuided(){
+      var built={core:gAns[0].trim(),moat:gAns[1].trim(),risks:gAns[2].trim(),sell:gAns[3].trim()};
+      setF(built);setGuided(false);}
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
     var sid=sel.investStyle||"default";
@@ -1396,7 +1411,60 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var qualityColor=qualityPct>=100?K.grn:qualityPct>=75?K.acc:qualityPct>=50?K.amb:K.dim;
     var qualityLabel=qualityPct>=100?"Complete thesis":qualityPct>=75?"Almost there":qualityPct>=50?"Good start":"Needs more detail";
     var isChanged=(joinThesis(f)!==sel.thesisNote);
+
+    // ── GUIDED MODE ─────────────────────────────────────────
+    if(guided){
+      var q=GUIDED_QS[gStep];
+      var progress=gStep/4;
+      var filled_so_far=gAns.filter(function(a){return a.trim().length>5}).length;
+      return<Modal title={sel.ticker+" — Let's write your thesis"} onClose={function(){setModal(null)}} w={560} K={K}>
+        {/* Progress bar */}
+        <div style={{height:3,borderRadius:2,background:K.bdr,marginBottom:24,overflow:"hidden"}}>
+          <div style={{height:"100%",width:((gStep)/4*100)+"%",background:K.acc,borderRadius:2,transition:"width .3s"}}/>
+        </div>
+        {/* Step counter */}
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          {GUIDED_QS.map(function(qs,i){var done=gAns[i].trim().length>5;return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<gStep?(done?K.grn:K.acc):i===gStep?K.acc+"50":K.bdr,transition:"background .3s"}}/>})}
+        </div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:6}}>Question {gStep+1} of 4</div>
+        <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8,lineHeight:1.35}}>{q.label}</div>
+        <div style={{fontSize:13,color:K.dim,lineHeight:1.6,marginBottom:16}}>{q.hint}</div>
+        <textarea
+          autoFocus
+          value={gAns[gStep]}
+          onChange={function(e){var next=gAns.slice();next[gStep]=e.target.value;setGAns(next)}}
+          placeholder={q.placeholder}
+          rows={4}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(gAns[gStep].trim().length>5?K.acc+"40":K.bdr),borderRadius:8,color:K.txt,padding:"14px 16px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7,transition:"border-color .2s"}}
+        />
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:8,marginBottom:20}}>
+          {gAns[gStep].trim().length>5?"✓ Good — keep going or move to the next question":"A sentence or two is enough."}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",gap:8}}>
+            {gStep>0&&<button onClick={function(){setGStep(gStep-1)}} style={S.btn}>← Back</button>}
+            <button onClick={function(){setGuided(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb}}>Skip to advanced editor</button>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {gStep<3&&<button
+              onClick={function(){setGStep(gStep+1)}}
+              style={Object.assign({},S.btnP,{opacity:1})}
+            >{gAns[gStep].trim().length>5?"Next →":"Skip for now →"}</button>}
+            {gStep===3&&<button
+              onClick={buildFromGuided}
+              style={Object.assign({},S.btnP,{background:K.grn})}
+            >Build my thesis →</button>}
+          </div>
+        </div>
+      </Modal>;
+    }
+
     return<Modal title={sel.ticker+" — Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
+      {/* Switch back to guided if first time */}
+      {isFirstTime&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"8px 12px",background:K.acc+"0a",borderRadius:8,border:"1px solid "+K.acc+"20"}}>
+        <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>Advanced editor — you can also use the</span>
+        <button onClick={function(){setGStep(0);setGuided(true)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"3px 10px"}}>Guided questions →</button>
+      </div>}
       {/* Quality meter */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:8}}>
         <div style={{position:"relative",width:40,height:40,flexShrink:0}}>
@@ -1424,11 +1492,34 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button onClick={function(){set("sell",kpiSeed)}} style={{marginTop:8,background:"none",border:"1px solid "+K.red+"30",borderRadius:4,padding:"3px 10px",fontSize:11,color:K.red,cursor:"pointer",fontFamily:fm}}>Paste into section</button>
         </div>}
         <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
-      {sel.thesisVersions&&sel.thesisVersions.length>0&&<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
-        <div style={{fontSize:11,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Version History ({sel.thesisVersions.length} snapshots)</div>
-        <div style={{maxHeight:100,overflowY:"auto"}}>{sel.thesisVersions.slice().reverse().slice(0,8).map(function(v,i){
-          return<div key={i} style={{fontSize:12,color:K.mid,marginBottom:4,paddingLeft:8,borderLeft:"2px solid "+K.bdr}}>
-          <span style={{fontFamily:fm,color:K.dim,fontSize:11}}>{v.date}</span> {"—"} {v.summary||"Updated"}</div>})}</div></div>}
+      {sel.thesisVersions&&sel.thesisVersions.length>0&&(function(){
+        var _vopen=useState(false),vOpen=_vopen[0],setVOpen=_vopen[1];
+        var versions=sel.thesisVersions.slice().reverse();
+        return<div style={{borderTop:"1px solid "+K.bdr,paddingTop:12,marginTop:8,marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:vOpen?10:0,cursor:"pointer"}} onClick={function(){setVOpen(!vOpen)}}>
+            <div style={{fontSize:11,color:K.dim,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Thesis History</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{versions.length} version{versions.length>1?"s":""}</span>
+              <IC name={vOpen?"alert":"plus"} size={10} color={K.dim}/>
+            </div>
+          </div>
+          {vOpen&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {versions.slice(0,10).map(function(v,i){
+              var isLatest=i===0;
+              var fc=[v.core?1:0,v.hasMoat?1:0,v.hasRisks?1:0,v.hasSell?1:0].reduce(function(a,b){return a+b},0);
+              return<div key={i} style={{padding:"8px 12px",borderRadius:8,background:isLatest?K.acc+"08":K.bg,border:"1px solid "+(isLatest?K.acc+"25":K.bdr)}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:v.core?4:0}}>
+                  <span style={{fontSize:10,fontWeight:600,color:isLatest?K.acc:K.dim,fontFamily:fm}}>{v.date}</span>
+                  {isLatest&&<span style={{fontSize:9,color:K.acc,fontFamily:fm,background:K.acc+"15",padding:"1px 5px",borderRadius:3}}>Current</span>}
+                  <div style={{flex:1}}/>
+                  {fc>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fc}/4 sections</span>}
+                </div>
+                {v.core&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.5,fontStyle:"italic"}}>"{v.core.substring(0,100)+(v.core.length>100?"…":"")}"</div>}
+                {!v.core&&v.summary&&<div style={{fontSize:12,color:K.dim,fontFamily:fb}}>{v.summary}</div>}
+              </div>;})}
+          </div>}
+        </div>;
+      })()}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:11,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
@@ -1524,6 +1615,149 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>Save</button></div></Modal>}
   // ── Investment Memo Builder ──
+  function SellCheckModal(){
+    var c=sellCheckTgt;if(!c)return null;
+    var pos=c.position||{};var isHeld=pos.shares>0&&pos.currentPrice>0;
+    var sellCriteria=c.thesisSell||"";
+    var _q1=useState(null),q1=_q1[0],setQ1=_q1[1];
+    var _q2=useState(null),q2=_q2[0],setQ2=_q2[1];
+    var _q3=useState(null),q3=_q3[0],setQ3=_q3[1];
+    var _note=useState(""),note=_note[0],setNote=_note[1];
+    function save(){
+      var decision=q1==="triggered"?"SELL":(q1==="not_yet"?"HOLD":"HOLD");
+      logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:decision,
+        reasoning:"Sell discipline check — conviction at "+c.conviction+"/10. "+(note.trim()||"Criteria reviewed."),
+        invalidator:"",timeHorizon:"medium",convictionAtTime:c.conviction||0,
+        priceAtTime:pos.currentPrice||0,outcome:null,outcomeNote:"",
+        sellCheckResult:{q1:q1,q2:q2,criteriaTriggered:q1==="triggered"},_isSellCheck:true});
+      setSellCheckTgt(null);
+      if(q1==="triggered"){showToast("Sell criteria checked — decision logged. The call is yours.",q1==="triggered"?"warn":"info",4000)}
+      else{showToast("Sell check complete — noted in journal","info",3000)}
+    }
+    var answered=(q1&&q2&&q3)||false;
+    return<Modal title={"Sell Discipline Check — "+c.ticker} onClose={function(){setSellCheckTgt(null)}} w={520} K={K}>
+      <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+        <div style={{fontSize:12,fontWeight:600,color:K.red,fontFamily:fm,marginBottom:4}}>Conviction has dropped to {c.conviction}/10</div>
+        <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6}}>This check was written when you were calm, not in the heat of the moment. Let's see if your criteria have actually triggered.</div>
+      </div>
+      {/* Sell criteria reminder */}
+      {sellCriteria.trim().length>10&&<div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Your sell criteria</div>
+        <div style={{fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,whiteSpace:"pre-line"}}>{sellCriteria}</div>
+      </div>}
+      {!sellCriteria.trim()&&<div style={{background:K.amb+"0a",borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.amb+"25"}}>
+        <div style={{fontSize:12,color:K.amb,fontFamily:fb}}>No sell criteria written yet. That makes this harder — you'll be deciding emotionally. Consider writing criteria before acting.</div>
+        <button onClick={function(){setSellCheckTgt(null);setSelId(c.id);setModal({type:"thesis"})}} style={{marginTop:8,padding:"5px 12px",borderRadius:6,border:"1px solid "+K.amb+"40",background:K.amb+"0d",color:K.amb,fontSize:11,cursor:"pointer",fontFamily:fm}}>Write sell criteria first</button>
+      </div>}
+      {/* Q1 */}
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Have any of your sell criteria actually triggered?</div>
+        <div style={{display:"flex",gap:8}}>
+          {[{v:"triggered",l:"Yes — criteria triggered",c:K.red},{v:"not_yet",l:"Not yet",c:K.grn},{v:"unsure",l:"Unsure",c:K.amb}].map(function(opt){var s2=q1===opt.v;return<button key={opt.v} onClick={function(){setQ1(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+        </div>
+      </div>
+      {/* Q2 */}
+      {q1&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Is this a thesis change — or just price/market noise?</div>
+        <div style={{display:"flex",gap:8}}>
+          {[{v:"thesis_broken",l:"Thesis has changed",c:K.red},{v:"noise",l:"Market noise",c:K.grn},{v:"unknown",l:"Not sure yet",c:K.amb}].map(function(opt){var s2=q2===opt.v;return<button key={opt.v} onClick={function(){setQ2(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+        </div>
+      </div>}
+      {/* Q3 */}
+      {q2&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Could you explain your current position to a smart friend?</div>
+        <div style={{display:"flex",gap:8}}>
+          {[{v:"yes",l:"Yes — case still holds",c:K.grn},{v:"no",l:"Struggling to defend it",c:K.red}].map(function(opt){var s2=q3===opt.v;return<button key={opt.v} onClick={function(){setQ3(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+        </div>
+      </div>}
+      {q1&&q2&&q3&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:6}}>Notes <span style={{color:K.dim,fontWeight:400,fontSize:11}}>(optional)</span></div>
+        <textarea value={note} onChange={function(e){setNote(e.target.value)}} rows={2} placeholder={"What's driving the conviction drop? What would change your answer?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
+      </div>}
+      {/* Verdict */}
+      {q1&&q2&&q3&&<div style={{padding:"12px 16px",borderRadius:10,marginBottom:20,background:(q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"08":K.grn+"08",border:"1px solid "+((q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"25":K.grn+"25")}}>
+        <div style={{fontSize:13,fontWeight:700,color:(q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red:K.grn,fontFamily:fm,marginBottom:4}}>
+          {(q1==="triggered"||q2==="thesis_broken"||q3==="no")?"Your answers suggest the thesis may have broken. Consider acting.":"Criteria haven't triggered. Staying the course is disciplined, not passive."}
+        </div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>This will be logged in the research journal. The decision to buy, hold or sell is yours.</div>
+      </div>}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <button onClick={function(){setSelId(c.id);setAiModal({title:"Sell Discipline Check — "+c.ticker,framing:{why:"This prompt takes your sell criteria and asks the AI to evaluate objectively whether they have been triggered.",dataPoints:["Your sell criteria","Recent conviction history","KPIs","Decisions log"]},prompt:buildPrompt("sell",c)});setSellCheckTgt(null)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"6px 14px",display:"flex",alignItems:"center",gap:5}}>
+          <IC name="lightbulb" size={11} color={K.acc}/>Get AI perspective
+        </button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setSellCheckTgt(null)}} style={S.btn}>Dismiss</button>
+          <button onClick={save} style={Object.assign({},S.btnP,{opacity:q1&&q2&&q3?1:.3})}>Log check</button>
+        </div>
+      </div>
+    </Modal>}
+
+  function PostMortemModal(){
+    var m=modal||{};var c=m.c;var dec=m.dec;
+    if(!c||!dec)return null;
+    var _rating=useState(null),rating=_rating[0],setRating=_rating[1];
+    var _reasoning=useState(null),rRating=_reasoning[0],setRRating=_reasoning[1];
+    var _learned=useState(""),learned=_learned[0],setLearned=_learned[1];
+    var ageDays=dec.date?Math.ceil((Date.now()-new Date(dec.date))/864e5):0;
+    function save(){
+      if(!rating)return;
+      upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){
+        return d.id===dec.id?Object.assign({},d,{
+          outcome:rating,
+          reasoningCorrect:rRating,
+          postMortemNote:learned.trim(),
+          outcomeDate:new Date().toISOString()
+        }):d
+      })})});
+      showToast("Post-mortem saved for "+c.ticker,"success",2500);
+      setModal(null);
+    }
+    var ratingOpts=[
+      {v:"right",label:"Right",desc:"Outcome was as expected",color:K.grn,icon:"check"},
+      {v:"wrong",label:"Wrong",desc:"Outcome went against my thesis",color:K.red,icon:"alert"},
+      {v:"mixed",label:"Mixed",desc:"Partly right, partly wrong",color:K.amb,icon:"dial"},
+      {v:"toosoon",label:"Too soon",desc:"Still playing out — check back later",color:K.dim,icon:"clock"},
+    ];
+    return<Modal title={"Post-Mortem — "+c.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
+      {/* Decision summary */}
+      <div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{ageDays} days ago · {dec.action||"Decision"}</div>
+        <div style={{fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.6}}>{dec.reasoning||"No reasoning recorded."}</div>
+        {dec.invalidator&&<div style={{fontSize:12,color:K.red,fontFamily:fb,marginTop:8,lineHeight:1.5}}>
+          <span style={{fontWeight:600}}>What I said would prove me wrong: </span>{dec.invalidator}
+        </div>}
+      </div>
+      {/* Q1: Was the outcome right? */}
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Was the outcome what you expected?</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {ratingOpts.map(function(opt){var sel2=rating===opt.v;return<button key={opt.v} onClick={function(){setRating(opt.v)}} style={{padding:"10px 14px",borderRadius:10,border:"2px solid "+(sel2?opt.color:K.bdr),background:sel2?opt.color+"12":"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
+            <div style={{fontSize:13,fontWeight:700,color:sel2?opt.color:K.txt,fontFamily:fm,marginBottom:2}}>{opt.label}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{opt.desc}</div>
+          </button>;})}
+        </div>
+      </div>
+      {/* Q2: Was your reasoning right? */}
+      {rating&&rating!=="toosoon"&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>Were you right <em>for the right reasons?</em></div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:10}}>The outcome could be right but your reasoning wrong — or vice versa. This is the most important question.</div>
+        <div style={{display:"flex",gap:8}}>
+          {[{v:"yes",l:"Yes — reasons held",c:K.grn},{v:"no",l:"Wrong reasons",c:K.red},{v:"partial",l:"Partially",c:K.amb}].map(function(opt){var sel2=rRating===opt.v;return<button key={opt.v} onClick={function(){setRRating(opt.v)}} style={{flex:1,padding:"8px",borderRadius:8,border:"2px solid "+(sel2?opt.c:K.bdr),background:sel2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:sel2?700:400,color:sel2?opt.c:K.mid,fontFamily:fm}}>
+            {opt.l}
+          </button>;})}
+        </div>
+      </div>}
+      {/* Q3: What did you learn? */}
+      {rating&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:6}}>What did you learn? <span style={{color:K.dim,fontWeight:400,fontSize:11}}>(optional)</span></div>
+        <textarea value={learned} onChange={function(e){setLearned(e.target.value)}} rows={3} placeholder={"What would you do differently? What does this tell you about your process?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+      </div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
+        <button onClick={function(){setModal(null)}} style={S.btn}>Later</button>
+        <button onClick={save} style={Object.assign({},S.btnP,{opacity:rating?1:.3})}>Save post-mortem</button>
+      </div>
+    </Modal>}
+
   function MemoModal(){if(!sel)return null;var c2=sel;var pos=c2.position||{};var sec2=parseThesis(c2.thesisNote);
     var os2=calcOwnerScore([c2]);var h2=gH(c2.kpis);var style2=c2.investStyle&&STYLE_MAP[c2.investStyle]?STYLE_MAP[c2.investStyle]:null;
     var activeMoats=MOAT_TYPES.filter(function(t){return c2.moatTypes&&c2.moatTypes[t.id]&&c2.moatTypes[t.id].active});
@@ -2282,7 +2516,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -4492,6 +4726,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       }
     });
 
+    // ── Sell trigger: flag held positions where conviction just dropped below 5 ──
+    items.forEach(function(item){
+      var c2=item.c;
+      var pos=c2.position||{};
+      var isHeld=pos.shares>0&&pos.currentPrice>0;
+      if(!isHeld)return;
+      if(item.conviction<=0)return; // not set yet, not a trigger
+      var hist=c2.convictionHistory||[];
+      var justDropped=hist.length>=2&&hist[hist.length-1].score<=4&&hist[hist.length-2].score>4;
+      var hasSellCheck=(c2.decisions||[]).some(function(d){return d._isSellCheck&&d.date&&Math.ceil((Date.now()-new Date(d.date))/864e5)<30});
+      if(justDropped&&!hasSellCheck){
+        flags.push({type:"sell_trigger",severity:"high",color:K.red,ticker:c2.ticker,c:c2,
+          msg:c2.ticker+" conviction just crossed below 5 — time for a sell discipline check",
+          action:"Run sell check",_sellCheck:true});
+      }
+    });
+
     // Alignment score: 100 minus deductions
     var deductions=mismatches.filter(function(m){return m.severity==="high"}).length*20
       +mismatches.filter(function(m){return m.severity==="medium"}).length*10
@@ -4729,6 +4980,33 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           onAction: {type: "library"},
           secondary: "Pre-Earnings AI",
           onSecondary: {type: "ai", aiType: "earnings", c: c}
+        });
+      }
+    });
+
+    // ── LAYER 5: Decision post-mortems (decisions >90d with no outcome) ──
+    portfolio.forEach(function(c){
+      var decs = (c.decisions||[]).filter(function(d){
+        if(d.cardType!=="decision"&&(d.cardType||!d.reasoning))return false;
+        if(d.outcome)return false; // already reviewed
+        if(!d.date)return false;
+        var ageDays = Math.ceil((Date.now()-new Date(d.date))/864e5);
+        return ageDays >= 90;
+      });
+      if(decs.length > 0){
+        var oldest = decs[decs.length-1];
+        var ageDays = Math.ceil((Date.now()-new Date(oldest.date))/864e5);
+        signals.push({
+          layer:"postmortem",
+          priority:3,
+          icon:"clock",
+          color:K.blue||"#3B82F6",
+          title:c.ticker+": decision needs a post-mortem",
+          sub:(oldest.action||"Decision")+" logged "+ageDays+"d ago — was your reasoning right?",
+          action:"Post-Mortem",
+          onAction:{type:"postmortem", c:c, dec:oldest},
+          secondary:"View journal",
+          onSecondary:{type:"go", c:c}
         });
       }
     });
@@ -7949,6 +8227,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       // ── Holdings (price data — de-emphasised) ──────────────────────────
       var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
 
+      {/* ── Sample portfolio banner ── */}
+      {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",border:"1px solid "+K.amb+"30",borderRadius:12,marginBottom:16}}>
+        <IC name="lightbulb" size={14} color={K.amb}/>
+        <div style={{flex:1}}>
+          <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
+          <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
+        </div>
+        <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+      </div>}
+      {/* ── Sample portfolio banner ── */}
+      {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",border:"1px solid "+K.amb+"30",borderRadius:12,marginBottom:16}}>
+        <IC name="lightbulb" size={14} color={K.amb}/>
+        <div style={{flex:1}}>
+          <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
+          <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD show what a complete dossier looks like.</span>
+        </div>
+        <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+      </div>}
       return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden"}}>
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
@@ -7995,6 +8291,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
             }
             else if(act.type==="library"){setSelId(null);setPage("library")}
+            else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
           }
 
           return<div style={{borderBottom:"1px solid "+K.bdr}}>
@@ -8765,7 +9062,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
           {/* CTAs */}
           <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btnP,{width:"100%",padding:isMobile?"14px":"12px 24px",fontSize:15,borderRadius:12,marginBottom:10})}>{"Get started →"}</button>
-          <button onClick={function(){setCos(SAMPLE);try{localStorage.setItem("ta-onboarded","true")}catch(e){}setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)}} style={{display:"block",width:"100%",background:"none",border:"1px solid "+K.bdr,borderRadius:12,color:K.dim,fontSize:13,cursor:"pointer",padding:isMobile?"12px":"10px",fontFamily:fb}}>{"Explore with demo data first"}</button>
+          <button onClick={function(){
+              var sampleWithFlag=SAMPLE.map(function(s){return Object.assign({},s,{_isSample:true})});
+              setCos(sampleWithFlag);
+              try{localStorage.setItem("ta-onboarded","true")}catch(e){}
+              setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)
+            }} style={{display:"block",width:"100%",background:"none",border:"1px solid "+K.bdr,borderRadius:12,color:K.dim,fontSize:13,cursor:"pointer",padding:isMobile?"12px":"10px",fontFamily:fb}}>{"Explore with example portfolio →"}</button>
         </div>
       })()}
       {sideTab==="watchlist"&&<div>
@@ -8888,7 +9190,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<AIPromptModal/>{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
     {/* === QUARTERLY LETTER POPUP === */}
