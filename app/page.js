@@ -1268,6 +1268,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){if(!loaded)return;cos.forEach(function(c){if(!c.earningsDate||c.earningsDate==="TBD")return;var d=dU(c.earningsDate);
     if(d>0&&d<=7&&!c.kpis.some(function(k){return k.lastResult})&&!notifs.some(function(n){return n.ticker===c.ticker&&n.type==="upcoming"&&n.ed===c.earningsDate}))
       setNotifs(function(p){return[{id:Date.now()+Math.random(),type:"upcoming",ticker:c.ticker,msg:"Earnings in "+d+"d — "+fD(c.earningsDate)+" "+c.earningsTime,time:new Date().toISOString(),read:false,ed:c.earningsDate}].concat(p).slice(0,30)})})},[loaded,cos]);
+  // ── Quarterly letter notification ─────────────────────────────
+  useEffect(function(){
+    if(!loaded)return;
+    var now4=new Date();
+    var curQ=Math.floor(now4.getMonth()/3);
+    var curY=now4.getFullYear();
+    if(curQ===0){curQ=4;curY--;}
+    var qKey='Q'+curQ+'-'+curY;
+    // Only notify if: letter not yet read, user has some data, not already notified
+    var alreadyRead=qLetters[qKey];
+    var hasData=cos.length>0||weeklyReviews.length>0;
+    var alreadyNotified=notifs.some(function(n){return n.type==='quarterly'&&n.qKey===qKey});
+    if(!alreadyRead&&hasData&&!alreadyNotified){
+      setNotifs(function(p){return[{id:Date.now()+Math.random(),type:'quarterly',ticker:'',qKey:qKey,msg:'Your '+qKey+' Owner's Letter is ready to read.',time:new Date().toISOString(),read:false}].concat(p).slice(0,30)});}
+  },[loaded]);
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
@@ -3022,8 +3037,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {showNotifs&&<div style={{position:"fixed",inset:0,zIndex:99}} onClick={function(){setShowNotifs(false)}}/>}
       {showNotifs&&<div className="ta-notif-panel" style={{position:"fixed",top:62,left:12,right:12,maxHeight:"70vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:16,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
         <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"4px 12px",fontSize:12})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
-        {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:14,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
-          <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:5}}/><div><div style={{fontSize:14,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:12,color:K.dim,marginTop:4}}>{fT(n.time)}</div></div></div>})}
+        {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:14,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={n.type==="quarterly"?{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,cursor:"pointer",background:"linear-gradient(135deg,#D4AF3712,transparent)",borderLeft:"3px solid #D4AF37"}:{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}else if(n.type==="quarterly"){setShowQLetter(n.qKey);setShowNotifs(false);}}}>
+          {n.type==="quarterly"?<div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:2}}>{"Your "+n.qKey+" Letter is ready"}</div>
+              <div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{"Your quarterly owner's letter has arrived."}</div>
+              <div style={{fontSize:11,color:K.dim,marginTop:4}}>{fT(n.time)}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>:<div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+            <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:5}}/><div><div style={{fontSize:14,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:12,color:K.dim,marginTop:4}}>{fT(n.time)}</div></div>
+          </div>}</div>})}
       </div>}
     </div>}
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"6px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:bm?K.bg:K.card+"e6",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50,gap:12}}>
@@ -3034,8 +3061,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {showNotifs&&<div style={{position:"fixed",inset:0,zIndex:99}} onClick={function(){setShowNotifs(false)}}/>}
     {showNotifs&&<div className="ta-notif-panel" style={{position:"absolute",top:48,right:32,width:380,maxHeight:420,overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:11})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
-      {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:13,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-alert"?"pointer":"default"}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
-        <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:13,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:11,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:11,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
+      {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:13,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={n.type==="quarterly"?{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,cursor:"pointer",background:"linear-gradient(135deg,#D4AF3712,transparent)",borderLeft:"3px solid #D4AF37"}:{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-alert"?"pointer":"default"}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}else if(n.type==="quarterly"){setShowQLetter(n.qKey);setShowNotifs(false);}}}>
+        {n.type==="quarterly"?<div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:2}}>{"Your "+n.qKey+" Letter is ready"}</div>
+            <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{"Your quarterly owner's letter has arrived. Tap to read."}</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:4}}>{fT(n.time)}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>:<div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+          <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:13,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:11,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:11,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div>
+        </div>}</div>})}</div>}
     <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <button onClick={function(){props.onLogout()}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,color:K.dim}} title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
@@ -10372,6 +10411,67 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,marginBottom:8}}>Question for next quarter</div>
             <div style={{fontSize:14,color:K.txt,lineHeight:1.75,fontFamily:fb,fontStyle:"italic"}}>{forwardQ}</div>
           </div>}
+          {/* Highlight of the quarter */}
+          {(function(){
+            var highlight="";
+            var hlColor=K.grn;
+            // Scored a perfect KPI quarter
+            if(totalKpis>=3&&metKpis===totalKpis){highlight="Every KPI met this quarter. "+metKpis+" for "+totalKpis+". Your thesis is playing out exactly as written.";hlColor=K.grn;}
+            // Long streak
+            else if(streakWeeks>=8){highlight=""+streakWeeks+" consecutive weeks of reviews. That is not a habit — it is an identity.";hlColor=K.grn;}
+            // Big winner held without trimming
+            else if(best2&&best2.ret>100&&sells2.filter(function(d){return d.ticker===best2.ticker}).length===0){highlight="You held "+best2.ticker+" through a +"+(best2.ret.toFixed(0))+"% move without trimming. Conviction, not noise.";hlColor=K.grn;}
+            // Made a hard sell call
+            else if(sells2.length>0&&rightDecs.some(function(d){return d.action==="SELL"||d.action==="TRIM"})){highlight="You made a sell decision this quarter and marked it right. Knowing when to exit is the rarer skill.";hlColor=K.acc;}
+            // Raised avg conviction
+            else if(avgConv>=7&&qRevs.length>=4){highlight="Average conviction across your portfolio is "+avgConv+"/10 with "+qRevs.length+" reviews logged. Your portfolio reflects your actual beliefs.";hlColor=K.grn;}
+            // Strong return with no trades
+            else if(totalRet2>10&&qDecs.length===0){highlight="+"+(totalRet2.toFixed(1))+"% with zero trades. The best quarter is often the quietest one.";hlColor=K.grn;}
+            // Any positive return
+            else if(totalRet2>0){highlight="The portfolio finished positive. In a quarter full of noise, that requires patience.";hlColor=K.mid;}
+            // Resilience through a down quarter
+            else if(totalRet2<0&&qRevs.length>=3){highlight="Down "+Math.abs(totalRet2).toFixed(1)+"% but "+qRevs.length+" reviews logged. You stayed engaged when it was hardest to. That matters.";hlColor=K.amb;}
+            if(!highlight)return null;
+            return<div style={{background:"linear-gradient(135deg,"+K.grn+"08,"+K.acc+"05)",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,padding:"18px 20px",marginBottom:16}}>
+              <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:hlColor,fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill={hlColor}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                {"Highlight of the Quarter"}
+              </div>
+              <div style={{fontSize:14,color:K.txt,lineHeight:1.78,fontFamily:fb}}>{highlight}</div>
+            </div>;
+          })()}
+          {/* Portfolio character */}
+          {(function(){
+            var traits=[];
+            // Concentration
+            if(perfArr.length>0&&totalVal2>0){
+              var topW=Math.round(perfArr[0].val/totalVal2*100);
+              if(topW>35)traits.push(perfArr[0].ticker+" is "+topW+"% of the portfolio. It is driving most of the story this quarter.");
+            }
+            // Highest conviction holding
+            var highConv=portfolio2.filter(function(c2){return c2.conviction>=8}).sort(function(a,b){return(b.conviction||0)-(a.conviction||0)});
+            if(highConv.length>0)traits.push(highConv[0].ticker+" sits at "+highConv[0].conviction+"/10 conviction — your highest-confidence holding.");
+            // Conviction raised significantly this quarter
+            var bigRaises=shifts.filter(function(s){return s.rating>=7});
+            if(bigRaises.length>0)traits.push("Conviction raised on "+bigRaises.slice(0,2).map(function(s){return s.ticker}).join(" and ")+" this quarter. Your view of these businesses got clearer.");
+            // All green portfolio
+            if(perfArr.length>=3&&perfArr.every(function(hp){return hp.ret>=0})){traits.push("Every holding finished positive this quarter. The portfolio is in agreement with your theses.");}
+            // Diversified sectors
+            var sectors=portfolio2.map(function(c2){return c2.sector}).filter(function(s,i,a){return s&&a.indexOf(s)===i});
+            if(sectors.length>=4)traits.push(""+sectors.length+" sectors represented. Your portfolio is thinking across multiple economic stories at once.");
+            if(traits.length===0)return null;
+            return<div>
+              <QSH color={K.blue}>{"Portfolio Character"}</QSH>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+                {traits.slice(0,3).map(function(t,i){
+                  return<div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<Math.min(traits.length,3)-1?"1px solid "+K.bdr+"20":"none"}}>
+                    <div style={{width:3,flexShrink:0,borderRadius:2,background:K.blue,alignSelf:"stretch",minHeight:16}}/>
+                    <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontFamily:fb}}>{t}</div>
+                  </div>;
+                })}
+              </div>
+            </div>;
+          })()}
           {/* Closing */}
           <div style={{fontSize:13,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
           {/* Actions */}
