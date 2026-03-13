@@ -6774,6 +6774,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {id:"portfolio2",label:"2nd Stock Portfolio",color:"#06b6d4",icon:"trending",isPortfolio2:true},
       {id:"cash",label:"Cash & Savings",color:"#22c55e",icon:"dollar"},
       {id:"bonds",label:"Bonds & Fixed Income",color:"#6b7280",icon:"overview"},
+      {id:"valuables",label:"Valuables & Collectibles",color:"#ec4899",icon:"shield",manual:true},
+      {id:"royalties",label:"Royalties & IP",color:"#a78bfa",icon:"book",manual:true},
       {id:"other",label:"Other Assets",color:"#94a3b8",icon:"folder"},
     ];
     var ATYPES_MAP={};ATYPES.forEach(function(t){ATYPES_MAP[t.id]=t});
@@ -6927,21 +6929,48 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       return{c:c,annual:annual,monthly:annual/12,yld:p.currentPrice>0?dps*mult/p.currentPrice*100:0,freq:c.divFrequency||"quarterly"};
     }).sort(function(a,b){return b.annual-a.annual});
 
-    // Monthly income calendar — spread dividends across months by freq
+    // Monthly income calendar — spread by frequency
+    // Each source has: {label, annual, monthly, freq, color, type}
     var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    var monthlyIncome=Array(12).fill(0);
-    incomeCos.forEach(function(item){
-      var monthly=item.monthly;
-      if(item.freq==="monthly"){for(var m=0;m<12;m++)monthlyIncome[m]+=monthly}
-      else if(item.freq==="quarterly"){[2,5,8,11].forEach(function(m){monthlyIncome[m]+=monthly*3})}
-      else if(item.freq==="semi"){[5,11].forEach(function(m){monthlyIncome[m]+=monthly*6})}
-      else if(item.freq==="annual"){monthlyIncome[11]+=item.annual}
-      else{[2,5,8,11].forEach(function(m){monthlyIncome[m]+=monthly*3})}
+    var incomeBreakdown=[];
+    // Stock dividends
+    incomeCos.forEach(function(item){incomeBreakdown.push({label:item.c.ticker,annual:item.annual,monthly:item.annual/12,freq:item.freq,color:K.acc,type:"stock"})});
+    // ETF dividends (via annualIncome field or yield estimate)
+    otherAssets.filter(function(a){return a.type==="etf"&&a.annualIncome>0}).forEach(function(a){
+      var freq=a.divFrequency||"quarterly";
+      incomeBreakdown.push({label:a.ticker||a.name,annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:freq,color:"#10b981",type:"etf"})
     });
-    otherAssets.filter(function(a){return a.annualIncome>0}).forEach(function(a){
-      for(var m=0;m<12;m++)monthlyIncome[m]+=Number(a.annualIncome)/12;
+    // Bonds — typically semi-annual
+    otherAssets.filter(function(a){return a.type==="bonds"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Bond",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:a.divFrequency||"semi",color:"#6b7280",type:"bonds"})
+    });
+    // Royalties — steady monthly
+    otherAssets.filter(function(a){return a.type==="royalties"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Royalty",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:"#a78bfa",type:"royalties"})
+    });
+    // Real estate rental
+    otherAssets.filter(function(a){return a.type==="real_estate"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Property",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:"#8b5cf6",type:"real_estate"})
+    });
+    // Everything else with income
+    otherAssets.filter(function(a){return["etf","bonds","royalties","real_estate"].indexOf(a.type)<0&&a.annualIncome>0}).forEach(function(a){
+      var atp2=ATYPES.find(function(t){return t.id===a.type})||{color:K.dim};
+      incomeBreakdown.push({label:a.name||a.ticker||"Other",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:atp2.color,type:a.type})
+    });
+    var monthlyIncome=Array(12).fill(0);
+    // Per-month breakdown for tooltip
+    var monthlyDetail=Array.from({length:12},function(){return[]});
+    incomeBreakdown.forEach(function(item){
+      var months=[];
+      if(item.freq==="monthly"){for(var m=0;m<12;m++)months.push([m,item.monthly])}
+      else if(item.freq==="quarterly"){[2,5,8,11].forEach(function(m){months.push([m,item.monthly*3])})}
+      else if(item.freq==="semi"){[5,11].forEach(function(m){months.push([m,item.monthly*6])})}
+      else if(item.freq==="annual"){months.push([11,item.annual])}
+      else{[2,5,8,11].forEach(function(m){months.push([m,item.monthly*3])})}
+      months.forEach(function(pair){monthlyIncome[pair[0]]+=pair[1];monthlyDetail[pair[0]].push({label:item.label,val:pair[1],color:item.color})});
     });
     var maxMonthIncome=Math.max.apply(null,monthlyIncome)||1;
+    var totalOtherIncome=incomeBreakdown.filter(function(x){return x.type!=="stock"}).reduce(function(s,x){return s+x.annual},0);
 
     // Donut
     function donutPath(startDeg,endDeg,r,cx,cy){
@@ -6958,8 +6987,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     // Asset type helpers
     var ALL_ALLOC_IDS=["stocks"].concat(ATYPES.map(function(t){return t.id}));
-    var ALLOC_LABELS={stocks:"Stock Portfolio",real_estate:"Real Estate",etf:"ETFs & Funds",gold:"Gold & Metals",crypto:"Crypto",portfolio2:"2nd Portfolio",cash:"Cash & Savings",bonds:"Bonds",other:"Other"};
-    var ALLOC_COLORS={stocks:K.acc,real_estate:"#8b5cf6",etf:"#10b981",gold:"#f59e0b",crypto:"#f97316",portfolio2:"#06b6d4",cash:"#22c55e",bonds:"#6b7280",other:"#94a3b8"};
+    var ALLOC_LABELS={stocks:"Stock Portfolio",real_estate:"Real Estate",etf:"ETFs & Funds",gold:"Gold & Metals",crypto:"Crypto",portfolio2:"2nd Portfolio",cash:"Cash & Savings",bonds:"Bonds",valuables:"Valuables",royalties:"Royalties",other:"Other"};
+    var ALLOC_COLORS={stocks:K.acc,real_estate:"#8b5cf6",etf:"#10b981",gold:"#f59e0b",crypto:"#f97316",portfolio2:"#06b6d4",cash:"#22c55e",bonds:"#6b7280",valuables:"#ec4899",royalties:"#a78bfa",other:"#94a3b8"};
     function getCurrentPct(id){
       if(totalAssetsUSD<=0)return 0;
       if(id==="stocks")return portValue/totalAssetsUSD*100;
@@ -6972,7 +7001,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var inputStyle={width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fm,outline:"none",boxSizing:"border-box"};
     var secLabel={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb,marginBottom:6,display:"block"};
 
-    function openAdd(type){setForm({type:type,name:"",ticker:"",quantity:"",costBasis:"",manualValue:"",annualIncome:""});setStep(1);setModal("add")}
+    function openAdd(type){setForm({type:type,name:"",ticker:"",quantity:"",costBasis:"",manualValue:"",annualIncome:"",divFrequency:type==="bonds"?"semi":"quarterly"});setStep(1);setModal("add")}
     function openEdit(a){setForm(Object.assign({},a));setModal("edit")}
     function saveAsset(){
       var a=Object.assign({},form);
@@ -7349,6 +7378,34 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
           </div>;
         })()}
+        {/* ── Did You Know / Wealth wisdom ── */}
+        {(function(){
+          var now=new Date();var idx=(now.getDate()+now.getMonth()*3)%8;
+          var cards=[
+            {type:"quote",author:"Charlie Munger",text:"The first $100,000 is a bitch, but you gotta do it. I don't care what you have to do — if it means walking everywhere and not eating anything that wasn't purchased with a coupon, find a way to get your hands on $100,000.",icon:"castle"},
+            {type:"fact",title:"Gold's purchasing power",text:"In 1920 you could buy a fine men's suit, a quality meal, and a pair of shoes for one gold coin (roughly 1 oz). Today, one ounce of gold (~$2,000+) still buys exactly that. Stocks and real estate compound — gold preserves.",icon:"shield"},
+            {type:"quote",author:"Warren Buffett",text:"Do not save what is left after spending, but spend what is left after saving.",icon:"dollar"},
+            {type:"fact",title:"The rule of 72",text:"Divide 72 by your annual return to find how many years it takes to double your money. At 8%: 9 years. At 12%: 6 years. At 6%: 12 years. Compound interest is the eighth wonder of the world.",icon:"trending"},
+            {type:"quote",author:"Morgan Housel",text:"Getting money requires taking risks, being optimistic, and putting yourself out there. Keeping money requires the opposite of taking risk. It requires humility, and fear that what you've made can be taken away just as fast.",icon:"shield"},
+            {type:"fact",title:"Real estate vs stocks",text:"Over 100 years, US equities have returned ~10% annually vs ~4% for residential real estate. But leverage — a mortgage — can dramatically amplify real estate returns on invested capital.",icon:"moat"},
+            {type:"quote",author:"John D. Rockefeller",text:"If you want to be wealthy, think of saving as buying your future self freedom.",icon:"book"},
+            {type:"fact",title:"The net worth tipping point",text:"Once your investment income exceeds your living expenses, your wealth compounds whether you work or not. This is the precise moment financial independence begins — not a number, but a ratio.",icon:"target"},
+          ];
+          var card=cards[idx];
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px",marginTop:12}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+              <div style={{width:32,height:32,borderRadius:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name={card.icon} size={14} color={K.acc}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{card.type==="quote"?"Investor Wisdom":"Did You Know?"}</div>
+                {card.title&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>{card.title}</div>}
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:card.type==="quote"?"italic":"normal"}}>{card.type==="quote"?"“"+card.text+"”":card.text}</div>
+                {card.author&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:6}}>— {card.author}</div>}
+              </div>
+            </div>
+          </div>;
+        })()}
       </div>}
 
       {/* ══ INCOME TAB ══ */}
@@ -7373,15 +7430,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {MONTHS.map(function(m,i){
               var val=monthlyIncome[i];var isNow=new Date().getMonth()===i;
               var barH=val>0?Math.max(8,val/maxMonthIncome*64):3;
-              return<div key={m} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fb,letterSpacing:0.5}}>{m}</div>
-                <div style={{width:"100%",height:72,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center"}}>
+              var detail=monthlyDetail[i];
+              return<div key={m} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}} className="ta-month-col">
+                <div style={{fontSize:9,color:isNow?K.acc:K.dim,fontFamily:fb,letterSpacing:0.5,fontWeight:isNow?700:400}}>{m}</div>
+                <div style={{width:"100%",height:72,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center",cursor:val>0?"pointer":"default"}}>
                   <div style={{width:"100%",borderRadius:4,background:val>0?(isNow?K.acc:K.grn):K.bdr,height:barH,transition:"height .3s",minHeight:3}}/>
                 </div>
                 <div style={{fontSize:9,color:val>0?K.txt:K.dim,fontFamily:fm,fontWeight:val>0?600:400,textAlign:"center",lineHeight:1.2}}>
                   {val>0?fmtM(val):"—"}
                 </div>
                 {isNow&&<div style={{width:4,height:4,borderRadius:"50%",background:K.acc}}/>}
+                {val>0&&detail.length>0&&<div className="ta-month-tooltip" style={{position:"absolute",bottom:"100%",left:"50%",transform:"translateX(-50%)",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 10px",zIndex:50,minWidth:110,pointerEvents:"none",boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fb,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{m}</div>
+                  {detail.slice(0,6).map(function(d,di){return<div key={di} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:K.mid,fontFamily:fm,marginBottom:2}}>
+                    <span style={{color:d.color,fontWeight:600,maxWidth:60,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label}</span>
+                    <span style={{color:K.txt,fontWeight:600}}>{fmtM(d.val)}</span>
+                  </div>})}
+                  {detail.length>6&&<div style={{fontSize:9,color:K.dim,fontFamily:fb}}>+{detail.length-6} more</div>}
+                </div>}
               </div>;
             })}
           </div>
@@ -7406,30 +7472,40 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>})}
         </div>}
 
-        {/* Other income sources */}
-        {otherAssets.filter(function(a){return a.annualIncome>0}).length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,overflow:"hidden",marginBottom:16}}>
-          <div style={{padding:"16px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={K.grn}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Other Income</div></div>
-            <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(otherIncome)}/yr</div>
-          </div>
-          {otherAssets.filter(function(a){return a.annualIncome>0}).map(function(a){
-            var atp=ATYPES_MAP[a.type]||{icon:"folder",label:a.type,color:K.dim};
-            return<div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
-              <IC name={atp.icon} size={14} color={atp.color}/>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||atp.label}</div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{atp.label}</div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:13,fontWeight:600,color:K.grn,fontFamily:fm}}>{fmtM(a.annualIncome)}/yr</div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{fmtM(a.annualIncome/12)}/mo</div>
-              </div>
-            </div>;
-          })}
-        </div>}
+        {/* Other income sources — grouped by type */}
+        {incomeBreakdown.filter(function(x){return x.type!=="stock"}).length>0&&(function(){
+          var groups=[{type:"etf",label:"ETF Dividends",icon:"chart",color:"#10b981"},{type:"bonds",label:"Bond Interest",icon:"overview",color:"#6b7280"},{type:"royalties",label:"Royalties & IP",icon:"book",color:"#a78bfa"},{type:"real_estate",label:"Rental Income",icon:"moat",color:"#8b5cf6"},{type:"other",label:"Other Income",icon:"dollar",color:K.grn},{type:"valuables",label:"Valuables Income",icon:"shield",color:"#ec4899"}];
+          return<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:16}}>
+            {groups.map(function(g){
+              var items=otherAssets.filter(function(a){return a.type===g.type&&a.annualIncome>0});
+              if(items.length===0)return null;
+              var grpTotal=items.reduce(function(s,a){return s+Number(a.annualIncome)},0);
+              return<div key={g.type} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,overflow:"hidden"}}>
+                <div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}><IC name={g.icon} size={14} color={g.color}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{g.label}</div></div>
+                  <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(grpTotal)}/yr</div>
+                </div>
+                {items.map(function(a){
+                  var freq=a.divFrequency||"monthly";
+                  return<div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
+                    <IC name={g.icon} size={14} color={g.color}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||g.label}</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{freq} · {a.ticker&&<span style={{background:g.color+"15",color:g.color,padding:"1px 5px",borderRadius:3,marginRight:4}}>{a.ticker}</span>}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:K.grn,fontFamily:fm}}>{fmtM(a.annualIncome)}/yr</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{fmtM(a.annualIncome/12)}/mo</div>
+                    </div>
+                  </div>;
+                })}
+              </div>;
+            })}
+          </div>;
+        })()}
 
-        {incomeCos.length===0&&otherAssets.filter(function(a){return a.annualIncome>0}).length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
-          No income data yet. Stock dividends appear automatically once positions and prices are set. Add rental income or bond interest when editing an asset.
+        {incomeCos.length===0&&incomeBreakdown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
+          No income data yet. Stock dividends appear automatically once positions and prices are set. Add rental income, bond interest, or royalties when editing an asset.
         </div>}
       </div>}
 
@@ -7506,7 +7582,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Quantity</label><input type="number" value={form.quantity||""} onChange={function(e){setForm(Object.assign({},form,{quantity:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
             {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>Current Value ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
             <div style={{marginBottom:14}}><label style={secLabel}>Total Cost Basis ({cSym})</label><input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/><div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid — used for gain/loss calculation</div></div>
-            {(atype.manual||atype.id==="bonds")&&<div style={{marginBottom:14}}><label style={secLabel}>Annual Income ({cSym}) — optional</label><input type="number" value={form.annualIncome||""} onChange={function(e){setForm(Object.assign({},form,{annualIncome:e.target.value}))}} placeholder="e.g. rental income, bond coupons" style={inputStyle}/></div>}
+            {(atype.manual||atype.id==="bonds"||atype.id==="etf"||atype.id==="royalties"||atype.id==="valuables")&&<div style={{marginBottom:14}}>
+              <label style={secLabel}>Annual Income ({cSym}) — optional</label>
+              <input type="number" value={form.annualIncome||""} onChange={function(e){setForm(Object.assign({},form,{annualIncome:e.target.value}))}} placeholder={atype.id==="royalties"?"e.g. book/music royalties":atype.id==="etf"?"ETF dividend income p.a.":atype.id==="valuables"?"e.g. watch rental income":"e.g. rental income, bond coupons"} style={inputStyle}/>
+              {(atype.id==="etf"||atype.id==="bonds")&&form.annualIncome>0&&<div style={{marginTop:8}}>
+                <label style={Object.assign({},secLabel,{marginBottom:4})}>Payment Frequency</label>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {[{v:"monthly",l:"Monthly"},{v:"quarterly",l:"Quarterly"},{v:"semi",l:"Semi-Annual"},{v:"annual",l:"Annual"}].map(function(f){var a=form.divFrequency===f.v;return<button key={f.v} onClick={function(){setForm(Object.assign({},form,{divFrequency:f.v}))}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+(a?K.acc:K.bdr),background:a?K.acc+"15":"transparent",color:a?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:a?600:400}}>{f.l}</button>})}
+                </div>
+              </div>}
+            </div>}
             {atype.isPortfolio2&&<div style={{marginBottom:14}}>
               <label style={secLabel}>Holdings</label>
               {(form.holdings||[]).map(function(h){return<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.bg,borderRadius:8,marginBottom:6}}>
@@ -8669,7 +8754,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
-    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}}"}}/>
+    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}"}}/>
     {/* ── MORNING BRIEFING ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
