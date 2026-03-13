@@ -1995,7 +1995,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       html+='<div class="footer"><div><div style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a1a">THESISALPHA</div><div style="font-family:EB Garamond,Georgia,serif;font-size:11px;color:#9ca3af;margin-top:5px;font-style:italic">Prepared for personal research. Not financial advice.</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+c2.ticker+'</div></div></div>';
       html+='</div></body></html>';
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
-    return<Modal title={"Investment Memo      var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
     return<Modal title={"Investment Memo — "+c2.ticker} onClose={function(){setModal(null)}} w={640} K={K}>
       {/* Auto-populated snapshot */}
       <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:20}}>
