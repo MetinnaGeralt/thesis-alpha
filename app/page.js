@@ -4162,10 +4162,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle" style={{cursor:"help"}}>{a2.label}</text></g>})}
                 {/* Center score */}
                 <text x={cx} y={cy-4} fill={K.txt} fontSize="22" fontWeight="800" fontFamily={fm} textAnchor="middle">{avgScore}</text>
-                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1">OWNERSHIP</text>
+                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1">MASTERY</text>
               </svg>
               <div style={{flex:1}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Ownership Depth</div>
+                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
                 {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
                   <div style={{width:6,height:6,borderRadius:"50%",background:a2.color,flexShrink:0}}/>
                   <span style={{fontSize:11,color:K.mid,fontFamily:fm,width:70}}>{a2.label}</span>
@@ -4502,14 +4502,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
           if(sections.length===0)return null;
           return<div id="ds-numbers" style={{marginBottom:24}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>OWNER'S NUMBERS</div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
-              {sections.map(function(sec,si){return<div key={si} style={{marginBottom:si<sections.length-1?14:0}}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>{sec.title}</div>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:"6px 16px"}}>
-                  {sec.items.map(function(item,ii){return<div key={ii} title={item.tip||""} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:"1px solid "+K.bdr+"30",cursor:item.tip?"help":"default"}}>
-                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{item.l}{item.tip&&<span style={{color:K.dim,fontSize:9,marginLeft:3}}>ⓘ</span>}</span>
-                    <span style={{fontSize:12,fontWeight:700,fontFamily:fm,color:item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt}}>{item.v}</span></div>})}</div></div>})}</div></div>})()}
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              {sections.map(function(sec,si){return<div key={si}>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:3,height:10,borderRadius:2,background:sec.color,flexShrink:0}}/>
+                  {sec.title}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
+                  {sec.items.map(function(item,ii){
+                    var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
+                    return<div key={ii} title={item.tip||""} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:9,padding:"9px 12px",cursor:item.tip?"help":"default",borderLeft:"2px solid "+valColor+"60"}}>
+                      <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                        {item.l}{item.tip&&<span style={{color:K.dim,fontSize:9,marginLeft:3}}>ⓘ</span>}
+                      </div>
+                      <div style={{fontSize:14,fontWeight:700,fontFamily:fm,color:valColor,lineHeight:1}}>{item.v}</div>
+                    </div>})}</div>
+              </div>})}</div></div>})()}
 
 
                 {/* -- INSIDER ACTIVITY -- */}
@@ -4534,20 +4543,41 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                         <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{sells.length}</div>
                         <div style={{fontSize:8,color:K.red}}>Sales</div></div></div>
                     {netBuy&&buys.length>0&&<div style={{fontSize:11,color:K.grn,fontFamily:fm,marginBottom:8}}>Net insider buying — typically a bullish signal</div>}
-                    {insiderData.transactions.slice(0,5).map(function(t2,i2){
-                      var txT=t2.transactionType||"";
-                      var lbl=txT==="P"?"BUY":txT==="S"?"SELL":txT==="A"?"GRANT":txT==="M"?"EXER":txT==="F"?"TAX":txT==="D"?"DISP":t2.change>0?"BUY":"SELL";
-                      var lclr=txT==="P"?K.grn:txT==="S"||txT==="D"||txT==="F"?K.red:txT==="A"||txT==="M"?K.blue:t2.change>0?K.grn:K.red;
-                      var role=(t2.name||"").toLowerCase();var isExec=role.indexOf("ceo")>=0||role.indexOf("cfo")>=0||role.indexOf("chief")>=0||role.indexOf("president")>=0||role.indexOf("director")>=0;
-                      return<div key={i2} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i2<4?"1px solid "+K.bdr+"30":"none"}}>
-                        <div style={{width:24,height:24,borderRadius:"50%",background:isExec?K.acc+"15":K.bg,border:"1px solid "+(isExec?K.acc+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isExec?K.acc:K.dim} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                        <div style={{flex:1,overflow:"hidden"}}>
-                          <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t2.name}</div>
-                          <div style={{fontSize:8,color:K.dim}}>{t2.transactionDate}</div></div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:11,fontWeight:600,color:lclr,fontFamily:fm}}>{lbl}</div>
-                          <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{Math.abs(t2.change||0).toLocaleString()} sh</div></div></div>})}</div>})()}</div>
+                    {(function(){
+                      // Detect exercise-and-sell: same person, same date, M+S pair of same magnitude
+                      var txns=insiderData.transactions.slice(0,10);
+                      var exerciseSellKeys={};
+                      txns.forEach(function(t2){
+                        if(t2.transactionType==="M"){
+                          var key=(t2.name||"")+"_"+(t2.transactionDate||"")+"_"+Math.abs(t2.change||0);
+                          exerciseSellKeys[key]=true;
+                        }
+                      });
+                      function isExerciseSell(t2){
+                        if(t2.transactionType!=="S")return false;
+                        var key=(t2.name||"")+"_"+(t2.transactionDate||"")+"_"+Math.abs(t2.change||0);
+                        return!!exerciseSellKeys[key];
+                      }
+                      return txns.slice(0,6).map(function(t2,i2){
+                        var txT=t2.transactionType||"";
+                        var exSell=isExerciseSell(t2);
+                        var lbl=exSell?"EXER+SELL":txT==="P"?"BUY":txT==="S"?"SELL":txT==="A"?"GRANT":txT==="M"?"EXERCISE":txT==="F"?"TAX-WITHHELD":txT==="D"?"DISPOSE":t2.change>0?"BUY":"SELL";
+                        var lclr=exSell?K.dim:txT==="P"?K.grn:txT==="S"||txT==="D"||txT==="F"?K.red:txT==="A"||txT==="M"?K.blue:t2.change>0?K.grn:K.red;
+                        var role=(t2.name||"").toLowerCase();var isExec=role.indexOf("ceo")>=0||role.indexOf("cfo")>=0||role.indexOf("chief")>=0||role.indexOf("president")>=0||role.indexOf("director")>=0;
+                        return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 0",borderBottom:i2<5?"1px solid "+K.bdr+"30":"none"}}>
+                          <div style={{width:24,height:24,borderRadius:"50%",background:isExec?K.acc+"15":K.bg,border:"1px solid "+(isExec?K.acc+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isExec?K.acc:K.dim} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                          <div style={{flex:1,overflow:"hidden"}}>
+                            <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t2.name}</div>
+                            <div style={{fontSize:9,color:K.dim}}>{t2.transactionDate}</div>
+                            {exSell&&<div style={{fontSize:9,color:K.dim,fontFamily:fb,marginTop:2,lineHeight:1.4}}>Option exercise &amp; same-day sale — not a directional signal</div>}
+                          </div>
+                          <div style={{textAlign:"right",flexShrink:0}}>
+                            <div style={{fontSize:11,fontWeight:600,color:lclr,fontFamily:fm}}>{lbl}</div>
+                            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{Math.abs(t2.change||0).toLocaleString()} sh</div>
+                          </div>
+                        </div>;
+                      })})()}</div>})()}</div>
               :<div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No recent insider transactions</div>}
             </div>
             {/* Top Institutional Holders */}
@@ -4729,48 +4759,64 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* Charts & analyst data (collapsible) */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
 
-        {/* ── RESEARCH TRAIL (inline) ── */}
-        <div id="ds-research" style={{marginBottom:24,marginTop:8}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingTop:16,borderTop:"1px solid "+K.bdr}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>RESEARCH TRAIL</div>
-            <div style={{display:"flex",gap:6}}>
-              <button style={Object.assign({},S.btnP,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
-              <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip</button>
-              <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
+        {/* ── RESEARCH TRAIL (tabbed) ── */}
+        {(function(){
+          var _rtT=useState("decisions"),rtTab=_rtT[0],setRtTab=_rtT[1];
+          var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;
+          var nLinks=(c.researchLinks||[]).length;
+          var RT_TABS=[
+            {id:"decisions",label:"Decisions",count:nDec,icon:"file"},
+            {id:"notes",label:"Notes",count:nDoc,icon:"book"},
+            {id:"links",label:"Links",count:nLinks,icon:"search"},
+            {id:"filings",label:"Filings",icon:"shield"},
+          ];
+          var addBtn=rtTab==="decisions"?null:
+            rtTab==="notes"?<div style={{display:"flex",gap:6}}>
+              <button style={Object.assign({},S.btnP,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
+              <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip</button>
+              <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
+            </div>:null;
+          return<div id="ds-research" style={{marginBottom:24,marginTop:8}}>
+            <div style={{paddingTop:16,borderTop:"1px solid "+K.bdr,marginBottom:14}}>
+              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>RESEARCH TRAIL</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                <div style={{display:"flex",gap:2,background:K.bg,borderRadius:9,padding:3,border:"1px solid "+K.bdr}}>
+                  {RT_TABS.map(function(tb){
+                    var active=rtTab===tb.id;
+                    return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{padding:"5px 12px",borderRadius:7,border:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,boxShadow:active?"0 1px 3px rgba(0,0,0,0.15)":"none",transition:"all .15s"}}>
+                      {tb.label}
+                      {tb.count>0&&<span style={{fontSize:9,background:active?K.acc+"20":K.bdr,color:active?K.acc:K.dim,borderRadius:3,padding:"1px 5px",fontFamily:fm,fontWeight:600}}>{tb.count}</span>}
+                    </button>;
+                  })}
+                </div>
+                {addBtn}
+              </div>
             </div>
-          </div>
-        {/* Inline decision form */}
-        <DecisionJournal company={c}/>
-        {/* Documents — memos, clips, notes */}
-        <ThesisVault company={c}/>
-        {/* Research links */}
-        <ResearchLinks company={c}/>
-        {/* Stats */}
-        {function(){var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;var nConv=(c.convictionHistory||[]).length;
-          var hasData=nDec>0||nDoc>0||nConv>1;
-          return hasData?<div style={{display:"flex",gap:12,marginBottom:16}}>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{nDec} entries</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{nDoc} docs</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{nConv} conviction updates</span>
-          </div>:null}()}
-        {/* SEC Filings */}
-        <SECFilings company={c}/>
-        {/* Thesis Scorecard */}
-        <ThesisScorecard company={c}/>
-        {/* Conviction History */}
-        {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:20}}>
-          <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction Over Time</div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
-            <div style={{display:"flex",alignItems:"flex-end",gap:2,height:50,marginBottom:6}}>
-              {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                <div style={{fontSize:8,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
-                <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
-            </div>
-            <div style={{display:"flex",gap:2}}>
-              {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
-            </div></div></div>}
-        {/* Attribution */}
-        <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
+            {rtTab==="decisions"&&<DecisionJournal company={c}/>}
+            {rtTab==="notes"&&<ThesisVault company={c}/>}
+            {rtTab==="links"&&<ResearchLinks company={c}/>}
+            {rtTab==="filings"&&<div>
+              <SECFilings company={c}/>
+              <ThesisScorecard company={c}/>
+              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:20}}>
+                <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction Over Time</div>
+                <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+                  <div style={{display:"flex",alignItems:"flex-end",gap:2,height:50,marginBottom:6}}>
+                    {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                      <div style={{fontSize:8,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
+                      <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
+                  </div>
+                  <div style={{display:"flex",gap:2}}>
+                    {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
+                  </div>
+                </div>
+              </div>}
+              <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}>
+                <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div>
+              </div>
+            </div>}
+          </div>;
+        })()}
         {/* ── Research Prompts (dossier inline) ── */}
         {(function(){
           var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
@@ -4809,7 +4855,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>;
         })()}
 
-        </div>{/* end research trail */}
+
         </div>}
       </div>}
     </div>
