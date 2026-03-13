@@ -995,7 +995,7 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:true,showBuyZone:false,showPriceChart:true};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:false,showBuyZone:false,showPriceChart:true};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
 if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";if(saved.showHeatmap===undefined)saved.showHeatmap=false;return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
