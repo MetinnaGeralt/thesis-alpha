@@ -5973,7 +5973,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
               ]},
-            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",bio:"Peter Lynch managed Fidelity's Magellan Fund from 1977–1990, achieving a 29% annual return. He favoured investing in businesses you understand and coined "invest in what you know."",wiki:"0/0e/Peter_Lynch.jpg/220px-Peter_Lynch.jpg",
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",bio:"Peter Lynch managed Fidelity's Magellan Fund from 1977–1990, achieving a 29% annual return. He favoured investing in businesses you understand and coined the phrase: invest in what you know.",wiki:"0/0e/Peter_Lynch.jpg/220px-Peter_Lynch.jpg",
               metrics:[
                 {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
