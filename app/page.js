@@ -6431,7 +6431,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:12,color:K.txt,fontWeight:500,marginBottom:5}}>{sw>=8?"Exceptional discipline — Munger-level consistency":sw>=4?"Building the habit — keep it going":sw>=1?"First steps — each week compounds":"Start your review streak today"}</div>
-          <div style={{display:"flex",gap:2}}>{[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){var done=i<sw;var isMil=JOURNEY.some(function(j){return j.w===i+1});return<div key={i} style={{flex:1,height:6,borderRadius:2,background:done?streakColor:K.bdr,border:isMil&&!done?"1px solid "+K.acc+"60":"none",position:"relative"}} title={isMil?"Week "+(i+1)+" unlock":(done?"Done":""}/>})}</div>
+          <div style={{display:"flex",gap:2}}>{[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){var done=i<sw;var isMil=JOURNEY.some(function(j){return j.w===i+1});return<div key={i} style={{flex:1,height:6,borderRadius:2,background:done?streakColor:K.bdr,border:isMil&&!done?"1px solid "+K.acc+"60":"none",position:"relative"}} title={isMil?"Week "+(i+1)+" unlock":(done?"Done":"")}/>})}</div>
           {nextUnlock&&<div style={{fontSize:10,color:K.acc,marginTop:4,fontFamily:fm}}>{sw>0?"Next: ":"Start to unlock: "}{nextUnlock.label} at week {nextUnlock.w}</div>}
         </div>
         <div style={{marginLeft:"auto",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
