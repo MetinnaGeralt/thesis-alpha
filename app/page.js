@@ -10235,11 +10235,11 @@ html+='</div>';
                   var rs=(hp.ret>=0?'+':'')+hp.ret.toFixed(1)+'%';
                   var valStr=hp.val>=1000?(hp.val/1000).toFixed(1)+'k':hp.val.toFixed(0);
                   var convStr=hp.conv>0?hp.conv+'/10':'—';
-                  var convClr=hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
+                  var convClr=hp.conv===0?'rgba(22,22,29,0.3)':hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
                   return '<tr>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:800;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+hp.ticker+'</td>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:'+rc+';text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">'+rs+'</td>'
-                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.5);text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">&dollar;'+valStr+'</td>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.5);text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">$'+valStr+'</td>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;font-weight:700;color:'+convClr+';text-align:center;border-bottom:1px solid rgba(22,22,29,0.06)">'+convStr+'</td>'
                     +'</tr>';
                 }).join('');
@@ -10260,7 +10260,7 @@ html+='</div>';
               }
               var signals=[];
               perfArr.forEach(function(hp){if(hp.conv>0&&hp.conv<=4)signals.push(hp.ticker+' conviction is '+hp.conv+'/10');});
-              if(qDecs.length===0)signals.push('No decisions logged this quarter');
+              // (omit: 'no decisions' is expected for many users, not worth flagging)
               var attnBlock='';
               if(signals.length>0){
                 attnBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#FDECB2;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
