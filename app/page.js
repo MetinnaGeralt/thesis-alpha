@@ -728,10 +728,10 @@ async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-tar
 // ═══ THEME SYSTEM ═══
 var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
 var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
-var FOREST={bg:"#f0f0f0",side:"#235a00",card:"#ffffff",bdr:"#e5e5e5",bdr2:"#d4d4d4",txt:"#4b4b4b",mid:"#6f6f6f",dim:"#afafaf",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
-var PURPLE={bg:"#13111c",side:"#0e0c16",card:"#1e1a2e",bdr:"#302a48",bdr2:"#443c64",txt:"#e8e4f0",mid:"#a89fc4",dim:"#6b6188",blue:"#818cf8",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#13111c"};
+var FOREST={bg:"#f7f7f5",side:"#1a4a00",card:"#ffffff",bdr:"#e2e8df",bdr2:"#c8d6c0",txt:"#1f2f1a",mid:"#4a6040",dim:"#8aaa80",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
+var PURPLE={bg:"#0d0b14",side:"#090711",card:"#17132a",bdr:"rgba(167,139,250,0.12)",bdr2:"rgba(167,139,250,0.22)",txt:"#f0ecff",mid:"#b8aee0",dim:"#7065a0",blue:"#818cf8",grn:"#34d399",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#ffffff",glow:"rgba(167,139,250,0.15)"};
 var BLOOMBERG={bg:"#000000",side:"#000000",card:"#080800",bdr:"#2a2200",bdr2:"#3d3200",txt:"#F39F41",mid:"#b87820",dim:"#6b4510",blue:"#0068ff",grn:"#00c944",red:"#ff433d",amb:"#F39F41",acc:"#F39F41",prim:"#F39F41",primTxt:"#000000"};
-var PAYPAL={bg:"#f5f7fa",side:"#003087",card:"#ffffff",bdr:"#d9e2ef",bdr2:"#c1cee0",txt:"#1a1a2e",mid:"#4a5568",dim:"#8899aa",blue:"#003087",grn:"#00a651",red:"#d93025",amb:"#f5a623",acc:"#003087",prim:"#003087",primTxt:"#ffffff"};
+var PAYPAL={bg:"#f0f4f8",side:"#0a2463",card:"#ffffff",bdr:"#cdd9e8",bdr2:"#aec0d4",txt:"#0d1b2a",mid:"#3d5a80",dim:"#7a94ae",blue:"#1a56db",grn:"#057a55",red:"#c81e1e",amb:"#d97706",acc:"#1a56db",prim:"#1a56db",primTxt:"#ffffff"};
 // ── Thesis Themes — landing page aesthetic: Outfit font, heavy rounding, purple accent ──
 var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.07)",bdr2:"rgba(255,255,255,0.14)",txt:"#ffffff",mid:"rgba(255,255,255,0.82)",dim:"rgba(255,255,255,0.56)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
 var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.08)",bdr2:"rgba(0,0,0,0.14)",txt:"#16161D",mid:"rgba(22,22,29,0.75)",dim:"rgba(22,22,29,0.52)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
@@ -740,6 +740,9 @@ var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,ser
 // Global thesis flag — updated inside TrackerApp before mkS calls
 var _isThesis=true;
 var _isBm=false;
+var _isForest=false;
+var _isPurple=false;
+var _isOcean=false;
 function TLogo(p){var s=p.size||28;if(_isBm)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #F39F41",color:"#F39F41",fontFamily:"'Consolas','Courier New',monospace",fontSize:Math.round(s*0.38),fontWeight:700,letterSpacing:0,flexShrink:0,boxSizing:"border-box"}}>{"TA"}</div>;return<img src="/logo.png" width={s} height={s} style={{borderRadius:_isThesis?Math.round(s*0.22):6,objectFit:"contain"}} alt="T"/>;}
 // (sector suggestions removed — using predefined METRICS dropdown)
 var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"lightbulb"},{id:"my-writeups",label:"Investment Memos",icon:"edit"},{id:"deep-dives",label:"Research Clips",icon:"link"},{id:"reports",label:"IR Library",icon:"bar"},{id:"notes",label:"Quick Notes",icon:"file"}];
@@ -752,9 +755,9 @@ function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.le
 var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
 var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
-  if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
-  if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
-  return<div style={{width:sz,height:sz,borderRadius:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
+  if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
+  if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
+  return<div style={{width:sz,height:sz,borderRadius:_isBm?0:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
 function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
   var paths={
@@ -793,22 +796,22 @@ function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
 
 function mkS(K){
   var th=_isThesis;
-  var br=th?999:(_isBm?0:8);
+  var br=th?999:_isBm?0:_isForest?999:_isOcean?4:_isPurple?10:8;
   var btnBase={cursor:"pointer",fontFamily:fm,transition:"all .15s ease",fontSize:th?13:12,fontWeight:th?700:400};
   var _mkDark=K.bg==="#16161D"||K.bg==="#0F0F14"||K.bg==="#0a0a0f"||K.bg==="#1a1a1a"||K.bg==="#0d1117"||K.bg==="#0a0e1a"||K.bg==="#1a1a2e";  var cardShadow=th?(_mkDark?"0 2px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15)":"0 4px 20px rgba(0,0,0,0.10), 0 1px 6px rgba(107,76,230,0.07), 0 0 0 1px rgba(0,0,0,0.04)"):"none";
   return{
     btn:Object.assign({},btnBase,{background:_isBm?"transparent":th?"rgba(255,255,255,0.06)":"transparent",border:"1px solid "+(_isBm?K.acc+"50":th?"rgba(255,255,255,0.1)":K.bdr),color:_isBm?K.acc:th?K.txt:K.mid,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
-    btnP:Object.assign({},btnBase,{background:_isBm?K.acc:K.prim,border:"1px solid "+(_isBm?K.acc:K.prim),color:K.primTxt,padding:th?"11px 28px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:th?"0 4px 20px "+K.prim+"60":"none",letterSpacing:_isBm?1:th?"-0.2px":0,textTransform:_isBm?"uppercase":"none"}),
+    btnP:Object.assign({},btnBase,{background:_isBm?K.acc:K.prim,border:"1px solid "+(_isBm?K.acc:K.prim),color:K.primTxt,padding:th?"11px 28px":_isForest?"10px 22px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:_isBm?"none":th?"0 4px 20px "+K.prim+"60":_isForest?"0 3px 12px "+K.prim+"50":_isPurple?"0 4px 20px "+K.prim+"40":"none",letterSpacing:_isBm?1:th?"-0.2px":0,textTransform:_isBm?"uppercase":"none"}),
     btnD:Object.assign({},btnBase,{background:"transparent",border:"1px solid #7F1D1D",color:K.red,padding:th?"9px 20px":"8px 16px",borderRadius:br}),
     btnChk:Object.assign({},btnBase,{background:_mkDark?K.acc+"18":K.acc+"22",border:"1px solid "+K.acc+(_mkDark?"40":"60"),color:K.acc,padding:th?"11px 24px":"9px 18px",borderRadius:br,fontWeight:700,boxShadow:_mkDark?"none":"inset 0 1px 0 rgba(255,255,255,0.6)"}),
     sec:{fontSize:th?11:11,letterSpacing:th?0.5:(_isBm?2:1),textTransform:"uppercase",color:th?K.acc:(_isBm?K.acc:K.dim),marginBottom:th?16:12,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",gap:8},
     badge:function(c){return{display:"inline-flex",alignItems:"center",gap:5,fontSize:12,fontWeight:th?700:500,color:c,background:c+"18",padding:th?"4px 14px":"3px 10px",borderRadius:th?999:6,fontFamily:fm}},
-    dot:function(s){return{width:8,height:8,borderRadius:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
-    card:{background:K.card,border:"1px solid "+(_isBm?K.acc+"30":K.bdr),borderRadius:th?20:(_isBm?0:6),padding:th?"24px 28px":"16px 20px",boxShadow:_isBm?"none":cardShadow},
+    dot:function(s){return{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:s==="met"?"#22C55E":s==="missed"?"#EF4444":"#555",flexShrink:0}},
+    card:{background:K.card,border:"1px solid "+(_isBm?K.acc+"30":_isPurple?"rgba(167,139,250,0.15)":K.bdr),borderRadius:th?20:_isBm?0:_isForest?16:_isOcean?8:_isPurple?12:6,padding:th?"24px 28px":"16px 20px",boxShadow:_isBm?"none":_isPurple?"0 4px 24px rgba(167,139,250,0.08)":_isOcean?"0 2px 8px rgba(26,86,219,0.06)":_isForest?"0 2px 10px rgba(88,204,2,0.07)":cardShadow},
     inp:{width:"100%",boxSizing:"border-box",background:_isBm?K.card:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+(_isBm?K.acc+"50":K.bdr),borderRadius:th?14:(_isBm?0:6),color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:14,fontFamily:fm,outline:"none"},
   }
 }
-function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;var th=_isThesis;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(12px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?(th?"28px 28px 0 0":_isBm?"0":"16px 16px 0 0"):th?28:(_isBm?0:16),padding:mob?th?"28px 24px 36px":"24px 20px 32px":th?"32px 36px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:th?"0 32px 80px rgba(0,0,0,.5)":"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}>{p.title?<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:th?28:24}}><h2 style={{margin:0,fontSize:mob?17:th?18:17,fontWeight:th?800:500,color:K.txt,fontFamily:fh,letterSpacing:th?"-0.5px":0}}>{p.title}</h2><button onClick={p.onClose} style={{background:th?"rgba(255,255,255,0.08)":"none",border:"none",color:K.dim,fontSize:17,cursor:"pointer",padding:mob?"10px 14px":"6px 10px",borderRadius:th?999:6,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=K.txt}} onMouseLeave={function(e){e.currentTarget.style.color=K.dim}}>{"✕"}</button></div>:<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"6px 10px",borderRadius:6,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=K.txt}} onMouseLeave={function(e){e.currentTarget.style.color=K.dim}}>{"✕"}</button></div>}{p.children}</div></div>}
+function Modal(p){var K=p.K||DARK;var mob=typeof window!=="undefined"&&window.innerWidth<768;var th=_isThesis;return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",display:"flex",alignItems:mob?"flex-end":"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(12px)",animation:"fadeInFast .15s ease-out"}} onClick={p.onClose}><div className="ta-slide ta-modal-inner" style={{background:K.card,border:mob?"none":"1px solid "+K.bdr2,borderRadius:mob?(th?"28px 28px 0 0":_isBm?"0":"16px 16px 0 0"):th?28:(_isBm?0:16),padding:mob?th?"28px 24px 36px":"24px 20px 32px":th?"32px 36px":"28px 32px",width:mob?"100%":p.w||500,maxWidth:mob?"100%":"92vw",maxHeight:mob?"90vh":"85vh",overflowY:"auto",boxShadow:th?"0 32px 80px rgba(0,0,0,.5)":"0 24px 64px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}>{p.title?<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:th?28:24}}><h2 style={{margin:0,fontSize:mob?17:th?18:17,fontWeight:th?800:500,color:K.txt,fontFamily:fh,letterSpacing:th?"-0.5px":0}}>{p.title}</h2><button onClick={p.onClose} style={{background:th?"rgba(255,255,255,0.08)":"none",border:"none",color:K.dim,fontSize:17,cursor:"pointer",padding:mob?"10px 14px":"6px 10px",borderRadius:th?999:6,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=K.txt}} onMouseLeave={function(e){e.currentTarget.style.color=K.dim}}>{"✕"}</button></div>:<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}><button onClick={p.onClose} style={{background:"none",border:"none",color:K.dim,fontSize:16,cursor:"pointer",padding:"6px 10px",borderRadius:_isBm?0:6,lineHeight:1}} onMouseEnter={function(e){e.currentTarget.style.color=K.txt}} onMouseLeave={function(e){e.currentTarget.style.color=K.dim}}>{"✕"}</button></div>}{p.children}</div></div>}
 function Inp(p){var K=p.K||DARK;var th=_isThesis;var b={width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:typeof window!=="undefined"&&window.innerWidth<768?16:14,fontFamily:fm,outline:"none"};return<div style={{marginBottom:18}}>{p.label&&<label style={{display:"block",fontSize:th?12:11,color:K.dim,marginBottom:th?8:6,letterSpacing:th?0:.5,textTransform:th?"none":"uppercase",fontFamily:fm,fontWeight:th?600:400}}>{p.label}</label>}{p.ta?<textarea value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} rows={3} style={Object.assign({},b,{resize:"vertical"})}/>:<input type={p.type||"text"} value={p.value} onChange={function(e){p.onChange(e.target.value)}} placeholder={p.placeholder} spellCheck={p.spellCheck!==undefined?p.spellCheck:true} autoCorrect={p.autoCorrect||"on"} autoComplete={p.autoComplete||"on"} style={b}/>}</div>}
 function Sel(p){var K=p.K||DARK;var th=_isThesis;return<div style={{marginBottom:18}}>{p.label&&<label style={{display:"block",fontSize:th?12:11,color:K.dim,marginBottom:th?8:6,letterSpacing:th?0:.5,textTransform:th?"none":"uppercase",fontFamily:fm,fontWeight:th?600:400}}>{p.label}</label>}<select value={p.value} onChange={function(e){p.onChange(e.target.value)}} style={{width:"100%",boxSizing:"border-box",background:th?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:th?14:6,color:K.txt,padding:th?"12px 18px":"10px 14px",fontSize:14,fontFamily:fm,outline:"none"}}>{p.options.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>})}</select></div>}
 
@@ -832,17 +835,17 @@ function LoginPage(props){
         props.onAuth(res2.data.user)}
     }catch(e){setErr("Something went wrong.");setLd(false)}}
   return(<div style={{background:K.bg,color:K.txt,minHeight:"100vh",fontFamily:fb,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-  {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{position:"absolute",top:20,right:24,background:"none",border:"1px solid "+K.bdr,borderRadius:999,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}}>{(theme==="dark"||theme==="thesis_dark")?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
-  <div className="ta-slide ta-login-box" style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
+  {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{position:"absolute",top:20,right:24,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}}>{(theme==="dark"||theme==="thesis_dark")?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
+  <div className="ta-slide ta-login-box" style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:28}}><TLogo size={24}/><span style={{fontSize:16,fontWeight:600,letterSpacing:2,fontFamily:fm,color:K.txt}}>ThesisAlpha</span></div>
     <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center",color:K.txt}}>{mode==="login"?"Welcome back":"Create account"}</h2>
     <p style={{fontSize:14,color:K.dim,textAlign:"center",margin:"0 0 32px"}}>{mode==="login"?"Sign in to your portfolio":"Start tracking your thesis"}</p>
-    {err&&<div style={{background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13,color:K.red}}>{err}</div>}
+    {err&&<div style={{background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,fontSize:13,color:K.red}}>{err}</div>}
     <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Email</label>
-      <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
+      <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
     <div style={{marginBottom:24}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
-      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"••••••••"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
+      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"••••••••"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
+    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:_isBm?0:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
     <div style={{textAlign:"center",fontSize:14,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
   </div></div>)}
 
@@ -867,15 +870,20 @@ function TrackerApp(props){
   // Update global flag so mkS, Modal, Inp, Sel all pick up the right shape language
   _isThesis=isThesis;
   _isBm=bm;
+  _isForest=isForest;
+  _isPurple=theme==="purple";
+  _isOcean=theme==="paypal";
   var K=THEMES[theme]||THESIS_DARK;
   if(isThesis){fm="'Outfit',sans-serif";fh="'Outfit',sans-serif";fb="'Outfit',sans-serif";}
-  else if(isForest){fm="'Nunito','DM Sans','Helvetica Neue',sans-serif";fh="'Nunito','DM Sans','Helvetica Neue',sans-serif";fb="'Nunito','DM Sans','Helvetica Neue',sans-serif";}
+  else if(isForest){fm="'Nunito','DM Sans',sans-serif";fh="'Nunito','DM Sans',sans-serif";fb="'Nunito','DM Sans',sans-serif";}
   else if(bm){fm="'Consolas','Monaco','IBM Plex Mono','Courier New',monospace";fh="'Consolas','Monaco','IBM Plex Mono','Courier New',monospace";fb="'Consolas','Monaco','IBM Plex Mono','Courier New',monospace";}
+  else if(theme==="purple"){fm="'Inter','DM Sans',sans-serif";fh="'Inter','DM Sans',sans-serif";fb="'Inter','DM Sans',sans-serif";}
+  else if(theme==="paypal"){fm="'Inter','Helvetica Neue',sans-serif";fh="'Inter','Helvetica Neue',sans-serif";fb="'Inter','Helvetica Neue',sans-serif";}
   else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";}
   var S=mkS(K);
   var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
   var sideDark=isDark||theme==="forest"||theme==="paypal";
-  var sideText=bm?"#F39F41":sideDark?"#ffffff":K.txt;var sideMid=bm?"#b87820":sideDark?"#ffffffcc":K.mid;var sideDim2=bm?"#6b4510":sideDark?"#ffffff88":K.dim;
+  var sideText=bm?"#F39F41":sideDark?"#ffffff":K.txt;var sideMid=bm?"#b87820":sideDark?"#ffffffcc":K.mid;var sideDim2=bm?"#6b4510":sideDark?"#ffffff66":K.dim;
   function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var all=["thesis_dark","thesis_light","dark","light","forest","purple","paypal","bloomberg"];var available=trialActive||isPro?all:(function(){var a=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){a.push("forest");a.push("purple")}if(streakWeeks>=3){a.push("paypal")}if(streakWeeks>=10){a.push("bloomberg")}return a})();var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
@@ -1348,7 +1356,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {f.status==="portfolio"&&<div style={{marginBottom:16}}>
         <div style={{fontSize:12,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Investment Style</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
+          {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div>
         {f.investStyle&&STYLE_MAP[f.investStyle]&&<div style={{fontSize:11,color:K.dim,marginTop:6,lineHeight:1.4}}>{STYLE_MAP[f.investStyle].desc}</div>}
       </div>}
@@ -1368,7 +1376,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{marginBottom:16}}>
         <div style={{fontSize:12,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Investment Style</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-          {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
+          {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
   function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
@@ -1471,12 +1479,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var filled_so_far=gAns.filter(function(a){return a.trim().length>5}).length;
       return<Modal title={sel.ticker+" — Let's write your thesis"} onClose={function(){setModal(null)}} w={560} K={K}>
         {/* Progress bar */}
-        <div style={{height:3,borderRadius:2,background:K.bdr,marginBottom:24,overflow:"hidden"}}>
-          <div style={{height:"100%",width:((gStep)/4*100)+"%",background:K.acc,borderRadius:2,transition:"width .3s"}}/>
+        <div style={{height:3,borderRadius:_isBm?0:2,background:K.bdr,marginBottom:24,overflow:"hidden"}}>
+          <div style={{height:"100%",width:((gStep)/4*100)+"%",background:K.acc,borderRadius:_isBm?0:2,transition:"width .3s"}}/>
         </div>
         {/* Step counter */}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
-          {GUIDED_QS.map(function(qs,i){var done=gAns[i].trim().length>5;return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<gStep?(done?K.grn:K.acc):i===gStep?K.acc+"50":K.bdr,transition:"background .3s"}}/>})}
+          {GUIDED_QS.map(function(qs,i){var done=gAns[i].trim().length>5;return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:i<gStep?(done?K.grn:K.acc):i===gStep?K.acc+"50":K.bdr,transition:"background .3s"}}/>})}
         </div>
         <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:6}}>Question {gStep+1} of 4</div>
         <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8,lineHeight:1.35}}>{q.label}</div>
@@ -1487,7 +1495,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           onChange={function(e){var next=gAns.slice();next[gStep]=e.target.value;setGAns(next)}}
           placeholder={q.placeholder}
           rows={4}
-          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(gAns[gStep].trim().length>5?K.acc+"40":K.bdr),borderRadius:8,color:K.txt,padding:"14px 16px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7,transition:"border-color .2s"}}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(gAns[gStep].trim().length>5?K.acc+"40":K.bdr),borderRadius:_isBm?0:8,color:K.txt,padding:"14px 16px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7,transition:"border-color .2s"}}
         />
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:8,marginBottom:20}}>
           {gAns[gStep].trim().length>5?"✓ Good — keep going or move to the next question":"A sentence or two is enough."}
@@ -1513,12 +1521,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     return<Modal title={sel.ticker+" — Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
       {/* Switch back to guided if first time */}
-      {isFirstTime&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"8px 12px",background:K.acc+"0a",borderRadius:8,border:"1px solid "+K.acc+"20"}}>
+      {isFirstTime&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"8px 12px",background:K.acc+"0a",borderRadius:_isBm?0:8,border:"1px solid "+K.acc+"20"}}>
         <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>Advanced editor — you can also use the</span>
-        <button onClick={function(){setGStep(0);setGuided(true)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"3px 10px"}}>Guided questions →</button>
+        <button onClick={function(){setGStep(0);setGuided(true)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"3px 10px"}}>Guided questions →</button>
       </div>}
       {/* Quality meter */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8}}>
         <div style={{position:"relative",width:40,height:40,flexShrink:0}}>
           <svg width={40} height={40} viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke={K.bdr} strokeWidth="3"/><circle cx="20" cy="20" r="16" fill="none" stroke={qualityColor} strokeWidth="3" strokeDasharray={Math.round(qualityPct/100*100)+" 100"} strokeLinecap="round" transform="rotate(-90 20 20)"/></svg>
           <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:qualityColor,fontFamily:fm}}>{filled}/4</div></div>
@@ -1527,7 +1535,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:11,color:K.dim}}>{totalWords} words · {filled} of 4 sections filled{sty?" · "+sty.label:""}</div></div>
         <div style={{display:"flex",gap:4}}>
           {sections.map(function(s){var done=f[s.key]&&f[s.key].trim().length>15;
-            return<div key={s.key} style={{width:20,height:20,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center",background:done?s.color+"15":"transparent",border:"1px solid "+(done?s.color+"30":K.bdr)}} title={s.label}>
+            return<div key={s.key} style={{width:20,height:20,borderRadius:_isBm?0:4,display:"flex",alignItems:"center",justifyContent:"center",background:done?s.color+"15":"transparent",border:"1px solid "+(done?s.color+"30":K.bdr)}} title={s.label}>
               {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={9} color={K.dim}/>}</div>})}</div></div>
       <div style={{fontSize:13,color:K.dim,marginBottom:16,lineHeight:1.6,fontStyle:"italic"}}>{"\u201cIf you can\u2019t state the argument against your position, you don\u2019t understand it well enough.\u201d — Munger"}</div>
       {sections.map(function(sec){var wordCount=(f[sec.key]||"").trim().split(/\s+/).filter(function(w){return w}).length;var done=f[sec.key]&&f[sec.key].trim().length>15;
@@ -1538,12 +1546,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {done?<IC name="check" size={11} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
           {wordCount>0&&<span style={{fontSize:10,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label></div>
         {!done&&<div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginBottom:6,lineHeight:1.5,paddingLeft:2}}>{getQ(sec.key)}</div>}
-        {showSeed&&<div style={{marginBottom:8,padding:"10px 14px",background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:8}}>
+        {showSeed&&<div style={{marginBottom:8,padding:"10px 14px",background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:8}}>
           <div style={{fontSize:11,color:K.red,fontFamily:fm,fontWeight:600,marginBottom:5,letterSpacing:.3}}>KPI THRESHOLDS — USE AS A STARTING POINT</div>
           <pre style={{fontSize:12,color:K.mid,fontFamily:fb,margin:0,whiteSpace:"pre-wrap",lineHeight:1.6}}>{kpiSeed}</pre>
-          <button onClick={function(){set("sell",kpiSeed)}} style={{marginTop:8,background:"none",border:"1px solid "+K.red+"30",borderRadius:4,padding:"3px 10px",fontSize:11,color:K.red,cursor:"pointer",fontFamily:fm}}>Paste into section</button>
+          <button onClick={function(){set("sell",kpiSeed)}} style={{marginTop:8,background:"none",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:4,padding:"3px 10px",fontSize:11,color:K.red,cursor:"pointer",fontFamily:fm}}>Paste into section</button>
         </div>}
-        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
+        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
       {sel.thesisVersions&&sel.thesisVersions.length>0&&(function(){
         var _vopen=useState(false),vOpen=_vopen[0],setVOpen=_vopen[1];
         var versions=sel.thesisVersions.slice().reverse();
@@ -1559,10 +1567,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {versions.slice(0,10).map(function(v,i){
               var isLatest=i===0;
               var fc=[v.core?1:0,v.hasMoat?1:0,v.hasRisks?1:0,v.hasSell?1:0].reduce(function(a,b){return a+b},0);
-              return<div key={i} style={{padding:"8px 12px",borderRadius:8,background:isLatest?K.acc+"08":K.bg,border:"1px solid "+(isLatest?K.acc+"25":K.bdr)}}>
+              return<div key={i} style={{padding:"8px 12px",borderRadius:_isBm?0:8,background:isLatest?K.acc+"08":K.bg,border:"1px solid "+(isLatest?K.acc+"25":K.bdr)}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:v.core?4:0}}>
                   <span style={{fontSize:10,fontWeight:600,color:isLatest?K.acc:K.dim,fontFamily:fm}}>{v.date}</span>
-                  {isLatest&&<span style={{fontSize:9,color:K.acc,fontFamily:fm,background:K.acc+"15",padding:"1px 5px",borderRadius:3}}>Current</span>}
+                  {isLatest&&<span style={{fontSize:9,color:K.acc,fontFamily:fm,background:K.acc+"15",padding:"1px 5px",borderRadius:_isBm?0:3}}>Current</span>}
                   <div style={{flex:1}}/>
                   {fc>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{fc}/4 sections</span>}
                 </div>
@@ -1612,22 +1620,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     return<Modal title={ex?"Edit Metric":"Track Metric"} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Metric picker with search */}
       {!ex&&<div style={{marginBottom:20}}>
-        <input value={kpiSearch} onChange={function(e){setKpiSearch(e.target.value)}} placeholder="Search metrics..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fm,outline:"none",marginBottom:12}}/>
+        <input value={kpiSearch} onChange={function(e){setKpiSearch(e.target.value)}} placeholder="Search metrics..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fm,outline:"none",marginBottom:12}}/>
         <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm}}>Choose Metric{sty?" • "+sty.label+" recommendations highlighted":""}</div>
         {sty&&recIds.length>0&&<div style={{marginBottom:12}}>
           <div style={{fontSize:11,color:sty.color,marginBottom:6,fontFamily:fm}}>Recommended for {sty.label}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {recIds.map(function(rid){var m=METRIC_MAP[rid];if(!m||used.includes(m.id))return null;var isSel=f.metricId===m.id;
-              return<button key={m.id} onClick={function(){set("metricId",m.id)}} style={{background:isSel?sty.color+"20":sty.color+"08",border:"1px solid "+(isSel?sty.color:sty.color+"40"),borderRadius:6,padding:"6px 12px",fontSize:12,color:isSel?sty.color:K.txt,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{m.label}</button>}).filter(Boolean)}</div></div>}
+              return<button key={m.id} onClick={function(){set("metricId",m.id)}} style={{background:isSel?sty.color+"20":sty.color+"08",border:"1px solid "+(isSel?sty.color:sty.color+"40"),borderRadius:_isBm?0:6,padding:"6px 12px",fontSize:12,color:isSel?sty.color:K.txt,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{m.label}</button>}).filter(Boolean)}</div></div>}
         <div style={{maxHeight:280,overflowY:"auto"}}>{Object.keys(cats).map(function(cat){return<div key={cat} style={{marginBottom:10}}>
           <div style={{fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm}}>{cat}</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
             {cats[cat].map(function(m){var isSel=f.metricId===m.id;var isRec=recIds.includes(m.id);
-              return<button key={m.id} onClick={function(){set("metricId",m.id);if(!f.value&&m.unit==="%")set("value","");setKpiSearch("")}} style={{background:isSel?K.acc+"20":K.bg,border:"1px solid "+(isSel?K.acc:isRec&&sty?sty.color+"40":K.bdr),borderRadius:6,padding:"5px 10px",fontSize:11,color:isSel?K.acc:K.mid,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400}}>{m.label}</button>})}</div></div>})}</div></div>}
+              return<button key={m.id} onClick={function(){set("metricId",m.id);if(!f.value&&m.unit==="%")set("value","");setKpiSearch("")}} style={{background:isSel?K.acc+"20":K.bg,border:"1px solid "+(isSel?K.acc:isRec&&sty?sty.color+"40":K.bdr),borderRadius:_isBm?0:6,padding:"5px 10px",fontSize:11,color:isSel?K.acc:K.mid,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400}}>{m.label}</button>})}</div></div>})}</div></div>}
       {!ex&&!f.metricId&&kpiSearch&&avail.length===0&&<div style={{textAlign:"center",padding:"16px",color:K.dim}}>
         <div style={{fontSize:13,marginBottom:8}}>No matching metrics found</div>
         <button onClick={function(){set("metricId","custom_"+kpiSearch.toLowerCase().replace(/[^a-z0-9]/g,"_"))}} style={Object.assign({},S.btn,{fontSize:12})}>Create custom: "{kpiSearch}"</button></div>}
-            {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:12,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
+            {ex&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",marginBottom:16}}><div style={{fontSize:14,fontWeight:500,color:K.txt}}>{selMet?selMet.label:ex.name}</div><div style={{fontSize:12,color:K.dim}}>{selMet?selMet.cat:""}</div></div>}
       {f.metricId&&<div>
         <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}>
           <Sel label="Rule" value={f.rule} onChange={function(v){set("rule",v)}} options={[{v:"gte",l:"≥ At least"},{v:"lte",l:"≤ At most"},{v:"eq",l:"= Exactly"}]} K={K}/>
@@ -1635,7 +1643,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
         <div style={{fontSize:12,color:K.dim,marginTop:4,marginBottom:12}}>Auto-fetched from Finnhub when you click Check Earnings</div></div>}
       {/* Queued KPIs */}
-      {!ex&&added.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:8,padding:"10px 14px",marginBottom:12}}>
+      {!ex&&added.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12}}>
         <div style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>{added.length} KPI{added.length>1?"s":""} queued</div>
         {added.map(function(a,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:K.mid,padding:"2px 0"}}>
           <span style={{color:K.grn}}>{"✓"}</span><span style={{fontWeight:600}}>{a.name}</span><span style={{color:K.dim}}>{a.target}</span>
@@ -1648,9 +1656,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button style={Object.assign({},S.btnP,{opacity:(f.metricId&&f.value)||added.length>0?1:.4})} onClick={doSave} disabled={!f.metricId&&added.length===0&&!f.value}>{ex?"Save":added.length>0?(f.metricId&&f.value?"Save "+(added.length+1)+" KPIs":"Save "+added.length+" KPI"+(added.length>1?"s":"")):"Save"}</button></div></Modal>}
   function ResultModal(){if(!sel)return null;var kpi=sel.kpis.find(function(k){return k.id===modal.data});if(!kpi)return null;
     var _a=useState(kpi.lastResult?String(kpi.lastResult.actual):""),a=_a[0],setA=_a[1];var _ex=useState(kpi.lastResult?kpi.lastResult.excerpt||"":""),ex=_ex[0],setEx=_ex[1];var pv=a?eS(kpi.rule,kpi.value,a):null;
-    return<Modal title="Enter Result" onClose={function(){setModal(null)}} w={440} K={K}><div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"14px 18px",marginBottom:20}}><div style={{fontSize:14,color:K.txt}}>{kpi.name}</div><div style={{fontSize:13,color:K.dim}}>Target: {kpi.target}</div></div>
+    return<Modal title="Enter Result" onClose={function(){setModal(null)}} w={440} K={K}><div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"14px 18px",marginBottom:20}}><div style={{fontSize:14,color:K.txt}}>{kpi.name}</div><div style={{fontSize:13,color:K.dim}}>Target: {kpi.target}</div></div>
       <Inp label="Actual Value" value={a} onChange={setA} type="number" K={K}/>
-      {pv&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"8px 12px",borderRadius:6,background:pv==="met"?"#22C55E10":"#EF444410"}}><div style={S.dot(pv)}/><span style={{fontSize:13,color:pv==="met"?"#22C55E":"#EF4444",fontWeight:500,fontFamily:fm}}>{pv.toUpperCase()}</span></div>}
+      {pv&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,padding:"8px 12px",borderRadius:_isBm?0:6,background:pv==="met"?"#22C55E10":"#EF444410"}}><div style={S.dot(pv)}/><span style={{fontSize:13,color:pv==="met"?"#22C55E":"#EF4444",fontWeight:500,fontFamily:fm}}>{pv.toUpperCase()}</span></div>}
       <Inp label="Evidence" value={ex} onChange={setEx} ta placeholder="Source..." K={K}/>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{kpi.lastResult&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:null}):k})})});setModal(null)}}>Clear</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:a?1:.4})} onClick={function(){if(!a)return;upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:{actual:parseFloat(a),status:eS(kpi.rule,kpi.value,a),excerpt:ex.trim()}}):k})})});setModal(null)}}>Save</button></div></Modal>}
   function DelModal(){if(!sel)return null;return<Modal title="Delete Company" onClose={function(){setModal(null)}} w={380} K={K}><p style={{fontSize:14,color:K.mid,marginTop:0}}>Delete <strong style={{color:K.txt}}>{sel.ticker}</strong> and all data?</p><div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnD} onClick={function(){delCo(selId)}}>Delete</button></div></Modal>}
@@ -1664,7 +1672,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder="e.g. Q4 2025 Earnings Analysis" K={K}/>
       <Sel label="Save to Folder" value={f.folder} onChange={function(v){set("folder",v)}} options={FOLDERS.map(function(fo){return{v:fo.id,l:fo.label}})} K={K}/>
       <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
-        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
+        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>Save</button></div></Modal>}
   // ── Investment Memo Builder ──
   function SellCheckModal(){
@@ -1688,53 +1696,53 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }
     var answered=(q1&&q2&&q3)||false;
     return<Modal title={"Sell Discipline Check — "+c.ticker} onClose={function(){setSellCheckTgt(null)}} w={520} K={K}>
-      <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+      <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20}}>
         <div style={{fontSize:12,fontWeight:600,color:K.red,fontFamily:fm,marginBottom:4}}>Conviction has dropped to {c.conviction}/10</div>
         <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6}}>This check was written when you were calm, not in the heat of the moment. Let's see if your criteria have actually triggered.</div>
       </div>
       {/* Sell criteria reminder */}
-      {sellCriteria.trim().length>10&&<div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
+      {sellCriteria.trim().length>10&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Your sell criteria</div>
         <div style={{fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,whiteSpace:"pre-line"}}>{sellCriteria}</div>
       </div>}
-      {!sellCriteria.trim()&&<div style={{background:K.amb+"0a",borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.amb+"25"}}>
+      {!sellCriteria.trim()&&<div style={{background:K.amb+"0a",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.amb+"25"}}>
         <div style={{fontSize:12,color:K.amb,fontFamily:fb}}>No sell criteria written yet. That makes this harder — you'll be deciding emotionally. Consider writing criteria before acting.</div>
-        <button onClick={function(){setSellCheckTgt(null);setSelId(c.id);setModal({type:"thesis"})}} style={{marginTop:8,padding:"5px 12px",borderRadius:6,border:"1px solid "+K.amb+"40",background:K.amb+"0d",color:K.amb,fontSize:11,cursor:"pointer",fontFamily:fm}}>Write sell criteria first</button>
+        <button onClick={function(){setSellCheckTgt(null);setSelId(c.id);setModal({type:"thesis"})}} style={{marginTop:8,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",background:K.amb+"0d",color:K.amb,fontSize:11,cursor:"pointer",fontFamily:fm}}>Write sell criteria first</button>
       </div>}
       {/* Q1 */}
       <div style={{marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Have any of your sell criteria actually triggered?</div>
         <div style={{display:"flex",gap:8}}>
-          {[{v:"triggered",l:"Yes — criteria triggered",c:K.red},{v:"not_yet",l:"Not yet",c:K.grn},{v:"unsure",l:"Unsure",c:K.amb}].map(function(opt){var s2=q1===opt.v;return<button key={opt.v} onClick={function(){setQ1(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+          {[{v:"triggered",l:"Yes — criteria triggered",c:K.red},{v:"not_yet",l:"Not yet",c:K.grn},{v:"unsure",l:"Unsure",c:K.amb}].map(function(opt){var s2=q1===opt.v;return<button key={opt.v} onClick={function(){setQ1(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
         </div>
       </div>
       {/* Q2 */}
       {q1&&<div style={{marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Is this a thesis change — or just price/market noise?</div>
         <div style={{display:"flex",gap:8}}>
-          {[{v:"thesis_broken",l:"Thesis has changed",c:K.red},{v:"noise",l:"Market noise",c:K.grn},{v:"unknown",l:"Not sure yet",c:K.amb}].map(function(opt){var s2=q2===opt.v;return<button key={opt.v} onClick={function(){setQ2(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+          {[{v:"thesis_broken",l:"Thesis has changed",c:K.red},{v:"noise",l:"Market noise",c:K.grn},{v:"unknown",l:"Not sure yet",c:K.amb}].map(function(opt){var s2=q2===opt.v;return<button key={opt.v} onClick={function(){setQ2(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
         </div>
       </div>}
       {/* Q3 */}
       {q2&&<div style={{marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Could you explain your current position to a smart friend?</div>
         <div style={{display:"flex",gap:8}}>
-          {[{v:"yes",l:"Yes — case still holds",c:K.grn},{v:"no",l:"Struggling to defend it",c:K.red}].map(function(opt){var s2=q3===opt.v;return<button key={opt.v} onClick={function(){setQ3(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
+          {[{v:"yes",l:"Yes — case still holds",c:K.grn},{v:"no",l:"Struggling to defend it",c:K.red}].map(function(opt){var s2=q3===opt.v;return<button key={opt.v} onClick={function(){setQ3(opt.v)}} style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:9,border:"2px solid "+(s2?opt.c:K.bdr),background:s2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:s2?700:400,color:s2?opt.c:K.mid,fontFamily:fm}}>{opt.l}</button>;})}
         </div>
       </div>}
       {q1&&q2&&q3&&<div style={{marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:6}}>Notes <span style={{color:K.dim,fontWeight:400,fontSize:11}}>(optional)</span></div>
-        <textarea value={note} onChange={function(e){setNote(e.target.value)}} rows={2} placeholder={"What's driving the conviction drop? What would change your answer?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
+        <textarea value={note} onChange={function(e){setNote(e.target.value)}} rows={2} placeholder={"What's driving the conviction drop? What would change your answer?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
       </div>}
       {/* Verdict */}
-      {q1&&q2&&q3&&<div style={{padding:"12px 16px",borderRadius:10,marginBottom:20,background:(q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"08":K.grn+"08",border:"1px solid "+((q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"25":K.grn+"25")}}>
+      {q1&&q2&&q3&&<div style={{padding:"12px 16px",borderRadius:_isBm?0:10,marginBottom:20,background:(q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"08":K.grn+"08",border:"1px solid "+((q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red+"25":K.grn+"25")}}>
         <div style={{fontSize:13,fontWeight:700,color:(q1==="triggered"||q2==="thesis_broken"||q3==="no")?K.red:K.grn,fontFamily:fm,marginBottom:4}}>
           {(q1==="triggered"||q2==="thesis_broken"||q3==="no")?"Your answers suggest the thesis may have broken. Consider acting.":"Criteria haven't triggered. Staying the course is disciplined, not passive."}
         </div>
         <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>This will be logged in the research journal. The decision to buy, hold or sell is yours.</div>
       </div>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <button onClick={function(){setSelId(c.id);setAiModal({title:"Sell Discipline Check — "+c.ticker,framing:{why:"This prompt takes your sell criteria and asks the AI to evaluate objectively whether they have been triggered.",dataPoints:["Your sell criteria","Recent conviction history","KPIs","Decisions log"]},prompt:buildPrompt("sell",c)});setSellCheckTgt(null)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"6px 14px",display:"flex",alignItems:"center",gap:5}}>
+        <button onClick={function(){setSelId(c.id);setAiModal({title:"Sell Discipline Check — "+c.ticker,framing:{why:"This prompt takes your sell criteria and asks the AI to evaluate objectively whether they have been triggered.",dataPoints:["Your sell criteria","Recent conviction history","KPIs","Decisions log"]},prompt:buildPrompt("sell",c)});setSellCheckTgt(null)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"6px 14px",display:"flex",alignItems:"center",gap:5}}>
           <IC name="lightbulb" size={11} color={K.acc}/>Get AI perspective
         </button>
         <div style={{display:"flex",gap:8}}>
@@ -1772,7 +1780,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     ];
     return<Modal title={"Post-Mortem — "+c.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       {/* Decision summary */}
-      <div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
+      <div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,border:"1px solid "+K.bdr}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{ageDays} days ago · {dec.action||"Decision"}</div>
         <div style={{fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.6}}>{dec.reasoning||"No reasoning recorded."}</div>
         {dec.invalidator&&<div style={{fontSize:12,color:K.red,fontFamily:fb,marginTop:8,lineHeight:1.5}}>
@@ -1783,7 +1791,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>Was the outcome what you expected?</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {ratingOpts.map(function(opt){var sel2=rating===opt.v;return<button key={opt.v} onClick={function(){setRating(opt.v)}} style={{padding:"10px 14px",borderRadius:10,border:"2px solid "+(sel2?opt.color:K.bdr),background:sel2?opt.color+"12":"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
+          {ratingOpts.map(function(opt){var sel2=rating===opt.v;return<button key={opt.v} onClick={function(){setRating(opt.v)}} style={{padding:"10px 14px",borderRadius:_isBm?0:10,border:"2px solid "+(sel2?opt.color:K.bdr),background:sel2?opt.color+"12":"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
             <div style={{fontSize:13,fontWeight:700,color:sel2?opt.color:K.txt,fontFamily:fm,marginBottom:2}}>{opt.label}</div>
             <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{opt.desc}</div>
           </button>;})}
@@ -1794,7 +1802,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>Were you right <em>for the right reasons?</em></div>
         <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:10}}>The outcome could be right but your reasoning wrong — or vice versa. This is the most important question.</div>
         <div style={{display:"flex",gap:8}}>
-          {[{v:"yes",l:"Yes — reasons held",c:K.grn},{v:"no",l:"Wrong reasons",c:K.red},{v:"partial",l:"Partially",c:K.amb}].map(function(opt){var sel2=rRating===opt.v;return<button key={opt.v} onClick={function(){setRRating(opt.v)}} style={{flex:1,padding:"8px",borderRadius:8,border:"2px solid "+(sel2?opt.c:K.bdr),background:sel2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:sel2?700:400,color:sel2?opt.c:K.mid,fontFamily:fm}}>
+          {[{v:"yes",l:"Yes — reasons held",c:K.grn},{v:"no",l:"Wrong reasons",c:K.red},{v:"partial",l:"Partially",c:K.amb}].map(function(opt){var sel2=rRating===opt.v;return<button key={opt.v} onClick={function(){setRRating(opt.v)}} style={{flex:1,padding:"8px",borderRadius:_isBm?0:8,border:"2px solid "+(sel2?opt.c:K.bdr),background:sel2?opt.c+"12":"transparent",cursor:"pointer",fontSize:12,fontWeight:sel2?700:400,color:sel2?opt.c:K.mid,fontFamily:fm}}>
             {opt.l}
           </button>;})}
         </div>
@@ -1802,7 +1810,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Q3: What did you learn? */}
       {rating&&<div style={{marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:6}}>What did you learn? <span style={{color:K.dim,fontWeight:400,fontSize:11}}>(optional)</span></div>
-        <textarea value={learned} onChange={function(e){setLearned(e.target.value)}} rows={3} placeholder={"What would you do differently? What does this tell you about your process?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"12px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+        <textarea value={learned} onChange={function(e){setLearned(e.target.value)}} rows={3} placeholder={"What would you do differently? What does this tell you about your process?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
       </div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
         <button onClick={function(){setModal(null)}} style={S.btn}>Later</button>
@@ -1862,26 +1870,26 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(function(){w.print()},600)}
     return<Modal title={"Investment Memo — "+c2.ticker} onClose={function(){setModal(null)}} w={640} K={K}>
       {/* Auto-populated snapshot */}
-      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:20}}>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:20}}>
         <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>SNAPSHOT (auto-filled)</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
           <div style={{textAlign:"center"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>PRICE</div><div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{pos.currentPrice?cSym+pos.currentPrice:"—"}</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>CONVICTION</div><div style={{fontSize:16,fontWeight:700,color:c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c2.conviction||"—"}/10</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>KPIs</div><div style={{fontSize:14,fontWeight:600,color:h2.c,fontFamily:fm}}>{h2.l}</div></div>
           <div style={{textAlign:"center"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>MOAT</div><div style={{fontSize:14,fontWeight:600,color:activeMoats.length>0?K.grn:K.dim,fontFamily:fm}}>{activeMoats.length>0?activeMoats.length+" types":"—"}</div></div></div>
-        {sec2.core&&<div style={{marginTop:10,padding:"8px 12px",background:K.card,borderLeft:"3px solid "+K.acc,borderRadius:"0 6px 6px 0",fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{sec2.core.substring(0,150)}{sec2.core.length>150?"...":""}</div>}
+        {sec2.core&&<div style={{marginTop:10,padding:"8px 12px",background:K.card,borderLeft:"3px solid "+K.acc,borderRadius:_isBm?"0":"0 6px 6px 0",fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.5}}>{sec2.core.substring(0,150)}{sec2.core.length>150?"...":""}</div>}
       </div>
       {/* Structured prompts */}
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>WHY NOW? <span style={{fontWeight:400,color:K.dim}}>— What’s the catalyst or timing argument?</span></label>
-        <textarea value={f.whyNow} onChange={function(e){set("whyNow",e.target.value)}} rows={3} placeholder="Recent earnings beat, sector rotation, valuation reset, management change..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.whyNow} onChange={function(e){set("whyNow",e.target.value)}} rows={3} placeholder="Recent earnings beat, sector rotation, valuation reset, management change..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>VALUATION <span style={{fontWeight:400,color:K.dim}}>— Your work on what it’s worth</span></label>
-        <textarea value={f.valuation} onChange={function(e){set("valuation",e.target.value)}} rows={3} placeholder="P/E vs peers, DCF assumptions, historical range, margin of safety..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.valuation} onChange={function(e){set("valuation",e.target.value)}} rows={3} placeholder="P/E vs peers, DCF assumptions, historical range, margin of safety..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>POSITION SIZING <span style={{fontWeight:400,color:K.dim}}>— Why this allocation?</span></label>
-        <textarea value={f.sizing} onChange={function(e){set("sizing",e.target.value)}} rows={2} placeholder="Portfolio weight, concentration risk, how this fits..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.sizing} onChange={function(e){set("sizing",e.target.value)}} rows={2} placeholder="Portfolio weight, concentration risk, how this fits..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.red,marginBottom:4,fontFamily:fm}}>RISKS I’M WATCHING <span style={{fontWeight:400,color:K.dim}}>— Beyond thesis risks</span></label>
-        <textarea value={f.risksWatching} onChange={function(e){set("risksWatching",e.target.value)}} rows={2} placeholder="What specifically keeps you up at night?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"20",borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.risksWatching} onChange={function(e){set("risksWatching",e.target.value)}} rows={2} placeholder="What specifically keeps you up at night?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"20",borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{marginBottom:18}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>12-MONTH OUTLOOK <span style={{fontWeight:400,color:K.dim}}>— What do you expect to happen?</span></label>
-        <textarea value={f.outlook} onChange={function(e){set("outlook",e.target.value)}} rows={2} placeholder="Revenue trajectory, catalysts, bear vs bull case..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.outlook} onChange={function(e){set("outlook",e.target.value)}} rows={2} placeholder="Revenue trajectory, catalysts, bear vs bull case..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{display:"flex",justifyContent:"space-between"}}>
         <button onClick={exportMemoPDF} style={Object.assign({},S.btn,{display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
         <div style={{display:"flex",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
@@ -1896,17 +1904,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       ;showToast("\u2713 Research clipped for "+c2.ticker,"info",3000);setModal(null)}
     return<Modal title={"Clip Research — "+c2.ticker} onClose={function(){setModal(null)}} w={520} K={K}>
       <div style={{display:"flex",gap:12,marginBottom:14}}>
-        <div style={{width:40,height:40,borderRadius:10,background:K.blue+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="link" size={18} color={K.blue}/></div>
+        <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:K.blue+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name="link" size={18} color={K.blue}/></div>
         <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt}}>Save research for {c2.ticker}</div>
           <div style={{fontSize:12,color:K.dim}}>Clip an article, report, or podcast with your takeaway</div></div></div>
       <Inp label="URL (optional)" value={f.url} onChange={function(v){set("url",v)}} placeholder="https://..." K={K}/>
       <Inp label="Title / Headline *" value={f.title} onChange={function(v){set("title",v)}} placeholder="e.g. NVIDIA's CUDA Moat Is Deeper Than You Think" K={K}/>
       <Inp label="Source" value={f.source} onChange={function(v){set("source",v)}} placeholder="e.g. Fabricated Intelligence, Company 10-K, Podcast" K={K}/>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>MY TAKEAWAY <span style={{fontWeight:400,color:K.dim}}>— What did you learn?</span></label>
-        <textarea value={f.takeaway} onChange={function(e){set("takeaway",e.target.value)}} rows={3} placeholder="The key insight and how it affects your thesis..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.takeaway} onChange={function(e){set("takeaway",e.target.value)}} rows={3} placeholder="The key insight and how it affects your thesis..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{marginBottom:18}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:6,fontFamily:fm}}>THESIS IMPACT</label>
         <div style={{display:"flex",gap:6}}>
-          {[{v:"strengthened",l:"Strengthened",c:K.grn},{v:"unchanged",l:"Unchanged",c:K.dim},{v:"weakened",l:"Weakened",c:K.red}].map(function(opt){return<button key={opt.v} onClick={function(){set("thesisImpact",opt.v)}} style={{flex:1,padding:"8px 12px",borderRadius:6,border:"1px solid "+(f.thesisImpact===opt.v?opt.c+"50":K.bdr),background:f.thesisImpact===opt.v?opt.c+"12":"transparent",color:f.thesisImpact===opt.v?opt.c:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{opt.l}</button>})}</div></div>
+          {[{v:"strengthened",l:"Strengthened",c:K.grn},{v:"unchanged",l:"Unchanged",c:K.dim},{v:"weakened",l:"Weakened",c:K.red}].map(function(opt){return<button key={opt.v} onClick={function(){set("thesisImpact",opt.v)}} style={{flex:1,padding:"8px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(f.thesisImpact===opt.v?opt.c+"50":K.bdr),background:f.thesisImpact===opt.v?opt.c+"12":"transparent",color:f.thesisImpact===opt.v?opt.c:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{opt.l}</button>})}</div></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={saveClip}>Save Clip</button></div></Modal>}
   // ── IR Library Entry Modal ──
@@ -1921,7 +1929,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <Inp label="URL" value={f.url} onChange={function(v){set("url",v)}} placeholder="https://investor.example.com/..." K={K}/>
       <Inp label="Quarter / Period" value={f.quarter} onChange={function(v){set("quarter",v)}} placeholder="e.g. Q4 FY26" K={K}/>
       <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>YOUR NOTES <span style={{fontWeight:400,color:K.dim}}>— Key takeaways from this document</span></label>
-        <textarea value={f.notes} onChange={function(e){set("notes",e.target.value)}} rows={3} placeholder="Management guided for... Key metric change was... Watch for..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+        <textarea value={f.notes} onChange={function(e){set("notes",e.target.value)}} rows={3} placeholder="Management guided for... Key metric change was... Watch for..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={saveIR}>Save</button></div></Modal>}
     function PositionModal(){if(!sel)return null;var pos=sel.position||{shares:0,avgCost:0};
@@ -1936,7 +1944,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Average Cost per Share" value={f.avgCost} onChange={function(v){set("avgCost",v)}} type="number" placeholder="0.00" K={K}/>
       <Inp label="Current Price" value={f.currentPrice} onChange={function(v){set("currentPrice",v)}} type="number" placeholder="0.00" K={K}/></div>
       <Inp label="Purchase Date" value={f.purchaseDate} onChange={function(v){set("purchaseDate",v)}} type="date" K={K}/>
-      {f.shares&&f.avgCost&&f.currentPrice&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:14,marginBottom:16}}>
+      {f.shares&&f.avgCost&&f.currentPrice&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:14,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>COST BASIS</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.avgCost)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>MKT VALUE</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.currentPrice)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
@@ -1944,7 +1952,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Price alert / Buy zone */}
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:12,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Price Alert</div></div>
       <Inp label="Buy Below / Target Price" value={f.targetPrice} onChange={function(v){set("targetPrice",v)}} type="number" placeholder="Set a buy target" K={K}/>
-      {tp>0&&cp>0&&<div style={{background:inBuyZone?K.grn+"10":K.bg,border:"1px solid "+(inBuyZone?K.grn+"40":K.bdr),borderRadius:8,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+      {tp>0&&cp>0&&<div style={{background:inBuyZone?K.grn+"10":K.bg,border:"1px solid "+(inBuyZone?K.grn+"40":K.bdr),borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
         <span style={{fontSize:14}}>{inBuyZone?"✅":"⏳"}</span>
         <span style={{fontSize:13,color:inBuyZone?K.grn:K.dim,fontWeight:500}}>{inBuyZone?"In the buy zone! Current $"+cp.toFixed(2)+" ≤ target $"+tp.toFixed(2):"Waiting — current $"+cp.toFixed(2)+" is "+(((cp-tp)/tp*100).toFixed(1))+"% above target $"+tp.toFixed(2)}</span></div>}
       {/* Dividends */}
@@ -1952,7 +1960,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Dividend per Payment" value={f.divPerShare} onChange={function(v){set("divPerShare",v)}} type="number" placeholder="0.00" K={K}/>
       <Sel label="Frequency" value={f.divFrequency} onChange={function(v){set("divFrequency",v)}} options={[{v:"quarterly",l:"Quarterly"},{v:"monthly",l:"Monthly"},{v:"semi",l:"Semi-Annual"},{v:"annual",l:"Annual"},{v:"none",l:"No Dividend"}]} K={K}/></div>
       <Inp label="Ex-Dividend Date (next)" value={f.exDivDate} onChange={function(v){set("exDivDate",v)}} type="date" K={K}/>
-      {parseFloat(f.divPerShare)>0&&f.divFrequency!=="none"&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:14,marginBottom:16}}>
+      {parseFloat(f.divPerShare)>0&&f.divFrequency!=="none"&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:14,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,textAlign:"center"}}>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ANNUAL DIV</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${annDiv.toFixed(2)}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>YIELD</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}%</div></div>
@@ -1993,8 +2001,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
         {BIAS_CHECKS.map(function(b){var flagged=flags[b.id];var answered=flags[b.id]!==undefined;
-          return<div key={b.id} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:12,background:flagged?K.red+"08":answered?K.grn+"06":K.bg,border:"2px solid "+(flagged?K.red+"30":answered?K.grn+"25":K.bdr),cursor:"pointer",transition:"all .15s"}} onClick={function(){toggleFlag(b.id)}}>
-            <div style={{width:32,height:32,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:flagged?K.red+"15":answered?K.grn+"15":K.card,border:"1px solid "+(flagged?K.red+"40":answered?K.grn+"40":K.bdr)}}>
+          return<div key={b.id} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:_isBm?0:12,background:flagged?K.red+"08":answered?K.grn+"06":K.bg,border:"2px solid "+(flagged?K.red+"30":answered?K.grn+"25":K.bdr),cursor:"pointer",transition:"all .15s"}} onClick={function(){toggleFlag(b.id)}}>
+            <div style={{width:32,height:32,borderRadius:_isBm?0:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,background:flagged?K.red+"15":answered?K.grn+"15":K.card,border:"1px solid "+(flagged?K.red+"40":answered?K.grn+"40":K.bdr)}}>
               {flagged?<IC name="alert" size={14} color={K.red}/>:answered?<IC name="check" size={14} color={K.grn}/>:<IC name={b.icon} size={14} color={K.dim}/>}
             </div>
             <div style={{flex:1,minWidth:0}}>
@@ -2006,7 +2014,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
           </div>})}
       </div>
-      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:10,padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"flex-start"}}>
+      {flagCount>=3&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:14,display:"flex",gap:12,alignItems:"flex-start"}}>
         <span style={{fontSize:18}}>⚠️</span>
         <div>
           <div style={{fontSize:13,fontWeight:700,color:K.amb,marginBottom:2}}>{flagCount} biases active — pause before acting</div>
@@ -2024,7 +2032,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
       </div></Modal>;
     return<Modal title={"Conviction Rating — "+sel.ticker} onClose={function(){setModal(null)}} w={440} K={K}>
-      {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:6,padding:"8px 12px",marginBottom:16,fontSize:12,color:K.amb,fontFamily:fm}}>{"⚠"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
+      {flagCount>0&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:6,padding:"8px 12px",marginBottom:16,fontSize:12,color:K.amb,fontFamily:fm}}>{"⚠"} {flagCount} bias flag{flagCount>1?"s":""} active: {BIAS_CHECKS.filter(function(b){return flags[b.id]}).map(function(b){return b.label}).join(", ")}</div>}
       <div style={{textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:48,fontWeight:700,color:r>=8?K.grn:r>=5?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{r}</div>
         <div style={{fontSize:12,color:K.dim}}>out of 10</div>
@@ -2033,7 +2041,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {delta>0?"▲ +"+delta:"▼ "+delta} from last ({prevRating}/10)</div>}
         {delta===0&&prevRating!==null&&<div style={{fontSize:12,color:K.dim,marginTop:4}}>Same as last ({prevRating}/10)</div>}
       </div>
-      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>{[1,2,3,4,5,6,7,8,9,10].map(function(v){return<button key={v} onClick={function(){setR(v)}} style={{width:32,height:32,borderRadius:6,border:"1px solid "+(v===r?K.acc:K.bdr),background:v===r?K.acc+"20":K.bg,color:v===r?K.acc:K.dim,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
+      <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>{[1,2,3,4,5,6,7,8,9,10].map(function(v){return<button key={v} onClick={function(){setR(v)}} style={{width:32,height:32,borderRadius:_isBm?0:6,border:"1px solid "+(v===r?K.acc:K.bdr),background:v===r?K.acc+"20":K.bg,color:v===r?K.acc:K.dim,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
       {/* Mini sparkline of history */}
       {sel.convictionHistory&&sel.convictionHistory.length>1&&<div style={{textAlign:"center",marginBottom:14}}>
         <svg width={Math.min(sel.convictionHistory.length*24,280)} height={32} viewBox={"0 0 "+Math.min(sel.convictionHistory.length*24,280)+" 32"}>
@@ -2066,7 +2074,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {sel.kpis.length>0&&<div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:8,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>KPI Results</label>
         {sel.kpis.map(function(k){return<div key={k.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
           <span style={{fontSize:13,color:K.mid,flex:1}}>{k.name} <span style={{color:K.dim}}>({k.target})</span></span>
-          <input type="number" value={kr[k.id]||""} onChange={function(e){setKr(function(p){var n=Object.assign({},p);n[k.id]=e.target.value;return n})}} placeholder="Actual" style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>})}</div>}
+          <input type="number" value={kr[k.id]||""} onChange={function(e){setKr(function(p){var n=Object.assign({},p);n[k.id]=e.target.value;return n})}} placeholder="Actual" style={{width:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fm,outline:"none"}}/></div>})}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.quarter.trim()&&f.summary.trim()?1:.4})} onClick={doSave}>Save Earnings</button></div></Modal>}
   function exportPDF(){if(!sel)return;var c=sel;var h=gH(c.kpis);var pos=c.position||{};var sec=parseThesis(c.thesisNote);
     var os=calcOwnerScore([c]);var conv=c.conviction||0;
@@ -2307,7 +2315,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function SettingsModal(){
     var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
-    var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Duolingo-inspired, playful",color:"#f0f0f0",accent:"#58cc02",unlock:1},{id:"purple",name:"Purple",desc:"Financial purple",color:"#13111c",accent:"#a78bfa",unlock:1},{id:"paypal",name:"PayPal Blue",desc:"Professional blue",color:"#f5f7fa",accent:"#003087",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"Amber on black. Zero rounding.",color:"#000000",accent:"#F39F41",unlock:10}];
+    var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Playful green. Pill buttons.",color:"#f7f7f5",accent:"#58cc02",unlock:1},{id:"purple",name:"Midnight",desc:"Deep purple. Hedge-fund dark.",color:"#0d0b14",accent:"#a78bfa",unlock:1},{id:"paypal",name:"Ocean",desc:"Clean professional blue",color:"#f0f4f8",accent:"#1a56db",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"Amber on black. Zero rounding.",color:"#000000",accent:"#F39F41",unlock:10}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
@@ -2317,13 +2325,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{marginBottom:24}}>
           <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>Currency Symbol</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {CURRENCIES.map(function(cur){var active=currency===cur.code;return<button key={cur.code} onClick={function(){saveCurrency(cur.code)}} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"10":K.card,cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
+            {CURRENCIES.map(function(cur){var active=currency===cur.code;return<button key={cur.code} onClick={function(){saveCurrency(cur.code)}} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:_isBm?0:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"10":K.card,cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
               <span style={{fontSize:18,fontFamily:fm,fontWeight:700,color:active?K.acc:K.txt,minWidth:28}}>{cur.sym.trim()}</span>
               <div>
                 <div style={{fontSize:13,fontWeight:active?700:500,color:active?K.acc:K.txt}}>{cur.code}</div>
                 <div style={{fontSize:11,color:K.dim}}>{cur.label}</div>
               </div>
-              {active&&<div style={{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:K.acc,flexShrink:0}}/>}
+              {active&&<div style={{marginLeft:"auto",width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.acc,flexShrink:0}}/>}
             </button>})}
           </div>
         </div>
@@ -2334,8 +2342,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
         {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
           <div><div style={{fontSize:14,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:12,color:K.dim,marginTop:2}}>{it.d}</div></div>
-          <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
-            <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
+          <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:_isBm?0:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
+            <div style={{width:18,height:18,borderRadius:_isBm?2:"50%",background:_isBm?K.acc:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
         <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"flex-end"}}>
           <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
@@ -2344,10 +2352,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Unlock new themes by building your weekly streak.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {allThemes.map(function(t){var unlocked=trialActive||isPro||(streakData.current||0)>=t.unlock;var active=theme===t.id;
-            return<div key={t.id} style={{borderRadius:10,border:"2px solid "+(active?K.acc:unlocked?K.bdr:"transparent"),background:unlocked?K.card:K.bg,padding:"14px 16px",cursor:unlocked?"pointer":"default",opacity:unlocked?1:.5,position:"relative"}} onClick={function(){if(unlocked){setTheme(t.id);try{localStorage.setItem("ta-theme",t.id)}catch(e){}}}}>
+            return<div key={t.id} style={{borderRadius:_isBm?0:10,border:"2px solid "+(active?K.acc:unlocked?K.bdr:"transparent"),background:unlocked?K.card:K.bg,padding:"14px 16px",cursor:unlocked?"pointer":"default",opacity:unlocked?1:.5,position:"relative"}} onClick={function(){if(unlocked){setTheme(t.id);try{localStorage.setItem("ta-theme",t.id)}catch(e){}}}}>
               {!unlocked&&<div style={{position:"absolute",top:8,right:8,fontSize:13}}>{String.fromCodePoint(0x1F512)}</div>}
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                <div style={{width:28,height:28,borderRadius:6,background:t.color,border:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:10,height:10,borderRadius:2,background:t.accent}}/></div>
+                <div style={{width:28,height:28,borderRadius:_isBm?0:6,background:t.color,border:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:10,height:10,borderRadius:_isBm?0:2,background:t.accent}}/></div>
                 <div><div style={{fontSize:13,fontWeight:600,color:unlocked?K.txt:K.dim}}>{t.name}</div>
                   <div style={{fontSize:10,color:K.dim}}>{t.desc}</div></div></div>
               {!unlocked&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Week {t.unlock} streak</div>}
@@ -2359,23 +2367,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
         <div style={{display:"grid",gap:6}}>
           {[
-            {w:1,icon:"🌿",type:"theme",label:"Forest Theme",desc:"A calm dark-green workspace"},
+            {w:1,icon:"🌿",type:"theme",label:"Forest",desc:"Playful green. Rounded and bright."},
             {w:2,icon:"🔍",type:"lens",label:"Munger Lens",desc:"Quality at scale — Munger's mental models"},
-            {w:3,icon:"🌊",type:"theme",label:"Ocean Theme",desc:"Deep blue professional palette"},
+            {w:3,icon:"🌊",type:"theme",label:"Ocean",desc:"Clean professional blue"},
             {w:4,icon:"🏰",type:"lens",label:"Buffett Lens",desc:"Owner earnings framework"},
-            {w:6,icon:"🌙",type:"theme",label:"Purple Theme",desc:"Twilight dark palette"},
+            {w:6,icon:"🌙",type:"theme",label:"Midnight",desc:"Deep purple. Hedge-fund dark."},
             {w:8,icon:"✨",type:"lens",label:"Magic Formula Lens",desc:"Greenblatt's earnings yield + ROIC"},
             {w:10,icon:"📟",type:"theme",label:"Bloomberg Terminal",desc:"Authentic amber-on-black terminal"},
             {w:12,icon:"📚",type:"lens",label:"Lynch · Akre · Pabrai Lenses",desc:"Three more investor frameworks"},
           ].map(function(r){
             var unlocked=trialActive||isPro||(streakData.current||0)>=r.w;
             var typeColor=r.type==="theme"?K.acc:K.grn;
-            return<div key={r.w+r.label} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:10,opacity:unlocked?1:.7}}>
+            return<div key={r.w+r.label} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:_isBm?0:10,opacity:unlocked?1:.7}}>
               <span style={{fontSize:18,flexShrink:0,lineHeight:1}}>{r.icon}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
                   <div style={{fontSize:13,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
-                  <span style={{fontSize:9,fontFamily:fm,fontWeight:600,color:typeColor,background:typeColor+"15",borderRadius:3,padding:"1px 6px"}}>{r.type==="theme"?"THEME":"LENS"}</span>
+                  <span style={{fontSize:9,fontFamily:fm,fontWeight:600,color:typeColor,background:typeColor+"15",borderRadius:_isBm?0:3,padding:"1px 6px"}}>{r.type==="theme"?"THEME":"LENS"}</span>
                 </div>
                 <div style={{fontSize:11,color:K.dim}}>{r.desc}</div>
               </div>
@@ -2429,10 +2437,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               :<button onClick={function(){setModal(null);setShowUpgrade(true);setUpgradeCtx("")}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>Upgrade to Pro</button>}</div></div>
         {/* Logout */}
         <div style={{padding:"14px 0"}}>
-          <button onClick={function(){props.onLogout()}} style={{background:K.red+"10",border:"1px solid "+K.red+"25",borderRadius:6,padding:"8px 16px",fontSize:12,color:K.red,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Log Out</button></div>
+          <button onClick={function(){props.onLogout()}} style={{background:K.red+"10",border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,padding:"8px 16px",fontSize:12,color:K.red,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Log Out</button></div>
       </div>}
       <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.mid,fontSize:12,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
+        <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"flex",alignItems:"center",gap:5,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.mid,fontSize:12,cursor:"pointer",padding:"6px 12px",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ThesisAlpha v1.0</div></div>
     </Modal>}
   // ── Upgrade Modal ──────────────────────────────────────────
@@ -2446,19 +2454,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{fontSize:14,color:K.mid,lineHeight:1.7}}>{ctxMsg}</div>
         <div style={{fontSize:13,color:K.dim,marginTop:4}}>Your process tools stay free forever. Add real-time data to supercharge them.</div></div>
       {/* Feature list */}
-      <div style={{background:K.bg,borderRadius:10,padding:"16px 20px",marginBottom:24}}>
+      <div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"16px 20px",marginBottom:24}}>
         {[{t:"Auto earnings check + notifications",i:"⚡"},{t:"Financial statements (10yr history)",i:"📊"},{t:"Data-driven moat analysis (8 metrics)",i:"🏰"},{t:"Analyst targets + insider trades",i:"📋"},{t:"Price charts with conviction markers",i:"📈"},{t:"Community benchmarks & consensus",i:"👥"},{t:"Premium PDF export",i:"📄"}].map(function(f){return<div key={f.t} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0"}}>
           <span style={{fontSize:14,width:20,textAlign:"center"}}>{f.i}</span>
           <span style={{fontSize:13,color:K.txt,fontFamily:fm}}>{f.t}</span></div>})}</div>
       {/* Pricing cards */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 16px",textAlign:"center"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 16px",textAlign:"center"}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$12.99<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/mo</span></div>
           <div style={{fontSize:11,color:K.dim,marginBottom:14}}>Cancel anytime</div>
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_MONTHLY||"price_1T8P7qB5sSVol2sMKMlNXT47")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:13,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
-        <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
-          <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
+        <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:_isBm?0:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
+          <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:_isBm?0:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
           <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$129<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/yr</span></div>
           <div style={{fontSize:11,color:K.grn,marginBottom:14}}>Save 17% — $10.75/mo</div>
@@ -2482,14 +2490,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {!selPrompt&&<div>
         <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
         <div style={{display:"grid",gap:8}}>{prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
-            return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:10,cursor:"pointer"}}>
-              <div style={{width:32,height:32,borderRadius:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
+            return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:_isBm?0:10,cursor:"pointer"}}>
+              <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
               <div style={{flex:1,minWidth:0}}><div style={{fontSize:10,fontWeight:600,color:done?K.grn:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:3}}>{p2.cat.toUpperCase()}</div>
                 <div style={{fontSize:13,color:K.txt,lineHeight:1.5}}>{p2.q.substring(0,120)}{p2.q.length>120?"...":""}</div>
                 {done&&<div style={{fontSize:10,color:K.dim,marginTop:4,fontFamily:fm}}>Answered {fD(scenarios.find(function(s){return s.promptId===p2.id}).answeredAt)}</div>}</div></div>})}</div></div>}
       {selPrompt&&activePrompt&&<div>
         <button onClick={function(){setSelPrompt(null);setResp("")}} style={{background:"none",border:"none",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fm,padding:0,marginBottom:12}}>{"\u2190 Back to scenarios"}</button>
-        <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"14px 18px",marginBottom:16}}>
+        <div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
           <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{activePrompt.cat.toUpperCase()}</div>
           <div style={{fontSize:14,color:K.txt,lineHeight:1.7}}>{activePrompt.q}</div></div>
         <label style={{display:"block",fontSize:13,color:K.dim,marginBottom:8,fontFamily:fm,fontWeight:600}}>Your plan</label>
@@ -2533,23 +2541,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {vMetrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
         var current=getValMetricValue(def,snap,price,c);
         var pass=current!=null&&vm.threshold>0?(vm.rule==="gte"?current>=vm.threshold:current<=vm.threshold):null;
-        return<div key={vm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr,marginBottom:8}}>
+        return<div key={vm.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,marginBottom:8}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{def.label}</div>
             <div style={{fontSize:11,color:K.dim,marginTop:2}}>{def.desc}</div></div>
           <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-            <select value={vm.rule} onChange={function(e){updateRule(vm.id,e.target.value)}} style={{background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 6px",fontSize:11,fontFamily:fm}}>
+            <select value={vm.rule} onChange={function(e){updateRule(vm.id,e.target.value)}} style={{background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"4px 6px",fontSize:11,fontFamily:fm}}>
               <option value="lte">{"\u2264"}</option><option value="gte">{"\u2265"}</option></select>
-            <input type="number" value={vm.threshold} onChange={function(e){updateThreshold(vm.id,e.target.value)}} style={{width:56,background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,textAlign:"right"}}/>
+            <input type="number" value={vm.threshold} onChange={function(e){updateThreshold(vm.id,e.target.value)}} style={{width:56,background:_isThesis?"rgba(255,255,255,0.05)":K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,textAlign:"right"}}/>
             <span style={{fontSize:10,color:K.dim,width:14}}>{def.unit}</span>
             {current!=null&&<span style={{fontSize:12,fontWeight:700,color:pass?K.grn:K.red,fontFamily:fm,minWidth:44,textAlign:"right"}}>{current.toFixed(def.unit==="%"?1:current<1?2:1)}</span>}
             {current==null&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,minWidth:44,textAlign:"right"}}>{"\u2014"}</span>}
             <button onClick={function(){toggleMetric(vm.id)}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:2}}>{"\u00D7"}</button></div></div>})}
       {/* Add more */}
-      {!adding&&<button onClick={function(){setAdding(true)}} style={{background:"none",border:"1px dashed "+K.acc+"40",borderRadius:8,color:K.acc,fontSize:12,cursor:"pointer",padding:"8px 14px",width:"100%",fontFamily:fm}}>+ Add metric</button>}
-      {adding&&<div style={{border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 14px",marginTop:4}}>
+      {!adding&&<button onClick={function(){setAdding(true)}} style={{background:"none",border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:8,color:K.acc,fontSize:12,cursor:"pointer",padding:"8px 14px",width:"100%",fontFamily:fm}}>+ Add metric</button>}
+      {adding&&<div style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"10px 14px",marginTop:4}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Choose a metric</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{VALUATION_METRICS.filter(function(m){return activeIds.indexOf(m.id)<0}).map(function(m){return<div key={m.id} onClick={function(){toggleMetric(m.id);setAdding(false)}} style={{padding:"8px 10px",borderRadius:6,border:"1px solid "+K.bdr,cursor:"pointer",background:K.bg}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>{VALUATION_METRICS.filter(function(m){return activeIds.indexOf(m.id)<0}).map(function(m){return<div key={m.id} onClick={function(){toggleMetric(m.id);setAdding(false)}} style={{padding:"8px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,cursor:"pointer",background:K.bg}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
           <div style={{fontSize:12,fontWeight:600,color:K.txt}}>{m.label}</div>
           <div style={{fontSize:10,color:K.dim}}>{m.desc.substring(0,50)}</div></div>})}</div>
         <button onClick={function(){setAdding(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",marginTop:6}}>Cancel</button></div>}
@@ -2571,10 +2579,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     return<Modal title={(e.quarter||"Latest")+" — "+c.ticker+" Earnings"} onClose={function(){setModal(null)}} w={560} K={K}>
       {/* Quarter nav */}
       {entries.length>1&&<div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {entries.map(function(eq,qi){return<button key={qi} onClick={function(){setModal({type:"earningsReport",data:qi})}} style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontFamily:fm,fontWeight:qi===idx?700:400,background:qi===idx?K.acc+"18":"transparent",border:"1px solid "+(qi===idx?K.acc:K.bdr),color:qi===idx?K.acc:K.mid,cursor:"pointer"}}>{eq.quarter||"Q?"}</button>})}
+        {entries.map(function(eq,qi){return<button key={qi} onClick={function(){setModal({type:"earningsReport",data:qi})}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,fontSize:11,fontFamily:fm,fontWeight:qi===idx?700:400,background:qi===idx?K.acc+"18":"transparent",border:"1px solid "+(qi===idx?K.acc:K.bdr),color:qi===idx?K.acc:K.mid,cursor:"pointer"}}>{eq.quarter||"Q?"}</button>})}
       </div>}
       {/* Summary */}
-      {e.summary&&<div style={{background:K.bg,borderRadius:10,padding:"14px 16px",marginBottom:16,fontSize:13,color:K.txt,lineHeight:1.7,border:"1px solid "+K.bdr}}>{e.summary}</div>}
+      {e.summary&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:16,fontSize:13,color:K.txt,lineHeight:1.7,border:"1px solid "+K.bdr}}>{e.summary}</div>}
       {/* KPI results */}
       {e.results&&e.results.length>0&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>KPI Scorecard</div>
@@ -2594,7 +2602,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {snapItems.length>0&&<div>
         <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Financial Snapshot</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-          {snapItems.map(function(si,i){return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr}}>
+          {snapItems.map(function(si,i){return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:_isBm?0:6,background:K.bg,border:"1px solid "+K.bdr}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{si.l}</span>
             <span style={{fontSize:12,fontWeight:600,color:si.beat===true?K.grn:si.beat===false?K.red:K.txt,fontFamily:fm}}>{si.v}</span>
           </div>})}
@@ -2615,20 +2623,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var ticker=d.ticker||"";var quarter=d.quarter||"Latest";var srcLabel=d.sourceLabel||"FMP";
     function fmtVal(v,unit){if(v==null)return"—";var abs=Math.abs(v);return(abs>=1000?Number(v).toFixed(0):abs>=10?Number(v).toFixed(1):Number(v).toFixed(2))+(unit||"")}
     return<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(0,0,0,.72)"}} onClick={function(e){if(e.target===e.currentTarget)setModal(null)}}>
-      <div style={{background:"#fff",borderRadius:22,padding:"26px 26px 22px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,.28)"}}>
+      <div style={{background:"#fff",borderRadius:_isBm?0:22,padding:"26px 26px 22px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,.28)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
           <div>
             <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:8}}>
               <span style={{fontSize:26,fontWeight:800,color:"#1a1a2e",letterSpacing:"-0.5px"}}>{ticker}</span>
               <span style={{fontSize:15,color:"#9ca3af",fontWeight:500}}>{quarter} Earnings</span>
             </div>
-            <span style={{fontSize:11,fontWeight:700,color:allMet?"#16a34a":metCount>0?"#d97706":"#dc2626",background:allMet?"#f0fdf4":metCount>0?"#fffbeb":"#fef2f2",border:"1px solid "+(allMet?"#bbf7d0":metCount>0?"#fde68a":"#fecaca"),borderRadius:20,padding:"3px 10px",fontFamily:fm}}>
+            <span style={{fontSize:11,fontWeight:700,color:allMet?"#16a34a":metCount>0?"#d97706":"#dc2626",background:allMet?"#f0fdf4":metCount>0?"#fffbeb":"#fef2f2",border:"1px solid "+(allMet?"#bbf7d0":metCount>0?"#fde68a":"#fecaca"),borderRadius:_isBm?0:20,padding:"3px 10px",fontFamily:fm}}>
               {metCount}/{kpis.length} KPIs met {allMet?"🎉":metCount>0?"✓":"😬"}
             </span>
           </div>
           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-            <button onClick={function(){setModal(null)}} style={{background:"#f3f4f6",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",color:"#6b7280",fontSize:16,lineHeight:1}}>×</button>
-            <span style={{fontSize:10,fontWeight:600,color:"#9ca3af",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,padding:"2px 8px",fontFamily:fm}}>Live Data: {srcLabel}</span>
+            <button onClick={function(){setModal(null)}} style={{background:"#f3f4f6",border:"none",borderRadius:_isBm?0:8,width:28,height:28,cursor:"pointer",color:"#6b7280",fontSize:16,lineHeight:1}}>×</button>
+            <span style={{fontSize:10,fontWeight:600,color:"#9ca3af",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:_isBm?0:10,padding:"2px 8px",fontFamily:fm}}>Live Data: {srcLabel}</span>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
@@ -2636,23 +2644,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var unit=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";
             var val=res&&res.actual!=null?fmtVal(res.actual,unit):"—";
             var bg=met?"#f0fdf4":missed?"#fef2f2":"#f9fafb";var border=met?"#bbf7d0":missed?"#fecaca":"#e5e7eb";var vc=met?"#16a34a":missed?"#dc2626":"#374151";
-            return<div key={i} style={{background:bg,border:"2px solid "+border,borderRadius:14,padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            return<div key={i} style={{background:bg,border:"2px solid "+border,borderRadius:_isBm?0:14,padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
                 <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:4}}>{k.name}</div>
                 <div style={{fontSize:32,fontWeight:800,color:vc,letterSpacing:"-0.5px",lineHeight:1}}>{val}</div>
               </div>
               <div style={{textAlign:"right"}}>
                 <div style={{fontSize:11,color:"#9ca3af",fontFamily:fm,marginBottom:6}}>Target: {k.target}</div>
-                {met&&<div style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✓ MET 🎉</div>}
-                {missed&&<div style={{background:"#dc2626",color:"#fff",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✗ MISSED</div>}
-                {!met&&!missed&&<div style={{background:"#e5e7eb",color:"#6b7280",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>? UNCLEAR</div>}
+                {met&&<div style={{background:"#16a34a",color:"#fff",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✓ MET 🎉</div>}
+                {missed&&<div style={{background:"#dc2626",color:"#fff",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✗ MISSED</div>}
+                {!met&&!missed&&<div style={{background:"#e5e7eb",color:"#6b7280",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>? UNCLEAR</div>}
               </div>
             </div>})}
         </div>
-        {d.summary&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6b7280",lineHeight:1.6}}>{d.summary.substring(0,200)}{d.summary.length>200?"…":""}</div>}
+        {d.summary&&<div style={{background:"#f9fafb",borderRadius:_isBm?0:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6b7280",lineHeight:1.6}}>{d.summary.substring(0,200)}{d.summary.length>200?"…":""}</div>}
         <div style={{display:"flex",gap:8}}>
-          <button style={{flex:1,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>{allMet?"🎯 Rate Conviction":"Update Conviction"}</button>
-          <button style={{background:"#f3f4f6",color:"#374151",border:"none",borderRadius:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"earningsReport",data:0})}}>Full Report</button>
+          <button style={{flex:1,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:_isBm?0:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>{allMet?"🎯 Rate Conviction":"Update Conviction"}</button>
+          <button style={{background:"#f3f4f6",color:"#374151",border:"none",borderRadius:_isBm?0:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"earningsReport",data:0})}}>Full Report</button>
         </div>
       </div>
     </div>}
@@ -2711,12 +2719,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(isLast){setTourStep(0);showToast("You know your way around. Go build something worth owning.","info",4000)}
       else{setTourStep(function(s){return s+1})}}
     function dismiss(){setTourStep(0)}
-    return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
+    return<div style={{position:"fixed",bottom:24,right:24,zIndex:8000,width:300,background:K.card,borderRadius:_isBm?0:16,boxShadow:"0 8px 32px rgba(0,0,0,.3)",border:"1px solid "+K.bdr,overflow:"hidden"}}>
       <div style={{height:3,background:cur.color,width:(tourStep/TOUR.length*100)+"%",transition:"width .4s ease"}}/>
       <div style={{padding:"16px 18px"}}>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:30,height:30,borderRadius:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <div style={{width:30,height:30,borderRadius:_isBm?0:8,background:cur.color+"20",border:"1px solid "+cur.color+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={cur.icon} size={14} color={cur.color}/>
             </div>
             <div>
@@ -2747,49 +2755,49 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",alignItems:"center",gap:8,background:sideDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)",borderRadius:isThesis?10:6,padding:"7px 12px",cursor:"text",border:"1px solid "+(sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"),transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"50"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}}>
         <IC name="search" size={13} color={sideDim2}/>
         <span style={{flex:1,fontSize:12,color:sideDim2,fontFamily:fm}}>Search…</span>
-        <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
+        <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:_isBm?0:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
       </div>
     </div>}
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="ai"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="ai"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
-      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:8,cursor:"pointer"}} onClick={openManage}>
+      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
         <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
-      :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:8}}>
+      :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <span style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1}}>TRIAL</span>
           <span style={{fontSize:11,color:trialDaysLeft<=3?K.red:trialDaysLeft<=7?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{trialDaysLeft}d left</span></div>
         {!trialBonusEarned&&<div>
-          <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"→"} +{TRIAL_BONUS} days</div></div>}
         {trialBonusEarned&&<div style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}
-        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{width:"100%",marginTop:8,padding:"7px 12px",background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:6,fontSize:11,fontWeight:600,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{width:"100%",marginTop:8,padding:"7px 12px",background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,fontSize:11,fontWeight:600,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
-      :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+      :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
     <div style={{padding:"10px 16px 6px"}}>
-      <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+      <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:_isBm?0:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
         <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
         <option value="watchlist">Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</option>
         <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
       </select>
-      {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/>}</div>
+      {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"7px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/>}</div>
     {!isMobile&&pCos.length>0&&<div style={{padding:"4px 16px 0",display:"flex",gap:8,flexWrap:"wrap"}}>
       {[["↑↓","Navigate"],["N","Add"],["R","Review"],["T","Thesis"]].map(function(h){return<span key={h[0]} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:sideDim2,fontFamily:fm}}>
-        <span style={{background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)",borderRadius:3,padding:"1px 4px",fontWeight:600}}>{h[0]}</span>{h[1]}
+        <span style={{background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)",borderRadius:_isBm?0:3,padding:"1px 4px",fontWeight:600}}>{h[0]}</span>{h[1]}
       </span>})}
     </div>}
     <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
@@ -2799,7 +2807,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var isWatchlist=c.status==="watchlist";
       var thesisAge=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):999;
       var thesisStaleIndicator=thesisAge>180?"●":thesisAge>90?"·":null;
-      return<div key={c.id} className="ta-side-item" style={{padding:isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(isThesis?K.acc+"15":K.blue+"10"):h.c+"08",borderLeft:isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
+      return<div key={c.id} className="ta-side-item" style={{padding:isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(isThesis?K.acc+"15":K.blue+"10"):h.c+"08",borderLeft:isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
         <div style={{position:"relative",flexShrink:0}}>
           <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
           {thesisStaleIndicator&&<span style={{position:"absolute",top:-3,right:-3,fontSize:7,color:thesisAge>180?K.amb:K.dim,lineHeight:1}}>{thesisStaleIndicator}</span>}
@@ -2809,21 +2817,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {hasPrice&&<div style={{fontSize:11,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</div>}
           {isWatchlist&&hasTarget&&<div style={{fontSize:10,color:pctToTarget>0?K.grn:K.amb,fontFamily:fm}}>{pctToTarget>0?pctToTarget.toFixed(0)+"% below":"At target"}</div>}
           {!isWatchlist&&hasPrice&&pos.avgCost>0&&<div style={{fontSize:10,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</div>}
-          {d>=0&&d<=7&&<div style={{fontSize:10,color:d<=2?K.red:K.amb,fontWeight:700,fontFamily:fm,background:(d<=2?K.red:K.amb)+"15",borderRadius:4,padding:"1px 5px"}}>{d===0?"Today":d===1?"Tmrw":d+"d"}</div>}
+          {d>=0&&d<=7&&<div style={{fontSize:10,color:d<=2?K.red:K.amb,fontWeight:700,fontFamily:fm,background:(d<=2?K.red:K.amb)+"15",borderRadius:_isBm?0:4,padding:"1px 5px"}}>{d===0?"Today":d===1?"Tmrw":d+"d"}</div>}
           {d>7&&d<=14&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d}d</div>}
           {!hasPrice&&(c.earningsDate==="TBD"||!c.earningsDate)&&<div style={{fontSize:10,color:sideDim2,fontFamily:fm}}>TBD</div>}
-          <div style={{width:20,height:4,borderRadius:2,background:h.c,opacity:isDark?0.8:1,marginTop:1,boxShadow:isDark?"none":"0 0 0 1px "+h.c+"30"}}/></div></div>})}</div>
+          <div style={{width:20,height:4,borderRadius:_isBm?0:2,background:h.c,opacity:isDark?0.8:1,marginTop:1,boxShadow:isDark?"none":"0 0 0 1px "+h.c+"30"}}/></div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
-      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
+      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
         {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
         {isDark?"Switch to Light":"Switch to Dark"}</button>}
       <div style={{display:"flex",gap:6}}>
         <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}} title="Add holding (N)">+ Add</button>
         <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:12})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div></div>}
   function TopBar(){
-    if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50}}>
+    if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
-      <button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:10,padding:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flexShrink:0}}>
+      <button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flexShrink:0}}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       {/* Centre — logo + wordmark */}
       <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={function(){setSelId(null);setPage("dashboard")}}>
@@ -2833,29 +2841,29 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
         <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.txt:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          {unread>0&&<div style={{position:"absolute",top:2,right:2,width:8,height:8,borderRadius:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
+          {unread>0&&<div style={{position:"absolute",top:2,right:2,width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
         <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
           {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
             :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:K.acc,fontWeight:700,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}</div></div>
       {showNotifs&&<div style={{position:"fixed",inset:0,zIndex:99}} onClick={function(){setShowNotifs(false)}}/>}
-      {showNotifs&&<div className="ta-notif-panel" style={{position:"fixed",top:62,left:12,right:12,maxHeight:"70vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:16,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
+      {showNotifs&&<div className="ta-notif-panel" style={{position:"fixed",top:62,left:12,right:12,maxHeight:"70vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:16,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
         <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"4px 12px",fontSize:12})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
         {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:14,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:5}}/><div><div style={{fontSize:14,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:12,color:K.dim,marginTop:4}}>{fT(n.time)}</div></div></div>})}
+          <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:5}}/><div><div style={{fontSize:14,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:12,color:K.dim,marginTop:4}}>{fT(n.time)}</div></div></div>})}
       </div>}
     </div>}
-    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:"blur(12px)",position:"sticky",top:0,zIndex:50,gap:12}}>
-    {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card+"e6",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50,gap:12}}>
+    {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      {unread>0&&<div style={{position:"absolute",top:1,right:1,width:8,height:8,borderRadius:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
+      {unread>0&&<div style={{position:"absolute",top:1,right:1,width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
     {showNotifs&&<div style={{position:"fixed",inset:0,zIndex:99}} onClick={function(){setShowNotifs(false)}}/>}
-    {showNotifs&&<div className="ta-notif-panel" style={{position:"absolute",top:48,right:32,width:380,maxHeight:420,overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
+    {showNotifs&&<div className="ta-notif-panel" style={{position:"absolute",top:48,right:32,width:380,maxHeight:420,overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:100}}>
       <div style={{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Notifications</span>{notifs.length>0&&<button style={Object.assign({},S.btn,{padding:"2px 8px",fontSize:11})} onClick={function(){setNotifs([])}}>Clear</button>}</div>
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:13,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-alert"?"pointer":"default"}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:13,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:11,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:11,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
-    <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-    <button onClick={function(){props.onLogout()}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,color:K.dim}} title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:13,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:11,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:11,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div></div>})}</div>}
+    <button onClick={function(){setModal({type:"settings"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title="Dashboard Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button onClick={function(){props.onLogout()}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,color:K.dim}} title="Log out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:34,height:34,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:34,height:34,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
@@ -2881,12 +2889,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function removeLink(lid){upd(c.id,function(prev){return Object.assign({},prev,{researchLinks:(prev.researchLinks||[]).filter(function(l){return l.id!==lid})})})}
     return<div style={{marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="link" size={14} color={K.dim}/>Research</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){setAdding(!adding)}}>+ Add Link</button></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
         <Inp label="URL" value={url} onChange={setUrl} placeholder="https://..." K={K}/>
         <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Label (optional)" value={label} onChange={setLabel} placeholder="Article title" K={K}/><Sel label="Type" value={cat} onChange={setCat} options={cats} K={K}/></div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:url.trim()?1:.4})} onClick={addLink}>Add</button></div></div>}
-      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:20,textAlign:"center",fontSize:13,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
-      {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:20,textAlign:"center",fontSize:13,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
+      {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
         {links.map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
           <IC name={catIcons[l.category]||"link"} size={14} color={K.dim}/>
           <a href={l.url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:13,color:K.blue,textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.label}</a>
@@ -2896,26 +2904,26 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   // ── Research Journal (structured card system) ──
   var CARD_STYLES={decision:{icon:"edit",color:"#3B82F6",label:"Decision"},earnings_review:{icon:"bar",color:"#F59E0B",label:"Earnings Review"},thesis_snapshot:{icon:"lightbulb",color:"#8B5CF6",label:"Thesis Update"},conviction_shift:{icon:"trending",color:"#EC4899",label:"Conviction Shift"},note:{icon:"file",color:"#6B7280",label:"Note"}};
   function JournalCard(p){var d=p.entry;var ct=CARD_STYLES[d.cardType]||CARD_STYLES.note;var actionColors={BUY:K.grn,SELL:K.red,HOLD:K.amb,TRIM:K.red,ADD:K.grn,PASS:K.dim};
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+ct.color,borderRadius:10,padding:"14px 18px",marginBottom:10}}>
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderLeft:"3px solid "+ct.color,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:10}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-        <div style={{width:24,height:24,borderRadius:6,background:ct.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={ct.icon} size={12} color={ct.color}/></div>
+        <div style={{width:24,height:24,borderRadius:_isBm?0:6,background:ct.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><IC name={ct.icon} size={12} color={ct.color}/></div>
         <span style={{fontSize:11,fontWeight:700,color:ct.color,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{ct.label}</span>
         {d.ticker&&<span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{d.ticker}</span>}
-        {d.action&&d.cardType==="decision"&&<span style={{fontSize:10,fontWeight:700,color:actionColors[d.action]||K.txt,background:(actionColors[d.action]||K.dim)+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{d.action}</span>}
-        {d.outcome&&<span style={{fontSize:10,fontWeight:600,color:d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:3}}>{d.outcome}</span>}
+        {d.action&&d.cardType==="decision"&&<span style={{fontSize:10,fontWeight:700,color:actionColors[d.action]||K.txt,background:(actionColors[d.action]||K.dim)+"15",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>{d.action}</span>}
+        {d.outcome&&<span style={{fontSize:10,fontWeight:600,color:d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:_isBm?0:3}}>{d.outcome}</span>}
         <span style={{marginLeft:"auto",fontSize:10,color:K.dim,fontFamily:fm}}>{d.date?new Date(d.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</span></div>
       {/* ── DECISION CARD ── */}
       {d.cardType==="decision"&&<div>
         {/* Auto-context row */}
-        {(d.priceAtTime||d.convictionAtTime>0)&&<div style={{display:"flex",gap:12,marginBottom:8,padding:"6px 10px",background:K.bg,borderRadius:6,fontSize:11,color:K.dim,fontFamily:fm}}>
+        {(d.priceAtTime||d.convictionAtTime>0)&&<div style={{display:"flex",gap:12,marginBottom:8,padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,fontSize:11,color:K.dim,fontFamily:fm}}>
           {d.priceAtTime>0&&<span>Price: ${d.priceAtTime}</span>}
           {d.convictionAtTime>0&&<span>Conviction: {d.convictionAtTime}/10</span>}
           {d.timeHorizon&&<span>{d.timeHorizon==="short"?"<1yr":d.timeHorizon==="medium"?"1-3yr":"3-10yr"}</span>}
           {d.shares&&<span>{d.shares} shares</span>}</div>}
         {d.reasoning&&<div style={{marginBottom:6}}><div style={{fontSize:10,color:ct.color,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:3}}>REASONING</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{d.reasoning}</div></div>}
-        {d.invalidator&&<div style={{padding:"8px 10px",background:K.red+"06",borderRadius:6,border:"1px solid "+K.red+"15",marginBottom:6}}>
+        {d.invalidator&&<div style={{padding:"8px 10px",background:K.red+"06",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"15",marginBottom:6}}>
           <div style={{fontSize:10,color:K.red,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:2}}>WHAT WOULD PROVE ME WRONG</div>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.invalidator}</div></div>}
       </div>}
@@ -2923,23 +2931,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {d.cardType==="earnings_review"&&<div>
         {d.quarter&&<div style={{fontSize:13,fontWeight:600,color:K.txt,marginBottom:6}}>{d.quarter}</div>}
         {d.kpisTotal>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-          {(d.kpiDetails||[]).map(function(k,ki){return<div key={ki} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:4,background:(k.status==="met"?K.grn:K.red)+"10",border:"1px solid "+(k.status==="met"?K.grn:K.red)+"20",fontSize:11,fontFamily:fm}}>
+          {(d.kpiDetails||[]).map(function(k,ki){return<div key={ki} style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:_isBm?0:4,background:(k.status==="met"?K.grn:K.red)+"10",border:"1px solid "+(k.status==="met"?K.grn:K.red)+"20",fontSize:11,fontFamily:fm}}>
             <span style={{color:k.status==="met"?K.grn:K.red,fontWeight:600}}>{k.status==="met"?"✓":"✗"}</span>
             <span style={{color:K.mid}}>{k.name}</span>
             {k.actual!=null&&<span style={{color:k.status==="met"?K.grn:K.red,fontWeight:600}}>{k.actual}</span>}</div>})}</div>}
         {d.kpisTotal>0&&<div style={{fontSize:12,fontWeight:600,color:d.kpisMet===d.kpisTotal?K.grn:d.kpisMet>0?K.amb:K.red,fontFamily:fm,marginBottom:6}}>{d.kpisMet}/{d.kpisTotal} KPIs met</div>}
         {d.summary&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginBottom:6}}>{d.summary.substring(0,200)}</div>}
-        {d.userNote&&<div style={{padding:"6px 10px",background:K.bg,borderRadius:6,marginTop:4}}>
+        {d.userNote&&<div style={{padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,marginTop:4}}>
           <div style={{fontSize:10,color:ct.color,fontFamily:fm,letterSpacing:1,fontWeight:600,marginBottom:2}}>MY TAKE</div>
           <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.userNote}</div></div>}
       </div>}
       {/* ── THESIS SNAPSHOT CARD ── */}
       {d.cardType==="thesis_snapshot"&&<div>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.5,marginBottom:8}}>{d.isNew?"Initial thesis written":"Thesis updated to v"+d.version}</div>
-        {d.core&&<div style={{padding:"8px 12px",background:K.bg,borderRadius:6,borderLeft:"2px solid "+ct.color,fontSize:12,color:K.mid,lineHeight:1.5,fontStyle:"italic",marginBottom:6}}>{"“"}{d.core}...{"”"}</div>}
+        {d.core&&<div style={{padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:6,borderLeft:"2px solid "+ct.color,fontSize:12,color:K.mid,lineHeight:1.5,fontStyle:"italic",marginBottom:6}}>{"“"}{d.core}...{"”"}</div>}
         <div style={{display:"flex",gap:3}}>
           {[{k:"core",c:K.acc,l:"Core"},{k:"hasMoat",c:K.grn,l:"Moat"},{k:"hasRisks",c:K.amb,l:"Risks"},{k:"hasSell",c:K.red,l:"Sell"}].map(function(s){var done=s.k==="core"?d.sectionsFilled>=1:d[s.k];
-            return<span key={s.k} style={{fontSize:10,padding:"2px 6px",borderRadius:3,background:done?s.c+"15":"transparent",color:done?s.c:K.dim,fontFamily:fm,border:"1px solid "+(done?s.c+"25":K.bdr)}}>{done?"●":"○"} {s.l}</span>})}</div>
+            return<span key={s.k} style={{fontSize:10,padding:"2px 6px",borderRadius:_isBm?0:3,background:done?s.c+"15":"transparent",color:done?s.c:K.dim,fontFamily:fm,border:"1px solid "+(done?s.c+"25":K.bdr)}}>{done?"●":"○"} {s.l}</span>})}</div>
       </div>}
       {/* ── CONVICTION SHIFT CARD ── */}
       {d.cardType==="conviction_shift"&&<div>
@@ -2949,7 +2957,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <span style={{fontSize:14,color:K.dim}}>{"→"}</span>
             <span style={{fontSize:22,fontWeight:800,color:d.newConviction>=7?K.grn:d.newConviction>=4?K.amb:K.red,fontFamily:fm}}>{d.newConviction}</span>
             <span style={{fontSize:12,fontWeight:600,color:d.delta>0?K.grn:K.red,fontFamily:fm}}>{d.delta>0?"+":""}{d.delta}</span></div>
-          {d.action&&d.action!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb,background:(d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb)+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm,textTransform:"uppercase"}}>{d.action}</span>}</div>
+          {d.action&&d.action!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb,background:(d.action==="add"?K.grn:d.action==="sell"?K.red:K.amb)+"15",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm,textTransform:"uppercase"}}>{d.action}</span>}</div>
         {d.note&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{d.note}</div>}
       </div>}
       {/* ── LEGACY/NOTE CARD ── */}
@@ -2971,7 +2979,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="book" size={14} color={K.dim}/>Research Journal</div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>{scored.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{rights}/{scored.length} right ({Math.round(rights/scored.length*100)}%)</span>}
         <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){setAdding(!adding)}}>+ Log Decision</button></div></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:12,padding:"20px 24px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:12}}>
         <div style={{fontSize:12,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION</div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
           <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
@@ -2979,27 +2987,27 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/>
           <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1-3yr"},{v:"long",l:"3-10yr"}]} K={K}/></div>
         <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,color:K.txt,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why am I making this decision? *</label>
-          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
         <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
-          <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would invalidate this" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
+          <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would invalidate this" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
         {/* Auto-context preview */}
         <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-          {c.conviction>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>Conviction: {c.conviction}/10</span>}
-          {c.position&&c.position.currentPrice>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>Price: ${c.position.currentPrice}</span>}
-          {c.kpis.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:4,border:"1px solid "+K.bdr}}>{c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length}/{c.kpis.filter(function(k){return k.lastResult}).length} KPIs met</span>}
+          {c.conviction>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>Conviction: {c.conviction}/10</span>}
+          {c.position&&c.position.currentPrice>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>Price: ${c.position.currentPrice}</span>}
+          {c.kpis.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>{c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length}/{c.kpis.filter(function(k){return k.lastResult}).length} KPIs met</span>}
         </div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.3})} onClick={addDecision}>Save to Journal</button></div></div>}
       {/* Journal entries — beautiful cards */}
-      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:24,textAlign:"center"}}><div style={{fontSize:36,marginBottom:8}}>{"📖"}</div><div style={{fontSize:14,color:K.dim,marginBottom:4}}>Your research journal is empty</div><div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Entries appear automatically as you check earnings, update your thesis, and adjust conviction. You can also log decisions manually.</div></div>}
+      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:24,textAlign:"center"}}><div style={{fontSize:36,marginBottom:8}}>{"📖"}</div><div style={{fontSize:14,color:K.dim,marginBottom:4}}>Your research journal is empty</div><div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Entries appear automatically as you check earnings, update your thesis, and adjust conviction. You can also log decisions manually.</div></div>}
       {decisions.length>0&&<div>
         {decisions.slice(0,15).map(function(d){return<div key={d.id}>
           <JournalCard entry={d}/>
           {/* Outcome scoring for decisions */}
           {d.cardType==="decision"&&!d.outcome&&<div style={{display:"flex",gap:6,padding:"0 18px 10px",marginTop:-6}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:"24px"}}>Score:</span>
-            <button style={{fontSize:11,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"right")}}>Right</button>
-            <button style={{fontSize:11,color:K.red,background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"wrong")}}>Wrong</button>
-            <button style={{fontSize:11,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"mixed")}}>Mixed</button></div>}
+            <button style={{fontSize:11,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"right")}}>Right</button>
+            <button style={{fontSize:11,color:K.red,background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"wrong")}}>Wrong</button>
+            <button style={{fontSize:11,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"mixed")}}>Mixed</button></div>}
         </div>})}</div>}
     </div>}
 
@@ -3008,15 +3016,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _filings=useState(null),filings=_filings[0],setFilings=_filings[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     useEffect(function(){setLd(true);fetchFilings(c.ticker).then(function(r){setFilings(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}><div style={S.sec}>SEC Filings</div><div style={{fontSize:12,color:K.dim}}>Loading...</div></div>;
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:20,marginBottom:20}}><div style={S.sec}>SEC Filings</div><div style={{fontSize:12,color:K.dim}}>Loading...</div></div>;
     if(!filings||!filings.length)return null;
     var formColors={"10-K":K.blue,"10-Q":K.acc,"8-K":K.amb,"4":K.grn,SC:K.dim};
     return<div style={{marginBottom:20}}>
       <div style={Object.assign({},S.sec,{marginBottom:12})}>SEC Filings</div>
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
         {filings.slice(0,8).map(function(f,i){var form=(f.form||"").toUpperCase();var color=formColors[form]||K.dim;
           return<a key={i} href={f.filingUrl||f.reportUrl||"#"} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<7?"1px solid "+K.bdr:"none",textDecoration:"none"}}>
-            <span style={{background:color+"15",color:color,fontFamily:fm,fontWeight:600,fontSize:11,padding:"3px 8px",borderRadius:4,border:"1px solid "+color+"30",minWidth:36,textAlign:"center"}}>{form}</span>
+            <span style={{background:color+"15",color:color,fontFamily:fm,fontWeight:600,fontSize:11,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+color+"30",minWidth:36,textAlign:"center"}}>{form}</span>
             <span style={{flex:1,fontSize:12,color:K.mid,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.symbol} — filed {f.filedDate||f.acceptedDate||""}</span>
             <span style={{fontSize:12,color:K.blue}}>{"↗"}</span></a>})}</div></div>}
 
@@ -3032,15 +3040,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var statusLabels={intact:"Thesis Intact",weakened:"Partially Weakened",broken:"Thesis Broken"};
     return<div style={{marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="target" size={14} color={K.dim}/>Thesis Scorecard</div><button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){setAdding(!adding)}}>+ Review</button></div>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+      {adding&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
         <div style={{fontSize:13,color:K.mid,marginBottom:12}}>Is your original thesis still intact?</div>
-        <div style={{display:"flex",gap:8,marginBottom:12}}>{["intact","weakened","broken"].map(function(s){return<button key={s} onClick={function(){setF(function(p2){return Object.assign({},p2,{status:s})})}} style={{flex:1,padding:"10px",borderRadius:8,fontSize:13,fontWeight:f.status===s?600:400,cursor:"pointer",fontFamily:fm,background:f.status===s?statusColors[s]+"15":"transparent",border:"1px solid "+(f.status===s?statusColors[s]+"50":K.bdr),color:f.status===s?statusColors[s]:K.dim}}>{statusLabels[s]}</button>})}</div>
-        <div style={{marginBottom:12}}><textarea value={f.note} onChange={function(e){setF(function(p2){return Object.assign({},p2,{note:e.target.value})})}} rows={2} placeholder="What changed? What would break this thesis?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"10px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical"}}/></div>
+        <div style={{display:"flex",gap:8,marginBottom:12}}>{["intact","weakened","broken"].map(function(s){return<button key={s} onClick={function(){setF(function(p2){return Object.assign({},p2,{status:s})})}} style={{flex:1,padding:"10px",borderRadius:_isBm?0:8,fontSize:13,fontWeight:f.status===s?600:400,cursor:"pointer",fontFamily:fm,background:f.status===s?statusColors[s]+"15":"transparent",border:"1px solid "+(f.status===s?statusColors[s]+"50":K.bdr),color:f.status===s?statusColors[s]:K.dim}}>{statusLabels[s]}</button>})}</div>
+        <div style={{marginBottom:12}}><textarea value={f.note} onChange={function(e){setF(function(p2){return Object.assign({},p2,{note:e.target.value})})}} rows={2} placeholder="What changed? What would break this thesis?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical"}}/></div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={S.btnP} onClick={addReview}>Save Review</button></div></div>}
-      {reviews.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:20,textAlign:"center",fontSize:13,color:K.dim}}>Periodically review: is your thesis still intact?</div>}
-      {reviews.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+      {reviews.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:20,textAlign:"center",fontSize:13,color:K.dim}}>Periodically review: is your thesis still intact?</div>}
+      {reviews.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
         {reviews.slice(0,6).map(function(r,i){return<div key={r.id} style={{padding:"10px 16px",borderBottom:i<Math.min(reviews.length,6)-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"flex-start",gap:10}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:statusColors[r.status]||K.dim,marginTop:5,flexShrink:0}}/>
+          <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:statusColors[r.status]||K.dim,marginTop:5,flexShrink:0}}/>
           <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:statusColors[r.status]||K.mid,fontFamily:fm}}>{statusLabels[r.status]||r.status}</div>
             {r.note&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,marginTop:2}}>{r.note}</div>}</div>
           <span style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{new Date(r.date).toLocaleDateString()}</span></div>})}</div>}</div>}
@@ -3059,11 +3067,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"irentry"})}}>+ IR Link</button>
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button></div></div>
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:12,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
-        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
-      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:28,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"doc"})}}>Create note</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
+        <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
+        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
+      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:28,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"doc"})}}>Create note</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
-        return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
+        return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
             <IC name="file" size={12} color={K.dim}/>
             <span style={{fontSize:14,fontWeight:500,color:K.txt,flex:1}}>{d.title}</span>
@@ -3084,19 +3092,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var selectedEntry=selQ&&years[selYear]?years[selYear][selQ]:null;
     return<div style={{marginBottom:20}}>
       <div style={S.sec}>Earnings History</div>
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px"}}>
         <div style={{display:"flex",gap:6,marginBottom:12}}>
-          {sortedYears.map(function(yr){return<button key={yr} onClick={function(){setSelYear(yr);setSelQ(null)}} style={{background:selYear===yr?K.acc+"20":"transparent",border:"1px solid "+(selYear===yr?K.acc+"50":K.bdr),borderRadius:6,padding:"5px 14px",fontSize:13,fontWeight:600,color:selYear===yr?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{yr}</button>})}</div>
+          {sortedYears.map(function(yr){return<button key={yr} onClick={function(){setSelYear(yr);setSelQ(null)}} style={{background:selYear===yr?K.acc+"20":"transparent",border:"1px solid "+(selYear===yr?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 14px",fontSize:13,fontWeight:600,color:selYear===yr?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{yr}</button>})}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8}}>
           {quarters.map(function(qt){var entry=years[selYear]?years[selYear][qt]:null;
-            return<div key={qt} onClick={function(){if(entry)setSelQ(selQ===qt?null:qt)}} style={{background:entry?(selQ===qt?K.acc+"15":K.bg):K.bg,border:"1px solid "+(entry?(selQ===qt?K.acc+"40":K.bdr):K.bdr),borderRadius:8,padding:"10px 12px",cursor:entry?"pointer":"default",opacity:entry?1:.4,textAlign:"center",transition:"all .2s"}}>
+            return<div key={qt} onClick={function(){if(entry)setSelQ(selQ===qt?null:qt)}} style={{background:entry?(selQ===qt?K.acc+"15":K.bg):K.bg,border:"1px solid "+(entry?(selQ===qt?K.acc+"40":K.bdr):K.bdr),borderRadius:_isBm?0:8,padding:"10px 12px",cursor:entry?"pointer":"default",opacity:entry?1:.4,textAlign:"center",transition:"all .2s"}}>
               <div style={{fontSize:13,fontWeight:600,color:entry?K.txt:K.dim,fontFamily:fm}}>{qt}</div>
               {entry&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>&#x2713; Tracked</div>}
               {!entry&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>&mdash;</div>}</div>})}</div>
         {selectedEntry&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid "+K.bdr}}>
           <div style={{fontSize:14,color:K.mid,lineHeight:1.6,marginBottom:8}}>{selectedEntry.summary}</div>
           {selectedEntry.results&&selectedEntry.results.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
-            {selectedEntry.results.map(function(r,i){return<div key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,padding:"6px 12px"}}>
+            {selectedEntry.results.map(function(r,i){return<div key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 12px"}}>
               <div style={{fontSize:11,color:K.dim}}>{METRIC_MAP[r.kpi_name]?METRIC_MAP[r.kpi_name].label:r.kpi_name}</div>
               <div style={{fontSize:14,fontWeight:600,color:r.status==="met"?K.grn:r.status==="missed"?K.red:K.mid,fontFamily:fm}}>{r.actual_value!=null?r.actual_value:"—"}</div></div>})}</div>}
           {selectedEntry.sourceUrl&&<a href={selectedEntry.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:K.blue,textDecoration:"none"}}>{selectedEntry.sourceLabel||"Source"} &#x2197;</a>}
@@ -3108,7 +3116,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function EarningsReportCard(p){var c=p.company;var snap=c.financialSnapshot||{};var news=c.latestNews||[];
     var hasSnap=Object.keys(snap).length>0;var hasSummary=!!c.earningSummary;var hasNews=news.length>0;var hasHistory=c.earningsHistory&&c.earningsHistory.length>0;
     if(!hasSnap&&!hasSummary&&!hasHistory)return null;
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:20}}>
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden",marginBottom:20}}>
       <div style={{padding:"16px 24px",borderBottom:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>Earnings Report {hasHistory?c.earningsHistory[0].quarter:""}</div>
           {c.lastChecked&&<div style={{fontSize:11,color:K.dim,marginTop:2}}>Updated {fT(c.lastChecked)}</div>}</div>
@@ -3145,8 +3153,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {g.items.map(function(k){var item=snap[k];
                 var isGood=item.positive!=null?item.positive:item.beat!=null?item.beat:null;
                 var valColor=isGood===true?K.grn:isGood===false?K.red:K.txt;
-                return<div key={k} style={{background:K.bg,borderRadius:8,padding:"9px 11px",position:"relative",overflow:"hidden"}}>
-                  {isGood!=null&&<div style={{position:"absolute",top:0,left:0,bottom:0,width:2,borderRadius:"2px 0 0 2px",background:isGood?K.grn:K.red}}/>}
+                return<div key={k} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"9px 11px",position:"relative",overflow:"hidden"}}>
+                  {isGood!=null&&<div style={{position:"absolute",top:0,left:0,bottom:0,width:2,borderRadius:_isBm?"0":"2px 0 0 2px",background:isGood?K.grn:K.red}}/>}
                   <div style={{fontSize:9,color:K.dim,marginBottom:3,fontFamily:fm,lineHeight:1.2}}>{item.label}</div>
                   <div style={{fontSize:14,fontWeight:700,color:valColor,fontFamily:fm,lineHeight:1}}>{item.value}</div>
                   {item.detail&&<div style={{fontSize:9,color:K.dim,marginTop:2}}>{item.detail}</div>}
@@ -3293,11 +3301,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Price Chart with Entry Points + Conviction Markers ──
   function PriceChart(p){var c=p.company;
-    if(!isPro){return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}>
+    if(!isPro){return<div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:20,marginBottom:20}}>
       <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
-      <div style={{background:K.bg,borderRadius:8,padding:"28px 20px",textAlign:"center"}}>
+      <div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"28px 20px",textAlign:"center"}}>
         <div style={{fontSize:14,color:K.mid,marginBottom:8}}>Price charts with entry points, conviction markers & earnings dates</div>
-        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("charts")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 16px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Upgrade to Unlock</button>
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("charts")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 16px",borderRadius:_isBm?0:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Upgrade to Unlock</button>
       </div></div>}
     var _pts=useState(null),pts=_pts[0],setPts=_pts[1];
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
@@ -3305,9 +3313,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     useEffect(function(){setLd(true);
       fetchHistoricalPrice(c.ticker,range).then(function(r){setPts(r);setLd(false)}).catch(function(){setLd(false)})},[c.ticker,range]);
-    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:20,marginBottom:20}}>
+    if(ld)return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:20,marginBottom:20}}>
       <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
-      <div className="ta-skel" style={{height:140,background:K.bdr,borderRadius:8}}/></div>;
+      <div className="ta-skel" style={{height:140,background:K.bdr,borderRadius:_isBm?0:8}}/></div>;
     if(!pts||pts.length<5)return null;
     var cW=Math.max(600,pts.length>200?700:pts.length*3.5);var cH=160;var pad={l:0,r:0,t:10,b:20};
     var prices=pts.map(function(p2){return p2.close});
@@ -3334,13 +3342,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var hovPt=hov!==null?pts[hov]:null;var lastPt=pts[pts.length-1];var firstPt=pts[0];
     var totalRet=((lastPt.close-firstPt.close)/firstPt.close*100);
     var ranges=["6M","1Y","2Y","5Y"];
-    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"14px":"16px 20px",marginBottom:20}}>
+    return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:isMobile?"14px":"16px 20px",marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Price History</div>
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           {hovPt&&<span style={{fontSize:12,fontFamily:fm,color:K.txt,marginRight:8}}>{hovPt.date} <strong>${hovPt.close.toFixed(2)}</strong></span>}
           <span style={{fontSize:11,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm,marginRight:8}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}% ({range})</span>
-          {ranges.map(function(r){return<button key={r} onClick={function(){setRange(r)}} style={{padding:"3px 8px",fontSize:11,fontFamily:fm,background:range===r?K.acc+"18":"transparent",color:range===r?K.acc:K.dim,border:"1px solid "+(range===r?K.acc+"30":"transparent"),borderRadius:4,cursor:"pointer"}}>{r}</button>})}</div></div>
+          {ranges.map(function(r){return<button key={r} onClick={function(){setRange(r)}} style={{padding:"3px 8px",fontSize:11,fontFamily:fm,background:range===r?K.acc+"18":"transparent",color:range===r?K.acc:K.dim,border:"1px solid "+(range===r?K.acc+"30":"transparent"),borderRadius:_isBm?0:4,cursor:"pointer"}}>{r}</button>})}</div></div>
       <div style={{overflowX:"auto"}}>
         <svg width={cW} height={cH} style={{display:"block"}} onMouseLeave={function(){setHov(null)}}>
           <defs><linearGradient id={"pg-"+c.id} x1="0" y1="0" x2="0" y2="1">
@@ -3371,7 +3379,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </svg></div>
       {/* Legend */}
       {(entries.length>0||convMarks.length>0)&&<div style={{display:"flex",gap:14,marginTop:8,flexWrap:"wrap"}}>
-        {entries.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:"50%",background:K.grn}}/> Buy/Add <span style={{width:8,height:8,borderRadius:"50%",background:K.red}}/> Sell/Trim</span>}
+        {entries.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.grn}}/> Buy/Add <span style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.red}}/> Sell/Trim</span>}
         {convMarks.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:2,background:K.amb}}/> Conviction updates</span>}
         {earnDates.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:8,color:K.amb,fontWeight:700}}>E</span> Earnings</span>}</div>}
     </div>}
@@ -3397,7 +3405,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Moat Analysis</span></div>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}</div></div></div>
       {ld?<div style={{padding:"32px 0"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        {[0,1,2,3].map(function(i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:22}}>
+        {[0,1,2,3].map(function(i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:22}}>
           <div className="ta-skel" style={{height:14,width:"60%",background:K.bdr,marginBottom:12}}/>
           <div className="ta-skel" style={{height:6,background:K.bdr,marginBottom:8}}/>
           <div className="ta-skel" style={{height:10,width:"40%",background:K.bdr}}/></div>})}</div>
@@ -3405,7 +3413,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       !moat?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>Insufficient financial data to analyze moat</div><div style={{fontSize:12,color:K.dim}}>Need at least 2 years of financial statements from SEC EDGAR.</div></div>:
       <div>
       {/* Composite Score */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"28px 32px",marginBottom:24,display:"flex",alignItems:"center",gap:32}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px",marginBottom:24,display:"flex",alignItems:"center",gap:32}}>
         <div style={{width:100,height:100,borderRadius:"50%",border:"4px solid "+cColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <div style={{fontSize:36,fontWeight:700,color:cColor,fontFamily:fm,lineHeight:1}}>{adjComposite}</div>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>/10</div></div>
@@ -3435,17 +3443,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {classified.length>0&&<button onClick={function(){setSubPage(null);setDetailTab("dossier");showToast(c.ticker+" moat classified — "+classified.length+" type"+(classified.length>1?"s":"")+" identified","info",3000)}} style={Object.assign({},S.btnP,{padding:"6px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="shield" size={11} color={"#fff"}/>Done — Back to Dossier</button>}</div>
           {/* Morningstar Reference + Moat Trend */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MORNINGSTAR RATING</div>
-              <select value={c.morningstarMoat||""} onChange={function(e){upd(c.id,{morningstarMoat:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+              <select value={c.morningstarMoat||""} onChange={function(e){upd(c.id,{morningstarMoat:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option><option value="Wide">★ Wide Moat</option><option value="Narrow">★ Narrow Moat</option><option value="None">No Moat</option><option value="Not Rated">Not Rated</option></select></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MOAT TREND</div>
-              <select value={c.moatTrend||""} onChange={function(e){upd(c.id,{moatTrend:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+              <select value={c.moatTrend||""} onChange={function(e){upd(c.id,{moatTrend:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option><option value="Strengthening">▲ Strengthening</option><option value="Stable">─ Stable</option><option value="Eroding">▼ Eroding</option></select></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}} title="Business model structure affects how leverage should be interpreted. A monopoly can safely carry debt that would destroy a commodity business.">
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}} title="Business model structure affects how leverage should be interpreted. A monopoly can safely carry debt that would destroy a commodity business.">
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>BUSINESS MODEL</div>
-              <select value={c.businessModelType||""} onChange={function(e){upd(c.id,{businessModelType:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.businessModelType==="monopoly"?K.grn:c.businessModelType==="oligopoly"?K.grn:c.businessModelType==="commodity"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+              <select value={c.businessModelType||""} onChange={function(e){upd(c.id,{businessModelType:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:c.businessModelType==="monopoly"?K.grn:c.businessModelType==="oligopoly"?K.grn:c.businessModelType==="commodity"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option>
                 <option value="monopoly">👑 Monopoly</option>
                 <option value="oligopoly">🏰 Oligopoly</option>
@@ -3455,7 +3463,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               </select>
               <div style={{fontSize:9,color:K.dim,fontFamily:fb,marginTop:5,lineHeight:1.3}}>Adjusts leverage tolerance in Analytics scoring</div>
             </div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR vs M★</div>
               <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginBottom:6,lineHeight:1.4}}>Your moat type count vs M★ analyst opinion</div>
               {(function(){var yourWidth=classified.length>=3?"Wide":classified.length>=1?"Narrow":"None";var mstar=c.morningstarMoat||"";
@@ -3468,7 +3476,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* Active moat types */}
           {classified.length>0&&<div style={{marginBottom:16}}>
             {classified.map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
-              return<div key={t.id} style={{background:K.card,border:"1px solid "+t.color+"40",borderLeft:"4px solid "+t.color,borderRadius:12,padding:"16px 20px",marginBottom:10}}>
+              return<div key={t.id} style={{background:K.card,border:"1px solid "+t.color+"40",borderLeft:"4px solid "+t.color,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                   <IC name={t.icon} size={16} color={t.color}/>
                   <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt}}>{t.label}</div>
@@ -3478,25 +3486,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                   <span style={{fontSize:11,color:K.dim,fontFamily:fm,width:70}}>STRENGTH</span>
                   <div style={{display:"flex",gap:3}}>
-                    {[1,2,3,4,5].map(function(v){return<button key={v} onClick={function(){setStrength(t.id,v)}} style={{width:28,height:24,borderRadius:4,border:"1px solid "+(v<=d.strength?t.color+"60":K.bdr),background:v<=d.strength?t.color+"20":"transparent",color:v<=d.strength?t.color:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
+                    {[1,2,3,4,5].map(function(v){return<button key={v} onClick={function(){setStrength(t.id,v)}} style={{width:28,height:24,borderRadius:_isBm?0:4,border:"1px solid "+(v<=d.strength?t.color+"60":K.bdr),background:v<=d.strength?t.color+"20":"transparent",color:v<=d.strength?t.color:K.dim,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{v}</button>})}</div>
                   <span style={{fontSize:11,color:t.color,fontFamily:fm,marginLeft:4}}>{d.strength>=5?"Dominant":d.strength>=4?"Strong":d.strength>=3?"Moderate":d.strength>=2?"Weak":"Fragile"}</span></div>
                 {/* Note */}
-                <textarea value={d.note||""} onChange={function(e){setNote(t.id,e.target.value)}} placeholder={"Why does "+c.ticker+" have "+t.label.toLowerCase()+"? Be specific..."} rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+                <textarea value={d.note||""} onChange={function(e){setNote(t.id,e.target.value)}} placeholder={"Why does "+c.ticker+" have "+t.label.toLowerCase()+"? Be specific..."} rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
                 {sug&&sug.reasons.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:8}}>
-                  {sug.reasons.map(function(r,ri){return<span key={ri} style={{fontSize:10,color:t.color,background:t.color+"10",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{r}</span>})}</div>}
+                  {sug.reasons.map(function(r,ri){return<span key={ri} style={{fontSize:10,color:t.color,background:t.color+"10",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>{r}</span>})}</div>}
               </div>})}</div>}
           {/* Suggestions + unclassified */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
             {classified.length===0&&<div style={{fontSize:13,color:K.mid,marginBottom:12,lineHeight:1.6}}>What type of competitive advantage does {c.ticker} have? Select the moat sources that apply. {hasSuggestions?"We've highlighted likely matches based on "+c.ticker+"'s sector and financials.":""}</div>}
             {classified.length>0&&<div style={{fontSize:12,color:K.dim,marginBottom:10}}>Add more moat sources:</div>}
             <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {unclassified.map(function(t){var sug=suggestions.find(function(s){return s.id===t.id});var isSuggested=!!sug;
-                return<button key={t.id} onClick={function(){toggleType(t.id)}} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",borderRadius:8,cursor:"pointer",textAlign:"left",background:isSuggested?t.color+"08":"transparent",border:"1px solid "+(isSuggested?t.color+"35":K.bdr),transition:"all .15s"}}>
-                  <div style={{width:28,height:28,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",background:t.color+"15",flexShrink:0,marginTop:1}}>
+                return<button key={t.id} onClick={function(){toggleType(t.id)}} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",borderRadius:_isBm?0:8,cursor:"pointer",textAlign:"left",background:isSuggested?t.color+"08":"transparent",border:"1px solid "+(isSuggested?t.color+"35":K.bdr),transition:"all .15s"}}>
+                  <div style={{width:28,height:28,borderRadius:_isBm?0:6,display:"flex",alignItems:"center",justifyContent:"center",background:t.color+"15",flexShrink:0,marginTop:1}}>
                     <IC name={t.icon} size={14} color={t.color}/></div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:13,fontWeight:600,color:isSuggested?K.txt:K.mid,display:"flex",alignItems:"center",gap:5}}>{t.label}
-                      {isSuggested&&<span style={{fontSize:8,fontWeight:700,color:t.color,background:t.color+"15",padding:"1px 5px",borderRadius:3,fontFamily:fm}}>LIKELY</span>}</div>
+                      {isSuggested&&<span style={{fontSize:8,fontWeight:700,color:t.color,background:t.color+"15",padding:"1px 5px",borderRadius:_isBm?0:3,fontFamily:fm}}>LIKELY</span>}</div>
                     <div style={{fontSize:11,color:K.dim,lineHeight:1.4,marginTop:2}}>{t.desc.split(".")[0]+"."}</div>
                     {isSuggested&&<div style={{fontSize:10,color:t.color,marginTop:3,fontFamily:fm}}>{sug.reasons[0]}</div>}
                   </div></button>})}</div></div>
@@ -3532,7 +3540,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
         return<div style={{marginBottom:24}}>
           <div style={S.sec}><IC name="shield" size={14} color={K.dim}/>Pricing Power Assessment</div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"22px 24px"}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"22px 24px"}}>
             {/* Header with scores */}
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
@@ -3543,7 +3551,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {finalScore!=null&&<div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{fontSize:11,color:K.acc,fontFamily:fm,letterSpacing:1}}>YOUR SCORE</div>
                 <div style={{fontSize:22,fontWeight:700,color:scoreColor,fontFamily:fm}}>{finalScore}<span style={{fontSize:11,fontWeight:400,color:K.dim}}>/10</span></div>
-                {isOverridden&&<span style={{fontSize:8,fontWeight:700,color:K.acc,background:K.acc+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>OVERRIDE</span>}
+                {isOverridden&&<span style={{fontSize:8,fontWeight:700,color:K.acc,background:K.acc+"15",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>OVERRIDE</span>}
               </div>}
             </div>
             {/* Guided questions */}
@@ -3555,14 +3563,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {["yes","partial","no"].map(function(opt){
                     var active=val===opt;var clr=opt==="yes"?K.grn:opt==="partial"?K.amb:K.red;
                     return<button key={opt} onClick={function(){setAnswer(q.id,active?"":opt)}}
-                      style={{padding:"5px 14px",borderRadius:6,border:"1px solid "+(active?clr+"60":K.bdr),
+                      style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+(active?clr+"60":K.bdr),
                         background:active?clr+"15":"transparent",color:active?clr:K.dim,
                         fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,textTransform:"capitalize"}}>{opt}</button>})}
                   <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:8,fontStyle:"italic"}}>{q.tip}</span>
                 </div>
               </div>})}
             {/* Suggested + final score */}
-            {answered>=3&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginTop:6}}>
+            {answered>=3&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginTop:6}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1}}>SUGGESTED SCORE</div>
                 <div style={{fontSize:16,fontWeight:700,color:suggested>=8?K.grn:suggested>=6?K.amb:K.red,fontFamily:fm}}>{suggested}/10</div>
@@ -3574,7 +3582,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {[1,2,3,4,5,6,7,8,9,10].map(function(v){
                     var active=finalScore===v;var clr=v>=8?K.grn:v>=6?K.amb:v>=4?"#F59E0B":K.red;
                     return<button key={v} onClick={function(){setScore(v)}}
-                      style={{width:28,height:26,borderRadius:4,border:"1px solid "+(active?clr+"80":v===suggested?K.acc+"40":K.bdr),
+                      style={{width:28,height:26,borderRadius:_isBm?0:4,border:"1px solid "+(active?clr+"80":v===suggested?K.acc+"40":K.bdr),
                         background:active?clr+"20":v===suggested?K.acc+"08":"transparent",
                         color:active?clr:v===suggested?K.acc:K.dim,
                         fontSize:12,fontWeight:active?700:500,cursor:"pointer",fontFamily:fm}}>{v}</button>})}
@@ -3585,7 +3593,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {/* Note */}
             <textarea value={pp.note||""} onChange={function(e){setNote(e.target.value)}}
               placeholder={"Why does "+c.ticker+" have "+(finalScore>=7?"strong":"weak")+" pricing power? What’s the structural reason?"}
-              rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5,marginTop:12}}/>
+              rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5,marginTop:12}}/>
           </div>
         </div>}()}
       {/* Individual Metrics */}
@@ -3594,24 +3602,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var ppOverride=m.id==="grossMargin"&&c.pricingPower&&c.pricingPower.score!=null;
           var displayScore=ppOverride?c.pricingPower.score:m.score;
           var barColor=displayScore>=8?K.grn:displayScore>=6?K.amb:K.red;
-          return<div key={m.id} style={{background:K.card,border:"1px solid "+(ppOverride?K.acc+"40":K.bdr),borderRadius:12,padding:"18px 22px"}}>
+          return<div key={m.id} style={{background:K.card,border:"1px solid "+(ppOverride?K.acc+"40":K.bdr),borderRadius:_isBm?0:12,padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
               <IC name={m.icon} size={16} color={K.dim}/>
               <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{ppOverride?"Pricing Power (Owner)":m.name}</div>
                 {ppOverride&&<div style={{fontSize:10,color:K.acc,fontFamily:fm}}>Data score: {m.score}/10 · Overridden by your assessment</div>}</div>
               <div style={{fontSize:22,fontWeight:700,color:barColor,fontFamily:fm}}>{displayScore}</div></div>
             {/* Score bar */}
-            <div style={{height:6,borderRadius:3,background:K.bdr,marginBottom:8,overflow:"hidden"}}>
-              <div style={{height:"100%",width:displayScore*10+"%",borderRadius:3,background:barColor,transition:"width .3s"}}/></div>
+            <div style={{height:6,borderRadius:_isBm?0:3,background:K.bdr,marginBottom:8,overflow:"hidden"}}>
+              <div style={{height:"100%",width:displayScore*10+"%",borderRadius:_isBm?0:3,background:barColor,transition:"width .3s"}}/></div>
             <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{m.value}</div>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>{m.detail}</div>
             {/* Mini sparkline */}
             {m.trend&&m.trend.length>=2&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:24,marginTop:4}}>
               {m.trend.map(function(v,ti){var mx=Math.max.apply(null,m.trend);var mn=Math.min.apply(null,m.trend);var range=mx-mn||1;var h=Math.max(3,((v-mn)/range)*22);
-                return<div key={ti} style={{flex:1,height:h,borderRadius:2,background:barColor+"60"}}/>})}</div>}
+                return<div key={ti} style={{flex:1,height:h,borderRadius:_isBm?0:2,background:barColor+"60"}}/>})}</div>}
             <div style={{fontSize:11,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
       {/* Munger quote */}
-      <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
+      <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"“"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"”"}</div>
         <div style={{fontSize:12,color:K.dim,marginTop:6,fontFamily:fm}}>{"—"} Warren Buffett (Munger's partner)</div></div>
       </div>}</div>}
@@ -3683,7 +3691,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:14,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div></div></div>
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:"48px 32px",textAlign:"center",marginTop:16}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"48px 32px",textAlign:"center",marginTop:16}}>
         <div style={{fontSize:36,marginBottom:16}}>📊</div>
         <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>10-Year Financial Statements</div>
         <div style={{fontSize:14,color:K.mid,lineHeight:1.7,maxWidth:420,margin:"0 auto 24px"}}>Income statements, balance sheets, cash flow — annual and quarterly. Powered by FMP with SEC EDGAR fallback.</div>
@@ -3727,19 +3735,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button onClick={function(){setSubPage(null)}} style={{background:"none",border:"none",color:K.acc,fontSize:14,cursor:"pointer",fontFamily:fm,padding:0}}>{"←"} Back</button>
         <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
         <div style={{flex:1}}><div style={{fontSize:20,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker} <span style={{fontWeight:300,color:K.mid,fontSize:15}}>Financial Statements</span></div>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}{data&&data.source?<span style={{marginLeft:8,fontSize:10,padding:"2px 6px",borderRadius:3,background:data.source==="sec-edgar"?K.grn+"15":K.acc+"15",color:data.source==="sec-edgar"?K.grn:K.acc}}>{"Source: "+(data.source==="sec-edgar"?"SEC EDGAR":"FMP")}</span>:""}</div></div>
-        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:12,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{c.name} · {c.sector}{data&&data.source?<span style={{marginLeft:8,fontSize:10,padding:"2px 6px",borderRadius:_isBm?0:3,background:data.source==="sec-edgar"?K.grn+"15":K.acc+"15",color:data.source==="sec-edgar"?K.grn:K.acc}}>{"Source: "+(data.source==="sec-edgar"?"SEC EDGAR":"FMP")}</span>:""}</div></div>
+        <div style={{display:"flex",gap:4}}>{["annual","quarter"].map(function(v){return<button key={v} onClick={function(){setPer(v)}} style={{padding:"6px 16px",fontSize:12,fontFamily:fm,fontWeight:per===v?600:400,background:per===v?K.acc+"20":"transparent",color:per===v?K.acc:K.dim,border:"1px solid "+(per===v?K.acc+"40":K.bdr),borderRadius:_isBm?0:6,cursor:"pointer"}}>{v==="annual"?"Annual":"Quarterly"}</button>})}
           <button onClick={exportFinancialsPDF} disabled={!data||ld} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,opacity:data&&!ld?1:.4,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>PDF</button></div></div>
       {/* Statement Tabs */}
       {isMobile?<div style={{marginBottom:16}}>
         <div style={{position:"relative"}}>
-          <select value={tab} onChange={function(e){setTab(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
+          <select value={tab} onChange={function(e){setTab(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
             {STMT_TABS.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
           <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
       </div>:<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>}
-      {ld?<div style={{padding:"32px 0"}}><div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:24}}>
+      {ld?<div style={{padding:"32px 0"}}><div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:24}}>
         {[0,1,2,3,4,5].map(function(i){return<div key={i} style={{display:"flex",gap:12,marginBottom:12}}>
           <div className="ta-skel" style={{height:12,flex:1,background:K.bdr}}/>
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
@@ -3747,16 +3755,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/></div>})}</div>
         <div style={{textAlign:"center",fontSize:12,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from FMP...</div></div>:
       rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:12,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available.<br/>
-        {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:6,color:K.amb,fontSize:11,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
+        {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:6,color:K.amb,fontSize:11,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
-        <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
+        <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:_isBm?0:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
       <div>
       {/* Interactive multi-metric chart */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
           {chartItems.map(function(ci,ci2){var isOn=chartSel.indexOf(ci.k)>=0;var col=isOn?CHART_COLORS[chartSel.indexOf(ci.k)%CHART_COLORS.length]:K.dim;
-            return<button key={ci.k} onClick={function(){toggleChartMetric(ci.k)}} style={{padding:"3px 10px",fontSize:11,fontFamily:fm,background:isOn?col+"18":"transparent",color:isOn?col:K.dim,border:"1px solid "+(isOn?col+"40":"transparent"),borderRadius:5,cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",fontWeight:isOn?600:400}}>
-              {isOn&&<span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:col,marginRight:4}}/>}{ci.l}</button>})}</div>
+            return<button key={ci.k} onClick={function(){toggleChartMetric(ci.k)}} style={{padding:"3px 10px",fontSize:11,fontFamily:fm,background:isOn?col+"18":"transparent",color:isOn?col:K.dim,border:"1px solid "+(isOn?col+"40":"transparent"),borderRadius:_isBm?0:5,cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",fontWeight:isOn?600:400}}>
+              {isOn&&<span style={{display:"inline-block",width:6,height:6,borderRadius:_isBm?1:"50%",background:col,marginRight:4}}/>}{ci.l}</button>})}</div>
         {hasPctMix&&<div style={{fontSize:10,color:K.amb,fontFamily:fm,marginBottom:8}}>{"⚠"} Mixing % and $ metrics — values share the Y-axis</div>}
         {chartSeries.length>0&&dates.length>0?(function(){
           var numSeries=chartSeries.length;var numDates=dates.length;
@@ -3796,12 +3804,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </svg>
             {/* Hover tooltip */}
             {(function(){var hovDate=hov||(dates.length>0?dates[dates.length-1]:null);if(!hovDate)return null;var hi=dates.indexOf(hovDate);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
-              return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
+              return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hovDate:hovDate.substring(0,4)}</div>
                 {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hovDate});if(!pt)return null;
                   var prev=s.pts[s.pts.indexOf(pt)-1];var yoy=prev&&prev.val!==0?((pt.val-prev.val)/Math.abs(prev.val)*100):null;
                   return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                    <span style={{width:6,height:6,borderRadius:2,background:s.color,flexShrink:0}}/>
+                    <span style={{width:6,height:6,borderRadius:_isBm?0:2,background:s.color,flexShrink:0}}/>
                     <span style={{fontSize:11,color:K.mid,fontFamily:fm,flex:1}}>{s.def.l}</span>
                     <span style={{fontSize:11,fontWeight:700,color:s.color,fontFamily:fm}}>{s.def.p?(pt.val*100).toFixed(1)+"%":s.def.sm?"$"+pt.val.toFixed(2):fmtBig(pt.val)}</span>
                     {yoy!=null&&<span style={{fontSize:8,color:yoy>=0?K.grn:K.red,fontFamily:fm}}>{yoy>=0?"+":""}{yoy.toFixed(0)}%</span>}</div>})}</div>})()}
@@ -3809,11 +3817,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* Legend */}
         {chartSeries.length>0&&<div style={{display:"flex",gap:12,marginTop:10,flexWrap:"wrap"}}>
           {chartSeries.map(function(s){return<div key={s.key} style={{display:"flex",alignItems:"center",gap:4}}>
-            <span style={{width:8,height:3,borderRadius:2,background:s.color}}/>
+            <span style={{width:8,height:3,borderRadius:_isBm?0:2,background:s.color}}/>
             <span style={{fontSize:10,color:s.color,fontFamily:fm,fontWeight:600}}>{s.def.l}</span></div>})}</div>}
       </div>
       {/* Full data table */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
         <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:fm}}>
           <thead><tr><th style={{position:"sticky",left:0,background:K.card,padding:"10px 14px",textAlign:"left",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,minWidth:200,zIndex:2}}>
             {stab.l} ({per==="quarter"?"Quarterly":"Annual"})</th>
@@ -3869,18 +3877,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     return<div className="ta-detail-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       {/* Thesis staleness + conviction drift banners */}
       {(_thesisStale||_tScore>0)&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:_thesisStale&&c.thesisNote?0:8}}>
-        {_tScore>0&&<div style={{display:"flex",alignItems:"center",gap:5,background:_tScoreColor+"12",border:"1px solid "+_tScoreColor+"30",borderRadius:6,padding:"4px 10px"}}>
+        {_tScore>0&&<div style={{display:"flex",alignItems:"center",gap:5,background:_tScoreColor+"12",border:"1px solid "+_tScoreColor+"30",borderRadius:_isBm?0:6,padding:"4px 10px"}}>
           <span style={{fontSize:10,fontWeight:700,color:_tScoreColor,fontFamily:fm}}>{_tScore}%</span>
           <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>thesis quality</span>
         </div>}
         {c.thesisUpdatedAt&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>· {_thesisStaleBadge}</span>}
       </div>}
-      {_thesisStale&&c.thesisNote&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"40",borderRadius:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.amb}}>
+      {_thesisStale&&c.thesisNote&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"40",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.amb}}>
         <IC name="alert" size={13} color={K.amb}/>
         <span>Thesis last updated <strong>{_thesisStaleBadge}</strong> — worth a review?</span>
-        <button onClick={function(){setDetailTab("dossier");setTimeout(function(){document.getElementById("thesis-editor")&&document.getElementById("thesis-editor").focus()},100)}} style={{marginLeft:"auto",background:"none",border:"1px solid "+K.amb+"60",borderRadius:4,padding:"2px 8px",fontSize:11,color:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Review Now</button>
+        <button onClick={function(){setDetailTab("dossier");setTimeout(function(){document.getElementById("thesis-editor")&&document.getElementById("thesis-editor").focus()},100)}} style={{marginLeft:"auto",background:"none",border:"1px solid "+K.amb+"60",borderRadius:_isBm?0:4,padding:"2px 8px",fontSize:11,color:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Review Now</button>
       </div>}
-      {_convDrift&&<div style={{background:K.blue+"10",border:"1px solid "+K.blue+"30",borderRadius:8,padding:"8px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.blue}}>
+      {_convDrift&&<div style={{background:K.blue+"10",border:"1px solid "+K.blue+"30",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.blue}}>
         <IC name="target" size={13} color={K.blue}/>
         <span>Conviction last updated <strong>{_convDriftDays}d ago</strong> — still feels right?</span>
       </div>}
@@ -3899,12 +3907,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"flex",gap:8,marginTop:5,alignItems:"center",flexWrap:"wrap"}}>
               {c.sector&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>}
               {c.sector&&(c.investStyle||true)&&<span style={{color:K.bdr,fontSize:11}}>·</span>}
-              {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 7px",borderRadius:4,fontFamily:fm,cursor:"pointer"}} onClick={function(){setModal({type:"edit"})}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
-              <button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"30":c.status==="toohard"?K.red+"30":K.amb+"30"),borderRadius:4,padding:"1px 7px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button>
+              {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fm,cursor:"pointer"}} onClick={function(){setModal({type:"edit"})}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
+              <button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"30":c.status==="toohard"?K.red+"30":K.amb+"30"),borderRadius:_isBm?0:4,padding:"1px 7px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button>
             </div>
           </div>
           {/* Conviction badge - right side */}
-          {conv>0&&<div onClick={function(){setModal({type:"conviction"})}} style={{cursor:"pointer",textAlign:"center",flexShrink:0,background:conv>=7?K.grn+"12":conv>=4?K.amb+"12":K.red+"12",border:"1px solid "+(conv>=7?K.grn+"30":conv>=4?K.amb+"30":K.red+"30"),borderRadius:12,padding:"8px 14px"}}>
+          {conv>0&&<div onClick={function(){setModal({type:"conviction"})}} style={{cursor:"pointer",textAlign:"center",flexShrink:0,background:conv>=7?K.grn+"12":conv>=4?K.amb+"12":K.red+"12",border:"1px solid "+(conv>=7?K.grn+"30":conv>=4?K.amb+"30":K.red+"30"),borderRadius:_isBm?0:12,padding:"8px 14px"}}>
             <div style={{fontSize:isMobile?22:26,fontWeight:800,color:conv>=7?K.grn:conv>=4?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{conv}</div>
             <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginTop:2}}>conviction</div>
           </div>}
@@ -3916,18 +3924,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <span style={{fontSize:12,color:dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7?K.amb:K.dim,fontFamily:fm}}>
               {c.earningsDate==="TBD"?"Earnings TBD":c.earningsDate?("Earnings "+fD(c.earningsDate)+(c.earningsTime?" · "+c.earningsTime:"")):"No earnings date"}
             </span>
-            {dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7&&<span style={{fontSize:10,fontWeight:700,color:K.amb,background:K.amb+"15",padding:"1px 7px",borderRadius:3,fontFamily:fm}}>{dU(c.earningsDate)===0?"Today":dU(c.earningsDate)===1?"Tomorrow":dU(c.earningsDate)+"d"}</span>}
+            {dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7&&<span style={{fontSize:10,fontWeight:700,color:K.amb,background:K.amb+"15",padding:"1px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}>{dU(c.earningsDate)===0?"Today":dU(c.earningsDate)===1?"Tomorrow":dU(c.earningsDate)+"d"}</span>}
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.acc,textDecoration:"none",display:"flex",alignItems:"center",gap:3,padding:"4px 9px",borderRadius:6,border:"1px solid "+K.bdr,fontFamily:fm}}>IR ↗</a>}
-            <button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){setModal({type:"edit"})}}>Edit</button>
-            {!isMobile&&<button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){exportPDF()}}>PDF</button>}
+            {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.acc,textDecoration:"none",display:"flex",alignItems:"center",gap:3,padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,fontFamily:fm}}>IR ↗</a>}
+            <button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){setModal({type:"edit"})}}>Edit</button>
+            {!isMobile&&<button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){exportPDF()}}>PDF</button>}
           </div>
         </div>
       </div>
       {/* ── Mobile section anchors ── */}
       {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:2}}>
-        {[{label:"Thesis",anchor:"ds-story"},{label:"Evidence",anchor:"ds-evidence"},{label:"Numbers",anchor:"ds-numbers"},{label:"Research",anchor:"ds-research"}].map(function(s){return<button key={s.anchor} onClick={function(){var el=document.getElementById(s.anchor);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}} style={{flexShrink:0,padding:"6px 14px",borderRadius:999,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:12,fontFamily:fm,cursor:"pointer"}}>{s.label}</button>})}
+        {[{label:"Thesis",anchor:"ds-story"},{label:"Evidence",anchor:"ds-evidence"},{label:"Numbers",anchor:"ds-numbers"},{label:"Research",anchor:"ds-research"}].map(function(s){return<button key={s.anchor} onClick={function(){var el=document.getElementById(s.anchor);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}} style={{flexShrink:0,padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:12,fontFamily:fm,cursor:"pointer"}}>{s.label}</button>})}
       </div>}
       {/* ── Company view (dossier always shown, no tab UI) ── */}
       {detailTab==="dossier"&&<div className="ta-fade">
@@ -3949,7 +3957,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var currentStep=steps.findIndex(function(s){return!s.done});
           if(currentStep<0){setTimeout(function(){setGuidedSetup(null);showToast(c.ticker+" setup complete - you're ready to track this investment","info",4000)},500);return null}
           var step=steps[currentStep];
-          return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+          return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
               <div><div style={{fontSize:14,fontWeight:600,color:K.txt}}>Set up {c.ticker}</div>
                 <div style={{fontSize:12,color:K.dim,marginTop:2}}>Step {currentStep+1} of {steps.length}</div></div>
@@ -3961,7 +3969,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     :<span style={{fontSize:10,fontWeight:700,color:i===currentStep?"#fff":K.dim}}>{i+1}</span>}</div>
                 <span style={{fontSize:11,color:s.done?K.grn:i===currentStep?K.txt:K.dim,fontWeight:i===currentStep?600:400,fontFamily:fm}}>{s.label}</span>
                 {i<steps.length-1&&<div style={{flex:1,height:1,background:s.done?K.grn:K.bdr}}/>}</div>})}</div>
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
               <IC name={step.icon} size={18} color={K.acc}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.txt}}>{step.label}</div>
@@ -3982,17 +3990,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           ];
           var doneCount=items.filter(function(it){return it.done}).length;
           if(doneCount>=items.length)return null;
-          return<div style={{background:K.bg,borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid "+K.bdr}}>
+          return<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16,border:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
               <span style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Owner Checklist</span>
               <span style={{fontSize:11,color:doneCount>=3?K.grn:K.dim,fontFamily:fm,fontWeight:600}}>{doneCount}/{items.length}</span></div>
             <div style={{display:"flex",gap:6}}>
-              {items.map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+              {items.map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:_isBm?0:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
                 {it.done?<svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill={K.grn+"20"} stroke={K.grn} strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke={K.grn} strokeWidth="1.5" fill="none"/></svg>
                   :<IC name={it.icon} size={14} color={K.dim}/>}
                 <span style={{fontSize:10,color:it.done?K.grn:K.mid,fontFamily:fm,fontWeight:it.done?600:400}}>{it.label}</span></button>})}</div></div>})()}
         {/* Company Summary — auto-fetched from FMP */}
-        {c.description&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+        {c.description&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:8}}>{descExpanded||c.description.length<=200?c.description:c.description.substring(0,200)+"…"}
             {c.description.length>200&&<button onClick={function(){setDescExpanded(!descExpanded)}} style={{background:"none",border:"none",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fm,padding:0,marginLeft:4}}>{descExpanded?"Show less":"Read more"}</button>}</div>
           {(c.ceo||c.employees||c.mktCap||c.exchange)&&<div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:11,color:K.dim,fontFamily:fm}}>
@@ -4021,11 +4029,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var doneCount=checklist.filter(function(it){return it.done}).length;
           var allDone=doneCount>=checklist.length;
           function tickItem(id){try{var s=localStorage.getItem("ta-rituals");var r=s?JSON.parse(s):{};r[ritualKey]=Object.assign({},r[ritualKey]||{});r[ritualKey][id]=true;localStorage.setItem("ta-rituals",JSON.stringify(r))}catch(e){}}
-          return<div style={{background:urgency+"08",border:"2px solid "+urgency+"30",borderRadius:14,padding:"18px 20px",marginBottom:24,position:"relative",overflow:"hidden"}}>
+          return<div style={{background:urgency+"08",border:"2px solid "+urgency+"30",borderRadius:_isBm?0:14,padding:"18px 20px",marginBottom:24,position:"relative",overflow:"hidden"}}>
             {/* Countdown pulse */}
             {daysOut<=2&&<div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,"+urgency+","+urgency+"60,"+urgency+")",animation:"shimmer 2s infinite"}}/>}
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <div style={{width:38,height:38,borderRadius:10,background:urgency+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <div style={{width:38,height:38,borderRadius:_isBm?0:10,background:urgency+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <IC name="target" size={18} color={urgency}/>
               </div>
               <div style={{flex:1}}>
@@ -4041,8 +4049,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
             {/* Checklist */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14}}>
-              {checklist.map(function(it){return<div key={it.id} onClick={function(){if(!it.done){tickItem(it.id);showToast(it.label+" ✓","info",2000);upd(c.id,{})}}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:it.done?(K.grn+"10"):(K.card),border:"1px solid "+(it.done?(K.grn+"30"):K.bdr),cursor:it.done?"default":"pointer",transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=urgency+"60"}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
-                <div style={{width:18,height:18,borderRadius:5,background:it.done?K.grn:"transparent",border:"2px solid "+(it.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
+              {checklist.map(function(it){return<div key={it.id} onClick={function(){if(!it.done){tickItem(it.id);showToast(it.label+" ✓","info",2000);upd(c.id,{})}}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:_isBm?0:8,background:it.done?(K.grn+"10"):(K.card),border:"1px solid "+(it.done?(K.grn+"30"):K.bdr),cursor:it.done?"default":"pointer",transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=urgency+"60"}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+                <div style={{width:18,height:18,borderRadius:_isBm?0:5,background:it.done?K.grn:"transparent",border:"2px solid "+(it.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
                   {it.done&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
                 </div>
                 <span style={{fontSize:11,color:it.done?K.grn:K.mid,fontFamily:fm,fontWeight:it.done?600:400}}>{it.label}</span>
@@ -4052,7 +4060,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {c.kpis.length>0&&<div style={{marginBottom:10}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Watch These Numbers</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {c.kpis.map(function(k){return<div key={k.id} style={{padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+                {c.kpis.map(function(k){return<div key={k.id} style={{padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
                   <span style={{color:K.txt,fontWeight:600}}>{k.name}</span>
                   <span style={{color:K.dim}}>→ {k.target}</span>
                 </div>})}
@@ -4060,12 +4068,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>}
             {/* Conviction + quick thesis preview */}
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
+              {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
                 <IC name="star" size={11} color={K.amb}/>
                 <span style={{color:K.mid}}>Conviction</span>
                 <span style={{color:K.txt,fontWeight:700}}>{c.conviction}/10</span>
               </div>}
-              <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"1px solid "+urgency+"30",borderRadius:6,padding:"4px 10px",fontSize:11,color:urgency,fontFamily:fm,cursor:"pointer"}}>Review thesis →</button>
+              <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"1px solid "+urgency+"30",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:urgency,fontFamily:fm,cursor:"pointer"}}>Review thesis →</button>
               {allDone&&<span style={{marginLeft:"auto",fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>✓ You're prepared</span>}
             </div>
           </div>
@@ -4077,19 +4085,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE STORY</div>
             <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit thesis</button></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
               <div style={{fontSize:14,color:K.txt,lineHeight:1.8,marginBottom:sec.moat||sec.risks||sec.sell?16:0}}>{sec.core}</div>
-              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.grn,marginBottom:8}}>
+              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.grn,marginBottom:8}}>
                 <div style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:3}}>MOAT</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.moat}</div></div>}
-              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.amb,marginBottom:8}}>
+              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.amb,marginBottom:8}}>
                 <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:3}}>RISKS</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.risks}</div></div>}
-              {sec.sell&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:8,borderLeft:"3px solid "+K.red}}>
+              {sec.sell&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.red}}>
                 <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:3}}>SELL CRITERIA</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
             </div>})()
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
             <div style={{fontSize:14,color:K.acc,fontWeight:600,marginBottom:4}}>Write your thesis</div>
             <div style={{fontSize:12,color:K.dim}}>Why do you own {c.ticker}? What’s the moat? When would you sell?</div></div>}
           {/* Thesis Timeline */}
@@ -4103,11 +4111,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             if(c.thesisUpdatedAt)tevents.push({label:"Updated",date:c.thesisUpdatedAt,color:_thesisStale?K.amb:K.grn});
             tevents.push({label:"Today",date:null,color:K.mid,today:true});
             if(tevents.length<3)return null;
-            return<div style={{marginTop:10,padding:"8px 12px",background:K.bg+"80",borderRadius:8}}>
+            return<div style={{marginTop:10,padding:"8px 12px",background:K.bg+"80",borderRadius:_isBm?0:8}}>
               <div style={{display:"flex",alignItems:"flex-start",position:"relative"}}>
                 <div style={{position:"absolute",left:"5%",right:"5%",height:1,background:K.bdr,top:4}}/>
                 {tevents.map(function(ev,ei){return<div key={ei} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
-                  <div style={{width:8,height:8,borderRadius:"50%",background:ev.today?K.bg:ev.color,border:"1.5px solid "+(ev.today?K.dim:ev.color)}}/>
+                  <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:ev.today?K.bg:ev.color,border:"1.5px solid "+(ev.today?K.dim:ev.color)}}/>
                   <div style={{fontSize:8,color:ev.color,fontFamily:fm,textAlign:"center",lineHeight:1.2}}>{ev.label}</div>
                   {!ev.today&&ev.date&&<div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{ev.date.slice(0,7)}</div>}
                 </div>})}
@@ -4117,10 +4125,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
 
         {/* Investment style */}
-        {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+        {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20}}>
           <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:6,fontFamily:fm}}>What type of investment is {c.ticker}?</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-            {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:5,border:"1px solid "+st.color+"30",background:st.color+"08",color:st.color,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+            {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:_isBm?0:5,border:"1px solid "+st.color+"30",background:st.color+"08",color:st.color,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
               <IC name={st.icon} size={8} color={st.color}/>{st.label}</button>})}</div></div>}
 
 
@@ -4160,7 +4168,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           // Build smooth rounded path from data points
           function roundedPath(pts2){if(pts2.length<3)return"";var d="";for(var i3=0;i3<pts2.length;i3++){var prev=pts2[(i3-1+pts2.length)%pts2.length];var curr=pts2[i3];var next=pts2[(i3+1)%pts2.length];var smooth=0.25;var cp1x=curr.x+(next.x-prev.x)*smooth;var cp1y=curr.y+(next.y-prev.y)*smooth;var prevNext=pts2[(i3+2)%pts2.length];var cp2x=next.x-(prevNext.x-curr.x)*smooth;var cp2y=next.y-(prevNext.y-curr.y)*smooth;if(i3===0)d+="M"+curr.x.toFixed(1)+","+curr.y.toFixed(1)+" ";d+="C"+cp1x.toFixed(1)+","+cp1y.toFixed(1)+" "+cp2x.toFixed(1)+","+cp2y.toFixed(1)+" "+next.x.toFixed(1)+","+next.y.toFixed(1)+" "}return d+"Z"}
           function roundedGridPath(level){var pts2=[];for(var i3=0;i3<n;i3++)pts2.push(pt(i3,level));return roundedPath(pts2)}
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",gap:16}}>
               <svg width="200" height="180" viewBox="0 0 200 180">
                 {/* Rounded grid rings */}
@@ -4181,9 +4189,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{flex:1}}>
                 <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
                 {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                  <div style={{width:6,height:6,borderRadius:"50%",background:a2.color,flexShrink:0}}/>
+                  <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
                   <span style={{fontSize:11,color:K.mid,fontFamily:fm,width:70}}>{a2.label}</span>
-                  <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:a2.score+"%",borderRadius:2,background:a2.color,transition:"width .4s"}}/></div>
+                  <div style={{flex:1,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:a2.score+"%",borderRadius:_isBm?0:2,background:a2.color,transition:"width .4s"}}/></div>
                   <span style={{fontSize:11,fontWeight:600,color:a2.score>=70?K.grn:a2.score>=40?K.amb:a2.score>0?K.red:K.dim,fontFamily:fm,width:24,textAlign:"right"}}>{a2.score}</span></div>})}
               </div></div></div>})()}
 
@@ -4192,11 +4200,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div id="ds-evidence" style={{marginBottom:24}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
           {/* KPI Scorecard */}
-          {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+          {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:4,fontFamily:fm}} title={"Graham Number (sqrt(22.5×EPS×BVPS)) — conservative floor for asset-heavy businesses: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
+                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm}} title={"Graham Number (sqrt(22.5×EPS×BVPS)) — conservative floor for asset-heavy businesses: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
@@ -4208,9 +4216,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.bdr;
               var statusLabel=k.lastResult?k.lastResult.status==="met"?"Met":k.lastResult.status==="unclear"?"N/A":"Missed":"—";
               var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";if(typeof v!=="number")return v+(u||"");var abs=Math.abs(v);var s=abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2);return s+(u||"")})():null;
-              return<div key={k.id} style={{background:K.bg,borderRadius:10,padding:"10px 12px",cursor:"pointer",border:"1px solid "+K.bdr+"60",position:"relative",overflow:"hidden"}} onClick={function(){setModal({type:"kpi",data:k.id})}}>
+              return<div key={k.id} style={{background:K.bg,borderRadius:_isBm?0:10,padding:"10px 12px",cursor:"pointer",border:"1px solid "+K.bdr+"60",position:"relative",overflow:"hidden"}} onClick={function(){setModal({type:"kpi",data:k.id})}}>
                 {/* Status color strip */}
-                <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,borderRadius:"10px 0 0 10px",background:statusColor}}/>
+                <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,borderRadius:_isBm?"0":"10px 0 0 10px",background:statusColor}}/>
                 <div style={{paddingLeft:6}}>
                   <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.name}</div>
                   <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:4}}>
@@ -4220,11 +4228,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     </div>
                     {/* Sparkline bars */}
                     {hist.length>0&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:22}}>
-                      {hist.slice(-5).map(function(hh,hi){return<div key={hi} title={hh.q} style={{width:5,borderRadius:1,height:hh.s==="met"?18:hh.s==="unclear"?10:6,background:hh.s==="met"?K.grn:hh.s==="unclear"?K.dim:K.red,opacity:.8}}/>})}
+                      {hist.slice(-5).map(function(hh,hi){return<div key={hi} title={hh.q} style={{width:5,borderRadius:_isBm?0:1,height:hh.s==="met"?18:hh.s==="unclear"?10:6,background:hh.s==="met"?K.grn:hh.s==="unclear"?K.dim:K.red,opacity:.8}}/>})}
                     </div>}
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:statusColor,flexShrink:0}}/>
+                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:statusColor,flexShrink:0}}/>
                     <span style={{fontSize:9,color:statusColor,fontFamily:fm,fontWeight:600}}>{statusLabel}</span>
                     {(function(){var streak=0;for(var si=hist.length-1;si>=0;si--){if(hist[si].s==="met")streak++;else break};return streak>=2?<span style={{fontSize:9,color:K.grn,fontFamily:fm,marginLeft:2}}>{streak}Q↑</span>:null})()}
                   </div>
@@ -4233,7 +4241,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
             <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
           </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center",marginBottom:12}}>
+          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",marginBottom:12}}>
             <div style={{fontSize:13,color:K.dim,marginBottom:6}}>No KPIs tracked yet</div>
             <button onClick={function(){setModal({type:"kpi"})}} style={Object.assign({},S.btn,{fontSize:11,padding:"5px 12px"})}>+ Add KPIs</button></div>}
           {/* Earnings check */}
@@ -4253,7 +4261,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
               {(function(){
                 var cx=60,cy=62,r=50;
                 var ang=function(v){return Math.PI*(1-v/10)};
@@ -4276,12 +4284,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>/10</span>
                   </div>
                   {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:6,justifyContent:"center",alignItems:"flex-end",height:14}}>
-                    {c.convictionHistory.slice(-8).map(function(ch,i2){return<div key={i2} style={{width:8,borderRadius:1,height:Math.max(2,Math.round(ch.rating/10*12))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.75}}/>})}
+                    {c.convictionHistory.slice(-8).map(function(ch,i2){return<div key={i2} style={{width:8,borderRadius:_isBm?0:1,height:Math.max(2,Math.round(ch.rating/10*12))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.75}}/>})}
                   </div>}
                 </div>
               })()}
             </div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
               <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:6,textTransform:"uppercase"}}>Position</div>
               {pos.shares>0?<div>
                 <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{pos.shares>=1000?(pos.shares/1000).toFixed(1)+"k":pos.shares}<span style={{fontSize:11,fontWeight:400,color:K.dim}}> sh @ {cSym}{pos.avgCost}</span></div>
@@ -4299,9 +4307,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 var gPct=graham>0?Math.max(2,Math.min(98,(graham-lo)/(hi-lo)*100)):null;
                 var priceColor=tgt>0?(price<tgt*0.85?K.grn:price<tgt*1.1?K.amb:K.red):K.mid;
                 return<div style={{marginTop:2}}>
-                  <div style={{position:"relative",height:6,borderRadius:3,background:"linear-gradient(90deg,"+K.grn+"55,"+K.amb+"55 50%,"+K.red+"55)",marginBottom:6}}>
-                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:1,background:K.blue+"bb"}} title={"Graham: "+cSym+graham.toFixed(2)}/>}
-                    {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:1,background:K.acc}} title={"Target: "+cSym+tgt}/>}
+                  <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:"linear-gradient(90deg,"+K.grn+"55,"+K.amb+"55 50%,"+K.red+"55)",marginBottom:6}}>
+                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.blue+"bb"}} title={"Graham: "+cSym+graham.toFixed(2)}/>}
+                    {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.acc}} title={"Target: "+cSym+tgt}/>}
                     <div style={{position:"absolute",top:"50%",left:pct+"%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:priceColor,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9,color:K.dim,fontFamily:fm}}>
@@ -4325,11 +4333,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
             <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
-          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
               <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
               <div style={{flex:1}}/>
-              <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
+              <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:_isBm?0:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
             {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
               <IC name="check" size={12} color={K.grn}/>
               <div style={{flex:1,minWidth:0}}>
@@ -4337,7 +4345,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
           </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
             <IC name="shield" size={20} color={K.acc}/>
             <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
@@ -4354,20 +4362,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>VALUATION</div>
             <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit framework":"Set up"}</button></div>
-          {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+          {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
             {verdict&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:16,fontWeight:800,color:verdictColor,fontFamily:fm}}>{verdict}</span>
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{passCount}/{totalJudged} criteria met</span></div>
-              <div style={{display:"flex",gap:3}}>{results.map(function(r){return<div key={r.id} style={{width:8,height:8,borderRadius:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
+              <div style={{display:"flex",gap:3}}>{results.map(function(r){return<div key={r.id} style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
             {results.map(function(r,ri){return<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:ri>0?"1px solid "+K.bdr+"30":"none"}}>
               <span style={{fontSize:12,color:K.mid,flex:1}}>{r.label}</span>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{r.rule==="gte"?"\u2265":"\u2264"}{r.threshold}{r.unit}</span>
               <span style={{fontSize:13,fontWeight:700,color:r.pass===true?K.grn:r.pass===false?K.red:K.dim,fontFamily:fm,minWidth:48,textAlign:"right"}}>{r.current!=null?r.current.toFixed(r.unit==="%"?1:r.current<1?2:1)+r.unit:"\u2014"}</span>
-              <span style={{width:6,height:6,borderRadius:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40",flexShrink:0}}/></div>})}
+              <span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40",flexShrink:0}}/></div>})}
             {val.updatedAt&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8,textAlign:"right"}}>Framework set {fD(val.updatedAt)}</div>}
           </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"valuation"})}}>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"valuation"})}}>
             <IC name="chart" size={20} color={K.acc}/>
             <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4,marginTop:6}}>Define your valuation framework</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you — FCF yield, P/E, PEG, earnings yield — and set your own thresholds for what constitutes good value.</div></div>}
@@ -4381,7 +4389,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           return<div style={{marginBottom:mktOpen?20:0}}>
             <div onClick={function(){setDossierMktOpen(function(v){return v===false?true:false})}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 0",marginBottom:mktOpen?16:0,userSelect:"none"}}>
               <div style={{flex:1,height:1,background:K.bdr}}/>
-              <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:999,background:K.card,border:"1px solid "+K.bdr,flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:_isBm?0:999,background:K.card,border:"1px solid "+K.bdr,flexShrink:0}}>
                 <IC name="bar" size={11} color={K.dim}/>
                 <span style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Market Data</span>
                 <span style={{fontSize:11,color:K.dim,transform:mktOpen?"rotate(0)":"rotate(-90deg)",transition:"transform .2s",display:"inline-block",lineHeight:1}}>▾</span>
@@ -4520,13 +4528,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {sections.map(function(sec,si){return<div key={si}>
                 <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{width:3,height:10,borderRadius:2,background:sec.color,flexShrink:0}}/>
+                  <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:sec.color,flexShrink:0}}/>
                   {sec.title}
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
                   {sec.items.map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
-                    return<div key={ii} title={item.tip||""} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:9,padding:"9px 12px",cursor:item.tip?"help":"default",borderLeft:"2px solid "+valColor+"60"}}>
+                    return<div key={ii} title={item.tip||""} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:_isBm?0:9,padding:"9px 12px",cursor:item.tip?"help":"default",borderLeft:"2px solid "+valColor+"60"}}>
                       <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                         {item.l}{item.tip&&<span style={{color:K.dim,fontSize:9,marginLeft:3}}>ⓘ</span>}
                       </div>
@@ -4541,7 +4549,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>INSIDER ACTIVITY</div></div>
           {insiderData?<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
             {/* Insider Transactions */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
               <div style={{fontSize:12,fontWeight:600,color:K.txt,marginBottom:10}}>Recent Transactions</div>
               {insiderData.transactions&&insiderData.transactions.length>0?
                 <div>{(function(){
@@ -4550,10 +4558,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   var netBuy=buys.length>sells.length;
                   return<div>
                     <div style={{display:"flex",gap:8,marginBottom:10}}>
-                      <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
+                      <div style={{flex:1,padding:"6px 10px",borderRadius:_isBm?0:6,background:K.grn+"08",border:"1px solid "+K.grn+"20",textAlign:"center"}}>
                         <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{buys.length}</div>
                         <div style={{fontSize:8,color:K.grn}}>Purchases</div></div>
-                      <div style={{flex:1,padding:"6px 10px",borderRadius:6,background:K.red+"08",border:"1px solid "+K.red+"20",textAlign:"center"}}>
+                      <div style={{flex:1,padding:"6px 10px",borderRadius:_isBm?0:6,background:K.red+"08",border:"1px solid "+K.red+"20",textAlign:"center"}}>
                         <div style={{fontSize:16,fontWeight:700,color:K.red,fontFamily:fm}}>{sells.length}</div>
                         <div style={{fontSize:8,color:K.red}}>Sales</div></div></div>
                     {netBuy&&buys.length>0&&<div style={{fontSize:11,color:K.grn,fontFamily:fm,marginBottom:8}}>Net insider buying — typically a bullish signal</div>}
@@ -4595,7 +4603,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               :<div style={{fontSize:12,color:K.dim,padding:"8px 0"}}>No recent insider transactions</div>}
             </div>
             {/* Top Institutional Holders */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
               <div style={{fontSize:12,fontWeight:600,color:K.txt,marginBottom:10}}>Top Institutional Holders</div>
               {insiderData.institutions&&insiderData.institutions.length>0?
                 <div>{insiderData.institutions.slice(0,7).map(function(inst,i2){
@@ -4614,12 +4622,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
           </div>
           :<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
-              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
-              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
-              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
-              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div></div>}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}>
+              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
+              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}>
+              <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
+              <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div></div>}
         </div>}
       </div>}{/* end dossierMktOpen */}
 
@@ -4631,7 +4639,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {dossierMoat?(function(){
             var comp=dossierMoat.composite;var mColor=comp>=8?K.grn:comp>=6?K.amb:K.red;
             var mLabel=comp>=8?"Wide Moat":comp>=6?"Narrow Moat":comp>=4?"Weak Moat":"No Moat";
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
               <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
                 <div style={{width:56,height:56,borderRadius:"50%",border:"3px solid "+mColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   <div style={{fontSize:22,fontWeight:800,color:mColor,fontFamily:fm,lineHeight:1}}>{comp}</div>
@@ -4644,22 +4652,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {(function(){var mt2=c.moatTypes||{};var activeMts=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return activeMts.length>0?<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
                     <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5}}>YOUR MOAT TYPES</div>
                     <div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                      {activeMts.map(function(t2){return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})}
+                      {activeMts.map(function(t2){return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})}
                     </div>
-                  </div>:<button onClick={function(){setSubPage("moat")}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm}}>+ Tag moat types</button>})()}</div></div>
+                  </div>:<button onClick={function(){setSubPage("moat")}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm}}>+ Tag moat types</button>})()}</div></div>
               <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"4px 16px"}}>
                 {dossierMoat.metrics.slice(0,8).map(function(m){var barColor=m.score>=8?K.grn:m.score>=6?K.amb:K.red;
                   return<div key={m.id} style={{display:"flex",alignItems:"center",gap:8,padding:"3px 0"}}>
                     <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:isMobile?90:110,flexShrink:0}}>{m.name.length>18?m.name.substring(0,18)+"…":m.name}</span>
-                    <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:(m.score*10)+"%",borderRadius:3,background:barColor,transition:"width .4s"}}/></div>
+                    <div style={{flex:1,height:6,borderRadius:_isBm?0:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:(m.score*10)+"%",borderRadius:_isBm?0:3,background:barColor,transition:"width .4s"}}/></div>
                     <span style={{fontSize:10,fontWeight:700,color:barColor,fontFamily:fm,width:20,textAlign:"right"}}>{m.score.toFixed(0)}</span></div>})}</div>
             </div>})()
-          :!isPro?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center"}}>
+          :!isPro?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}>
             <div style={{fontSize:13,color:K.dim,marginBottom:8}}>Moat analysis powered by financial data</div>
             <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("financials")}} style={Object.assign({},S.btn,{fontSize:11,padding:"5px 14px"})}>Upgrade to unlock</button></div>
-          :<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px",textAlign:"center"}}>
-            <div className="ta-skel" style={{height:10,width:"60%",background:K.bdr,margin:"0 auto 8px",borderRadius:4}}/>
-            <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:3}}/></div>}
+          :<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px",textAlign:"center"}}>
+            <div className="ta-skel" style={{height:10,width:"60%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
+            <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div>}
         </div>
 
         {/* Expected CAGR contribution */}
@@ -4682,7 +4690,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
           var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:16}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
               <button onClick={function(){if(isPro){setPage("hub");setHubTab("goals")}else{setShowUpgrade(true);setUpgradeCtx("goals")}}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
@@ -4699,11 +4707,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
             <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials")}}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Full financials {"→"}</button></div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
             <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
               {[{k:"revenue",l:"Revenue",c:"#1cb0f6"},{k:"netIncome",l:"Net Income",c:"#58cc02"},{k:"fcf",l:"Free Cash Flow",c:"#ff9600"},{k:"sbc",l:"Stock-Based Comp",c:"#ce82ff"}].map(function(m){
                 return<div key={m.k} style={{display:"flex",alignItems:"center",gap:4}}>
-                  <span style={{width:8,height:8,borderRadius:2,background:m.c}}/>
+                  <span style={{width:8,height:8,borderRadius:_isBm?0:2,background:m.c}}/>
                   <span style={{fontSize:10,color:K.mid,fontFamily:fm}}>{m.l}</span></div>})}</div>
             {(function(){
               var MK=[{k:"revenue",c:"#1cb0f6"},{k:"netIncome",c:"#58cc02"},{k:"fcf",c:"#ff9600"},{k:"sbc",c:"#ce82ff"}];
@@ -4737,10 +4745,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 </svg>
                 {hovD&&(function(){var hi=keyFin.findIndex(function(p2){return p2.date===hovD});if(hi<0)return null;var pt=keyFin[hi];
                   var tx=pad3.l+hi*(gW+(nD>1?gG:0));
-                  return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW3-160),top:4,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
+                  return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW3-160),top:4,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
                     <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>{pt.date?pt.date.substring(0,4):""}</div>
                     {MK.map(function(m){return pt[m.k]!=null?<div key={m.k} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                      <span style={{width:6,height:6,borderRadius:2,background:m.c,flexShrink:0}}/>
+                      <span style={{width:6,height:6,borderRadius:_isBm?0:2,background:m.c,flexShrink:0}}/>
                       <span style={{fontSize:10,color:K.mid,fontFamily:fm,flex:1}}>{m.k==="revenue"?"Revenue":m.k==="netIncome"?"Net Income":m.k==="fcf"?"FCF":"SBC"}</span>
                       <span style={{fontSize:11,fontWeight:700,color:m.c,fontFamily:fm}}>{fmtBig(pt[m.k])}</span></div>:null})}</div>})()}
               </div>})()}
@@ -4749,13 +4757,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
         {/* ── LINKS ── */}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:20}}>
-          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
+          <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
             <IC name="chart" size={16} color={K.blue}/>
             <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt}}>Full Financials</div>
               <div style={{fontSize:10,color:K.dim}}>Income, balance, cash flow</div></div>
-            {!isPro&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 5px",borderRadius:3}}>PRO</span>}
+            {!isPro&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"12",padding:"2px 5px",borderRadius:_isBm?0:3}}>PRO</span>}
             <span style={{color:K.acc}}>{"→"}</span></div>
-          {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
+          {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:10,textDecoration:"none"}}>
             <IC name="link" size={16} color={K.mid}/>
             <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt}}>Investor Relations</div>
               <div style={{fontSize:10,color:K.dim}}>{c.domain||"IR page"}</div></div>
@@ -4767,7 +4775,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>RESEARCH TRAIL</div>
             </div>
           {(c.decisions||[]).concat((c.docs||[]).map(function(d2){return Object.assign({},d2,{cardType:d2.isClip?"clip":d2.isMemo?"memo":d2.isIR?"ir":"doc",date:d2.updatedAt})})).sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,3).map(function(d2,di){
-            return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:6,fontSize:12,color:K.mid}}>
+            return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:6,fontSize:12,color:K.mid}}>
               <span style={{fontWeight:600,color:K.txt}}>{d2.title||d2.ticker||""}</span> {d2.content?d2.content.substring(0,80)+"...":d2.reasoning?d2.reasoning.substring(0,80)+"...":""}</div>})}</div>}
 
         {/* Charts & analyst data (collapsible) */}
@@ -4794,12 +4802,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{paddingTop:16,borderTop:"1px solid "+K.bdr,marginBottom:14}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>RESEARCH TRAIL</div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                <div style={{display:"flex",gap:2,background:K.bg,borderRadius:9,padding:3,border:"1px solid "+K.bdr}}>
+                <div style={{display:"flex",gap:2,background:K.bg,borderRadius:_isBm?0:9,padding:3,border:"1px solid "+K.bdr}}>
                   {RT_TABS.map(function(tb){
                     var active=rtTab===tb.id;
-                    return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{padding:"5px 12px",borderRadius:7,border:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,boxShadow:active?"0 1px 3px rgba(0,0,0,0.15)":"none",transition:"all .15s"}}>
+                    return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,boxShadow:active?"0 1px 3px rgba(0,0,0,0.15)":"none",transition:"all .15s"}}>
                       {tb.label}
-                      {tb.count>0&&<span style={{fontSize:9,background:active?K.acc+"20":K.bdr,color:active?K.acc:K.dim,borderRadius:3,padding:"1px 5px",fontFamily:fm,fontWeight:600}}>{tb.count}</span>}
+                      {tb.count>0&&<span style={{fontSize:9,background:active?K.acc+"20":K.bdr,color:active?K.acc:K.dim,borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,fontWeight:600}}>{tb.count}</span>}
                     </button>;
                   })}
                 </div>
@@ -4814,18 +4822,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <ThesisScorecard company={c}/>
               {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{marginBottom:20}}>
                 <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction Over Time</div>
-                <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+                <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px"}}>
                   <div style={{display:"flex",alignItems:"flex-end",gap:2,height:50,marginBottom:6}}>
                     {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                       <div style={{fontSize:8,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
-                      <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
+                      <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:_isBm?0:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
                   </div>
                   <div style={{display:"flex",gap:2}}>
                     {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
                   </div>
                 </div>
               </div>}
-              <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}>
+              <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,marginTop:8}}>
                 <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div>
               </div>
             </div>}
@@ -4861,7 +4869,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   if(needsThesis)return;
                   var fr=FRAMING_DOSS[dp.type];
                   setAiModal({title:dp.label+" — "+c.ticker,framing:fr,prompt:buildPrompt(dp.type,c)});
-                }} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 13px",borderRadius:8,border:"1px solid "+dp.color+(needsThesis?"20":"40"),background:dp.color+(needsThesis?"05":"0d"),color:dp.color,fontSize:12,fontWeight:600,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,opacity:needsThesis?0.4:1}}>
+                }} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 13px",borderRadius:_isBm?0:8,border:"1px solid "+dp.color+(needsThesis?"20":"40"),background:dp.color+(needsThesis?"05":"0d"),color:dp.color,fontSize:12,fontWeight:600,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,opacity:needsThesis?0.4:1}}>
                   <IC name={dp.icon} size={12} color={dp.color}/>{dp.label}
                 </button>;
               })}
@@ -5033,7 +5041,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     if(compact){
       // Compact version for Net Worth Hub — inline banner
-      return<div style={{background:headerColor+"0d",border:"1px solid "+headerColor+"30",borderRadius:12,padding:"14px 18px",marginBottom:16}}>
+      return<div style={{background:headerColor+"0d",border:"1px solid "+headerColor+"30",borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:open&&all.length>0?12:0}}>
           <IC name="alert" size={14} color={headerColor}/>
           <div style={{flex:1}}>
@@ -5043,21 +5051,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </span>
           </div>
           <div style={{fontSize:13,fontWeight:700,color:scoreColor,fontFamily:fm,marginRight:8}}>{signals.score}/100</div>
-          <button onClick={function(){setOpen(!open)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,padding:"4px 10px"}}>
+          <button onClick={function(){setOpen(!open)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,padding:"4px 10px"}}>
             {open?"Hide":"Details"}
           </button>
         </div>
         {open&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {all.map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:item.color+"08",borderRadius:9,border:"1px solid "+item.color+"25"}}>
+          {all.map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:item.color+"08",borderRadius:_isBm?0:9,border:"1px solid "+item.color+"25"}}>
             <IC name={item.severity==="high"?"alert":"check"} size={12} color={item.color} style={{marginTop:2,flexShrink:0}}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{item.msg}</div>
               <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
             </div>
             <div style={{display:"flex",gap:6,flexShrink:0}}>
-              {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
-              {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI Review</button>}
-              {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Go →</button>}
+              {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
+              {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI Review</button>}
+              {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Go →</button>}
             </div>
           </div>})}
         </div>}
@@ -5065,10 +5073,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }
 
     // Full version for Dashboard
-    return<div style={{background:K.card,border:"1px solid "+(high.length>0?K.red+"40":K.amb+"40"),borderRadius:14,marginBottom:16,overflow:"hidden"}}>
+    return<div style={{background:K.card,border:"1px solid "+(high.length>0?K.red+"40":K.amb+"40"),borderRadius:_isBm?0:14,marginBottom:16,overflow:"hidden"}}>
       {/* Header row */}
       <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer",borderBottom:open?"1px solid "+K.bdr:"none"}} onClick={function(){setOpen(!open)}}>
-        <div style={{width:36,height:36,borderRadius:10,background:headerColor+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+        <div style={{width:36,height:36,borderRadius:_isBm?0:10,background:headerColor+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <IC name="alert" size={16} color={headerColor}/>
         </div>
         <div style={{flex:1,minWidth:0}}>
@@ -5081,7 +5089,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
         </div>
         {/* Score pill */}
-        <div style={{flexShrink:0,textAlign:"center",background:scoreColor+"12",border:"1px solid "+scoreColor+"30",borderRadius:10,padding:"6px 14px"}}>
+        <div style={{flexShrink:0,textAlign:"center",background:scoreColor+"12",border:"1px solid "+scoreColor+"30",borderRadius:_isBm?0:10,padding:"6px 14px"}}>
           <div style={{fontSize:18,fontWeight:800,color:scoreColor,fontFamily:fm,lineHeight:1}}>{signals.score}</div>
           <div style={{fontSize:9,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginTop:2}}>Alignment</div>
         </div>
@@ -5093,16 +5101,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {high.length>0&&<div>
           <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Needs attention</div>
           {high.map(function(item,i){
-            return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:K.red+"08",borderRadius:10,border:"1px solid "+K.red+"25",marginBottom:8}}>
+            return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:K.red+"08",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"25",marginBottom:8}}>
               <IC name="alert" size={14} color={K.red} style={{flexShrink:0,marginTop:1}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{item.msg}</div>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginBottom:8}}>{item.action}</div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.acc+"50",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+                  {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.acc+"50",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
                     <IC name="lightbulb" size={11} color={K.acc}/>Generate AI Review
                   </button>}
-                  {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fb}}>
+                  {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fb}}>
                     Open {item.ticker} →
                   </button>}
                 </div>
@@ -5120,16 +5128,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {med.length>0&&<div>
           <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Worth considering</div>
           {med.map(function(item,i){
-            return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.amb+"08",borderRadius:9,border:"1px solid "+K.amb+"25",marginBottom:6}}>
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.amb+"08",borderRadius:_isBm?0:9,border:"1px solid "+K.amb+"25",marginBottom:6}}>
               <IC name="check" size={12} color={K.amb}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:1}}>{item.msg}</div>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.action}</div>
               </div>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
-                {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
-                {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI</button>}
-                {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{item.ticker} →</button>}
+                {item._sellCheck&&onSellCheck&&<button onClick={function(){onSellCheck(item.c)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>Sell Check</button>}
+                {!item._sellCheck&&item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.acc+"40",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fb}}>AI</button>}
+                {!item._sellCheck&&onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{item.ticker} →</button>}
               </div>
             </div>;
           })}
@@ -5388,29 +5396,29 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }
 
     return<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,backdropFilter:"blur(4px)"}} onClick={function(){setAiModal(null)}}>
-      <div style={{background:K.card,borderRadius:20,maxWidth:660,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.5)",border:"1px solid "+K.bdr}} onClick={function(e){e.stopPropagation()}}>
+      <div style={{background:K.card,borderRadius:_isBm?0:20,maxWidth:660,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.5)",border:"1px solid "+K.bdr}} onClick={function(e){e.stopPropagation()}}>
 
         {/* Header */}
         <div style={{padding:"24px 28px 0"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
             <IC name="lightbulb" size={16} color={K.acc}/>
             <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fh,flex:1}}>{aiModal.title}</div>
-            <button onClick={function(){setAiModal(null)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:6}}>✕</button>
+            <button onClick={function(){setAiModal(null)}} style={{background:"none",border:"none",color:K.dim,fontSize:18,cursor:"pointer",padding:"4px 8px",borderRadius:_isBm?0:6}}>✕</button>
           </div>
 
           {/* Saved response view */}
           {aiModal.savedResponse&&<div style={{marginBottom:20}}>
             <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Saved Analysis</div>
-            <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"16px 18px",fontSize:13,color:K.mid,lineHeight:1.7,fontFamily:fb,whiteSpace:"pre-wrap",maxHeight:360,overflowY:"auto"}}>{aiModal.savedResponse}</div>
-            <button onClick={function(){setShowPrompt(!showPrompt)}} style={{marginTop:10,padding:"6px 12px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{showPrompt?"Hide prompt":"View prompt"}</button>
+            <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"16px 18px",fontSize:13,color:K.mid,lineHeight:1.7,fontFamily:fb,whiteSpace:"pre-wrap",maxHeight:360,overflowY:"auto"}}>{aiModal.savedResponse}</div>
+            <button onClick={function(){setShowPrompt(!showPrompt)}} style={{marginTop:10,padding:"6px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>{showPrompt?"Hide prompt":"View prompt"}</button>
           </div>}
 
           {/* Why this is different — framing */}
-          {!aiModal.savedResponse&&<div style={{background:K.acc+"0d",border:"1px solid "+K.acc+"30",borderRadius:12,padding:"16px 18px",marginBottom:20}}>
+          {!aiModal.savedResponse&&<div style={{background:K.acc+"0d",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:12,padding:"16px 18px",marginBottom:20}}>
             <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Why this is different</div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontFamily:fb}}>{framing.why}</div>
             <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
-              {(framing.dataPoints||[]).map(function(dp){return<span key={dp} style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:20,padding:"3px 10px",fontFamily:fb}}>✓ {dp}</span>})}
+              {(framing.dataPoints||[]).map(function(dp){return<span key={dp} style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:_isBm?0:20,padding:"3px 10px",fontFamily:fb}}>✓ {dp}</span>})}
             </div>
           </div>}
         </div>
@@ -5418,20 +5426,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* Prompt textarea */}
         {showPrompt&&<div style={{padding:"0 28px",marginBottom:16}}>
           <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Your generated prompt</div>
-          <textarea readOnly value={prompt} style={{width:"100%",height:200,background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,color:K.mid,padding:"14px 16px",fontSize:12,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}/>
+          <textarea readOnly value={prompt} style={{width:"100%",height:200,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,color:K.mid,padding:"14px 16px",fontSize:12,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box",lineHeight:1.6}}/>
         </div>}
 
         {/* Actions */}
         <div style={{padding:"0 28px 24px"}}>
           <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:12,textAlign:"center"}}>Copy the prompt, then open your preferred AI — it will be ready to paste</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <button onClick={copyPrompt} style={{flex:1,padding:"11px 16px",borderRadius:10,border:"2px solid "+K.acc,background:copied?K.acc:K.acc+"15",color:copied?"#fff":K.acc,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
+            <button onClick={copyPrompt} style={{flex:1,padding:"11px 16px",borderRadius:_isBm?0:10,border:"2px solid "+K.acc,background:copied?K.acc:K.acc+"15",color:copied?"#fff":K.acc,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
               {copied?"✓ Copied!":"Copy Prompt"}
             </button>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
             {[{id:"claude",label:"Open in Claude",color:"#cc785c"},{id:"chatgpt",label:"Open in ChatGPT",color:"#10a37f"},{id:"gemini",label:"Open in Gemini",color:"#4285f4"}].map(function(ai){
-              return<button key={ai.id} onClick={function(){openIn(ai.id)}} style={{padding:"9px 8px",borderRadius:9,border:"1px solid "+ai.color+"40",background:ai.color+"0d",color:ai.color,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+              return<button key={ai.id} onClick={function(){openIn(ai.id)}} style={{padding:"9px 8px",borderRadius:_isBm?0:9,border:"1px solid "+ai.color+"40",background:ai.color+"0d",color:ai.color,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
                 {ai.label}
               </button>;
             })}
@@ -5523,18 +5531,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {PORT_PROMPTS.map(function(pp){
             var last=getLastRun("portfolio_"+pp.id);
-            return<div key={pp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"18px 22px",display:"flex",alignItems:"center",gap:16}}>
-              <div style={{width:40,height:40,borderRadius:10,background:pp.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            return<div key={pp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"18px 22px",display:"flex",alignItems:"center",gap:16}}>
+              <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:pp.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <IC name={pp.icon} size={18} color={pp.color}/>
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                   <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{pp.title}</div>
-                  {last&&<span style={{fontSize:10,color:K.dim,background:K.bdr,padding:"1px 7px",borderRadius:4,fontFamily:fb}}>Last run {daysAgo(last.date)}</span>}
+                  {last&&<span style={{fontSize:10,color:K.dim,background:K.bdr,padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fb}}>Last run {daysAgo(last.date)}</span>}
                 </div>
                 <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{pp.desc}</div>
               </div>
-              <button onClick={function(){genPortPrompt(pp)}} style={{flexShrink:0,padding:"9px 18px",borderRadius:10,border:"1px solid "+pp.color+"50",background:pp.color+"12",color:pp.color,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Analyse</button>
+              <button onClick={function(){genPortPrompt(pp)}} style={{flexShrink:0,padding:"9px 18px",borderRadius:_isBm?0:10,border:"1px solid "+pp.color+"50",background:pp.color+"12",color:pp.color,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Analyse</button>
             </div>;
           })}
         </div>
@@ -5548,15 +5556,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:16}}>Select a holding, then choose the prompt type.</div>
 
-        {portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No portfolio holdings yet. Add companies from the dashboard.</div>}
+        {portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No portfolio holdings yet. Add companies from the dashboard.</div>}
 
         {portCos.length>0&&<div>
           {/* Holding picker */}
           <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:20}}>
-            {portCos.map(function(c){var active=selCo&&selCo.id===c.id;return<button key={c.id} onClick={function(){setSelCo(active?null:c)}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"12":"transparent",cursor:"pointer"}}>
+            {portCos.map(function(c){var active=selCo&&selCo.id===c.id;return<button key={c.id} onClick={function(){setSelCo(active?null:c)}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderRadius:_isBm?0:10,border:"2px solid "+(active?K.acc:K.bdr),background:active?K.acc+"12":"transparent",cursor:"pointer"}}>
               <CoLogo ticker={c.ticker} domain={c.domain} size={20}/>
               <span style={{fontSize:13,fontWeight:active?700:400,color:active?K.acc:K.mid,fontFamily:fm}}>{c.ticker}</span>
-              <span style={{fontSize:10,color:active?K.acc:K.dim,background:active?K.acc+"15":K.bg,borderRadius:4,padding:"1px 6px",fontFamily:fb}}>{c.conviction}/10</span>
+              <span style={{fontSize:10,color:active?K.acc:K.dim,background:active?K.acc+"15":K.bg,borderRadius:_isBm?0:4,padding:"1px 6px",fontFamily:fb}}>{c.conviction}/10</span>
             </button>})}
           </div>
 
@@ -5567,18 +5575,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var hasThesis=selCo.thesisNote&&selCo.thesisNote.trim().length>30;
               var needsThesis=["challenge","annual","bear","sell","valuation"].indexOf(type)>=0&&!hasThesis;
               var last=getLastRun(selCo.id+"_"+type);
-              return<div key={type} style={{background:K.card,border:"1px solid "+(needsThesis?K.bdr:f.color+"30"),borderRadius:14,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,opacity:needsThesis?0.55:1}}>
-                <div style={{width:38,height:38,borderRadius:9,background:f.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              return<div key={type} style={{background:K.card,border:"1px solid "+(needsThesis?K.bdr:f.color+"30"),borderRadius:_isBm?0:14,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,opacity:needsThesis?0.55:1}}>
+                <div style={{width:38,height:38,borderRadius:_isBm?0:9,background:f.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   <IC name={f.icon} size={16} color={f.color}/>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}>
                     <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{f.title}</div>
-                    {last&&<span style={{fontSize:10,color:K.grn,background:K.grn+"15",padding:"1px 7px",borderRadius:4,fontFamily:fb}}>✓ {daysAgo(last.date)}</span>}
+                    {last&&<span style={{fontSize:10,color:K.grn,background:K.grn+"15",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fb}}>✓ {daysAgo(last.date)}</span>}
                   </div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{needsThesis?"Write a thesis for "+selCo.ticker+" first":f.framing.why.slice(0,100)+"…"}</div>
                 </div>
-                <button onClick={function(){if(!needsThesis)genHoldingPrompt(type,selCo)}} disabled={needsThesis} style={{flexShrink:0,padding:"8px 16px",borderRadius:9,border:"1px solid "+f.color+(needsThesis?"20":"50"),background:f.color+(needsThesis?"05":"12"),color:f.color,fontSize:12,fontWeight:700,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,whiteSpace:"nowrap",opacity:needsThesis?0.5:1}}>Analyse</button>
+                <button onClick={function(){if(!needsThesis)genHoldingPrompt(type,selCo)}} disabled={needsThesis} style={{flexShrink:0,padding:"8px 16px",borderRadius:_isBm?0:9,border:"1px solid "+f.color+(needsThesis?"20":"50"),background:f.color+(needsThesis?"05":"12"),color:f.color,fontSize:12,fontWeight:700,cursor:needsThesis?"not-allowed":"pointer",fontFamily:fm,whiteSpace:"nowrap",opacity:needsThesis?0.5:1}}>Analyse</button>
               </div>;
             })}
           </div>}
@@ -5600,7 +5608,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {allHistory.slice(0,6).map(function(item){
-                return<div key={item.key} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"flex-start",gap:12}}>
+                return<div key={item.key} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",display:"flex",alignItems:"flex-start",gap:12}}>
                   <IC name="lightbulb" size={13} color={K.acc} style={{marginTop:2}}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
@@ -5609,7 +5617,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     </div>
                     <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.summary}</div>
                   </div>
-                  <button onClick={function(){setAiModal({title:item.title,framing:{why:"Saved analysis from "+item.date,dataPoints:[]},prompt:"",histKey:item.key,savedResponse:item.full});}} style={{flexShrink:0,padding:"5px 12px",borderRadius:7,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>View</button>
+                  <button onClick={function(){setAiModal({title:item.title,framing:{why:"Saved analysis from "+item.date,dataPoints:[]},prompt:"",histKey:item.key,savedResponse:item.full});}} style={{flexShrink:0,padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>View</button>
                 </div>;
               })}
             </div>
@@ -5749,18 +5757,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isMobile?"-0.5px":"normal"}}>Owner's Hub</h1>
             <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
-              <div style={{width:isMobile?120:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
+              <div style={{width:isMobile?120:140,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:_isBm?0:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={11} color={K.dim}/>{currentLevel.name}</span>
             </div></div></div>
         {/* Quick stats */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:isMobile?8:16,marginTop:isMobile?12:16}}>
-          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10}}>
             <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
             <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>holdings</div></div>
-          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10}}>
             <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{scored.length}</div>
             <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>scored</div></div>
-          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10}}>
+          <div style={{textAlign:"center",padding:isMobile?"10px 8px":"8px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10}}>
             <div style={{fontSize:isMobile?22:20,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
             <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>decisions</div></div></div></div>
 
@@ -5770,20 +5778,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
-            <select value={ht} onChange={function(e){setHt(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
+            <select value={ht} onChange={function(e){setHt(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
               {tabs.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
             <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
         </div>}
         return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto",msOverflowStyle:"none",scrollbarWidth:"none"}}>
           {tabs.map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
-            <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}{tab.dot>0&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:K.grn,borderRadius:999,padding:"1px 5px",marginLeft:2,lineHeight:1.4}}>{tab.dot}</span>}</button>})}</div>
+            <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}{tab.dot>0&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:K.grn,borderRadius:_isBm?0:999,padding:"1px 5px",marginLeft:2,lineHeight:1.4}}>{tab.dot}</span>}</button>})}</div>
       })()}
 
       {/* ═══ COMMAND CENTER TAB ═══ */}
       {ht==="command"&&<div>
         {/* ── Zone 1: Right Now ── */}
-        <div style={{marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:K.acc}}/> Right Now</div></div>
+        <div style={{marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:_isBm?0:2,background:K.acc}}/> Right Now</div></div>
         {/* ═══ 7-DAY QUEST ═══ */}
         {(function(){
           var wk=getWeekId();
@@ -5845,11 +5853,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:14,fontWeight:600,color:K.txt}}>This Week's Focus</div>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>Resets every Monday · {doneCount}/{quests.length} complete</div></div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{width:80,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:questPct+"%",borderRadius:3,background:allDone2?K.grn:K.acc,transition:"width .5s"}}/></div>
+                <div style={{width:80,height:6,borderRadius:_isBm?0:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:questPct+"%",borderRadius:_isBm?0:3,background:allDone2?K.grn:K.acc,transition:"width .5s"}}/></div>
                 <span style={{fontSize:12,fontWeight:600,color:allDone2?K.grn:K.acc,fontFamily:fm}}>{questPct}%</span></div></div>
             {/* Focus list */}
             <div style={{display:"grid",gap:6}}>
-              {quests.map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
+              {quests.map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:_isBm?0:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
                 <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {q.done?<IC name="check" size={12} color="#fff" strokeWidth={3}/>:<IC name={q.icon} size={10} color={q.color}/>}</div>
                 <div style={{flex:1,fontSize:13,color:q.done?K.dim:K.txt,textDecoration:q.done?"line-through":"none"}}>{q.text}</div>
@@ -5857,22 +5865,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {q.done&&<span style={{fontSize:11,color:K.grn,fontFamily:fm}}>{"✓"}</span>}
               </div>})}</div>
             {/* Focus reward preview */}
-            {!allDone2&&<div style={{marginTop:12,padding:"10px 16px",background:K.bg,borderRadius:8,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:28,height:28,borderRadius:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={14} color="#a78bfa"/></div>
+            {!allDone2&&<div style={{marginTop:12,padding:"10px 16px",background:K.bg,borderRadius:_isBm?0:8,display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:"#a78bfa15",display:"flex",alignItems:"center",justifyContent:"center",animation:"glowPulse 2s ease-in-out infinite"}}><IC name="dice" size={14} color="#a78bfa"/></div>
               <div style={{fontSize:12,color:K.dim}}>Complete all actions to claim your weekly insight</div></div>}
             {/* Focus complete + claim */}
-            {allDone2&&!questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"20px",background:"linear-gradient(135deg,"+K.acc+"08,#a78bfa08)",border:"1px solid #a78bfa30",borderRadius:12}}>
+            {allDone2&&!questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"20px",background:"linear-gradient(135deg,"+K.acc+"08,#a78bfa08)",border:"1px solid #a78bfa30",borderRadius:_isBm?0:12}}>
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
               <div style={{fontSize:12,color:K.dim,marginBottom:12}}>All actions complete! Claim your weekly insight</div>
               <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:14,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
-            {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:8}}>
+            {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8}}>
               <div style={{fontSize:13,color:K.grn,fontWeight:500}}>All actions complete this week ✓</div>
               <div style={{fontSize:11,color:K.dim}}>New actions every Monday</div></div>}
           </div>})()}
 
         {/* Upcoming earnings */}
-        {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px",marginBottom:20}}>
+        {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm}}>Earnings This Fortnight</div>
           {upcoming.map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
             <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
@@ -5886,7 +5894,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {(function(){var stale=portfolio.filter(function(c2){if(!c2.thesisUpdatedAt)return c2.thesisNote&&c2.thesisNote.length>20;return Math.ceil((Date.now()-new Date(c2.thesisUpdatedAt))/864e5)>90});
           var unchecked=portfolio.filter(function(c2){return!c2.lastChecked&&c2.kpis.length>0});
           if(stale.length===0&&unchecked.length===0)return null;
-          return<div style={{background:K.amb+"06",border:"1px solid "+K.amb+"20",borderRadius:12,padding:"12px 16px",marginBottom:16}}>
+          return<div style={{background:K.amb+"06",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:12,padding:"12px 16px",marginBottom:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,fontFamily:fm,marginBottom:8}}>Needs Attention</div>
             {stale.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:stale.length>0&&unchecked.length>0?6:0}}>
               <IC name="clock" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>Thesis refresh: <strong style={{color:K.txt}}>{stale.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
@@ -5895,16 +5903,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>})()}
 
         {/* ── Zone 2: Your Portfolio ── */}
-        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:"#8B5CF6"}}/> Your Portfolio</div></div>
+        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:_isBm?0:2,background:"#8B5CF6"}}/> Your Portfolio</div></div>
         {/* Recent decisions (last 5) */}
-        {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 20px"}}>
+        {allDecs.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Recent Decisions</div>
             <button onClick={function(){setHt("journal")}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>View all {"→"}</button></div>
           {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).slice(0,5).map(function(dec,i){
             var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
             return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<4?"1px solid "+K.bdr:"none"}}>
-              <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:3,fontFamily:fm,minWidth:36,textAlign:"center"}}>{dec.action}</span>
+              <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm,minWidth:36,textAlign:"center"}}>{dec.action}</span>
               <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
               <span style={{fontSize:12,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dec.reasoning?dec.reasoning.substring(0,60)+"...":""}</span>
               {dec.outcome&&<span style={{fontSize:10,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,fontFamily:fm,fontWeight:600}}>{dec.outcome}</span>}
@@ -5921,15 +5929,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var buyDec=(c2.decisions||[]).find(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
             return{ticker:c2.ticker,ret:ret2,contrib:weight*ret2,weight:weight*100,reasoning:buyDec?buyDec.reasoning:"",id:c2.id}}).sort(function(a,b){return b.contrib-a.contrib});
           var bestD=attr[0];var worstD=attr[attr.length-1];
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:12}}>Performance Attribution</div>
             <div style={{display:"flex",gap:16,marginBottom:12}}>
               <div><div style={{fontSize:24,fontWeight:700,color:totalRet>=0?K.grn:K.red,fontFamily:fm}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div><div style={{fontSize:11,color:K.dim}}>Portfolio return</div></div>
               <div style={{flex:1,display:"flex",flexDirection:"column",gap:4}}>{attr.slice(0,5).map(function(a2){return<div key={a2.ticker} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer"}} onClick={function(){setSelId(a2.id);setDetailTab("dossier");setPage("dashboard")}}>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,width:40}}>{a2.ticker}</span>
-                <div style={{flex:1,height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(Math.abs(a2.contrib)/Math.max(Math.abs(attr[0].contrib),1)*100,100)+"%",borderRadius:3,background:a2.contrib>=0?K.grn:K.red}}/></div>
+                <div style={{flex:1,height:6,borderRadius:_isBm?0:3,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(Math.abs(a2.contrib)/Math.max(Math.abs(attr[0].contrib),1)*100,100)+"%",borderRadius:_isBm?0:3,background:a2.contrib>=0?K.grn:K.red}}/></div>
                 <span style={{fontSize:11,fontWeight:600,color:a2.contrib>=0?K.grn:K.red,fontFamily:fm,minWidth:42,textAlign:"right"}}>{a2.contrib>=0?"+":""}{a2.contrib.toFixed(1)}%</span></div>})}</div></div>
-            {bestD&&bestD.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 10px",background:K.bg,borderRadius:6}}><span style={{fontWeight:600,color:K.grn}}>Best call:</span> {bestD.ticker} ({bestD.ret>=0?"+":""}{bestD.ret.toFixed(0)}%) {bestD.reasoning.substring(0,80)}</div>}
+            {bestD&&bestD.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,padding:"8px 10px",background:K.bg,borderRadius:_isBm?0:6}}><span style={{fontWeight:600,color:K.grn}}>Best call:</span> {bestD.ticker} ({bestD.ret>=0?"+":""}{bestD.ret.toFixed(0)}%) {bestD.reasoning.substring(0,80)}</div>}
           </div>})()}
         {/* === GROWTH TIMELINE === */}
         {portfolio.length>0&&(function(){
@@ -5940,10 +5948,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var tE=portfolio.reduce(function(s2,c2){return s2+(c2.earningsHistory||[]).length},0);
           var tCu=portfolio.reduce(function(s2,c2){return s2+(c2.convictionHistory||[]).length},0);
           var avgM=portfolio.reduce(function(s2,c2){return s2+calcMastery(c2).stars},0)/Math.max(portfolio.length,1);
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:12}}>Your Growth</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-              {[{l:"Theses",v:tw+"/"+portfolio.length,c:tw===portfolio.length?K.grn:K.txt},{l:"Avg depth",v:avgSec.toFixed(1)+"/4",c:avgSec>=3?K.grn:K.txt},{l:"KPIs tracked",v:totalK+(" (")+kpC+" checked)",c:kpC>0?K.grn:K.txt},{l:"Earnings reviewed",v:tE+"q",c:tE>=portfolio.length*2?K.grn:K.txt},{l:"Conviction updates",v:tCu+"",c:tCu>=portfolio.length*2?K.grn:K.txt},{l:"Mastery avg",v:avgM.toFixed(1)+"/6",c:avgM>=4?K.grn:K.txt}].map(function(g2){return<div key={g2.l} style={{padding:"6px 8px",background:K.bg,borderRadius:6}}>
+              {[{l:"Theses",v:tw+"/"+portfolio.length,c:tw===portfolio.length?K.grn:K.txt},{l:"Avg depth",v:avgSec.toFixed(1)+"/4",c:avgSec>=3?K.grn:K.txt},{l:"KPIs tracked",v:totalK+(" (")+kpC+" checked)",c:kpC>0?K.grn:K.txt},{l:"Earnings reviewed",v:tE+"q",c:tE>=portfolio.length*2?K.grn:K.txt},{l:"Conviction updates",v:tCu+"",c:tCu>=portfolio.length*2?K.grn:K.txt},{l:"Mastery avg",v:avgM.toFixed(1)+"/6",c:avgM>=4?K.grn:K.txt}].map(function(g2){return<div key={g2.l} style={{padding:"6px 8px",background:K.bg,borderRadius:_isBm?0:6}}>
                 <div style={{fontSize:14,fontWeight:700,color:g2.c,fontFamily:fm}}>{g2.v}</div><div style={{fontSize:8,color:K.dim}}>{g2.l}</div></div>})}</div></div>})()}
         {/* === INVESTOR DNA v2 === */}
         {portfolio.length>=2&&(function(){
@@ -5974,26 +5982,26 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var sectors2={};portfolio.forEach(function(c2){var s3=c2.sector||"Other";sectors2[s3]=(sectors2[s3]||0)+1});
           var topSectors=Object.keys(sectors2).sort(function(a,b){return sectors2[b]-sectors2[a]}).slice(0,3);
           var avgConv=portfolio.reduce(function(s2,c2){return s2+(c2.conviction||0)},0)/Math.max(portfolio.length,1);
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:14}}>Investor DNA</div>
             {/* Top match */}
-            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,padding:"12px 14px",background:K.acc+"06",borderRadius:10,border:"1px solid "+K.acc+"15"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,padding:"12px 14px",background:K.acc+"06",borderRadius:_isBm?0:10,border:"1px solid "+K.acc+"15"}}>
               <div style={{width:44,height:44,borderRadius:"50%",background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
               <div style={{flex:1}}>
                 <div style={{fontSize:15,fontWeight:700,color:K.txt}}>{best.investor.name}</div>
                 <div style={{fontSize:12,color:K.acc,fontWeight:600}}>{best.investor.style}</div>
                 <div style={{fontSize:11,color:K.dim,marginTop:2}}>{best.investor.desc}</div></div>
-              <div style={{textAlign:"center",padding:"6px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}}>
+              <div style={{textAlign:"center",padding:"6px 12px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
                 <div style={{fontSize:20,fontWeight:800,color:best.composite>=50?K.grn:best.composite>=25?K.acc:K.dim,fontFamily:fm}}>{Math.round(best.composite)}%</div>
                 <div style={{fontSize:8,color:K.dim}}>match</div></div></div>
             {/* Shared holdings */}
             {best.shared.length>0&&<div style={{marginBottom:12}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Shared holdings with {best.investor.name} ({best.shared.length})</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {best.shared.map(function(t2){return<span key={t2} style={{padding:"3px 8px",borderRadius:4,background:K.grn+"10",border:"1px solid "+K.grn+"25",fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{t2}</span>})}</div></div>}
+                {best.shared.map(function(t2){return<span key={t2} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:K.grn+"10",border:"1px solid "+K.grn+"25",fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{t2}</span>})}</div></div>}
             {/* Why this match */}
-            <div style={{fontSize:12,color:K.mid,lineHeight:1.6,padding:"8px 10px",background:K.bg,borderRadius:6,marginBottom:14}}>
+            <div style={{fontSize:12,color:K.mid,lineHeight:1.6,padding:"8px 10px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:14}}>
               {"Based on "}<strong style={{color:K.txt}}>{best.shared.length}</strong>{" shared holdings ("+best.overlapPct.toFixed(0)+"% of your portfolio) and "}
               <strong style={{color:K.txt}}>{best.traitSim.toFixed(0)}%</strong>{" style similarity. "}
               {best.investor.fund!==""&&<span>{"Fund: "+best.investor.fund+". "}</span>}
@@ -6002,11 +6010,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {top3.length>1&&<div style={{marginBottom:12}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Other close matches</div>
               <div style={{display:"flex",gap:8}}>
-                {top3.slice(1).map(function(m2){return<div key={m2.investor.id} style={{flex:1,padding:"8px 10px",borderRadius:6,background:K.bg,border:"1px solid "+K.bdr}}>
+                {top3.slice(1).map(function(m2){return<div key={m2.investor.id} style={{flex:1,padding:"8px 10px",borderRadius:_isBm?0:6,background:K.bg,border:"1px solid "+K.bdr}}>
                   <div style={{fontSize:12,fontWeight:600,color:K.txt}}>{m2.investor.name}</div>
                   <div style={{fontSize:10,color:K.dim}}>{m2.investor.style}</div>
                   <div style={{display:"flex",alignItems:"center",gap:4,marginTop:4}}>
-                    <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(m2.composite,100)+"%",borderRadius:2,background:K.acc}}/></div>
+                    <div style={{flex:1,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(m2.composite,100)+"%",borderRadius:_isBm?0:2,background:K.acc}}/></div>
                     <span style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{Math.round(m2.composite)}%</span></div>
                   {m2.shared.length>0&&<div style={{fontSize:8,color:K.dim,marginTop:3}}>{m2.shared.join(", ")}</div>}</div>})}</div></div>}
             {/* Your portfolio traits */}
@@ -6018,9 +6026,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <span>Top sectors: <strong style={{color:K.txt}}>{topSectors.join(", ")}</strong></span></div></div>})()}
 
         {/* ── Zone 3: Reflection ── */}
-        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:2,background:K.grn}}/> Reflection</div></div>
+        <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:_isBm?0:2,background:K.grn}}/> Reflection</div></div>
         {/* === QUARTERLY LETTER === */}
-        {weeklyReviews.length>=1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+        {weeklyReviews.length>=1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div><div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:4}}>Quarterly Letters</div>
                 <div style={{fontSize:13,color:K.mid}}>Your personal investment reflections, generated each quarter.</div></div>
@@ -6037,28 +6045,28 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var ag=gaps.reduce(function(a,b){return a+b},0)/gaps.length;
             if(ag<=1.3)pats.push({icon:"check",color:K.grn,t:"Review cadence: every "+ag.toFixed(1)+" weeks. Exceptional consistency."})}
           if(pats.length===0)return null;
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginTop:16}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
-            {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:6,marginBottom:4}}>
+            {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:4}}>
               <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
         {/* ═══ STRESS TEST ═══ */}
         {portfolio.length>0&&<div style={{marginTop:24}}>
           <div style={S.sec}><IC name="shield" size={14} color={K.acc}/>Stress Test</div>
           {(function(){var planned=portfolio.filter(function(c2){return(c2.scenarios||[]).length>0});var unplanned=portfolio.filter(function(c2){return(c2.scenarios||[]).length===0});var totalScen=portfolio.reduce(function(s,c2){return s+(c2.scenarios||[]).length},0);
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                 <div style={{fontSize:28,fontWeight:800,color:planned.length===portfolio.length?K.grn:planned.length>0?K.amb:K.dim,fontFamily:fm}}>{planned.length}<span style={{fontSize:14,fontWeight:400,color:K.dim}}>/{portfolio.length}</span></div>
                 <div><div style={{fontSize:13,fontWeight:600,color:K.txt}}>Holdings stress-tested</div>
                   <div style={{fontSize:11,color:K.dim}}>{totalScen} scenario{totalScen!==1?"s":""} planned</div></div></div>
-              {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:11,fontFamily:fm,borderRadius:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer"}}>{c2.ticker}</button>})}</div>}
+              {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:11,fontFamily:fm,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer"}}>{c2.ticker}</button>})}</div>}
               {planned.length===portfolio.length&&<div style={{fontSize:12,color:K.grn,fontFamily:fm}}>Every holding has a crisis plan.</div>}
             </div>})()}</div>}
         {/* ═══ PERSONAL RECORD ═══ */}
         <div style={{marginTop:24}}>
           <div style={S.sec}><IC name="bar" size={14} color={K.dim}/>Your Record</div>
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:10}}>
-            {[{label:"Holdings",value:portfolio.length,icon:"overview",color:K.acc},{label:"Decisions Logged",value:allDecs.length,icon:"edit",color:K.blue},{label:"Reviews Done",value:weeklyReviews.length,icon:"shield",color:K.grn},{label:"Decision Accuracy",value:scored.length>0?dqPct+"%":"—",icon:"target",color:dqPct>=60?K.grn:K.amb}].map(function(s){return<div key={s.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 18px"}}>
+            {[{label:"Holdings",value:portfolio.length,icon:"overview",color:K.acc},{label:"Decisions Logged",value:allDecs.length,icon:"edit",color:K.blue},{label:"Reviews Done",value:weeklyReviews.length,icon:"shield",color:K.grn},{label:"Decision Accuracy",value:scored.length>0?dqPct+"%":"—",icon:"target",color:dqPct>=60?K.grn:K.amb}].map(function(s){return<div key={s.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 18px"}}>
               <IC name={s.icon} size={16} color={s.color}/>
               <div style={{fontSize:26,fontWeight:800,color:s.color,fontFamily:fm,marginTop:8,lineHeight:1}}>{s.value}</div>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:4}}>{s.label}</div>
@@ -6193,13 +6201,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
               {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
-                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
+                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
                   {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
                   {l.name}
                   {locked&&<span style={{display:"block",fontSize:8,color:K.dim,marginTop:1}}>Week {l.unlock} streak</span>}
                 </button>})}</div>
             {/* Lens header */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:12}}>
                 {lens.wiki&&<img src={"https://upload.wikimedia.org/wikipedia/commons/thumb/"+lens.wiki} alt={lens.name} style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"1px solid "+K.bdr,background:K.bg}} onError={function(e){e.target.style.display="none"}}/>}
                 <div style={{flex:1}}>
@@ -6213,13 +6221,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:13,color:K.mid,fontStyle:"italic",lineHeight:1.6,borderTop:"1px solid "+K.bdr+"40",paddingTop:12}}>"{lens.quote}"</div>
             </div>
             {/* Metrics table with actual values */}
-            {lensLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
+            {lensLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center"}}>
               <div style={{display:"inline-block",width:20,height:20,border:"2px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .8s linear infinite",marginBottom:12}}/>
               <div style={{fontSize:14,color:K.dim}}>Fetching financial data for your holdings…</div></div>}
-            {!lensLoading&&portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
+            {!lensLoading&&portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center"}}>
               <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No financial data yet</div>
               <div style={{fontSize:13,color:K.dim}}>Add portfolio companies with position data. Financial metrics are fetched automatically from FMP.</div></div>}
-            {!lensLoading&&portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+            {!lensLoading&&portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                 <thead><tr style={{borderBottom:"2px solid "+K.bdr}}>
                   <th style={{textAlign:"left",padding:"12px 14px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>Metric</th>
@@ -6238,11 +6246,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <td style={{textAlign:"center",padding:"12px 8px"}}>
                       <div style={{fontSize:14,color:K.dim,fontFamily:fm}}>{fmtVal(m.sp500,m.unit)}</div></td>
                     <td style={{textAlign:"center",padding:"12px 8px"}}>
-                      {m.delta!=null?<span style={{fontSize:13,fontWeight:600,color:clr(m.delta),fontFamily:fm,background:clr(m.delta)+"10",padding:"3px 10px",borderRadius:4}}>{m.delta>=0?"+":""}{m.delta.toFixed(1)}{m.unit==="x"?"x":m.unit}</span>:<span style={{color:K.dim}}>—</span>}</td>
+                      {m.delta!=null?<span style={{fontSize:13,fontWeight:600,color:clr(m.delta),fontFamily:fm,background:clr(m.delta)+"10",padding:"3px 10px",borderRadius:_isBm?0:4}}>{m.delta>=0?"+":""}{m.delta.toFixed(1)}{m.unit==="x"?"x":m.unit}</span>:<span style={{color:K.dim}}>—</span>}</td>
                     <td style={{padding:"12px 14px"}}>
                       <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{m.holdings.slice(0,8).map(function(h){
                         var hDelta=m.invert?m.sp500-h.value:h.value-m.sp500;
-                        return<span key={h.ticker} style={{fontSize:10,fontFamily:fm,padding:"2px 6px",borderRadius:3,background:hDelta>0?K.grn+"12":hDelta>-2?K.amb+"12":K.red+"12",color:hDelta>0?K.grn:hDelta>-2?K.amb:K.red}} title={h.raw}>{h.ticker} {h.raw||fmtVal(h.value,m.unit)}</span>})}</div></td>
+                        return<span key={h.ticker} style={{fontSize:10,fontFamily:fm,padding:"2px 6px",borderRadius:_isBm?0:3,background:hDelta>0?K.grn+"12":hDelta>-2?K.amb+"12":K.red+"12",color:hDelta>0?K.grn:hDelta>-2?K.amb:K.red}} title={h.raw}>{h.ticker} {h.raw||fmtVal(h.value,m.unit)}</span>})}</div></td>
                   </tr>})}</tbody>
               </table>
               <div style={{padding:"12px 14px",borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
@@ -6262,17 +6270,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:12,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><IC name="edit" size={12} color={K.dim}/>Decision Log</div>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{allDecs.length} decision{allDecs.length!==1?"s":""}{scored.length>0?" · "+dqPct+"% accuracy":""}</div>
             </div>
-            {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:"20px 24px",textAlign:"center",color:K.dim,fontSize:13}}>No decisions logged yet. Log BUY / SELL / HOLD decisions from company pages.</div>:
+            {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:10,padding:"20px 24px",textAlign:"center",color:K.dim,fontSize:13}}>No decisions logged yet. Log BUY / SELL / HOLD decisions from company pages.</div>:
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {allDecs.slice().sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,20).map(function(dec,i){
                 var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
-                return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"11px 14px",borderLeft:"3px solid "+clr}}>
+                return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,padding:"11px 14px",borderLeft:"3px solid "+clr}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:4,fontFamily:fm}}>{dec.action}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:_isBm?0:4,fontFamily:fm}}>{dec.action}</span>
                     <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
                     {dec.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>@ ${dec.price}</span>}
                     <span style={{flex:1}}/>
-                    {dec.outcome&&<span style={{fontSize:10,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:3}}>{dec.outcome}</span>}
+                    {dec.outcome&&<span style={{fontSize:10,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:_isBm?0:3}}>{dec.outcome}</span>}
                     <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span>
                   </div>
                   {dec.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginTop:5}}>{dec.reasoning.substring(0,160)}{dec.reasoning.length>160?"…":""}</div>}
@@ -6288,17 +6296,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
           <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"memo"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Investment Memo</button>
           <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"doc"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>+ Quick Note</button>
-          <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:12,fontFamily:fm,outline:"none"}}>
+          <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"7px 12px",fontSize:12,fontFamily:fm,outline:"none"}}>
             <option value="all">All Companies</option>
             {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
-          <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:12,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
+          <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
           {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d2){return d2.folder===fo.id&&(hc==="all"||d2.companyId===parseInt(hc))}).length;
-            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
+            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
         <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
           <div>
-            {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:32,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:13,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
+            {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:32,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:13,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
             {filteredDocs.map(function(d3){var fo=FOLDERS.find(function(f){return f.id===d3.folder});var isActive=hd===d3.id;
-              return<div key={d3.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d3.id)}}>
+              return<div key={d3.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d3.id)}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                   <CoLogo domain={d3.domain} ticker={d3.ticker} size={18}/>
                   <span style={{fontSize:11,fontWeight:600,color:K.mid,fontFamily:fm}}>{d3.ticker}</span>
@@ -6308,7 +6316,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:14,fontWeight:500,color:K.txt}}>{d3.title}</div>
                 {!selectedDoc&&d3.content&&<div style={{fontSize:13,color:K.dim,lineHeight:1.5,marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d3.content.substring(0,200)}</div>}
               </div>})}</div>
-          {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
+          {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
               <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
               <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
@@ -6369,21 +6377,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         return<div>
           {/* Settings row */}
           <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Target CAGR</span>
               <input type="number" min={1} max={50} type="text" inputMode="numeric" defaultValue={goals.targetCAGR} key={"cagr-"+goals.targetCAGR} onBlur={function(e){var v=parseFloat(e.target.value);if(!isNaN(v)&&v>0&&v<=99)saveGoals(Object.assign({},goals,{targetCAGR:v}));else e.target.value=goals.targetCAGR}} style={{width:52,background:"transparent",border:"none",color:K.txt,fontSize:18,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/>
               <span style={{fontSize:13,color:K.mid,fontFamily:fm}}>%</span>
             </div>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Horizon</span>
-              {[5,10,15,20].map(function(yr){return<button key={yr} onClick={function(){saveGoals(Object.assign({},goals,{horizon:yr}))}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+(goals.horizon===yr?K.acc:"transparent"),background:goals.horizon===yr?K.acc+"20":"transparent",color:goals.horizon===yr?K.acc:K.dim,fontSize:12,fontWeight:goals.horizon===yr?700:400,cursor:"pointer",fontFamily:fm}}>{yr}y</button>})}
+              {[5,10,15,20].map(function(yr){return<button key={yr} onClick={function(){saveGoals(Object.assign({},goals,{horizon:yr}))}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+(goals.horizon===yr?K.acc:"transparent"),background:goals.horizon===yr?K.acc+"20":"transparent",color:goals.horizon===yr?K.acc:K.dim,fontSize:12,fontWeight:goals.horizon===yr?700:400,cursor:"pointer",fontFamily:fm}}>{yr}y</button>})}
             </div>
           </div>
 
-          {portf.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>Add holdings to see your CAGR projection</div>:
+          {portf.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>Add holdings to see your CAGR projection</div>:
           <div>
             {/* Main projection card */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",marginBottom:16}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",marginBottom:16}}>
               <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:140}}>
                   <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Expected Portfolio CAGR</div>
@@ -6416,16 +6424,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {tgtX!==expX&&<text x={tgtX.toFixed(0)} y="-4" fill={K.amb} fontSize="9" fontWeight="bold" textAnchor="middle">Target {goals.targetCAGR}%</text>}
                 </svg>
               </div>
-              {!onTarget&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:8,padding:"10px 14px",fontSize:12,color:K.amb}}>
+              {!onTarget&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:8,padding:"10px 14px",fontSize:12,color:K.amb}}>
                 Your expected {portCAGR.toFixed(1)}% is below your {goals.targetCAGR}% target. Consider whether your target is realistic, or if higher-conviction positions could shift the outlook.
               </div>}
-              {onTarget&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:8,padding:"10px 14px",fontSize:12,color:K.grn}}>
+              {onTarget&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:8,padding:"10px 14px",fontSize:12,color:K.grn}}>
                 Your portfolio is on track. Expected {portCAGR.toFixed(1)}% vs {goals.targetCAGR}% target — {prob}% probability of hitting it.
               </div>}
             </div>
 
             {/* Per-holding breakdown */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Expected Return by Holding</div>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:10}}>TSR = (1 + EPS Growth + Buyback) × (1 + Multiple Change) + Dividend Yield − 1. Growth adjusted by quality score (ROIC, margins). "Needed" = growth required to hit your target CAGR at current valuation.</div>
               {holdingReturns.map(function(h){
@@ -6452,14 +6460,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:14,fontWeight:600,color:K.txt}}>Reading List</div>
           <button onClick={function(){setModal({type:"addReading"})}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Add Book</button>
         </div>
-        {readingList.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
+        {readingList.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
           <div style={{marginBottom:8}}>No books yet</div>
           <div style={{fontSize:12}}>Add books, articles, and resources that shape your investment thinking.</div>
         </div>}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
           {readingList.map(function(item,i){
             var statusColor=item.status==="read"?K.grn:item.status==="reading"?K.acc:K.dim;
-            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 18px"}}>
+            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 18px"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:600,color:K.txt,marginBottom:2}}>{item.title}</div>
@@ -6467,7 +6475,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {item.notes&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{item.notes}</div>}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-                  <select value={item.status||"want"} onChange={function(e){var updated=readingList.map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r});saveRL(updated)}} style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:6,color:statusColor,fontSize:11,padding:"2px 6px",fontFamily:fm,cursor:"pointer"}}>
+                  <select value={item.status||"want"} onChange={function(e){var updated=readingList.map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r});saveRL(updated)}} style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:statusColor,fontSize:11,padding:"2px 6px",fontFamily:fm,cursor:"pointer"}}>
                     <option value="want">Want to read</option>
                     <option value="reading">Reading</option>
                     <option value="read">Read</option>
@@ -6504,7 +6512,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var JOURNEY=[
       {w:1,type:"theme",id:"forest",label:"Forest Theme",icon:"seedling",desc:"A calm dark-green workspace"},
       {w:2,type:"lens",id:"munger",label:"Munger Lens",icon:"search",desc:"Quality at scale filter"},
-      {w:3,type:"theme",id:"paypal",label:"Ocean Theme",icon:"shield",desc:"Deep blue palette"},
+      {w:3,type:"theme",id:"paypal",label:"Ocean",icon:"shield",desc:"Clean professional blue"},
       {w:4,type:"lens",id:"buffett",label:"Buffett Lens",icon:"castle",desc:"Owner earnings framework"},
       {w:6,type:"theme",id:"purple",label:"Purple Theme",icon:"target",desc:"Twilight dark palette"},
       {w:8,type:"lens",id:"greenblatt",label:"Magic Formula Lens",icon:"bar",desc:"Greenblatt's two-factor system"},
@@ -6566,14 +6574,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
 
       {/* ── Streak bar ── */}
-      <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12,marginBottom:20}}>
+      <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,marginBottom:20}}>
         <div>
           <div style={{fontSize:30,fontWeight:800,color:streakColor,fontFamily:fm,lineHeight:1}}>{sw}</div>
           <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>WEEK STREAK</div>
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:12,color:K.txt,fontWeight:500,marginBottom:5}}>{sw>=8?"Exceptional discipline — Munger-level consistency":sw>=4?"Building the habit — keep it going":sw>=1?"First steps — each week compounds":"Start your review streak today"}</div>
-          <div style={{display:"flex",gap:2}}>{[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){var done=i<sw;var isMil=JOURNEY.some(function(j){return j.w===i+1});return<div key={i} style={{flex:1,height:6,borderRadius:2,background:done?streakColor:K.bdr,border:isMil&&!done?"1px solid "+K.acc+"60":"none",position:"relative"}} title={isMil?"Week "+(i+1)+" unlock":(done?"Done":"")}/>})}</div>
+          <div style={{display:"flex",gap:2}}>{[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){var done=i<sw;var isMil=JOURNEY.some(function(j){return j.w===i+1});return<div key={i} style={{flex:1,height:6,borderRadius:_isBm?0:2,background:done?streakColor:K.bdr,border:isMil&&!done?"1px solid "+K.acc+"60":"none",position:"relative"}} title={isMil?"Week "+(i+1)+" unlock":(done?"Done":"")}/>})}</div>
           {nextUnlock&&<div style={{fontSize:10,color:K.acc,marginTop:4,fontFamily:fm}}>{sw>0?"Next: ":"Start to unlock: "}{nextUnlock.label} at week {nextUnlock.w}</div>}
         </div>
         <div style={{marginLeft:"auto",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
@@ -6587,11 +6595,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         // Unlock journey track — show all milestones
         return<div>
           {/* Journey track */}
-          {isFree&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+          {isFree&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
             <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:14,display:"flex",alignItems:"center",gap:6}}><IC name="trending" size={12} color={K.dim}/>Your Unlock Journey</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {JOURNEY.map(function(j){var done=sw>=j.w;var isNext=!done&&j.w===nextUnlock?.w;
-                return<div key={j.w} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:8,background:done?K.grn+"08":isNext?K.acc+"08":"transparent",border:"1px solid "+(done?K.grn+"30":isNext?K.acc+"30":K.bdr+"50"),opacity:done||isNext?1:0.55}}>
+                return<div key={j.w} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:_isBm?0:8,background:done?K.grn+"08":isNext?K.acc+"08":"transparent",border:"1px solid "+(done?K.grn+"30":isNext?K.acc+"30":K.bdr+"50"),opacity:done||isNext?1:0.55}}>
                   <div style={{width:28,height:28,borderRadius:"50%",background:done?K.grn+"20":isNext?K.acc+"20":K.bdr,border:"1px solid "+(done?K.grn+"60":isNext?K.acc+"60":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     {done?<IC name="check" size={12} color={K.grn}/>:<span style={{fontSize:11,fontWeight:700,color:isNext?K.acc:K.dim,fontFamily:fm}}>{j.w}</span>}
                   </div>
@@ -6602,29 +6610,29 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <div style={{fontSize:10,color:done?K.grn:isNext?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>{done?"Unlocked":isNext?"Up next":"Week "+j.w}</div>
                 </div>})}
             </div>
-            <div style={{marginTop:14,padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:8,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{marginTop:14,padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,display:"flex",alignItems:"center",gap:10}}>
               <IC name="lightbulb" size={13} color={K.acc}/>
               <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>Pro users get all themes and lenses immediately. <span style={{color:K.acc,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}}>See what's included →</span></div>
             </div>
           </div>}
-          {!isFree&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
+          {!isFree&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
             <IC name="shield" size={16} color={K.grn}/>
             <div style={{fontSize:13,color:K.mid}}>Pro member — all themes and investor lenses are unlocked. Your review generates a full portfolio health report.</div>
           </div>}
           {/* Insight preview chest */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:10,display:"inline-block",animation:"glowPulse 2.5s ease-in-out infinite"}}>{String.fromCodePoint(0x1F4DC)}</div>
             <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Weekly Insight awaits</div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.6,maxWidth:340,margin:"0 auto 16px"}}>{isFree?"Complete your review to earn investor wisdom and claim your streak reward.":"Complete your review to receive curated wisdom and your portfolio health report."}</div>
             {currentWeekReviewed
               ?<div><div style={{fontSize:14,fontWeight:600,color:K.grn,marginBottom:4}}>{"✓"} Done for this week</div><div style={{fontSize:12,color:K.dim}}>Come back next week</div></div>
               :<div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"center"}}>
-                <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 40px",fontSize:14,borderRadius:10})}>Start Review</button>
+                <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 40px",fontSize:14,borderRadius:_isBm?0:10})}>Start Review</button>
                 {alreadyDone&&<button onClick={function(){setStep("done")}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>View past results →</button>}
               </div>}
           </div>
           {/* Past review mini-history */}
-          {weeklyReviews.length>1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px"}}>
+          {weeklyReviews.length>1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px"}}>
             <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>RECENT REVIEWS</div>
             {weeklyReviews.slice(1,6).map(function(h,hi){var d2=h.date?new Date(h.date):null;var ds2=d2?d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";var inc=h.entries?h.entries.filter(function(e){return e.new>e.prev}).length:0;var dec=h.entries?h.entries.filter(function(e){return e.new<e.prev}).length:0;
               return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0",borderBottom:hi<Math.min(weeklyReviews.length-2,4)?"1px solid "+K.bdr+"30":"none"}}>
@@ -6644,10 +6652,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {step==="review"&&c&&<div>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{idx+1} / {portfolio.length}</div>
-          <div style={{flex:1,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:((idx+1)/portfolio.length*100)+"%",borderRadius:2,background:K.acc,transition:"width .3s"}}/></div>
+          <div style={{flex:1,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:((idx+1)/portfolio.length*100)+"%",borderRadius:_isBm?0:2,background:K.acc,transition:"width .3s"}}/></div>
           <button onClick={function(){setStep("summary")}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,opacity:.6}}>Skip to summary →</button>
         </div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"28px 32px"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"28px 32px"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
             <CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
             <div><div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}</div>
@@ -6660,21 +6668,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {(function(){var prevWeek=weeklyReviews.length>0?weeklyReviews[0]:null;var prevEntry=prevWeek?prevWeek.entries.find(function(e){return e.id===c.id}):null;
             if(!prevEntry)return null;
             var prevAction=prevEntry.action||"hold";
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:3}}>LAST WEEK</div>
                 <div style={{fontSize:12,color:K.mid}}>Conviction: <strong style={{color:K.txt}}>{prevEntry.prev}→{prevEntry.new}</strong>{prevEntry.note?" · "+prevEntry.note.substring(0,60):""}</div>
               </div>
-              {prevAction!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb,background:(prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb)+"15",padding:"3px 8px",borderRadius:4,fontFamily:fm,textTransform:"uppercase",flexShrink:0}}>{prevAction}</span>}
+              {prevAction!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb,background:(prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb)+"15",padding:"3px 8px",borderRadius:_isBm?0:4,fontFamily:fm,textTransform:"uppercase",flexShrink:0}}>{prevAction}</span>}
             </div>})()}
           {/* Conviction sparkline */}
           {(function(){var ch=c.convictionHistory||[];if(ch.length<2)return null;var pts=ch.slice(-8);
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5}}>CONVICTION HISTORY</div>
                 <div style={{display:"flex",alignItems:"flex-end",gap:3,height:24}}>
                   {pts.map(function(p,pi){var h=Math.max(3,Math.round((p.rating/10)*24));var isLast=pi===pts.length-1;var clr=p.rating>=7?K.grn:p.rating>=4?K.amb:K.red;
-                    return<div key={pi} title={(p.date||"")+": "+p.rating} style={{width:16,height:h,borderRadius:2,background:isLast?clr:clr+"60",flexShrink:0}}/>})}
+                    return<div key={pi} title={(p.date||"")+": "+p.rating} style={{width:16,height:h,borderRadius:_isBm?0:2,background:isLast?clr:clr+"60",flexShrink:0}}/>})}
                 </div>
               </div>
               <div style={{textAlign:"right",flexShrink:0}}>
@@ -6684,13 +6692,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               </div>
             </div>})()}
           {/* Thesis reminder */}
-          {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
+          {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR THESIS</div>
             <div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{c.thesisNote.split("\n")[0].substring(0,200)}</div></div>}
           {/* Reflection prompt */}
           {(function(){var prompts=["If you couldn\u2019t look at the stock price for 5 years, would you still own this?","What do you understand about this business that the market doesn\u2019t?","Would you be comfortable if this was your only holding?","Is this business better or worse than when you first bought it?","Are you holding because of conviction or because selling feels like admitting a mistake?","What would a smart skeptic say about your thesis?","Has anything structurally changed, or is this just noise?","Would you buy more at today\u2019s price?"];
             var pi=(idx+c.id)%prompts.length;
-            return<div style={{background:K.bg,borderRadius:8,padding:"10px 14px",marginBottom:16,borderLeft:"2px solid "+K.acc}}>
+            return<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,borderLeft:"2px solid "+K.acc}}>
               <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{prompts[pi]}</div></div>})()}
           {/* Conviction adjustment */}
           <div style={{marginBottom:16}}>
@@ -6698,7 +6706,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"flex",gap:4}}>
               {[1,2,3,4,5,6,7,8,9,10].map(function(v){var cur=revs[c.id]!=null?revs[c.id]:c.conviction;var active=cur===v;var clr=v>=7?K.grn:v>=4?K.amb:K.red;
                 return<button key={v} onClick={function(){setConv(c.id,v)}}
-                  style={{flex:1,height:36,borderRadius:6,border:"1px solid "+(active?clr:K.bdr),background:active?clr+"20":"transparent",
+                  style={{flex:1,height:36,borderRadius:_isBm?0:6,border:"1px solid "+(active?clr:K.bdr),background:active?clr+"20":"transparent",
                     color:active?clr:K.dim,fontSize:14,fontWeight:active?700:500,cursor:"pointer",fontFamily:fm}}>{v}</button>})}
             </div>
             {revs[c.id]!=null&&revs[c.id]!==c.conviction&&<div style={{fontSize:11,color:K.acc,fontFamily:fm,marginTop:4}}>Changed from {c.conviction} to {revs[c.id]}</div>}
@@ -6710,14 +6718,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {[{id:"hold",l:"Hold",c:K.mid},{id:"add",l:"Add",c:K.grn},{id:"trim",l:"Trim",c:K.amb},{id:"review",l:"Deep Review",c:K.acc},{id:"sell",l:"Consider Sell",c:K.red}].map(function(a){
                 var act=actions[c.id]||"hold";
                 return<button key={a.id} onClick={function(){setAction(c.id,a.id)}}
-                  style={{padding:"6px 12px",borderRadius:6,border:"1px solid "+(act===a.id?a.c+"60":K.bdr),
+                  style={{padding:"6px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(act===a.id?a.c+"60":K.bdr),
                     background:act===a.id?a.c+"12":"transparent",color:act===a.id?a.c:K.dim,
                     fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{a.l}</button>})}
             </div>
           </div>
           {/* Note */}
           <input value={notes[c.id]||""} onChange={function(e){setNote(c.id,e.target.value)}} placeholder="Quick note (optional)..."
-            style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+            style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fm,outline:"none"}}/>
           <div style={{display:"flex",gap:12,marginTop:20}}>
             <button onClick={prevHolding} disabled={idx===0} style={Object.assign({},S.btn,{opacity:idx===0?.3:1})}>← Prev</button>
             <div style={{flex:1}}/>
@@ -6728,7 +6736,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ═══ SUMMARY STEP ═══ */}
       {step==="summary"&&<div style={{position:"fixed",inset:0,zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(8px)",animation:"fadeInFast .2s ease"}}>
-        <div className="ta-celebrate" style={{background:K.card,borderRadius:20,padding:isMobile?"24px 20px":"36px 40px",width:isMobile?"94vw":480,maxWidth:"94vw",maxHeight:"90vh",overflow:"auto",position:"relative",border:"2px solid "+K.grn+"40",boxShadow:"0 0 60px "+K.grn+"15, 0 20px 60px rgba(0,0,0,.3)"}}>
+        <div className="ta-celebrate" style={{background:K.card,borderRadius:_isBm?0:20,padding:isMobile?"24px 20px":"36px 40px",width:isMobile?"94vw":480,maxWidth:"94vw",maxHeight:"90vh",overflow:"auto",position:"relative",border:"2px solid "+K.grn+"40",boxShadow:"0 0 60px "+K.grn+"15, 0 20px 60px rgba(0,0,0,.3)"}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+","+K.grn+")",backgroundSize:"200% 100%"}}/>
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:52,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 16px rgba(255,215,0,.5))"}}>{String.fromCodePoint(0x1F3C6)}</div>
@@ -6755,31 +6763,31 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.acc,fontFamily:fm,lineHeight:1}}>{avgNew}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Avg conv</div></div>
                 {actCount>0&&<div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{actCount}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Actions</div></div>}
               </div>
-              {pats.slice(0,2).map(function(p2,pi){return<div key={pi} style={{background:p2.c+"10",border:"1px solid "+p2.c+"30",borderRadius:8,padding:"8px 14px",marginBottom:6,fontSize:12,color:p2.c,textAlign:"center",fontStyle:"italic"}}>{p2.t}</div>})}
+              {pats.slice(0,2).map(function(p2,pi){return<div key={pi} style={{background:p2.c+"10",border:"1px solid "+p2.c+"30",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:6,fontSize:12,color:p2.c,textAlign:"center",fontStyle:"italic"}}>{p2.t}</div>})}
             </div>})()}
           {/* Holdings pills */}
           <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:16,maxHeight:100,overflow:"auto"}}>
             {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var chgd=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
-              return<div key={c2.id} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:20,background:chgd?K.acc+"10":K.bg,border:"1px solid "+(chgd?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm}}>
+              return<div key={c2.id} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:_isBm?0:20,background:chgd?K.acc+"10":K.bg,border:"1px solid "+(chgd?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm}}>
                 <span style={{fontWeight:600,color:K.txt}}>{c2.ticker}</span>
                 {chgd?<span style={{color:K.acc,fontWeight:600}}>{c2.conviction+"→"+newConv}</span>:<span style={{color:K.dim}}>{newConv}</span>}
                 {act!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,textTransform:"uppercase"}}>{act}</span>}
               </div>})}
           </div>
           {/* Pro teasers for free users */}
-          {isFree&&<div style={{marginBottom:16,padding:"12px 14px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr}}>
+          {isFree&&<div style={{marginBottom:16,padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr}}>
             <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Pro members also see after their review</div>
             <div style={{display:"flex",flexDirection:"column",gap:6}}>
               {[{label:"Moat Health Delta",sub:"How your holdings scored vs last week"},
                 {label:"Earnings Prep Score",sub:"KPI readiness for upcoming reports"},
                 {label:"Insider Trade Alerts",sub:"Buys/sells since your last review"}
-              ].map(function(t){return<div key={t.label} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:6,background:K.card,border:"1px solid "+K.bdr}}>
+              ].map(function(t){return<div key={t.label} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr}}>
                 <div style={{flex:1}}>
                   <div style={{fontSize:12,fontWeight:600,color:K.txt,filter:"blur(0)"}}>{t.label}</div>
                   <div style={{fontSize:11,color:K.dim}}>{t.sub}</div>
                 </div>
                 <div style={{fontSize:13,fontWeight:700,color:K.dim,filter:"blur(4px)",userSelect:"none",minWidth:32,textAlign:"right"}}>9.1</div>
-                <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:5,padding:"3px 8px",fontSize:10,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>⚡ Pro</button>
+                <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 8px",fontSize:10,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>⚡ Pro</button>
               </div>})}
             </div>
           </div>}
@@ -6787,7 +6795,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {isFree&&nextUnlock&&<div style={{marginBottom:14,textAlign:"center",fontSize:12,color:K.acc,fontFamily:fm}}>
             {sw+1>=nextUnlock.w?"🎉 Complete this review to unlock "+nextUnlock.label+"!":"Keep going — "+nextUnlock.label+" unlocks at week "+nextUnlock.w}
           </div>}
-          <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 0",borderRadius:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
+          <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 0",borderRadius:_isBm?0:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
             {String.fromCodePoint(0x2705)+" Complete Review & Claim Insight"}</button>
           <div style={{textAlign:"center",marginTop:10}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>← Go back and edit</button></div>
         </div>
@@ -6795,24 +6803,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ═══ MILESTONE CELEBRATION ═══ */}
       {step==="milestone"&&milestone&&<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.75)",backdropFilter:"blur(12px)",animation:"fadeInFast .25s ease"}}>
-        <div style={{background:K.card,borderRadius:24,padding:"40px 44px",width:isMobile?"90vw":400,maxWidth:"90vw",textAlign:"center",border:"2px solid "+K.grn+"60",boxShadow:"0 0 80px "+K.grn+"20, 0 24px 60px rgba(0,0,0,.4)",position:"relative",overflow:"hidden"}}>
+        <div style={{background:K.card,borderRadius:_isBm?0:24,padding:"40px 44px",width:isMobile?"90vw":400,maxWidth:"90vw",textAlign:"center",border:"2px solid "+K.grn+"60",boxShadow:"0 0 80px "+K.grn+"20, 0 24px 60px rgba(0,0,0,.4)",position:"relative",overflow:"hidden"}}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:"linear-gradient(90deg,"+K.grn+",#FFD700,"+K.grn+")",animation:"shimmer 2s linear infinite"}}/>
           <div style={{fontSize:64,marginBottom:12,animation:"glowPulse 1.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 20px rgba(255,215,0,.7))"}}>{String.fromCodePoint(0x1F381)}</div>
           <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week {sw+1} Unlocked</div>
           <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:8}}>{milestone.label}</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.6,marginBottom:20}}>{milestone.desc}<br/>{milestone.type==="theme"?"Head to Settings to activate it.":"Available now in Investor Lenses."}</div>
-          <div style={{padding:"10px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:10,marginBottom:20}}>
+          <div style={{padding:"10px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,marginBottom:20}}>
             <div style={{fontSize:12,color:K.grn,fontWeight:600,fontFamily:fm}}>{"🔥"} {sw+1} week streak — keep it going!</div>
             {nextUnlock&&sw+1<nextUnlock.w&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Next: {nextUnlock.label} at week {nextUnlock.w}</div>}
           </div>
-          <button onClick={dismissMilestone} style={Object.assign({},S.btnP,{width:"100%",padding:"12px 0",fontSize:14,borderRadius:10,background:K.grn,border:"none",color:"#fff",fontWeight:700})}>Claim Reward & See Insight</button>
+          <button onClick={dismissMilestone} style={Object.assign({},S.btnP,{width:"100%",padding:"12px 0",fontSize:14,borderRadius:_isBm?0:10,background:K.grn,border:"none",color:"#fff",fontWeight:700})}>Claim Reward & See Insight</button>
           {!isFree&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Pro users have this already — but the streak still counts.</div>}
         </div>
       </div>}
 
       {/* ═══ DONE STEP ═══ */}
       {step==="done"&&<div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"28px 24px",marginBottom:20}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"28px 24px",marginBottom:20}}>
           <div style={{textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:8,display:"inline-block",color:K.grn}}>{"✓"}</div>
             <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
@@ -6821,12 +6829,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* 8-week conviction trend chart */}
           {weeklyReviews.length>=2&&(function(){
             var last8=weeklyReviews.slice(0,8).reverse();
-            return<div style={{background:K.bg,borderRadius:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
+            return<div style={{background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
               <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>CONVICTION TREND (8 WEEKS)</div>
               <div style={{display:"flex",alignItems:"flex-end",gap:4,height:40,justifyContent:"center"}}>
                 {last8.map(function(rev,ri){var avg=rev.summary?rev.summary.avgConv:0;var h=Math.max(4,Math.round((avg/10)*40));var isLatest=ri===last8.length-1;var clr=avg>=7?K.grn:avg>=4?K.acc:K.red;
                   return<div key={ri} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                    <div style={{width:"100%",height:h,borderRadius:2,background:isLatest?clr:clr+"50"}} title={"Wk "+rev.weekId+": avg "+avg}/>
+                    <div style={{width:"100%",height:h,borderRadius:_isBm?0:2,background:isLatest?clr:clr+"50"}} title={"Wk "+rev.weekId+": avg "+avg}/>
                     {isLatest&&<span style={{fontSize:7,color:clr,fontFamily:fm,fontWeight:700}}>{avg}</span>}
                   </div>})}
               </div>
@@ -6837,7 +6845,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var noKpi=portfolio.filter(function(c2){return c2.kpis.length===0});
             var staleThesis=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
             var withInsider=portfolio.filter(function(c2){return c2._insiderCache&&c2._insiderCache.length>0});
-            return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
+            return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:16}}>
               <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,marginBottom:10,display:"flex",alignItems:"center",gap:5}}><IC name="shield" size={10} color={K.acc}/>Portfolio Health Report</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {[{icon:"target",label:"Earnings in next 14 days",value:upcoming.length,good:upcoming.length===0,warn:upcoming.length>0,detail:upcoming.length>0?upcoming.map(function(c2){return c2.ticker}).join(", "):"All clear"},
@@ -6852,10 +6860,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               </div>
             </div>})()}
           {/* Free user — subtle Pro nudge */}
-          {isFree&&<div style={{padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+          {isFree&&<div style={{padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
             <IC name="lightbulb" size={13} color={K.acc}/>
             <div style={{flex:1,fontSize:12,color:K.dim,lineHeight:1.5}}>Pro members see a full health report after every review — upcoming earnings, stale theses, insider trades.</div>
-            <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:6,padding:"4px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,flexShrink:0}}>⚡ Pro</button>
+            <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,flexShrink:0}}>⚡ Pro</button>
           </div>}
         </div>
         {/* Review history */}
@@ -6865,19 +6873,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var increases=r.entries.filter(function(e){return e.new>e.prev});
             var decreases=r.entries.filter(function(e){return e.new<e.prev});
             var acts=r.entries.filter(function(e){return e.action&&e.action!=="hold"});
-            return<div key={ri} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:8}}>
+            return<div key={ri} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Week of {r.weekId}</div>
                 <div style={{display:"flex",gap:6}}>
-                  {increases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>↑{increases.length}</span>}
-                  {decreases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.red,background:K.red+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>↓{decreases.length}</span>}
-                  {acts.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.acc,background:K.acc+"12",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>{acts.length} action{acts.length>1?"s":""}</span>}
+                  {increases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>↑{increases.length}</span>}
+                  {decreases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.red,background:K.red+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>↓{decreases.length}</span>}
+                  {acts.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.acc,background:K.acc+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>{acts.length} action{acts.length>1?"s":""}</span>}
                 </div>
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>avg {r.summary.avgConv}/10</span>
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                 {r.entries.map(function(e){var changed=e.prev!==e.new;var isUp=e.new>e.prev;
-                  return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:4,background:changed?(isUp?K.grn+"12":K.red+"12"):K.bg,border:"1px solid "+(changed?(isUp?K.grn+"30":K.red+"30"):K.bdr),fontSize:11,fontFamily:fm,color:changed?(isUp?K.grn:K.red):K.dim,display:"flex",alignItems:"center",gap:3}}>
+                  return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:changed?(isUp?K.grn+"12":K.red+"12"):K.bg,border:"1px solid "+(changed?(isUp?K.grn+"30":K.red+"30"):K.bdr),fontSize:11,fontFamily:fm,color:changed?(isUp?K.grn:K.red):K.dim,display:"flex",alignItems:"center",gap:3}}>
                     <span style={{fontWeight:600}}>{e.ticker}</span>
                     {changed&&<span>{isUp?"↑":"↓"}{e.prev}→{e.new}</span>}
                     {!changed&&<span style={{color:K.dim}}>{e.new}</span>}
@@ -7140,7 +7148,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function getDrift(id){return getCurrentPct(id)-getTargetPct(id)}
 
     // Modal helpers
-    var inputStyle={width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fm,outline:"none",boxSizing:"border-box"};
+    var inputStyle={width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fm,outline:"none",boxSizing:"border-box"};
     var secLabel={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb,marginBottom:6,display:"block"};
 
     function openAdd(type){setForm({type:type,name:"",ticker:"",quantity:"",costBasis:"",manualValue:"",annualIncome:"",divFrequency:type==="bonds"?"semi":"quarterly"});setStep(1);setModal("add")}
@@ -7197,13 +7205,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:13,color:K.dim}}>{portCos.length} stocks · {otherAssets.length} assets · {liabilities.length} liabilities{currency!=="USD"&&fxRate!==1?" · FX live":""}</div>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setLmodal("pick")}} style={{padding:"9px 14px",borderRadius:10,border:"1px solid "+K.red+"50",background:K.red+"0d",color:K.red,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>+ Liability</button>
-          <button onClick={function(){setStep(0);setModal("add")}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}><IC name="plus" size={14} color="#fff"/>Add Asset</button>
+          <button onClick={function(){setLmodal("pick")}} style={{padding:"9px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"50",background:K.red+"0d",color:K.red,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>+ Liability</button>
+          <button onClick={function(){setStep(0);setModal("add")}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:_isBm?0:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}><IC name="plus" size={14} color="#fff"/>Add Asset</button>
         </div>
       </div>
 
       {/* ── Summary card ── */}
-      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:isMobile?"20px":"24px 32px",marginBottom:16}}>
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"20px":"24px 32px",marginBottom:16}}>
         <div style={{display:"flex",flexWrap:"wrap",gap:24,alignItems:"center"}}>
           {/* Donut */}
           <div style={{flexShrink:0}}>
@@ -7230,7 +7238,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px"}}>
               {allocData.map(function(d){var pct=totalAssetsUSD>0?(d.value/totalAssetsUSD*100):0;return<div key={d.id} style={{display:"flex",alignItems:"center",gap:5}}>
-                <div style={{width:8,height:8,borderRadius:2,background:d.color,flexShrink:0}}/>
+                <div style={{width:8,height:8,borderRadius:_isBm?0:2,background:d.color,flexShrink:0}}/>
                 <span style={{fontSize:11,color:K.mid,fontFamily:fb}}>{d.label}</span>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{pct.toFixed(1)}%</span>
               </div>})}
@@ -7240,7 +7248,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",flexDirection:"column",gap:12,alignSelf:"flex-start",alignItems:"flex-end"}}>
             <MiniSparkline/>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-              <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:fetching?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
+              <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:fetching?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
                 {fetching?<span style={{display:"inline-block",width:10,height:10,border:"1.5px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .7s linear infinite"}}/>:<IC name="gear" size={11} color={K.dim}/>}
                 {fetching?"Refreshing…":"Refresh prices"}
               </button>
@@ -7254,7 +7262,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",gap:4,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {[["overview","Overview","bar"],["history","History","chart"],["income","Income","dollar"],["targets","Allocation","target"]].map(function(tb){
           var active=nwTab===tb[0];
-          return<button key={tb[0]} onClick={function(){setNwTab(tb[0])}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:"8px 8px 0 0",border:"1px solid "+(active?K.bdr:"transparent"),borderBottom:active?"1px solid "+K.card:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:13,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,marginBottom:active?-1:0}}>
+          return<button key={tb[0]} onClick={function(){setNwTab(tb[0])}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:_isBm?"0":"8px 8px 0 0",border:"1px solid "+(active?K.bdr:"transparent"),borderBottom:active?"1px solid "+K.card:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:13,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,marginBottom:active?-1:0}}>
             <IC name={tb[2]} size={13} color={active?K.txt:K.dim}/>{tb[1]}
           </button>;
         })}
@@ -7284,7 +7292,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           />;
         })()}
         {/* Main stock portfolio */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:12,overflow:"hidden"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{stocks:!expanded.stocks}))}}>
             <IC name="trending" size={14} color={K.acc}/>
             <div style={{flex:1}}>
@@ -7307,7 +7315,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
                 <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
@@ -7322,7 +7330,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   var drift2=myPct2-idealPct2;
                   var showDrift=Math.abs(drift2)>5&&myPct2>0;
                   return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:38}}>
-                    <div style={{fontSize:11,fontWeight:700,color:cc,fontFamily:fm,background:cc+"15",borderRadius:4,padding:"1px 6px",whiteSpace:"nowrap"}}>{conv}/10</div>
+                    <div style={{fontSize:11,fontWeight:700,color:cc,fontFamily:fm,background:cc+"15",borderRadius:_isBm?0:4,padding:"1px 6px",whiteSpace:"nowrap"}}>{conv}/10</div>
                     {showDrift&&<div style={{fontSize:9,color:drift2>0?K.red:K.grn,fontFamily:fb,whiteSpace:"nowrap"}}>{drift2>0?"↑ over":"↓ under"}</div>}
                   </div>;
                 })()}
@@ -7341,7 +7349,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var totalTypeVal=assets.reduce(function(s,a){return s+getAssetValue(a)},0);
           var totalTypeCost=assets.reduce(function(s,a){return s+getAssetCost(a)},0);
           var isOpen=expanded[atp.id];
-          return<div key={atp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
+          return<div key={atp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:12,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{[atp.id]:!isOpen}))}}>
               <IC name={atp.icon} size={14} color={atp.color}/>
               <div style={{flex:1}}>
@@ -7352,7 +7360,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(totalTypeVal)}</div>
                 {totalTypeCost>0&&<div style={{fontSize:12,color:totalTypeVal>=totalTypeCost?K.grn:K.red,fontFamily:fb}}>{totalTypeVal>=totalTypeCost?"+":""}{((totalTypeVal-totalTypeCost)/totalTypeCost*100).toFixed(1)}%</div>}
               </div>}
-              <button onClick={function(e){e.stopPropagation();openAdd(atp.id)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+atp.color+"60",background:atp.color+"12",color:atp.color,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600,flexShrink:0}}>+ Add</button>
+              <button onClick={function(e){e.stopPropagation();openAdd(atp.id)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+atp.color+"60",background:atp.color+"12",color:atp.color,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600,flexShrink:0}}>+ Add</button>
               <IC name={isOpen?"alert":"plus"} size={12} color={K.dim}/>
             </div>
             {isOpen&&<div style={{borderTop:"1px solid "+K.bdr}}>
@@ -7372,8 +7380,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
-                        {tk&&a.type!=="portfolio2"&&<span style={{fontSize:10,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{tk}</span>}
-                        {hasLive&&<span style={{fontSize:10,color:dayChg>=0?K.grn:K.red,background:(dayChg>=0?K.grn:K.red)+"12",padding:"1px 7px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{dayChg>=0?"+":""}{dayChg.toFixed(2)}% today</span>}
+                        {tk&&a.type!=="portfolio2"&&<span style={{fontSize:10,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{tk}</span>}
+                        {hasLive&&<span style={{fontSize:10,color:dayChg>=0?K.grn:K.red,background:(dayChg>=0?K.grn:K.red)+"12",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{dayChg>=0?"+":""}{dayChg.toFixed(2)}% today</span>}
                       </div>
                       <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:3,display:"flex",alignItems:"center",gap:8}}>
                         {a.type==="portfolio2"&&<span>{(a.holdings||[]).length} holdings</span>}
@@ -7386,7 +7394,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     {/* Allocation bar + % */}
                     {allocPct>0&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:52}}>
                       <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{allocPct.toFixed(1)}%</div>
-                      <div style={{width:52,height:3,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...allocData.map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:2}}/></div>
+                      <div style={{width:52,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...allocData.map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:_isBm?0:2}}/></div>
                     </div>}
                     <div style={{textAlign:"right",minWidth:80}}>
                       <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
@@ -7394,8 +7402,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                       {!cost&&hasLive&&<div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Live</div>}
                     </div>
                     <div style={{display:"flex",gap:5,flexShrink:0}}>
-                      <button onClick={function(){openEdit(a)}} style={{padding:"4px 9px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
-                      <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"4px 9px",borderRadius:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>✕</button>
+                      <button onClick={function(){openEdit(a)}} style={{padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                      <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>✕</button>
                     </div>
                   </div>
                 </div>;
@@ -7410,12 +7418,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <IC name="alert" size={13} color={K.red}/>
             <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Liabilities</div>
             <div style={{fontSize:12,color:K.dim,fontFamily:fb,flex:1}}>— {fmtM(totalLiabUSD)} total debt</div>
-            <button onClick={function(){setLmodal("pick")}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add</button>
+            <button onClick={function(){setLmodal("pick")}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add</button>
           </div>
-          {liabilities.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:"20px",textAlign:"center",color:K.dim,fontSize:13}}>
+          {liabilities.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",color:K.dim,fontSize:13}}>
             No liabilities recorded. Add mortgages, loans or credit card balances to see your true net worth.
           </div>}
-          {liabilities.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,overflow:"hidden"}}>
+          {liabilities.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
             {liabilities.map(function(l,i){
               var lt=LTYPES_MAP[l.type]||{icon:"overview",color:K.red,label:l.type};
               var annualInt=l.balance>0&&l.interestRate>0?l.balance*l.interestRate/100:0;
@@ -7433,8 +7441,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <div style={{fontSize:14,fontWeight:700,color:K.red,fontFamily:fm}}>−{fmtM(l.balance)}</div>
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0}}>
-                  <button onClick={function(){openEditLiab(l)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
-                  <button onClick={function(){if(window.confirm("Remove this liability?"))deleteLiab(l.id)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>Remove</button>
+                  <button onClick={function(){openEditLiab(l)}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                  <button onClick={function(){if(window.confirm("Remove this liability?"))deleteLiab(l.id)}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>Remove</button>
                 </div>
               </div>;
             })}
@@ -7444,7 +7452,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ══ HISTORY TAB ══ */}
       {nwTab==="history"&&<div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"24px",marginBottom:16}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"24px",marginBottom:16}}>
           {(function(){
             var hist=netWorthHistory.slice(-52);
             if(hist.length<2)return<div style={{padding:"30px 0",textAlign:"center",color:K.dim,fontSize:13}}>Your net worth history will build up as you use the app over time.</div>;
@@ -7505,14 +7513,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var progress=prev?(cur-prev)/(next-prev)*100:cur/next*100;
           var needed=next-cur;
           function fmtMilestone(m){return cSym+(m>=1e6?m/1e6+"M":m/1000+"K")}
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px"}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <IC name="target" size={14} color={K.acc}/>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Next milestone: {fmtMilestone(next)}</div>
             </div>
             <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:12}}>{fmtM(needed)} to go · {progress.toFixed(1)}% of the way there</div>
-            <div style={{height:8,borderRadius:4,background:K.bdr,overflow:"hidden"}}>
-              <div style={{height:"100%",width:Math.min(100,progress)+"%",borderRadius:4,background:K.acc,transition:"width .5s"}}/>
+            <div style={{height:8,borderRadius:_isBm?0:4,background:K.bdr,overflow:"hidden"}}>
+              <div style={{height:"100%",width:Math.min(100,progress)+"%",borderRadius:_isBm?0:4,background:K.acc,transition:"width .5s"}}/>
             </div>
             <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
               <span style={{fontSize:11,color:K.dim,fontFamily:fb}}>{prev?fmtMilestone(prev):"0"}</span>
@@ -7534,9 +7542,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {type:"fact",title:"The net worth tipping point",text:"Once your investment income exceeds your living expenses, your wealth compounds whether you work or not. This is the precise moment financial independence begins — not a number, but a ratio.",icon:"target"},
           ];
           var card=cards[idx];
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px",marginTop:12}}>
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px",marginTop:12}}>
             <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-              <div style={{width:32,height:32,borderRadius:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                 <IC name={card.icon} size={14} color={K.acc}/>
               </div>
               <div style={{flex:1}}>
@@ -7554,7 +7562,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {nwTab==="income"&&<div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
           {[{label:"Annual Income",val:fmtM(totalIncomeUSD)},{label:"Monthly Average",val:fmtM(totalIncomeUSD/12)},{label:"Portfolio Yield",val:incomeYield.toFixed(2)+"%"}].map(function(c){
-            return<div key={c.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 20px"}}>
+            return<div key={c.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 20px"}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{c.label}</div>
               <div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>{c.val}</div>
             </div>;
@@ -7562,7 +7570,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
 
         {/* Monthly calendar */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,padding:"20px 24px",marginBottom:16}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
             <IC name="clock" size={14} color={K.dim}/>
             <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Monthly Income Calendar</div>
@@ -7576,13 +7584,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               return<div key={m} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}} className="ta-month-col">
                 <div style={{fontSize:9,color:isNow?K.acc:K.dim,fontFamily:fb,letterSpacing:0.5,fontWeight:isNow?700:400}}>{m}</div>
                 <div style={{width:"100%",height:72,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center",cursor:val>0?"pointer":"default"}}>
-                  <div style={{width:"100%",borderRadius:4,background:val>0?(isNow?K.acc:K.grn):K.bdr,height:barH,transition:"height .3s",minHeight:3}}/>
+                  <div style={{width:"100%",borderRadius:_isBm?0:4,background:val>0?(isNow?K.acc:K.grn):K.bdr,height:barH,transition:"height .3s",minHeight:3}}/>
                 </div>
                 <div style={{fontSize:9,color:val>0?K.txt:K.dim,fontFamily:fm,fontWeight:val>0?600:400,textAlign:"center",lineHeight:1.2}}>
                   {val>0?fmtM(val):"—"}
                 </div>
                 {isNow&&<div style={{width:4,height:4,borderRadius:"50%",background:K.acc}}/>}
-                {val>0&&detail.length>0&&<div className="ta-month-tooltip" style={{position:"absolute",bottom:"100%",left:"50%",transform:"translateX(-50%)",background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"8px 10px",zIndex:50,minWidth:110,pointerEvents:"none",boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
+                {val>0&&detail.length>0&&<div className="ta-month-tooltip" style={{position:"absolute",bottom:"100%",left:"50%",transform:"translateX(-50%)",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 10px",zIndex:50,minWidth:110,pointerEvents:"none",boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
                   <div style={{fontSize:9,color:K.dim,fontFamily:fb,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{m}</div>
                   {detail.slice(0,6).map(function(d,di){return<div key={di} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:K.mid,fontFamily:fm,marginBottom:2}}>
                     <span style={{color:d.color,fontWeight:600,maxWidth:60,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label}</span>
@@ -7596,7 +7604,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
 
         {/* Dividend-paying stocks */}
-        {incomeCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,marginBottom:16,overflow:"hidden"}}>
+        {incomeCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:16,overflow:"hidden"}}>
           <div style={{padding:"16px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={K.acc}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Stock Dividends</div></div>
             <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(stockIncome)}/yr</div>
@@ -7622,7 +7630,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var items=otherAssets.filter(function(a){return a.type===g.type&&a.annualIncome>0});
               if(items.length===0)return null;
               var grpTotal=items.reduce(function(s,a){return s+Number(a.annualIncome)},0);
-              return<div key={g.type} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,overflow:"hidden"}}>
+              return<div key={g.type} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
                 <div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}><IC name={g.icon} size={14} color={g.color}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{g.label}</div></div>
                   <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(grpTotal)}/yr</div>
@@ -7633,7 +7641,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <IC name={g.icon} size={14} color={g.color}/>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||g.label}</div>
-                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{freq} · {a.ticker&&<span style={{background:g.color+"15",color:g.color,padding:"1px 5px",borderRadius:3,marginRight:4}}>{a.ticker}</span>}</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{freq} · {a.ticker&&<span style={{background:g.color+"15",color:g.color,padding:"1px 5px",borderRadius:_isBm?0:3,marginRight:4}}>{a.ticker}</span>}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:600,color:K.grn,fontFamily:fm}}>{fmtM(a.annualIncome)}/yr</div>
@@ -7646,7 +7654,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>;
         })()}
 
-        {incomeCos.length===0&&incomeBreakdown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
+        {incomeCos.length===0&&incomeBreakdown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
           No income data yet. Stock dividends appear automatically once positions and prices are set. Add rental income, bond interest, or royalties when editing an asset.
         </div>}
       </div>}
@@ -7656,27 +7664,27 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
           <div style={{fontSize:13,color:K.dim,fontFamily:fb}}>Set your ideal allocation. Flags when you drift more than 5%.</div>
           {!editTgt
-            ?<button onClick={function(){setTgtDraft(Object.assign({},assetTargets));setEditTgt(true)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Edit targets</button>
+            ?<button onClick={function(){setTgtDraft(Object.assign({},assetTargets));setEditTgt(true)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Edit targets</button>
             :<div style={{display:"flex",gap:8}}>
-              <button onClick={function(){setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb}}>Cancel</button>
-              <button onClick={function(){setAssetTargets(Object.assign({},tgtDraft));setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:K.acc,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Save</button>
+              <button onClick={function(){setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb}}>Cancel</button>
+              <button onClick={function(){setAssetTargets(Object.assign({},tgtDraft));setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"none",background:K.acc,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Save</button>
             </div>}
         </div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:14,overflow:"hidden"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
           {ALL_ALLOC_IDS.map(function(id,i){
             var current=getCurrentPct(id),target=getTargetPct(id),drift=getDrift(id);
             var hasTarget=target>0,bigDrift=Math.abs(drift)>5&&hasTarget;
             var color=ALLOC_COLORS[id]||K.dim;
             return<div key={id} style={{padding:"14px 20px",borderBottom:i<ALL_ALLOC_IDS.length-1?"1px solid "+K.bdr+"50":"none",display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:10,height:10,borderRadius:2,background:color,flexShrink:0}}/>
+              <div style={{width:10,height:10,borderRadius:_isBm?0:2,background:color,flexShrink:0}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                   <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{ALLOC_LABELS[id]}</span>
-                  {bigDrift&&<span style={{fontSize:10,fontWeight:600,background:drift>0?K.amb+"20":K.blue+"20",color:drift>0?K.amb:"#60a5fa",borderRadius:4,padding:"1px 6px"}}>{drift>0?"Overweight":"Underweight"}</span>}
+                  {bigDrift&&<span style={{fontSize:10,fontWeight:600,background:drift>0?K.amb+"20":K.blue+"20",color:drift>0?K.amb:"#60a5fa",borderRadius:_isBm?0:4,padding:"1px 6px"}}>{drift>0?"Overweight":"Underweight"}</span>}
                 </div>
-                <div style={{position:"relative",height:6,borderRadius:3,background:K.bdr,overflow:"hidden"}}>
-                  <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(100,current)+"%",borderRadius:3,background:color,transition:"width .4s"}}/>
-                  {hasTarget&&<div style={{position:"absolute",top:-2,height:10,width:2,borderRadius:1,background:K.txt+"90",left:Math.min(100,target)+"%"}}/>}
+                <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:K.bdr,overflow:"hidden"}}>
+                  <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(100,current)+"%",borderRadius:_isBm?0:3,background:color,transition:"width .4s"}}/>
+                  {hasTarget&&<div style={{position:"absolute",top:-2,height:10,width:2,borderRadius:_isBm?0:1,background:K.txt+"90",left:Math.min(100,target)+"%"}}/>}
                 </div>
               </div>
               <div style={{textAlign:"right",minWidth:80,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
@@ -7684,7 +7692,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {hasTarget&&<span style={{fontSize:11,color:bigDrift?(drift>0?K.amb:"#60a5fa"):K.dim,fontFamily:fb}}>target {target}%</span>}
               </div>
               {editTgt&&<div style={{flexShrink:0,width:72,display:"flex",alignItems:"center",gap:4}}>
-                <input type="number" min="0" max="100" value={tgtDraft[id]||""} onChange={function(e){setTgtDraft(Object.assign({},tgtDraft,{[id]:e.target.value}))}} placeholder="0" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"5px 8px",fontSize:12,fontFamily:fm,outline:"none",textAlign:"right"}}/>
+                <input type="number" min="0" max="100" value={tgtDraft[id]||""} onChange={function(e){setTgtDraft(Object.assign({},tgtDraft,{[id]:e.target.value}))}} placeholder="0" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"5px 8px",fontSize:12,fontFamily:fm,outline:"none",textAlign:"right"}}/>
                 <span style={{fontSize:12,color:K.dim,fontFamily:fb}}>%</span>
               </div>}
             </div>;
@@ -7701,12 +7709,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ── Asset Add/Edit Modal ── */}
       {modal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setModal(null);setStep(0)}}>
-        <div style={{background:K.card,borderRadius:18,padding:"28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
+        <div style={{background:K.card,borderRadius:_isBm?0:18,padding:"28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
           {modal==="add"&&step===0&&<div>
             <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Asset</div>
             <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Select asset type</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {ATYPES.map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+              {ATYPES.map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
                 <IC name={t.icon} size={16} color={t.color}/>
                 <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
               </button>})}
@@ -7730,13 +7738,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {(atype.id==="etf"||atype.id==="bonds")&&form.annualIncome>0&&<div style={{marginTop:8}}>
                 <label style={Object.assign({},secLabel,{marginBottom:4})}>Payment Frequency</label>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {[{v:"monthly",l:"Monthly"},{v:"quarterly",l:"Quarterly"},{v:"semi",l:"Semi-Annual"},{v:"annual",l:"Annual"}].map(function(f){var a=form.divFrequency===f.v;return<button key={f.v} onClick={function(){setForm(Object.assign({},form,{divFrequency:f.v}))}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+(a?K.acc:K.bdr),background:a?K.acc+"15":"transparent",color:a?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:a?600:400}}>{f.l}</button>})}
+                  {[{v:"monthly",l:"Monthly"},{v:"quarterly",l:"Quarterly"},{v:"semi",l:"Semi-Annual"},{v:"annual",l:"Annual"}].map(function(f){var a=form.divFrequency===f.v;return<button key={f.v} onClick={function(){setForm(Object.assign({},form,{divFrequency:f.v}))}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+(a?K.acc:K.bdr),background:a?K.acc+"15":"transparent",color:a?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:a?600:400}}>{f.l}</button>})}
                 </div>
               </div>}
             </div>}
             {atype.isPortfolio2&&<div style={{marginBottom:14}}>
               <label style={secLabel}>Holdings</label>
-              {(form.holdings||[]).map(function(h){return<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.bg,borderRadius:8,marginBottom:6}}>
+              {(form.holdings||[]).map(function(h){return<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:8,marginBottom:6}}>
                 <div style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h.ticker}</span><span style={{fontSize:11,color:K.dim,marginLeft:8}}>{h.shares} @ {cSym}{h.avgCost}</span></div>
                 <button onClick={function(){removeP2Holding(h.id)}} style={{background:"transparent",border:"none",color:K.red,fontSize:14,cursor:"pointer"}}>✕</button>
               </div>})}
@@ -7746,11 +7754,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <input type="number" value={p2form.shares} onChange={function(e){setP2form(Object.assign({},p2form,{shares:e.target.value}))}} placeholder="Shares" style={inputStyle}/>
                 <input type="number" value={p2form.avgCost} onChange={function(e){setP2form(Object.assign({},p2form,{avgCost:e.target.value}))}} placeholder={"Avg cost ("+cSym+")"} style={inputStyle}/>
               </div>
-              <button onClick={addP2Holding} style={{marginTop:8,padding:"7px 14px",borderRadius:8,border:"1px solid "+K.acc+"60",background:K.acc+"12",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add Holding</button>
+              <button onClick={addP2Holding} style={{marginTop:8,padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.acc+"60",background:K.acc+"12",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add Holding</button>
             </div>}
             <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={function(){setModal(null);setStep(0)}} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
-              <button onClick={saveAsset} style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{modal==="edit"?"Save Changes":"Add Asset"}</button>
+              <button onClick={function(){setModal(null);setStep(0)}} style={{flex:1,padding:"10px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
+              <button onClick={saveAsset} style={{flex:2,padding:"10px",borderRadius:_isBm?0:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{modal==="edit"?"Save Changes":"Add Asset"}</button>
             </div>
           </div>}
         </div>
@@ -7758,12 +7766,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ── Liability Pick/Add/Edit Modal ── */}
       {lmodal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setLmodal(null);setLform({})}}>
-        <div style={{background:K.card,borderRadius:18,padding:"28px",maxWidth:480,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
+        <div style={{background:K.card,borderRadius:_isBm?0:18,padding:"28px",maxWidth:480,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
           {lmodal==="pick"&&<div>
             <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Liability</div>
             <div style={{fontSize:13,color:K.dim,marginBottom:20}}>What type of debt?</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {LTYPES.map(function(t){return<button key={t.id} onClick={function(){openAddLiab(t.id)}} style={{padding:"14px 16px",borderRadius:12,border:"1px solid "+K.bdr,background:K.bg,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+              {LTYPES.map(function(t){return<button key={t.id} onClick={function(){openAddLiab(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"1px solid "+K.bdr,background:K.bg,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <IC name={t.icon} size={16} color={t.color}/>
                 <span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
               </button>})}
@@ -7780,8 +7788,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{marginBottom:14}}><label style={secLabel}>Interest Rate (%) — optional</label><input type="number" value={lform.interestRate||""} onChange={function(e){setLform(Object.assign({},lform,{interestRate:e.target.value}))}} placeholder="e.g. 3.5" style={inputStyle}/></div>
             <div style={{marginBottom:14}}><label style={secLabel}>Monthly Payment ({cSym}) — optional</label><input type="number" value={lform.monthlyPayment||""} onChange={function(e){setLform(Object.assign({},lform,{monthlyPayment:e.target.value}))}} placeholder="0" style={inputStyle}/></div>
             <div style={{display:"flex",gap:10,marginTop:8}}>
-              <button onClick={function(){setLmodal(null);setLform({})}} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
-              <button onClick={saveLiab} style={{flex:2,padding:"10px",borderRadius:10,border:"none",background:K.red,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{lmodal==="edit"?"Save Changes":"Add Liability"}</button>
+              <button onClick={function(){setLmodal(null);setLform({})}} style={{flex:1,padding:"10px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
+              <button onClick={saveLiab} style={{flex:2,padding:"10px",borderRadius:_isBm?0:10,border:"none",background:K.red,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{lmodal==="edit"?"Save Changes":"Add Liability"}</button>
             </div>
           </div>}
         </div>
@@ -7811,10 +7819,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:12,color:K.dim,marginTop:3}}>{allEvents.length} event{allEvents.length!==1?"s":""} across {cos.length} holding{cos.length!==1?"s":""}</div>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {[{id:"all",label:"All",count:allEvents.length},{id:"decision",label:"Decisions",count:typeCounts.decision},{id:"conviction",label:"Conviction",count:typeCounts.conviction},{id:"earnings",label:"Earnings",count:typeCounts.earnings}].map(function(f){var active=tlFilter===f.id;return<button key={f.id} onClick={function(){setTlFilter(f.id)}} style={{background:active?K.acc:K.card,border:"1px solid "+(active?K.acc:K.bdr),color:active?"#fff":K.mid,padding:"5px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:active?600:400}}>{f.label}{f.count>0?" ("+f.count+")":""}</button>})}
+          {[{id:"all",label:"All",count:allEvents.length},{id:"decision",label:"Decisions",count:typeCounts.decision},{id:"conviction",label:"Conviction",count:typeCounts.conviction},{id:"earnings",label:"Earnings",count:typeCounts.earnings}].map(function(f){var active=tlFilter===f.id;return<button key={f.id} onClick={function(){setTlFilter(f.id)}} style={{background:active?K.acc:K.card,border:"1px solid "+(active?K.acc:K.bdr),color:active?"#fff":K.mid,padding:"5px 12px",borderRadius:_isBm?0:20,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:active?600:400}}>{f.label}{f.count>0?" ("+f.count+")":""}</button>})}
         </div>
       </div>
-      {allEvents.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14,lineHeight:1.7}}>Your investment story starts here.<br/><span style={{fontSize:12,opacity:.7}}>Log decisions or conviction scores to build your record.</span></div>}
+      {allEvents.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center",color:K.dim,fontSize:14,lineHeight:1.7}}>Your investment story starts here.<br/><span style={{fontSize:12,opacity:.7}}>Log decisions or conviction scores to build your record.</span></div>}
       {years.map(function(yr){var evts=byYear[yr];return<div key={yr} style={{marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
           <div style={{fontSize:20,fontWeight:800,color:K.txt,fontFamily:fh,opacity:.4,minWidth:48}}>{yr}</div>
@@ -7833,9 +7841,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{width:9,height:9,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:5,border:"2px solid "+K.bg,zIndex:1}}/>
               {!isLast&&<div style={{width:2,flex:1,minHeight:8,background:K.bdr+"50",margin:"2px 0"}}/>}
             </div>
-            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab("dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab("dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
+                <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:_isBm?0:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
                 <CoLogo domain={ev.domain} ticker={ev.ticker} size={13}/>
                 <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{ev.ticker}</span>
                 <span style={{fontSize:12,color:K.mid,flex:1,lineHeight:1.3}}>{ev.heading}</span>
@@ -7912,7 +7920,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{portCos.length} portfolio companies{ldM?" • Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" • "+withMoat.length+" analyzed":""}</p></div>
 
       {ldM?<div style={{padding:40,textAlign:"center"}}><div style={{fontSize:14,color:K.dim}}>Analyzing financial quality of {portCos.length} companies...</div>
-        <div style={{height:4,borderRadius:2,background:K.bdr,maxWidth:300,margin:"16px auto"}}><div style={{height:"100%",borderRadius:2,background:K.acc,width:(portCos.length>0?prog/portCos.length*100:0)+"%",transition:"width .3s"}}/></div></div>:
+        <div style={{height:4,borderRadius:_isBm?0:2,background:K.bdr,maxWidth:300,margin:"16px auto"}}><div style={{height:"100%",borderRadius:_isBm?0:2,background:K.acc,width:(portCos.length>0?prog/portCos.length*100:0)+"%",transition:"width .3s"}}/></div></div>:
       <div>
       {/* ── Munger's 4 Pillars ── */}
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:12,marginBottom:24}}>
@@ -7921,13 +7929,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {label:"Pricing Power",val:pricingAvg,sub:pricingAvg>=8?"Exceptional":pricingAvg>=6?"Strong":pricingAvg>=4?"Moderate":"Weak",icon:"dollar"},
           {label:"Capital Efficiency",val:roicAvg,sub:roicAvg>=8?"Outstanding":roicAvg>=6?"Good":roicAvg>=4?"Fair":"Poor",icon:"target"}
         ].map(function(card){var v=card.val;var clr=v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim;
-          return<div key={card.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"18px 22px"}}>
+          return<div key={card.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><IC name={card.icon} size={14} color={K.dim}/><div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontWeight:600,fontFamily:fb}}>{card.label}</div></div>
             <div style={{fontSize:28,fontWeight:700,color:clr,fontFamily:fm}}>{v||"—"}<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/10</span></div>
             <div style={{fontSize:11,color:clr,marginTop:4,fontFamily:fb}}>{v?card.sub:""}</div></div>})}</div>
 
       {/* ── Portfolio Quality Profile (all 8 dimensions) ── */}
-      {withMoat.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+      {withMoat.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
         <div style={secStyle}><IC name="bar" size={14} color={K.dim}/>Portfolio Quality Profile</div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
           {dimIds.map(function(d){var avg2=dimAvgs[d];if(avg2===null)return null;
@@ -7938,12 +7946,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                   <span style={{fontSize:13,color:K.mid,fontFamily:fb}}>{dimLabels[d]}</span>
                   <span style={{fontSize:13,fontWeight:600,color:clr,fontFamily:fm}}>{avg2}</span></div>
-                <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:avg2*10+"%",borderRadius:2,background:clr,transition:"width .5s"}}/></div></div></div>})}
+                <div style={{height:4,borderRadius:_isBm?0:2,background:K.bdr}}><div style={{height:"100%",width:avg2*10+"%",borderRadius:_isBm?0:2,background:clr,transition:"width .5s"}}/></div></div></div>})}
         </div>
         <div style={{marginTop:14,fontSize:12,color:K.dim,lineHeight:1.6,fontFamily:fb}}>Average scores across {withMoat.length} of {holdings.length} companies. Dimensions below 6 are portfolio-wide vulnerabilities.{withMoat.length<holdings.length?" "+(holdings.length-withMoat.length)+" holding"+(holdings.length-withMoat.length>1?"s":"")+" excluded — no historical data yet.":""}</div></div>}
 
       {/* ── Red Flags: Munger "avoid losers" ── */}
-      {redFlags.length>0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+      {redFlags.length>0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
         <div style={secStyle}><IC name="alert" size={14} color={K.red}/>Needs Attention</div>
         <div style={{fontSize:13,color:K.mid,marginBottom:14,lineHeight:1.6,fontFamily:fb}}>These holdings have weak capital efficiency or fragile balance sheets. Munger would ask: why do I own this?</div>
         {redFlags.map(function(x){var issues=[];
@@ -7953,7 +7961,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(x.dims.fortress&&x.dims.fortress.score<4&&leverageExempt)issues.push("High leverage ("+x.dims.fortress.value+") — tolerated for "+bmt);
           if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
           if(x.dims.grossMargin){var ppOver=(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:x.dims.grossMargin.score;if(ppOver<4)issues.push("Weak pricing power ("+ppOver+"/10)")};
-          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("dossier");setPage("dashboard")}}>
+          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("dossier");setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
               <div style={{fontSize:11,color:K.red,fontFamily:fb}}>{issues.join(" • ")}</div></div>
@@ -7961,13 +7969,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* ── Strongest / Weakest ── */}
       {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,marginBottom:24}}>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
           <div style={secStyle}><IC name="trending" size={14} color={K.grn}/>Strongest Businesses</div>
           {strongest.map(function(x){var bmt=x.company.businessModelType;return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</span>{bmt&&<span style={{fontSize:9,color:bmt==="monopoly"||bmt==="oligopoly"?K.grn:K.dim,fontFamily:fm}}>{bmt==="monopoly"?"👑":bmt==="oligopoly"?"🏰":bmt==="niche"?"🎯":bmt==="commodity"?"📦":"⚔"}</span>}</div><div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
           <div style={secStyle}><IC name="alert" size={14} color={K.amb}/>Weakest Links</div>
           {weakest.map(function(x){var bmt=x.company.businessModelType;return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
@@ -7975,7 +7983,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div></div>}
 
       {/* ── Holdings Quality Table ── */}
-      {holdings.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+      {holdings.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
         <div style={secStyle}><IC name="overview" size={14} color={K.dim}/>Holdings Quality</div>
         <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead><tr>{["","Company","Moat","Fortress","Pricing","ROIC","Earnings Q."].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:11,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fb,fontWeight:600,whiteSpace:"nowrap"}}>{h}</th>})}</tr></thead>
@@ -7984,7 +7992,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("dossier");setPage("dashboard")}}>
               <td style={{padding:"10px 10px",fontSize:12,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
-              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:14,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
+              <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:14,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:_isBm?0:4}}>{q.moat}</span></td>
               {[q.fortress,q.pricing,q.roic,q.fcf].map(function(v,vi){return<td key={vi} style={{padding:"10px 10px",textAlign:"center",fontSize:14,fontWeight:600,color:v?cellClr(v):K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{v||"—"}</td>})}</tr>})}</tbody></table></div></div>}
 
       {/* ── Investment Style Distribution ── */}
@@ -7992,10 +8000,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var hasStyles=portCos.some(function(co){return co.investStyle});
         if(!hasStyles)return null;
         var total=portCos.length;
-        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
           <div style={secStyle}><IC name="bar" size={14} color={K.dim}/>Investment Style Mix</div>
           <div style={{fontSize:13,color:K.dim,marginBottom:16}}>How your portfolio is distributed across investment approaches.</div>
-          <div style={{display:"flex",gap:3,height:28,borderRadius:6,overflow:"hidden",marginBottom:14}}>
+          <div style={{display:"flex",gap:3,height:28,borderRadius:_isBm?0:6,overflow:"hidden",marginBottom:14}}>
             {INVEST_STYLES.map(function(st){var cnt=styleCounts[st.id]||0;if(!cnt)return null;
               return<div key={st.id} style={{flex:cnt,background:st.color,display:"flex",alignItems:"center",justifyContent:"center",minWidth:cnt/total>0.12?0:28}} title={st.label+": "+cnt}>
                 <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:fm}}>{cnt}</span></div>}).filter(Boolean)}
@@ -8005,12 +8013,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
             {INVEST_STYLES.map(function(st){var cnt=styleCounts[st.id]||0;if(!cnt)return null;
               var pct=Math.round(cnt/total*100);var names=portCos.filter(function(co){return co.investStyle===st.id}).map(function(co){return co.ticker});
-              return<div key={st.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:st.color+"08",border:"1px solid "+st.color+"25",borderRadius:8,flex:"1 1 200px"}}>
+              return<div key={st.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:st.color+"08",border:"1px solid "+st.color+"25",borderRadius:_isBm?0:8,flex:"1 1 200px"}}>
                 <IC name={st.icon} size={14} color={st.color}/>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{st.label} <span style={{fontWeight:400,color:st.color}}>{pct}%</span></div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{names.join(", ")}</div></div></div>}).filter(Boolean)}
-            {styleCounts.unset&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,flex:"1 1 200px"}}>
+            {styleCounts.unset&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,flex:"1 1 200px"}}>
               <IC name="alert" size={14} color={K.dim}/>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.mid,fontFamily:fm}}>Unclassified <span style={{fontWeight:400,color:K.dim}}>{Math.round(styleCounts.unset/total*100)}%</span></div>
@@ -8026,27 +8034,27 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var activeTypes=MOAT_TYPES.filter(function(t){return typeCounts[t.id]});
         var unclass=portCos.filter(function(co){var mt2=co.moatTypes||{};return!MOAT_TYPES.some(function(t){return mt2[t.id]&&mt2[t.id].active})});
         if(activeTypes.length===0)return null;
-        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:24}}>
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
           <div style={secStyle}><IC name="castle" size={14} color={K.dim}/>Moat Source Map</div>
           <div style={{fontSize:13,color:K.dim,marginBottom:16}}>What protects your portfolio? Distribution of competitive advantages across holdings.</div>
           <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10}}>
             {activeTypes.map(function(t){var cos2=typeCompanies[t.id]||[];var avgStr=cos2.length?Math.round(cos2.reduce(function(s,x){return s+x.strength},0)/cos2.length*10)/10:0;
-              return<div key={t.id} style={{padding:"14px 16px",borderRadius:8,background:t.color+"08",border:"1px solid "+t.color+"25"}}>
+              return<div key={t.id} style={{padding:"14px 16px",borderRadius:_isBm?0:8,background:t.color+"08",border:"1px solid "+t.color+"25"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <div style={{width:24,height:24,borderRadius:5,background:t.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}><IC name={t.icon} size={12} color={t.color}/></div>
+                  <div style={{width:24,height:24,borderRadius:_isBm?0:5,background:t.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}><IC name={t.icon} size={12} color={t.color}/></div>
                   <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</div></div>
                   <span style={{fontSize:18,fontWeight:700,color:t.color,fontFamily:fm}}>{cos2.length}</span></div>
                 <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                   {cos2.sort(function(a,b){return b.strength-a.strength}).map(function(x){
-                    return<span key={x.ticker} style={{fontSize:11,fontWeight:600,color:t.color,background:t.color+"15",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{x.ticker} {"•".repeat(x.strength)}</span>})}</div>
+                    return<span key={x.ticker} style={{fontSize:11,fontWeight:600,color:t.color,background:t.color+"15",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>{x.ticker} {"•".repeat(x.strength)}</span>})}</div>
                 <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>Avg strength: {avgStr}/5</div></div>})}</div>
-          {unclass.length>0&&<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:8}}>
+          {unclass.length>0&&<div style={{marginTop:12,padding:"10px 14px",background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:8}}>
               <div style={{fontSize:12,color:K.amb,fontWeight:600}}>Unclassified: {unclass.map(function(c2){return c2.ticker}).join(", ")}</div>
               <div style={{fontSize:11,color:K.dim,marginTop:2}}>Visit the Moat Tracker for each company to classify their competitive advantages.</div></div>}
         </div>}()}
 
       {/* ── Munger Quote ── */}
-      {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:12}}>
+      {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
         <div style={{fontSize:14,color:K.mid,lineHeight:1.7,fontStyle:"italic",fontFamily:fh}}>{"\"Over the long term, it’s hard for a stock to earn a much better return than the business which underlies it earns. If the business earns 6% on capital over 40 years and you hold it for that 40 years, you’re not going to make much different than a 6% return.\""}</div>
         <div style={{fontSize:12,color:K.dim,marginTop:8,fontFamily:fb}}>{"—"} Charlie Munger</div></div>}
 
@@ -8197,22 +8205,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>Income analytics for your dividend portfolio</p></div>
       {/* Summary cards */}
       <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:24}}>
-        {[{l:"ANNUAL INCOME",v:"$"+totalAnnual.toFixed(0),c:K.grn},{l:"MONTHLY AVG",v:"$"+monthlyAvg.toFixed(0),c:K.grn},{l:"PORTFOLIO YIELD",v:portfolioYield.toFixed(2)+"%",c:K.acc},{l:"DAILY INCOME",v:"$"+(totalAnnual/365).toFixed(2),c:K.grn},{l:"PAYERS",v:divPayers.length+"/"+portfolio.length,c:K.txt}].map(function(card){return<div key={card.l} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{card.l}</div><div style={{fontSize:22,fontWeight:700,color:card.c,fontFamily:fm}}>{card.v}</div></div>})}
+        {[{l:"ANNUAL INCOME",v:"$"+totalAnnual.toFixed(0),c:K.grn},{l:"MONTHLY AVG",v:"$"+monthlyAvg.toFixed(0),c:K.grn},{l:"PORTFOLIO YIELD",v:portfolioYield.toFixed(2)+"%",c:K.acc},{l:"DAILY INCOME",v:"$"+(totalAnnual/365).toFixed(2),c:K.grn},{l:"PAYERS",v:divPayers.length+"/"+portfolio.length,c:K.txt}].map(function(card){return<div key={card.l} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>{card.l}</div><div style={{fontSize:22,fontWeight:700,color:card.c,fontFamily:fm}}>{card.v}</div></div>})}
       </div>
       {/* Tab bar */}
       <div style={{display:"flex",gap:4,marginBottom:20,borderBottom:"1px solid "+K.bdr,paddingBottom:0}}>
-        {tabs.map(function(t){var active=divTab===t.id;return<button key={t.id} onClick={function(){setDivTab(t.id)}} style={{padding:"8px 16px",background:"none",border:"none",borderBottom:"2px solid "+(active?K.acc:"transparent"),color:active?K.acc:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:active?700:400,marginBottom:-1,transition:"all .15s"}}>{t.label}{t.id==="risk"&&atRisk.length>0&&<span style={{marginLeft:5,background:K.red,color:"#fff",borderRadius:999,fontSize:10,padding:"1px 6px",fontWeight:700}}>{atRisk.length}</span>}</button>})}
+        {tabs.map(function(t){var active=divTab===t.id;return<button key={t.id} onClick={function(){setDivTab(t.id)}} style={{padding:"8px 16px",background:"none",border:"none",borderBottom:"2px solid "+(active?K.acc:"transparent"),color:active?K.acc:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:active?700:400,marginBottom:-1,transition:"all .15s"}}>{t.label}{t.id==="risk"&&atRisk.length>0&&<span style={{marginLeft:5,background:K.red,color:"#fff",borderRadius:_isBm?0:999,fontSize:10,padding:"1px 6px",fontWeight:700}}>{atRisk.length}</span>}</button>})}
       </div>
 
       {/* ── TAB: OVERVIEW ── */}
       {divTab==="overview"&&(function(){
         var upcoming2=divPayers.filter(function(c){if(!c.exDivDate)return false;var ed=new Date(c.exDivDate);var now2=new Date();var freq=c.divFrequency;while(ed<now2){if(freq==="monthly")ed.setMonth(ed.getMonth()+1);else if(freq==="semi")ed.setMonth(ed.getMonth()+6);else if(freq==="annual")ed.setFullYear(ed.getFullYear()+1);else ed.setMonth(ed.getMonth()+3)}c._nextExDiv=ed.toISOString().split("T")[0];return Math.ceil((ed-now2)/864e5)<=60}).sort(function(a,b){return a._nextExDiv>b._nextExDiv?1:-1});
         return<div>
-          {upcoming2.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+          {upcoming2.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming Ex-Dividend Dates</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               {upcoming2.slice(0,8).map(function(c){var dU2=Math.ceil((new Date(c._nextExDiv)-new Date())/864e5);var pos=c.position||{};var payout=(pos.shares||0)*(c.divPerShare||c.lastDiv||0);
-                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:dU2<=7?K.amb+"08":K.bg,borderRadius:8,border:"1px solid "+(dU2<=7?K.amb+"25":K.bdr),cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:dU2<=7?K.amb+"08":K.bg,borderRadius:_isBm?0:8,border:"1px solid "+(dU2<=7?K.amb+"25":K.bdr),cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
                   <CoLogo domain={c.domain} ticker={c.ticker} size={18}/>
                   <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
                     <div style={{fontSize:10,color:dU2<=7?K.amb:K.dim,fontFamily:fm}}>{fD(c._nextExDiv)}{dU2<=30?" ("+dU2+"d)":""}</div></div>
@@ -8220,7 +8228,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 </div>})}
             </div></div>}
           {/* Payers table */}
-          {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+          {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm,fontWeight:600}}>Dividend Payers</div>
             <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
@@ -8251,9 +8259,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <span style={{fontSize:14,color:K.mid,fontWeight:500}}>Total Annual Income</span>
               <span style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnual.toFixed(0)}</span></div>
           </div>}
-          {nonPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px"}}>
+          {nonPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Non-Dividend Holdings ({nonPayers.length})</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{nonPayers.map(function(c){return<div key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",background:K.bg,borderRadius:6,cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}><CoLogo domain={c.domain} ticker={c.ticker} size={16}/><span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{c.ticker}</span></div>})}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{nonPayers.map(function(c){return<div key={c.id} style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 12px",background:K.bg,borderRadius:_isBm?0:6,cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard");setSubPage(null)}}><CoLogo domain={c.domain} ticker={c.ticker} size={16}/><span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{c.ticker}</span></div>})}</div>
           </div>}
           {divPayers.length===0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
             <div style={{fontSize:36,marginBottom:12}}>{String.fromCodePoint(0x1F4B0)}</div>
@@ -8270,12 +8278,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         return<div>
           {/* Ex-div date warning + refresh */}
           {missingExDiv.length>0&&(function(){
-            return<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:10,marginBottom:16}}>
+            return<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,marginBottom:16}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 16px",flexWrap:"wrap"}}>
                 <span style={{fontSize:12,color:K.amb,fontFamily:fm}}><strong>{missingExDiv.length} holding{missingExDiv.length!==1?"s":""}</strong> missing ex-div date — chart uses estimated months ({missingExDiv.map(function(c){return c.ticker}).join(", ")})</span>
                 <div style={{display:"flex",gap:8,flexShrink:0}}>
-                  <button onClick={function(){setShowManual(function(v){return!v})}} style={{background:"none",border:"1px solid "+K.amb+"60",color:K.amb,padding:"5px 12px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm}}>Enter manually</button>
-                  <button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:rdStatus==="loading"?K.bdr:K.amb,border:"none",color:rdStatus==="loading"?K.dim:"#000",padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:rdStatus==="loading"?"default":"pointer",fontFamily:fm}}>
+                  <button onClick={function(){setShowManual(function(v){return!v})}} style={{background:"none",border:"1px solid "+K.amb+"60",color:K.amb,padding:"5px 12px",borderRadius:_isBm?0:8,fontSize:12,cursor:"pointer",fontFamily:fm}}>Enter manually</button>
+                  <button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:rdStatus==="loading"?K.bdr:K.amb,border:"none",color:rdStatus==="loading"?K.dim:"#000",padding:"6px 14px",borderRadius:_isBm?0:8,fontSize:12,fontWeight:600,cursor:rdStatus==="loading"?"default":"pointer",fontFamily:fm}}>
                     {rdStatus==="loading"?"Fetching…":rdStatus.startsWith("done")?"✓ Updated "+rdStatus.split(":")[1]+"!":"Fetch Real Dates"}
                   </button>
                 </div>
@@ -8285,7 +8293,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
                   {missingExDiv.map(function(c){return<div key={c.id} style={{display:"flex",alignItems:"center",gap:6}}>
                     <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:40}}>{c.ticker}</span>
-                    <input type="date" value={manualDates[c.id]||""} onChange={function(e){var v=e.target.value;setManualDates(function(p){var n=Object.assign({},p);n[c.id]=v;return n})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,outline:"none"}}/>
+                    <input type="date" value={manualDates[c.id]||""} onChange={function(e){var v=e.target.value;setManualDates(function(p){var n=Object.assign({},p);n[c.id]=v;return n})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,outline:"none"}}/>
                   </div>})}
                 </div>
                 <button onClick={function(){
@@ -8293,11 +8301,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   Object.keys(manualDates).forEach(function(cid){var d=manualDates[cid];if(!d)return;
                     upd(cid,function(prev){return Object.assign({},prev,{exDivDate:d})});count++});
                   if(count>0){setManualDates({});setShowManual(false);showToast("✓ Saved "+count+" ex-div date"+(count!==1?"s":""),"success",3000)}
-                }} style={{background:K.acc,border:"none",color:"#fff",padding:"7px 18px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save Dates</button>
+                }} style={{background:K.acc,border:"none",color:"#fff",padding:"7px 18px",borderRadius:_isBm?0:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save Dates</button>
               </div>}
             </div>})()}
           {/* Stacked bar chart */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px",marginBottom:20}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px",marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>Monthly Income Stream</div>
               {missingExDiv.length===0&&<button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}} title="Re-fetch ex-div dates from FMP">{rdStatus==="loading"?"Refreshing…":rdStatus.startsWith("done")?"✓ Refreshed":"↻ Refresh dates"}</button>}
@@ -8310,7 +8318,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {/* Invisible full-height hover target so user doesn't need to aim at thin bars */}
                   <div style={{position:"absolute",inset:0,zIndex:1}}/>
                   {(isHov||isNow)&&m.income>0&&<div style={{fontSize:isMobile?8:11,color:K.grn,fontFamily:fm,marginBottom:2,fontWeight:600,position:"relative",zIndex:2}}>{cSym}{m.income.toFixed(0)}</div>}
-                  <div style={{width:"100%",height:barH,borderRadius:"3px 3px 0 0",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"flex-end",opacity:isHov?1:0.8,transition:"opacity .15s",outline:isNow?"2px solid "+K.acc:"none",outlineOffset:2,position:"relative",zIndex:2}}>
+                  <div style={{width:"100%",height:barH,borderRadius:_isBm?"0":"3px 3px 0 0",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"flex-end",opacity:isHov?1:0.8,transition:"opacity .15s",outline:isNow?"2px solid "+K.acc:"none",outlineOffset:2,position:"relative",zIndex:2}}>
                     {m.payers.length>0?m.payers.map(function(p,pi){var h=Math.round(p.amount/m.income*barH);return<div key={p.ticker} style={{width:"100%",height:Math.max(1,h),background:p.color,flexShrink:0}}/>}):<div style={{width:"100%",height:barH,background:K.bdr+"50"}}/>}
                   </div>
                 </div>})}
@@ -8319,27 +8327,27 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {monthlyBreakdown.map(function(m){var isNow=m.idx===nowMonth;return<div key={m.idx} style={{textAlign:"center",fontSize:isMobile?8:11,color:isNow?K.acc:K.dim,fontWeight:isNow?700:400,fontFamily:fm}}>{m.month}</div>})}
             </div>
             {/* Hover detail */}
-            {hovMonth!==null&&monthlyBreakdown[hovMonth].income>0&&<div style={{marginTop:16,padding:"12px 16px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr}}>
+            {hovMonth!==null&&monthlyBreakdown[hovMonth].income>0&&<div style={{marginTop:16,padding:"12px 16px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr}}>
               <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{monthNames[hovMonth]} — {cSym}{monthlyBreakdown[hovMonth].income.toFixed(0)} total</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-                {monthlyBreakdown[hovMonth].payers.map(function(p){return<div key={p.ticker} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",background:p.color+"15",borderRadius:999,border:"1px solid "+p.color+"30"}}>
-                  <div style={{width:8,height:8,borderRadius:"50%",background:p.color}}/>
+                {monthlyBreakdown[hovMonth].payers.map(function(p){return<div key={p.ticker} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",background:p.color+"15",borderRadius:_isBm?0:999,border:"1px solid "+p.color+"30"}}>
+                  <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:p.color}}/>
                   <span style={{fontSize:12,fontWeight:600,color:p.color,fontFamily:fm}}>{p.ticker}</span>
                   <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>${p.amount.toFixed(0)}</span>
                 </div>})}
               </div>
             </div>}
-            {hovMonth!==null&&monthlyBreakdown[hovMonth].income===0&&<div style={{marginTop:12,padding:"10px 14px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr}}>
+            {hovMonth!==null&&monthlyBreakdown[hovMonth].income===0&&<div style={{marginTop:12,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
               <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{monthNames[hovMonth]} — no income scheduled</div>
             </div>}
           </div>
           {/* Legend */}
-          {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:20}}>
+          {divPayers.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:12,fontFamily:fm,fontWeight:600}}>Payer Legend</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
               {divPayers.map(function(c){var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var ann=(pos.shares||0)*dps*mult;var col=tickerColorMap[c.ticker];
-                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:col+"08",borderRadius:8,border:"1px solid "+col+"25"}}>
-                  <div style={{width:10,height:10,borderRadius:2,background:col,flexShrink:0}}/>
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:col+"08",borderRadius:_isBm?0:8,border:"1px solid "+col+"25"}}>
+                  <div style={{width:10,height:10,borderRadius:_isBm?0:2,background:col,flexShrink:0}}/>
                   <CoLogo domain={c.domain} ticker={c.ticker} size={16}/>
                   <div><div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
                     <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{freqLabel(c.divFrequency)} · ${ann.toFixed(0)}/yr</div></div>
@@ -8347,7 +8355,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>
           </div>}
           {/* Cadence guide */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm,fontWeight:600}}>Payment Cadence by Holding</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {divPayers.map(function(c){var payMonths=estimatePayMonths(c);var col=tickerColorMap[c.ticker];
@@ -8357,7 +8365,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:3,flex:1}}>
-                    {monthNames.map(function(mn,mi){var pays=payMonths.indexOf(mi)>=0;return<div key={mi} style={{height:18,borderRadius:3,background:pays?col:K.bdr+"30",display:"flex",alignItems:"center",justifyContent:"center"}} title={pays?mn+" — "+c.ticker+" pays":mn}>
+                    {monthNames.map(function(mn,mi){var pays=payMonths.indexOf(mi)>=0;return<div key={mi} style={{height:18,borderRadius:_isBm?0:3,background:pays?col:K.bdr+"30",display:"flex",alignItems:"center",justifyContent:"center"}} title={pays?mn+" — "+c.ticker+" pays":mn}>
                       {pays&&!isMobile&&<span style={{fontSize:7,color:"#fff",fontWeight:700}}>{mn.charAt(0)}</span>}
                     </div>})}
                   </div>
@@ -8375,7 +8383,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         return<div>
           {sorted.map(function(x){var c=x.c;var ss=x.s;if(ss.score===null)return null;
             var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var yld=pos.currentPrice?dps*mult/pos.currentPrice*100:0;
-            return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+            return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:16}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:16}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
                 <div style={{flex:1}}>
@@ -8386,25 +8394,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
                     {/* Score bar */}
-                    <div style={{flex:1,height:8,background:K.bdr,borderRadius:999,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:(ss.score/10*100)+"%",background:ss.color,borderRadius:999,transition:"width .4s"}}/>
+                    <div style={{flex:1,height:8,background:K.bdr,borderRadius:_isBm?0:999,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:(ss.score/10*100)+"%",background:ss.color,borderRadius:_isBm?0:999,transition:"width .4s"}}/>
                     </div>
                     <div style={{display:"flex",alignItems:"baseline",gap:4}}>
                       <span style={{fontSize:22,fontWeight:800,color:ss.color,fontFamily:fm}}>{ss.score}</span>
                       <span style={{fontSize:13,color:K.dim,fontFamily:fm}}>/10</span>
                     </div>
-                    <span style={{fontSize:12,fontWeight:700,color:ss.color,background:ss.color+"15",padding:"2px 10px",borderRadius:999,fontFamily:fm}}>{ss.label}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:ss.color,background:ss.color+"15",padding:"2px 10px",borderRadius:_isBm?0:999,fontFamily:fm}}>{ss.label}</span>
                   </div>
                 </div>
               </div>
               {/* Component breakdown */}
               <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
                 {ss.components.map(function(comp){var pct=comp.pts/comp.max;var col=pct>=0.67?K.grn:pct>=0.34?K.amb:K.red;
-                  return<div key={comp.label} style={{background:K.bg,borderRadius:8,padding:"10px 12px",border:"1px solid "+col+"25"}} title={comp.tip}>
+                  return<div key={comp.label} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",border:"1px solid "+col+"25"}} title={comp.tip}>
                     <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,letterSpacing:.3,lineHeight:1.3}}>{comp.label}</div>
                     <div style={{fontSize:13,fontWeight:700,color:col,fontFamily:fm,lineHeight:1.3}}>{comp.value}</div>
                     <div style={{display:"flex",gap:2,marginTop:6}}>
-                      {Array.from({length:comp.max}).map(function(_,i){return<div key={i} style={{flex:1,height:3,borderRadius:999,background:i<comp.pts?col:K.bdr}}/>})}
+                      {Array.from({length:comp.max}).map(function(_,i){return<div key={i} style={{flex:1,height:3,borderRadius:_isBm?0:999,background:i<comp.pts?col:K.bdr}}/>})}
                     </div>
                   </div>})}
               </div>
@@ -8417,7 +8425,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var growthData=divPayers.map(function(c){return Object.assign({c:c},getGrowthMetrics(c))}).sort(function(a,b){return(b.divGr||b.revGr||0)-(a.divGr||a.revGr||0)});
         return<div>
           {/* 3yr income projection summary */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:12,fontFamily:fm,fontWeight:600}}>Income Projection (3 Years)</div>
             <div style={{display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
               <div><div style={{fontSize:12,color:K.dim,marginBottom:4}}>Today's annual income</div><div style={{fontSize:24,fontWeight:800,color:K.txt,fontFamily:fm}}>${totalAnnual.toFixed(0)}</div></div>
@@ -8429,7 +8437,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 var flatCount=divPayers.length-cagrCount-yoyCount;
                 var note=cagrCount>0?"Based on "+cagrCount+" multi-yr CAGR"+(yoyCount>0?", "+yoyCount+" YoY rate":"")+", "+flatCount+" flat":"Fetch real dates to compute growth rates";
                 return<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                  {totalProj3yr>totalAnnual&&<div style={{background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:8,padding:"8px 14px"}}>
+                  {totalProj3yr>totalAnnual&&<div style={{background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:8,padding:"8px 14px"}}>
                     <div style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>+${(totalProj3yr-totalAnnual).toFixed(0)} / yr</div>
                     <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>if growth rates hold</div>
                   </div>}
@@ -8442,7 +8450,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
             var yld=pos.currentPrice?dps*mult/pos.currentPrice*100:0;
             var hasGrowthData=gd.divGr!==null||gd.revGr!==null;
-            return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+            return<div key={c.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
                 <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,width:60}}>{c.ticker}</span>
@@ -8451,20 +8459,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{freqLabel(c.divFrequency)}</span>
               </div>
               {hasGrowthData&&<div style={{display:"flex",gap:16,marginTop:14,flexWrap:"wrap"}}>
-                {(gd.divCagr!==null||gd.divGr!==null)&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
+                {(gd.divCagr!==null||gd.divGr!==null)&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
                   <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>{gd.divCagr!==null?"DIV CAGR (MULTI-YR)":"DIV GROWTH YoY"}</div>
                   <div style={{fontSize:16,fontWeight:700,color:(gd.divCagr||gd.divGr||0)>0?K.grn:K.red,fontFamily:fm}}>{(gd.divCagr!=null?gd.divCagr:gd.divGr)>=0?"+":""}{(gd.divCagr!=null?gd.divCagr:gd.divGr).toFixed(1)}%</div>
                   {gd.divCagr!==null&&gd.divGr!==null&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>YoY: {gd.divGr>=0?"+":""}{gd.divGr.toFixed(1)}%</div>}
                 </div>}
-                {gd.revGr!==null&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
+                {gd.revGr!==null&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
                   <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>REVENUE GROWTH</div>
                   <div style={{fontSize:16,fontWeight:700,color:gd.revGr>0?K.grn:K.red,fontFamily:fm}}>{gd.revGr>=0?"+":""}{gd.revGr.toFixed(1)}%</div>
                 </div>}
-                {gd.annIncome>0&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
+                {gd.annIncome>0&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
                   <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>YOUR ANNUAL INCOME</div>
                   <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>${gd.annIncome.toFixed(0)}</div>
                 </div>}
-                {gd.proj3yr!==null&&gd.annIncome>0&&<div style={{background:K.grn+"08",borderRadius:8,padding:"10px 16px",border:"1px solid "+K.grn+"20"}}>
+                {gd.proj3yr!==null&&gd.annIncome>0&&<div style={{background:K.grn+"08",borderRadius:_isBm?0:8,padding:"10px 16px",border:"1px solid "+K.grn+"20"}}>
                   <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>PROJECTED IN 3 YRS</div>
                   <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>${gd.proj3yr.toFixed(0)}</div>
                   <div style={{fontSize:10,color:K.grn,fontFamily:fm}}>+${(gd.proj3yr-gd.annIncome).toFixed(0)}</div>
@@ -8477,25 +8485,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* ── TAB: CUT RISK ── */}
       {divTab==="risk"&&(function(){
         return<div>
-          {atRisk.length===0&&cautious.length===0&&divPayers.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:12,padding:"24px",textAlign:"center",marginBottom:20}}>
+          {atRisk.length===0&&cautious.length===0&&divPayers.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:12,padding:"24px",textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:28,marginBottom:8}}>✓</div>
             <div style={{fontSize:14,fontWeight:600,color:K.grn,marginBottom:6}}>All dividends look safe</div>
             <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto",lineHeight:1.6}}>No holdings are showing red flags for a dividend cut based on available financial data.</div>
           </div>}
           {atRisk.length>0&&<div style={{marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:K.red}}/>
+              <div style={{width:10,height:10,borderRadius:_isBm?1:"50%",background:K.red}}/>
               <span style={{fontSize:12,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:.5}}>AT RISK — Safety score ≤ 4/10</span>
             </div>
             {atRisk.map(function(x){var c=x.c;var ss=x.s;var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var yld=pos.currentPrice?dps*mult/pos.currentPrice*100:0;
               var warnings=ss.components.filter(function(cp){return cp.pts===0});
-              return<div key={c.id} style={{background:K.red+"06",border:"1px solid "+K.red+"30",borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+              return<div key={c.id} style={{background:K.red+"06",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                   <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
                   <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:18,fontWeight:800,color:K.red,fontFamily:fm}}>{ss.score}/10</div><div style={{fontSize:11,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}% yield</div></div>
                 </div>
-                {warnings.length>0&&<div style={{background:K.red+"08",borderRadius:8,padding:"10px 14px"}}>
+                {warnings.length>0&&<div style={{background:K.red+"08",borderRadius:_isBm?0:8,padding:"10px 14px"}}>
                   <div style={{fontSize:11,fontWeight:700,color:K.red,fontFamily:fm,marginBottom:6,letterSpacing:.5}}>RISK FACTORS</div>
                   {warnings.map(function(w){return<div key={w.label} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:4}}>
                     <span style={{color:K.red,fontSize:13,flexShrink:0}}>•</span>
@@ -8506,21 +8514,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}
           {cautious.length>0&&<div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:K.amb}}/>
+              <div style={{width:10,height:10,borderRadius:_isBm?1:"50%",background:K.amb}}/>
               <span style={{fontSize:12,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:.5}}>WATCH CLOSELY — Safety score 5–6/10</span>
             </div>
             {cautious.map(function(x){var c=x.c;var ss=x.s;var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;var yld=pos.currentPrice?dps*mult/pos.currentPrice*100:0;
-              return<div key={c.id} style={{background:K.amb+"06",border:"1px solid "+K.amb+"30",borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+              return<div key={c.id} style={{background:K.amb+"06",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
                   <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
                   <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:11,color:K.dim}}>{c.name}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:18,fontWeight:800,color:K.amb,fontFamily:fm}}>{ss.score}/10</div><div style={{fontSize:11,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}% yield</div></div>
-                  <div style={{fontSize:12,fontWeight:700,color:K.amb,background:K.amb+"15",padding:"2px 10px",borderRadius:999,fontFamily:fm}}>{ss.label}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:K.amb,background:K.amb+"15",padding:"2px 10px",borderRadius:_isBm?0:999,fontFamily:fm}}>{ss.label}</div>
                 </div>
               </div>})}
           </div>}
           {divPayers.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:13}}>No dividend payers in your portfolio.</div>}
-          <div style={{marginTop:20,padding:"14px 18px",background:K.bg,borderRadius:10,border:"1px solid "+K.bdr}}>
+          <div style={{marginTop:20,padding:"14px 18px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr}}>
             <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,marginBottom:6,letterSpacing:.5}}>HOW CUT RISK IS CALCULATED</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.7}}>Based on 7 signals inspired by Simply Safe Dividends’ methodology: <strong>payout ratio</strong> (sector-adjusted — a REIT at 85% is safer than a retailer at 85%), <strong>FCF coverage</strong> (does free cash flow actually fund the dividend?), <strong>interest coverage</strong> (a company drowning in interest payments will sacrifice the dividend first), <strong>dividend longevity</strong> (a 20-year payer is far more committed than a 2-year payer), <strong>revenue growth</strong> (declining revenue precedes cuts), <strong>debt/equity</strong> (leverage headroom), and <strong>dividend growth trend</strong>. Each signal is scored and normalised to a 1–10 safety score.</div>
           </div>
@@ -8581,20 +8589,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       return<Modal K={K} title={isNew?"Add Resource":"Edit Resource"} onClose={function(){setLibModal(null)}} w={520}>
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Type</label>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div>
         </div>
         <Inp K={K} label="Title" value={title} onChange={setTitle} placeholder="e.g. Howard Marks on Risk"/>
         <Inp K={K} label="URL (YouTube, Vimeo, article, etc.)" value={url} onChange={setUrl} placeholder="https://..."/>
-        {thumb&&<div style={{borderRadius:8,overflow:"hidden",marginBottom:16,height:120,background:K.bg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/></div>}
+        {thumb&&<div style={{borderRadius:_isBm?0:8,overflow:"hidden",marginBottom:16,height:120,background:K.bg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/></div>}
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Folder</label>
           {!newFolderMode&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
-            <button onClick={function(){setFolder("")}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(folder===""?K.acc:K.bdr),background:folder===""?K.acc+"18":"transparent",color:folder===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
-            {folders.map(function(f){return<button key={f.id} onClick={function(){setFolder(f.id)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(folder===f.id?f.color:K.bdr),background:folder===f.id?f.color+"20":"transparent",color:folder===f.id?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:folder===f.id?700:400}}>{f.name}</button>})}
-            <button onClick={function(){setNewFolderMode(true)}} style={{padding:"6px 14px",borderRadius:999,border:"1px dashed "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>+ New folder</button>
+            <button onClick={function(){setFolder("")}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(folder===""?K.acc:K.bdr),background:folder===""?K.acc+"18":"transparent",color:folder===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
+            {folders.map(function(f){return<button key={f.id} onClick={function(){setFolder(f.id)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(folder===f.id?f.color:K.bdr),background:folder===f.id?f.color+"20":"transparent",color:folder===f.id?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:folder===f.id?700:400}}>{f.name}</button>})}
+            <button onClick={function(){setNewFolderMode(true)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px dashed "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>+ New folder</button>
           </div>}
           {newFolderMode&&<div>
-            <input value={folderName} onChange={function(e){setFolderName(e.target.value)}} placeholder="Folder name" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fm,outline:"none",marginBottom:8}}/>
+            <input value={folderName} onChange={function(e){setFolderName(e.target.value)}} placeholder="Folder name" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fm,outline:"none",marginBottom:8}}/>
             <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c)}} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:folderColor===c?"2px solid "+K.txt:"2px solid transparent"}}/>})}</div>
             <button onClick={function(){setNewFolderMode(false)}} style={{fontSize:12,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>← Back to existing</button>
           </div>}
@@ -8603,8 +8611,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Link to holding (optional)</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            <button onClick={function(){setLibTicker("")}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(libTicker===""?K.acc:K.bdr),background:libTicker===""?K.acc+"18":"transparent",color:libTicker===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
-            {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return<button key={c.id} onClick={function(){setLibTicker(libTicker===c.ticker?"":c.ticker)}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(libTicker===c.ticker?K.acc:K.bdr),background:libTicker===c.ticker?K.acc+"18":"transparent",color:libTicker===c.ticker?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTicker===c.ticker?700:400}}>{c.ticker}</button>})}
+            <button onClick={function(){setLibTicker("")}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===""?K.acc:K.bdr),background:libTicker===""?K.acc+"18":"transparent",color:libTicker===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
+            {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return<button key={c.id} onClick={function(){setLibTicker(libTicker===c.ticker?"":c.ticker)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===c.ticker?K.acc:K.bdr),background:libTicker===c.ticker?K.acc+"18":"transparent",color:libTicker===c.ticker?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTicker===c.ticker?700:400}}>{c.ticker}</button>})}
           </div>
           <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>Tagged items appear in your Morning Brief before earnings on that company.</div>
         </div>
@@ -8670,8 +8678,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.4,marginBottom:4}}>{it.title}</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                <span style={{fontSize:10,fontWeight:700,color:tc,background:tc+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,letterSpacing:.5}}>{it.type}</span>
-                {fol&&<span style={{fontSize:10,color:fol.color,background:fol.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm}}>{fol.name}</span>}
+                <span style={{fontSize:10,fontWeight:700,color:tc,background:tc+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,letterSpacing:.5}}>{it.type}</span>
+                {fol&&<span style={{fontSize:10,color:fol.color,background:fol.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm}}>{fol.name}</span>}
               </div>
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
@@ -8704,18 +8712,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <input value={libSearch} onChange={function(e){setLibSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?12:8,color:K.txt,padding:"9px 12px 9px 34px",fontSize:13,fontFamily:fm,outline:"none"}}/>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["all"].concat(ITEM_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
+          {["all"].concat(ITEM_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
         </div>
       </div>
       {/* Folders row */}
       {folders.length>0&&<div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-        <button onClick={function(){setLibFolder(null)}} style={{padding:"7px 16px",borderRadius:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),background:libFolder===null?K.acc+"18":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===null?700:400,display:"flex",alignItems:"center",gap:6}}>
+        <button onClick={function(){setLibFolder(null)}} style={{padding:"7px 16px",borderRadius:_isBm?0:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),background:libFolder===null?K.acc+"18":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===null?700:400,display:"flex",alignItems:"center",gap:6}}>
           <IC name="overview" size={12} color={libFolder===null?K.acc:K.mid}/>All <span style={{fontSize:11,opacity:.7}}>({allCount})</span>
         </button>
         {folders.map(function(f){var cnt=totalByFolder[f.id]||0;var isActiveFol=libFolder===f.id;
           return<div key={f.id} style={{position:"relative",display:"inline-flex",alignItems:"center"}}>
-            <button onClick={function(){setLibFolder(isActiveFol?null:f.id)}} style={{padding:"7px "+(isActiveFol?"30px":"16px")+" 7px 16px",borderRadius:999,border:"1px solid "+(isActiveFol?f.color:K.bdr),background:isActiveFol?f.color+"18":"transparent",color:isActiveFol?f.color:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:isActiveFol?700:400,display:"flex",alignItems:"center",gap:6,transition:"padding .1s"}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:f.color,flexShrink:0}}/>
+            <button onClick={function(){setLibFolder(isActiveFol?null:f.id)}} style={{padding:"7px "+(isActiveFol?"30px":"16px")+" 7px 16px",borderRadius:_isBm?0:999,border:"1px solid "+(isActiveFol?f.color:K.bdr),background:isActiveFol?f.color+"18":"transparent",color:isActiveFol?f.color:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:isActiveFol?700:400,display:"flex",alignItems:"center",gap:6,transition:"padding .1s"}}>
+              <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:f.color,flexShrink:0}}/>
               {f.name} <span style={{fontSize:11,opacity:.7}}>({cnt})</span>
             </button>
             {isActiveFol&&<button onClick={function(e){e.stopPropagation();setLibModal({type:"folder",folder:f})}} style={{position:"absolute",right:8,background:"none",border:"none",cursor:"pointer",padding:2,color:f.color,opacity:.75,display:"flex",alignItems:"center"}} title="Edit or delete folder">
@@ -8758,7 +8766,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         return<div style={{marginBottom:24}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm,fontWeight:600}}>This Week</div>
           {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
-            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
+            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
               <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
                 <div style={{fontSize:12,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
@@ -8770,7 +8778,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(!later.length)return null;
         return<div style={{marginBottom:24}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
             {later.map(function(c,i){var d=dU(c.earningsDate);
               return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
@@ -8780,7 +8788,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Recently reported */}
       {recent.length>0&&<div style={{marginBottom:24}}>
         <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden"}}>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
           {recent.map(function(c,i){var h=gH(c.kpis);
             return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
@@ -8800,19 +8808,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         <div>
           <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>TITLE *</div>
-          <input value={f.title} onChange={function(e){set("title",e.target.value)}} placeholder="e.g. The Intelligent Investor" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}} autoFocus onKeyDown={function(e){if(e.key==="Enter")save()}}/>
+          <input value={f.title} onChange={function(e){set("title",e.target.value)}} placeholder="e.g. The Intelligent Investor" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}} autoFocus onKeyDown={function(e){if(e.key==="Enter")save()}}/>
         </div>
         <div>
           <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>AUTHOR</div>
-          <input value={f.author} onChange={function(e){set("author",e.target.value)}} placeholder="e.g. Benjamin Graham" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}}/>
+          <input value={f.author} onChange={function(e){set("author",e.target.value)}} placeholder="e.g. Benjamin Graham" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}}/>
         </div>
         <div>
           <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>STATUS</div>
-          <div style={{display:"flex",gap:6}}>{[{v:"want",l:"Want to read"},{v:"reading",l:"Reading"},{v:"read",l:"Read"}].map(function(s){var active=f.status===s.v;return<button key={s.v} onClick={function(){set("status",s.v)}} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid "+(active?K.acc:K.bdr),background:active?K.acc+"18":"transparent",color:active?K.acc:K.mid,fontSize:12,fontFamily:fm,fontWeight:active?600:400,cursor:"pointer"}}>{s.l}</button>})}</div>
+          <div style={{display:"flex",gap:6}}>{[{v:"want",l:"Want to read"},{v:"reading",l:"Reading"},{v:"read",l:"Read"}].map(function(s){var active=f.status===s.v;return<button key={s.v} onClick={function(){set("status",s.v)}} style={{flex:1,padding:"8px 0",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc:K.bdr),background:active?K.acc+"18":"transparent",color:active?K.acc:K.mid,fontSize:12,fontFamily:fm,fontWeight:active?600:400,cursor:"pointer"}}>{s.l}</button>})}</div>
         </div>
         <div>
           <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>NOTES (optional)</div>
-          <textarea value={f.notes} onChange={function(e){set("notes",e.target.value)}} placeholder="Key takeaways, why you want to read it..." rows={3} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+          <textarea value={f.notes} onChange={function(e){set("notes",e.target.value)}} placeholder="Key takeaways, why you want to read it..." rows={3} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
         </div>
         <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
           <button onClick={function(){setModal(null)}} style={S.btn}>Cancel</button>
@@ -8847,11 +8855,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       setStatus(null);setImporting(false)}
     return<Modal title="Import Companies" onClose={function(){if(!importing)setModal(null)}} w={520} K={K}>
       <div style={{fontSize:13,color:K.dim,marginBottom:16,lineHeight:1.6}}>Paste tickers separated by commas, newlines, or semicolons. Each will be looked up via FMP and added to your Watchlist.</div>
-      <textarea value={txt} onChange={function(e){setTxt(e.target.value)}} placeholder={"AAPL\nMSFT\nGOOG\nAMZN"} rows={5} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"12px",fontSize:14,fontFamily:fm,outline:"none",resize:"vertical",lineHeight:1.6}} disabled={importing}/>
+      <textarea value={txt} onChange={function(e){setTxt(e.target.value)}} placeholder={"AAPL\nMSFT\nGOOG\nAMZN"} rows={5} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"12px",fontSize:14,fontFamily:fm,outline:"none",resize:"vertical",lineHeight:1.6}} disabled={importing}/>
       {tickers.length>0&&!importing&&<div style={{fontSize:12,color:K.acc,marginTop:8,fontFamily:fm}}>{tickers.length} new ticker{tickers.length>1?"s":""} found: {tickers.slice(0,15).join(", ")}{tickers.length>15?" +"+( tickers.length-15)+" more":""}</div>}
       {results.length>0&&<div style={{marginTop:12,maxHeight:160,overflowY:"auto"}}>{results.map(function(r){
         return<div key={r.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",fontSize:12}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:r.ok?K.grn:K.red}}/>
+          <span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:r.ok?K.grn:K.red}}/>
           <span style={{fontWeight:600,color:K.txt,fontFamily:fm}}>{r.ticker}</span>
           <span style={{color:r.ok?K.mid:K.red}}>{r.ok?r.name:r.err}</span></div>})}</div>}
       {status&&<div style={{fontSize:12,color:K.acc,marginTop:8,fontFamily:fm}}>{status}</div>}
@@ -8879,10 +8887,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?14:0}}>
         <div><h1 style={{margin:0,fontSize:isMobile?24:isThesis?32:26,fontWeight:isThesis||isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis||isMobile?"-0.5px":"normal"}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"6px 0 0",fontSize:isMobile?13:14,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" • Outside your circle of competence":priceLoading?" • Updating prices…":""}</p></div>
         {!isMobile&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:6,padding:"7px 14px",fontSize:12,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON":"Click to enable"}>
+          <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 14px",fontSize:12,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON":"Click to enable"}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             {autoNotify?"Auto-check ON":"Auto-check"}</button>
-          {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:6,padding:"7px 12px",fontSize:12,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}}>
+          {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 12px",fontSize:12,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
             {emailNotify?"KPI Email ON":"+ KPI Email"}</button>}
           <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
@@ -8890,13 +8898,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:13})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div>}
         {isMobile&&<button style={Object.assign({},S.btnP,{padding:"10px 22px",fontSize:14})} onClick={function(){setModal({type:"add"})}}>+ Add</button>}</div>
       {isMobile&&<div style={{display:"flex",gap:8,marginTop:4}}>
-        <button onClick={function(){if(requirePro("earnings"))checkAll()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:K.acc+"15",border:"1px solid "+K.acc+"40",borderRadius:10,padding:"10px",fontSize:14,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Check All</button>
-        <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:10,padding:"10px",fontSize:14,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+        <button onClick={function(){if(requirePro("earnings"))checkAll()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:K.acc+"15",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Check All</button>
+        <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
           {autoNotify?"Auto ON":"Auto-check"}</button></div>}</div>
         {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
-    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm::before{content:\'\';position:fixed;inset:0;pointer-events:none;z-index:9998;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}.ta-bm ::-webkit-scrollbar{width:6px;height:6px}.ta-bm ::-webkit-scrollbar-track{background:#000000}.ta-bm ::-webkit-scrollbar-thumb{background:#6b4510}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#3d3200}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}"}}/>
+    <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm::before{content:\'\';position:fixed;inset:0;pointer-events:none;z-index:9998;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px)}.ta-bm ::-webkit-scrollbar{width:6px;height:6px}.ta-bm ::-webkit-scrollbar-track{background:#000000}.ta-bm ::-webkit-scrollbar-thumb{background:#6b4510}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#3d3200}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}.ta-bm *{box-shadow:none!important}.ta-bm{line-height:1.35;letter-spacing:0.01em}.ta-bm div,.ta-bm button,.ta-bm input,.ta-bm textarea,.ta-bm select,.ta-bm span,.ta-bm a,.ta-bm li{border-radius:0!important}.ta-bm .ta-status-dot{border-radius:0!important;width:6px!important;height:6px!important}.ta-bm [role=switch]>div{border-radius:0!important}.ta-bm button{transition:background .05s!important}.ta-bm img:not([alt=""]):not([style*="objectFit: contain"]){border-radius:0!important}.ta-forest{}.ta-forest .ta-active-item{box-shadow:0 2px 12px rgba(88,204,2,0.2)}.ta-forest button:active{transform:scale(0.96)!important;transition:transform .08s}.ta-forest ::-webkit-scrollbar{width:6px;height:6px}.ta-forest ::-webkit-scrollbar-track{background:#f7f7f5}.ta-forest ::-webkit-scrollbar-thumb{background:#58cc0260;border-radius:999px}.ta-forest ::-webkit-scrollbar-thumb:hover{background:#58cc02}.ta-purple{}.ta-purple ::-webkit-scrollbar{width:5px;height:5px}.ta-purple ::-webkit-scrollbar-track{background:#0d0b14}.ta-purple ::-webkit-scrollbar-thumb{background:#302a48;border-radius:999px}.ta-purple ::-webkit-scrollbar-thumb:hover{background:#a78bfa}.ta-purple input:focus,.ta-purple textarea:focus,.ta-purple select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,0.15)!important;outline:none!important}.ta-purple button:active{opacity:0.85}.ta-ocean{}.ta-ocean ::-webkit-scrollbar{width:5px;height:5px}.ta-ocean ::-webkit-scrollbar-track{background:#f0f4f8}.ta-ocean ::-webkit-scrollbar-thumb{background:#cdd9e8;border-radius:4px}.ta-ocean ::-webkit-scrollbar-thumb:hover{background:#1a56db}.ta-ocean input:focus,.ta-ocean textarea:focus{border-color:#1a56db!important;box-shadow:0 0 0 3px rgba(26,86,219,0.12)!important;outline:none!important}"}}/>
     {/* ── MORNING BRIEFING ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
@@ -8962,7 +8970,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       // ── Holdings (price data — de-emphasised) ──────────────────────────
       var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
 
-      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:14,marginBottom:20,overflow:"hidden"}}>
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:_isBm?0:14,marginBottom:20,overflow:"hidden"}}>
         {/* ── Sample portfolio banner ── */}
         {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",borderBottom:"1px solid "+K.amb+"30"}}>
           <IC name="lightbulb" size={14} color={K.amb}/>
@@ -8970,7 +8978,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
             <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
           </div>
-          <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+          <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
@@ -8982,7 +8990,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"07"}}>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>Today's Focus</div>
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
-            <div style={{width:32,height:32,borderRadius:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={focus.icon} size={14} color={focus.color}/>
             </div>
             <div style={{flex:1,minWidth:0}}>
@@ -9027,7 +9035,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"flex",flexDirection:"column",gap:0}}>
               {sigs.map(function(sig,i){
                 return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:isMobile?"10px 16px":"10px 24px",borderTop:i===0?"none":"1px solid "+K.bdr+"50",background:"transparent"}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:sig.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:sig.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     <IC name={sig.icon} size={12} color={sig.color}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
@@ -9035,10 +9043,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:isMobile?"nowrap":"normal"}}>{sig.sub}</div>
                   </div>
                   <div style={{display:"flex",gap:6,flexShrink:0}}>
-                    {sig.secondary&&sig.onSecondary&&!isMobile&&<button onClick={function(){handleAction(sig.onSecondary)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
+                    {sig.secondary&&sig.onSecondary&&!isMobile&&<button onClick={function(){handleAction(sig.onSecondary)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
                       {sig.secondary}
                     </button>}
-                    <button onClick={function(){handleAction(sig.onAction)}} style={{padding:"4px 12px",borderRadius:6,border:"1px solid "+sig.color+"50",background:sig.color+"0d",color:sig.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
+                    <button onClick={function(){handleAction(sig.onAction)}} style={{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+sig.color+"50",background:sig.color+"0d",color:sig.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
                       {sig.action}
                     </button>
                   </div>
@@ -9122,12 +9130,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
                   <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
                   <div style={{display:"flex",gap:3}}>
-                    {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
+                    {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
                   </div>
                 </div>
 
                 {/* Table */}
-                <div style={{borderRadius:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+                <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
                     <div style={{padding:"5px 10px"}}/>
                     <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
@@ -9181,7 +9189,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {insiderSignals.length>0&&<div>
               <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
               </div>
             </div>}
 
@@ -9211,15 +9219,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
               return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
                 <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
-                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
                   <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
                   <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
-                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
                   <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
-                  <div style={{flex:1,height:3,borderRadius:2,background:K.bdr,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:_coverage+"%",borderRadius:2,background:_covColor,transition:"width .3s"}}/>
+                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
                   </div>
                   <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
                 </div>
@@ -9242,20 +9250,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
                 <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
                   <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
-                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
+                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:_isBm?0:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
                     <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:999,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}} title="Refresh news"><IC name="refresh" size={9} color={K.dim}/>{"Refresh"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}} title="Refresh news"><IC name="refresh" size={9} color={K.dim}/>{"Refresh"}</button>
                 </div>
               </div>
-              {showNewsFilter&&<div style={{background:K.bg,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+              {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
                 <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
+                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
+                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
                     {cat.label}
                   </button>})}
                 </div>
@@ -9277,7 +9285,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                       <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
                     </div>
                   </div>
-                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
                 </a>})}
               </div>}
               {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
@@ -9306,7 +9314,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           
           var nm2=Object.assign({},milestones);nm2.onboard_dismissed=true;setMilestones(nm2);try{localStorage.setItem("ta-milestones",JSON.stringify(nm2))}catch(e){}}
         return null}
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"14px 18px",marginBottom:16}}>
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:14}}>{"📋"}</span>
@@ -9315,10 +9323,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button onClick={function(){var nm3=Object.assign({},milestones);nm3.onboard_dismissed=true;setMilestones(nm3);try{localStorage.setItem("ta-milestones",JSON.stringify(nm3))}catch(e){}}} style={{background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:2}}>{"✕"}</button></div>
         {/* Progress bar */}
         <div style={{display:"flex",gap:3,marginBottom:12}}>
-          {steps.map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          {steps.map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
         {/* Step buttons */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:11,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
+          {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:11,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
             {s.done?<IC name="check" size={9} color={K.grn}/>:<IC name={s.icon} size={9} color={s.color}/>}{s.label}</button>})}</div>
       </div>})()}
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
@@ -9336,21 +9344,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       // Holdings in buy zone (below target price)
       var inBuyZone=held.filter(function(c){return c.targetPrice>0&&c.position&&c.position.currentPrice>0&&c.position.currentPrice<c.targetPrice}).length;
       return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:isMobile?8:16,marginBottom:20}}>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Portfolio Value</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.15}}>{cSym}{totalValue.toLocaleString(undefined,{maximumFractionDigits:0})}</div>
           <div style={{fontSize:11,color:K.dim,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Invested: {cSym}{totalCost.toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Total Return</div>
           <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isUp?"+":""}{totalReturnPct.toFixed(1)}%</div>
           <div style={{fontSize:11,color:isUp?K.grn:K.red,marginTop:4,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isUp?"+":""}{cSym}{Math.abs(totalReturn).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden"}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Today</div>
           {dayPnl!==0?<div>
             <div style={{fontSize:isMobile?16:22,fontWeight:700,color:isDayUp?K.grn:K.red,fontFamily:fm,lineHeight:1.15}}>{isDayUp?"+":""}{dayPnlPct.toFixed(2)}%</div>
             <div style={{fontSize:11,color:isDayUp?K.grn:K.red,marginTop:4,fontFamily:fm}}>{isDayUp?"+":""}{cSym}{Math.abs(dayPnl).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
           </div>:<div style={{fontSize:isMobile?14:18,fontWeight:500,color:K.dim,fontFamily:fm,lineHeight:1.15,marginTop:4}}>Refresh prices</div>}</div>
-        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden",cursor:"pointer"}} onClick={function(){if(best)setSelId(best.id)}}>
+        <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:isMobile?"12px 14px":"18px 22px",minWidth:0,overflow:"hidden",cursor:"pointer"}} onClick={function(){if(best)setSelId(best.id)}}>
           <div style={{fontSize:10,letterSpacing:isMobile?0.5:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:6,fontFamily:fm,whiteSpace:"nowrap"}}>Leader / Laggard</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
             <div><div style={{fontSize:isMobile?14:16,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1.15}}>{best?best.ticker:"—"}</div>
@@ -9358,7 +9366,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{textAlign:"right"}}><div style={{fontSize:isMobile?14:16,fontWeight:700,color:K.red,fontFamily:fm,lineHeight:1.15}}>{worst?worst.ticker:"—"}</div>
               <div style={{fontSize:11,color:K.red,marginTop:2,fontFamily:fm}}>{worst?(worst.pct>=0?"+":"")+worst.pct.toFixed(1)+"%":""}</div></div>
           </div>
-          {inBuyZone>0&&<div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,marginTop:4,background:K.grn+"12",padding:"2px 6px",borderRadius:3,display:"inline-block"}}>{inBuyZone} in buy zone</div>}
+          {inBuyZone>0&&<div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,marginTop:4,background:K.grn+"12",padding:"2px 6px",borderRadius:_isBm?0:3,display:"inline-block"}}>{inBuyZone} in buy zone</div>}
         </div>
       </div>}()}
     {/* Analytics quick link */}
@@ -9389,7 +9397,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {/* View toggle */}
     {filtered.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{display:"flex",gap:4}}>
-        {[{v:"fundamentals",label:"Fundamentals",icon:"chart"},{v:"list",label:"Holdings",icon:"file"},{v:"cards",label:"Cards",icon:"overview"}].map(function(opt){var active=dashSet.portfolioView===opt.v||(opt.v==="fundamentals"&&!dashSet.portfolioView);return<button key={opt.v} onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:opt.v});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:active?K.acc+"18":"transparent",color:active?K.acc:K.dim,border:"1px solid "+(active?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+        {[{v:"fundamentals",label:"Fundamentals",icon:"chart"},{v:"list",label:"Holdings",icon:"file"},{v:"cards",label:"Cards",icon:"overview"}].map(function(opt){var active=dashSet.portfolioView===opt.v||(opt.v==="fundamentals"&&!dashSet.portfolioView);return<button key={opt.v} onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:opt.v});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:active?K.acc+"18":"transparent",color:active?K.acc:K.dim,border:"1px solid "+(active?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
           <IC name={opt.icon} size={10} color={active?K.acc:K.dim}/>{opt.label}
         </button>})}
       </div>
@@ -9398,7 +9406,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(toRefresh.length===0)return;
         showToast("Refreshing fundamentals…","info",3000);
         toRefresh.forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)});
-      }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:5,cursor:"pointer",padding:"4px 10px",display:"flex",alignItems:"center",gap:4,fontSize:10,color:K.dim,fontFamily:fm}}>
+      }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,cursor:"pointer",padding:"4px 10px",display:"flex",alignItems:"center",gap:4,fontSize:10,color:K.dim,fontFamily:fm}}>
         <IC name="refresh" size={9} color={K.dim}/> Refresh fundamentals
       </button>}
     </div>}
@@ -9464,7 +9472,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       });
 
       var COL_W=isMobile?54:68;
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden",marginBottom:28}}>
         {/* Table header */}
         <div style={{display:"flex",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid "+K.bdr,gap:0}}>
           <div style={{flex:1,minWidth:isMobile?90:120}}>
@@ -9474,11 +9482,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}} title={m.tip}>{m.short}</span>
           </div>})}
           <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
-            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
+            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
               <IC name="gear" size={10} color={showFundCfg?K.acc:K.dim}/>
             </button>
             {/* Column picker dropdown */}
-            {showFundCfg&&<div style={{position:"absolute",right:0,top:30,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 14px",boxShadow:"0 6px 24px rgba(0,0,0,.25)",zIndex:60,minWidth:260,maxHeight:380,overflowY:"auto"}} onClick={function(e){e.stopPropagation()}}>
+            {showFundCfg&&<div style={{position:"absolute",right:0,top:30,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",boxShadow:"0 6px 24px rgba(0,0,0,.25)",zIndex:60,minWidth:260,maxHeight:380,overflowY:"auto"}} onClick={function(e){e.stopPropagation()}}>
               <div style={{fontSize:11,fontWeight:700,color:K.txt,marginBottom:10}}>Customize columns</div>
               <div style={{fontSize:10,color:K.dim,marginBottom:10}}>Pick up to 6 metrics for your look-through view</div>
               {["Growth","Margins","Returns","Value","Health","Price"].map(function(cat){
@@ -9495,7 +9503,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                           var n=Object.assign({},p,{fundCols:next});
                           try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n;
                         });
-                      }} style={{padding:"4px 10px",borderRadius:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"14":"transparent",color:on?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400}}>
+                      }} style={{padding:"4px 10px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"14":"transparent",color:on?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400}}>
                         {m.label}
                       </button>})}
                   </div>
@@ -9540,7 +9548,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {activeCols.map(function(m){var v=m.get(snap);var color=metricColor(m,v);
               return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
                 {v!=null
-                  ?<span style={{fontSize:isMobile?11:12,fontWeight:600,color:color,fontFamily:fm,background:color+"10",padding:"2px 6px",borderRadius:4}}>{m.fmt(v)}</span>
+                  ?<span style={{fontSize:isMobile?11:12,fontWeight:600,color:color,fontFamily:fm,background:color+"10",padding:"2px 6px",borderRadius:_isBm?0:4}}>{m.fmt(v)}</span>
                   :<span style={{fontSize:11,color:K.bdr,fontFamily:fm}}>{"—"}</span>}
               </div>})}
             {!isMobile&&<div style={{width:28,display:"flex",justifyContent:"flex-end"}}>
@@ -9558,7 +9566,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {/* Nordnet-style list view */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="list"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p2=cc.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,overflow:"hidden",marginBottom:28}}>
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden",marginBottom:28}}>
         <div style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"2px solid "+K.bdr,fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",gap:0}}>
           <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
@@ -9568,7 +9576,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?"Sector":"Allocation"}</span>
           {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];var hw={conviction:{w:40,a:"center",l:"C"},kpis:{w:55,a:"right",l:"KPIs",d:true},earnings:{w:60,a:"right",l:"Earn.",d:true},price:{w:70,a:"right",l:"Price",d:true},mastery:{w:55,a:"center",l:"Mastery"}};return oo.map(function(k2){var h2=hw[k2];if(!h2)return null;if(!(dashSet.listCols||{})[k2])return null;if(h2.d&&isMobile)return null;return<span key={k2} style={{width:h2.w,textAlign:h2.a}}>{h2.l}</span>})})()}
           <span style={{width:isMobile?0:28,position:"relative",overflow:"hidden"}}>{!isMobile&&<button onClick={function(e){e.stopPropagation();setShowListCfg(!showListCfg)}} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><IC name="gear" size={12} color={K.dim}/></button>}
-            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
+            {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
               <div style={{padding:"4px 12px 6px",fontSize:11,color:K.dim,fontWeight:600}}>Show columns</div>
               {(function(){var allCols=[{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"price",l:"Current Price"},{k:"mastery",l:"Mastery Stars"}];
               var order=dashSet.listColOrder||allCols.map(function(c2){return c2.k});
@@ -9576,7 +9584,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               allCols.forEach(function(c2){if(!sorted.find(function(s2){return s2.k===c2.k}))sorted.push(c2)});
               function moveCol(k2,dir){setDashSet(function(p){var o=p.listColOrder||allCols.map(function(c3){return c3.k});var idx2=o.indexOf(k2);if(idx2<0)return p;var ni=Math.max(0,Math.min(o.length-1,idx2+dir));if(ni===idx2)return p;var no=o.slice();no.splice(idx2,1);no.splice(ni,0,k2);var n=Object.assign({},p,{listColOrder:no});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
               return sorted.map(function(col){return<div key={col.k} style={{padding:"5px 12px",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
-                <div onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{width:12,height:12,borderRadius:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent",cursor:"pointer",flexShrink:0}}/>
+                <div onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{width:12,height:12,borderRadius:_isBm?0:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent",cursor:"pointer",flexShrink:0}}/>
                 <span style={{flex:1,cursor:"pointer"}} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}}>{col.l}</span>
                 <div style={{display:"flex",gap:2}}>
                   <button onClick={function(){moveCol(col.k,-1)}} style={{background:"none",border:"none",cursor:"pointer",padding:"0 2px",fontSize:10,color:K.dim}}>{"▲"}</button>
@@ -9611,7 +9619,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {(cc._dayChangePct||0)!==0&&<div style={{fontSize:10,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}%</div>}</div>}
             </span>
             {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:12,fontFamily:fm}}>{sideTab==="watchlist"?(function(){if(!cc.targetPrice||!p2.currentPrice)return<span style={{color:K.dim}}>{"—"}</span>;var gap=((cc.targetPrice-p2.currentPrice)/p2.currentPrice*100);return<span style={{color:gap>0?K.grn:K.red,fontWeight:600}}>{gap>0?gap.toFixed(0)+"% below":"At target"}</span>})():<span style={{color:K.txt}}>{val>0?cSym+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}</span>}
-            <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{cc.sector||""}</span>:weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:10,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
+            <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{cc.sector||""}</span>:weight>0?<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{flex:1,height:10,borderRadius:_isBm?0:5,background:K.blue+"18",overflow:"hidden"}}><div style={{height:"100%",width:Math.min(weight,100)+"%",borderRadius:_isBm?0:5,background:K.blue,transition:"width .4s"}}/></div><span style={{fontSize:10,color:K.blue,fontFamily:fm,fontWeight:600,minWidth:28,textAlign:"right"}}>{weight.toFixed(1)}%</span></div>:<div style={{height:10}}/>}</span>
             {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];return oo.map(function(k2){if(!(dashSet.listCols||{})[k2])return null;
               if(k2==="conviction")return<span key={k2} style={{width:40,textAlign:"center"}}>{cc.conviction>0?<span style={{fontSize:13,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:K.red,fontFamily:fm}}>{cc.conviction}</span>:<span style={{color:K.dim}}>{"—"}</span>}</span>;
               if(k2==="kpis"&&!isMobile)return<span key={k2} style={{width:55,textAlign:"right"}}><span style={S.badge(h2.c)}>{h2.l}</span></span>;
@@ -9634,7 +9642,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var _gDisc=_graham>0&&pos.currentPrice>0?((_graham-pos.currentPrice)/pos.currentPrice*100):null;
         var _fy=_snap.fairValue?_snap.fairValue.numVal:0;
         var _pvfv=_fy>0&&pos.currentPrice>0?((_fy-pos.currentPrice)/pos.currentPrice*100):null;
-        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
+        return<div key={c.id} className="ta-card ta-fade" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",cursor:"pointer",position:"relative",animationDelay:Math.min(ci*40,400)+"ms"}} onClick={function(){setSelId(c.id);setDetailTab("dossier")}}>
           <button onClick={function(e){e.stopPropagation();setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:4,opacity:.4}} title="Remove">{"✕"}</button>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}><CoLogo domain={c.domain} ticker={c.ticker} size={28}/><div style={{flex:1,minWidth:0}}>
             <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
@@ -9651,10 +9659,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         {/* Price vs value row */}
         {dashSet.showPrices&&((_tgtGap!=null)||(_gDisc!=null&&Math.abs(_gDisc)<100))&&<div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
-          {_tgtGap!=null&&<span style={{fontSize:10,background:_tgtGap>0?K.grn+"12":K.red+"12",color:_tgtGap>0?K.grn:K.red,padding:"2px 7px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{_tgtGap>0?"↑":"↓"}{Math.abs(_tgtGap).toFixed(0)}% to target</span>}
-          {_gDisc!=null&&Math.abs(_gDisc)<100&&<span style={{fontSize:10,background:_gDisc>0?K.grn+"10":K.amb+"10",color:_gDisc>0?K.grn:K.amb,padding:"2px 7px",borderRadius:4,fontFamily:fm}}>{_gDisc>0?Math.abs(_gDisc).toFixed(0)+"% below Graham":""+Math.abs(_gDisc).toFixed(0)+"% above Graham"}</span>}
+          {_tgtGap!=null&&<span style={{fontSize:10,background:_tgtGap>0?K.grn+"12":K.red+"12",color:_tgtGap>0?K.grn:K.red,padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{_tgtGap>0?"↑":"↓"}{Math.abs(_tgtGap).toFixed(0)}% to target</span>}
+          {_gDisc!=null&&Math.abs(_gDisc)<100&&<span style={{fontSize:10,background:_gDisc>0?K.grn+"10":K.amb+"10",color:_gDisc>0?K.grn:K.amb,padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm}}>{_gDisc>0?Math.abs(_gDisc).toFixed(0)+"% below Graham":""+Math.abs(_gDisc).toFixed(0)+"% above Graham"}</span>}
         </div>}
-          {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{marginBottom:10,padding:"8px 12px",background:K.bg,borderRadius:8}}>
+          {dashSet.showPositions&&pos.shares>0&&pos.avgCost>0&&pos.currentPrice>0&&<div style={{marginBottom:10,padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:8}}>
             <div style={{display:"flex",gap:10,justifyContent:"space-between"}}>
               <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{pos.shares>=1000?(pos.shares/1000).toFixed(1)+"k":pos.shares} sh</span>
               <span style={{fontSize:12,fontWeight:700,color:_totalRet!=null&&_totalRet>=0?K.grn:K.red,fontFamily:fm}}>{_totalRet!=null?(_totalRet>=0?"+":"")+_totalRet.toFixed(1)+"%":"—"}</span>
@@ -9664,11 +9672,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}
           {/* Investment style + Moat type micro-badges — hidden on mobile */}
           {!isMobile&&c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",gap:4,marginBottom:8}}>
-            <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
+            <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
           {!isMobile&&function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
             if(active.length===0)return null;
             return<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
-              {active.slice(0,4).map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:t.color,background:t.color+"10",padding:"1px 6px",borderRadius:3,fontFamily:fm}}>
+              {active.slice(0,4).map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:t.color,background:t.color+"10",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>
                 <IC name={t.icon} size={8} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
           {/* Progress Path — hidden on mobile */}
           {!isMobile&&(function(){var sec=parseThesis(c.thesisNote);var steps=[
@@ -9688,8 +9696,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:10,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <span style={{fontSize:11,color:d>=0&&d<=7?K.amb:K.dim,fontFamily:fm}}>{c.earningsDate==="TBD"?"TBD":(d<=0?"Reported":d+"d")}</span>
-              {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:3,fontFamily:fm}}>BUY ZONE</span>}
-              {_snap.shareholderYield&&_snap.shareholderYield.numVal>0.5&&<span style={{fontSize:10,color:K.grn,fontFamily:fm,background:K.grn+"10",padding:"2px 6px",borderRadius:3}}>{_snap.shareholderYield.value} yield</span>}
+              {dashSet.showBuyZone&&c.targetPrice>0&&pos.currentPrice>0&&pos.currentPrice<=c.targetPrice&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"15",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>BUY ZONE</span>}
+              {_snap.shareholderYield&&_snap.shareholderYield.numVal>0.5&&<span style={{fontSize:10,color:K.grn,fontFamily:fm,background:K.grn+"10",padding:"2px 6px",borderRadius:_isBm?0:3}}>{_snap.shareholderYield.value} yield</span>}
             </div>
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               {total>0&&<span style={{fontSize:11,color:met===total&&total>0?K.grn:K.dim,fontFamily:fm,fontWeight:met===total&&total>0?700:400}}>{met}/{total} KPIs</span>}
@@ -9703,12 +9711,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var avgStars=items.reduce(function(s2,i2){return s2+i2.m.stars},0)/Math.max(items.length,1);
       var mastered=items.filter(function(i2){return i2.m.stars>=6}).length;
       var nextSteps={"Added":"Write a thesis with core investment case, moat, risks, and sell criteria","Thesis":"Define 2+ KPIs and rate your conviction","Tracked":"Check earnings and classify the competitive moat","Monitored":"Log a decision and review your thesis (keep it fresh)","Disciplined":"Accumulate 3+ quarters of earnings data and conviction history"};
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={{fontSize:14,fontWeight:600,color:K.txt}}>Ownership Mastery</div>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{avgStars.toFixed(1)}/6 avg {mastered>0?" · "+mastered+" mastered":""}</div></div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {items.map(function(it){return<div key={it.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",borderRadius:8,background:K.bg,cursor:"pointer",flexWrap:"wrap"}} onClick={function(){setSelId(it.id);setDetailTab("dossier")}}>
+          {items.map(function(it){return<div key={it.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",borderRadius:_isBm?0:8,background:K.bg,cursor:"pointer",flexWrap:"wrap"}} onClick={function(){setSelId(it.id);setDetailTab("dossier")}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}}>
               <CoLogo domain={it.domain} ticker={it.ticker} size={20}/>
               <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,width:44,flexShrink:0}}>{it.ticker}</span>
@@ -9723,7 +9731,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {label:"Earnings",icon:"target",color:K.amb,pg:"calendar",desc:"Upcoming & recent"},
         {label:"Dividends",icon:"dollar",color:K.grn,pg:"dividends",desc:"Income tracking"},
         {label:"Timeline",icon:"trending",color:K.blue,pg:"timeline",desc:"Your history"}
-      ].map(function(lnk){return<div key={lnk.label} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"center"}} onClick={function(){setSelId(null);setPage(lnk.pg)}}>
+      ].map(function(lnk){return<div key={lnk.label} className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",cursor:"pointer",textAlign:"center"}} onClick={function(){setSelId(null);setPage(lnk.pg)}}>
         <IC name={lnk.icon} size={16} color={lnk.color}/>
         <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginTop:4}}>{lnk.label}</div>
         <div style={{fontSize:10,color:K.dim}}>{lnk.desc}</div></div>})}</div>}
@@ -9731,11 +9739,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var HARD_CHIPS=["Too complex to model","Outside circle of competence","Requires specialist knowledge","Valuation too opaque","Management concerns","Regulatory unpredictable","Commodity/macro-driven","Come back later"];
       var stale=filtered.filter(function(c){return c.parkedAt&&(new Date()-new Date(c.parkedAt))/864e5>180});
       return<div>
-        <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:16}}>
+        <div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:16}}>
           <div style={{fontSize:13,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"} {filtered.length} {filtered.length===1?"company":"companies"} parked here.{stale.length>0?" \u2014 "+stale.length+" have been here 6+ months. Worth a second look?":""}</div>
         </div>
-        {stale.length>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+        {stale.length>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
           <IC name="clock" size={13} color={K.amb}/>
           <span style={{fontSize:13,color:K.amb,fontFamily:fm,fontWeight:600}}>{stale.length} entr{stale.length===1?"y":"ies"} older than 6 months</span>
           <span style={{fontSize:12,color:K.dim,flex:1}}>Has your understanding changed? Consider reconsidering.</span>
@@ -9745,14 +9753,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var daysParked=c.parkedAt?Math.floor((new Date()-new Date(c.parkedAt))/864e5):null;
             var isStale=daysParked!==null&&daysParked>180;
             var tl=daysParked===null?"Unknown":daysParked<30?(daysParked+"d ago"):daysParked<365?(Math.floor(daysParked/30)+"mo ago"):(Math.floor(daysParked/365)+"yr "+Math.floor((daysParked%365)/30)+"mo ago");
-            return<div key={c.id} style={{background:K.card,border:"1px solid "+(isStale?K.amb+"50":K.bdr),borderRadius:12,padding:"16px 20px"}}>
+            return<div key={c.id} style={{background:K.card,border:"1px solid "+(isStale?K.amb+"50":K.bdr),borderRadius:_isBm?0:12,padding:"16px 20px"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8}}>
                     <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
                     <span style={{fontSize:12,color:K.dim}}>{c.name}</span>
-                    {c.sector&&<span style={{fontSize:11,color:K.dim,background:K.bg,padding:"1px 8px",borderRadius:999,border:"1px solid "+K.bdr}}>{c.sector}</span>}
+                    {c.sector&&<span style={{fontSize:11,color:K.dim,background:K.bg,padding:"1px 8px",borderRadius:_isBm?0:999,border:"1px solid "+K.bdr}}>{c.sector}</span>}
                     <span style={{fontSize:11,color:isStale?K.amb:K.dim,fontFamily:fm,marginLeft:"auto",fontWeight:isStale?600:400}}>{tl}</span>
                   </div>
                   {c.tooHardReason
@@ -9763,31 +9771,31 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                     :<div style={{marginBottom:8}}>
                         <div style={{fontSize:12,color:K.dim,marginBottom:6}}>Why too hard? <span style={{opacity:.7}}>(helps you decide later)</span></div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                          {HARD_CHIPS.map(function(r){return<button key={r} onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:r})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:999,padding:"3px 10px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}>{r}</button>})}
+                          {HARD_CHIPS.map(function(r){return<button key={r} onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:r})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"3px 10px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}>{r}</button>})}
                         </div>
                       </div>}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0,marginLeft:8}}>
-                  <button onClick={function(e){e.stopPropagation();upd(c.id,{status:"watchlist",parkedAt:""});showToast(c.ticker+" moved to Watchlist","info",2000)}} style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:6,padding:"6px 12px",fontSize:12,color:K.grn,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Reconsider \u2192</button>
-                  <button onClick={function(e){e.stopPropagation();if(window.confirm("Remove "+c.ticker+"?"))setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"6px 12px",fontSize:12,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Remove</button>
+                  <button onClick={function(e){e.stopPropagation();upd(c.id,{status:"watchlist",parkedAt:""});showToast(c.ticker+" moved to Watchlist","info",2000)}} style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:6,padding:"6px 12px",fontSize:12,color:K.grn,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Reconsider \u2192</button>
+                  <button onClick={function(e){e.stopPropagation();if(window.confirm("Remove "+c.ticker+"?"))setCos(function(p){return p.filter(function(x){return x.id!==c.id})})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 12px",fontSize:12,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Remove</button>
                 </div>
               </div>
             </div>})}
         </div>
       </div>}())}
-    {sideTab==="toohard"&&filtered.length===0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:13,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"}</div></div>}
+    {sideTab==="toohard"&&filtered.length===0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20}}><div style={{fontSize:13,fontWeight:600,color:K.red,marginBottom:4}}>Circle of Competence</div><div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"}</div></div>}
     {/* Empty state — warm welcome */}
     {filtered.length===0&&<div className="ta-fade" style={{padding:isMobile?"40px 4px 100px":"60px 20px",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
       {sideTab==="portfolio"&&(function(){
         return<div>
           {/* Hero */}
           <div style={{marginBottom:isMobile?28:32}}>
-            <div style={{width:64,height:64,borderRadius:20,background:"linear-gradient(135deg,"+K.acc+"30,"+K.acc+"08)",border:"1px solid "+K.acc+"30",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="trending" size={28} color={K.acc}/></div>
+            <div style={{width:64,height:64,borderRadius:_isBm?0:20,background:"linear-gradient(135deg,"+K.acc+"30,"+K.acc+"08)",border:"1px solid "+K.acc+"30",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="trending" size={28} color={K.acc}/></div>
             <h3 style={{fontSize:isMobile?22:24,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 10px",lineHeight:1.25}}>{"Think like an owner."}</h3>
             <p style={{fontSize:isMobile?14:14,color:K.dim,lineHeight:1.7,margin:"0 auto",maxWidth:360}}>{"Your first company takes 3 minutes to set up. Thesis, KPIs, and a plan — then you're in the system."}</p>
           </div>
           {/* 3-step path */}
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28,textAlign:"left",background:K.card,border:"1px solid "+K.bdr,borderRadius:16,padding:isMobile?"18px 16px":"20px 24px"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:28,textAlign:"left",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"18px 16px":"20px 24px"}}>
             <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600,marginBottom:6}}>{"Your first 3 minutes"}</div>
             {[
               {n:"1",color:K.grn,icon:"plus",title:"Add a company you own",desc:"We auto-fill name, sector & earnings date"},
@@ -9804,23 +9812,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>})}
           </div>
           {/* CTAs */}
-          <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btnP,{width:"100%",padding:isMobile?"14px":"12px 24px",fontSize:15,borderRadius:12,marginBottom:10})}>{"Get started →"}</button>
+          <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btnP,{width:"100%",padding:isMobile?"14px":"12px 24px",fontSize:15,borderRadius:_isBm?0:12,marginBottom:10})}>{"Get started →"}</button>
           <button onClick={function(){
               var sampleWithFlag=SAMPLE.map(function(s){return Object.assign({},s,{_isSample:true})});
               setCos(sampleWithFlag);
               try{localStorage.setItem("ta-onboarded","true")}catch(e){}
               setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)
-            }} style={{display:"block",width:"100%",background:"none",border:"1px solid "+K.bdr,borderRadius:12,color:K.dim,fontSize:13,cursor:"pointer",padding:isMobile?"12px":"10px",fontFamily:fb}}>{"Explore with example portfolio →"}</button>
+            }} style={{display:"block",width:"100%",background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,color:K.dim,fontSize:13,cursor:"pointer",padding:isMobile?"12px":"10px",fontFamily:fb}}>{"Explore with example portfolio →"}</button>
         </div>
       })()}
       {sideTab==="watchlist"&&<div>
-        <div style={{width:56,height:56,borderRadius:16,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="search" size={24} color={K.acc}/></div>
+        <div style={{width:56,height:56,borderRadius:_isBm?0:16,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="search" size={24} color={K.acc}/></div>
         <h3 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{"Nothing on your watchlist yet"}</h3>
         <p style={{fontSize:14,color:K.dim,lineHeight:1.7,margin:"0 0 24px",maxWidth:340,marginLeft:"auto",marginRight:"auto"}}>{"Add companies you're researching but haven't bought yet. When the thesis is clear and price is right, promote them to your portfolio."}</p>
-        <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:14,borderRadius:10})}>{"+ Add to Watchlist"}</button>
+        <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:14,borderRadius:_isBm?0:10})}>{"+ Add to Watchlist"}</button>
       </div>}
       {sideTab==="toohard"&&<div>
-        <div style={{width:56,height:56,borderRadius:16,background:K.red+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="alert" size={24} color={K.red}/></div>
+        <div style={{width:56,height:56,borderRadius:_isBm?0:16,background:K.red+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px"}}><IC name="alert" size={24} color={K.red}/></div>
         <h3 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>{"Too-Hard Pile is empty"}</h3>
         <p style={{fontSize:14,color:K.dim,lineHeight:1.7,margin:"0 0 4px",maxWidth:340,marginLeft:"auto",marginRight:"auto"}}>{"Companies outside your circle of competence. It takes wisdom to know what you don't know."}</p>
         <p style={{fontSize:13,color:K.dim,fontStyle:"italic",margin:"0 0 24px"}}>{"— Munger"}</p>
@@ -9830,7 +9838,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Portfolio Heatmap */}
       {dashSet.showHeatmap&&function(){var withPrice=filtered.filter(function(c){var p=c.position||{};return p.currentPrice>0&&p.avgCost>0&&p.shares>0});
         if(withPrice.length<2)return null;
-        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:16}}>
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:16}}>
           <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Portfolio Heatmap</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {withPrice.sort(function(a,b){return(b.position.shares*b.position.currentPrice)-(a.position.shares*a.position.currentPrice)}).map(function(c2){
@@ -9838,13 +9846,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var totalVal=withPrice.reduce(function(s,x){return s+(x.position.shares*x.position.currentPrice)},0);var weight=val/totalVal*100;
               var clr=pct>=20?"#00C853":pct>=5?"#66BB6A":pct>=0?"#A5D6A7":pct>=-10?"#EF9A9A":pct>=-20?"#EF5350":"#C62828";
               var minW=Math.max(60,weight*3);
-              return<div key={c2.id} onClick={function(){setSelId(c2.id)}} style={{background:clr+"20",border:"1px solid "+clr+"40",borderRadius:6,padding:"8px 12px",cursor:"pointer",minWidth:minW,flex:weight>15?"1 1 "+minW+"px":"0 1 "+minW+"px"}}>
+              return<div key={c2.id} onClick={function(){setSelId(c2.id)}} style={{background:clr+"20",border:"1px solid "+clr+"40",borderRadius:_isBm?0:6,padding:"8px 12px",cursor:"pointer",minWidth:minW,flex:weight>15?"1 1 "+minW+"px":"0 1 "+minW+"px"}}>
                 <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</div>
                 <div style={{fontSize:14,fontWeight:700,color:clr,fontFamily:fm}}>{pct>=0?"+":""}{pct.toFixed(1)}%</div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{weight.toFixed(0)}% of portfolio</div></div>})}</div></div>}()}
       <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:(dashSet.showSectors&&dashSet.showDividends)?"1fr 1fr":"1fr",gap:16}}>
       {/* Sector Concentration (value-weighted) */}
-      {dashSet.showSectors&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+      {dashSet.showSectors&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
         <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Sector Concentration</div>
         {function(){var sectorVal={};var totalVal=0;
           filtered.forEach(function(c2){var s=c2.sector||"Other";var pos2=c2.position||{};var val=pos2.shares>0&&pos2.currentPrice>0?pos2.shares*pos2.currentPrice:0;sectorVal[s]=(sectorVal[s]||0)+val;totalVal+=val});
@@ -9854,12 +9862,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             var warn=pct>=50;
             return<div key={s} style={{marginBottom:10}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:13,color:K.mid}}>{s}</span><span style={{fontSize:12,color:warn?K.amb:K.dim,fontWeight:warn?600:400,fontFamily:fm}}>{pct}%{warn?" ⚠":""}</span></div>
-              <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
+              <div style={{height:4,borderRadius:_isBm?0:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:_isBm?0:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
       {/* Dividends */}
-      {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
+      {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Dividend Dashboard</div>
-          <button onClick={function(){setPage("dividends")}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:20,padding:"3px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>Full Hub →</button>
+          <button onClick={function(){setPage("dividends")}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,padding:"3px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>Full Hub →</button>
         </div>
         {divCos.length===0&&<div style={{fontSize:13,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:12}}>Dividend data is auto-fetched when you add companies.</span></div>}
         {divCos.length>0&&(function(){
@@ -9886,13 +9894,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           return<div>
             {/* Summary cards */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:8}}>
-              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</div>
                 <div style={{fontSize:8,color:K.dim}}>Est. Annual Income</div></div>
-              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.acc,fontFamily:fm}}>{portYield.toFixed(2)}%</div>
                 <div style={{fontSize:8,color:K.dim}}>Portfolio Yield</div></div>
-              <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
+              <div style={{padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>${monthlyInc.toFixed(0)}</div>
                 <div style={{fontSize:8,color:K.dim}}>Monthly (avg)</div></div></div>
             <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginBottom:14,display:"flex",alignItems:"center",gap:5}}>
@@ -9905,7 +9913,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>Monthly Income Estimate</div>
               <div style={{display:"flex",gap:3,alignItems:"flex-end",height:60}}>
                 {monthlyArr.map(function(v2,mi){return<div key={mi} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
-                  <div style={{width:"100%",height:Math.max(v2/maxMonth*50,2),borderRadius:3,background:v2>0?K.grn:K.bdr,marginBottom:3}}/>
+                  <div style={{width:"100%",height:Math.max(v2/maxMonth*50,2),borderRadius:_isBm?0:3,background:v2>0?K.grn:K.bdr,marginBottom:3}}/>
                   <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{months[mi]}</div>
                   {v2>0&&<div style={{fontSize:7,color:K.grn,fontFamily:fm}}>${v2.toFixed(0)}</div>}</div>})}</div></div>}
             {/* Holdings table */}
@@ -9928,10 +9936,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <span style={{width:60,textAlign:"right",fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{h2.shares>0?"$"+h2.annPay.toFixed(0):"--"}</span>
                   {isPro&&<span style={{width:50,textAlign:"right",fontSize:11,color:safeColor,fontFamily:fm}}>{h2.payout>0?h2.payout.toFixed(0)+"%":"--"}</span>}</div>})}</div>
             {/* Upcoming ex-div dates */}
-            {upcoming2.length>0&&<div style={{padding:"10px 12px",background:K.bg,borderRadius:8,marginBottom:8}}>
+            {upcoming2.length>0&&<div style={{padding:"10px 12px",background:K.bg,borderRadius:_isBm?0:8,marginBottom:8}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>Upcoming Ex-Dividend Dates</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                {upcoming2.slice(0,5).map(function(h2){var dU2=Math.ceil((new Date(h2.exDiv)-new Date())/864e5);return<div key={h2.ticker} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:4,border:"1px solid "+K.amb+"25",background:K.amb+"06"}}>
+                {upcoming2.slice(0,5).map(function(h2){var dU2=Math.ceil((new Date(h2.exDiv)-new Date())/864e5);return<div key={h2.ticker} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.amb+"25",background:K.amb+"06"}}>
                   <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span>
                   <span style={{fontSize:10,color:K.amb,fontFamily:fm}}>{dU2<=0?"Today":dU2+"d"}</span></div>})}</div></div>}
             {/* Yield on cost explanation */}
@@ -9940,7 +9948,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div className={bm?"ta-bm":""} style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden",position:"relative"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
+  return(<div className={bm?"ta-bm":isForest?"ta-forest":theme==="purple"?"ta-purple":theme==="paypal"?"ta-ocean":""} style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden",position:"relative"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
     {/* === QUARTERLY LETTER POPUP === */}
@@ -9978,7 +9986,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var upcomingE=portfolio2.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
       var scored2=qDecs.filter(function(d2){return d2.outcome});var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
-      function QSH(p){return<div style={{fontSize:10,letterSpacing:_isThesis?1:2.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:800,marginTop:24,marginBottom:10,paddingBottom:6,borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:8}}><div style={{width:4,height:14,borderRadius:2,background:p.color||K.acc}}/>{p.children}</div>}
+      function QSH(p){return<div style={{fontSize:10,letterSpacing:_isThesis?1:2.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:800,marginTop:24,marginBottom:10,paddingBottom:6,borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:8}}><div style={{width:4,height:14,borderRadius:_isBm?0:2,background:p.color||K.acc}}/>{p.children}</div>}
       // Personalized observations
       var obs=[];
       var highConvLow=perfArr.filter(function(hp){return hp.conv>=8}).sort(function(a,b){return a.val-b.val});
@@ -10018,7 +10026,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div><div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>Quarterly Letter</div>
                 <div style={{fontSize:14,color:K.dim,marginTop:4}}>{qTitle+" \u2014 "+qRange}</div>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}>
-                  <span style={{fontSize:11,color:portCharColor,fontFamily:fm,fontWeight:700,letterSpacing:.5,background:portCharColor+"18",padding:"2px 10px",borderRadius:999}}>{portCharLabel}</span>
+                  <span style={{fontSize:11,color:portCharColor,fontFamily:fm,fontWeight:700,letterSpacing:.5,background:portCharColor+"18",padding:"2px 10px",borderRadius:_isBm?0:999}}>{portCharLabel}</span>
                 </div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:800,letterSpacing:3,color:K.txt,fontFamily:fm}}>THESISALPHA</div>
                 <div style={{fontSize:10,color:K.dim,letterSpacing:1,textTransform:"uppercase"}}>{"Owner\u2019s Report"}</div>
@@ -10026,7 +10034,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* Salutation + summary */}
           <div style={{fontSize:14,color:K.mid,lineHeight:1.85,marginBottom:20}}>{"Dear "+(username||"Investor")+","}<br/><br/>{"This quarter you completed "}<strong style={{color:K.txt}}>{qRevs.length}</strong>{" weekly reviews, logged "}<strong style={{color:K.txt}}>{qDecs.length}</strong>{" decisions, and checked earnings on "}<strong style={{color:K.txt}}>{earningsChecked}</strong>{" holdings. "}{buys2.length>0&&<span>{"Added to "}<strong style={{color:K.grn}}>{buys2.map(function(b){return b.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{sells2.length>0&&<span>{"Exited "}<strong style={{color:K.red}}>{sells2.map(function(s3){return s3.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(", ")}</strong>{". "}</span>}{"Portfolio: "}<strong style={{color:K.txt}}>{portfolio2.length}</strong>{" companies."}</div>
           {/* Performance banner */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:10,overflow:"hidden",marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden",marginBottom:24}}>
             <div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Total Return</div><div style={{fontSize:22,fontWeight:800,color:totalRet2>=0?K.grn:K.red,fontFamily:fm}}>{totalRet2>=0?"+":""}{totalRet2.toFixed(1)}%</div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>${(pnl>=0?"+":"")+Math.round(pnl).toLocaleString()}</div></div>
             {best2&&<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Best</div><div style={{fontSize:18,fontWeight:800,color:K.grn,fontFamily:fm}}>{best2.ticker}</div><div style={{fontSize:10,color:K.grn,fontFamily:fm}}>{best2.ret>=0?"+":""}{best2.ret.toFixed(0)}%</div></div>}
             {worst2&&worst2.ticker!==(best2&&best2.ticker)?<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}><div style={{fontSize:7,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>Weakest</div><div style={{fontSize:18,fontWeight:800,color:K.red,fontFamily:fm}}>{worst2.ticker}</div><div style={{fontSize:10,color:K.red,fontFamily:fm}}>{worst2.ret>=0?"+":""}{worst2.ret.toFixed(0)}%</div></div>:<div style={{padding:"14px 10px",textAlign:"center",borderRight:"1px solid "+K.bdr}}/>}
@@ -10034,11 +10042,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* Holdings */}
           {perfArr.length>0&&<div><QSH color={K.blue}>Holdings Snapshot</QSH><div style={{marginBottom:20}}>{perfArr.slice(0,10).map(function(hp,hi){return<div key={hp.ticker} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:hi<Math.min(perfArr.length,10)-1?"1px solid "+K.bdr+"30":"none"}}><CoLogo domain={hp.domain} ticker={hp.ticker} size={18}/><span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,width:48}}>{hp.ticker}</span><span style={{fontSize:12,fontWeight:700,color:hp.ret>=0?K.grn:K.red,fontFamily:fm,width:60,textAlign:"right"}}>{hp.ret>=0?"+":""}{hp.ret.toFixed(1)}%</span><span style={{fontSize:11,color:K.dim,fontFamily:fm,width:56,textAlign:"right"}}>${hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0)}</span><span style={{marginLeft:"auto",fontSize:11,color:hp.conv>=7?K.grn:hp.conv>=4?K.amb:hp.conv>0?K.red:K.dim,fontFamily:fm}}>{hp.conv>0?hp.conv+"/10":"\u2014"}</span></div>})}</div></div>}
           {/* KPIs */}
-          {totalKpis>0&&<div><QSH color={K.grn}>KPI Scorecard</QSH><div style={{display:"flex",gap:8,marginBottom:10}}><div style={{flex:1,padding:"10px",background:K.grn+"08",borderRadius:8,textAlign:"center",border:"1px solid "+K.grn+"20"}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div><div style={{fontSize:8,color:K.dim}}>Hit Rate</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{metKpis}</div><div style={{fontSize:8,color:K.dim}}>Met</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.red,fontFamily:fm}}>{totalKpis-metKpis}</div><div style={{fontSize:8,color:K.dim}}>Missed</div></div></div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong execution \u2014 thesis assumptions holding.":kpiHitRate>=40?"Mixed results \u2014 consider revising persistent misses.":"Several misses \u2014 review whether theses need updating."}</div></div>}
+          {totalKpis>0&&<div><QSH color={K.grn}>KPI Scorecard</QSH><div style={{display:"flex",gap:8,marginBottom:10}}><div style={{flex:1,padding:"10px",background:K.grn+"08",borderRadius:_isBm?0:8,textAlign:"center",border:"1px solid "+K.grn+"20"}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{kpiHitRate}%</div><div style={{fontSize:8,color:K.dim}}>Hit Rate</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.grn,fontFamily:fm}}>{metKpis}</div><div style={{fontSize:8,color:K.dim}}>Met</div></div><div style={{flex:1,padding:"10px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:20,fontWeight:800,color:K.red,fontFamily:fm}}>{totalKpis-metKpis}</div><div style={{fontSize:8,color:K.dim}}>Missed</div></div></div><div style={{fontSize:12,color:K.mid,lineHeight:1.6}}>{kpiHitRate>=70?"Strong execution \u2014 thesis assumptions holding.":kpiHitRate>=40?"Mixed results \u2014 consider revising persistent misses.":"Several misses \u2014 review whether theses need updating."}</div></div>}
           {/* Process */}
           <QSH color={K.acc}>Process Discipline</QSH>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>{[{v:os2.total,l:"Owner\u2019s Score",c:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red},{v:streakWeeks+"wk",l:"Streak",c:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim},{v:avgConv,l:"Avg Conviction",c:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim},{v:qRevs.length,l:"Reviews",c:qRevs.length>=8?K.grn:qRevs.length>=4?K.amb:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>{[{v:moatCount+"/"+portfolio2.length,l:"Moats",c:moatCount>=portfolio2.length?K.grn:K.amb},{v:scenarioCount+"/"+portfolio2.length,l:"Stress-Tested",c:scenarioCount>=portfolio2.length?K.grn:K.amb},{v:freshT,l:"Fresh Theses",c:freshT>=portfolio2.length?K.grn:K.amb},{v:qNotes,l:"Notes",c:qNotes>0?K.txt:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:12}}>{[{v:os2.total,l:"Owner\u2019s Score",c:os2.total>=70?K.grn:os2.total>=40?K.amb:K.red},{v:streakWeeks+"wk",l:"Streak",c:streakWeeks>=4?K.grn:streakWeeks>=1?K.amb:K.dim},{v:avgConv,l:"Avg Conviction",c:avgConv>=7?K.grn:avgConv>=4?K.amb:K.dim},{v:qRevs.length,l:"Reviews",c:qRevs.length>=8?K.grn:qRevs.length>=4?K.amb:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:16}}>{[{v:moatCount+"/"+portfolio2.length,l:"Moats",c:moatCount>=portfolio2.length?K.grn:K.amb},{v:scenarioCount+"/"+portfolio2.length,l:"Stress-Tested",c:scenarioCount>=portfolio2.length?K.grn:K.amb},{v:freshT,l:"Fresh Theses",c:freshT>=portfolio2.length?K.grn:K.amb},{v:qNotes,l:"Notes",c:qNotes>0?K.txt:K.dim}].map(function(m){return<div key={m.l} style={{padding:"10px",background:K.bg,borderRadius:_isBm?0:8,textAlign:"center",border:"1px solid "+K.bdr}}><div style={{fontSize:16,fontWeight:800,color:m.c,fontFamily:fm}}>{m.v}</div><div style={{fontSize:7.5,color:K.dim,fontFamily:fm}}>{m.l}</div></div>})}</div>
           {/* Conviction shifts */}
           {shifts.length>0&&<div><QSH color={K.amb}>Conviction Shifts</QSH><div style={{marginBottom:12}}>{shifts.slice(0,6).map(function(s3,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"20"}}><span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,width:44}}>{s3.ticker}</span><span style={{fontSize:13,fontWeight:800,color:s3.rating>=7?K.grn:s3.rating>=4?K.amb:K.red,fontFamily:fm}}>{s3.rating}/10</span>{s3.note&&<span style={{fontSize:11,color:K.dim,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s3.note}</span>}</div>})}</div></div>}
           {/* Dividends */}
@@ -10058,7 +10066,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:13})}>Close</button></div>
         </div></div>})()}
     {chestOverlay&&<div style={{position:"fixed",inset:0,zIndex:10002,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",animation:"fadeInFast .3s ease"}} onClick={function(){setChestOverlay(null)}}>
-      <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"1px solid "+K.bdr,boxShadow:"0 8px 32px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"40px 48px",borderRadius:_isBm?0:20,background:K.card,maxWidth:380,position:"relative",overflow:"hidden",border:"1px solid "+K.bdr,boxShadow:"0 8px 32px rgba(0,0,0,.3)"}} onClick={function(e){e.stopPropagation()}}>
         {/* Tier glow bar */}
         <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:chestOverlay.tier==="rare"?"linear-gradient(90deg,#FFD700,#FF8C00,#FFD700)":chestOverlay.tier==="uncommon"?"linear-gradient(90deg,#a78bfa,#818cf8,#a78bfa)":K.acc}}/>
         {/* Tier label */}
@@ -10070,15 +10078,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* Description */}
         <div style={{fontSize:14,color:K.mid,lineHeight:1.7,marginBottom:chestOverlay.author?4:16}}>{chestOverlay.desc}</div>
         {chestOverlay.author&&<div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginBottom:16}}>{"— "+chestOverlay.author}</div>}
-        {chestOverlay.healthNote&&<div style={{textAlign:"left",marginTop:4,padding:"12px 14px",background:K.bg,borderRadius:8,border:"1px solid "+K.bdr,marginBottom:12}}><div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>Portfolio Health</div><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{chestOverlay.healthNote}</div></div>}
+        {chestOverlay.healthNote&&<div style={{textAlign:"left",marginTop:4,padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,marginBottom:12}}><div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>Portfolio Health</div><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{chestOverlay.healthNote}</div></div>}
         {chestOverlay.teaser&&<div style={{fontSize:12,color:K.acc,marginTop:4,marginBottom:12,fontFamily:fm}}>{chestOverlay.teaser}</div>}
         {/* XP earned */}
-        {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:6,padding:"4px 12px",marginBottom:12}}>
+        {chestOverlay.xp>0&&<div style={{display:"inline-block",background:K.grn+"12",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:6,padding:"4px 12px",marginBottom:12}}>
           </div>}
         <div><button onClick={function(){setChestOverlay(null)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:13})}>Collect</button></div>
       </div></div>}
     {celebOverlay&&<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.6)",backdropFilter:"blur(6px)",animation:"fadeInFast .3s ease"}} onClick={function(){setCelebOverlay(null)}}>
-      <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc),boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"30, 0 0 40px "+(celebOverlay.color||K.acc)+"15, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420,animation:"celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both, glowPulse 2s ease-in-out infinite"}}>
+      <div className="ta-celebrate" style={{textAlign:"center",padding:"48px 60px",borderRadius:_isBm?0:20,background:K.card,border:"2px solid "+(celebOverlay.color||K.acc),boxShadow:"0 0 80px "+(celebOverlay.color||K.acc)+"30, 0 0 40px "+(celebOverlay.color||K.acc)+"15, 0 20px 60px rgba(0,0,0,.3)",maxWidth:420,animation:"celebratePop .5s cubic-bezier(.175,.885,.32,1.275) both, glowPulse 2s ease-in-out infinite"}}>
         <div style={{fontSize:56,marginBottom:16,animation:"streakFlame 1s ease infinite"}}>{celebOverlay.icon||String.fromCodePoint(0x1F389)}</div>
         <div style={{fontSize:24,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{celebOverlay.title}</div>
         <div style={{fontSize:14,color:K.mid,lineHeight:1.7,marginBottom:20}}>{celebOverlay.subtitle}</div>
@@ -10089,9 +10097,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var colors=["#FFD700","#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE"];
         var left=Math.random()*100;var delay=Math.random()*2;var size=Math.random()*8+4;var dur=Math.random()*2+2;
         return React.createElement("div",{key:i,style:{position:"absolute",left:left+"%",top:-20,width:size,height:size,borderRadius:Math.random()>.5?"50%":"2px",background:colors[i%colors.length],animation:"confettiFall "+dur+"s "+delay+"s ease-in both"}})})}</div>}
-    {toast&&<div className="ta-fade" style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:toast.type==="levelup"?"14px 28px":"10px 24px",borderRadius:12,background:toast.type==="levelup"?"linear-gradient(135deg, #FFD700 0%, #FFA500 100%)":toast.type==="streak"?"linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)":toast.type==="milestone"?"linear-gradient(135deg, #667eea 0%, #764ba2 100%)":K.card,border:"1px solid "+(toast.type==="levelup"?"#FFD700":toast.type==="streak"?"#FF6B6B":toast.type==="milestone"?"#764ba2":K.bdr),boxShadow:"0 8px 32px rgba(0,0,0,.25)",display:"flex",alignItems:"center",gap:12,cursor:"pointer",maxWidth:420}} onClick={function(){setToast(null)}}>
+    {toast&&<div className="ta-fade" style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:9999,padding:toast.type==="levelup"?"14px 28px":"10px 24px",borderRadius:_isBm?0:12,background:toast.type==="levelup"?"linear-gradient(135deg, #FFD700 0%, #FFA500 100%)":toast.type==="streak"?"linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)":toast.type==="milestone"?"linear-gradient(135deg, #667eea 0%, #764ba2 100%)":K.card,border:"1px solid "+(toast.type==="levelup"?"#FFD700":toast.type==="streak"?"#FF6B6B":toast.type==="milestone"?"#764ba2":K.bdr),boxShadow:"0 8px 32px rgba(0,0,0,.25)",display:"flex",alignItems:"center",gap:12,cursor:"pointer",maxWidth:420}} onClick={function(){setToast(null)}}>
       <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
-      {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
+      {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
     <Sidebar/><div style={{flex:1,overflowY:"auto",overflowX:"hidden",width:isMobile?"100%":"auto",paddingBottom:isMobile?56:0}}><TopBar/>
     {/* ── Profile Panel ── */}
@@ -10100,7 +10108,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var style=cos.length>0?(function(){var styles={};cos.forEach(function(c){if(c.investStyle)styles[c.investStyle]=(styles[c.investStyle]||0)+1});var top=Object.entries(styles).sort(function(a,b){return b[1]-a[1]})[0];return top?top[0]:null})():null;
       var styleLabel=style&&STYLE_MAP&&STYLE_MAP[style]?STYLE_MAP[style].label:style;
       var streak=streakData.current||0;
-      return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":300,background:K.card,border:"1px solid "+K.bdr2,borderRadius:14,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"20px 22px"}} onClick={function(e){e.stopPropagation()}}>
+      return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":300,background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:14,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"20px 22px"}} onClick={function(e){e.stopPropagation()}}>
 
         {/* Avatar + identity */}
         <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18}}>
@@ -10114,8 +10122,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{flex:1,minWidth:0}}>
             {editingName
               ?<div style={{display:"flex",gap:5,alignItems:"center"}}>
-                  <input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Your name" maxLength={20} style={{background:K.bg,border:"1px solid "+K.acc,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:13,fontFamily:fm,width:"100%",outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername();if(e.key==="Escape")setEditingName(false)}} autoFocus/>
-                  <button onClick={saveUsername} style={{background:K.acc,color:"#fff",border:"none",borderRadius:5,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Save</button>
+                  <input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Your name" maxLength={20} style={{background:K.bg,border:"1px solid "+K.acc,borderRadius:_isBm?0:6,color:K.txt,padding:"4px 8px",fontSize:13,fontFamily:fm,width:"100%",outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername();if(e.key==="Escape")setEditingName(false)}} autoFocus/>
+                  <button onClick={saveUsername} style={{background:K.acc,color:"#fff",border:"none",borderRadius:_isBm?0:5,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Save</button>
                 </div>
               :<div style={{fontSize:15,fontWeight:600,color:K.txt,cursor:"pointer",display:"flex",alignItems:"center",gap:6}} onClick={function(){setEditingName(true);setNameInput(username||"")}}>
                 {username||"Set your name"}
@@ -10123,25 +10131,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               </div>}
             <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
               <span style={{fontSize:11,color:plan==="pro"?K.grn:K.dim,fontWeight:plan==="pro"?600:400,fontFamily:fm}}>{plan==="pro"?"Pro":"Free"}</span>
-              {styleLabel&&<span style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:4,padding:"1px 7px",fontFamily:fm}}>{styleLabel}</span>}
+              {styleLabel&&<span style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm}}>{styleLabel}</span>}
             </div>
           </div>
         </div>
 
         {/* Streak — single motivational stat */}
-        {streak>0&&<div style={{background:K.grn+"0d",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+        {streak>0&&<div style={{background:K.grn+"0d",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
           <div style={{fontSize:22,lineHeight:1}}>🔥</div>
           <div>
             <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1}}>{streak} week{streak!==1?"s":""}</div>
             <div style={{fontSize:11,color:K.dim,marginTop:2}}>current streak{streakData.best>streak?" · best "+streakData.best:""}</div>
           </div>
         </div>}
-        {streak===0&&<div style={{background:K.bg,border:"1px dashed "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+        {streak===0&&<div style={{background:K.bg,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
           <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>Complete your first Weekly Review to start a streak</div>
         </div>}
 
         {/* Log out */}
-        <button onClick={function(){setShowProfile(false);props.onLogout()}} style={{width:"100%",padding:"9px",borderRadius:9,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,textAlign:"center"}}>Log out</button>
+        <button onClick={function(){setShowProfile(false);props.onLogout()}} style={{width:"100%",padding:"9px",borderRadius:_isBm?0:9,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,textAlign:"center"}}>Log out</button>
       </div>})()}
     {trial&&trial.start&&plan!=="pro"&&function(){
       var urgent=trialDaysLeft<=3;var warn=trialDaysLeft<=7&&!urgent;
@@ -10152,9 +10160,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:12,fontWeight:600,color:barColor,fontFamily:fm}}>{trialDaysLeft}d left</div>
           <div style={{fontSize:12,color:K.mid}}>{trialBonusEarned?"Full trial — "+TRIAL_TOTAL+" days earned":"Pro trial — complete "+THESIS_UNLOCK+" theses to earn +"+TRIAL_BONUS+" more days"}</div></div>
         {!trialBonusEarned&&<div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{display:"flex",gap:3}}>{[0,1,2].map(function(i){return<div key={i} style={{width:24,height:6,borderRadius:3,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          <div style={{display:"flex",gap:3}}>{[0,1,2].map(function(i){return<div key={i} style={{width:24,height:6,borderRadius:_isBm?0:3,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
           <span style={{fontSize:11,color:thesisProgress>=THESIS_UNLOCK?K.grn:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK}</span></div>}
-        {urgent&&<button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{padding:"5px 14px",fontSize:11,fontWeight:600,background:K.red+"15",border:"1px solid "+K.red+"40",color:K.red,borderRadius:6,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Upgrade Now</button>}
+        {urgent&&<button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{padding:"5px 14px",fontSize:11,fontWeight:600,background:K.red+"15",border:"1px solid "+K.red+"40",color:K.red,borderRadius:_isBm?0:6,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Upgrade Now</button>}
       </div>}
       // Expired trial banner
       if(trialExpired){return<div style={{padding:isMobile?"12px 14px":"12px 32px",background:K.amb+"10",borderBottom:"1px solid "+K.amb+"25",display:"flex",alignItems:"center",gap:16}}>
@@ -10162,7 +10170,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
       return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
-    {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
+    {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {[{id:"dashboard",icon:"overview",label:"Portfolio"},{id:"calendar",icon:"calendar",label:"Calendar"},{id:"review",icon:"star",label:"Review"},{id:"hub",icon:"castle",label:"Hub"},{id:"library",icon:"book",label:"Library"}].map(function(item){var active=page===item.id&&!selId;return<button key={item.id} onClick={function(){setSelId(null);setPage(item.id)}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:0,color:active?K.acc:K.dim}}>
         <IC name={item.icon} size={18} color={active?K.acc:K.dim}/>
         <span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400}}>{item.label}</span>
@@ -10235,8 +10243,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <input ref={cmdInputRef} value={cmdQuery} onChange={function(e){setCmdQuery(e.target.value);setCmdIdx(0)}} onKeyDown={onInputKey}
               placeholder="Search companies, pages, actions…"
               style={{flex:1,background:"none",border:"none",outline:"none",fontSize:16,color:K.txt,fontFamily:fm,caretColor:K.acc}}/>
-            {cmdQuery&&<button onClick={function(){setCmdQuery("");setCmdIdx(0);cmdInputRef.current&&cmdInputRef.current.focus()}} style={{background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"2px 6px",borderRadius:4,fontFamily:fm}}>✕</button>}
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:5,padding:"2px 7px",flexShrink:0}}>Esc</span>
+            {cmdQuery&&<button onClick={function(){setCmdQuery("");setCmdIdx(0);cmdInputRef.current&&cmdInputRef.current.focus()}} style={{background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"2px 6px",borderRadius:_isBm?0:4,fontFamily:fm}}>✕</button>}
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"2px 7px",flexShrink:0}}>Esc</span>
           </div>
           {/* Results */}
           {flat.length>0?<div style={{maxHeight:380,overflowY:"auto",padding:"8px 0"}}>
@@ -10251,12 +10259,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:13,color:isActive?K.txt:K.txt,fontFamily:fm,fontWeight:isActive?600:400,display:"flex",alignItems:"center",gap:7}}>
                       {item.label}
-                      {item.badge&&<span style={{fontSize:9,fontFamily:fm,color:item.badgeColor,background:item.badgeColor+"18",border:"1px solid "+item.badgeColor+"30",borderRadius:4,padding:"1px 5px",fontWeight:700,textTransform:"uppercase"}}>{item.badge}</span>}
+                      {item.badge&&<span style={{fontSize:9,fontFamily:fm,color:item.badgeColor,background:item.badgeColor+"18",border:"1px solid "+item.badgeColor+"30",borderRadius:_isBm?0:4,padding:"1px 5px",fontWeight:700,textTransform:"uppercase"}}>{item.badge}</span>}
                     </div>
                     {item.sub&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.sub}</div>}
                   </div>
                   {item.meta&&<span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{item.meta}</span>}
-                  {isActive&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:5,padding:"2px 7px",flexShrink:0}}>↵</span>}
+                  {isActive&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"2px 7px",flexShrink:0}}>↵</span>}
                 </div>
               })}
             </div>})}
@@ -10264,10 +10272,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* Footer hint */}
           <div style={{borderTop:"1px solid "+K.bdr,padding:"8px 20px",display:"flex",gap:16}}>
             {[["↑↓","Navigate"],["↵","Open"],["Esc","Close"]].map(function(h){return<span key={h[0]} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,color:K.dim,fontFamily:fm}}>
-              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 6px",fontSize:10}}>{h[0]}</span>{h[1]}
+              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,padding:"1px 6px",fontSize:10}}>{h[0]}</span>{h[1]}
             </span>})}
             <span style={{marginLeft:"auto",fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"1px 5px",fontSize:10}}>⌘K</span>to open
+              <span style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,padding:"1px 5px",fontSize:10}}>⌘K</span>to open
             </span>
           </div>
         </div>
@@ -10296,18 +10304,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
       return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
         {/* Customize panel */}
-        {fabCustomize&&<div style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:16,padding:"20px 22px",boxShadow:"0 16px 48px rgba(0,0,0,.35)",width:260,marginBottom:6}} onClick={function(e){e.stopPropagation()}}>
+        {fabCustomize&&<div style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:16,padding:"20px 22px",boxShadow:"0 16px 48px rgba(0,0,0,.35)",width:260,marginBottom:6}} onClick={function(e){e.stopPropagation()}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:.5}}>CUSTOMIZE SHORTCUTS</span>
-            <button onClick={function(){setFabCustomize(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:"2px 6px",borderRadius:6}}>✕</button>
+            <button onClick={function(){setFabCustomize(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:"2px 6px",borderRadius:_isBm?0:6}}>✕</button>
           </div>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts. Drag to reorder.</div>
           {FAB_ALL.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
-            <div style={{width:28,height:28,borderRadius:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={s.icon} size={13} color={s.color}/>
             </div>
             <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{s.label}</span>
-            <div style={{width:18,height:18,borderRadius:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+            <div style={{width:18,height:18,borderRadius:_isBm?0:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
               {on&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
             </div>
           </div>})}
@@ -10315,21 +10323,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>}
         {/* Action pills — fan upward when open */}
         {fabOpen&&activeShortcuts.map(function(s,si){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,animation:"fabSlideIn "+(0.06+si*0.04)+"s ease-out both",transformOrigin:"right center"}}>
-          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:999,padding:"5px 14px",fontSize:12,fontFamily:fm,color:K.txt,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,.18)",cursor:"pointer"}} onClick={s.action} onMouseEnter={function(e){e.currentTarget.style.background=s.color+"15";e.currentTarget.style.color=s.color}} onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.color=K.txt}}>{s.label}</span>
+          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"5px 14px",fontSize:12,fontFamily:fm,color:K.txt,whiteSpace:"nowrap",boxShadow:"0 4px 16px rgba(0,0,0,.18)",cursor:"pointer"}} onClick={s.action} onMouseEnter={function(e){e.currentTarget.style.background=s.color+"15";e.currentTarget.style.color=s.color}} onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.color=K.txt}}>{s.label}</span>
           <div onClick={s.action} style={{width:40,height:40,borderRadius:"50%",background:s.color,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",boxShadow:"0 4px 16px "+s.color+"50",flexShrink:0,transition:"transform .12s"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.1)"}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)"}}>
             <IC name={s.icon} size={16} color="#fff"/>
           </div>
         </div>})}
         {/* Gear button — only when open */}
         {fabOpen&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:-2}}>
-          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:999,padding:"5px 14px",fontSize:11,fontFamily:fm,color:K.dim,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.15)",cursor:"pointer"}} onClick={function(){setFabCustomize(!fabCustomize)}}>Customize shortcuts</span>
+          <span style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"5px 14px",fontSize:11,fontFamily:fm,color:K.dim,whiteSpace:"nowrap",boxShadow:"0 4px 12px rgba(0,0,0,.15)",cursor:"pointer"}} onClick={function(){setFabCustomize(!fabCustomize)}}>Customize shortcuts</span>
           <div onClick={function(){setFabCustomize(!fabCustomize)}} style={{width:40,height:40,borderRadius:"50%",background:fabCustomize?K.acc:K.bdr,border:"1px solid "+K.bdr2,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,transition:"all .15s"}}>
             <IC name="gear" size={16} color={fabCustomize?"#fff":K.dim}/>
           </div>
         </div>}
         {/* Main FAB button */}
         <div style={{position:"relative"}}>
-          <button onClick={function(e){e.stopPropagation();setFabOpen(!fabOpen);if(fabOpen)setFabCustomize(false)}} style={{width:54,height:54,borderRadius:"50%",background:fabOpen?K.mid:K.acc,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:fabOpen?"0 4px 20px rgba(0,0,0,.3)":"0 6px 24px "+K.acc+"60",transition:"all .2s",outline:"none"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.07)"}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)"}}>
+          <button onClick={function(e){e.stopPropagation();setFabOpen(!fabOpen);if(fabOpen)setFabCustomize(false)}} style={{width:54,height:54,borderRadius:_isBm?0:"50%",background:fabOpen?K.mid:K.acc,border:_isBm?"1px solid "+K.acc:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:_isBm?"none":fabOpen?"0 4px 20px rgba(0,0,0,.3)":"0 6px 24px "+K.acc+"60",transition:"all .2s",outline:"none"}} onMouseEnter={function(e){e.currentTarget.style.transform="scale(1.07)"}} onMouseLeave={function(e){e.currentTarget.style.transform="scale(1)"}}>
             <span style={{fontSize:22,lineHeight:1,color:"#fff",display:"block",transform:fabOpen?"rotate(45deg)":"rotate(0deg)",transition:"transform .2s"}}>+</span>
           </button>
         </div>
@@ -10340,7 +10348,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 function OnboardingFlow(p){
   var {K,S,fm,fb,fh,isDark,isMobile,cSym,nId,cos,setCos,selId,setSelId,obStep,setObStep,obPath,setObPath,oUsername,setOUsername,oTicker,setOTicker,oName,setOName,oSector,setOSector,oLook,setOLook,oDomain,setODomain,oIndustry,setOIndustry,oPrice,setOPrice,oStyle,setOStyle,oTCore,setOTCore,oTMoat,setOTMoat,oTRisk,setOTRisk,oTSell,setOTSell,oKpiSel,setOKpiSel,oKpiTargets,setOKpiTargets,oCoId,setOCoId,oShares,setOShares,oAvgCost,setOAvgCost,oPurchDate,setOPurchDate,oTmrRef,upd,lookupTicker,finishOnboarding,setDetailTab,setGuidedSetup,setTourStep,INVEST_STYLES,STYLE_MAP,METRIC_MAP,SAMPLE,IC,TLogo}=p;
   var overlay={position:"fixed",inset:0,background:isDark?"rgba(10,10,15,.97)":"rgba(245,245,250,.97)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
-  var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
+  var card={position:"relative",background:K.card,borderRadius:_isBm?0:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
 
   // ── Local state ──────────────────────────────────────────
   // All form state lives in parent — see declarations near obPath
@@ -10387,7 +10395,7 @@ function OnboardingFlow(p){
 
   // ── Step dots ─────────────────────────────────────────────
   function stepDots(){return<div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:28}}>
-    {[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
+    {[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:_isBm?0:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
 
   // ─────────────────────────────────────────────────────────
   // STEP 1 — Identity welcome
@@ -10399,7 +10407,7 @@ function OnboardingFlow(p){
       <h1 style={{fontSize:26,fontWeight:700,color:K.txt,fontFamily:fh,margin:"16px 0 10px",lineHeight:1.2}}>You did the research.<br/>Now keep the conviction.</h1>
       <p style={{fontSize:14,color:K.mid,lineHeight:1.7,margin:0,maxWidth:360,marginLeft:"auto",marginRight:"auto"}}>ThesisAlpha is where your investment thinking lives — thesis, KPIs, earnings checks, all in one place.</p>
     </div>
-    <div style={{background:K.bg,borderRadius:10,padding:"14px 18px",marginBottom:24,border:"1px solid "+K.bdr}}>
+    <div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:24,border:"1px solid "+K.bdr}}>
       <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>What you'll do in the next 3 minutes</div>
       {[{n:"1",c:K.grn,t:"Add a company you own"},
         {n:"2",c:K.blue,t:"Write a one-paragraph thesis"},
@@ -10429,7 +10437,7 @@ function OnboardingFlow(p){
         onChange={function(e){setOUsername(e.target.value)}}
         placeholder="Your first name or nickname"
         autoFocus
-        style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,color:K.txt,padding:"13px 16px",fontSize:16,fontFamily:fb,outline:"none",boxSizing:"border-box",textAlign:"center"}}
+        style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,color:K.txt,padding:"13px 16px",fontSize:16,fontFamily:fb,outline:"none",boxSizing:"border-box",textAlign:"center"}}
         onKeyDown={function(e){if(e.key==="Enter"&&oUsername.trim()){setObStep(3)}}}
       />
     </div>
@@ -10449,19 +10457,19 @@ function OnboardingFlow(p){
     <div style={{marginBottom:16}}>
       <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker symbol</label>
       <div style={{display:"flex",gap:12,alignItems:"center"}}>
-        <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false}/>
+        <input value={oTicker} onChange={function(e){onTickerChange(e.target.value)}} placeholder="AAPL" style={{flex:"0 0 110px",background:K.bg,border:"1px solid "+(oLook==="done"?K.grn:K.bdr),borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:16,fontFamily:fm,fontWeight:600,outline:"none",textTransform:"uppercase",letterSpacing:1,transition:"border .2s"}} spellCheck={false}/>
         {oLook==="loading"&&<span style={{display:"inline-block",width:14,height:14,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}
         {oLook==="done"&&<span style={{fontSize:13,color:K.grn,fontFamily:fm}}>{"✓"} Found — {oName}</span>}
         {oLook==="error"&&<span style={{fontSize:13,color:K.amb}}>Not found — enter name below</span>}
       </div></div>
     {(oLook==="done"||oLook==="error")&&<div style={{marginBottom:16}}>
       <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Company name</label>
-      <input value={oName} onChange={function(e){setOName(e.target.value)}} placeholder="Apple Inc." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none"}}/>
+      <input value={oName} onChange={function(e){setOName(e.target.value)}} placeholder="Apple Inc." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none"}}/>
     </div>}
     {(oLook==="done"||oLook==="error")&&oName.trim()&&<div style={{marginBottom:20}}>
       <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>How do you invest in this?</label>
       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-        {INVEST_STYLES.map(function(st){var isSel=oStyle===st.id;return<button key={st.id} onClick={function(){setOStyle(isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
+        {INVEST_STYLES.map(function(st){var isSel=oStyle===st.id;return<button key={st.id} onClick={function(){setOStyle(isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
           <IC name={st.icon} size={9} color={isSel?st.color:K.dim}/>{st.label}</button>})}
       </div>
       {oStyle&&STYLE_MAP[oStyle]&&<div style={{fontSize:11,color:K.dim,marginTop:6,lineHeight:1.5}}>{STYLE_MAP[oStyle].desc}</div>}
@@ -10469,20 +10477,20 @@ function OnboardingFlow(p){
     {(oLook==="done"||oName.trim())&&<div style={{marginBottom:20}}>
       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
         <label style={{fontSize:11,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Position</label>
-        <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"1px 6px",borderRadius:4,border:"1px solid "+K.bdr}}>optional</span>
+        <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,padding:"1px 6px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>optional</span>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
         <div>
           <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Shares owned</label>
-          <input value={oShares} onChange={function(e){setOShares(e.target.value)}} placeholder="100" type="number" min="0" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+          <input value={oShares} onChange={function(e){setOShares(e.target.value)}} placeholder="100" type="number" min="0" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
         </div>
         <div>
           <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Avg cost {cSym}</label>
-          <input value={oAvgCost} onChange={function(e){setOAvgCost(e.target.value)}} placeholder="142.50" type="number" min="0" step="0.01" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+          <input value={oAvgCost} onChange={function(e){setOAvgCost(e.target.value)}} placeholder="142.50" type="number" min="0" step="0.01" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none"}}/>
         </div>
         <div>
           <label style={{display:"block",fontSize:10,color:K.dim,marginBottom:4,fontFamily:fm}}>Purchase date</label>
-          <input value={oPurchDate} onChange={function(e){setOPurchDate(e.target.value)}} type="date" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none",colorScheme:isDark?"dark":"light"}}/>
+          <input value={oPurchDate} onChange={function(e){setOPurchDate(e.target.value)}} type="date" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,outline:"none",colorScheme:isDark?"dark":"light"}}/>
         </div>
       </div>
     </div>}
@@ -10497,7 +10505,7 @@ function OnboardingFlow(p){
   // ─────────────────────────────────────────────────────────
   if(obStep===4){
     var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
-    var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
+    var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
     var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
     return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
       {stepDots()}
@@ -10510,7 +10518,7 @@ function OnboardingFlow(p){
           {key:"sell",label:"Sell criteria",placeholder:sty3?sty3.sellPrompt:"What specific event or number would make me sell?",color:K.red,val:oTSell,set:setOTSell}
         ].map(function(sec){return<div key={sec.key}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-            <div style={{width:8,height:8,borderRadius:2,background:sec.color,flexShrink:0}}/>
+            <div style={{width:8,height:8,borderRadius:_isBm?0:2,background:sec.color,flexShrink:0}}/>
             <label style={{fontSize:11,fontWeight:600,color:sec.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:0.8}}>{sec.label}</label>
           </div>
           <textarea value={sec.val} onChange={function(e){sec.set(e.target.value)}} placeholder={sec.placeholder} style={taStyle}/>
@@ -10540,7 +10548,7 @@ function OnboardingFlow(p){
         {sugMetrics.map(function(met){
           var isSel=oKpiSel.indexOf(met.id)>=0;
           var tv=oKpiTargets[met.id]||"";
-          return<div key={met.id} style={{borderRadius:10,border:"2px solid "+(isSel?K.acc:K.bdr),background:isSel?K.acc+"08":K.bg,padding:"12px 14px",cursor:"pointer",transition:"all .15s"}} onClick={function(){setOKpiSel(function(p){return p.indexOf(met.id)>=0?p.filter(function(x){return x!==met.id}):p.concat([met.id])})}}>
+          return<div key={met.id} style={{borderRadius:_isBm?0:10,border:"2px solid "+(isSel?K.acc:K.bdr),background:isSel?K.acc+"08":K.bg,padding:"12px 14px",cursor:"pointer",transition:"all .15s"}} onClick={function(){setOKpiSel(function(p){return p.indexOf(met.id)>=0?p.filter(function(x){return x!==met.id}):p.concat([met.id])})}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{met.label}</div>
@@ -10551,12 +10559,12 @@ function OnboardingFlow(p){
             </div>
             {isSel&&<div style={{marginTop:10,display:"flex",alignItems:"center",gap:8}} onClick={function(e){e.stopPropagation()}}>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Target ≥</span>
-              <input value={tv} onChange={function(e){var v=e.target.value;setOKpiTargets(function(p){var n=Object.assign({},p);n[met.id]=v;return n})}} placeholder="e.g. 15" style={{width:80,background:K.card,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"5px 8px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+              <input value={tv} onChange={function(e){var v=e.target.value;setOKpiTargets(function(p){var n=Object.assign({},p);n[met.id]=v;return n})}} placeholder="e.g. 15" style={{width:80,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"5px 8px",fontSize:13,fontFamily:fm,outline:"none"}}/>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{met.unit||""}</span>
             </div>}
           </div>})}
       </div>
-      <div style={{background:K.acc+"0a",border:"1px solid "+K.acc+"25",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.6}}>
+      <div style={{background:K.acc+"0a",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.6}}>
         <strong style={{color:K.acc}}>{"💡"} Tip:</strong> Don{"'"}t overthink the target. A rough number beats no number. You can refine after the first earnings check.
       </div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
@@ -10587,13 +10595,13 @@ function OnboardingFlow(p){
         {[{label:"Company added",done:!!co5,icon:"✓"},
           {label:"Thesis written",done:hasThesis5,icon:"✓"},
           {label:kpiCount5+" KPI"+(kpiCount5!==1?"s":"")+" to track at earnings",done:kpiCount5>0,icon:"✓"}
-        ].map(function(row){return<div key={row.label} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:8,background:row.done?K.grn+"08":K.bg,border:"1px solid "+(row.done?K.grn+"25":K.bdr)}}>
+        ].map(function(row){return<div key={row.label} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:_isBm?0:8,background:row.done?K.grn+"08":K.bg,border:"1px solid "+(row.done?K.grn+"25":K.bdr)}}>
           <div style={{width:22,height:22,borderRadius:"50%",background:row.done?K.grn+"20":"transparent",border:"1px solid "+(row.done?K.grn+"40":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,color:K.grn,fontWeight:700}}>{row.done?row.icon:""}</div>
           <span style={{fontSize:13,fontWeight:row.done?600:400,color:row.done?K.txt:K.dim}}>{row.label}</span>
           {row.done&&pts>0&&row.label.indexOf("Company")>=0&&<span style={{marginLeft:"auto",fontSize:11,color:K.acc,fontFamily:fm,fontWeight:600}}>+{pts} pts</span>}
         </div>})}
       </div>
-      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.7}}>
+      <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,fontSize:12,color:K.mid,lineHeight:1.7}}>
         <strong style={{color:K.txt,display:"block",marginBottom:4}}>What happens next</strong>
         ThesisAlpha will remind you before the next earnings report. When results drop, open the app and run a 1-click earnings check — your KPIs vs real numbers, instant verdict.
       </div>
