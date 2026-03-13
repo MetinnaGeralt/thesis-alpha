@@ -957,7 +957,7 @@ function TrackerApp(props){
   },[page,selId]);
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
-  var chestOverlay=null;function setChestOverlay(){}
+  var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var xpFloat=null;
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
@@ -6693,7 +6693,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
 
   // ── Weekly Owner's Review ──────────────────────────────
-  function WeeklyReview(){
+  var CHEST_REWARDS=[
+  {label:"The Patient Investor",desc:"Markets reward those who wait. Every week you review is a vote for long-term thinking.",icon:String.fromCodePoint(0x1F3C6),tier:"rare",xp:50},
+  {label:"Process over Outcomes",desc:"A good decision with a bad outcome is still a good decision. Track your reasoning.",icon:String.fromCodePoint(0x1F3AF),tier:"uncommon",xp:30},
+  {label:"Conviction Check",desc:"You showed up. That\u2019s 80% of investing. The other 20% is staying honest with yourself.",icon:String.fromCodePoint(0x1F525),tier:"common",xp:15},
+  {label:"The Weekly Edge",desc:"Most investors never write down why they own something. You just did.",icon:"\u26A1",tier:"common",xp:15},
+  {label:"Owner\u2019s Discipline",desc:"Reviewing your holdings weekly puts you in the top 5% of retail investors by process.",icon:String.fromCodePoint(0x1F4CB),tier:"uncommon",xp:25},
+  {label:"Compounding Clarity",desc:"The clearer your thesis, the better your judgment under pressure.",icon:String.fromCodePoint(0x1F4A1),tier:"common",xp:15},
+  {label:"The Munger Habit",desc:"Invert, always invert. Did you stress-test your convictions this week?",icon:String.fromCodePoint(0x1F9E0),tier:"uncommon",xp:30},
+  {label:"Patience Rewarded",desc:"One more week of discipline in the books. The market rewards patience; so do we.",icon:"\u23F3",tier:"common",xp:10},
+];
+function openChest(){
+  var sw=streakData.current||0;
+  var pool=sw>0&&sw%4===0?CHEST_REWARDS.filter(function(r){return r.tier==="rare"||r.tier==="uncommon"}):CHEST_REWARDS;
+  var reward=pool[Math.floor(Math.random()*pool.length)];
+  setChestOverlay(reward);
+}
+
+function WeeklyReview(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
     var today=new Date().getDay();
