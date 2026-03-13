@@ -10247,7 +10247,65 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 +'<div style="margin-top:10px;font-family:'+F+';font-size:12px;color:rgba(255,255,255,0.4)">'+escHtml(username||'Investor')+'&nbsp;&middot;&nbsp;'+qRevs.length+' reviews&nbsp;&middot;&nbsp;'+qDecs.length+' decisions</div>'
                 +'</td></tr></table>';
               var cta='<div style="text-align:center;margin-top:20px"><a href="https://app.thesisalpha.io" style="display:inline-block;background:#6B4CE6;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-family:'+F+';font-size:14px;font-weight:800;letter-spacing:-0.2px">Open ThesisAlpha &rarr;</a></div>';
-              var eBody2=header+statsRow+holdingsBlock+attnBlock+obsBlock+closing+cta;
+              var storyBlock='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px"><tr><td>'
+                +'<p style="font-family:'+F+';font-size:14px;line-height:1.85;color:#16161D;margin:0 0 16px">'+escHtml('Dear '+(username||'Investor')+',')+'</p>'
+                +(storyText?'<p style="font-family:'+F+';font-size:14px;line-height:1.85;color:#16161D;margin:0 0 16px">'+escHtml(storyText)+'</p>':'')
+                +'<table width="100%" cellpadding="0" cellspacing="0" style="border-left:3px solid #6B4CE6;margin-bottom:20px"><tr><td style="padding:8px 0 8px 16px">'
+                +'<div style="font-family:'+F+';font-size:13px;color:#6b7280;line-height:1.75;font-style:italic">&ldquo;'+escHtml(matchedQuote.quote)+'&rdquo;</div>'
+                +'<div style="font-family:'+F+';font-size:10px;color:#9ca3af;margin-top:6px;font-weight:700">&mdash; '+escHtml(matchedQuote.author)+'</div>'
+                +'</td></tr></table>'
+                +'</td></tr></table>';
+              var decisionsBlock='';
+              if(qDecs.length>0){
+                var decRows2=qDecs.slice(0,6).map(function(d){
+                  var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';
+                  var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'rgba(22,22,29,0.3)';
+                  var outcomeLabel=d.outcome==='right'?'&#10003; Right':d.outcome==='wrong'?'&#10005; Wrong':'';
+                  return '<tr><td style="padding:10px 14px;font-family:'+F+';font-size:12px;font-weight:800;color:'+aclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap">'+escHtml(d.action||'')+'</td>'
+                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+escHtml(d.ticker||'')+'</td>'
+                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.6);border-bottom:1px solid rgba(22,22,29,0.06)">'+escHtml((d.reasoning||'').substring(0,80))+'</td>'
+                    +(outcomeLabel?'<td style="padding:10px 14px;font-size:11px;font-weight:700;color:'+oclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap">'+outcomeLabel+'</td>':'<td></td>')
+                    +'</tr>';
+                }).join('');
+                decisionsBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;margin-bottom:16px">'
+                  +'<tr style="background:rgba(22,22,29,0.04)"><th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Action</th><th style="padding:9px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Ticker</th><th style="padding:9px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Reasoning</th><th style="padding:9px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Outcome</th></tr>'
+                  +decRows2+'</table>';
+              }
+              var reflBlock='';
+              var reflEntries=qRevs.filter(function(r){return r.reflection&&r.reflection.trim().length>10});
+              if(reflEntries.length>0){
+                var reflItems=reflEntries.slice(0,3).map(function(r){
+                  var d=r.date?r.date.substring(0,10):'';
+                  return (d?'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.35);margin-bottom:3px">'+d+'</div>':'')
+                    +'<div style="font-family:'+F+';font-size:13px;color:#374151;line-height:1.7;padding-left:10px;border-left:3px solid #6B4CE6;margin-bottom:10px">'+escHtml(r.reflection.substring(0,200))+'</div>';
+                }).join('');
+                reflBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B4CE6;margin-bottom:12px">What I Learned</div>'
+                  +reflItems+'</td></tr></table>';
+              }
+              var fwdBlock=forwardQ
+                ?'<table width="100%" cellpadding="0" cellspacing="0" style="background:#EDE9FE;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
+                +'<div style="font-family:'+F+';font-size:9px;font-weight:700;color:#5B21B6;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Question for next quarter</div>'
+                +'<div style="font-family:'+F+';font-size:13px;color:#3730A3;line-height:1.75;font-style:italic">'+escHtml(forwardQ)+'</div>'
+                +'</td></tr></table>':'';
+              var decReviewBlock='';
+              if(bestDec||worstDec){
+                decReviewBlock='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px"><tr>'
+                  +(bestDec?'<td width="'+(worstDec?'50%':'100%')+'" style="padding-right:'+(worstDec?'6':'0')+'px;vertical-align:top">'
+                  +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0"><tr><td style="padding:14px 16px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#15803d;margin-bottom:6px">&#10003; Best Decision</div>'
+                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(bestDec.ticker+(bestDec.isSynthetic?'':' '+bestDec.action))+'</div>'
+                  +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((bestDec.reasoning||'').substring(0,100))+'</div>'
+                  +'</td></tr></table></td>':'')
+                  +(worstDec?'<td width="50%" style="padding-left:6px;vertical-align:top">'
+                  +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:10px;border:1px solid #fecaca"><tr><td style="padding:14px 16px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#b91c1c;margin-bottom:6px">&#10007; Hardest Call</div>'
+                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(worstDec.ticker+(worstDec.isSynthetic?'':' '+worstDec.action))+'</div>'
+                  +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((worstDec.reasoning||'').substring(0,100))+'</div>'
+                  +'</td></tr></table></td>':'')
+                  +'</tr></table>';
+              }
+              var eBody2=header+storyBlock+statsRow+holdingsBlock+decReviewBlock+decisionsBlock+reflBlock+attnBlock+fwdBlock+obsBlock+closing+cta;
               sendQuarterlyLetterEmail(eBody2,qTitle)
       }
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
@@ -10450,7 +10508,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             }
             // Highest conviction holding
             var highConv=portfolio2.filter(function(c2){return c2.conviction>=8}).sort(function(a,b){return(b.conviction||0)-(a.conviction||0)});
-            if(highConv.length>0)traits.push(highConv[0].ticker+" sits at "+highConv[0].conviction+"/10 conviction — your highest-confidence holding.");
+            if(highConv.length>0)traits.push(highConv[0].ticker+" sits at "+highConv[0].conviction+"/10 conviction, your highest-confidence holding.");
             // Conviction raised significantly this quarter
             var bigRaises=shifts.filter(function(s){return s.rating>=7});
             if(bigRaises.length>0)traits.push("Conviction raised on "+bigRaises.slice(0,2).map(function(s){return s.ticker}).join(" and ")+" this quarter. Your view of these businesses got clearer.");
