@@ -1325,6 +1325,147 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled — earnings will be checked and you'll be notified",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
   function toggleEmailNotify(){var nv=!emailNotify;setEmailNotify(nv);try{localStorage.setItem("ta-emailnotify",String(nv))}catch(e){}}
 
+  // ── Email sending via /api/email (Resend) ──────────────────
+  async function sendEmail(subject, html){
+    if(!props.user)return;
+    try{
+      var r=await authFetch("/api/email",{method:"POST",body:JSON.stringify({to:props.user,subject,html})});
+      var d=await r.json();
+      if(d.success){showToast("Email sent to "+props.user,"milestone",4000)}
+      else{showToast("Email failed: "+(d.error||"unknown error"),"info",4000)}
+    }catch(e){showToast("Could not send email","info",3000)}
+  }
+
+  // ── Email HTML base template (ThesisAlpha branded) ──────────
+  function emailBase(bodyHtml, preheader){
+    var F='-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ThesisAlpha</title>'
+      +'<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap" rel="stylesheet">'
+      +'</head><body style="margin:0;padding:0;background:#F7F5F0;font-family:'+F+'">'
+      +'<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">'+(preheader||'ThesisAlpha')+'&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>'
+      // Outer wrapper
+      +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F5F0;padding:32px 0">'
+      +'<tr><td align="center" style="padding:0 16px">'
+      +'<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;border-radius:16px;overflow:hidden">'
+      // ── Dark header ──
+      +'<tr><td style="background:#16161D;padding:24px 32px 20px">'
+      +'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+      +'<td valign="middle">'
+      +'<div style="display:inline-block;width:30px;height:30px;border-radius:8px;background:#6B4CE6;text-align:center;line-height:30px;font-family:'+F+';font-size:14px;font-weight:900;color:#ffffff;vertical-align:middle;letter-spacing:-0.5px">T</div>'
+      +'<span style="font-family:'+F+';font-size:17px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;vertical-align:middle;margin-left:8px">ThesisAlpha</span>'
+      +'</td>'
+      +'<td align="right" valign="middle"><span style="font-family:'+F+';font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6B4CE6">Owner\'s Platform</span></td>'
+      +'</tr></table>'
+      +'</td></tr>'
+      // Purple accent stripe
+      +'<tr><td style="height:3px;background:#6B4CE6;line-height:3px;font-size:3px">&nbsp;</td></tr>'
+      // ── Body ──
+      +'<tr><td style="padding:32px 36px;background:#F7F5F0">'
+      +bodyHtml
+      +'</td></tr>'
+      // ── Footer ──
+      +'<tr><td style="background:#EFECE6;padding:18px 36px;border-top:1px solid rgba(22,22,29,0.08)">'
+      +'<p style="margin:0 0 4px;font-family:'+F+';font-size:11px;color:rgba(22,22,29,0.45);font-weight:700;letter-spacing:0.5px">ThesisAlpha &mdash; invest with conviction, not impulse.</p>'
+      +'<p style="margin:0;font-family:'+F+';font-size:10px;color:rgba(22,22,29,0.3);line-height:1.5">Not financial advice. Data from third-party providers may contain errors. For personal use only.</p>'
+      +'</td></tr>'
+      +'</table>'
+      +'</td></tr></table></body></html>';
+  }
+
+  // ── Earnings / KPI Alert email ───────────────────────────────
+  function sendEarningsEmail(c){
+    if(!emailNotify||!c)return;
+    var pos=c.position||{};
+    var conv=c.conviction||0;
+    var allChecked=c.kpis.filter(function(k){return k.lastResult;});
+    var metKpis=allChecked.filter(function(k){return k.lastResult.status==="met";});
+    var missedKpis=allChecked.filter(function(k){return k.lastResult.status==="missed";});
+    var totalReturn=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
+    var F='-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif';
+
+    // ── KPI cards ──
+    var kpiCards='';
+    allChecked.forEach(function(k){
+      var met=k.lastResult.status==="met";
+      var borderClr=met?'#16a34a':'#dc2626';
+      var badgeBg=met?'#D1F4E0':'#fee2e2';
+      var badgeTxt=met?'#166534':'#991b1b';
+      var badge=met?'&#10003;&nbsp;MET':'&#10005;&nbsp;MISSED';
+      var actual=k.lastResult.actual!=null?String(k.lastResult.actual):'—';
+      kpiCards+='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;border-left:4px solid '+borderClr+';margin-bottom:8px;overflow:hidden">'
+        +'<tr>'
+        +'<td style="padding:14px 16px">'
+        +'<div style="font-family:'+F+';font-size:10px;font-weight:700;color:rgba(22,22,29,0.45);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">'+escHtml(k.name)+'</div>'
+        +'<div style="font-family:'+F+';font-size:26px;font-weight:900;color:#16161D;letter-spacing:-0.8px;line-height:1">'+escHtml(actual)+'</div>'
+        +'</td>'
+        +'<td style="padding:14px 16px;text-align:right;vertical-align:top">'
+        +'<div style="font-family:'+F+';font-size:11px;color:rgba(22,22,29,0.4);margin-bottom:6px">Target: '+escHtml(k.target||'')+'</div>'
+        +'<span style="font-family:'+F+';font-size:11px;font-weight:800;color:'+badgeTxt+';background:'+badgeBg+';padding:4px 10px;border-radius:999px">'+badge+'</span>'
+        +'</td>'
+        +'</tr>'
+        // Sell criteria warning on missed KPI
+        +((!met&&c.thesisNote&&c.thesisNote.indexOf('## SELL')!==-1)?
+          '<tr><td colspan="2" style="padding:0 16px 12px">'
+          +'<div style="background:#fef2f2;border-radius:6px;padding:8px 10px;font-family:'+F+';font-size:11px;color:#7f1d1d;line-height:1.5">Check your sell criteria — this metric missed target.</div>'
+          +'</td></tr>':'')
+        +'</table>';
+    });
+
+    // ── Thesis excerpt ──
+    var thesisBlock='';
+    if(c.thesisNote&&c.thesisNote.trim().length>10){
+      var thesisSnippet=c.thesisNote.replace(/##[^\n]*/g,'').replace(/\n+/g,' ').trim().substring(0,220);
+      thesisBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#EDE9FE;border-radius:12px;margin-bottom:20px">'
+        +'<tr><td style="padding:16px 18px">'
+        +'<div style="font-family:'+F+';font-size:10px;font-weight:700;color:#5B21B6;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Your thesis</div>'
+        +'<div style="font-family:'+F+';font-size:13px;color:#3730A3;line-height:1.65;font-style:italic">&ldquo;'+escHtml(thesisSnippet)+(thesisSnippet.length>=220?'&hellip;':'&rdquo;')+'</div>'
+        +'</td></tr></table>';
+    }
+
+    // ── Header block ──
+    var kpiScore=allChecked.length>0?metKpis.length+' of '+allChecked.length+' KPIs met':'No KPI data';
+    var scoreClr=allChecked.length>0&&metKpis.length===allChecked.length?'#D1F4E0':allChecked.length>0&&metKpis.length>0?'#FDECB2':'rgba(255,255,255,0.12)';
+    var scoreTxt=allChecked.length>0&&metKpis.length===allChecked.length?'#166534':allChecked.length>0&&metKpis.length>0?'#92400e':'rgba(255,255,255,0.6)';
+
+    var headerBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#16161D;border-radius:12px;overflow:hidden;margin-bottom:20px">'
+      +'<tr><td style="padding:20px 22px">'
+      +'<div style="font-family:'+F+';font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">KPI Earnings Check</div>'
+      +'<div style="font-family:'+F+';font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.6px;line-height:1.1">'+escHtml(c.name)+'<br><span style="color:#6B4CE6">'+escHtml(c.ticker)+(c.earningsDate&&c.earningsDate!=='TBD'?' · '+escHtml(c.earningsDate):'')+'</span></div>'
+      +'<div style="margin-top:12px;display:inline-block">'
+      +'<span style="font-family:'+F+';font-size:11px;font-weight:700;color:'+scoreTxt+';background:'+scoreClr+';padding:4px 12px;border-radius:999px">'+kpiScore+'</span>'
+      +(conv>0?'&nbsp;<span style="font-family:'+F+';font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.08);padding:4px 12px;border-radius:999px">Conviction '+conv+'/10</span>':'')
+      +'</div>'
+      +'</td></tr></table>';
+
+    // ── Earnings summary ──
+    var summaryBlock='';
+    if(c.earningSummary){
+      summaryBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-left:4px solid #6B4CE6;border-radius:0 12px 12px 0;margin-bottom:20px">'
+        +'<tr><td style="padding:14px 18px">'
+        +'<div style="font-family:'+F+';font-size:10px;font-weight:700;color:#6B4CE6;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Earnings Summary</div>'
+        +'<div style="font-family:'+F+';font-size:13px;color:#374151;line-height:1.7">'+escHtml(c.earningSummary.substring(0,400))+'</div>'
+        +'</td></tr></table>';
+    }
+
+    // ── CTA ──
+    var cta='<div style="text-align:center;margin-top:24px">'
+      +'<a href="https://app.thesisalpha.io" style="display:inline-block;background:#6B4CE6;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-family:'+F+';font-size:14px;font-weight:800;letter-spacing:-0.2px">Open dossier in ThesisAlpha &rarr;</a>'
+      +'</div>'
+      +'<p style="text-align:center;margin:12px 0 0;font-family:'+F+';font-size:11px;color:rgba(22,22,29,0.35)">You\'re receiving this because KPI email alerts are enabled. <a href="https://app.thesisalpha.io" style="color:#6B4CE6;text-decoration:none">Manage alerts</a></p>';
+
+    var body=headerBlock+(kpiCards?kpiCards+'<div style="height:12px"></div>':'')+thesisBlock+summaryBlock+cta;
+    sendEmail(c.ticker+' earnings check — ThesisAlpha', emailBase(body, c.ticker+' · '+kpiScore));
+  }
+
+  // ── Quarterly Letter email ───────────────────────────────────
+  function sendQuarterlyLetterEmail(bodyHtml, title){
+    sendEmail("Quarterly Letter: "+title+" — ThesisAlpha", emailBase(bodyHtml, "Your "+title+" owner's report"));
+  }
+
+  function escHtml(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+
+
   // ── Modals ─────────────────────────────────────────────────
   function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:sideTab==="watchlist"?"watchlist":sideTab==="toohard"?"toohard":"portfolio",investStyle:"",purchaseDate:""}),f=_f[0],setF=_f[1];
     var _ls=useState("idle"),ls=_ls[0],setLs=_ls[1];var _lm=useState(""),lm=_lm[0],setLm=_lm[1];var tmr=useRef(null);
@@ -2110,28 +2251,36 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         moatSvg+='<rect x="130" y="'+y2+'" width="'+(v/10*270).toFixed(0)+'" height="16" rx="4" fill="'+cl+'" opacity="0.85"/>';
         moatSvg+='<text x="410" y="'+(y2+12)+'" font-size="12" font-weight="700" fill="'+cl+'" font-family="JetBrains Mono,monospace">'+v.toFixed(1)+'</text>'});
       moatSvg+='</svg>'}}
-    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' Research Note</title>';
-    html+='<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
-    html+='<style>@page{size:A4;margin:20mm 18mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.65}.page{max-width:700px;margin:0 auto;padding:36px 44px}';
-    html+='.cover{padding:48px 0 36px;border-bottom:3px solid #1a1a2e;margin-bottom:32px}.cover h1{font-family:Playfair Display,serif;font-size:42px;font-weight:800;letter-spacing:-1px;line-height:1}.cover .cn{font-size:16px;color:#4b5563;margin-top:8px}.cover .meta{font-family:JetBrains Mono,monospace;font-size:10px;color:#9ca3af;margin-top:6px}';
-    html+='.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:20px}.tag{font-family:JetBrains Mono,monospace;font-size:8.5px;font-weight:600;padding:4px 12px;border-radius:4px}';
+    var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+c.ticker+' — Research Memo</title>';
+    html+='<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">';
+    html+='<style>@page{size:A4;margin:22mm 24mm 24mm 24mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:"EB Garamond",Georgia,serif;color:#1a1a1a;font-size:12.5px;line-height:1.75;background:#ffffff}.page{max-width:640px;margin:0 auto}.rh{font-family:"JetBrains Mono",monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:32px;display:flex;justify-content:space-between}.cover{padding:0 0 28px;border-bottom:2px solid #1a1a1a;margin-bottom:28px}.cover-ticker{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:4px;color:#6B4CE6;text-transform:uppercase;margin-bottom:12px}.cover h1{font-family:"EB Garamond",Georgia,serif;font-size:38px;font-weight:500;letter-spacing:-0.5px;line-height:1.15;color:#1a1a1a;margin-bottom:8px}.cover .sub{font-family:"EB Garamond",Georgia,serif;font-size:14px;color:#4b5563;font-style:italic}.cover .meta{font-family:"JetBrains Mono",monospace;font-size:9px;color:#9ca3af;margin-top:14px;display:flex;gap:16px;flex-wrap:wrap}.stats{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid #e5e7eb;margin:20px 0 28px}.stat{padding:12px;text-align:center;border-right:1px solid #e5e7eb}.stat:last-child{border-right:none}.stat-l{font-family:"JetBrains Mono",monospace;font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px}.stat-v{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:700}.stat-s{font-size:9px;color:#9ca3af;margin-top:2px;font-family:"JetBrains Mono",monospace}.sh{font-family:"JetBrains Mono",monospace;font-size:8.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#1a1a1a;margin:28px 0 16px;padding-bottom:7px;border-bottom:1.5px solid #1a1a1a;display:flex;align-items:center;justify-content:space-between}.sh-n{font-size:8px;color:#9ca3af}.t-main{font-family:"EB Garamond",Georgia,serif;font-size:13.5px;line-height:1.82;padding:18px 22px;background:#faf9f7;border-left:3px solid #1a1a1a;margin-bottom:12px}.t-block{padding:12px 18px;margin-bottom:8px;font-size:12px;line-height:1.72;color:#374151}.t-label{font-family:"JetBrains Mono",monospace;font-size:7.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:4px}th{font-family:"JetBrains Mono",monospace;font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding:6px 10px;border-bottom:1.5px solid #1a1a1a;font-weight:700;text-align:left}td{padding:8px 10px;border-bottom:1px solid #f3f4f6;font-family:"EB Garamond",Georgia,serif;font-size:12px}.mono{font-family:"JetBrains Mono",monospace}.grn{color:#15803d}.red{color:#b91c1c}.amb{color:#b45309}.pur{color:#6B4CE6}.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.fc{border:1px solid #e5e7eb;padding:14px 16px}.fch{font-family:"JetBrains Mono",monospace;font-size:7.5px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:10px;font-weight:700}.fr{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f9fafb}.fr:last-child{border-bottom:none}.fk{font-size:11.5px;color:#6b7280;font-family:"EB Garamond",Georgia,serif}.fv{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;color:#1a1a1a}.mt{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:1px solid #e5e7eb;margin:0 6px 6px 0}.mt-l{font-size:11.5px;font-weight:600;font-family:"EB Garamond",Georgia,serif}.sc{border:1px solid #e5e7eb;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid}.scc{font-family:"JetBrains Mono",monospace;font-size:7.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6B4CE6;margin-bottom:4px}.scq{font-size:11.5px;color:#6b7280;font-style:italic;margin-bottom:6px;line-height:1.5;font-family:"EB Garamond",Georgia,serif}.sca{font-size:12px;color:#1a1a1a;line-height:1.65;font-family:"EB Garamond",Georgia,serif}.tag{font-family:"JetBrains Mono",monospace;font-size:8px;font-weight:600;padding:3px 10px;margin-right:6px;margin-bottom:4px;display:inline-block}.dec{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f3f4f6;align-items:flex-start}.dec-action{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:800;width:52px;flex-shrink:0}.dec-body{font-size:12px;line-height:1.65;font-family:"EB Garamond",Georgia,serif;flex:1}.dec-date{font-family:"JetBrains Mono",monospace;font-size:9px;color:#9ca3af;white-space:nowrap}.footer{margin-top:36px;padding-top:14px;border-top:1.5px solid #1a1a1a;display:flex;justify-content:space-between;align-items:flex-end}@media print{.page{padding:0}}</style></head><body><div class="page">';
+
     html+='.kstats{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:28px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:5px}.ks-v{font-family:JetBrains Mono,monospace;font-size:18px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:3px}';
     html+='.sh{font-family:JetBrains Mono,monospace;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:#1a1a2e;margin:32px 0 14px;padding-bottom:8px;border-bottom:2px solid #1a1a2e;display:flex;align-items:center;gap:8px}.sh-n{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#1a1a2e;color:#fff;font-size:9px}';
-    html+='.tc{font-family:Playfair Display,serif;font-size:13px;line-height:1.85;padding:20px 24px;background:linear-gradient(135deg,#fafafa,#f5f5f5);border-radius:10px;border-left:4px solid #1a1a2e;margin-bottom:14px}';
-    html+='.tb{padding:12px 18px;border-radius:8px;margin-bottom:8px;font-size:11px;line-height:1.7;color:#374151;background:#fafafa}.tl{font-family:JetBrains Mono,monospace;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}';
+    
     html+='table{width:100%;border-collapse:collapse;font-size:10.5px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:8px 12px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:9px 12px;border-bottom:1px solid #f3f4f6}';
     html+='.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.amb{color:#d97706}';
     html+='.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.fc{border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px}.fch{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:10px;font-weight:700}.fr{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f9fafb}.fr:last-child{border-bottom:none}.fk{font-size:10px;color:#6b7280}.fv{font-family:JetBrains Mono,monospace;font-size:11px;font-weight:600;color:#1a1a2e}';
     html+='.sc{border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin-bottom:8px;page-break-inside:avoid}.scc{font-family:JetBrains Mono,monospace;font-size:7.5px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#6b4ce6;margin-bottom:4px}.scq{font-size:10px;color:#6b7280;font-style:italic;margin-bottom:6px;line-height:1.5}.sca{font-size:11px;color:#1a1a2e;line-height:1.6}';
     html+='.footer{margin-top:40px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-start}';
     html+='@media print{.page{padding:0}}</style></head><body><div class="page">';
-    html+='<div class="cover"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h1>'+c.ticker+'</h1><div class="cn">'+esc(c.name)+'</div><div class="meta">'+[c.sector,c.industry,c.exchange,c.country].filter(Boolean).join(' \u00B7 ')+'</div>';
-    html+='<div class="tags">';
-    if(style)html+='<span class="tag" style="background:'+style.color+'12;color:'+style.color+';border:1px solid '+style.color+'30">'+style.label+'</span>';
-    html+='<span class="tag" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0">KPIs: '+h.l+'</span>';
-    if(conv>0)html+='<span class="tag" style="background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">Conviction: '+conv+'/10</span>';
-    activeMoats.forEach(function(t){html+='<span class="tag" style="background:'+t.color+'10;color:'+t.color+';border:1px solid '+t.color+'30">'+t.label+'</span>'});
-    html+='</div></div><div style="text-align:right"><div style="font-family:JetBrains Mono,monospace;font-size:11px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:9px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-top:2px">Investment Research Note</div><div style="font-family:JetBrains Mono,monospace;font-size:9px;color:#6b7280;margin-top:10px">'+today+'</div></div></div>';
+    html+='<div class="rh"><span>ThesisAlpha &mdash; Owner\'s Research Memo</span><span>Confidential &middot; Personal Use Only</span></div>';
+html+='<div class="cover">';
+html+='<div class="cover-ticker">'+c.ticker+(c.exchange?' &middot; '+c.exchange:'')+'</div>';
+html+='<h1>'+esc(c.name)+'</h1>';
+if(c.sector||c.industry)html+='<div class="sub">'+[c.sector,c.industry].filter(Boolean).join(' &middot; ')+'</div>';
+html+='<div class="meta">';
+html+='<span>Prepared: '+today+'</span>';
+if(c.purchaseDate)html+='<span>Owned since: '+c.purchaseDate+'</span>';
+if(style)html+='<span>Style: '+style.label+'</span>';
+html+='</div>';
+html+='<div style="margin-top:14px">';
+if(conv>0)html+='<span class="tag" style="background:'+(conv>=7?'#f0fdf4':conv>=4?'#fefce8':'#fef2f2')+';color:'+(conv>=7?'#15803d':conv>=4?'#b45309':'#b91c1c')+';border:1px solid '+(conv>=7?'#bbf7d0':conv>=4?'#fef08a':'#fecaca')+'">Conviction '+conv+'/10</span>';
+html+='<span class="tag" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">'+h.l+'</span>';
+activeMoats.forEach(function(t){html+='<span class="tag" style="background:'+t.color+'10;color:'+t.color+';border:1px solid '+t.color+'30">'+t.label+'</span>'});
+html+='</div>';
+html+='</div>';
+
     html+='<div class="kstats"><div class="ks"><div class="ks-l">Price</div><div class="ks-v">'+(pos.currentPrice>0?'$'+pos.currentPrice.toFixed(2):'\u2014')+'</div>'+(pos.avgCost>0?'<div class="ks-s '+(totalReturn>=0?'grn':'red')+'">'+(totalReturn>=0?'+':'')+totalReturn.toFixed(1)+'%</div>':'')+'</div>';
     html+='<div class="ks"><div class="ks-l">Position</div><div class="ks-v">'+(posValue>0?'$'+(posValue>=1e6?(posValue/1e6).toFixed(1)+'M':(posValue/1e3).toFixed(1)+'k'):'\u2014')+'</div>'+(pos.shares>0?'<div class="ks-s">'+pos.shares+' shares</div>':'')+'</div>';
     html+='<div class="ks"><div class="ks-l">Conviction</div><div class="ks-v '+(conv>=7?'grn':conv>=4?'amb':'red')+'">'+(conv>0?conv+'/10':'\u2014')+'</div></div>';
@@ -2139,10 +2288,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     html+='<div class="ks"><div class="ks-l">Div Yield</div><div class="ks-v '+(divYld>0?'grn':'')+'">'+(divYld>0?divYld.toFixed(1)+'%':'\u2014')+'</div></div>';
     html+='</div></div>';
     if(sec.core||sec.moat||sec.risks||sec.sell){html+='<div class="sh"><span class="sh-n">1</span>Investment Thesis</div>';
-      if(sec.core)html+='<div class="tc">'+esc(sec.core)+'</div>';
-      if(sec.moat)html+='<div class="tb" style="border-left:3px solid #16a34a"><div class="tl" style="color:#16a34a">Competitive Moat</div>'+esc(sec.moat)+'</div>';
-      if(sec.risks)html+='<div class="tb" style="border-left:3px solid #d97706"><div class="tl" style="color:#d97706">Key Risks</div>'+esc(sec.risks)+'</div>';
-      if(sec.sell)html+='<div class="tb" style="border-left:3px solid #dc2626"><div class="tl" style="color:#dc2626">Sell Criteria</div>'+esc(sec.sell)+'</div>'}
+      if(sec.core)html+='<div class="t-main">'+esc(sec.core)+'</div>';
+      if(sec.moat)html+='<div class="t-block" style="border-left:3px solid #15803d"><div class="t-label" style="color:#15803d">Competitive Moat</div>'+esc(sec.moat)+'</div>';
+      if(sec.risks)html+='<div class="t-block" style="border-left:3px solid #b45309"><div class="t-label" style="color:#b45309">Key Risks</div>'+esc(sec.risks)+'</div>';
+      if(sec.sell)html+='<div class="t-block" style="border-left:3px solid #b91c1c"><div class="t-label" style="color:#b91c1c">Sell Criteria</div>'+esc(sec.sell)+'</div>'}
     var hasFinancials=Object.keys(snap).length>0;
     if(hasFinancials||pos.shares>0){html+='<div class="sh"><span class="sh-n">2</span>Financial Profile</div><div class="fg">';
       var valItems=[[pv("pe"),"P/E"],[pv("pb"),"P/B"],[pv("fcf"),"FCF/Share"],[pv("grossMargin"),"Gross Margin"],[pv("opMargin"),"Op Margin"],[pv("roe"),"ROE"],[pv("roic"),"ROIC"],[pv("revGrowth"),"Rev Growth"]].filter(function(x){return x[0]!=="\u2014"});
@@ -2177,7 +2326,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var decs=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)});
     if(c.earningsHistory&&c.earningsHistory.length>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Earnings History</div><table><thead><tr><th>Quarter</th><th>Summary</th></tr></thead><tbody>';c.earningsHistory.slice(0,6).forEach(function(e){html+='<tr><td class="mono" style="font-weight:700;white-space:nowrap">'+esc(e.quarter)+'</td><td style="font-size:10px;color:#4b5563;max-width:380px">'+esc((e.summary||"").substring(0,250))+'</td></tr>'});html+='</tbody></table>'}
     if(decs.length>0){html+='<div class="sh"><span class="sh-n">'+(_secN++)+'</span>Decision Ledger</div><table><thead><tr><th>Date</th><th>Action</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';decs.slice(0,8).forEach(function(d){var clr=d.action==="BUY"||d.action==="ADD"?"#16a34a":"#dc2626";html+='<tr><td class="mono" style="white-space:nowrap;font-size:10px">'+esc((d.date||"").substring(0,10))+'</td><td style="font-weight:800;color:'+clr+'" class="mono">'+esc(d.action||"")+'</td><td style="font-size:10px;color:#4b5563;max-width:300px">'+esc((d.reasoning||"").substring(0,180))+'</td><td class="mono" style="font-weight:700;color:'+(d.outcome==="right"?"#16a34a":d.outcome==="wrong"?"#dc2626":"#9ca3af")+'">'+esc(d.outcome||"\u2014")+'</td></tr>'});html+='</tbody></table>'}
-    html+='<div class="footer"><div><div style="font-family:JetBrains Mono,monospace;font-size:10px;font-weight:800;letter-spacing:3px">THESISALPHA</div><div style="font-size:8px;color:#9ca3af;margin-top:4px;max-width:320px;line-height:1.5">Generated for personal research purposes. Not financial advice. Data from third-party providers may contain errors. Past performance does not predict future results.</div></div><div style="text-align:right"><div class="mono" style="font-size:10px;font-weight:700">'+c.ticker+'</div><div style="font-size:9px;color:#6b7280">'+today+'</div></div></div>';
+    html+='<div class="footer"><div><div style="font-family:\"JetBrains Mono\",monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a1a">THESISALPHA</div><div style="font-family:\"EB Garamond\",Georgia,serif;font-size:11px;color:#9ca3af;margin-top:5px;max-width:340px;line-height:1.6;font-style:italic">Prepared for personal research. Not financial advice. The investor is solely responsible for all investment decisions.</div></div><div style="text-align:right"><div style="font-family:\"JetBrains Mono\",monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+c.ticker+'</div><div style="font-family:\"JetBrains Mono\",monospace;font-size:9px;color:#9ca3af;margin-top:2px">'+today+'</div></div></div>';
     html+='</div></body></html>';
     var w=window.open("","_blank");if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print()},800)}}
 
@@ -10014,9 +10163,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         h+='<div class="ks"><div class="ks-l">Div Income</div><div class="ks-v '+(qDivIncome>0?"grn":"")+'">$'+Math.round(qDivIncome)+'</div></div></div>';
         if(perfArr.length>0){h+='<div class="sh">Holdings</div><table><thead><tr><th>Ticker</th><th style="text-align:right">Return</th><th style="text-align:right">Value</th><th style="text-align:center">Conv</th></tr></thead><tbody>';perfArr.slice(0,10).forEach(function(hp){h+='<tr><td class="mono" style="font-weight:700">'+hp.ticker+'</td><td class="mono" style="text-align:right;color:'+(hp.ret>=0?"#16a34a":"#dc2626")+'">'+(hp.ret>=0?"+":"")+hp.ret.toFixed(1)+'%</td><td class="mono" style="text-align:right">$'+(hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0))+'</td><td style="text-align:center" class="mono">'+(hp.conv>0?hp.conv+"/10":"\u2014")+'</td></tr>'});h+='</tbody></table>'}
         h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
-        if(obs.length>0){h+='<div class="sh">Observations</div>';obs.slice(0,4).forEach(function(o){h+='<p style="font-size:11px;line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid #e5e7eb">'+o+'</p>'})}
-        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:20px;line-height:1.8">'+(qRevs.length>=10?"Exceptional discipline. Your process is compounding.":qRevs.length>=4?"Solid quarter. Consistency is your edge.":"Every journey starts with a step. Build the habit next quarter.")+'</p>';
-        h+='<div class="footer"><div><strong style="font-family:JetBrains Mono,monospace;letter-spacing:3px;color:#1a1a2e;font-size:10px">THESISALPHA</strong><div style="margin-top:4px">For personal use only. Not financial advice.</div></div><div style="text-align:right">'+new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+'</div></div></div></body></html>';
+        if(obs.length>0){h+='<div class="sh">Observations</div>';obs.slice(0,4).forEach(function(o){h+='<p style="font-size:11px;line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid #6B4CE6;color:#374151">'+o+'</p>'})}
+        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'—';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'—')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'—')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'—')+'</td></tr>';});h+='</tbody></table>';}
+        var learnedNotes=[];qRevs.forEach(function(rev){if(rev.learned&&rev.learned.trim().length>10)learnedNotes.push({date:rev.date,text:rev.learned.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px">';h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div>';h+='<p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+(ln.text.substring(0,300))+'</p>';h+='</div>';});}
+        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge — and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter — they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
+        h+='<div style="margin-top:32px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a2e">THESISALPHA</div><div style="font-size:10px;color:#9ca3af;margin-top:4px;font-style:italic">Owner\'s Report &middot; Personal use only &middot; Not financial advice.</div></div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+qTitle+'</div><div style="font-size:9px;color:#9ca3af">'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div></div></div></body></html>';
         var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
       return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(10px)"}} onClick={dismiss}>
         <div style={{background:K.card,borderRadius:_isThesis?24:16,maxWidth:600,width:"92%",maxHeight:"88vh",overflowY:"auto",padding:_isThesis?"36px 40px":"32px 36px",position:"relative",boxShadow:"0 24px 80px rgba(0,0,0,.4)"}} onClick={function(e){e.stopPropagation()}}>
@@ -10061,7 +10212,65 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:13,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
           {/* Actions */}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
-            <button onClick={function(){var eBody='<div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e"><div style="border-bottom:3px solid #1a1a2e;padding-bottom:12px;margin-bottom:20px"><h1 style="font-family:Georgia,serif;font-size:24px;margin:0">Quarterly Letter</h1><div style="font-size:12px;color:#6b7280;margin-top:4px">'+qTitle+'</div></div><p style="line-height:1.8">Dear '+(username||"Investor")+', this quarter: <strong>'+qRevs.length+'</strong> reviews, <strong>'+qDecs.length+'</strong> decisions. Return: <strong style="color:'+(totalRet2>=0?"#16a34a":"#dc2626")+'">'+(totalRet2>=0?"+":"")+totalRet2.toFixed(1)+'%</strong>. Score: '+os2.total+'. KPI hit: '+kpiHitRate+'%.'+(qDivIncome>0?' Dividends: $'+Math.round(qDivIncome)+'.':'')+'</p><p style="font-style:italic;color:#9ca3af;margin-top:16px">The process compounds just like the returns.</p><div style="border-top:2px solid #1a1a2e;padding-top:10px;margin-top:20px;font-size:10px;color:#9ca3af"><strong style="color:#1a1a2e;letter-spacing:2px;font-family:monospace">THESISALPHA</strong></div></div>';sendQuarterlyLetterEmail(eBody,qTitle)}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
+            <button onClick={function(){
+              var F='-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif';
+              var retClr=totalRet2>=0?'#16a34a':'#dc2626';
+              var retStr=(totalRet2>=0?'+':'')+totalRet2.toFixed(1)+'%';
+              var statsRow='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px"><tr>'
+                +'<td width="25%" style="padding:0 4px 0 0"><table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;text-align:center"><tr><td style="padding:14px 8px"><div style="font-family:'+F+';font-size:9px;font-weight:700;color:rgba(22,22,29,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Return</div><div style="font-family:'+F+';font-size:22px;font-weight:900;color:'+retClr+';letter-spacing:-0.5px">'+retStr+'</div></td></tr></table></td>'
+                +'<td width="25%" style="padding:0 4px"><table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;text-align:center"><tr><td style="padding:14px 8px"><div style="font-family:'+F+';font-size:9px;font-weight:700;color:rgba(22,22,29,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Reviews</div><div style="font-family:'+F+';font-size:22px;font-weight:900;color:#16161D;letter-spacing:-0.5px">'+qRevs.length+'</div></td></tr></table></td>'
+                +'<td width="25%" style="padding:0 4px"><table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;text-align:center"><tr><td style="padding:14px 8px"><div style="font-family:'+F+';font-size:9px;font-weight:700;color:rgba(22,22,29,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">KPI Hit</div><div style="font-family:'+F+';font-size:22px;font-weight:900;color:#16161D;letter-spacing:-0.5px">'+kpiHitRate+'%</div></td></tr></table></td>'
+                +'<td width="25%" style="padding:0 0 0 4px"><table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;text-align:center"><tr><td style="padding:14px 8px"><div style="font-family:'+F+';font-size:9px;font-weight:700;color:rgba(22,22,29,0.4);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Score</div><div style="font-family:'+F+';font-size:22px;font-weight:900;color:#6B4CE6;letter-spacing:-0.5px">'+os2.total+'</div></td></tr></table></td>'
+                +'</tr></table>';
+              var holdingsBlock='';
+              if(perfArr.length>0){
+                var rows=perfArr.slice(0,8).map(function(hp){
+                  var rc=hp.ret>=0?'#16a34a':'#dc2626';
+                  var rs=(hp.ret>=0?'+':'')+hp.ret.toFixed(1)+'%';
+                  var valStr=hp.val>=1000?(hp.val/1000).toFixed(1)+'k':hp.val.toFixed(0);
+                  var convStr=hp.conv>0?hp.conv+'/10':'—';
+                  var convClr=hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
+                  return '<tr>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:800;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+hp.ticker+'</td>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:'+rc+';text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">'+rs+'</td>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.5);text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">&dollar;'+valStr+'</td>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;font-weight:700;color:'+convClr+';text-align:center;border-bottom:1px solid rgba(22,22,29,0.06)">'+convStr+'</td>'
+                    +'</tr>';
+                }).join('');
+                holdingsBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;margin-bottom:16px">'
+                  +'<tr style="background:rgba(22,22,29,0.04)">'
+                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Holding</th>'
+                  +'<th style="padding:9px 14px;text-align:right;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Return</th>'
+                  +'<th style="padding:9px 14px;text-align:right;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Value</th>'
+                  +'<th style="padding:9px 14px;text-align:center;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Conv.</th>'
+                  +'</tr>'+rows+'</table>';
+              }
+              var obsBlock='';
+              if(obs.length>0){
+                obsBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#EDE9FE;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;color:#5B21B6;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Observations</div>'
+                  +obs.slice(0,3).map(function(o){return '<div style="font-family:'+F+';font-size:12px;color:#3730A3;line-height:1.65;margin-bottom:8px;padding-left:10px;border-left:3px solid #6B4CE6">'+o+'</div>';}).join('')
+                  +'</td></tr></table>';
+              }
+              var signals=[];
+              perfArr.forEach(function(hp){if(hp.conv>0&&hp.conv<=4)signals.push(hp.ticker+' conviction is '+hp.conv+'/10');});
+              if(qDecs.length===0)signals.push('No decisions logged this quarter');
+              var attnBlock='';
+              if(signals.length>0){
+                attnBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#FDECB2;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;color:#92400e;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Worth reviewing</div>'
+                  +signals.map(function(s){return '<div style="font-family:'+F+';font-size:12px;color:#78350f;line-height:1.6;margin-bottom:4px">&bull; '+s+'</div>';}).join('')
+                  +'</td></tr></table>';
+              }
+              var closing='<p style="font-family:'+F+';font-size:13px;line-height:1.8;color:rgba(22,22,29,0.5);font-style:italic;margin:16px 0 0">'+(qRevs.length>=10?'Exceptional discipline this quarter. Your process is your edge.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':'Every journey starts with one review.')+'</p>';
+              var header='<table width="100%" cellpadding="0" cellspacing="0" style="background:#16161D;border-radius:12px;overflow:hidden;margin-bottom:20px"><tr><td style="padding:20px 22px">'
+                +'<div style="font-family:'+F+';font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">Quarterly Owner\'s Letter</div>'
+                +'<div style="font-family:'+F+';font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.6px;line-height:1.1">'+escHtml(qTitle)+'<br><span style="color:#6B4CE6">'+escHtml(qRange)+'</span></div>'
+                +'<div style="margin-top:10px;font-family:'+F+';font-size:12px;color:rgba(255,255,255,0.4)">'+escHtml(username||'Investor')+'&nbsp;&middot;&nbsp;'+qRevs.length+' reviews&nbsp;&middot;&nbsp;'+qDecs.length+' decisions</div>'
+                +'</td></tr></table>';
+              var cta='<div style="text-align:center;margin-top:20px"><a href="https://app.thesisalpha.io" style="display:inline-block;background:#6B4CE6;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-family:'+F+';font-size:14px;font-weight:800;letter-spacing:-0.2px">Open ThesisAlpha &rarr;</a></div>';
+              var eBody2=header+statsRow+holdingsBlock+attnBlock+obsBlock+closing+cta;
+              sendQuarterlyLetterEmail(eBody2,qTitle)}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:13})}>Close</button></div>
         </div></div>})()}
