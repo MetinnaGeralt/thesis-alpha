@@ -1195,7 +1195,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   var _sideOpen=useState(false),sideOpen=_sideOpen[0],setSideOpen=_sideOpen[1];
   var _dashGameExp=useState(function(){try{return localStorage.getItem("ta-dash-game-expanded")==="true"}catch(e){return false}}),dashGameExpanded=_dashGameExp[0],setDashGameExpanded=_dashGameExp[1];
   function toggleDashGame(){var n=!dashGameExpanded;setDashGameExpanded(n);try{localStorage.setItem("ta-dash-game-expanded",n?"true":"false")}catch(e){}}
-  var LEVELS=[{min:0,name:"Novice",next:25,icon:"🌱"},{min:25,name:"Apprentice",next:50,icon:"📚"},{min:50,name:"Practitioner",next:70,icon:"🔭"},{min:70,name:"Disciplined",next:85,icon:"⭐"},{min:85,name:"Master",next:100,icon:"🏆"}];
+  var LEVELS=[{min:0,name:"Novice",next:25,icon:"seedling",ikey:true},{min:25,name:"Apprentice",next:50,icon:"book",ikey:true},{min:50,name:"Practitioner",next:70,icon:"search",ikey:true},{min:70,name:"Disciplined",next:85,icon:"shield",ikey:true},{min:85,name:"Master",next:100,icon:"castle",ikey:true}];
   function getLevel(score){var lv=LEVELS[0];LEVELS.forEach(function(l){if(score>=l.min)lv=l});return lv}
   // Toast system for celebrations
   var _toast=useState(null),toast=_toast[0],setToast=_toast[1];
@@ -2640,7 +2640,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -2740,7 +2740,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="hub"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
     {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Journal",t:"journal",icon:"book"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
@@ -5607,7 +5607,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
               <div style={{width:isMobile?120:140,height:4,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{currentLevel.icon} {currentLevel.name}</span>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={11} color={K.dim}/>{currentLevel.name}</span>
             </div></div></div>
         {/* Quick stats */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:isMobile?8:16,marginTop:isMobile?12:16}}>
@@ -5623,7 +5623,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"journal",l:"Research Journal",icon:"book"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"target"}];
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"target"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -5632,7 +5632,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
         </div>}
-        return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
+        return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto",msOverflowStyle:"none",scrollbarWidth:"none"}}>
           {tabs.map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}{tab.dot>0&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:K.grn,borderRadius:999,padding:"1px 5px",marginLeft:2,lineHeight:1.4}}>{tab.dot}</span>}</button>})}</div>
       })()}
@@ -5911,36 +5911,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {unplanned.length>0&&<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{unplanned.slice(0,5).map(function(c2){return<button key={c2.id} onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("dashboard");setTimeout(function(){setModal({type:"scenario"})},200)}} style={{padding:"5px 12px",fontSize:11,fontFamily:fm,borderRadius:6,border:"1px solid "+K.bdr,background:K.bg,color:K.mid,cursor:"pointer"}}>{c2.ticker}</button>})}</div>}
               {planned.length===portfolio.length&&<div style={{fontSize:12,color:K.grn,fontFamily:fm}}>Every holding has a crisis plan.</div>}
             </div>})()}</div>}
-        {/* ═══ COMMUNITY BENCHMARK ═══ */}
+        {/* ═══ PERSONAL RECORD ═══ */}
         <div style={{marginTop:24}}>
-          <div style={S.sec}><IC name="users" size={14} color={K.dim}/>Community</div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-            <div style={{display:"flex",alignItems:isMobile?"flex-start":"center",gap:16,flexDirection:isMobile?"column":"row"}}>
-              {/* Your score */}
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>YOUR PROCESS SCORE</div>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{fontSize:36,fontWeight:800,color:os.total>=70?K.grn:os.total>=40?K.amb:K.red,fontFamily:fm}}>{os.total}</div>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{currentLevel.icon} {currentLevel.name}</div>
-                    <div style={{fontSize:12,color:K.dim}}>Top investors maintain 70+ process scores</div></div></div>
-              </div>
-              {/* Benchmark */}
-              <div style={{flex:1,padding:"16px 20px",background:K.bg,borderRadius:10,textAlign:"center"}}>
-                <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:8}}>COMMUNITY BENCHMARK</div>
-                <div style={{fontSize:14,color:K.mid,lineHeight:1.7,marginBottom:8}}>ThesisAlpha is in early access. As more owners join, you'll see how your process compares.</div>
-                <div style={{display:"flex",justifyContent:"center",gap:12}}>
-                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
-                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{portfolio.length}</div>
-                    <div style={{fontSize:8,color:K.dim}}>Your holdings</div></div>
-                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
-                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{weeklyReviews.length}</div>
-                    <div style={{fontSize:8,color:K.dim}}>Reviews done</div></div>
-                  <div style={{padding:"6px 12px",background:K.card,borderRadius:6,border:"1px solid "+K.bdr}}>
-                    <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{allDecs.length}</div>
-                    <div style={{fontSize:8,color:K.dim}}>Decisions logged</div></div></div>
-                <div style={{fontSize:10,color:K.acc,marginTop:10,fontFamily:fm}}>{"🌱"} You're among the first owners. Early adopters shape the community.</div>
-              </div></div>
+          <div style={S.sec}><IC name="bar" size={14} color={K.dim}/>Your Record</div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:10}}>
+            {[{label:"Holdings",value:portfolio.length,icon:"overview",color:K.acc},{label:"Decisions Logged",value:allDecs.length,icon:"edit",color:K.blue},{label:"Reviews Done",value:weeklyReviews.length,icon:"shield",color:K.grn},{label:"Decision Accuracy",value:scored.length>0?dqPct+"%":"—",icon:"target",color:dqPct>=60?K.grn:K.amb}].map(function(s){return<div key={s.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"16px 18px"}}>
+              <IC name={s.icon} size={16} color={s.color}/>
+              <div style={{fontSize:26,fontWeight:800,color:s.color,fontFamily:fm,marginTop:8,lineHeight:1}}>{s.value}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:4}}>{s.label}</div>
+            </div>})}
           </div>
         </div>
       </div>}
@@ -5952,7 +5931,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
           // Lens definitions with ACTUAL S&P 500 benchmarks
           var LENSES=[
-            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",unlock:0,quote:"Only invest in good companies, don’t overpay, do nothing.",
+            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",unlock:0,quote:"Only invest in good companies, don’t overpay, do nothing.",bio:"Terry Smith founded Fundsmith in 2010 and built it into one of Europe's largest equity funds. A proponent of buy-and-hold quality investing, he is known for his blunt annual letters and rejection of trading.",wiki:"b/b0/Terry_Smith.jpg/220px-Terry_Smith.jpg",
               metrics:[
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:25,desc:"Pricing power — can the business charge a premium?"},
                 {id:"roic",label:"ROCE / ROIC",sp500:15,unit:"%",weight:25,desc:"Returns on capital — is the business capital-efficient?"},
@@ -5960,7 +5939,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Earnings quality — does profit turn into real cash?"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Financial strength — lower is better",invert:true}
               ]},
-            {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",unlock:0,quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",
+            {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",unlock:0,quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",bio:"Dev Kantesaria runs Valley Forge Capital, a concentrated fund of 6–8 positions. He looks for recession-resistant monopolies with pricing power, minimal debt, and 15%+ compounding potential.",wiki:null,
               metrics:[
                 {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Organic demand growth — is the TAM expanding?"},
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:20,desc:"Above 60% signals a capital-light moat"},
@@ -5969,7 +5948,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — the engine of compounding"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Low debt = low risk of permanent impairment",invert:true}
               ]},
-            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:0,quote:"A great business at a fair price is superior to a fair business at a great price.",
+            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:0,quote:"A great business at a fair price is superior to a fair business at a great price.",bio:"Charlie Munger was Warren Buffett's partner at Berkshire Hathaway for over 50 years. He championed the idea of buying wonderful businesses at fair prices and introduced mental models from multiple disciplines.",wiki:"7/7d/Charlie_Munger.jpg/220px-Charlie_Munger.jpg",
               metrics:[
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"The single best measure of a moat"},
                 {id:"grossMargin",label:"Pricing Power (Gross Margin)",sp500:45,unit:"%",weight:20,desc:"Can they raise prices without losing customers?"},
@@ -5978,7 +5957,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
                 {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
               ]},
-            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:0,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:0,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",bio:"Warren Buffett has run Berkshire Hathaway since 1965. Influenced by Ben Graham's margin of safety and Phil Fisher's qualitative analysis, he focuses on durable competitive advantages and owner earnings.",wiki:"7/7d/Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg/220px-Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg",
               metrics:[
                 {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
                 {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
@@ -5986,7 +5965,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
               ]},
-            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:0,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",
+            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:0,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",bio:"Joel Greenblatt teaches investing at Columbia and founded Gotham Capital. His Magic Formula ranks stocks by return on capital and earnings yield — a systematic approach to buying good businesses cheaply.",wiki:null,
               metrics:[
                 {id:"roic",label:"Return on Capital",sp500:15,unit:"%",weight:35,desc:"The first pillar of the Magic Formula — high ROIC = good business"},
                 {id:"netMargin",label:"Earnings Yield",sp500:12,unit:"%",weight:35,desc:"The second pillar — high earnings yield = bargain price"},
@@ -5994,7 +5973,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
                 {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
               ]},
-            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",bio:"Peter Lynch managed Fidelity's Magellan Fund from 1977–1990, achieving a 29% annual return. He favoured investing in businesses you understand and coined "invest in what you know."",wiki:"0/0e/Peter_Lynch.jpg/220px-Peter_Lynch.jpg",
               metrics:[
                 {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
                 {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
@@ -6002,7 +5981,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
               ]},
-            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:0,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",
+            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:0,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",bio:"Shelby Cullom Davis built a $50M fortune to $900M over 47 years by focusing on financial companies. The Davis Double Play: buy growing earnings at a low multiple, then benefit from both EPS growth and multiple expansion.",wiki:null,
               metrics:[
                 {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:25,desc:"Growing earnings = rising stock price (first play)"},
                 {id:"netMargin",label:"Net Margin Expansion",sp500:12,unit:"%",weight:20,desc:"Expanding margins = multiple expansion (second play)"},
@@ -6011,13 +5990,31 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"fcfConversion",label:"Cash Generation",sp500:85,unit:"%",weight:10,desc:"Real cash flow backing earnings growth"},
                 {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:10,desc:"Durable margins through cycles"}
               ]},
-            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:0,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",
+            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:0,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",bio:"Chris Hohn founded TCI Fund Management and is one of the world's highest-earning hedge fund managers. He combines activist pressure with long-term holding of high-quality, cash-generative businesses.",wiki:null,
               metrics:[
                 {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
                 {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — allocating capital wisely?"},
                 {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:20,desc:"Operational efficiency gains over time"},
                 {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
+              ]},
+            {id:"akre",name:"Chuck Akre",subtitle:"Compounding Machine",unlock:0,quote:"The most important thing is the rate of return on reinvested capital.",
+              bio:"Chuck Akre ran Akre Capital for decades, seeking 'three-legged stools': exceptional business models, skilled managers, and reinvestment opportunities. Known for owning American Tower for 20+ years.",wiki:null,
+              metrics:[
+                {id:"roic",label:"Return on Invested Capital",sp500:15,unit:"%",weight:35,desc:"The engine of compounding — must be sustainably high"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:25,desc:"Real cash that can be reinvested at high rates"},
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Growth extends the compounding runway"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:10,desc:"Pricing power funds reinvestment"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Moderate leverage is acceptable if returns are high",invert:true}
+              ]},
+            {id:"pabrai",name:"Mohnish Pabrai",subtitle:"Heads I Win, Tails I Don't Lose",unlock:0,quote:"Invest in businesses where you have a significant probability of a big win and a small probability of permanent loss.",
+              bio:"Mohnish Pabrai runs the Pabrai Investment Funds, closely modelling his approach on Buffett. He focuses on low-risk, high-uncertainty situations — cloning great investors and waiting for fat pitches.",wiki:null,
+              metrics:[
+                {id:"fortress",label:"Balance Sheet Safety",sp500:1.5,unit:"x",weight:30,desc:"Strong balance sheet limits downside risk",invert:true},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"High returns on capital = durable moat"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:20,desc:"Cash is the scoreboard — everything else is accounting"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Pricing power is the moat"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:10,desc:"Profitability after all obligations"}
               ]}
           ];
           var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||(streakData.current||0)>=l.unlock)})||LENSES[0];
@@ -6060,12 +6057,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 </button>})}</div>
             {/* Lens header */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px",marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div><div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{lens.name} <span style={{fontWeight:300,color:K.dim,fontSize:14}}>{lens.subtitle}</span></div></div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:24,fontWeight:700,color:beatPct>=70?K.grn:beatPct>=40?K.amb:K.red,fontFamily:fm}}>{beatPct}%</div>
-                  <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>metrics above S&P 500</div></div></div>
-              <div style={{fontSize:13,color:K.mid,fontStyle:"italic",lineHeight:1.6}}>“{lens.quote}”</div>
+              <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:12}}>
+                {lens.wiki&&<img src={"https://upload.wikimedia.org/wikipedia/commons/thumb/"+lens.wiki} alt={lens.name} style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"1px solid "+K.bdr,background:K.bg}} onError={function(e){e.target.style.display="none"}}/>}
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                    <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{lens.name} <span style={{fontWeight:300,color:K.dim,fontSize:14}}>{lens.subtitle}</span></div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:24,fontWeight:700,color:beatPct>=70?K.grn:beatPct>=40?K.amb:K.red,fontFamily:fm}}>{beatPct}%</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>metrics above S&amp;P 500</div></div></div>
+                  {lens.bio&&<div style={{fontSize:12,color:K.dim,lineHeight:1.6,marginTop:5}}>{lens.bio}</div>}
+                </div></div>
+              <div style={{fontSize:13,color:K.mid,fontStyle:"italic",lineHeight:1.6,borderTop:"1px solid "+K.bdr+"40",paddingTop:12}}>"{lens.quote}"</div>
             </div>
             {/* Metrics table with actual values */}
             {lensLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
@@ -6107,33 +6109,40 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>})()}
       </div>}
 
-      {/* ═══ DECISION JOURNAL TAB ═══ */}
-      {ht==="journal"&&<div>
-        {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center"}}>
-          <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No decisions logged yet</div>
-          <div style={{fontSize:13,color:K.dim}}>Entries appear automatically as you check earnings, update theses, and adjust conviction during weekly reviews.</div></div>:
-        <div>
-          <div style={{fontSize:13,color:K.dim,marginBottom:16}}>
-            {allDecs.length} decision{allDecs.length>1?"s":""} logged · {scored.length} scored · {rights} right · {rights} right of {scored.length} scored</div>
-          {allDecs.sort(function(a,b){return(b.date||"")<(a.date||"")?-1:1}).map(function(dec,i){
-            var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
-            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"14px 18px",marginBottom:8,borderLeft:"3px solid "+clr}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:700,color:clr,background:clr+"12",padding:"2px 10px",borderRadius:4,fontFamily:fm}}>{dec.action}</span>
-                <span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
-                {dec.price&&<span style={{fontSize:12,color:K.dim,fontFamily:fm}}>@ ${dec.price}</span>}
-                <span style={{flex:1}}/>
-                {dec.outcome&&<span style={{fontSize:11,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:dec.outcome==="lucky"?"#9333EA":K.amb)+"12",padding:"2px 8px",borderRadius:3,fontFamily:fm}}>{dec.outcome}</span>}
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span></div>
-              {dec.reasoning&&<div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{dec.reasoning}</div>}
-              {dec.invalidation&&<div style={{fontSize:12,color:K.amb,marginTop:6,fontStyle:"italic"}}>{"Invalidation: "+dec.invalidation}</div>}
-            </div>})}
-        </div>}
-      </div>}
-
       {/* ═══ DOCUMENT VAULT TAB ═══ */}
       {ht==="docs"&&<div>
         <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+        {/* Decisions journal embedded */}
+        {(function(){var _jf=["all","buy","sell","hold","add","trim"];
+          return<div style={{marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><IC name="edit" size={12} color={K.dim}/>Decision Log</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{allDecs.length} decision{allDecs.length!==1?"s":""}{scored.length>0?" · "+dqPct+"% accuracy":""}</div>
+            </div>
+            {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:10,padding:"20px 24px",textAlign:"center",color:K.dim,fontSize:13}}>No decisions logged yet. Log BUY / SELL / HOLD decisions from company pages.</div>:
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {allDecs.slice().sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,20).map(function(dec,i){
+                var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
+                return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"11px 14px",borderLeft:"3px solid "+clr}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:4,fontFamily:fm}}>{dec.action}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
+                    {dec.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>@ ${dec.price}</span>}
+                    <span style={{flex:1}}/>
+                    {dec.outcome&&<span style={{fontSize:10,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:3}}>{dec.outcome}</span>}
+                    <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span>
+                  </div>
+                  {dec.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginTop:5}}>{dec.reasoning.substring(0,160)}{dec.reasoning.length>160?"…":""}</div>}
+                  {dec.invalidation&&<div style={{fontSize:11,color:K.amb,marginTop:4,fontStyle:"italic"}}>If wrong: {dec.invalidation}</div>}
+                </div>})}
+              {allDecs.length>20&&<div style={{fontSize:12,color:K.dim,textAlign:"center",padding:"8px 0"}}>Showing 20 of {allDecs.length} decisions. Full history in Investment Story →</div>}
+            </div>}
+          </div>
+        })()}
+        {/* Research documents */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><IC name="file" size={12} color={K.dim}/>Research Notes</div>
+        </div>
           <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"memo"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Investment Memo</button>
           <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"doc"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>+ Quick Note</button>
           <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"7px 12px",fontSize:12,fontFamily:fm,outline:"none"}}>
@@ -6219,7 +6228,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Target CAGR</span>
-              <input type="number" min={1} max={50} value={goals.targetCAGR} onChange={function(e){saveGoals(Object.assign({},goals,{targetCAGR:parseFloat(e.target.value)||12}))}} style={{width:48,background:"transparent",border:"none",color:K.txt,fontSize:18,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/>
+              <input type="number" min={1} max={50} type="text" inputMode="numeric" defaultValue={goals.targetCAGR} key={"cagr-"+goals.targetCAGR} onBlur={function(e){var v=parseFloat(e.target.value);if(!isNaN(v)&&v>0&&v<=99)saveGoals(Object.assign({},goals,{targetCAGR:v}));else e.target.value=goals.targetCAGR}} style={{width:52,background:"transparent",border:"none",color:K.txt,fontSize:18,fontWeight:700,fontFamily:fm,outline:"none",textAlign:"center"}}/>
               <span style={{fontSize:13,color:K.mid,fontFamily:fm}}>%</span>
             </div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:8}}>
@@ -8392,6 +8401,35 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>}
 
   // ── CSV Import Modal ──────────────────────────────────────
+  function AddReadingModal(){
+    var _f=useState({title:"",author:"",notes:"",status:"want"}),f=_f[0],setF=_f[1];
+    var set=function(k,v){setF(function(p){return Object.assign({},p,{[k]:v})})};
+    function save(){if(!f.title.trim())return;saveRL(readingList.concat([{title:f.title.trim(),author:f.author.trim(),notes:f.notes.trim(),status:f.status,addedAt:new Date().toISOString()}]));setModal(null)}
+    return<Modal title="Add to Reading List" onClose={function(){setModal(null)}} w={460} K={K}>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div>
+          <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>TITLE *</div>
+          <input value={f.title} onChange={function(e){set("title",e.target.value)}} placeholder="e.g. The Intelligent Investor" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}} autoFocus onKeyDown={function(e){if(e.key==="Enter")save()}}/>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>AUTHOR</div>
+          <input value={f.author} onChange={function(e){set("author",e.target.value)}} placeholder="e.g. Benjamin Graham" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:14,fontFamily:fb,outline:"none",boxSizing:"border-box"}}/>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>STATUS</div>
+          <div style={{display:"flex",gap:6}}>{[{v:"want",l:"Want to read"},{v:"reading",l:"Reading"},{v:"read",l:"Read"}].map(function(s){var active=f.status===s.v;return<button key={s.v} onClick={function(){set("status",s.v)}} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid "+(active?K.acc:K.bdr),background:active?K.acc+"18":"transparent",color:active?K.acc:K.mid,fontSize:12,fontFamily:fm,fontWeight:active?600:400,cursor:"pointer"}}>{s.l}</button>})}</div>
+        </div>
+        <div>
+          <div style={{fontSize:11,color:K.dim,marginBottom:5,fontFamily:fm}}>NOTES (optional)</div>
+          <textarea value={f.notes} onChange={function(e){set("notes",e.target.value)}} placeholder="Key takeaways, why you want to read it..." rows={3} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",boxSizing:"border-box"}}/>
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+          <button onClick={function(){setModal(null)}} style={S.btn}>Cancel</button>
+          <button onClick={save} style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})}>Add Book</button>
+        </div>
+      </div>
+    </Modal>}
+
   function CSVImportModal(){
     var _txt=useState(""),txt=_txt[0],setTxt=_txt[1];
     var _status=useState(null),status=_status[0],setStatus=_status[1];
@@ -9757,7 +9795,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {id:"pg-dash",label:"Portfolio Overview",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("dashboard")}},
         {id:"pg-hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
         {id:"pg-trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
-        {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
+        {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-review",label:"Weekly Review",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
         {id:"pg-calendar",label:"Earnings Calendar",icon:"target",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("calendar")}},
         {id:"pg-analytics",label:"Analytics",icon:"bar",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("analytics")}},
@@ -9851,7 +9889,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var FAB_ALL=[
         {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
         {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
-        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("journal")}},
+        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"review",label:"Weekly Review",icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
         {id:"add",label:"Add Holding",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setModal({type:"add"})}},
         {id:"calendar",label:"Earnings Calendar",icon:"calendar",color:K.red,action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
