@@ -892,7 +892,7 @@ function TrackerApp(props){
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _scm=useState(null),sellCheckTgt=_scm[0],setSellCheckTgt=_scm[1]; // sell discipline check trigger
-  var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
+  var _pg=useState(function(){try{return typeof window!=="undefined"&&window.innerWidth<768?"home":"dashboard"}catch(e){return"dashboard"}}),page=_pg[0],setPage=_pg[1];
   var _nwTab=useState("overview"),nwTab=_nwTab[0],setNwTab=_nwTab[1];
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
@@ -10153,6 +10153,265 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
+
+  // ═══════════════════════════════════════════════════════════
+  // ── MOBILE HOME — Today's Focus ───────────────────────────
+  // ═══════════════════════════════════════════════════════════
+  function MobileHome(){
+    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var held=portfolio.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
+    var totalCost=held.reduce(function(s,c){return s+(c.position.shares*c.position.avgCost)},0);
+    var totalVal=held.reduce(function(s,c){return s+(c.position.shares*c.position.currentPrice)},0);
+    var totalRet=totalCost>0?((totalVal-totalCost)/totalCost*100):0;
+    var pnl=totalVal-totalCost;
+    var perfArr=held.map(function(c){var p=c.position;return{ticker:c.ticker,id:c.id,ret:(p.currentPrice-p.avgCost)/p.avgCost*100,conv:c.conviction||0,domain:c.domain}}).sort(function(a,b){return b.ret-a.ret});
+    var best=perfArr[0];var worst=perfArr.length>1?perfArr[perfArr.length-1]:null;
+    var streak=streakData.current||0;
+    var alreadyReviewed=weeklyReviews.length>0&&weeklyReviews[0].weekId===getWeekId();
+    var hour=new Date().getHours();
+    var greeting=hour<12?"Good morning":(hour<17?"Good afternoon":"Good evening");
+    var upcoming=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+    var hasUnreadLetter=(function(){var now=new Date();var q=Math.floor(now.getMonth()/3);var y=now.getFullYear();if(q===0){q=4;y--;}return!qLetters["Q"+q+"-"+y]&&(cos.length>0||weeklyReviews.length>0)})();
+
+    return<div style={{padding:"0 0 80px 0",minHeight:"100vh",background:K.bg}}>
+      {/* ── Greeting header ── */}
+      <div style={{padding:"20px 20px 0"}}>
+        <div style={{fontSize:13,color:K.dim,fontFamily:fm,marginBottom:2}}>{greeting+","}</div>
+        <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.1}}>{username||"Investor"}</div>
+      </div>
+
+      {/* ── Streak card ── */}
+      <div style={{margin:"20px 16px 0",padding:"18px 20px",background:streak>0?K.grn+"10":K.card,border:"1px solid "+(streak>0?K.grn+"30":K.bdr),borderRadius:_isBm?0:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:36,lineHeight:1}}>{streak>0?"🔥":"📅"}</div>
+          <div style={{flex:1}}>
+            {streak>0?<><div style={{fontSize:22,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{streak} week{streak!==1?"s":""} <span style={{fontSize:13,fontWeight:500,color:K.dim}}>streak</span></div>
+              <div style={{fontSize:12,color:K.dim,marginTop:3}}>{alreadyReviewed?"This week: done ✓":"Review due this week"}{streakData.best>streak?" · best "+streakData.best:""}  </div></>
+            :<><div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fm}}>Start your streak</div>
+              <div style={{fontSize:12,color:K.dim,marginTop:2}}>Complete your first weekly review</div></>}
+          </div>
+          {!alreadyReviewed&&<button onClick={function(){setPage("review")}} style={{padding:"9px 16px",borderRadius:_isBm?0:10,background:K.acc,border:"none",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Review</button>}
+          {alreadyReviewed&&<div style={{width:32,height:32,borderRadius:"50%",background:K.grn+"20",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>}
+        </div>
+      </div>
+
+      {/* ── Quarterly letter notification ── */}
+      {hasUnreadLetter&&<div style={{margin:"12px 16px 0",padding:"14px 16px",background:"linear-gradient(135deg,#D4AF3710,#D4AF3705)",border:"1px solid #D4AF3730",borderRadius:_isBm?0:14,cursor:"pointer",display:"flex",alignItems:"center",gap:12}} onClick={function(){var now=new Date();var q=Math.floor(now.getMonth()/3);var y=now.getFullYear();if(q===0){q=4;y--;}setShowQLetter("Q"+q+"-"+y)}}>
+        <div style={{width:38,height:38,borderRadius:_isBm?0:10,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:1}}>Your quarterly letter is ready</div>
+          <div style={{fontSize:12,color:K.dim}}>Tap to read your owner's report</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>}
+
+      {/* ── Portfolio snapshot ── */}
+      {held.length>0&&<div style={{margin:"12px 16px 0"}}>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Portfolio</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+          <div style={{padding:"14px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>Total return</div>
+            <div style={{fontSize:22,fontWeight:800,color:totalRet>=0?K.grn:K.red,fontFamily:fm,lineHeight:1}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}%</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:2}}>{pnl>=0?"$+":"$-"}{Math.abs(Math.round(pnl)).toLocaleString()}</div>
+          </div>
+          <div style={{padding:"14px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>Holdings</div>
+            <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{portfolio.length}</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:2}}>{"$"+(totalVal>=1e6?(totalVal/1e6).toFixed(1)+"M":(totalVal/1e3).toFixed(0)+"k")+" invested"}</div>
+          </div>
+        </div>
+        {(best||worst)&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {best&&<div onClick={function(){setSelId(best.id);setPage("dashboard")}} style={{padding:"12px 14px",background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,cursor:"pointer"}}>
+            <div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Best</div>
+            <div style={{display:"flex",alignItems:"center",gap:7}}><CoLogo domain={best.domain} ticker={best.ticker} size={20}/><span style={{fontSize:14,fontWeight:800,color:K.txt,fontFamily:fm}}>{best.ticker}</span></div>
+            <div style={{fontSize:13,fontWeight:700,color:K.grn,fontFamily:fm,marginTop:3}}>{best.ret>=0?"+":""}{best.ret.toFixed(1)}%</div>
+          </div>}
+          {worst&&worst.ticker!==best.ticker&&<div onClick={function(){setSelId(worst.id);setPage("dashboard")}} style={{padding:"12px 14px",background:K.red+"06",border:"1px solid "+K.red+"15",borderRadius:_isBm?0:12,cursor:"pointer"}}>
+            <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>Weakest</div>
+            <div style={{display:"flex",alignItems:"center",gap:7}}><CoLogo domain={worst.domain} ticker={worst.ticker} size={20}/><span style={{fontSize:14,fontWeight:800,color:K.txt,fontFamily:fm}}>{worst.ticker}</span></div>
+            <div style={{fontSize:13,fontWeight:700,color:K.red,fontFamily:fm,marginTop:3}}>{worst.ret>=0?"+":""}{worst.ret.toFixed(1)}%</div>
+          </div>}
+        </div>}
+      </div>}
+
+      {/* ── Upcoming earnings ── */}
+      {upcoming.length>0&&<div style={{margin:"20px 16px 0"}}>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Upcoming earnings</div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {upcoming.slice(0,4).map(function(c){var d=dU(c.earningsDate);var urgent=d<=3;return<div key={c.id} onClick={function(){setSelId(c.id);setPage("dashboard")}} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",background:K.card,border:"1px solid "+(urgent?K.amb+"40":K.bdr),borderRadius:_isBm?0:10,cursor:"pointer"}}>
+            <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+              <div style={{fontSize:11,color:K.dim}}>{c.name&&c.name.length>30?c.name.substring(0,28)+"...":c.name}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:12,fontWeight:700,color:urgent?K.amb:K.mid,fontFamily:fm}}>{d===0?"Today":d===1?"Tomorrow":d+"d"}</div>
+              <div style={{fontSize:10,color:K.dim}}>{c.earningsTime||""}</div>
+            </div>
+          </div>})}
+        </div>
+      </div>}
+
+      {/* ── Empty state ── */}
+      {portfolio.length===0&&<div style={{margin:"40px 24px",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:12}}>📋</div>
+        <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Add your first holding</div>
+        <div style={{fontSize:14,color:K.dim,lineHeight:1.6,marginBottom:20}}>Track your investments and build the discipline to think like an owner.</div>
+        <button onClick={function(){setModal({type:"add"})}} style={{padding:"12px 28px",borderRadius:_isBm?0:12,background:K.acc,border:"none",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:fm}}>Add holding</button>
+      </div>}
+    </div>;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ── MOBILE READ — Library + Reading List ──────────────────
+  // ═══════════════════════════════════════════════════════════
+  function MobileRead(){
+    var _rt=useState("library"),readTab=_rt[0],setReadTab=_rt[1];
+    var _q=useState(""),rq=_q[0],setRq=_q[1];
+    var allDocs=[];
+    cos.forEach(function(c){(c.docs||[]).forEach(function(d){allDocs.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,coId:c.id}))})});
+    allDocs.sort(function(a,b){return new Date(b.updatedAt||0)-new Date(a.updatedAt||0)});
+    var filtered=rq?allDocs.filter(function(d){return(d.title||"").toLowerCase().indexOf(rq.toLowerCase())>=0||(d.ticker||"").toLowerCase().indexOf(rq.toLowerCase())>=0}):allDocs;
+    var folderIcons={thesis:"lightbulb",reports:"file",news:"news","deep-dives":"search",notes:"edit"};
+
+    return<div style={{padding:"0 0 80px",minHeight:"100vh",background:K.bg}}>
+      <div style={{padding:"20px 20px 0"}}>
+        <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:16}}>Read</div>
+        {/* Tabs */}
+        <div style={{display:"flex",gap:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:3,marginBottom:16}}>
+          {[{id:"library",l:"Library"},{id:"reading",l:"Reading List"}].map(function(t){var act=readTab===t.id;return<button key={t.id} onClick={function(){setReadTab(t.id)}} style={{flex:1,padding:"8px 0",borderRadius:_isBm?0:8,background:act?K.acc:"transparent",border:"none",color:act?"#fff":K.mid,fontSize:13,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}>{t.l}</button>})}
+        </div>
+      </div>
+
+      {readTab==="library"&&<div style={{padding:"0 16px"}}>
+        <input value={rq} onChange={function(e){setRq(e.target.value)}} placeholder="Search notes & documents..." style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:14,fontFamily:fb,outline:"none",marginBottom:14}}/>
+        {filtered.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:14}}>No documents yet. Add notes from the desktop.</div>}
+        {filtered.slice(0,30).map(function(d,i){var icon=folderIcons[d.folder]||"file";return<div key={d.id||i} onClick={function(){setSelId(d.coId);setDetailTab("library");setPage("dashboard")}} style={{display:"flex",gap:12,padding:"13px 0",borderBottom:"1px solid "+K.bdr+"30",cursor:"pointer",alignItems:"flex-start"}}>
+          <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <IC name={icon} size={16} color={K.acc}/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.title||"Untitled"}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{d.ticker}{d.folder?" · "+d.folder:""}{d.updatedAt?" · "+(new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})):""}</div>
+            {d.content&&<div style={{fontSize:12,color:K.mid,marginTop:3,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.substring(0,120)}</div>}
+          </div>
+        </div>})}
+      </div>}
+
+      {readTab==="reading"&&<div style={{padding:"0 16px"}}>
+        {readingList.length===0&&<div style={{textAlign:"center",padding:"40px 0"}}>
+          <div style={{fontSize:36,marginBottom:10}}>📚</div>
+          <div style={{fontSize:16,fontWeight:600,color:K.txt,marginBottom:6}}>Nothing saved yet</div>
+          <div style={{fontSize:13,color:K.dim,lineHeight:1.6}}>Save books, articles and videos to your reading list. Use the Log tab to add quickly.</div>
+        </div>}
+        {readingList.map(function(it,i){return<div key={i} style={{display:"flex",gap:12,padding:"13px 0",borderBottom:"1px solid "+K.bdr+"30",alignItems:"flex-start"}}>
+          <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:it.status==="read"?K.grn+"12":K.card,border:"1px solid "+(it.status==="read"?K.grn+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <IC name={it.status==="read"?"check":"book"} size={16} color={it.status==="read"?K.grn:K.dim}/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{it.title}</div>
+            {it.author&&<div style={{fontSize:11,color:K.dim}}>{it.author}</div>}
+            {it.notes&&<div style={{fontSize:12,color:K.mid,marginTop:3,lineHeight:1.4}}>{it.notes.substring(0,100)}</div>}
+          </div>
+          {it.url&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",padding:4,flexShrink:0}}><IC name="link" size={14} color={K.acc}/></button>}
+        </div>})}
+      </div>}
+    </div>;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ── MOBILE LOG — Quick capture ────────────────────────────
+  // ═══════════════════════════════════════════════════════════
+  function MobileLog(){
+    var _lt=useState("decision"),logType=_lt[0],setLogType=_lt[1];
+    var _saved=useState(false),saved=_saved[0],setSaved=_saved[1];
+    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    // Decision state
+    var _dc=useState(portfolio.length>0?portfolio[0].id:""),decCo=_dc[0],setDecCo=_dc[1];
+    var _da=useState("BUY"),decAction=_da[0],setDecAction=_da[1];
+    var _dr=useState(""),decReason=_dr[0],setDecReason=_dr[1];
+    // Bookmark state
+    var _bt=useState(""),bookTitle=_bt[0],setBookTitle=_bt[1];
+    var _ba=useState(""),bookAuthor=_ba[0],setBookAuthor=_ba[1];
+    var _bu=useState(""),bookUrl=_bu[0],setBookUrl=_bu[1];
+    var _bn=useState(""),bookNotes=_bn[0],setBookNotes=_bn[1];
+    var _btype=useState("book"),bookType=_btype[0],setBookType=_btype[1];
+
+    function saveDecision(){
+      if(!decReason.trim()||!decCo)return;
+      var co=cos.find(function(c){return c.id===decCo});
+      if(!co)return;
+      logJournalEntry(decCo,{cardType:"decision",ticker:co.ticker,action:decAction,reasoning:decReason.trim(),date:new Date().toISOString()});
+      setDecReason("");setSaved(true);setTimeout(function(){setSaved(false)},2000);
+    }
+    function saveBookmark(){
+      if(!bookTitle.trim())return;
+      var item={title:bookTitle.trim(),author:bookAuthor.trim(),url:bookUrl.trim(),notes:bookNotes.trim(),status:"want",type:bookType,addedAt:new Date().toISOString()};
+      saveRL(readingList.concat([item]));
+      setBookTitle("");setBookAuthor("");setBookUrl("");setBookNotes("");
+      setSaved(true);setTimeout(function(){setSaved(false)},2000);
+    }
+
+    var types=[{id:"decision",l:"Decision",icon:"trending"},{id:"bookmark",l:"Save",icon:"book"}];
+
+    return<div style={{padding:"0 0 80px",minHeight:"100vh",background:K.bg}}>
+      <div style={{padding:"20px 20px 0"}}>
+        <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:4}}>Log</div>
+        <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Capture a decision or save something to read</div>
+        <div style={{display:"flex",gap:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:3,marginBottom:20}}>
+          {types.map(function(t){var act=logType===t.id;return<button key={t.id} onClick={function(){setLogType(t.id);setSaved(false)}} style={{flex:1,padding:"9px 0",borderRadius:_isBm?0:8,background:act?K.acc:"transparent",border:"none",color:act?"#fff":K.mid,fontSize:14,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IC name={t.icon} size={13} color={act?"#fff":K.mid}/>{t.l}</button>})}
+        </div>
+      </div>
+
+      <div style={{padding:"0 16px"}}>
+        {logType==="decision"&&<div>
+          {portfolio.length===0&&<div style={{textAlign:"center",padding:32,color:K.dim,fontSize:14}}>Add holdings on desktop first.</div>}
+          {portfolio.length>0&&<>
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Company</label>
+              <select value={decCo} onChange={function(e){setDecCo(e.target.value)}} style={{width:"100%",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fm,outline:"none"}}>
+                {portfolio.map(function(c){return<option key={c.id} value={c.id}>{c.ticker} — {c.name}</option>})}
+              </select>
+            </div>
+            <div style={{marginBottom:14}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Action</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                {["BUY","ADD","HOLD","TRIM","SELL","WATCH"].map(function(a){var act=decAction===a;var clr=a==="BUY"||a==="ADD"?K.grn:a==="SELL"||a==="TRIM"?K.red:K.mid;return<button key={a} onClick={function(){setDecAction(a)}} style={{padding:"9px 0",borderRadius:_isBm?0:8,border:"1px solid "+(act?clr:K.bdr),background:act?clr+"15":"transparent",color:act?clr:K.mid,fontSize:13,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm}}>{a}</button>})}
+              </div>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Why</label>
+              <textarea value={decReason} onChange={function(e){setDecReason(e.target.value)}} rows={4} placeholder={"What is driving this decision? What would change your mind?"} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
+            </div>
+            <button onClick={saveDecision} disabled={!decReason.trim()} style={{width:"100%",padding:"14px",borderRadius:_isBm?0:12,background:decReason.trim()?(saved?K.grn:K.acc):"rgba(255,255,255,0.08)",border:"none",color:decReason.trim()?"#fff":K.dim,fontSize:15,fontWeight:700,cursor:decReason.trim()?"pointer":"default",fontFamily:fm,transition:"background .2s"}}>
+              {saved?"Logged ✓":"Log Decision"}
+            </button>
+          </>}
+        </div>}
+
+        {logType==="bookmark"&&<div>
+          <div style={{display:"flex",gap:6,marginBottom:14}}>
+            {[{id:"book",l:"📚 Book"},{id:"article",l:"📄 Article"},{id:"video",l:"▶ Video"},{id:"podcast",l:"🎙 Podcast"}].map(function(t){return<button key={t.id} onClick={function(){setBookType(t.id)}} style={{flex:1,padding:"7px 0",borderRadius:_isBm?0:8,border:"1px solid "+(bookType===t.id?K.acc:K.bdr),background:bookType===t.id?K.acc+"15":"transparent",color:bookType===t.id?K.acc:K.mid,fontSize:11,fontWeight:bookType===t.id?700:400,cursor:"pointer",fontFamily:fm}}>{t.l}</button>})}
+          </div>
+          {[{key:"title",label:"Title",val:bookTitle,set:setBookTitle,ph:"What are you saving?",required:true},
+            {key:"author",label:"Author / Creator",val:bookAuthor,set:setBookAuthor,ph:"Who made it?"},
+            {key:"url",label:"URL (optional)",val:bookUrl,set:setBookUrl,ph:"https://..."},
+            {key:"notes",label:"Why saving this?",val:bookNotes,set:setBookNotes,ph:"Key idea or why it matters to you...",ta:true},
+          ].map(function(f){return<div key={f.key} style={{marginBottom:14}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>{f.label}{f.required&&<span style={{color:K.acc}}> *</span>}</label>
+            {f.ta?<textarea value={f.val} onChange={function(e){f.set(e.target.value)}} rows={3} placeholder={f.ph} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
+            :<input value={f.val} onChange={function(e){f.set(e.target.value)}} placeholder={f.ph} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fb,outline:"none"}}/>}
+          </div>})}
+          <button onClick={saveBookmark} disabled={!bookTitle.trim()} style={{width:"100%",padding:"14px",borderRadius:_isBm?0:12,background:bookTitle.trim()?(saved?K.grn:K.acc):"rgba(255,255,255,0.08)",border:"none",color:bookTitle.trim()?"#fff":K.dim,fontSize:15,fontWeight:700,cursor:bookTitle.trim()?"pointer":"default",fontFamily:fm,transition:"background .2s"}}>
+            {saved?"Saved ✓":"Save to Library"}
+          </button>
+        </div>}
+      </div>
+    </div>;
+  }
+
   return(<div className={bm?"ta-bm":isForest?"ta-forest":theme==="purple"?"ta-purple":theme==="paypal"?"ta-ocean":""} style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden",position:"relative"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
@@ -10642,12 +10901,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
-      {[{id:"dashboard",icon:"overview",label:"Portfolio"},{id:"calendar",icon:"calendar",label:"Calendar"},{id:"review",icon:"star",label:"Review"},{id:"hub",icon:"castle",label:"Hub"},{id:"library",icon:"book",label:"Library"}].map(function(item){var active=page===item.id&&!selId;return<button key={item.id} onClick={function(){setSelId(null);setPage(item.id)}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,padding:0,color:active?K.acc:K.dim}}>
-        <IC name={item.icon} size={18} color={active?K.acc:K.dim}/>
-        <span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400}}>{item.label}</span>
-      </button>})}
+      (function(){
+      var mItems=[
+        {id:"home",label:"Home",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>},
+        {id:"dashboard",label:"Portfolio",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>},
+        {id:"review",label:"Review",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>},
+        {id:"read",label:"Read",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
+        {id:"log",label:"Log",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>},
+      ];
+      return mItems.map(function(item){
+        var active=(item.id==="home"?page==="home":item.id==="read"?page==="read":item.id==="log"?page==="log":page===item.id)&&!selId;
+        var isLog=item.id==="log";
+        return<button key={item.id} onClick={function(){setSelId(null);setPage(item.id)}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
+          {isLog?<div style={{width:40,height:40,borderRadius:_isBm?0:20,background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:0,boxShadow:"0 4px 12px "+K.acc+"60",marginTop:-18,color:"#fff"}}>{item.svg}</div>
+          :<div style={{color:active?K.acc:K.dim}}>{item.svg}</div>}
+          {!isLog&&<span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400,letterSpacing:0.2}}>{item.label}</span>}
+        </button>});
+      })()}
     </div>}
     {/* ── ⌘K Command Palette ── */}
     {cmdOpen&&(function(){
