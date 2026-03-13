@@ -3145,7 +3145,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <span style={{fontSize:12,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
           <span style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",fontFamily:fm}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</span></a>})}</div>}</div>}
 
-  function calcMoatFromData(finData){
+  function calcMoatFromData(finData,businessModelType){
     if(!finData)return null;
     var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
     if(inc.length<2)return null;
@@ -3191,7 +3191,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(fcfC.length>=2){metrics.push({id:"fcfConversion",name:"FCF Conversion",score:Math.min(10,Math.max(1,Math.round(avg(fcfC)>120?9:avg(fcfC)>100?8:avg(fcfC)>80?7:avg(fcfC)>50?5:avg(fcfC)>0?3:1))),value:avg(fcfC).toFixed(0)+"%",detail:"FCF/NI ratio avg "+avg(fcfC).toFixed(0)+"%",trend:fcfC,icon:"dollar",desc:"High FCF relative to net income shows earnings quality"})}}
     // 6. FINANCIAL FORTRESS
     if(recentBal.length>=1&&recent.length>=1){var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
-      if(ebitda&&ebitda>0){var ratio=nd/ebitda;metrics.push({id:"fortress",name:"Financial Fortress",score:Math.min(10,Math.max(1,Math.round(ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1))),value:ratio<0?"Net Cash":ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x"),trend:null,icon:"castle",desc:"Low leverage = resilience and optionality"})}
+      if(ebitda&&ebitda>0){var ratio=nd/ebitda;
+        // Business model-adjusted leverage tolerance
+        var _bmt=businessModelType||"competitive";
+        var _rawFortress=ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1;
+        var _floorByBM=_bmt==="monopoly"?7:_bmt==="oligopoly"?6:_bmt==="niche"?5:_bmt==="commodity"?1:3;
+        var _fortressScore=Math.min(10,Math.max(_floorByBM,Math.round(_rawFortress)));
+        var _adjNote=(_bmt==="monopoly"||_bmt==="oligopoly")&&ratio>=2?" (adjusted for "+_bmt+")":"";
+        metrics.push({id:"fortress",name:"Financial Fortress",score:_fortressScore,value:ratio<0?"Net Cash":ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x")+_adjNote,trend:null,icon:"castle",desc:"Low leverage = resilience and optionality. Score adjusts for business model type."})}
       else if(nd<0){metrics.push({id:"fortress",name:"Financial Fortress",score:9,value:"Net Cash",detail:"More cash than debt",trend:null,icon:"castle",desc:"Low leverage = resilience and optionality"})}}
     // 7. R&D
     var rds=[];for(var rdi=0;rdi<recent.length;rdi++){var rd=recent[rdi].researchAndDevelopmentExpenses;var rv2=recent[rdi].revenue;if(rd&&rv2)rds.push(rd/rv2*100)}
@@ -3410,7 +3417,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={S.sec}><IC name="castle" size={14} color={K.dim}/>Moat Classification</div>
             {classified.length>0&&<button onClick={function(){setSubPage(null);setDetailTab("dossier");showToast(c.ticker+" moat classified — "+classified.length+" type"+(classified.length>1?"s":"")+" identified","info",3000)}} style={Object.assign({},S.btnP,{padding:"6px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="shield" size={11} color={"#fff"}/>Done — Back to Dossier</button>}</div>
           {/* Morningstar Reference + Moat Trend */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MORNINGSTAR RATING</div>
               <select value={c.morningstarMoat||""} onChange={function(e){upd(c.id,{morningstarMoat:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.morningstarMoat==="Wide"?K.grn:c.morningstarMoat==="Narrow"?K.amb:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
@@ -3419,6 +3426,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>MOAT TREND</div>
               <select value={c.moatTrend||""} onChange={function(e){upd(c.id,{moatTrend:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.moatTrend==="Strengthening"?K.grn:c.moatTrend==="Eroding"?K.red:K.txt,padding:"8px 10px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option><option value="Strengthening">▲ Strengthening</option><option value="Stable">─ Stable</option><option value="Eroding">▼ Eroding</option></select></div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}} title="Business model structure affects how leverage should be interpreted. A monopoly can safely carry debt that would destroy a commodity business.">
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>BUSINESS MODEL</div>
+              <select value={c.businessModelType||""} onChange={function(e){upd(c.id,{businessModelType:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:c.businessModelType==="monopoly"?K.grn:c.businessModelType==="oligopoly"?K.grn:c.businessModelType==="commodity"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+                <option value="">Not Set</option>
+                <option value="monopoly">👑 Monopoly</option>
+                <option value="oligopoly">🏰 Oligopoly</option>
+                <option value="niche">🎯 Niche Dominant</option>
+                <option value="competitive">⚔ Competitive</option>
+                <option value="commodity">📦 Commodity</option>
+              </select>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fb,marginTop:5,lineHeight:1.3}}>Adjusts leverage tolerance in Analytics scoring</div>
+            </div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px"}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR vs M★</div>
               <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginBottom:6,lineHeight:1.4}}>Your moat type count vs M★ analyst opinion</div>
@@ -7373,46 +7392,60 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Portfolio Timeline ─────────────────────────────────────
   function PortfolioTimeline(){
-    var allDecs=[];
-    cos.forEach(function(c){(c.decisions||[]).forEach(function(d){allDecs.push(Object.assign({},d,{ticker:c.ticker,companyId:c.id,domain:c.domain}))})});
-    allDecs.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
-    var allJournal=[];
-    cos.forEach(function(c){(c.journalEntries||[]).forEach(function(e){allJournal.push(Object.assign({},e,{ticker:c.ticker,companyId:c.id}))})});
-    allJournal.sort(function(a,b){return(b.date||b.createdAt||"")>(a.date||a.createdAt||"")?1:-1});
-    var combined=allDecs.map(function(d){return{type:"decision",date:d.date,data:d}})
-      .concat(allJournal.slice(0,30).map(function(e){return{type:"journal",date:e.date||e.createdAt,data:e}}));
-    combined.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
-    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:800}}>
-      <div style={{padding:isMobile?"20px 0 16px":"28px 0 24px"}}>
-        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Portfolio Timeline</div>
-        <div style={{fontSize:13,color:K.dim}}>{allDecs.length} decisions · {allJournal.length} journal entries</div>
+    var _tlf=useState("all"),tlFilter=_tlf[0],setTlFilter=_tlf[1];
+    var allEvents=[];
+    cos.forEach(function(c){
+      (c.decisions||[]).forEach(function(d){allEvents.push({type:"decision",date:d.date||d.createdAt||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:d.action==="buy"||d.action==="add"?K.grn:d.action==="sell"||d.action==="trim"?K.red:K.acc,badge:(d.action||"NOTE").toUpperCase(),heading:d.reasoning?d.reasoning.substring(0,100):(d.action||"Note"),detail:d.reasoning||"",invalidator:d.invalidator||""})});
+      (c.convictionHistory||[]).forEach(function(ch,i2){var prev=(c.convictionHistory||[])[i2-1];var delta=prev?ch.rating-prev.rating:0;allEvents.push({type:"conviction",date:ch.date||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:delta>0?K.grn:delta<0?K.red:K.dim,badge:"CONVICTION",heading:(delta>0?"▲ ":delta<0?"▼ ":"─ ")+ch.rating+"/10"+(delta!==0?" ("+(delta>0?"+":"")+delta+")":""),detail:ch.note||"",invalidator:""})});
+      (c.earningsHistory||[]).forEach(function(eh){allEvents.push({type:"earnings",date:eh.checkedAt||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:K.blue,badge:"EARNINGS",heading:(eh.quarter||"")+" — "+(eh.summary||"").substring(0,70),detail:eh.summary||"",invalidator:""})});
+    });
+    allEvents.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
+    var filtered=tlFilter==="all"?allEvents:allEvents.filter(function(e){return e.type===tlFilter});
+    var byYear={};filtered.forEach(function(e){var yr=e.date?e.date.substring(0,4):"—";(byYear[yr]||(byYear[yr]=[])).push(e)});
+    var years=Object.keys(byYear).sort().reverse();
+    var typeCounts={decision:allEvents.filter(function(e){return e.type==="decision"}).length,conviction:allEvents.filter(function(e){return e.type==="conviction"}).length,earnings:allEvents.filter(function(e){return e.type==="earnings"}).length};
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:820}}>
+      <div style={{padding:isMobile?"20px 0 16px":"28px 0 20px",display:"flex",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?20:24,fontWeight:isThesis?800:700,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Investment Story</h1>
+          <div style={{fontSize:12,color:K.dim,marginTop:3}}>{allEvents.length} event{allEvents.length!==1?"s":""} across {cos.length} holding{cos.length!==1?"s":""}</div>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {[{id:"all",label:"All",count:allEvents.length},{id:"decision",label:"Decisions",count:typeCounts.decision},{id:"conviction",label:"Conviction",count:typeCounts.conviction},{id:"earnings",label:"Earnings",count:typeCounts.earnings}].map(function(f){var active=tlFilter===f.id;return<button key={f.id} onClick={function(){setTlFilter(f.id)}} style={{background:active?K.acc:K.card,border:"1px solid "+(active?K.acc:K.bdr),color:active?"#fff":K.mid,padding:"5px 12px",borderRadius:20,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:active?600:400}}>{f.label}{f.count>0?" ("+f.count+")":""}</button>})}
+        </div>
       </div>
-      {combined.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>No activity yet. Log decisions and journal entries in company pages.</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:0}}>
-        {combined.slice(0,60).map(function(item,i){
-          var d=item.data;var dt=item.date?new Date(item.date):null;
-          var ds=dt?dt.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
-          var isDecision=item.type==="decision";
-          var clr=isDecision?(d.action==="buy"?K.grn:d.action==="sell"?K.red:K.acc):K.blue;
-          return<div key={i} style={{display:"flex",gap:14,paddingBottom:16}}>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:20,flexShrink:0}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:clr,flexShrink:0,marginTop:4}}/>
-              {i<combined.length-1&&<div style={{width:2,flex:1,background:K.bdr,marginTop:4}}/>}
+      {allEvents.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:12,padding:40,textAlign:"center",color:K.dim,fontSize:14,lineHeight:1.7}}>Your investment story starts here.<br/><span style={{fontSize:12,opacity:.7}}>Log decisions or conviction scores to build your record.</span></div>}
+      {years.map(function(yr){var evts=byYear[yr];return<div key={yr} style={{marginBottom:28}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+          <div style={{fontSize:20,fontWeight:800,color:K.txt,fontFamily:fh,opacity:.4,minWidth:48}}>{yr}</div>
+          <div style={{flex:1,height:1,background:K.bdr}}/>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,opacity:.7}}>{evts.length} event{evts.length!==1?"s":""}</div>
+        </div>
+        {evts.map(function(ev,i){
+          var dt=ev.date?new Date(ev.date):null;
+          var ds=dt?dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+          var isLast=i===evts.length-1;
+          return<div key={i} style={{display:"flex",gap:0,marginBottom:isLast?0:2}}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",width:isMobile?36:64,flexShrink:0,paddingTop:5}}>
+              <span style={{fontSize:isMobile?9:10,color:K.dim,fontFamily:fm,textAlign:"right",lineHeight:1.2,whiteSpace:"nowrap"}}>{ds}</span>
             </div>
-            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:0}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                {isDecision&&<span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"15",border:"1px solid "+clr+"30",borderRadius:4,padding:"2px 7px",textTransform:"uppercase"}}>{d.action||"note"}</span>}
-                {!isDecision&&<span style={{fontSize:10,fontWeight:700,color:K.blue,background:K.blue+"15",border:"1px solid "+K.blue+"30",borderRadius:4,padding:"2px 7px"}}>Journal</span>}
-                <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(d.companyId);setPage("dashboard")}}>{d.ticker}</span>
-                <span style={{fontSize:11,color:K.dim,marginLeft:"auto"}}>{ds}</span>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:26,flexShrink:0}}>
+              <div style={{width:9,height:9,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:5,border:"2px solid "+K.bg,zIndex:1}}/>
+              {!isLast&&<div style={{width:2,flex:1,minHeight:8,background:K.bdr+"50",margin:"2px 0"}}/>}
+            </div>
+            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab(ev.type==="decision"?"research":"dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
+                <CoLogo domain={ev.domain} ticker={ev.ticker} size={13}/>
+                <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{ev.ticker}</span>
+                <span style={{fontSize:12,color:K.mid,flex:1,lineHeight:1.3}}>{ev.heading}</span>
               </div>
-              {isDecision&&d.reasoning&&<div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{d.reasoning.substring(0,200)}{d.reasoning.length>200?"…":""}</div>}
-              {!isDecision&&d.content&&<div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{(d.content||"").substring(0,200)}{(d.content||"").length>200?"…":""}</div>}
-              {!isDecision&&d.title&&<div style={{fontSize:13,fontWeight:500,color:K.txt}}>{d.title}</div>}
+              {ev.detail&&ev.detail.length>ev.heading.length&&<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginTop:5,paddingTop:5,borderTop:"1px solid "+K.bdr+"30"}}>{ev.detail.substring(0,200)}{ev.detail.length>200?"…":""}</div>}
+              {ev.invalidator&&<div style={{fontSize:10,color:K.amb,marginTop:3,fontStyle:"italic",opacity:.8}}>If wrong: {ev.invalidator.substring(0,100)}</div>}
             </div>
           </div>
         })}
-      </div>
+      </div>})}
     </div>
   }
 
@@ -7426,7 +7459,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var done=0;var results={};
       portCos.forEach(function(c){
         fetchFinancialStatements(c.ticker,"annual").then(function(r){
-          var m=calcMoatFromData(r);if(m)results[c.id]=m;done++;setProg(done);
+          var m=calcMoatFromData(r,c.businessModelType);if(m)results[c.id]=m;done++;setProg(done);
           if(done>=portCos.length){setMoats(results);setLdM(false)}
         }).catch(function(){done++;setProg(done);if(done>=portCos.length){setMoats(results);setLdM(false)}})})
     },[cos.length]);
@@ -7524,15 +7557,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {withMoat.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,marginBottom:24}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
           <div style={secStyle}><IC name="trending" size={14} color={K.grn}/>Strongest Businesses</div>
-          {strongest.map(function(x){return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+          {strongest.map(function(x){var bmt=x.company.businessModelType;return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
-            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</span>{bmt&&<span style={{fontSize:9,color:bmt==="monopoly"||bmt==="oligopoly"?K.grn:K.dim,fontFamily:fm}}>{bmt==="monopoly"?"👑":bmt==="oligopoly"?"🏰":bmt==="niche"?"🎯":bmt==="commodity"?"📦":"⚔"}</span>}</div><div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
           <div style={secStyle}><IC name="alert" size={14} color={K.amb}/>Weakest Links</div>
-          {weakest.map(function(x){return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
+          {weakest.map(function(x){var bmt=x.company.businessModelType;return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,cursor:"pointer",padding:"6px 0"}} onClick={function(){setSelId(x.company.id);setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
-            <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div><div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}</div></div>
+            <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</span>{bmt&&<span style={{fontSize:9,color:bmt==="monopoly"||bmt==="oligopoly"?K.grn:K.dim,fontFamily:fm}}>{bmt==="monopoly"?"👑":bmt==="oligopoly"?"🏰":bmt==="niche"?"🎯":bmt==="commodity"?"📦":"⚔"}</span>}</div><div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{moatLabel(x.moat.composite)}{(bmt==="monopoly"||bmt==="oligopoly")&&" • leverage-adjusted"}</div></div>
             <div style={{fontSize:18,fontWeight:700,color:moatColor(x.moat.composite),fontFamily:fm}}>{x.moat.composite}</div></div>})}</div></div>}
 
       {/* ── Holdings Quality Table ── */}
