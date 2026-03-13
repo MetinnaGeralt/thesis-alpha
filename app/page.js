@@ -6652,6 +6652,7 @@ html+='</div>';
     var _revs=useState({}),revs=_revs[0],setRevs=_revs[1];
     var _notes=useState({}),notes=_notes[0],setNotes=_notes[1];
     var _actions=useState({}),actions=_actions[0],setActions=_actions[1];
+    var _refl=useState(""),reflection=_refl[0],setReflection=_refl[1];
     var _milestone=useState(null),milestone=_milestone[0],setMilestone=_milestone[1];
     var c=portfolio[idx];
     var sw=streakData.current||0;
@@ -6689,6 +6690,7 @@ html+='</div>';
       var entries=portfolio.map(function(c2){return{ticker:c2.ticker,id:c2.id,prev:c2.conviction||0,
         new:revs[c2.id]!=null?revs[c2.id]:c2.conviction||0,note:notes[c2.id]||"",action:actions[c2.id]||"hold"}});
       var rev={weekId:weekId,date:new Date().toISOString(),entries:entries,
+        reflection:reflection.trim(),
         summary:{total:portfolio.length,changed:entries.filter(function(e){return e.prev!==e.new}).length,
         avgConv:Math.round(entries.reduce(function(s,e){return s+e.new},0)/Math.max(entries.length,1)*10)/10}};
       saveReview(rev);
@@ -6944,6 +6946,10 @@ html+='</div>';
           {isFree&&nextUnlock&&<div style={{marginBottom:14,textAlign:"center",fontSize:12,color:K.acc,fontFamily:fm}}>
             {sw+1>=nextUnlock.w?"🎉 Complete this review to unlock "+nextUnlock.label+"!":"Keep going — "+nextUnlock.label+" unlocks at week "+nextUnlock.w}
           </div>}
+          <div style={{marginBottom:16}}>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>What did I learn this week? <span style={{fontWeight:400,color:K.dim,textTransform:"none",letterSpacing:0}}>(optional — saved to quarterly letter)</span></label>
+            <textarea value={reflection} onChange={function(e){setReflection(e.target.value)}} rows={3} placeholder={"A key insight, a mistake I noticed, something that shifted my thinking..."} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
+          </div>
           <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 0",borderRadius:_isBm?0:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
             {String.fromCodePoint(0x2705)+" Complete Review & Claim Insight"}</button>
           <div style={{textAlign:"center",marginTop:10}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>← Go back and edit</button></div>
@@ -10165,7 +10171,7 @@ html+='</div>';
         h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
         if(obs.length>0){h+='<div class="sh">Observations</div>';obs.slice(0,4).forEach(function(o){h+='<p style="font-size:11px;line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid #6B4CE6;color:#374151">'+o+'</p>'})}
         if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'—';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'—')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'—')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'—')+'</td></tr>';});h+='</tbody></table>';}
-        var learnedNotes=[];qRevs.forEach(function(rev){if(rev.learned&&rev.learned.trim().length>10)learnedNotes.push({date:rev.date,text:rev.learned.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px">';h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div>';h+='<p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+(ln.text.substring(0,300))+'</p>';h+='</div>';});}
+        var learnedNotes=[];qRevs.forEach(function(rev){if(rev.reflection&&rev.reflection.trim().length>10)learnedNotes.push({date:rev.date&&rev.date.substring(0,10),text:rev.reflection.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px">';h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div>';h+='<p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+(ln.text.substring(0,300))+'</p>';h+='</div>';});}
         h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge — and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter — they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
         h+='<div style="margin-top:32px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a2e">THESISALPHA</div><div style="font-size:10px;color:#9ca3af;margin-top:4px;font-style:italic">Owner\'s Report &middot; Personal use only &middot; Not financial advice.</div></div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+qTitle+'</div><div style="font-size:9px;color:#9ca3af">'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div></div></div></body></html>';
         var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
@@ -10269,7 +10275,45 @@ html+='</div>';
                 +'<div style="margin-top:10px;font-family:'+F+';font-size:12px;color:rgba(255,255,255,0.4)">'+escHtml(username||'Investor')+'&nbsp;&middot;&nbsp;'+qRevs.length+' reviews&nbsp;&middot;&nbsp;'+qDecs.length+' decisions</div>'
                 +'</td></tr></table>';
               var cta='<div style="text-align:center;margin-top:20px"><a href="https://app.thesisalpha.io" style="display:inline-block;background:#6B4CE6;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-family:'+F+';font-size:14px;font-weight:800;letter-spacing:-0.2px">Open ThesisAlpha &rarr;</a></div>';
-              var eBody2=header+statsRow+holdingsBlock+attnBlock+obsBlock+closing+cta;
+              var decisionsBlock='';
+              if(qDecs.length>0){
+                var decRows=qDecs.slice(0,6).map(function(d){
+                  var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';
+                  var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'rgba(22,22,29,0.3)';
+                  var outcomeLabel=d.outcome==='right'?'&#10003; Right':d.outcome==='wrong'?'&#10005; Wrong':'';
+                  return '<tr>'
+                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:12px;font-weight:800;color:'+aclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap">'+escHtml(d.action||'')+'</td>'
+                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+escHtml(d.ticker||'')+'</td>'
+                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.6);border-bottom:1px solid rgba(22,22,29,0.06);max-width:220px">'+escHtml((d.reasoning||'').substring(0,100))+(d.reasoning&&d.reasoning.length>100?'&hellip;':'')+'</td>'
+                    +(outcomeLabel?'<td style="padding:10px 14px;font-family:'+F+';font-size:11px;font-weight:700;color:'+oclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap;text-align:right">'+outcomeLabel+'</td>':'<td style="border-bottom:1px solid rgba(22,22,29,0.06)"></td>')
+                    +'</tr>';
+                }).join('');
+                decisionsBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;margin-bottom:16px">'
+                  +'<tr style="background:rgba(22,22,29,0.04)">'
+                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Action</th>'
+                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Company</th>'
+                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Reasoning</th>'
+                  +'<th style="padding:9px 14px;text-align:right;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Outcome</th>'
+                  +'</tr>'+decRows+'</table>'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(22,22,29,0.3);margin:-12px 0 16px;text-align:right;padding-right:4px">KEY DECISIONS THIS QUARTER</div>';
+              }
+              var reflBlock='';
+              var reflEntries=qRevs.filter(function(r){return r.reflection&&r.reflection.trim().length>10});
+              if(reflEntries.length>0){
+                var reflItems=reflEntries.slice(0,3).map(function(r){
+                  var d=r.date?r.date.substring(0,10):'';
+                  return '<div style="margin-bottom:10px">'
+                    +(d?'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.35);margin-bottom:3px">'+d+'</div>':'')
+                    +'<div style="font-family:'+F+';font-size:13px;color:#374151;line-height:1.7;padding-left:10px;border-left:3px solid #6B4CE6">'+escHtml(r.reflection.substring(0,200))+'</div>'
+                    +'</div>';
+                }).join('');
+                reflBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;margin-bottom:16px">'
+                  +'<tr><td style="padding:16px 18px">'
+                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B4CE6;margin-bottom:12px">What I Learned</div>'
+                  +reflItems
+                  +'</td></tr></table>';
+              }
+              var eBody2=header+statsRow+holdingsBlock+decisionsBlock+reflBlock+attnBlock+obsBlock+closing+cta;
               sendQuarterlyLetterEmail(eBody2,qTitle)}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:13})}>Close</button></div>
