@@ -10163,24 +10163,24 @@ html+='</div>';
       var storyLines=[];
       // Lead with the dominant performer
       if(best2&&best2.ret>50){
-        if(best2.ret>500)storyLines.push(best2.ticker+' returned +'+best2.ret.toFixed(0)+'% this quarter. That is the kind of number that changes the shape of a portfolio. The question is whether you saw it coming — or simply had the conviction to hold.');
+        if(best2.ret>500)storyLines.push(best2.ticker+' returned +'+best2.ret.toFixed(0)+'% this quarter. That is the kind of number that changes the shape of a portfolio. The question is whether you saw it coming \u2014 or simply had the conviction to hold.');
         else storyLines.push(best2.ticker+' led the way at +'+(best2.ret.toFixed(0))+'%. That kind of return doesn\'t happen without a thesis that held under pressure.');
       } else if(totalRet2>15){
         storyLines.push('A strong quarter across the board. '+totalRet2.toFixed(1)+'% is the kind of result that comes from businesses doing exactly what you expected them to do.');
       } else if(totalRet2<-10){
         storyLines.push('The portfolio gave back '+Math.abs(totalRet2).toFixed(1)+'% this quarter. Returns fluctuate. Theses erode. Knowing which one is happening here is the work.');
       } else if(totalRet2>=0){
-        storyLines.push('A steady quarter — +'+(totalRet2.toFixed(1))+'%. Not every period is a breakthrough. Compounding works in the quiet ones too.');
+        storyLines.push('A steady quarter \u2014 +'+(totalRet2.toFixed(1))+'%. Not every period is a breakthrough. Compounding works in the quiet ones too.');
       } else {
         storyLines.push('The portfolio slipped '+Math.abs(totalRet2).toFixed(1)+'% this quarter. The best investors separate price movement from business quality. Where do your holdings stand on that test?');
       }
       // Process narrative
       if(qDecs.length===0&&qRevs.length>=4){
-        storyLines.push('You made no portfolio changes. '+qRevs.length+' reviews, zero trades. That kind of disciplined inaction is harder than it sounds — and usually right.');
+        storyLines.push('You made no portfolio changes. '+qRevs.length+' reviews, zero trades. That kind of disciplined inaction is harder than it sounds \u2014 and usually right.');
       } else if(buys2.length>0&&sells2.length>0){
         var buyTickers=buys2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
         var sellTickers=sells2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
-        storyLines.push('You added to '+buyTickers+' and exited '+sellTickers+'. Two kinds of conviction in the same quarter — buying what you believe in, cutting what you don\'t.');
+        storyLines.push('You added to '+buyTickers+' and exited '+sellTickers+'. Two kinds of conviction in the same quarter \u2014 buying what you believe in, cutting what you don\'t.');
       } else if(buys2.length>0){
         var buyTickers2=buys2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
         storyLines.push('You added to '+buyTickers2+(buys2.length>1?' across '+buys2.length+' decisions':'')+'. Conviction backed by capital.');
@@ -10203,7 +10203,7 @@ html+='</div>';
         worstDec=wrongDecs.sort(function(a,b){return(b.reasoning||'').length-(a.reasoning||'').length})[0];
       }
       // If no scored decisions, use portfolio performance
-      var bestPerfDec=best2&&best2.ret>20?{ticker:best2.ticker,action:'HOLD',reasoning:'Held without adding or trimming — the position did the work.',outcome:'right',isSynthetic:true}:null;
+      var bestPerfDec=best2&&best2.ret>20?{ticker:best2.ticker,action:'HOLD',reasoning:'Held without adding or trimming \u2014 the position did the work.',outcome:'right',isSynthetic:true}:null;
       var worstPerfDec=worst2&&worst2.ret<-10?{ticker:worst2.ticker,action:'HOLD',reasoning:'The position declined. Worth asking: has the thesis changed, or has only the price?',outcome:'wrong',isSynthetic:true}:null;
       if(!bestDec)bestDec=bestPerfDec;
       if(!worstDec)worstDec=worstPerfDec;
@@ -10241,15 +10241,15 @@ html+='</div>';
       } else if(staleList.length>0&&Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)>90){
         forwardQ='Your '+staleList[0].ticker+' thesis is '+Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)+' days old. Before next quarter ends: is the business the same as when you wrote it?';
       } else if(lowConvHigh.length>0&&totalVal2>0&&lowConvHigh[0].val/totalVal2>0.15){
-        forwardQ=lowConvHigh[0].ticker+' is a meaningful position with conviction at '+lowConvHigh[0].conv+'/10. What would it take to raise that number — and is that information available this quarter?';
+        forwardQ=lowConvHigh[0].ticker+' is a meaningful position with conviction at '+lowConvHigh[0].conv+'/10. What would it take to raise that number \u2014 and is that information available this quarter?';
       } else if(worst2&&worst2.ret<-15){
-        forwardQ=worst2.ticker+' was down '+Math.abs(worst2.ret).toFixed(0)+'% this quarter. What would need to be true for you to add more — and what would tell you it\'s time to exit?';
+        forwardQ=worst2.ticker+' was down '+Math.abs(worst2.ret).toFixed(0)+'% this quarter. What would need to be true for you to add more \u2014 and what would tell you it\'s time to exit?';
       } else if(totalKpis>0&&kpiHitRate<50){
         forwardQ='More than half your KPIs were missed this quarter. Are the businesses underperforming, or were the targets wrong? That distinction shapes what you do next.';
       } else if(qRevs.length===0){
         forwardQ='You didn\'t complete a weekly review this quarter. What\'s one holding you\'d review first if you started today?';
       } else {
-        forwardQ='Heading into '+('Q'+(qNum===4?1:qNum+1)+' '+(qNum===4?qYear+1:qYear))+': which of your '+portfolio2.length+' holdings has the thesis that most needs revisiting — and why haven\'t you done it yet?';
+        forwardQ='Heading into '+('Q'+(qNum===4?1:qNum+1)+' '+(qNum===4?qYear+1:qYear))+': which of your '+portfolio2.length+' holdings has the thesis that most needs revisiting \u2014 and why haven\'t you done it yet?';
       }
 
       // PDF export
@@ -10264,9 +10264,9 @@ html+='</div>';
         if(perfArr.length>0){h+='<div class="sh">Holdings</div><table><thead><tr><th>Ticker</th><th style="text-align:right">Return</th><th style="text-align:right">Value</th><th style="text-align:center">Conv</th></tr></thead><tbody>';perfArr.slice(0,10).forEach(function(hp){h+='<tr><td class="mono" style="font-weight:700">'+hp.ticker+'</td><td class="mono" style="text-align:right;color:'+(hp.ret>=0?"#16a34a":"#dc2626")+'">'+(hp.ret>=0?"+":"")+hp.ret.toFixed(1)+'%</td><td class="mono" style="text-align:right">$'+(hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0))+'</td><td style="text-align:center" class="mono">'+(hp.conv>0?hp.conv+"/10":"\u2014")+'</td></tr>'});h+='</tbody></table>'}
         h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
         if(obs.length>0){h+='<div class="sh">Observations</div>';obs.slice(0,4).forEach(function(o){h+='<p style="font-size:11px;line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid #6B4CE6;color:#374151">'+o+'</p>'})}
-        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'—';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'—')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'—')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'—')+'</td></tr>';});h+='</tbody></table>';}
+        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'\u2014';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'\u2014')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'\u2014')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'\u2014')+'</td></tr>';});h+='</tbody></table>';}
         var learnedNotes=[];qRevs.forEach(function(rev){if(rev.reflection&&rev.reflection.trim().length>10)learnedNotes.push({date:rev.date&&rev.date.substring(0,10),text:rev.reflection.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px">';h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div>';h+='<p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+(ln.text.substring(0,300))+'</p>';h+='</div>';});}
-        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge — and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter — they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
+        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge \u2014 and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter \u2014 they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
         h+='<div style="margin-top:32px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a2e">THESISALPHA</div><div style="font-size:10px;color:#9ca3af;margin-top:4px;font-style:italic">Owner\'s Report &middot; Personal use only &middot; Not financial advice.</div></div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+qTitle+'</div><div style="font-size:9px;color:#9ca3af">'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div></div></div></body></html>';
         var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
       return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(10px)"}} onClick={dismiss}>
@@ -10289,7 +10289,7 @@ html+='</div>';
           </div>
           <div style={{borderLeft:"3px solid "+K.acc,paddingLeft:16,marginBottom:24}}>
             <div style={{fontSize:14,color:K.mid,lineHeight:1.75,fontStyle:"italic",fontFamily:fb}}>{"\u201c"+matchedQuote.quote+"\u201d"}</div>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6,letterSpacing:0.3}}>{"— "+matchedQuote.author}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6,letterSpacing:0.3}}>{"\u2014 "+matchedQuote.author}</div>
           </div>
           {/* Performance banner */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden",marginBottom:24}}>
@@ -10320,12 +10320,12 @@ html+='</div>';
             <div style={{display:"grid",gridTemplateColumns:bestDec&&worstDec?"1fr 1fr":"1fr",gap:10,marginBottom:16}}>
               {bestDec&&<div style={{padding:"14px 16px",background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:10}}>
                 <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,marginBottom:6}}>{"\u2713 Best Decision"}</div>
-                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{bestDec.ticker} {bestDec.isSynthetic?"":"— "+bestDec.action}</div>
+                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{bestDec.ticker} {bestDec.isSynthetic?"":"\u2014 "+bestDec.action}</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontFamily:fb}}>{(bestDec.reasoning||"").substring(0,120)}{(bestDec.reasoning||"").length>120?"...":""}</div>
               </div>}
               {worstDec&&<div style={{padding:"14px 16px",background:K.red+"06",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:10}}>
                 <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.red,fontFamily:fm,marginBottom:6}}>{"\u2717 Hardest Call"}</div>
-                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{worstDec.ticker} {worstDec.isSynthetic?"":"— "+worstDec.action}</div>
+                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{worstDec.ticker} {worstDec.isSynthetic?"":"\u2014 "+worstDec.action}</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontFamily:fb}}>{(worstDec.reasoning||"").substring(0,120)}{(worstDec.reasoning||"").length>120?"...":""}</div>
               </div>}
             </div>
@@ -10354,7 +10354,7 @@ html+='</div>';
                   var rc=hp.ret>=0?'#16a34a':'#dc2626';
                   var rs=(hp.ret>=0?'+':'')+hp.ret.toFixed(1)+'%';
                   var valStr=hp.val>=1000?(hp.val/1000).toFixed(1)+'k':hp.val.toFixed(0);
-                  var convStr=hp.conv>0?hp.conv+'/10':'—';
+                  var convStr=hp.conv>0?hp.conv+'/10':'\u2014';
                   var convClr=hp.conv===0?'rgba(22,22,29,0.3)':hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
                   return '<tr>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:800;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+hp.ticker+'</td>'
@@ -10408,13 +10408,13 @@ html+='</div>';
                 if(bestDec)decReviewBlock+='<td width="'+(worstDec?'50%':'100%')+'" style="padding-right:'+(worstDec?'6':'0')+'px;vertical-align:top">'
                   +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0"><tr><td style="padding:14px 16px">'
                   +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#15803d;margin-bottom:6px">&#10003; Best Decision</div>'
-                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(bestDec.ticker+(bestDec.isSynthetic?'':' — '+bestDec.action))+'</div>'
+                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(bestDec.ticker+(bestDec.isSynthetic?'':' \u2014 '+bestDec.action))+'</div>'
                   +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((bestDec.reasoning||'').substring(0,100))+((bestDec.reasoning||'').length>100?'&hellip;':'')+'</div>'
                   +'</td></tr></table></td>';
                 if(worstDec)decReviewBlock+='<td width="50%" style="padding-left:6px;vertical-align:top">'
                   +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:10px;border:1px solid #fecaca"><tr><td style="padding:14px 16px">'
                   +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#b91c1c;margin-bottom:6px">&#10007; Hardest Call</div>'
-                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(worstDec.ticker+(worstDec.isSynthetic?'':' — '+worstDec.action))+'</div>'
+                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(worstDec.ticker+(worstDec.isSynthetic?'':' \u2014 '+worstDec.action))+'</div>'
                   +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((worstDec.reasoning||'').substring(0,100))+((worstDec.reasoning||'').length>100?'&hellip;':'')+'</div>'
                   +'</td></tr></table></td>';
                 decReviewBlock+='</tr></table>';
