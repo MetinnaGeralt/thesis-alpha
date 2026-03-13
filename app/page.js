@@ -5666,7 +5666,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {id:"r_oldest",text:"Review your oldest thesis",icon:"book",color:K.blue,done:false,check:function(){return portfolio.length>0&&portfolio.every(function(c2){return!c2.thesisUpdatedAt||Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)<7})},onClick:function(){var oldest=portfolio.filter(function(c2){return c2.thesisNote}).sort(function(a,b){return(a.thesisUpdatedAt||"")>(b.thesisUpdatedAt||"")?1:-1})[0];if(oldest){setSelId(oldest.id);setPage("dashboard");setModal({type:"thesis"})}}},
             {id:"r_kpiall",text:"Ensure every holding has 2+ KPIs",icon:"target",color:K.blue,done:false,check:function(){return portfolio.every(function(c2){return c2.kpis.length>=2})},onClick:function(){var t=portfolio.find(function(c2){return c2.kpis.length<2});if(t){setSelId(t.id);setDetailTab("dossier");setPage("dashboard")}}},
             {id:"r_convall",text:"Rate conviction for all holdings",icon:"trending",color:K.amb,done:false,check:function(){return portfolio.every(function(c2){return c2.conviction>0})},onClick:function(){var t=portfolio.find(function(c2){return!c2.conviction});if(t){setSelId(t.id);setPage("dashboard");setModal({type:"conviction"})}}},
-            {id:"r_decision",text:"Log a BUY, SELL, or HOLD decision",icon:"edit",color:K.acc,done:false,check:function(){var recent=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-604800000))recent.push(d)})});return recent.length>0},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("research");setPage("dashboard")}}},
+            {id:"r_decision",text:"Log a BUY, SELL, or HOLD decision",icon:"edit",color:K.acc,done:false,check:function(){var recent=[];cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-604800000))recent.push(d)})});return recent.length>0},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("dossier");setPage("dashboard")}}},
             {id:"r_export",text:"Export a research note",icon:"file",color:K.mid,done:false,check:function(){return false},onClick:function(){if(portfolio[0]){setSelId(portfolio[0].id);setDetailTab("dossier");setPage("dashboard")}}},
             {id:"r_moatall",text:"Classify moats for all holdings",icon:"castle",color:"#9333EA",done:false,check:function(){return portfolio.every(function(c2){var mt=c2.moatTypes||{};return Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})})},onClick:function(){var t=portfolio.find(function(c2){var mt=c2.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});if(t){setSelId(t.id);setSubPage("moat");setPage("dashboard")}}}
           ];
@@ -7433,7 +7433,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{width:9,height:9,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:5,border:"2px solid "+K.bg,zIndex:1}}/>
               {!isLast&&<div style={{width:2,flex:1,minHeight:8,background:K.bdr+"50",margin:"2px 0"}}/>}
             </div>
-            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab(ev.type==="decision"?"research":"dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
+            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab("dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
                 <CoLogo domain={ev.domain} ticker={ev.ticker} size={13}/>
@@ -7498,10 +7498,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     // Munger "wonderful at fair price" filter — flag companies with ROIC < 6 or fortress < 4
     // Exception: monopoly/oligopoly business models can safely carry leverage — don't flag them for balance sheet alone
+    // Exception 2: if composite moat score >= 7, the business is high-quality — leverage is a chosen structure, not a flaw
     var redFlags=withMoat.filter(function(x){
       var r=x.dims.roic?x.dims.roic.score:10;var f=x.dims.fortress?x.dims.fortress.score:10;
       var bmt=x.company.businessModelType||"";
-      var leverageExempt=bmt==="monopoly"||bmt==="oligopoly";
+      var leverageExempt=bmt==="monopoly"||bmt==="oligopoly"||(x.moat.composite>=7);
       return r<5||(f<4&&!leverageExempt)});
 
     var secStyle={fontSize:12,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
@@ -7552,7 +7553,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(x.dims.fortress&&x.dims.fortress.score<4&&leverageExempt)issues.push("High leverage ("+x.dims.fortress.value+") — tolerated for "+bmt);
           if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
           if(x.dims.grossMargin){var ppOver=(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:x.dims.grossMargin.score;if(ppOver<4)issues.push("Weak pricing power ("+ppOver+"/10)")};
-          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("research");setPage("dashboard")}}>
+          return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("dossier");setPage("dashboard")}}>
             <CoLogo domain={x.company.domain} ticker={x.company.ticker} size={24}/>
             <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{x.company.ticker}</div>
               <div style={{fontSize:11,color:K.red,fontFamily:fb}}>{issues.join(" • ")}</div></div>
@@ -7580,7 +7581,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <thead><tr>{["","Company","Moat","Fortress","Pricing","ROIC","Earnings Q."].map(function(h){return<th key={h} style={{textAlign:h===""||h==="Company"?"left":"center",padding:"8px 10px",fontSize:11,color:K.dim,borderBottom:"1px solid "+K.bdr,fontFamily:fb,fontWeight:600,whiteSpace:"nowrap"}}>{h}</th>})}</tr></thead>
           <tbody>{holdings.map(function(q,i){
             function cellClr(v){return v>=8?K.grn:v>=6?K.acc:v>=4?K.amb:v?K.red:K.dim}
-            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("research");setPage("dashboard")}}>
+            return<tr key={q.id} style={{cursor:"pointer"}} onClick={function(){setSelId(q.id);setDetailTab("dossier");setPage("dashboard")}}>
               <td style={{padding:"10px 10px",fontSize:12,color:K.dim,fontFamily:fm,borderBottom:"1px solid "+K.bdr+"50"}}>{i+1}</td>
               <td style={{padding:"10px 10px",borderBottom:"1px solid "+K.bdr+"50"}}><div style={{display:"flex",alignItems:"center",gap:8}}><CoLogo domain={q.domain} ticker={q.ticker} size={20}/><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{q.ticker}</span></div></td>
               <td style={{padding:"10px 10px",textAlign:"center",borderBottom:"1px solid "+K.bdr+"50"}}><span style={{fontSize:14,fontWeight:700,color:moatColor(q.moat),fontFamily:fm,background:moatColor(q.moat)+"15",padding:"3px 10px",borderRadius:4}}>{q.moat}</span></td>
@@ -9859,7 +9860,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {id:"thesis",label:"Why I Own",icon:"lightbulb",color:K.grn,action:function(){goCompany(function(){setModal({type:"thesis"})})}},
         {id:"conviction",label:"Rate Conviction",icon:"star",color:K.amb,action:function(){goCompany(function(){setModal({type:"conviction"})})}},
         {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
-        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("research");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
+        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
       ];
       var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
       return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
