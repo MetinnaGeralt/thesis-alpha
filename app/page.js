@@ -7497,9 +7497,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }).sort(function(a,b){return b.moat-a.moat});
 
     // Munger "wonderful at fair price" filter — flag companies with ROIC < 6 or fortress < 4
+    // Exception: monopoly/oligopoly business models can safely carry leverage — don't flag them for balance sheet alone
     var redFlags=withMoat.filter(function(x){
       var r=x.dims.roic?x.dims.roic.score:10;var f=x.dims.fortress?x.dims.fortress.score:10;
-      return r<5||f<4});
+      var bmt=x.company.businessModelType||"";
+      var leverageExempt=bmt==="monopoly"||bmt==="oligopoly";
+      return r<5||(f<4&&!leverageExempt)});
 
     var secStyle={fontSize:12,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
@@ -7543,8 +7546,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={secStyle}><IC name="alert" size={14} color={K.red}/>Needs Attention</div>
         <div style={{fontSize:13,color:K.mid,marginBottom:14,lineHeight:1.6,fontFamily:fb}}>These holdings have weak capital efficiency or fragile balance sheets. Munger would ask: why do I own this?</div>
         {redFlags.map(function(x){var issues=[];
+          var bmt=x.company.businessModelType||"";var leverageExempt=bmt==="monopoly"||bmt==="oligopoly";
           if(x.dims.roic&&x.dims.roic.score<5)issues.push("Low ROIC ("+x.dims.roic.value+")");
-          if(x.dims.fortress&&x.dims.fortress.score<4)issues.push("Weak balance sheet ("+x.dims.fortress.value+")");
+          if(x.dims.fortress&&x.dims.fortress.score<4&&!leverageExempt)issues.push("Weak balance sheet ("+x.dims.fortress.value+")");
+          if(x.dims.fortress&&x.dims.fortress.score<4&&leverageExempt)issues.push("High leverage ("+x.dims.fortress.value+") — tolerated for "+bmt);
           if(x.dims.fcfConversion&&x.dims.fcfConversion.score<4)issues.push("Poor FCF conversion ("+x.dims.fcfConversion.value+")");
           if(x.dims.grossMargin){var ppOver=(x.company.pricingPower&&x.company.pricingPower.score!=null)?x.company.pricingPower.score:x.dims.grossMargin.score;if(ppOver<4)issues.push("Weak pricing power ("+ppOver+"/10)")};
           return<div key={x.company.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,cursor:"pointer",padding:"8px 12px",background:K.card,borderRadius:8,border:"1px solid "+K.bdr}} onClick={function(){setSelId(x.company.id);setDetailTab("research");setPage("dashboard")}}>
