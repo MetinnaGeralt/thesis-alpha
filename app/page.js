@@ -384,7 +384,7 @@ async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
 async function fetchDividendInfo(ticker){try{
   var hist=await fmp("historical-price-full/stock_dividend/"+ticker);
   if(!hist||!hist.historical||!hist.historical.length)return null;
-  var divs=hist.historical.slice(0,12); // last 12 dividends
+  var divs=hist.historical.slice(0,24); // last 24 dividends for better CAGR
   var latest=divs[0];
   // Determine frequency from gaps between payments
   var freq="quarterly";
@@ -394,7 +394,21 @@ async function fetchDividendInfo(ticker){try{
       gaps.push(Math.round((d1-d2)/(1000*60*60*24)))}
     var avgGap=gaps.reduce(function(s,v){return s+v},0)/gaps.length;
     if(avgGap<45)freq="monthly";else if(avgGap<120)freq="quarterly";else if(avgGap<240)freq="semi";else freq="annual"}
-  return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDividend||0}
+  // Compute annual dividend totals per calendar year for CAGR
+  var yearTotals={};
+  divs.forEach(function(d){
+    var yr=new Date(d.date).getFullYear();
+    yearTotals[yr]=(yearTotals[yr]||0)+(d.dividend||d.adjDividend||0)});
+  var years=Object.keys(yearTotals).map(Number).sort();
+  var divCagr=null;
+  if(years.length>=3){
+    // Use most recent full year vs 3 years ago (or earliest available)
+    var curYr=years[years.length-1];var baseYr=years[Math.max(0,years.length-4)];
+    var nYrs=curYr-baseYr;
+    if(nYrs>=1&&yearTotals[baseYr]>0&&yearTotals[curYr]>0){
+      divCagr=(Math.pow(yearTotals[curYr]/yearTotals[baseYr],1/nYrs)-1)*100;
+      if(Math.abs(divCagr)>50)divCagr=null}} // sanity cap
+  return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDivident||0,divCagr:divCagr}
 }catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
 // Shared: estimate which months a company pays dividends based on frequency + exDivDate
 function estimatePayMonths(c){
@@ -1289,7 +1303,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         // Fetch real ex-div date for payers missing it
         if((c.divPerShare>0||c.lastDiv>0)&&!c.exDivDate){
           try{var dInfo=await fetchDividendInfo(c.ticker);
-            if(dInfo&&dInfo.exDivDate){upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency})})}}catch(e){}}
+            if(dInfo&&dInfo.exDivDate){upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency,divCagr:dInfo.divCagr!=null?dInfo.divCagr:prev.divCagr})})}}catch(e){}}
       }}catch(e){}
       await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
@@ -7609,7 +7623,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     for(var i=0;i<payers.length;i++){var c=payers[i];
       try{var dInfo=await fetchDividendInfo(c.ticker);
         if(dInfo&&dInfo.exDivDate){
-          upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency})});
+          upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency,divCagr:dInfo.divCagr!=null?dInfo.divCagr:prev.divCagr})});
           updated++}
       }catch(e){}
       await new Promise(function(res){setTimeout(res,400)})}
@@ -7623,6 +7637,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _dht=useState("overview"),divTab=_dht[0],setDivTab=_dht[1];
     var _dhm=useState(null),hovMonth=_dhm[0],setHovMonth=_dhm[1];
     var _rdst=useState("idle"),rdStatus=_rdst[0],setRdStatus=_rdst[1];
+    var _me=useState(false),showManual=_me[0],setShowManual=_me[1];
+    var _md=useState({}),manualDates=_md[0],setManualDates=_md[1];
     var monthNames=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     var TICKER_COLORS=[K.acc,"#22C55E","#F59E0B","#EC4899","#8B5CF6","#06B6D4","#f87171","#a3e635","#fb923c","#38bdf8"];
     var freqLabel=function(f){return f==="monthly"?"Monthly":f==="semi"?"Semi-Annual":f==="annual"?"Annual":"Quarterly"};
@@ -7721,11 +7737,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function getGrowthMetrics(c){
       var snap=c.financialSnapshot||{};var g=function(k){return snap[k]&&snap[k].numVal!=null?snap[k].numVal:null};
       var divGr=g("divGrowth");var revGr=g("revGrowth");
+      // Use multi-year CAGR as the most reliable growth rate; fall back to TTM divGrowth, then revGrowth proxy
+      var divCagr=c.divCagr!=null&&!isNaN(c.divCagr)?c.divCagr:null;
+      var growthRate=divCagr!=null?divCagr:divGr!=null?divGr:revGr!=null?Math.min(revGr*0.5,8):null;
+      var growthSource=divCagr!=null?"cagr":divGr!=null?"yoy":revGr!=null?"rev":null;
       var dps=c.divPerShare||c.lastDiv||0;var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
       var annDps=dps*mult;var pos=c.position||{};
       var annIncome=(pos.shares||0)*annDps;
-      var proj3yr=divGr!=null&&divGr>0?annIncome*Math.pow(1+divGr/100,3):null;
-      return{divGr:divGr,revGr:revGr,annDps:annDps,annIncome:annIncome,proj3yr:proj3yr}}
+      // Always project — use 0% growth if no data (flat line is honest, same as current)
+      var effectiveRate=growthRate!=null&&growthRate>0?growthRate:0;
+      var proj3yr=annIncome*Math.pow(1+effectiveRate/100,3);
+      return{divGr:divGr,divCagr:divCagr,growthRate:growthRate,growthSource:growthSource,revGr:revGr,annDps:annDps,annIncome:annIncome,proj3yr:proj3yr}}
     var totalProj3yr=divPayers.reduce(function(s,c){var gm=getGrowthMetrics(c);return s+(gm.proj3yr||gm.annIncome)},0);
     // ── Tab nav ─────────────────────────────────────────────────
     var tabs=[{id:"overview",label:"Overview"},{id:"income",label:"Income Stream"},{id:"safety",label:"Safety Scores"},{id:"growth",label:"Growth Tracker"},{id:"risk",label:"Cut Risk"}];
@@ -7808,12 +7830,33 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         var missingExDiv=divPayers.filter(function(c){return!c.exDivDate||c.exDivDate===""});
         return<div>
           {/* Ex-div date warning + refresh */}
-          {missingExDiv.length>0&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 16px",background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:10,marginBottom:16,flexWrap:"wrap"}}>
-            <span style={{fontSize:12,color:K.amb,fontFamily:fm}}><strong>{missingExDiv.length} holding{missingExDiv.length!==1?"s":""}</strong> missing ex-div date — bar chart uses estimated months ({missingExDiv.map(function(c){return c.ticker}).join(", ")})</span>
-            <button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:rdStatus==="loading"?K.bdr:K.amb,border:"none",color:rdStatus==="loading"?K.dim:"#000",padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:rdStatus==="loading"?"default":"pointer",fontFamily:fm,flexShrink:0}}>
-              {rdStatus==="loading"?"Fetching…":rdStatus.startsWith("done")?"✓ Updated "+rdStatus.split(":")[1]+" holding"+(rdStatus.split(":")[1]!=="1"?"s":"")+"!":"Fetch Real Dates"}
-            </button>
-          </div>}
+          {missingExDiv.length>0&&(function(){
+            return<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:10,marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,padding:"10px 16px",flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:K.amb,fontFamily:fm}}><strong>{missingExDiv.length} holding{missingExDiv.length!==1?"s":""}</strong> missing ex-div date — chart uses estimated months ({missingExDiv.map(function(c){return c.ticker}).join(", ")})</span>
+                <div style={{display:"flex",gap:8,flexShrink:0}}>
+                  <button onClick={function(){setShowManual(function(v){return!v})}} style={{background:"none",border:"1px solid "+K.amb+"60",color:K.amb,padding:"5px 12px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:fm}}>Enter manually</button>
+                  <button onClick={function(){if(rdStatus==="loading")return;refreshDivDates(setRdStatus)}} style={{background:rdStatus==="loading"?K.bdr:K.amb,border:"none",color:rdStatus==="loading"?K.dim:"#000",padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:600,cursor:rdStatus==="loading"?"default":"pointer",fontFamily:fm}}>
+                    {rdStatus==="loading"?"Fetching…":rdStatus.startsWith("done")?"✓ Updated "+rdStatus.split(":")[1]+"!":"Fetch Real Dates"}
+                  </button>
+                </div>
+              </div>
+              {showManual&&<div style={{borderTop:"1px solid "+K.amb+"20",padding:"12px 16px"}}>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Enter most recent ex-dividend date for each holding (YYYY-MM-DD). The payment cycle will be calculated automatically.</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+                  {missingExDiv.map(function(c){return<div key={c.id} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:40}}>{c.ticker}</span>
+                    <input type="date" value={manualDates[c.id]||""} onChange={function(e){var v=e.target.value;setManualDates(function(p){var n=Object.assign({},p);n[c.id]=v;return n})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,outline:"none"}}/>
+                  </div>})}
+                </div>
+                <button onClick={function(){
+                  var count=0;
+                  Object.keys(manualDates).forEach(function(cid){var d=manualDates[cid];if(!d)return;
+                    upd(cid,function(prev){return Object.assign({},prev,{exDivDate:d})});count++});
+                  if(count>0){setManualDates({});setShowManual(false);showToast("✓ Saved "+count+" ex-div date"+(count!==1?"s":""),"success",3000)}
+                }} style={{background:K.acc,border:"none",color:"#fff",padding:"7px 18px",borderRadius:8,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save Dates</button>
+              </div>}
+            </div>})()}
           {/* Stacked bar chart */}
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"24px",marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4}}>
@@ -7824,10 +7867,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:isMobile?4:8,alignItems:"flex-end",height:160,marginBottom:8}}>
               {monthlyBreakdown.map(function(m){
                 var isNow=m.idx===nowMonth;var isHov=hovMonth===m.idx;var barH=m.income>0?Math.max(10,Math.round(m.income/maxMonthlyIncome*130)):3;
-                return<div key={m.idx} style={{display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",height:"100%",justifyContent:"flex-end"}} onMouseEnter={function(){setHovMonth(m.idx)}} onMouseLeave={function(){setHovMonth(null)}}>
-                  {(isHov||isNow)&&m.income>0&&<div style={{fontSize:isMobile?8:11,color:K.grn,fontFamily:fm,marginBottom:2,fontWeight:600}}>{cSym}{m.income.toFixed(0)}</div>}
-                  <div style={{width:"100%",height:barH,borderRadius:"3px 3px 0 0",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"flex-end",opacity:isHov?1:0.8,transition:"opacity .15s",outline:isNow?"2px solid "+K.acc:"none",outlineOffset:2}}>
-                    {m.payers.length>0?m.payers.map(function(p,pi){var h=Math.round(p.amount/m.income*barH);return<div key={p.ticker} style={{width:"100%",height:Math.max(1,h),background:p.color,flexShrink:0}}/>}):<div style={{width:"100%",height:barH,background:K.bdr}}/>}
+                return<div key={m.idx} style={{display:"flex",flexDirection:"column",alignItems:"center",cursor:"pointer",height:"100%",justifyContent:"flex-end",position:"relative"}} onMouseEnter={function(){setHovMonth(m.idx)}} onMouseLeave={function(){setHovMonth(null)}}>
+                  {/* Invisible full-height hover target so user doesn't need to aim at thin bars */}
+                  <div style={{position:"absolute",inset:0,zIndex:1}}/>
+                  {(isHov||isNow)&&m.income>0&&<div style={{fontSize:isMobile?8:11,color:K.grn,fontFamily:fm,marginBottom:2,fontWeight:600,position:"relative",zIndex:2}}>{cSym}{m.income.toFixed(0)}</div>}
+                  <div style={{width:"100%",height:barH,borderRadius:"3px 3px 0 0",overflow:"hidden",display:"flex",flexDirection:"column",justifyContent:"flex-end",opacity:isHov?1:0.8,transition:"opacity .15s",outline:isNow?"2px solid "+K.acc:"none",outlineOffset:2,position:"relative",zIndex:2}}>
+                    {m.payers.length>0?m.payers.map(function(p,pi){var h=Math.round(p.amount/m.income*barH);return<div key={p.ticker} style={{width:"100%",height:Math.max(1,h),background:p.color,flexShrink:0}}/>}):<div style={{width:"100%",height:barH,background:K.bdr+"50"}}/>}
                   </div>
                 </div>})}
             </div>
@@ -7939,10 +7984,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div><div style={{fontSize:12,color:K.dim,marginBottom:4}}>Today's annual income</div><div style={{fontSize:24,fontWeight:800,color:K.txt,fontFamily:fm}}>${totalAnnual.toFixed(0)}</div></div>
               <div style={{fontSize:20,color:K.dim}}>→</div>
               <div><div style={{fontSize:12,color:K.dim,marginBottom:4}}>Projected in 3 years</div><div style={{fontSize:24,fontWeight:800,color:K.grn,fontFamily:fm}}>${totalProj3yr.toFixed(0)}</div></div>
-              {totalProj3yr>totalAnnual&&<div style={{background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:8,padding:"8px 14px"}}>
-                <div style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>+${(totalProj3yr-totalAnnual).toFixed(0)} / yr</div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>if growth rates hold</div>
-              </div>}
+              {(function(){
+                var cagrCount=divPayers.filter(function(c){return c.divCagr!=null}).length;
+                var yoyCount=divPayers.filter(function(c){return c.divCagr==null&&c.financialSnapshot&&c.financialSnapshot.divGrowth}).length;
+                var flatCount=divPayers.length-cagrCount-yoyCount;
+                var note=cagrCount>0?"Based on "+cagrCount+" multi-yr CAGR"+(yoyCount>0?", "+yoyCount+" YoY rate":"")+", "+flatCount+" flat":"Fetch real dates to compute growth rates";
+                return<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {totalProj3yr>totalAnnual&&<div style={{background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:8,padding:"8px 14px"}}>
+                    <div style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>+${(totalProj3yr-totalAnnual).toFixed(0)} / yr</div>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>if growth rates hold</div>
+                  </div>}
+                  <div style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{note}</div>
+                </div>})()}
             </div>
           </div>
           {/* Per holding */}
@@ -7959,9 +8012,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{freqLabel(c.divFrequency)}</span>
               </div>
               {hasGrowthData&&<div style={{display:"flex",gap:16,marginTop:14,flexWrap:"wrap"}}>
-                {gd.divGr!==null&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>DIV GROWTH YoY</div>
-                  <div style={{fontSize:16,fontWeight:700,color:gd.divGr>0?K.grn:K.red,fontFamily:fm}}>{gd.divGr>=0?"+":""}{gd.divGr.toFixed(1)}%</div>
+                {(gd.divCagr!==null||gd.divGr!==null)&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
+                  <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>{gd.divCagr!==null?"DIV CAGR (MULTI-YR)":"DIV GROWTH YoY"}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:(gd.divCagr||gd.divGr||0)>0?K.grn:K.red,fontFamily:fm}}>{(gd.divCagr!=null?gd.divCagr:gd.divGr)>=0?"+":""}{(gd.divCagr!=null?gd.divCagr:gd.divGr).toFixed(1)}%</div>
+                  {gd.divCagr!==null&&gd.divGr!==null&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>YoY: {gd.divGr>=0?"+":""}{gd.divGr.toFixed(1)}%</div>}
                 </div>}
                 {gd.revGr!==null&&<div style={{background:K.bg,borderRadius:8,padding:"10px 16px",border:"1px solid "+K.bdr}}>
                   <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>REVENUE GROWTH</div>
