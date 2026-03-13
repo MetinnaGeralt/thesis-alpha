@@ -1142,6 +1142,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function toggleDash(key){setDashSet(function(p){var n=Object.assign({},p);n[key]=!n[key];try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}
   var _ob=useState(0),obStep=_ob[0],setObStep=_ob[1];
   var _obPath=useState(""),obPath=_obPath[0],setObPath=_obPath[1];
+  var _oUN=useState(""),oUsername=_oUN[0],setOUsername=_oUN[1];
   // Onboarding form state — kept at parent level so OnboardingFlow re-renders don't wipe it
   var _oTicker=useState(""),oTicker=_oTicker[0],setOTicker=_oTicker[1];
   var _oName=useState(""),oName=_oName[0],setOName=_oName[1];
@@ -2333,8 +2334,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div><div style={{fontSize:14,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:12,color:K.dim,marginTop:2}}>{it.d}</div></div>
           <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
             <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
-        <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <button onClick={function(){setModal(null);setObStep(1)}} style={{display:"inline-flex",alignItems:"center",gap:6,background:"none",border:"1px solid "+K.bdr,borderRadius:6,padding:"7px 14px",fontSize:12,color:K.mid,cursor:"pointer",fontFamily:fm}}><IC name="lightbulb" size={12} color={K.dim}/>Replay Welcome Tour</button>
+        <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"flex-end"}}>
           <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
       {/* ── Themes Tab ── */}
@@ -2356,22 +2356,34 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {sTab==="rewards"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
         <div style={{display:"grid",gap:6}}>
-          {[{w:1,icon:String.fromCodePoint(0x1F3A8),label:"Forest & Purple themes",desc:"Two new color palettes"},
-            {w:2,icon:String.fromCodePoint(0x1F916),label:"Research Export Pack",desc:"One-click export for AI tools"},
-            {w:3,icon:String.fromCodePoint(0x1F4B3),label:"PayPal Blue theme",desc:"Crisp professional blue"},
-            {w:2,icon:String.fromCodePoint(0x1F9D0),label:"Munger Lens (free)",desc:"Available to all users"},
-            {w:5,icon:String.fromCodePoint(0x1F4BB),label:"Bloomberg Terminal theme",desc:"The iconic black & orange"},
-            {w:8,icon:String.fromCodePoint(0x1F3E6),label:"Warren Buffett lens",desc:"Owner Earnings"},
-            {w:12,icon:String.fromCodePoint(0x2728),label:"Joel Greenblatt lens",desc:"Magic Formula"},
-            {w:16,icon:String.fromCodePoint(0x1F4DA),label:"Peter Lynch lens",desc:"Growth at a Price"},
-            {w:20,icon:String.fromCodePoint(0x1F4C8),label:"Shelby Cullom Davis lens",desc:"Davis Double Play"},
-            {w:24,icon:String.fromCodePoint(0x1F3AF),label:"Chris Hohn lens",desc:"Activist Value"}
-          ].map(function(r){var unlocked=(streakData.current||0)>=r.w;return<div key={r.w} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:8,opacity:unlocked?1:.7}}>
-            <span style={{fontSize:16,flexShrink:0}}>{r.icon}</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
-              <div style={{fontSize:11,color:K.dim}}>{r.desc}</div></div>
-            <div style={{fontSize:11,fontFamily:fm,color:unlocked?K.grn:K.dim,fontWeight:600,flexShrink:0}}>{unlocked?"✓":"Wk "+r.w}</div></div>})}</div>
+          {[
+            {w:1,icon:"🌿",type:"theme",label:"Forest Theme",desc:"A calm dark-green workspace"},
+            {w:2,icon:"🔍",type:"lens",label:"Munger Lens",desc:"Quality at scale — Munger's mental models"},
+            {w:3,icon:"🌊",type:"theme",label:"Ocean Theme",desc:"Deep blue professional palette"},
+            {w:4,icon:"🏰",type:"lens",label:"Buffett Lens",desc:"Owner earnings framework"},
+            {w:6,icon:"🌙",type:"theme",label:"Purple Theme",desc:"Twilight dark palette"},
+            {w:8,icon:"✨",type:"lens",label:"Magic Formula Lens",desc:"Greenblatt's earnings yield + ROIC"},
+            {w:10,icon:"💻",type:"theme",label:"Bloomberg Theme",desc:"Terminal-style workspace"},
+            {w:12,icon:"📚",type:"lens",label:"Lynch · Akre · Pabrai Lenses",desc:"Three more investor frameworks"},
+          ].map(function(r){
+            var unlocked=(streakData.current||0)>=r.w;
+            var typeColor=r.type==="theme"?K.acc:K.grn;
+            return<div key={r.w+r.label} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:10,opacity:unlocked?1:.7}}>
+              <span style={{fontSize:18,flexShrink:0,lineHeight:1}}>{r.icon}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                  <div style={{fontSize:13,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
+                  <span style={{fontSize:9,fontFamily:fm,fontWeight:600,color:typeColor,background:typeColor+"15",borderRadius:3,padding:"1px 6px"}}>{r.type==="theme"?"THEME":"LENS"}</span>
+                </div>
+                <div style={{fontSize:11,color:K.dim}}>{r.desc}</div>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                {unlocked
+                  ?<span style={{fontSize:12,color:K.grn,fontWeight:700}}>{"✓"}</span>
+                  :<span style={{fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>Wk {r.w}</span>}
+              </div>
+            </div>;
+          })}</div>
         <div style={{fontSize:11,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
         <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
@@ -2646,7 +2658,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
-  function finishOnboarding(){setObStep(0);try{localStorage.setItem("ta-onboarded","true")}catch(e){}
+  function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
     setTimeout(function(){refreshPrices()},500)}
 
   // ── Dossier Spotlight Tour ───────────────────────────────
@@ -6926,8 +6938,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         try{
           var r=await fetch("https://api.exchangerate-api.com/v4/latest/USD");
           var d=await r.json();
-          if(d&&d.rates){setLocalFx(d.rates);setFxRates(d.rates)}
-        }catch(e){setLocalFx(fxRates||{})}
+          if(d&&d.rates){setLocalFx(d.rates)}
+        }catch(e){setLocalFx({})}
       }
       fetchFx();
     },[currency]);
@@ -9926,7 +9938,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}</div></div>}
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
-  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
+  return(<div style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
     {/* === QUARTERLY LETTER POPUP === */}
@@ -10322,7 +10334,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
 // ═══ ROOT ═══
 function OnboardingFlow(p){
-  var {K,S,fm,fb,fh,isDark,isMobile,cSym,nId,cos,setCos,selId,setSelId,obStep,setObStep,obPath,setObPath,oTicker,setOTicker,oName,setOName,oSector,setOSector,oLook,setOLook,oDomain,setODomain,oIndustry,setOIndustry,oPrice,setOPrice,oStyle,setOStyle,oTCore,setOTCore,oTMoat,setOTMoat,oTRisk,setOTRisk,oTSell,setOTSell,oKpiSel,setOKpiSel,oKpiTargets,setOKpiTargets,oCoId,setOCoId,oShares,setOShares,oAvgCost,setOAvgCost,oPurchDate,setOPurchDate,oTmrRef,upd,lookupTicker,finishOnboarding,setDetailTab,setGuidedSetup,setTourStep,INVEST_STYLES,STYLE_MAP,METRIC_MAP,SAMPLE,IC,TLogo}=p;
+  var {K,S,fm,fb,fh,isDark,isMobile,cSym,nId,cos,setCos,selId,setSelId,obStep,setObStep,obPath,setObPath,oUsername,setOUsername,oTicker,setOTicker,oName,setOName,oSector,setOSector,oLook,setOLook,oDomain,setODomain,oIndustry,setOIndustry,oPrice,setOPrice,oStyle,setOStyle,oTCore,setOTCore,oTMoat,setOTMoat,oTRisk,setOTRisk,oTSell,setOTSell,oKpiSel,setOKpiSel,oKpiTargets,setOKpiTargets,oCoId,setOCoId,oShares,setOShares,oAvgCost,setOAvgCost,oPurchDate,setOPurchDate,oTmrRef,upd,lookupTicker,finishOnboarding,setDetailTab,setGuidedSetup,setTourStep,INVEST_STYLES,STYLE_MAP,METRIC_MAP,SAMPLE,IC,TLogo}=p;
   var overlay={position:"fixed",inset:0,background:isDark?"rgba(10,10,15,.97)":"rgba(245,245,250,.97)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"};
   var card={position:"relative",background:K.card,borderRadius:16,padding:"32px 36px",width:"100%",maxWidth:480,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,.35)"};
 
@@ -10343,7 +10355,7 @@ function OnboardingFlow(p){
   function addOnboardingCompany(){
     if(!oTicker.trim()||!oName.trim())return;
     var nc={id:nId(cos),ticker:oTicker.toUpperCase().trim(),name:oName.trim(),sector:oSector,industry:oIndustry,domain:oDomain,irUrl:"",earningsDate:"TBD",earningsTime:"AMC",thesisNote:"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:0,position:{shares:parseFloat(oShares)||0,avgCost:parseFloat(oAvgCost)||0,currentPrice:oPrice},purchaseDate:oPurchDate||null,conviction:0,convictionHistory:[],status:"portfolio",investStyle:oStyle,lastDiv:0,divPerShare:0,divFrequency:"quarterly",exDivDate:"",lastChecked:null,notes:"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString()};
-    setCos(function(p){return p.concat([nc])});setSelId(nc.id);setOCoId(nc.id);setObStep(3)}
+    setCos(function(p){return p.concat([nc])});setSelId(nc.id);setOCoId(nc.id);setObStep(4)}
 
   function saveThesisAndContinue(){
     var coId=oCoId;
@@ -10356,7 +10368,7 @@ function OnboardingFlow(p){
       var combined=parts.join("\n\n");
       if(combined.trim()){
         upd(coId,function(c){return Object.assign({},c,{thesisNote:combined,thesisUpdatedAt:new Date().toISOString()})})}}
-    setObStep(4)}
+    setObStep(5)}
 
   function saveKpisAndFinish(){
     var coId=oCoId;
@@ -10371,7 +10383,7 @@ function OnboardingFlow(p){
 
   // ── Step dots ─────────────────────────────────────────────
   function stepDots(){return<div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:28}}>
-    {[1,2,3,4,5].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
+    {[1,2,3,4,5,6].map(function(s){return<div key={s} style={{width:s===obStep?24:8,height:8,borderRadius:4,background:s===obStep?K.acc:s<obStep?K.acc+"60":K.bdr,transition:"all .3s"}}/>})}</div>}
 
   // ─────────────────────────────────────────────────────────
   // STEP 1 — Identity welcome
@@ -10393,16 +10405,42 @@ function OnboardingFlow(p){
           <span style={{fontSize:11,fontWeight:700,color:r.c,fontFamily:fm}}>{r.n}</span></div>
         <span style={{fontSize:13,color:K.mid,fontWeight:500}}>{r.t}</span>
       </div>})}</div>
-    <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15,marginBottom:10})}>Start with a company I own →</button>
+    <button onClick={function(){setObPath("fresh");setCos([]);setObStep(2)}} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15,marginBottom:10})}>Get started →</button>
     <button onClick={function(){setObPath("demo");setCos(SAMPLE);finishOnboarding();setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)}} style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:"8px",fontFamily:fb}}>Explore with demo data first</button>
   </div></div>;
 
   // ─────────────────────────────────────────────────────────
-  // STEP 2 — Add first company (no skip)
+  // STEP 2 — What's your name?
   // ─────────────────────────────────────────────────────────
   if(obStep===2)return<div style={overlay}><div style={card}>
     {stepDots()}
-    <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>Which company do you own?</h2>
+    <div style={{textAlign:"center",marginBottom:24}}>
+      <div style={{fontSize:32,marginBottom:12}}>👋</div>
+      <h2 style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 8px"}}>What should we call you?</h2>
+      <p style={{fontSize:13,color:K.dim,margin:0,lineHeight:1.6}}>We'll use this to personalise your experience. You can always change it later.</p>
+    </div>
+    <div style={{marginBottom:24}}>
+      <input
+        value={oUsername}
+        onChange={function(e){setOUsername(e.target.value)}}
+        placeholder="Your first name or nickname"
+        autoFocus
+        style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:10,color:K.txt,padding:"13px 16px",fontSize:16,fontFamily:fb,outline:"none",boxSizing:"border-box",textAlign:"center"}}
+        onKeyDown={function(e){if(e.key==="Enter"&&oUsername.trim()){setObStep(3)}}}
+      />
+    </div>
+    <button onClick={function(){setObStep(3)}} disabled={!oUsername.trim()} style={Object.assign({},S.btnP,{width:"100%",padding:"13px",fontSize:15,opacity:oUsername.trim()?1:0.4})}>
+      {oUsername.trim()?"Nice to meet you, "+oUsername.trim()+"! →":"Continue →"}
+    </button>
+    <button onClick={function(){setObStep(3)}} style={{display:"block",width:"100%",textAlign:"center",background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"8px",fontFamily:fb,marginTop:4}}>Skip for now</button>
+  </div></div>;
+
+  // ─────────────────────────────────────────────────────────
+  // STEP 3 — Add first company (no skip)
+  // ─────────────────────────────────────────────────────────
+  if(obStep===3)return<div style={overlay}><div style={card}>
+    {stepDots()}
+    <h2 style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fh,margin:"0 0 4px",textAlign:"center"}}>{oUsername.trim()?"Hey "+oUsername.trim()+", which company do you own?":"Which company do you own?"}</h2>
     <p style={{fontSize:13,color:K.dim,textAlign:"center",margin:"0 0 24px",lineHeight:1.6}}>Pick one you've already thought about. This becomes your first thesis.</p>
     <div style={{marginBottom:16}}>
       <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Ticker symbol</label>
@@ -10453,7 +10491,7 @@ function OnboardingFlow(p){
   // ─────────────────────────────────────────────────────────
   // STEP 3 — Write thesis inline
   // ─────────────────────────────────────────────────────────
-  if(obStep===3){
+  if(obStep===4){
     var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
     var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
     var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
@@ -10475,9 +10513,9 @@ function OnboardingFlow(p){
         </div>})}
       </div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(2)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setObStep(4)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip for now</button>
+          <button onClick={function(){setObStep(5)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip for now</button>
           <button onClick={saveThesisAndContinue} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:hasAny?1:.5})} disabled={!hasAny}>Save & Continue {"→"}</button>
         </div>
       </div>
@@ -10486,7 +10524,7 @@ function OnboardingFlow(p){
   // ─────────────────────────────────────────────────────────
   // STEP 4 — Pick KPIs
   // ─────────────────────────────────────────────────────────
-  if(obStep===4){
+  if(obStep===5){
     var sty4=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
     var sugIds=sty4?sty4.kpis.slice(0,4):["revGrowth","grossMargin","opMargin","fcfPerShare"];
     var sugMetrics=sugIds.map(function(id){return METRIC_MAP[id]}).filter(Boolean);
@@ -10518,7 +10556,7 @@ function OnboardingFlow(p){
         <strong style={{color:K.acc}}>{"💡"} Tip:</strong> Don{"'"}t overthink the target. A rough number beats no number. You can refine after the first earnings check.
       </div>
       <div style={{display:"flex",gap:12,justifyContent:"space-between"}}>
-        <button onClick={function(){setObStep(3)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
+        <button onClick={function(){setObStep(4)}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"←"} Back</button>
         <div style={{display:"flex",gap:8}}>
           <button onClick={saveKpisAndFinish} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",padding:"9px 10px",fontFamily:fb}}>Skip</button>
           <button onClick={saveKpisAndFinish} style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13,opacity:oKpiSel.length>0?1:.45})} disabled={oKpiSel.length===0}>Add {oKpiSel.length>0?oKpiSel.length+" KPI"+(oKpiSel.length>1?"s":""):"KPIs"} & Finish {"→"}</button>
@@ -10529,7 +10567,7 @@ function OnboardingFlow(p){
   // ─────────────────────────────────────────────────────────
   // STEP 5 — Celebration + what happens next
   // ─────────────────────────────────────────────────────────
-  if(obStep===5){
+  if(obStep===6){
     var co5=cos.find(function(c){return c.id===oCoId})||cos[cos.length-1];
     var kpiCount5=co5?co5.kpis.length:oKpiSel.length;
     var hasThesis5=co5&&co5.thesisNote&&co5.thesisNote.trim().length>10;
