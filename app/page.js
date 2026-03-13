@@ -6689,8 +6689,7 @@ html+='</div>';
     function finishReview(){
       var entries=portfolio.map(function(c2){return{ticker:c2.ticker,id:c2.id,prev:c2.conviction||0,
         new:revs[c2.id]!=null?revs[c2.id]:c2.conviction||0,note:notes[c2.id]||"",action:actions[c2.id]||"hold"}});
-      var rev={weekId:weekId,date:new Date().toISOString(),entries:entries,
-        reflection:reflection.trim(),
+      var rev={weekId:weekId,date:new Date().toISOString(),entries:entries,reflection:reflection.trim(),
         summary:{total:portfolio.length,changed:entries.filter(function(e){return e.prev!==e.new}).length,
         avgConv:Math.round(entries.reduce(function(s,e){return s+e.new},0)/Math.max(entries.length,1)*10)/10}};
       saveReview(rev);
@@ -10141,7 +10140,6 @@ html+='</div>';
       var upcomingE=portfolio2.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
       var scored2=qDecs.filter(function(d2){return d2.outcome});var rights2=scored2.filter(function(d2){return d2.outcome==="right"}).length;
       function sendQLEmail(){
-              var F=
               var F='-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Helvetica,Arial,sans-serif';
               var retClr=totalRet2>=0?'#16a34a':'#dc2626';
               var retStr=(totalRet2>=0?'+':'')+totalRet2.toFixed(1)+'%';
@@ -10157,12 +10155,12 @@ html+='</div>';
                   var rc=hp.ret>=0?'#16a34a':'#dc2626';
                   var rs=(hp.ret>=0?'+':'')+hp.ret.toFixed(1)+'%';
                   var valStr=hp.val>=1000?(hp.val/1000).toFixed(1)+'k':hp.val.toFixed(0);
-                  var convStr=hp.conv>0?hp.conv+'/10':'\u2014';
-                  var convClr=hp.conv===0?'rgba(22,22,29,0.3)':hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
+                  var convStr=hp.conv>0?hp.conv+'/10':'—';
+                  var convClr=hp.conv>=7?'#16a34a':hp.conv>=4?'#d97706':'#dc2626';
                   return '<tr>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:800;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+hp.ticker+'</td>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:'+rc+';text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">'+rs+'</td>'
-                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.5);text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">$'+valStr+'</td>'
+                    +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.5);text-align:right;border-bottom:1px solid rgba(22,22,29,0.06)">&dollar;'+valStr+'</td>'
                     +'<td style="padding:11px 14px;font-family:'+F+';font-size:12px;font-weight:700;color:'+convClr+';text-align:center;border-bottom:1px solid rgba(22,22,29,0.06)">'+convStr+'</td>'
                     +'</tr>';
                 }).join('');
@@ -10183,7 +10181,7 @@ html+='</div>';
               }
               var signals=[];
               perfArr.forEach(function(hp){if(hp.conv>0&&hp.conv<=4)signals.push(hp.ticker+' conviction is '+hp.conv+'/10');});
-              // (omit: 'no decisions' is expected for many users, not worth flagging)
+              if(qDecs.length===0)signals.push('No decisions logged this quarter');
               var attnBlock='';
               if(signals.length>0){
                 attnBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#FDECB2;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
@@ -10197,77 +10195,9 @@ html+='</div>';
                 +'<div style="font-family:'+F+';font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.6px;line-height:1.1">'+escHtml(qTitle)+'<br><span style="color:#6B4CE6">'+escHtml(qRange)+'</span></div>'
                 +'<div style="margin-top:10px;font-family:'+F+';font-size:12px;color:rgba(255,255,255,0.4)">'+escHtml(username||'Investor')+'&nbsp;&middot;&nbsp;'+qRevs.length+' reviews&nbsp;&middot;&nbsp;'+qDecs.length+' decisions</div>'
                 +'</td></tr></table>';
-              var storyBlock='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px"><tr><td style="padding:0">'
-                +'<p style="font-family:'+F+';font-size:14px;line-height:1.85;color:#1a1a2e;margin:0 0 16px">'+escHtml('Dear '+(username||'Investor')+',')+'</p>'
-                +'<p style="font-family:'+F+';font-size:14px;line-height:1.85;color:#16161D;margin:0 0 16px;font-weight:400">'+escHtml(storyText)+'</p>'
-                +'<table width="100%" cellpadding="0" cellspacing="0" style="border-left:3px solid #6B4CE6;margin-bottom:20px"><tr><td style="padding:8px 0 8px 16px">'
-                +'<div style="font-family:'+F+';font-size:13px;color:#6b7280;line-height:1.75;font-style:italic">&ldquo;'+escHtml(matchedQuote.quote)+'&rdquo;</div>'
-                +'<div style="font-family:'+F+';font-size:10px;color:#9ca3af;margin-top:6px;font-weight:700;letter-spacing:0.5px">&mdash; '+escHtml(matchedQuote.author)+'</div>'
-                +'</td></tr></table>'
-                +'</td></tr></table>';
-              var decReviewBlock='';
-              if(bestDec||worstDec){
-                decReviewBlock='<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px"><tr>';
-                if(bestDec)decReviewBlock+='<td width="'+(worstDec?'50%':'100%')+'" style="padding-right:'+(worstDec?'6':'0')+'px;vertical-align:top">'
-                  +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0"><tr><td style="padding:14px 16px">'
-                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#15803d;margin-bottom:6px">&#10003; Best Decision</div>'
-                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(bestDec.ticker+(bestDec.isSynthetic?'':' \u2014 '+bestDec.action))+'</div>'
-                  +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((bestDec.reasoning||'').substring(0,100))+((bestDec.reasoning||'').length>100?'&hellip;':'')+'</div>'
-                  +'</td></tr></table></td>';
-                if(worstDec)decReviewBlock+='<td width="50%" style="padding-left:6px;vertical-align:top">'
-                  +'<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:10px;border:1px solid #fecaca"><tr><td style="padding:14px 16px">'
-                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#b91c1c;margin-bottom:6px">&#10007; Hardest Call</div>'
-                  +'<div style="font-family:'+F+';font-size:14px;font-weight:800;color:#16161D;margin-bottom:5px">'+escHtml(worstDec.ticker+(worstDec.isSynthetic?'':' \u2014 '+worstDec.action))+'</div>'
-                  +'<div style="font-family:'+F+';font-size:12px;color:#374151;line-height:1.6">'+escHtml((worstDec.reasoning||'').substring(0,100))+((worstDec.reasoning||'').length>100?'&hellip;':'')+'</div>'
-                  +'</td></tr></table></td>';
-                decReviewBlock+='</tr></table>';
-              }
-              var fwdBlock=forwardQ?'<table width="100%" cellpadding="0" cellspacing="0" style="background:#EDE9FE;border-radius:12px;margin-bottom:16px"><tr><td style="padding:16px 18px">'
-                +'<div style="font-family:'+F+';font-size:9px;font-weight:700;color:#5B21B6;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Question for next quarter</div>'
-                +'<div style="font-family:'+F+';font-size:13px;color:#3730A3;line-height:1.75;font-style:italic">'+escHtml(forwardQ)+'</div>'
-                +'</td></tr></table>':'';
-
               var cta='<div style="text-align:center;margin-top:20px"><a href="https://app.thesisalpha.io" style="display:inline-block;background:#6B4CE6;color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-family:'+F+';font-size:14px;font-weight:800;letter-spacing:-0.2px">Open ThesisAlpha &rarr;</a></div>';
-              var decisionsBlock='';
-              if(qDecs.length>0){
-                var decRows=qDecs.slice(0,6).map(function(d){
-                  var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';
-                  var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'rgba(22,22,29,0.3)';
-                  var outcomeLabel=d.outcome==='right'?'&#10003; Right':d.outcome==='wrong'?'&#10005; Wrong':'';
-                  return '<tr>'
-                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:12px;font-weight:800;color:'+aclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap">'+escHtml(d.action||'')+'</td>'
-                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:13px;font-weight:700;color:#16161D;border-bottom:1px solid rgba(22,22,29,0.06)">'+escHtml(d.ticker||'')+'</td>'
-                    +'<td style="padding:10px 14px;font-family:'+F+';font-size:12px;color:rgba(22,22,29,0.6);border-bottom:1px solid rgba(22,22,29,0.06);max-width:220px">'+escHtml((d.reasoning||'').substring(0,100))+(d.reasoning&&d.reasoning.length>100?'&hellip;':'')+'</td>'
-                    +(outcomeLabel?'<td style="padding:10px 14px;font-family:'+F+';font-size:11px;font-weight:700;color:'+oclr+';border-bottom:1px solid rgba(22,22,29,0.06);white-space:nowrap;text-align:right">'+outcomeLabel+'</td>':'<td style="border-bottom:1px solid rgba(22,22,29,0.06)"></td>')
-                    +'</tr>';
-                }).join('');
-                decisionsBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;margin-bottom:16px">'
-                  +'<tr style="background:rgba(22,22,29,0.04)">'
-                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Action</th>'
-                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Company</th>'
-                  +'<th style="padding:9px 14px;text-align:left;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Reasoning</th>'
-                  +'<th style="padding:9px 14px;text-align:right;font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.4)">Outcome</th>'
-                  +'</tr>'+decRows+'</table>'
-                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(22,22,29,0.3);margin:-12px 0 16px;text-align:right;padding-right:4px">KEY DECISIONS THIS QUARTER</div>';
-              }
-              var reflBlock='';
-              var reflEntries=qRevs.filter(function(r){return r.reflection&&r.reflection.trim().length>10});
-              if(reflEntries.length>0){
-                var reflItems=reflEntries.slice(0,3).map(function(r){
-                  var d=r.date?r.date.substring(0,10):'';
-                  return '<div style="margin-bottom:10px">'
-                    +(d?'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(22,22,29,0.35);margin-bottom:3px">'+d+'</div>':'')
-                    +'<div style="font-family:'+F+';font-size:13px;color:#374151;line-height:1.7;padding-left:10px;border-left:3px solid #6B4CE6">'+escHtml(r.reflection.substring(0,200))+'</div>'
-                    +'</div>';
-                }).join('');
-                reflBlock='<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;margin-bottom:16px">'
-                  +'<tr><td style="padding:16px 18px">'
-                  +'<div style="font-family:'+F+';font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#6B4CE6;margin-bottom:12px">What I Learned</div>'
-                  +reflItems
-                  +'</td></tr></table>';
-              }
-              var eBody2=header+storyBlock+statsRow+holdingsBlock+decReviewBlock+decisionsBlock+reflBlock+attnBlock+fwdBlock+obsBlock+closing+cta;
-              sendQuarterlyLetterEmail(eBody2,qTitle)}}
+              var eBody2=header+statsRow+holdingsBlock+attnBlock+obsBlock+closing+cta;
+              sendQuarterlyLetterEmail(eBody2,qTitle)
       }
       function dismiss(){var nl=Object.assign({},qLetters);nl[showQLetter]=true;setQLetters(nl);try{localStorage.setItem("ta-qletters",JSON.stringify(nl))}catch(e){}setShowQLetter(null)}
       function QSH(p){return<div style={{fontSize:10,letterSpacing:_isThesis?1:2.5,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:800,marginTop:24,marginBottom:10,paddingBottom:6,borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",gap:8}}><div style={{width:4,height:14,borderRadius:_isBm?0:2,background:p.color||K.acc}}/>{p.children}</div>}
@@ -10287,29 +10217,26 @@ html+='</div>';
       if(scenarioCount>0&&scenarioCount<portfolio2.length)obs.push(scenarioCount+" of "+portfolio2.length+" holdings have pre-mortem plans. The unplanned ones are the most vulnerable in a downturn.");
       var withDate=portfolio2.filter(function(c2){return c2.purchaseDate});
       if(withDate.length>0){var avgDays=Math.round(withDate.reduce(function(s,c2){return s+Math.ceil((new Date()-new Date(c2.purchaseDate))/864e5)},0)/withDate.length);if(avgDays>365)obs.push("Your average holding period is "+Math.round(avgDays/30)+" months. Long-term ownership is where compounding happens.")}
-
-      // ── Story of the Quarter (rule-based narrative) ──────────
+      // ── Story of the Quarter ──────────────────────────────────
       var storyLines=[];
-      // Lead with the dominant performer
       if(best2&&best2.ret>50){
-        if(best2.ret>500)storyLines.push(best2.ticker+' returned +'+best2.ret.toFixed(0)+'% this quarter. That is the kind of number that changes the shape of a portfolio. The question is whether you saw it coming \u2014 or simply had the conviction to hold.');
-        else storyLines.push(best2.ticker+' led the way at +'+(best2.ret.toFixed(0))+'%. That kind of return doesn\'t happen without a thesis that held under pressure.');
+        if(best2.ret>500)storyLines.push(best2.ticker+' returned +'+best2.ret.toFixed(0)+'% this quarter. That is the kind of number that changes the shape of a portfolio. The question is whether you saw it coming or simply had the conviction to hold.');
+        else storyLines.push(best2.ticker+' led the way at +'+(best2.ret.toFixed(0))+'%. That kind of return does not happen without a thesis that held under pressure.');
       } else if(totalRet2>15){
         storyLines.push('A strong quarter across the board. '+totalRet2.toFixed(1)+'% is the kind of result that comes from businesses doing exactly what you expected them to do.');
       } else if(totalRet2<-10){
         storyLines.push('The portfolio gave back '+Math.abs(totalRet2).toFixed(1)+'% this quarter. Returns fluctuate. Theses erode. Knowing which one is happening here is the work.');
       } else if(totalRet2>=0){
-        storyLines.push('A steady quarter \u2014 +'+(totalRet2.toFixed(1))+'%. Not every period is a breakthrough. Compounding works in the quiet ones too.');
+        storyLines.push('A steady quarter: +'+(totalRet2.toFixed(1))+'%. Not every period is a breakthrough. Compounding works in the quiet ones too.');
       } else {
         storyLines.push('The portfolio slipped '+Math.abs(totalRet2).toFixed(1)+'% this quarter. The best investors separate price movement from business quality. Where do your holdings stand on that test?');
       }
-      // Process narrative
       if(qDecs.length===0&&qRevs.length>=4){
-        storyLines.push('You made no portfolio changes. '+qRevs.length+' reviews, zero trades. That kind of disciplined inaction is harder than it sounds \u2014 and usually right.');
+        storyLines.push('You made no portfolio changes. '+qRevs.length+' reviews, zero trades. That kind of disciplined inaction is harder than it sounds and usually right.');
       } else if(buys2.length>0&&sells2.length>0){
         var buyTickers=buys2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
         var sellTickers=sells2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
-        storyLines.push('You added to '+buyTickers+' and exited '+sellTickers+'. Two kinds of conviction in the same quarter \u2014 buying what you believe in, cutting what you don\'t.');
+        storyLines.push('You added to '+buyTickers+' and exited '+sellTickers+'. Two kinds of conviction in the same quarter: buying what you believe in, cutting what you do not.');
       } else if(buys2.length>0){
         var buyTickers2=buys2.map(function(d){return d.ticker}).filter(function(v,i,a){return a.indexOf(v)===i}).join(', ');
         storyLines.push('You added to '+buyTickers2+(buys2.length>1?' across '+buys2.length+' decisions':'')+'. Conviction backed by capital.');
@@ -10319,54 +10246,35 @@ html+='</div>';
       }
       var storyText=storyLines.join(' ');
 
-      // ── Best & Worst Decision ─────────────────────────────────
-      var bestDec=null,worstDec=null;
-      // Prefer scored decisions; fall back to best/worst performer
-      var rightDecs=qDecs.filter(function(d){return d.outcome==='right'});
-      var wrongDecs=qDecs.filter(function(d){return d.outcome==='wrong'});
-      if(rightDecs.length>0){
-        // Pick the one with the most enthusiastic reasoning (longest)
-        bestDec=rightDecs.sort(function(a,b){return(b.reasoning||'').length-(a.reasoning||'').length})[0];
-      }
-      if(wrongDecs.length>0){
-        worstDec=wrongDecs.sort(function(a,b){return(b.reasoning||'').length-(a.reasoning||'').length})[0];
-      }
-      // If no scored decisions, use portfolio performance
-      if(!bestDec&&best2&&best2.ret>20){bestDec={ticker:best2.ticker,action:'HOLD',reasoning:'Held without adding or trimming. The position did the work.',outcome:'right',isSynthetic:true};}
-      if(!worstDec&&worst2&&worst2.ret<-10){worstDec={ticker:worst2.ticker,action:'HOLD',reasoning:'The position declined. Has the thesis changed, or has only the price?',outcome:'wrong',isSynthetic:true};}
-
-      // ── Curated Quote Library ─────────────────────────────────
+      // ── Quote (simple if/else, no function array) ─────────────
       var matchedQuote={quote:"The big money is not in the buying and the selling, but in the waiting.",author:"Jesse Livermore"};
       if(totalRet2>30){matchedQuote={quote:"The stock market is a device for transferring money from the impatient to the patient.",author:"Warren Buffett"};}
       else if(totalRet2>15){matchedQuote={quote:"Compound interest is the eighth wonder of the world. He who understands it, earns it.",author:"Albert Einstein"};}
       else if(totalRet2<-15){matchedQuote={quote:"The most important quality for an investor is temperament, not intellect.",author:"Warren Buffett"};}
       else if(totalRet2<0){matchedQuote={quote:"In the short run, the market is a voting machine. In the long run, it is a weighing machine.",author:"Benjamin Graham"};}
-      else if(qRevs.length>=10&&qDecs.length===0){matchedQuote={quote:"Inactivity strikes us as intelligent behavior.",author:"Warren Buffett"};}
-      else if(qRevs.length>=6&&qDecs.length===0){matchedQuote={quote:"Our favorite holding period is forever.",author:"Warren Buffett"};}
+      else if(qRevs.length>=6&&qDecs.length===0){matchedQuote={quote:"Inactivity strikes us as intelligent behavior.",author:"Warren Buffett"};}
       else if(qDecs.length>=4){matchedQuote={quote:"The wise investor does not try to outsmart the market every quarter.",author:"Howard Marks"};}
       else if(perfArr.length>0&&totalVal2>0&&perfArr[0].val/totalVal2>0.40){matchedQuote={quote:"Diversification is protection against ignorance. It makes little sense if you know what you are doing.",author:"Warren Buffett"};}
       else if(totalKpis>0&&kpiHitRate>=80){matchedQuote={quote:"In investing, what is comfortable is rarely profitable.",author:"Robert Arnott"};}
-      else if(totalKpis>0&&kpiHitRate<50){matchedQuote={quote:"An investment in knowledge pays the best interest.",author:"Benjamin Franklin"};}
+
+      // ── Best & Worst Decision ─────────────────────────────────
+      var bestDec=null,worstDec=null;
+      var rightDecs=qDecs.filter(function(d){return d.outcome==='right'});
+      var wrongDecs=qDecs.filter(function(d){return d.outcome==='wrong'});
+      if(rightDecs.length>0){bestDec=rightDecs.sort(function(a,b){return(b.reasoning||'').length-(a.reasoning||'').length})[0];}
+      if(wrongDecs.length>0){worstDec=wrongDecs.sort(function(a,b){return(b.reasoning||'').length-(a.reasoning||'').length})[0];}
+      if(!bestDec&&best2&&best2.ret>20){bestDec={ticker:best2.ticker,action:'HOLD',reasoning:'Held without adding or trimming. The position did the work.',outcome:'right',isSynthetic:true};}
+      if(!worstDec&&worst2&&worst2.ret<-10){worstDec={ticker:worst2.ticker,action:'HOLD',reasoning:'The position declined. Has the thesis changed, or has only the price?',outcome:'wrong',isSynthetic:true};}
 
       // ── Forward-Looking Question ──────────────────────────────
       var forwardQ='';
-      if(upcomingE.length>0){
-        var nextE=upcomingE[0];
-        var nextEDays=dU(nextE.earningsDate);
-        forwardQ=nextE.ticker+' reports in '+nextEDays+' day'+(nextEDays!==1?'s':'')+'. Does your thesis still give you a clear view on what "good" looks like for this earnings?';
-      } else if(staleList.length>0&&Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)>90){
-        forwardQ='Your '+staleList[0].ticker+' thesis is '+Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)+' days old. Before next quarter ends: is the business the same as when you wrote it?';
-      } else if(lowConvHigh.length>0&&totalVal2>0&&lowConvHigh[0].val/totalVal2>0.15){
-        forwardQ=lowConvHigh[0].ticker+' is a meaningful position with conviction at '+lowConvHigh[0].conv+'/10. What would it take to raise that number \u2014 and is that information available this quarter?';
-      } else if(worst2&&worst2.ret<-15){
-        forwardQ=worst2.ticker+' was down '+Math.abs(worst2.ret).toFixed(0)+'% this quarter. What would need to be true for you to add more \u2014 and what would tell you it\'s time to exit?';
-      } else if(totalKpis>0&&kpiHitRate<50){
-        forwardQ='More than half your KPIs were missed this quarter. Are the businesses underperforming, or were the targets wrong? That distinction shapes what you do next.';
-      } else if(qRevs.length===0){
-        forwardQ='You didn\'t complete a weekly review this quarter. What\'s one holding you\'d review first if you started today?';
-      } else {
-        forwardQ='Heading into '+('Q'+(qNum===4?1:qNum+1)+' '+(qNum===4?qYear+1:qYear))+': which of your '+portfolio2.length+' holdings has the thesis that most needs revisiting \u2014 and why haven\'t you done it yet?';
-      }
+      if(upcomingE.length>0){var nextE=upcomingE[0];var nextEDays=dU(nextE.earningsDate);forwardQ=nextE.ticker+' reports in '+nextEDays+' day'+(nextEDays!==1?'s':'')+'. Does your thesis still give you a clear view on what good looks like for this earnings?';}
+      else if(staleList.length>0&&Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)>90){forwardQ='Your '+staleList[0].ticker+' thesis is '+Math.ceil((new Date()-new Date(staleList[0].thesisUpdatedAt))/864e5)+' days old. Before next quarter ends: is the business the same as when you wrote it?';}
+      else if(lowConvHigh.length>0&&totalVal2>0&&lowConvHigh[0].val/totalVal2>0.15){forwardQ=lowConvHigh[0].ticker+' is a meaningful position with conviction at '+lowConvHigh[0].conv+'/10. What would it take to raise that number?';}
+      else if(worst2&&worst2.ret<-15){forwardQ=worst2.ticker+' was down '+Math.abs(worst2.ret).toFixed(0)+'% this quarter. What would need to be true to add more, and what would tell you it is time to exit?';}
+      else if(totalKpis>0&&kpiHitRate<50){forwardQ='More than half your KPIs were missed this quarter. Are the businesses underperforming, or were the targets wrong?';}
+      else if(qRevs.length===0){forwardQ='You did not complete a weekly review this quarter. Which holding would you review first if you started today?';}
+      else{forwardQ='Heading into next quarter: which of your '+portfolio2.length+' holdings has the thesis that most needs revisiting?';}
 
       // PDF export
       function exportPDF(){var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Quarterly Letter '+qTitle+'</title><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet"><style>@page{size:A4;margin:20mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;color:#1a1a2e;font-size:11px;line-height:1.7}.page{max-width:680px;margin:0 auto;padding:40px}h1{font-family:Playfair Display,serif;font-size:36px;font-weight:800;letter-spacing:-1px}.sh{font-size:9px;letter-spacing:3px;text-transform:uppercase;font-family:JetBrains Mono,monospace;font-weight:800;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #1a1a2e}.kstats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin:16px 0 20px}.ks{padding:14px 12px;text-align:center;border-right:1px solid #e5e7eb}.ks:last-child{border-right:none}.ks-l{font-family:JetBrains Mono,monospace;font-size:7.5px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:4px}.ks-v{font-family:JetBrains Mono,monospace;font-size:20px;font-weight:800}.ks-s{font-size:9px;color:#9ca3af;margin-top:2px}table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}th{font-family:JetBrains Mono,monospace;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;padding:6px 10px;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left}td{padding:7px 10px;border-bottom:1px solid #f3f4f6}.mono{font-family:JetBrains Mono,monospace}.grn{color:#16a34a}.red{color:#dc2626}.pg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px}.pc{padding:10px;border:1px solid #e5e7eb;border-radius:8px;text-align:center}.pc-v{font-family:JetBrains Mono,monospace;font-size:16px;font-weight:800}.pc-l{font-size:8px;color:#9ca3af;margin-top:2px}.footer{margin-top:36px;padding-top:12px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;font-size:8px;color:#9ca3af}</style></head><body><div class="page">';
@@ -10380,9 +10288,11 @@ html+='</div>';
         if(perfArr.length>0){h+='<div class="sh">Holdings</div><table><thead><tr><th>Ticker</th><th style="text-align:right">Return</th><th style="text-align:right">Value</th><th style="text-align:center">Conv</th></tr></thead><tbody>';perfArr.slice(0,10).forEach(function(hp){h+='<tr><td class="mono" style="font-weight:700">'+hp.ticker+'</td><td class="mono" style="text-align:right;color:'+(hp.ret>=0?"#16a34a":"#dc2626")+'">'+(hp.ret>=0?"+":"")+hp.ret.toFixed(1)+'%</td><td class="mono" style="text-align:right">$'+(hp.val>=1e3?(hp.val/1e3).toFixed(1)+"k":hp.val.toFixed(0))+'</td><td style="text-align:center" class="mono">'+(hp.conv>0?hp.conv+"/10":"\u2014")+'</td></tr>'});h+='</tbody></table>'}
         h+='<div class="sh">Process</div><div class="pg"><div class="pc"><div class="pc-v">'+os2.total+'</div><div class="pc-l">Owner\'s Score</div></div><div class="pc"><div class="pc-v">'+streakWeeks+'</div><div class="pc-l">Streak</div></div><div class="pc"><div class="pc-v">'+moatCount+'/'+portfolio2.length+'</div><div class="pc-l">Moats</div></div><div class="pc"><div class="pc-v">'+scenarioCount+'/'+portfolio2.length+'</div><div class="pc-l">Stress-Tested</div></div></div>';
         if(obs.length>0){h+='<div class="sh">Observations</div>';obs.slice(0,4).forEach(function(o){h+='<p style="font-size:11px;line-height:1.7;margin-bottom:8px;padding-left:12px;border-left:2px solid #6B4CE6;color:#374151">'+o+'</p>'})}
-        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'\u2014';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'\u2014')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'\u2014')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'\u2014')+'</td></tr>';});h+='</tbody></table>';}
+        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var co2=cos.find(function(x){return x.id===d.coId||x.decisions&&x.decisions.indexOf(d)>=0});var ticker2=co2?co2.ticker:'—';var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'—')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+d.action+'</td><td class="mono" style="font-weight:700">'+ticker2+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+(d.reasoning?d.reasoning.substring(0,120):'—')+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+(d.outcome||'—')+'</td></tr>';});h+='</tbody></table>';}
         var learnedNotes=[];qRevs.forEach(function(rev){if(rev.reflection&&rev.reflection.trim().length>10)learnedNotes.push({date:rev.date&&rev.date.substring(0,10),text:rev.reflection.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px">';h+='<div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div>';h+='<p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+(ln.text.substring(0,300))+'</p>';h+='</div>';});}
-        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge \u2014 and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter \u2014 they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
+        if(qDecs.length>0){h+='<div class="sh">Key Decisions</div>';h+='<table><thead><tr><th>Date</th><th>Action</th><th>Company</th><th>Reasoning</th><th>Outcome</th></tr></thead><tbody>';qDecs.slice(0,8).forEach(function(d){var aclr=d.action==='BUY'||d.action==='ADD'?'#15803d':d.action==='SELL'||d.action==='TRIM'?'#b91c1c':'#b45309';var oclr=d.outcome==='right'?'#15803d':d.outcome==='wrong'?'#b91c1c':'#9ca3af';h+='<tr><td class="mono" style="font-size:10px;white-space:nowrap;color:#9ca3af">'+(d.date?d.date.substring(0,10):'\u2014')+'</td><td class="mono" style="font-weight:700;color:'+aclr+'">'+escHtml(d.action||'')+'</td><td class="mono" style="font-weight:700">'+escHtml(d.ticker||'\u2014')+'</td><td style="font-size:11px;color:#374151;max-width:200px">'+escHtml((d.reasoning||'').substring(0,120))+'</td><td class="mono" style="font-size:10px;font-weight:700;color:'+oclr+'">'+escHtml(d.outcome||'\u2014')+'</td></tr>';});h+='</tbody></table>';}
+        var learnedNotes=[];qRevs.forEach(function(rev){if(rev.reflection&&rev.reflection.trim().length>10)learnedNotes.push({date:rev.date&&rev.date.substring(0,10),text:rev.reflection.trim()})});if(learnedNotes.length>0){h+='<div class="sh">What I Learned</div>';learnedNotes.slice(0,4).forEach(function(ln){h+='<div style="margin-bottom:12px"><div style="font-family:\'JetBrains Mono\',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:4px">'+(ln.date||'')+'</div><p style="font-size:12px;line-height:1.75;color:#1a1a2e;border-left:2px solid #e5e7eb;padding-left:12px;margin:0">'+ln.text.substring(0,300)+'</p></div>';});}
+        h+='<p style="font-size:12px;font-style:italic;color:#6b7280;margin-top:24px;line-height:1.85;border-top:1px solid #e5e7eb;padding-top:16px">'+(qRevs.length>=10?'Exceptional discipline. Your process is your edge — and it compounds.':qRevs.length>=4?'Solid quarter. Consistency is the most underrated investment skill.':qRevs.length>=2?'Building the habit. The investors who outperform aren\'t smarter — they\'re more disciplined.':'Every journey starts with a step. Build the weekly review habit next quarter.')+'</p>';
         h+='<div style="margin-top:32px;padding-top:14px;border-top:2px solid #1a1a2e;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:800;letter-spacing:3px;color:#1a1a2e">THESISALPHA</div><div style="font-size:10px;color:#9ca3af;margin-top:4px;font-style:italic">Owner\'s Report &middot; Personal use only &middot; Not financial advice.</div></div><div style="text-align:right"><div style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:700;color:#6B4CE6">'+qTitle+'</div><div style="font-size:9px;color:#9ca3af">'+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'</div></div></div></div></body></html>';
         var w2=window.open("","_blank");if(w2){w2.document.write(h);w2.document.close();setTimeout(function(){w2.print()},800)}}
       return<div style={{position:"fixed",inset:0,zIndex:10003,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(10px)"}} onClick={dismiss}>
@@ -10400,12 +10310,12 @@ html+='</div>';
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:6}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div></div></div></div>
           {/* Salutation + narrative story */}
           <div style={{marginBottom:24}}>
-            <div style={{fontSize:14,color:K.mid,marginBottom:16,fontFamily:fb}}>{"Dear "+(username||"Investor")+","}</div>
-            <div style={{fontSize:15,color:K.txt,lineHeight:1.85,fontFamily:fb,marginBottom:0}}>{storyText}</div>
+            <div style={{fontSize:14,color:K.mid,marginBottom:16,fontFamily:fb}}>{"Dear "+(username||"Investor")+"," }</div>
+            <div style={{fontSize:15,color:K.txt,lineHeight:1.85,fontFamily:fb}}>{storyText}</div>
           </div>
           <div style={{borderLeft:"3px solid "+K.acc,paddingLeft:16,marginBottom:24}}>
-            <div style={{fontSize:14,color:K.mid,lineHeight:1.75,fontStyle:"italic",fontFamily:fb}}>{"\u201c"+matchedQuote.quote+"\u201d"}</div>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6,letterSpacing:0.3}}>{"\u2014 "+matchedQuote.author}</div>
+            <div style={{fontSize:14,color:K.mid,lineHeight:1.75,fontStyle:"italic",fontFamily:fb}}>{"“"+matchedQuote.quote+"”"}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>{"— "+matchedQuote.author}</div>
           </div>
           {/* Performance banner */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:0,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden",marginBottom:24}}>
@@ -10435,13 +10345,13 @@ html+='</div>';
           {(bestDec||worstDec)&&<div><QSH color={K.acc}>Decision Review</QSH>
             <div style={{display:"grid",gridTemplateColumns:bestDec&&worstDec?"1fr 1fr":"1fr",gap:10,marginBottom:16}}>
               {bestDec&&<div style={{padding:"14px 16px",background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:10}}>
-                <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,marginBottom:6}}>{"\u2713 Best Decision"}</div>
-                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{bestDec.ticker} {bestDec.isSynthetic?"":"\u2014 "+bestDec.action}</div>
+                <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.grn,fontFamily:fm,marginBottom:6}}>{"✓ Best Decision"}</div>
+                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{bestDec.ticker}{bestDec.isSynthetic?"":" — "+bestDec.action}</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontFamily:fb}}>{(bestDec.reasoning||"").substring(0,120)}{(bestDec.reasoning||"").length>120?"...":""}</div>
               </div>}
               {worstDec&&<div style={{padding:"14px 16px",background:K.red+"06",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:10}}>
-                <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.red,fontFamily:fm,marginBottom:6}}>{"\u2717 Hardest Call"}</div>
-                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{worstDec.ticker} {worstDec.isSynthetic?"":"\u2014 "+worstDec.action}</div>
+                <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.red,fontFamily:fm,marginBottom:6}}>{"✗ Hardest Call"}</div>
+                <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm,marginBottom:4}}>{worstDec.ticker}{worstDec.isSynthetic?"":" — "+worstDec.action}</div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontFamily:fb}}>{(worstDec.reasoning||"").substring(0,120)}{(worstDec.reasoning||"").length>120?"...":""}</div>
               </div>}
             </div>
