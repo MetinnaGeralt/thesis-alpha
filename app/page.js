@@ -8465,7 +8465,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {/* ── MORNING BRIEFING ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
-      var greeting=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+      var dow=now.getDay();// 0=Sun,6=Sat
+      var isWeekend=dow===0||dow===6;
+      var isFriday=dow===5;var isMonday=dow===1;
+      var daySeed=now.getDate()%4;// rotates 0-3 per calendar day, stable within a day
+      var mktOpen=!isWeekend&&hour>=9&&(hour<16||(hour===9&&now.getMinutes()>=30));
+      var _n=username||"Investor";
+      var greeting=(function(){
+        if(hour>=23||hour<5){var late=[["Still here, "+_n+"?","The futures don't sleep"],["Night mode, "+_n,"Markets reopen in the morning"],["Late night, "+_n,"Even Buffett sleeps"],["Can't sleep, "+_n+"?","Check the Asia markets while you're up"]];return late[daySeed][0];}
+        if(hour<7){var early=[["Early bird, "+_n,"Markets open at 9:30"],["You're up early, "+_n,"Pre-market starts soon"],["Rise and grind, "+_n,"Bell rings at 9:30"],["Morning, "+_n+" ☕","Let's see what overnight brought"]];return early[daySeed][0];}
+        if(hour<9){return isMonday?"New week, "+_n:isFriday?"Friday's here, "+_n:"Good morning, "+_n;}
+        if(hour===9&&now.getMinutes()<30){return"Bell rings soon, "+_n;}
+        if(mktOpen){var open=[["Markets are live, "+_n],["Eyes on the tape, "+_n],["Market hours, "+_n],["In session, "+_n]];return open[daySeed][0];}
+        if(hour<17&&isWeekend){return dow===6?"Saturday, "+_n:"Sunday, "+_n+". Markets are closed.";}
+        if(hour<17){return isFriday?"TGIF, "+_n:"Good afternoon, "+_n;}
+        if(hour<20){var eve=[["After hours, "+_n],["Closing thoughts, "+_n],["Good evening, "+_n],["Wind down, "+_n]];return eve[daySeed][0];}
+        return"Bedtime soon, "+_n;
+      })();
 
       // ── Conviction health ───────────────────────────────────────────────
       var convReviewed=portfolio.filter(function(c2){
@@ -8523,7 +8539,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:isMobile?16:17,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}, {username||"Investor"}</div>
+          <div style={{fontSize:isMobile?16:17,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}</div>
           <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
         </div>
 
@@ -9406,7 +9422,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{height:4,borderRadius:2,background:K.bdr}}><div style={{height:"100%",width:pct+"%",borderRadius:2,background:warn?K.amb:K.acc}}/></div></div>})}()}</div>}
       {/* Dividends */}
       {dashSet.showDividends&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:12,padding:"20px 24px"}}>
-        <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontFamily:fm}}>Dividend Dashboard</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <div style={{fontSize:11,letterSpacing:3,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Dividend Dashboard</div>
+          <button onClick={function(){setPage("dividends")}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:20,padding:"3px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>Full Hub →</button>
+        </div>
         {divCos.length===0&&<div style={{fontSize:13,color:K.dim,padding:"16px 0",textAlign:"center"}}>No dividend-paying holdings detected.<br/><span style={{fontSize:12}}>Dividend data is auto-fetched when you add companies.</span></div>}
         {divCos.length>0&&(function(){
           var totalVal3=divCos.reduce(function(s2,c2){var p2=c2.position||{};return s2+(p2.shares||0)*(p2.currentPrice||0)},0);
@@ -9431,7 +9450,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var upcoming2=holdings.filter(function(h2){return h2.exDiv&&new Date(h2.exDiv)>=new Date()}).sort(function(a,b){return a.exDiv>b.exDiv?1:-1});
           return<div>
             {/* Summary cards */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:8}}>
               <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>${totalAnnualDiv.toFixed(0)}</div>
                 <div style={{fontSize:8,color:K.dim}}>Est. Annual Income</div></div>
@@ -9441,6 +9460,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{padding:"12px 14px",background:K.bg,borderRadius:8,textAlign:"center"}}>
                 <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>${monthlyInc.toFixed(0)}</div>
                 <div style={{fontSize:8,color:K.dim}}>Monthly (avg)</div></div></div>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginBottom:14,display:"flex",alignItems:"center",gap:5}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:K.grn,display:"inline-block",flexShrink:0}}/>
+              Live — same data as Dividend Hub. <span style={{color:K.acc,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={function(){setPage("dividends")}}>Update ex-div dates there.</span>
+            </div>
             {!isPro&&<div style={{fontSize:11,color:K.acc,marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("dividends")}}>Upgrade for monthly income chart, yield on cost, payout safety analysis</div>}
             {/* Monthly income chart */}
             {isPro&&<div style={{marginBottom:16}}>
