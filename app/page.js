@@ -1281,7 +1281,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var hasData=cos.length>0||weeklyReviews.length>0;
     var alreadyNotified=notifs.some(function(n){return n.type==='quarterly'&&n.qKey===qKey});
     if(!alreadyRead&&hasData&&!alreadyNotified){
-      setNotifs(function(p){return[{id:Date.now()+Math.random(),type:'quarterly',ticker:'',qKey:qKey,msg:'Your '+qKey+' Owner's Letter is ready to read.',time:new Date().toISOString(),read:false}].concat(p).slice(0,30)});}
+      setNotifs(function(p){return[{id:Date.now()+Math.random(),type:'quarterly',ticker:'',qKey:qKey,msg:'Your '+qKey+' Quarterly Letter is ready.',time:new Date().toISOString(),read:false}].concat(p).slice(0,30)});}
   },[loaded]);
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
