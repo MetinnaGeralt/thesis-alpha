@@ -2747,7 +2747,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="review"?(isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="assets"?(isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:"12px 20px",cursor:"pointer",background:page==="library"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
-    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="ai"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>AI Advisor</span></div>
+    <div style={{padding:"12px 20px",cursor:"pointer",background:page==="ai"?(isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:isThesis?"0 999px 999px 0":"0",marginRight:isThesis?10:0}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:"10px 20px"}}>
@@ -4771,7 +4771,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div></div></div>}
         {/* Attribution */}
         <div style={{padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:10,marginTop:8}}><div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div></div>
-        {/* ── AI Position Review (dossier inline) ── */}
+        {/* ── Research Prompts (dossier inline) ── */}
         {(function(){
           var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
           var DOSS_PROMPTS=[
@@ -4791,7 +4791,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           return<div style={{marginTop:20,paddingTop:20,borderTop:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
               <IC name="lightbulb" size={14} color={K.acc}/>
-              <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fb,textTransform:"uppercase",letterSpacing:1}}>AI Position Review</div>
+              <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fb,textTransform:"uppercase",letterSpacing:1}}>Research Prompts</div>
             </div>
             <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:14,lineHeight:1.5}}>{hasThesis?"Generate a context-rich prompt built from your thesis, KPIs, and decisions — then open it in Claude, ChatGPT, or Gemini.":"Write a thesis first to unlock AI prompts for this holding."}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
@@ -5382,7 +5382,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>;
   }
 
-  // ── AI Advisor (sidebar page) ─────────────────────────────
+  // ── Research Prompts (sidebar page) ─────────────────────────────
   function AIAdvisor(){
     var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var _sel=useState(null),selCo=_sel[0],setSelCo=_sel[1];
@@ -5448,9 +5448,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* Header */}
       <div style={{padding:isMobile?"20px 0 20px":"28px 0 24px"}}>
-        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>AI Position Review</div>
+        <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Research Prompts</div>
         <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.6,maxWidth:620}}>
-          ChatGPT and Claude know everything written publicly about your holdings. They know nothing about you. These prompts change that — they feed your thesis, conviction history, KPIs, and decisions to any AI, and ask it to use your own context against you.
+          These prompts are for your own research — not financial advice. They package your thesis, conviction history, KPIs and decisions into structured questions you can take to any AI to challenge your own thinking.
         </div>
       </div>
 
@@ -10133,7 +10133,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {id:"pg-divs",label:"Dividend Hub",icon:"dollar",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("dividends")}},
         {id:"pg-assets",label:"All Assets",icon:"trending",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("assets")}},
         {id:"pg-library",label:"Library",icon:"video",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("library")}},
-        {id:"pg-ai",label:"AI Advisor",icon:"lightbulb",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("ai")}},
+        {id:"pg-ai",label:"Research Prompts",icon:"lightbulb",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("ai")}},
         {id:"pg-timeline",label:"Timeline",icon:"clock",color:K.mid,action:function(){setCmdOpen(false);setSelId(null);setPage("timeline")}},
         {id:"pg-feed",label:"My Feed",icon:"news",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("feed")}},
         {id:"pg-lenses",label:"Investor Lenses",icon:"search",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("lenses")}},
