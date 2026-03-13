@@ -10095,49 +10095,51 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {/* ── Profile Panel ── */}
     {showProfile&&<div style={{position:"fixed",inset:0,zIndex:199}} onClick={function(){setShowProfile(false)}}/>}
     {showProfile&&(function(){
-      var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-      var withThesis=portfolio.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>20}).length;
-      var totalKpis=portfolio.reduce(function(s,c){return s+c.kpis.length},0);
-      var totalDecisions=0;cos.forEach(function(c){totalDecisions+=(c.decisions||[]).length});
-      var reviewCount=weeklyReviews.length;
-      return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":360,maxHeight:"80vh",overflowY:"auto",background:K.card,border:"1px solid "+K.bdr2,borderRadius:12,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"24px"}} onClick={function(e){e.stopPropagation()}}>
-        {/* Avatar + Level */}
-        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
-          <div style={{position:"relative",cursor:"pointer"}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
-            {avatarUrl?<img src={avatarUrl} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"3px solid "+K.acc}}/>
-              :<div style={{width:64,height:64,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,color:K.acc,fontWeight:700,fontFamily:fm,border:"3px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",top:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={9} color={K.dim}/></div>
+      var style=cos.length>0?(function(){var styles={};cos.forEach(function(c){if(c.investStyle)styles[c.investStyle]=(styles[c.investStyle]||0)+1});var top=Object.entries(styles).sort(function(a,b){return b[1]-a[1]})[0];return top?top[0]:null})():null;
+      var styleLabel=style&&STYLE_MAP&&STYLE_MAP[style]?STYLE_MAP[style].label:style;
+      var streak=streakData.current||0;
+      return<div className="ta-slide" style={{position:"fixed",top:56,right:isMobile?12:32,width:isMobile?"calc(100vw - 24px)":300,background:K.card,border:"1px solid "+K.bdr2,borderRadius:14,boxShadow:"0 16px 48px rgba(0,0,0,.3)",zIndex:200,padding:"20px 22px"}} onClick={function(e){e.stopPropagation()}}>
+
+        {/* Avatar + identity */}
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:18}}>
+          <div style={{position:"relative",cursor:"pointer",flexShrink:0}} onClick={function(){avatarFileRef.current&&avatarFileRef.current.click()}}>
+            {avatarUrl
+              ?<img src={avatarUrl} style={{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
+              :<div style={{width:56,height:56,borderRadius:"50%",background:K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:K.acc,fontWeight:700,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
+            <div style={{position:"absolute",bottom:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={8} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
-          <div>
-            <div style={{fontSize:16,fontWeight:600,color:K.txt}}>{username||props.user||"Investor"}</div>
-            {!username&&!editingName&&<button onClick={function(){setEditingName(true);setNameInput("")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>Set username</button>}
-            {editingName&&<div style={{display:"flex",gap:6,marginTop:4}}><input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Choose a username" maxLength={20} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,color:K.txt,padding:"4px 8px",fontSize:12,fontFamily:fm,width:140,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername()}} autoFocus/><button onClick={saveUsername} style={{background:K.acc,color:K.primTxt,border:"none",borderRadius:4,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Save</button></div>}
-            {username&&<div style={{fontSize:11,color:K.dim}}>{props.user}</div>}
-            <div style={{fontSize:11,color:K.dim,marginTop:2}}>{plan==="pro"?"Pro":"Free"} plan</div></div></div>
+          <div style={{flex:1,minWidth:0}}>
+            {editingName
+              ?<div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  <input value={nameInput} onChange={function(e){setNameInput(e.target.value)}} placeholder="Your name" maxLength={20} style={{background:K.bg,border:"1px solid "+K.acc,borderRadius:6,color:K.txt,padding:"4px 8px",fontSize:13,fontFamily:fm,width:"100%",outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")saveUsername();if(e.key==="Escape")setEditingName(false)}} autoFocus/>
+                  <button onClick={saveUsername} style={{background:K.acc,color:"#fff",border:"none",borderRadius:5,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Save</button>
+                </div>
+              :<div style={{fontSize:15,fontWeight:600,color:K.txt,cursor:"pointer",display:"flex",alignItems:"center",gap:6}} onClick={function(){setEditingName(true);setNameInput(username||"")}}>
+                {username||"Set your name"}
+                <IC name="edit" size={10} color={K.dim}/>
+              </div>}
+            <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:plan==="pro"?K.grn:K.dim,fontWeight:plan==="pro"?600:400,fontFamily:fm}}>{plan==="pro"?"Pro":"Free"}</span>
+              {styleLabel&&<span style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:4,padding:"1px 7px",fontFamily:fm}}>{styleLabel}</span>}
+            </div>
+          </div>
+        </div>
 
-        {/* Stats grid */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
-          {[{label:"Streak",value:streakData.current||0,sub:"weeks",color:K.grn},
-            {label:"Reviews",value:reviewCount,sub:"completed",color:K.blue},
-            {label:"Decisions",value:totalDecisions,sub:"logged",color:K.amb}
-          ].map(function(s){return<div key={s.label} style={{background:K.bg,borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
-            <div style={{fontSize:18,fontWeight:700,color:s.color,fontFamily:fm}}>{s.value}</div>
-            <div style={{fontSize:10,color:K.dim}}>{s.sub}</div></div>})}</div>
-        {/* Portfolio stats */}
-        <div style={{background:K.bg,borderRadius:8,padding:"14px 16px",marginBottom:20}}>
-          <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Portfolio Activity</div>
-          <div style={{display:"grid",gap:6}}>
-            {[{label:"Companies tracked",value:portfolio.length,icon:"overview"},
-              {label:"Theses written",value:withThesis,icon:"lightbulb"},
-              {label:"KPIs tracked",value:totalKpis,icon:"target"},
-              {label:"Best streak",value:(streakData.best||0)+" weeks",icon:"shield"}
-            ].map(function(s){return<div key={s.label} style={{display:"flex",alignItems:"center",gap:8}}>
-              <IC name={s.icon} size={12} color={K.dim}/>
-              <span style={{fontSize:12,color:K.mid,flex:1}}>{s.label}</span>
-              <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s.value}</span></div>})}</div></div>
-        <div style={{marginTop:16,textAlign:"center"}}>
-          <button onClick={function(){setShowProfile(false)}} style={S.btn}>Close</button></div>
+        {/* Streak — single motivational stat */}
+        {streak>0&&<div style={{background:K.grn+"0d",border:"1px solid "+K.grn+"25",borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{fontSize:22,lineHeight:1}}>🔥</div>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm,lineHeight:1}}>{streak} week{streak!==1?"s":""}</div>
+            <div style={{fontSize:11,color:K.dim,marginTop:2}}>current streak{streakData.best>streak?" · best "+streakData.best:""}</div>
+          </div>
+        </div>}
+        {streak===0&&<div style={{background:K.bg,border:"1px dashed "+K.bdr,borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb}}>Complete your first Weekly Review to start a streak</div>
+        </div>}
+
+        {/* Log out */}
+        <button onClick={function(){setShowProfile(false);props.onLogout()}} style={{width:"100%",padding:"9px",borderRadius:9,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,textAlign:"center"}}>Log out</button>
       </div>})()}
     {trial&&trial.start&&plan!=="pro"&&function(){
       var urgent=trialDaysLeft<=3;var warn=trialDaysLeft<=7&&!urgent;
