@@ -876,7 +876,7 @@ function TrackerApp(props){
   var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
   var sideDark=isDark||theme==="forest"||theme==="paypal";
   var sideText=bm?"#F39F41":sideDark?"#ffffff":K.txt;var sideMid=bm?"#b87820":sideDark?"#ffffffcc":K.mid;var sideDim2=bm?"#6b4510":sideDark?"#ffffff88":K.dim;
-  function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var available=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){available.push("forest");available.push("purple")}if(streakWeeks>=3){available.push("paypal")}if(streakWeeks>=5){available.push("bloomberg")}var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var all=["thesis_dark","thesis_light","dark","light","forest","purple","paypal","bloomberg"];var available=trialActive||isPro?all:(function(){var a=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){a.push("forest");a.push("purple")}if(streakWeeks>=3){a.push("paypal")}if(streakWeeks>=10){a.push("bloomberg")}return a})();var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
@@ -2343,7 +2343,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {sTab==="themes"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Unlock new themes by building your weekly streak.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {allThemes.map(function(t){var unlocked=(streakData.current||0)>=t.unlock;var active=theme===t.id;
+          {allThemes.map(function(t){var unlocked=trialActive||isPro||(streakData.current||0)>=t.unlock;var active=theme===t.id;
             return<div key={t.id} style={{borderRadius:10,border:"2px solid "+(active?K.acc:unlocked?K.bdr:"transparent"),background:unlocked?K.card:K.bg,padding:"14px 16px",cursor:unlocked?"pointer":"default",opacity:unlocked?1:.5,position:"relative"}} onClick={function(){if(unlocked){setTheme(t.id);try{localStorage.setItem("ta-theme",t.id)}catch(e){}}}}>
               {!unlocked&&<div style={{position:"absolute",top:8,right:8,fontSize:13}}>{String.fromCodePoint(0x1F512)}</div>}
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -2368,7 +2368,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {w:10,icon:"📟",type:"theme",label:"Bloomberg Terminal",desc:"Authentic amber-on-black terminal"},
             {w:12,icon:"📚",type:"lens",label:"Lynch · Akre · Pabrai Lenses",desc:"Three more investor frameworks"},
           ].map(function(r){
-            var unlocked=(streakData.current||0)>=r.w;
+            var unlocked=trialActive||isPro||(streakData.current||0)>=r.w;
             var typeColor=r.type==="theme"?K.acc:K.grn;
             return<div key={r.w+r.label} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:10,opacity:unlocked?1:.7}}>
               <span style={{fontSize:18,flexShrink:0,lineHeight:1}}>{r.icon}</span>
@@ -6160,7 +6160,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:10,desc:"Profitability after all obligations"}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||(streakData.current||0)>=l.unlock)})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -6192,7 +6192,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           return<div>
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-              {LENSES.map(function(l){var active=l.id===activeLens;var locked=l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+              {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
                 return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
                   {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
                   {l.name}
