@@ -883,6 +883,7 @@ function TrackerApp(props){
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _scm=useState(null),sellCheckTgt=_scm[0],setSellCheckTgt=_scm[1]; // sell discipline check trigger
   var _pg=useState("dashboard"),page=_pg[0],setPage=_pg[1];
+  var _nwTab=useState("overview"),nwTab=_nwTab[0],setNwTab=_nwTab[1];
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
@@ -6761,7 +6762,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _p2form=useState({ticker:"",name:"",shares:"",avgCost:""}),p2form=_p2form[0],setP2form=_p2form[1];
     var _expanded=useState({stocks:true}),expanded=_expanded[0],setExpanded=_expanded[1];
     var _step=useState(0),step=_step[0],setStep=_step[1];
-    var _tab=useState("overview"),nwTab=_tab[0],setNwTab=_tab[1];
     var _editTgt=useState(false),editTgt=_editTgt[0],setEditTgt=_editTgt[1];
     var _tgtDraft=useState({}),tgtDraft=_tgtDraft[0],setTgtDraft=_tgtDraft[1];
     var _fx=useState({}),localFx=_fx[0],setLocalFx=_fx[1];
@@ -6787,7 +6787,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     ];
     var LTYPES_MAP={};LTYPES.forEach(function(t){LTYPES_MAP[t.id]=t});
 
-    var CRYPTO_IDS={BTC:"bitcoin",ETH:"ethereum",SOL:"solana",BNB:"binancecoin",ADA:"cardano",XRP:"ripple",DOGE:"dogecoin",MATIC:"matic-network",DOT:"polkadot",AVAX:"avalanche-2",LINK:"chainlink",UNI:"uniswap",LTC:"litecoin",ATOM:"cosmos",ALGO:"algorand"};
+    var CRYPTO_IDS={BTC:"bitcoin",ETH:"ethereum",SOL:"solana",BNB:"binancecoin",ADA:"cardano",XRP:"ripple",DOGE:"dogecoin",MATIC:"matic-network",POL:"matic-network",DOT:"polkadot",AVAX:"avalanche-2",LINK:"chainlink",UNI:"uniswap",LTC:"litecoin",ATOM:"cosmos",ALGO:"algorand",SHIB:"shiba-inu",NEAR:"near",ARB:"arbitrum",OP:"optimism",INJ:"injective-protocol",SUI:"sui",APT:"aptos",TON:"the-open-network",PEPE:"pepe",WIF:"dogwifcoin"};
+    var COMMODITY_MAP={GOLD:"XAUUSD",XAU:"XAUUSD",SILVER:"XAGUSD",XAG:"XAGUSD",OIL:"CLUSD",CRUDE:"CLUSD",PLATINUM:"XPTUSD",PALLADIUM:"XPDUSD"};
 
     useEffect(function(){
       async function fetchFx(){
@@ -6817,7 +6818,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     function getAssetValue(a){
       if(a.type==="portfolio2") return(a.holdings||[]).reduce(function(s,h){var px=livePrices["FMP_"+h.ticker]||h.currentPrice||h.avgCost||0;return s+h.shares*px},0);
-      if((a.type==="etf"||a.type==="gold")&&a.ticker&&a.quantity){var lp=livePrices["FMP_"+a.ticker.toUpperCase()];return lp?a.quantity*lp:Number(a.costBasis)||0}
+      if(a.type==="gold"&&a.ticker&&a.quantity){
+        var gt=a.ticker.toUpperCase();var gkey=COMMODITY_MAP[gt]?gt:(gt||"GOLD");
+        var gp=livePrices["FMP_"+gkey]||livePrices["FMP_XAUUSD"]||0;
+        return gp?a.quantity*gp:Number(a.costBasis)||0;
+      }
+      if(a.type==="etf"&&a.ticker&&a.quantity){var lp=livePrices["FMP_"+a.ticker.toUpperCase()];return lp?a.quantity*lp:Number(a.costBasis)||0}
       if(a.type==="crypto"&&a.ticker&&a.quantity){var cp=livePrices["CG_"+a.ticker.toUpperCase()];return cp?a.quantity*cp:Number(a.costBasis)||0}
       return Number(a.manualValue)||0;
     }
@@ -6826,30 +6832,52 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       return Number(a.costBasis)||0;
     }
 
+    var _lastRefresh=useState(null),lastRefresh=_lastRefresh[0],setLastRefresh=_lastRefresh[1];
+
     async function refreshLivePrices(){
       setFetching(true);
-      var fmpTickers=[];var cgTickers=[];
+      var fmpTickers=[];var cgTickers=[];var commodityTickers=[];
       otherAssets.forEach(function(a){
-        if((a.type==="etf"||a.type==="gold")&&a.ticker) fmpTickers.push(a.ticker.toUpperCase());
-        if(a.type==="crypto"&&a.ticker) cgTickers.push(a.ticker.toUpperCase());
+        if(a.type==="crypto"&&a.ticker){cgTickers.push(a.ticker.toUpperCase());return}
+        if(a.type==="gold"&&a.ticker){
+          var t=a.ticker.toUpperCase();
+          if(COMMODITY_MAP[t])commodityTickers.push(t);
+          else if(t==="GLD"||t==="SLV"||t==="IAU"||t==="PPLT")fmpTickers.push(t);
+          else{commodityTickers.push("GOLD");} // default gold
+          return;
+        }
+        if(a.type==="etf"&&a.ticker)fmpTickers.push(a.ticker.toUpperCase());
         if(a.type==="portfolio2")(a.holdings||[]).forEach(function(h){if(h.ticker)fmpTickers.push(h.ticker.toUpperCase())});
       });
-      fmpTickers=[...new Set(fmpTickers)];cgTickers=[...new Set(cgTickers)];
+      fmpTickers=[...new Set(fmpTickers)];cgTickers=[...new Set(cgTickers)];commodityTickers=[...new Set(commodityTickers)];
       var newPrices=Object.assign({},livePrices);
+      // FMP equities + ETFs
       if(fmpTickers.length>0){
-        try{var results=await Promise.all(fmpTickers.map(function(t){return fmp("quote/"+t)}));
-          fmpTickers.forEach(function(t,i){var d=results[i];if(d&&d[0]&&d[0].price)newPrices["FMP_"+t]=d[0].price})}catch(e){}
+        try{
+          var results=await Promise.all(fmpTickers.map(function(t){return fmp("quote/"+t)}));
+          fmpTickers.forEach(function(t,i){var d=results[i];if(d&&d[0]){newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0}});
+        }catch(e){}
       }
+      // FMP commodities (XAUUSD etc.)
+      if(commodityTickers.length>0){
+        try{
+          var comResults=await Promise.all(commodityTickers.map(function(t){var sym=COMMODITY_MAP[t]||"XAUUSD";return fmp("quote/"+sym)}));
+          commodityTickers.forEach(function(t,i){var d=comResults[i];if(d&&d[0]){var sym=COMMODITY_MAP[t]||"XAUUSD";newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0;newPrices["FMP_"+sym]=d[0].price||0}});
+        }catch(e){}
+      }
+      // CoinGecko for crypto
       if(cgTickers.length>0){
-        try{var cgIds=cgTickers.map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean);
-          var resp=await fetch("https://api.coingecko.com/api/v3/simple/price?ids="+cgIds.join(",")+"&vs_currencies=usd");
+        try{
+          var cgIds=cgTickers.map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean).join(",");
+          var resp=await fetch("https://api.coingecko.com/api/v3/simple/price?ids="+cgIds+"&vs_currencies=usd&include_24hr_change=true");
           var cgData=await resp.json();
-          cgTickers.forEach(function(t){var id=CRYPTO_IDS[t]||t.toLowerCase();if(cgData[id])newPrices["CG_"+t]=cgData[id].usd})}catch(e){}
+          cgTickers.forEach(function(t){var id=CRYPTO_IDS[t]||t.toLowerCase();if(cgData[id]){newPrices["CG_"+t]=cgData[id].usd;newPrices["CHG_"+t]=cgData[id].usd_24h_change||0}});
+        }catch(e){}
       }
-      setLivePrices(newPrices);setFetching(false);
+      setLivePrices(newPrices);setLastRefresh(new Date());setFetching(false);
     }
 
-    useEffect(function(){refreshLivePrices()},[otherAssets.length]);
+    useEffect(function(){if(otherAssets.length>0)refreshLivePrices()},[otherAssets.length]);
 
     // Totals
     var otherValue=otherAssets.reduce(function(s,a){return s+getAssetValue(a)},0);
@@ -7040,9 +7068,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {/* Sparkline + refresh */}
           <div style={{display:"flex",flexDirection:"column",gap:12,alignSelf:"flex-start",alignItems:"flex-end"}}>
             <MiniSparkline/>
-            <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
-              <IC name="gear" size={11} color={K.dim}/>{fetching?"Refreshing…":"Refresh prices"}
-            </button>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+              <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:8,border:"1px solid "+K.bdr,background:"transparent",color:fetching?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
+                {fetching?<span style={{display:"inline-block",width:10,height:10,border:"1.5px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .7s linear infinite"}}/>:<IC name="gear" size={11} color={K.dim}/>}
+                {fetching?"Refreshing…":"Refresh prices"}
+              </button>
+              {lastRefresh&&<div style={{fontSize:9,color:K.dim,fontFamily:fb}}>Updated {lastRefresh.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>}
+            </div>
           </div>
         </div>
       </div>
@@ -7100,10 +7132,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               var p=c.position||{};var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:null;
               var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
               var pct=val&&totalAssetsUSD>0?val/totalAssetsUSD*100:null;
+              var todayChg=c._moatCache&&c._moatCache.priceChange!==undefined?c._moatCache.priceChange:null;
               return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
                 <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
@@ -7156,26 +7189,43 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               {assets.map(function(a){
                 var val=getAssetValue(a),cost=getAssetCost(a),gain=val-cost,gainPct=cost>0?gain/cost*100:0;
                 var pct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
-                return<div key={a.id} style={{padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"50",display:"flex",alignItems:"center",gap:12}}>
-                  <IC name={atp.icon} size={13} color={atp.color}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
-                    <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:2}}>
-                      {a.ticker&&a.type!=="portfolio2"&&<span style={{marginRight:8,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:4}}>{a.ticker.toUpperCase()}</span>}
-                      {a.type==="portfolio2"&&<span>{(a.holdings||[]).length} holdings</span>}
-                      {(a.type==="etf"||a.type==="gold")&&a.quantity&&<span>{a.quantity} shares</span>}
-                      {a.type==="crypto"&&a.quantity&&<span>{a.quantity} {a.ticker||""}</span>}
-                      {a.annualIncome>0&&<span style={{marginLeft:6,color:K.grn}}>{fmtM(a.annualIncome)}/yr</span>}
+                // Live price + day change
+                var tk=a.ticker?a.ticker.toUpperCase():"";
+                var livePrice=a.type==="crypto"?livePrices["CG_"+tk]:(a.type==="gold"?(livePrices["FMP_"+(COMMODITY_MAP[tk]?tk:"GOLD")]||livePrices["FMP_XAUUSD"]):livePrices["FMP_"+tk])||0;
+                var dayChg=livePrices["CHG_"+tk]||0;
+                var hasLive=livePrice>0;
+                var allocPct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
+                return<div key={a.id} style={{padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <IC name={atp.icon} size={13} color={atp.color}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
+                        {tk&&a.type!=="portfolio2"&&<span style={{fontSize:10,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{tk}</span>}
+                        {hasLive&&<span style={{fontSize:10,color:dayChg>=0?K.grn:K.red,background:(dayChg>=0?K.grn:K.red)+"12",padding:"1px 7px",borderRadius:4,fontFamily:fm,fontWeight:600}}>{dayChg>=0?"+":""}{dayChg.toFixed(2)}% today</span>}
+                      </div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:3,display:"flex",alignItems:"center",gap:8}}>
+                        {a.type==="portfolio2"&&<span>{(a.holdings||[]).length} holdings</span>}
+                        {(a.type==="etf"||a.type==="gold")&&a.quantity&&<span>{a.quantity.toLocaleString()} {a.type==="gold"?"oz":"units"}{hasLive?" @ "+cSym+livePrice.toLocaleString("en-US",{maximumFractionDigits:2}):""}</span>}
+                        {a.type==="crypto"&&a.quantity&&<span>{a.quantity.toLocaleString()} {tk}{hasLive?" @ "+cSym+livePrice.toLocaleString("en-US",{maximumFractionDigits:2}):""}</span>}
+                        {a.annualIncome>0&&<span style={{color:K.grn}}>{fmtM(a.annualIncome)}/yr</span>}
+                        {!hasLive&&(a.type==="etf"||a.type==="gold"||a.type==="crypto")&&tk&&<span style={{color:K.amb}}>⚠ No live price — check ticker</span>}
+                      </div>
                     </div>
-                  </div>
-                  {pct>0&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
-                  <div style={{textAlign:"right",minWidth:80}}>
-                    <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
-                    {cost>0&&val>0&&<div style={{fontSize:11,color:gain>=0?K.grn:K.red,fontFamily:fb}}>{gain>=0?"+":""}{fmtM(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%)</div>}
-                  </div>
-                  <div style={{display:"flex",gap:6,flexShrink:0}}>
-                    <button onClick={function(){openEdit(a)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
-                    <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"5px 10px",borderRadius:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>Remove</button>
+                    {/* Allocation bar + % */}
+                    {allocPct>0&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:52}}>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{allocPct.toFixed(1)}%</div>
+                      <div style={{width:52,height:3,borderRadius:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...allocData.map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:2}}/></div>
+                    </div>}
+                    <div style={{textAlign:"right",minWidth:80}}>
+                      <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
+                      {cost>0&&val>0&&<div style={{fontSize:11,color:gain>=0?K.grn:K.red,fontFamily:fb}}>{gain>=0?"+":""}{fmtM(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%)</div>}
+                      {!cost&&hasLive&&<div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Live</div>}
+                    </div>
+                    <div style={{display:"flex",gap:5,flexShrink:0}}>
+                      <button onClick={function(){openEdit(a)}} style={{padding:"4px 9px",borderRadius:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                      <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"4px 9px",borderRadius:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>✕</button>
+                    </div>
                   </div>
                 </div>;
               })}
