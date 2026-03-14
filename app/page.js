@@ -9875,6 +9875,106 @@ function WeeklyReview(){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm *{box-shadow:none!important}.ta-bm *{transition:none!important}.ta-bm{line-height:1.25;letter-spacing:0;font-size:12px}.ta-bm div,.ta-bm button,.ta-bm input,.ta-bm textarea,.ta-bm select,.ta-bm span,.ta-bm a,.ta-bm li{border-radius:0!important}.ta-bm img{border-radius:0!important}.ta-bm ::-webkit-scrollbar{width:4px;height:4px}.ta-bm ::-webkit-scrollbar-track{background:#000}.ta-bm ::-webkit-scrollbar-thumb{background:#F39F4170}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#333}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}.ta-bm button:hover{background:rgba(243,159,65,0.12)!important;color:#F39F41!important}.ta-forest{}.ta-forest .ta-active-item{box-shadow:0 2px 12px rgba(88,204,2,0.2)}.ta-forest button:active{transform:scale(0.96)!important;transition:transform .08s}.ta-forest ::-webkit-scrollbar{width:6px;height:6px}.ta-forest ::-webkit-scrollbar-track{background:#f7f7f5}.ta-forest ::-webkit-scrollbar-thumb{background:#58cc0260;border-radius:999px}.ta-forest ::-webkit-scrollbar-thumb:hover{background:#58cc02}.ta-purple{}.ta-purple ::-webkit-scrollbar{width:5px;height:5px}.ta-purple ::-webkit-scrollbar-track{background:#0d0b14}.ta-purple ::-webkit-scrollbar-thumb{background:#302a48;border-radius:999px}.ta-purple ::-webkit-scrollbar-thumb:hover{background:#a78bfa}.ta-purple input:focus,.ta-purple textarea:focus,.ta-purple select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,0.15)!important;outline:none!important}.ta-purple button:active{opacity:0.85}.ta-ocean{}.ta-ocean ::-webkit-scrollbar{width:5px;height:5px}.ta-ocean ::-webkit-scrollbar-track{background:#f0f4f8}.ta-ocean ::-webkit-scrollbar-thumb{background:#cdd9e8;border-radius:4px}.ta-ocean ::-webkit-scrollbar-thumb:hover{background:#1a56db}.ta-ocean input:focus,.ta-ocean textarea:focus{border-color:#1a56db!important;box-shadow:0 0 0 3px rgba(26,86,219,0.12)!important;outline:none!important}"}}/>
+    {/* ── READING & LIBRARY WIDGET ── */}
+    {sideTab==="portfolio"&&!isMobile&&(function(){
+      var rl=readingList||[];
+      var libItems=(library&&library.items)||[];
+      var currentlyReading=rl.filter(function(r){return r.status==="reading"});
+      var wantToRead=rl.filter(function(r){return r.status==="want"||!r.status});
+      var recentlyRead=rl.filter(function(r){return r.status==="read"}).slice(-3).reverse();
+      // Library items linked to portfolio companies
+      var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
+      var isEmpty=rl.length===0&&libItems.length===0;
+      return<div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
+            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"“In my whole life, I have known no wise people who didn’t read all the time”"}</span>}
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
+            <button onClick={function(){setPage("library")}} style={{fontSize:10,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Library →</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":currentlyReading.length>0?"2fr 1fr":"1fr 1fr",gap:10}}>
+          {/* Left: currently reading or queue */}
+          <div style={{background:K.card,border:"1px solid "+(currentlyReading.length>0?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px"}}>
+            {currentlyReading.length>0?(function(){
+              var book=currentlyReading[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.acc,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,animation:"pulse 2s infinite"}}/>
+                  Currently reading
+                  {currentlyReading.length>1&&<span style={{fontSize:9,color:K.dim,marginLeft:4}}>{"+"+( currentlyReading.length-1)+" more"}</span>}
+                </div>
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
+                {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
+                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{"""+book.notes.substring(0,100)+(book.notes.length>100?"...":"")+""" }</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
+                  {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
+                </div>
+              </div>;
+            })()
+            :wantToRead.length>0?(function(){
+              var next=wantToRead[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Up next</div>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
+                {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
+                  {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
+                </div>
+              </div>;
+            })()
+            :<div style={{textAlign:"center",padding:"8px 0"}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
+              {investorProfile==="munger"
+                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Munger: "Go to bed smarter than when you woke up.""}</div>
+                :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
+              <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
+            </div>}
+          </div>
+          {/* Right: recently read + library links */}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {/* Recently finished */}
+            {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
+              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
+                <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
+                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{"""+book.notes.substring(0,60)+(book.notes.length>60?"...":"")+""" }</div>}
+                </div>
+              </div>})}
+            </div>}
+            {/* Library items linked to holdings */}
+            {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
+              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
+                <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
+                  {it.type&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{it.type}</div>}
+                </div>
+              </div>})}
+            </div>}
+            {/* Stats if queue is healthy */}
+            {recentlyRead.length===0&&linkedItems.length===0&&rl.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",display:"flex",gap:16,justifyContent:"space-around",alignItems:"center"}}>
+              {[{label:"Read",val:rl.filter(function(r){return r.status==="read"}).length,color:K.grn},
+                {label:"Reading",val:currentlyReading.length,color:K.acc},
+                {label:"Queue",val:wantToRead.length,color:K.dim}].map(function(s,i){return<div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:fm,lineHeight:1}}>{s.val}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</div>
+              </div>})}
+            </div>}
+          </div>
+        </div>
+      </div>;
+    })()}
+
     {/* ── MORNING BRIEFING ── */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
