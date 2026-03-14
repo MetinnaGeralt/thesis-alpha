@@ -2215,9 +2215,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {/* TA logo mark */}
-              <div style={{width:20,height:20,borderRadius:5,background:"linear-gradient(135deg,#7c3aed,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-              </div>
+              <TLogo size={20}/>
               <span style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:600,letterSpacing:0.5}}>ThesisAlpha</span>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
