@@ -221,7 +221,7 @@ var SUPERINVESTORS=[
     holdings:["META","MSFT","NOVO-B","L'OREAL","IDEXX","VISA","ESTC","AMZN","MASI","WAT","POOL","FICO","PAYC","VEEV"],
     traits:{quality:0.95,value:0.3,growth:0.5,income:0.3,concentration:0.4,turnover:0.05}},
   {id:"hohn",name:"Chris Hohn",fund:"TCI Fund",style:"Activist FCF",desc:"Concentrated on free cash flow machines. Activist shareholder, pushes capital returns.",
-    holdings:["GOOG","MSFT","V","MA","MCO","CPRT","GE","LHX","CSGP","SPGI","CDW"],
+    holdings:["GE","V","MSFT","MCO","SPGI","MA","GOOG","CNI","CSGP"],
     traits:{quality:0.85,value:0.4,growth:0.4,income:0.3,concentration:0.8,turnover:0.15}},
   {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",style:"Growth at Reasonable Price",desc:"Know what you own. Everyday observation, PEG ratio, growth with margin of safety.",
     holdings:["COST","HD","SBUX","NKE","TJX","WMT","MCD","PG","UNH","ABBV","JNJ","PEP","AMGN","TMO"],
@@ -236,7 +236,7 @@ var SUPERINVESTORS=[
     holdings:["OC","TEL","WMB","BKNG","LYB","NRG","PVH","CZR","HCA","DAL"],
     traits:{quality:0.4,value:0.85,growth:0.2,income:0.4,concentration:0.4,turnover:0.3}},
   {id:"kantesaria",name:"Dev Kantesaria",fund:"Valley Forge Capital",style:"Quality Compounder",desc:"15%+ compounders with minimal risk of permanent loss. Ultra-concentrated, high conviction.",
-    holdings:["MSFT","GOOG","V","MA","MCO","SPGI","ROP","FICO","CPRT","POOL"],
+    holdings:["FICO","SPGI","MA","MCO","V","INTU","ROP","GOOG","MSFT"],
     traits:{quality:0.95,value:0.3,growth:0.5,income:0.1,concentration:0.9,turnover:0.05}},
   {id:"pabrai",name:"Mohnish Pabrai",fund:"Pabrai Investment Funds",style:"Cloner Value",desc:"Shamelessly clones the best ideas. Concentrated, high-conviction, Munger-inspired.",
     holdings:["COAL","TRMD","AMPS","JSPR","BATT","SATS","EXPE","TROW"],
@@ -249,7 +249,10 @@ var SUPERINVESTORS=[
     traits:{quality:0.6,value:0.2,growth:0.9,income:0.0,concentration:0.4,turnover:0.5}},
   {id:"gayner",name:"Tom Gayner",fund:"Markel",style:"Patient Quality",desc:"Insurance-funded long-term equity portfolio. Patient, quality-focused, Buffett-inspired.",
     holdings:["BRK-B","GOOG","MSFT","DIS","BAM","AMZN","V","MA","HD","CME","WMT","KKR"],
-    traits:{quality:0.8,value:0.5,growth:0.4,income:0.3,concentration:0.3,turnover:0.1}}
+    traits:{quality:0.8,value:0.5,growth:0.4,income:0.3,concentration:0.3,turnover:0.1}},
+  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",style:"Compounding Machines",desc:"Three-legged stool: extraordinary business, exceptional management, reinvestment opportunity. Buy and hold forever.",
+    holdings:["MA","BN","KKR","V","MCO","FICO","CPRT","ORLY","MSCI","SPGI","CSGP","CCCS"],
+    traits:{quality:0.95,value:0.4,growth:0.7,income:0.05,concentration:0.6,turnover:0.03}}
 ];
 var MSTAR_RATINGS=["Wide","Narrow","None","Not Rated"];
 function calcOwnerScore(cos){
