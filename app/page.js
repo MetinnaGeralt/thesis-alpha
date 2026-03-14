@@ -823,6 +823,16 @@ function LoginPage(props){
   var _th=useState(function(){try{var s=localStorage.getItem("ta-theme");if(s==="light"||!s)return"thesis_light";if(s==="dark")return"thesis_dark";return s}catch(e){return"thesis_light"}}),theme=_th[0],setTheme=_th[1];
   var K=THEMES[theme]||THESIS_LIGHT;
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
+  async function sendReset(){
+    if(!email.trim()){setErr("Please enter your email.");return}
+    setLd(true);setErr("");
+    try{
+      var res=await supabase.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin});
+      if(res.error){setErr(res.error.message);setLd(false);return}
+      setErr("\u2713 Reset link sent. Check your email.");
+      setLd(false);
+    }catch(e){setErr("Something went wrong.");setLd(false)}
+  }
   async function submit(){if(!email.trim()||!pw.trim()){setErr("Please fill in all fields.");return}setLd(true);setErr("");
     try{
       if(mode==="signup"){if(pw.length<6){setErr("Password must be 6+ characters.");setLd(false);return}
@@ -838,15 +848,23 @@ function LoginPage(props){
   {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{position:"absolute",top:20,right:24,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}}>{(theme==="dark"||theme==="thesis_dark")?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
   <div className="ta-slide ta-login-box" style={{width:400,padding:"48px 40px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,boxShadow:theme==="dark"?"0 32px 64px rgba(0,0,0,.4)":"0 32px 64px rgba(0,0,0,.08)"}}>
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:28}}><TLogo size={24}/><span style={{fontSize:16,fontWeight:600,letterSpacing:2,fontFamily:fm,color:K.txt}}>ThesisAlpha</span></div>
-    <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center",color:K.txt}}>{mode==="login"?"Welcome back":"Create account"}</h2>
-    <p style={{fontSize:14,color:K.dim,textAlign:"center",margin:"0 0 32px"}}>{mode==="login"?"Sign in to your portfolio":"Start tracking your thesis"}</p>
+    <h2 style={{fontSize:28,fontFamily:fh,fontWeight:400,margin:"0 0 8px",textAlign:"center",color:K.txt}}>
+      {mode==="login"?"Welcome back":mode==="forgot"?"Reset password":"Create account"}
+    </h2>
+    <p style={{fontSize:14,color:K.dim,textAlign:"center",margin:"0 0 32px",lineHeight:1.6}}>
+      {mode==="login"?"Sign in to your portfolio":mode==="forgot"?"Enter your email and we'll send you a reset link.":"Start tracking your thesis"}
+    </p>
     {err&&<div style={{background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,fontSize:13,color:K.red}}>{err}</div>}
     <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Email</label>
       <input type="email" value={email} onChange={function(e){setEmail(e.target.value);setErr("")}} placeholder="you@email.com" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <div style={{marginBottom:24}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
-      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"••••••••"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>
-    <button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:_isBm?0:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>
-    <div style={{textAlign:"center",fontSize:14,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>{mode==="login"?"Sign up":"Sign in"}</span></div>
+    {mode!=="forgot"&&<div style={{marginBottom:24}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:1,textTransform:"uppercase",fontFamily:fm}}>Password</label>
+      <input type="password" value={pw} onChange={function(e){setPw(e.target.value);setErr("")}} placeholder={"••••••••"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:14,fontFamily:fb,outline:"none"}} onKeyDown={function(e){if(e.key==="Enter")submit()}}/></div>}
+    {mode!=="forgot"&&<button onClick={submit} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:_isBm?0:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"...":(mode==="login"?"Sign In":"Create Account")}</button>}
+    {mode==="forgot"&&<button onClick={sendReset} disabled={ld2} style={{width:"100%",background:K.prim||K.acc,color:K.primTxt||"#fff",border:"none",padding:"14px",borderRadius:_isBm?0:12,fontSize:14,fontWeight:600,cursor:ld2?"wait":"pointer",fontFamily:fb,marginBottom:16,opacity:ld2?.6:1}}>{ld2?"Sending...":"Send reset link"}</button>}
+    {mode==="login"&&<div style={{textAlign:"center",marginBottom:12}}>
+      <span onClick={function(){setMode("forgot");setErr("");setPw("")}} style={{fontSize:13,color:K.dim,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}}>Forgot password?</span>
+    </div>}
+    <div style={{textAlign:"center",fontSize:14,color:K.dim}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<span onClick={function(){setMode(mode==="login"?"signup":"login");setErr("")}} style={{color:K.acc,cursor:"pointer",display:mode==="forgot"?"none":"inline"}}>{mode==="login"?"Sign up":"Sign in"}</span>{mode==="forgot"&&<span onClick={function(){setMode("login");setErr("")}} style={{color:K.acc,cursor:"pointer"}}>Back to sign in</span>}</div>
   </div></div>)}
 
 // ═══ TRACKER APP ═══
