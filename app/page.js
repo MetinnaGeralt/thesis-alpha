@@ -560,16 +560,24 @@ async function fetchHistoricalPrice(ticker,range){
 var _fmpmetricscache={};
 async function fetchFMPMetrics(ticker){
   if(_fmpmetricscache[ticker])return _fmpmetricscache[ticker];
-  try{
-    var results=await Promise.all([fmp("ratios-ttm/"+ticker),fmp("key-metrics-ttm/"+ticker)]);
-    var ratios=results[0]&&Array.isArray(results[0])&&results[0].length?results[0][0]:null;
-    var km=results[1]&&Array.isArray(results[1])&&results[1].length?results[1][0]:null;
-    if(!ratios&&!km)return null;
-    var out={ratios:ratios||{},km:km||{}};
-    _fmpmetricscache[ticker]=out;
-    console.log("[ThesisAlpha] FMP metrics for "+ticker+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
-    return out;
-  }catch(e){console.warn("[ThesisAlpha] FMP metrics error:",e);return null}}
+  // Try with suffix first, then base ticker for international stocks
+  var tickersToTry=[ticker];
+  if(isIntlTicker(ticker)){var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i,"");if(base!==ticker)tickersToTry.push(base);}
+  for(var _ti=0;_ti<tickersToTry.length;_ti++){
+    var _tk=tickersToTry[_ti];
+    try{
+      var results=await Promise.all([fmp("ratios-ttm/"+_tk),fmp("key-metrics-ttm/"+_tk)]);
+      var ratios=results[0]&&Array.isArray(results[0])&&results[0].length?results[0][0]:null;
+      var km=results[1]&&Array.isArray(results[1])&&results[1].length?results[1][0]:null;
+      if(!ratios&&!km)continue;
+      var out={ratios:ratios||{},km:km||{}};
+      _fmpmetricscache[ticker]=out;
+      console.log("[ThesisAlpha] FMP metrics for "+ticker+(ticker!==_tk?" (via base "+_tk+")":"")+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+      return out;
+    }catch(e){console.warn("[ThesisAlpha] FMP metrics error for "+_tk+":",e);}
+  }
+  return null;
+}
 
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
@@ -1349,11 +1357,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     return function(){clearInterval(tmr)}},[loaded]);
   // Auto-populate financialSnapshot for companies that don't have one yet
   useEffect(function(){if(!loaded)return;
-    var needSnapshot=cos.filter(function(c){return(!c.financialSnapshot||Object.keys(c.financialSnapshot).length===0)&&c.ticker});
+    var needSnapshot=cos.filter(function(c){return(!c.financialSnapshot||Object.keys(c.financialSnapshot).length===0||(Object.keys(c.financialSnapshot).length<3&&!c.financialSnapshot.grossMargin))&&c.ticker});
     if(!needSnapshot.length)return;
     var i=0;var tmr2=setInterval(function(){if(i>=needSnapshot.length){clearInterval(tmr2);return}
       var c=needSnapshot[i];i++;
-      fetchEarnings(c,c.kpis||[]).then(function(r){if(r&&r.found&&r.snapshot&&Object.keys(r.snapshot).length>0){
+      fetchEarnings(c,c.kpis||[]).then(function(r){if(r&&r.snapshot&&Object.keys(r.snapshot).length>0){
         setCos(function(prev){return prev.map(function(x){if(x.id!==c.id)return x;
           // Only set snapshot if still empty (avoid overwriting a manual check)
           if(x.financialSnapshot&&Object.keys(x.financialSnapshot).length>0)return x;
