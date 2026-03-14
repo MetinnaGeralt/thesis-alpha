@@ -1006,7 +1006,9 @@ function TrackerApp(props){
   var cmdInputRef=useRef(null);
   // ── Subscription / Tier ──
   var FREE_LIMIT=3;var TRIAL_BASE=14;var TRIAL_BONUS=16;var TRIAL_TOTAL=TRIAL_BASE+TRIAL_BONUS;var THESIS_UNLOCK=3;
-  var _plan=useState(function(){try{return localStorage.getItem("ta-plan")||"free"}catch(e){return"free"}}),plan=_plan[0],setPlan=_plan[1];
+  var OWNER_EMAIL="leypoldtcapital@gmail.com";
+  var _plan=useState(function(){try{if(typeof window!=="undefined"&&localStorage.getItem("ta-userid")){/* owner always pro */}return localStorage.getItem("ta-plan")||"free"}catch(e){return"free"}}),plan=_plan[0],setPlan=_plan[1];
+  var effectivePlan=props.user===OWNER_EMAIL?"pro":plan;
   var _stripeCustomer=useState(null),stripeCustomerId=_stripeCustomer[0],setStripeCustomerId=_stripeCustomer[1];
   var _showUpgrade=useState(false),showUpgrade=_showUpgrade[0],setShowUpgrade=_showUpgrade[1];
   var _upgradeCtx=useState(""),upgradeCtx=_upgradeCtx[0],setUpgradeCtx=_upgradeCtx[1];
@@ -1016,13 +1018,13 @@ function TrackerApp(props){
   // Trial computations
   var trialDaysLeft=trial&&trial.start?Math.max(0,Math.ceil(((trial.bonusEarned?TRIAL_TOTAL:TRIAL_BASE)*864e5+new Date(trial.start).getTime()-Date.now())/864e5)):0;
   var trialActive=trial&&trial.start&&trialDaysLeft>0;
-  var trialExpired=trial&&trial.start&&trialDaysLeft<=0&&plan!=="pro";
+  var trialExpired=trial&&trial.start&&trialDaysLeft<=0&&effectivePlan!=="pro";
   var trialBonusEarned=trial&&trial.bonusEarned;
   // Count complete theses (all 4 sections filled with >15 chars each)
   var completeTheses=cos.filter(function(c){if(!c.thesisNote)return false;var p=parseThesis(c.thesisNote);return p.core&&p.core.trim().length>15&&p.moat&&p.moat.trim().length>15&&p.risks&&p.risks.trim().length>15&&p.sell&&p.sell.trim().length>15}).length;
   var thesisProgress=Math.min(completeTheses,THESIS_UNLOCK);
   // isPro = paid subscriber OR active trial
-  var isPro=plan==="pro"||trialActive;
+  var isPro=effectivePlan==="pro"||trialActive;
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
@@ -6742,7 +6744,7 @@ function WeeklyReview(){
     var _milestone=useState(null),milestone=_milestone[0],setMilestone=_milestone[1];
     var c=portfolio[idx];
     var sw=streakData.current||0;
-    var isFree=plan!=="pro"&&!trialActive; // trial = full pro experience
+    var isFree=effectivePlan!=="pro"&&!trialActive; // trial = full pro experience
 
     // Master unlock journey — single source of truth
     var JOURNEY=[
@@ -9220,6 +9222,7 @@ function WeeklyReview(){
             <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
           </div>
           <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>\uD83D\uDD04 Full Reset (Owner)</button>}
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
@@ -10919,7 +10922,7 @@ function WeeklyReview(){
         {/* Log out */}
         <button onClick={function(){setShowProfile(false);props.onLogout()}} style={{width:"100%",padding:"9px",borderRadius:_isBm?0:9,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,textAlign:"center"}}>Log out</button>
       </div>})()}
-    {trial&&trial.start&&plan!=="pro"&&function(){
+    {trial&&trial.start&&effectivePlan!=="pro"&&function(){
       var urgent=trialDaysLeft<=3;var warn=trialDaysLeft<=7&&!urgent;
       var barColor=urgent?K.red:warn?K.amb:K.acc;
       // Active trial banner
