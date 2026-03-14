@@ -4755,29 +4755,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             return<div>{recent.map(function(d2){return<JournalCard key={d2.id} entry={d2}/>})}</div>})()}
         </div>
 
-        {/* ── STRESS TEST ── */}
-        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
-          return<div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
-            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
-          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
-              <div style={{flex:1}}/>
-              <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:_isBm?0:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
-            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
-              <IC name="check" size={12} color={K.grn}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
-                <div style={{fontSize:12,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
-          </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
-            <IC name="shield" size={20} color={K.acc}/>
-            <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
-        </div>})()}
         {/* ── VALUATION ── */}
         {(function(){var val=c.valuation||{metrics:[]};var snap2=c.financialSnapshot||{};var price2=(c.position||{}).currentPrice||(snap2.livePrice&&snap2.livePrice.numVal?snap2.livePrice.numVal:0)||(snap2.pe&&snap2.eps?(parseFloat(String(snap2.pe.value||"").replace(/[^0-9.]/g,""))||0)*(parseFloat(String(snap2.eps.value||"").replace(/[^0-9.\-]/g,""))||0):0);
           var results=val.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
@@ -5057,6 +5034,29 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
               <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div></div>}
         </div>}
+        {/* ── STRESS TEST ── */}
+        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
+          return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
+            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
+          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
+              <div style={{flex:1}}/>
+              <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:_isBm?0:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
+            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
+              <IC name="check" size={12} color={K.grn}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
+            <IC name="shield" size={20} color={K.acc}/>
+            <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
+        </div>})()}
       </div>}{/* end dossierMktOpen */}
 
                 {/* ── 4. THE MOAT ── */}
