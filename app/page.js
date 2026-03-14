@@ -11789,17 +11789,66 @@ function WeeklyReview(){
     var upcoming=portfolio.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
     var hasUnreadLetter=(function(){var now=new Date();var q=Math.floor(now.getMonth()/3);var y=now.getFullYear();if(q===0){q=4;y--;}return!qLetters["Q"+q+"-"+y]&&(cos.length>0||weeklyReviews.length>0)})();
 
+    // Morning signals for mobile
+    var mobileSigs=(function(){
+      var sigs=[];
+      var now=new Date();
+      portfolio.forEach(function(c){
+        var d=dU(c.earningsDate);
+        if(d>=0&&d<=7)sigs.push({type:"earnings",ticker:c.ticker,id:c.id,label:d===0?"Earnings today":d===1?"Earnings tomorrow":"Earnings in "+d+"d",color:d<=2?K.red:K.amb,domain:c.domain});
+        if(c.conviction>=9&&(c.position||{}).currentPrice>0&&(c.position||{}).avgCost>0){var ret=((c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100);if(ret<-15)sigs.push({type:"watch",ticker:c.ticker,id:c.id,label:"Down "+Math.abs(ret).toFixed(0)+"% — check thesis",color:K.amb,domain:c.domain});}
+      });
+      return sigs.slice(0,3);
+    })();
+
     return<div style={{padding:"0 0 80px 0",minHeight:"100vh",background:K.bg}}>
-      {/* ── Greeting header ── */}
-      <div style={{padding:"20px 20px 0"}}>
-        <div style={{fontSize:13,color:K.dim,fontFamily:fm,marginBottom:2}}>{greeting+","}</div>
-        <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.1}}>{username||"Investor"}</div>
+      {/* ── Greeting + Mr Market strip ── */}
+      <div style={{padding:"20px 16px 0"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16}}>
+          <div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:2}}>{greeting+","}</div>
+            <div style={{fontSize:24,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.1}}>{username||"Investor"}</div>
+          </div>
+          {/* Compact Mr Market mood chip */}
+          {mrMarket&&<div style={{display:"flex",alignItems:"center",gap:7,background:K.card,border:"1px solid "+mrMarket.color+"30",borderRadius:_isBm?0:12,padding:"7px 10px",cursor:"pointer",maxWidth:140}} onClick={function(){setPage("home")}}>
+            <div style={{position:"relative",width:28,height:34,flexShrink:0}}>
+              {/* Mini monopoly man indicator */}
+              <svg width="28" height="34" viewBox="0 0 100 120" fill="none" style={{overflow:"visible"}}>
+                <rect x="38" y="8" width="24" height="18" rx="1.5" fill={mrMarket.color+"40"} stroke={K.acc} strokeWidth="1.5"/>
+                <ellipse cx="50" cy="36" rx="14" ry="15" fill={mrMarket.mood==="extreme_fear"?"#FFE4E6":mrMarket.mood==="greed"||mrMarket.mood==="extreme_greed"?"#ECFDF5":"#FEF9EC"} stroke={K.acc} strokeWidth="1.5"/>
+                <path d="M36 38 Q43 35 50 37 Q57 35 64 38 Q60 43 50 41 Q40 43 36 38Z" fill={K.acc+"50"} stroke={K.acc} strokeWidth="1"/>
+                <rect x="32" y="51" width="36" height="24" rx="2" fill={mrMarket.color+"20"} stroke={K.acc} strokeWidth="1.2"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{fontSize:8,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:K.acc,fontFamily:fm}}>Market</div>
+              <div style={{fontSize:11,fontWeight:800,color:mrMarket.color,fontFamily:fm,lineHeight:1}}>{mrMarket.composite}</div>
+              <div style={{fontSize:8,color:mrMarket.color,fontFamily:fm,lineHeight:1.2}}>{mrMarket.label}</div>
+            </div>
+          </div>}
+          {!mrMarket&&mrMarketLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"7px 12px"}}>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Loading market...</div>
+          </div>}
+        </div>
+        {/* Morning signals strip */}
+        {mobileSigs.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:4}}>
+          {mobileSigs.map(function(sig,i){return<div key={i} onClick={function(){if(sig.id){setSelId(sig.id);setPage("dashboard")}}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:sig.color+"08",border:"1px solid "+sig.color+"25",borderRadius:_isBm?0:10,cursor:"pointer"}}>
+            <CoLogo domain={sig.domain} ticker={sig.ticker} size={18}/>
+            <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{sig.ticker}</span>
+            <span style={{fontSize:11,color:K.mid,fontFamily:fm,flex:1}}>{sig.label}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>;})}
+        </div>}
       </div>
 
       {/* ── Streak card ── */}
       <div style={{margin:"20px 16px 0",padding:"18px 20px",background:streak>0?K.grn+"10":K.card,border:"1px solid "+(streak>0?K.grn+"30":K.bdr),borderRadius:_isBm?0:16}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <div style={{fontSize:36,lineHeight:1}}>{streak>0?"🔥":"📅"}</div>
+          <div style={{width:40,height:40,borderRadius:_isBm?0:12,background:streak>0?K.grn+"15":K.bdr+"30",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {streak>0
+              ?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8" strokeLinecap="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+              :<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
+          </div>
           <div style={{flex:1}}>
             {streak>0?<><div style={{fontSize:22,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{streak} week{streak!==1?"s":""} <span style={{fontSize:13,fontWeight:500,color:K.dim}}>streak</span></div>
               <div style={{fontSize:12,color:K.dim,marginTop:3}}>{alreadyReviewed?"This week: done ✓":"Review due this week"}{streakData.best>streak?" · best "+streakData.best:""}  </div></>
@@ -11872,7 +11921,9 @@ function WeeklyReview(){
 
       {/* ── Empty state ── */}
       {portfolio.length===0&&<div style={{margin:"40px 24px",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:12}}>📋</div>
+        <div style={{width:56,height:56,borderRadius:_isBm?0:16,background:K.acc+"10",border:"1px solid "+K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.6" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
         <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Add your first holding</div>
         <div style={{fontSize:14,color:K.dim,lineHeight:1.6,marginBottom:20}}>Track your investments and build the discipline to think like an owner.</div>
         <button onClick={function(){setModal({type:"add"})}} style={{padding:"12px 28px",borderRadius:_isBm?0:12,background:K.acc,border:"none",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:fm}}>Add holding</button>
@@ -12521,19 +12572,22 @@ function WeeklyReview(){
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
       var mItems=[
-        {id:"home",label:"Home",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>},
-        {id:"dashboard",label:"Portfolio",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>},
-        {id:"review",label:"Review",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>},
-        {id:"read",label:"Read",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
-        {id:"log",label:"Log",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>},
+        {id:"home",   label:"Brief",     svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>},
+        {id:"dashboard",label:"Holdings",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>},
+        {id:"add",    label:"Add",       svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>},
+        {id:"read",   label:"Read",      svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
+        {id:"review", label:"Review",    svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>},
       ];
       return mItems.map(function(item){
-        var active=(item.id==="home"?page==="home":item.id==="read"?page==="read":item.id==="log"?page==="log":page===item.id)&&!selId;
-        var isLog=item.id==="log";
-        return<button key={item.id} onClick={function(){setSelId(null);setPage(item.id)}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
-          {isLog?<div style={{width:40,height:40,borderRadius:_isBm?0:20,background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:0,boxShadow:"0 4px 12px "+K.acc+"60",marginTop:-18,color:"#fff"}}>{item.svg}</div>
-          :<div style={{color:active?K.acc:K.dim}}>{item.svg}</div>}
-          {!isLog&&<span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400,letterSpacing:0.2}}>{item.label}</span>}
+        var active=(item.id==="home"?page==="home":item.id==="read"?page==="read":page===item.id)&&!selId;
+        var isAdd=item.id==="add";
+        return<button key={item.id} onClick={function(){if(isAdd){setModal({type:"add"})}else{setSelId(null);setPage(item.id)}}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
+          {isAdd
+            ?<div style={{width:42,height:42,borderRadius:_isBm?0:21,background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px "+K.acc+"70",marginTop:-20,color:"#fff"}}>{item.svg}</div>
+            :<div style={{color:active?K.acc:K.dim,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+               <div>{item.svg}</div>
+               <span style={{fontSize:9,fontFamily:fm,fontWeight:active?700:400,letterSpacing:0.2}}>{item.label}</span>
+             </div>}
         </button>});
       })()}
     </div>}
