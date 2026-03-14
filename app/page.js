@@ -480,9 +480,60 @@ async function fetchFinancialStatements(ticker,period){
         return row});
       var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
-    console.log("[ThesisAlpha] FMP returned empty"+(isIntlTicker(ticker)?" (international — skipping SEC EDGAR)":". Trying SEC EDGAR fallback..."));
-    if(isIntlTicker(ticker))return{income:[],balance:[],cashflow:[]};
-    // Fallback: SEC EDGAR (US companies only)
+    console.log("[ThesisAlpha] FMP returned empty for "+ticker);
+    // For international tickers: try the base ticker (without suffix) with FMP
+    if(isIntlTicker(ticker)){
+      var baseTicker=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i,"");
+      if(baseTicker!==ticker){
+        console.log("[ThesisAlpha] Trying base ticker "+baseTicker+" for FMP financials...");
+        var r2=await Promise.all([fmp("income-statement/"+baseTicker+qs),fmp("balance-sheet-statement/"+baseTicker+qs),fmp("cash-flow-statement/"+baseTicker+qs)]);
+        var _is2=r2[0],_bs2=r2[1],_cf2=r2[2];
+        if(_is2&&Array.isArray(_is2))_is2=_is2.filter(function(x){return x&&x.revenue!=null});
+        if(_bs2&&Array.isArray(_bs2))_bs2=_bs2.filter(function(x){return x&&x.totalAssets!=null});
+        if(_cf2&&Array.isArray(_cf2))_cf2=_cf2.filter(function(x){return x&&x.netIncome!=null});
+        if((_is2&&_is2.length>0)||(_bs2&&_bs2.length>0)||(_cf2&&_cf2.length>0)){
+          console.log("[ThesisAlpha] Base ticker fallback success for "+baseTicker);
+          var incRows2=(_is2||[]).reverse().map(function(row){
+            if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
+            if(row.operatingIncomeRatio==null&&row.operatingIncome!=null&&row.revenue!=null&&row.revenue!==0)row.operatingIncomeRatio=row.operatingIncome/row.revenue;
+            if(row.netIncomeRatio==null&&row.netIncome!=null&&row.revenue!=null&&row.revenue!==0)row.netIncomeRatio=row.netIncome/row.revenue;
+            return row});
+          var res2={income:incRows2,balance:(_bs2||[]).reverse(),cashflow:(_cf2||[]).reverse(),source:"fmp-base"};
+          _fincache[key]=res2;return res2;
+        }
+      }
+      // Last resort: synthesise minimal rows from Finnhub metrics (TTM data only)
+      console.log("[ThesisAlpha] Trying Finnhub metrics fallback for "+ticker);
+      try{
+        var fhSym=toFinnhubSymbol(ticker);
+        var fhMet=await finnhub("stock/metric?symbol="+fhSym+"&metric=all");
+        var fhEarn=await finnhub("stock/earnings?symbol="+fhSym);
+        if(fhMet&&fhMet.metric&&Object.keys(fhMet.metric).length>0){
+          var m=fhMet.metric;
+          var yr=new Date().getFullYear();
+          // Build a synthetic TTM income row from Finnhub metrics
+          var synthIncome={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            revenue:m.revenuePerShareTTM!=null?m.revenuePerShareTTM*1e6:null,
+            grossProfitRatio:m.grossMarginTTM!=null?m.grossMarginTTM/100:null,
+            operatingIncomeRatio:m.operatingMarginTTM!=null?m.operatingMarginTTM/100:null,
+            netIncomeRatio:m.netProfitMarginTTM!=null?m.netProfitMarginTTM/100:null,
+            eps:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            epsDiluted:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            _isSynthetic:true};
+          var synthBalance={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            totalDebt:null,totalEquity:null,
+            debtToEquity:m["totalDebt/totalEquityQuarterly"]||null,
+            currentRatio:m.currentRatioQuarterly||null,_isSynthetic:true};
+          var synthCF={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            freeCashFlow:m.freeCashFlowPerShareTTM!=null?m.freeCashFlowPerShareTTM*1e6:null,
+            _isSynthetic:true};
+          var resFh={income:[synthIncome],balance:[synthBalance],cashflow:[synthCF],source:"finnhub-metrics"};
+          _fincache[key]=resFh;return resFh;
+        }
+      }catch(fhErr){console.warn("[ThesisAlpha] Finnhub metrics fallback failed:",fhErr)}
+      return{income:[],balance:[],cashflow:[]};
+    }
+    // US companies only — try SEC EDGAR
     var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
     if(r.ok){var d=await r.json();
       if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
@@ -1054,7 +1105,7 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:false,showBuyZone:false,showPriceChart:true};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:false,showBuyZone:false,showPriceChart:true,businessMode:false};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
 if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";if(saved.showHeatmap===undefined)saved.showHeatmap=false;return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -1584,7 +1635,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     return<Modal title="Edit Company" onClose={function(){setModal(null)}} K={K}>
-      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K}/><Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
+      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}>
+<div>
+  <Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K} spellCheck={false} autoCorrect="off"/>
+  <div style={{fontSize:10,color:K.dim,marginTop:-10,marginBottom:10,fontFamily:fm,lineHeight:1.5}}>Canadian: RY.TO · UK: VOD.L · German: SAP.DE</div>
+</div>
+<Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"},{v:"TBD",l:"TBD"}]} K={K}/></div>
       <Inp label="Logo Domain" value={f.domain} onChange={function(v){set("domain",v)}} placeholder="apple.com" K={K}/>
       <Inp label="IR URL" value={f.irUrl} onChange={function(v){set("irUrl",v)}} placeholder="https://investor.apple.com" K={K}/>
@@ -1593,7 +1649,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div></div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setSelPrompt(null);setResp("")}}>Back</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){
+  var newTicker=f.ticker.toUpperCase().trim();
+  var tickerChanged=newTicker!==sel.ticker;
+  upd(selId,Object.assign({ticker:newTicker,name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle},
+    tickerChanged?{financialSnapshot:{},lastChecked:null,latestNews:[],earningsHistory:[]}:{}));
+  if(tickerChanged){setTimeout(function(){checkOne(selId)},300);showToast("Ticker updated to "+newTicker+" — re-fetching data","info",3000);}
+  setModal(null);
+}}>Save</button></div></Modal>}
   function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
     var sections={core:"",moat:"",risks:"",sell:""};var cur="core";
     var lines=(note||"").split("\n");
@@ -2134,7 +2197,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={saveIR}>Save</button></div></Modal>}
     function PositionModal(){if(!sel)return null;var pos=sel.position||{shares:0,avgCost:0};
-    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||""),purchaseDate:sel.purchaseDate||""}),f=_f[0],setF=_f[1];
+    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||""),purchaseDate:sel.purchaseDate||"",ivEstimate:String(sel.ivEstimate||""),mosPct:String(sel.mosPct||"30")}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var mult=f.divFrequency==="monthly"?12:f.divFrequency==="quarterly"?4:f.divFrequency==="semi"?2:1;
     var annDiv=parseFloat(f.divPerShare||0)*mult;
@@ -2150,6 +2213,28 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>COST BASIS</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.avgCost)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>MKT VALUE</div><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym}{(parseFloat(f.shares)*parseFloat(f.currentPrice)).toLocaleString(undefined,{maximumFractionDigits:0})}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>GAIN/LOSS</div><div style={{fontSize:14,fontWeight:600,color:((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100)>=0?K.grn:K.red,fontFamily:fm}}>{((parseFloat(f.currentPrice)-parseFloat(f.avgCost))/parseFloat(f.avgCost)*100).toFixed(1)}%</div></div></div></div>}
+      <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}>
+        <div style={{fontSize:12,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:4}}>Intrinsic Value & Margin of Safety</div>
+        <div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:12}}>Your estimate of fair value per share. The margin of safety is the discount you require before buying.</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
+        <Inp label="IV Estimate (per share)" value={f.ivEstimate} onChange={function(v){set("ivEstimate",v)}} type="number" placeholder="e.g. 150.00" K={K}/>
+        <Inp label="Required MoS (%)" value={f.mosPct} onChange={function(v){set("mosPct",v)}} type="number" placeholder="30" K={K}/>
+      </div>
+      {parseFloat(f.ivEstimate)>0&&(function(){
+        var iv=parseFloat(f.ivEstimate);var mos=parseFloat(f.mosPct||30)/100;
+        var buyBelow=iv*(1-mos);var cp=parseFloat(f.currentPrice)||0;
+        var mosNow=cp>0?((iv-cp)/iv*100):null;
+        var inZone=cp>0&&cp<=buyBelow;
+        var col=inZone?K.grn:mosNow!=null&&mosNow>0?K.amb:K.red;
+        return<div style={{background:col+"0d",border:"1px solid "+col+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,textAlign:"center",marginBottom:8}}>
+            <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>IV ESTIMATE</div><div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym}{iv.toFixed(2)}</div></div>
+            <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>BUY BELOW</div><div style={{fontSize:15,fontWeight:700,color:K.grn,fontFamily:fm}}>{cSym}{buyBelow.toFixed(2)}</div></div>
+            <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>{cp>0?"CURRENT MoS":"MoS NEEDED"}</div><div style={{fontSize:15,fontWeight:700,color:col,fontFamily:fm}}>{mosNow!=null?mosNow.toFixed(1)+"%":f.mosPct+"%"}</div></div>
+          </div>
+          <div style={{fontSize:12,color:col,fontWeight:600,textAlign:"center"}}>{inZone?"\u2713 In buy zone \u2014 price below margin of safety threshold":mosNow!=null&&mosNow>0?"Within IV but above buy zone \u2014 "+(((buyBelow/cp-1)*100).toFixed(1))+"% drop needed":"Above IV \u2014 trading at "+((cp-iv)/iv*100).toFixed(1)+"% premium to your estimate"}</div>
+        </div>})()}
       {/* Price alert / Buy zone */}
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:12,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Price Alert</div></div>
       <Inp label="Buy Below / Target Price" value={f.targetPrice} onChange={function(v){set("targetPrice",v)}} type="number" placeholder="Set a buy target" K={K}/>
@@ -2166,7 +2251,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ANNUAL DIV</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${annDiv.toFixed(2)}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>YIELD</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}%</div></div>
           {f.shares&&<div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ANNUAL INCOME</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${(parseFloat(f.shares)*annDiv).toFixed(0)}</div></div>}</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0,purchaseDate:f.purchaseDate||""});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0,purchaseDate:f.purchaseDate||"",ivEstimate:parseFloat(f.ivEstimate)||0,mosPct:parseFloat(f.mosPct)||30});setModal(null)}}>Save</button></div></Modal>}
   var BIAS_CHECKS=[
     {id:"confirmation",label:"Confirmation Bias",q:"Am I only seeking information that confirms my existing belief?",icon:"search"},
     {id:"anchoring",label:"Anchoring",q:"Am I anchored to a specific price, target, or past event?",icon:"target"},
@@ -3243,8 +3328,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
     var _f=useState({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
+    var _sg=useState(false),sellGateOpen=_sg[0],setSellGateOpen=_sg[1];
+    var _sq=useState(""),sellQ=_sq[0],setSellQ=_sq[1];
     function addDecision(){if(!f.reasoning.trim())return;
-      logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
+      if((f.action==="SELL"||f.action==="TRIM")&&!sellGateOpen){setSellGateOpen(true);return;}
+      setSellGateOpen(false);setSellQ("");
+      logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim()+(sellQ.trim()?"\n\nSell rationale: "+sellQ.trim():""),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
       if(allDecCount<=1)setTimeout(function(){showToast("\u2713 First decision logged","info",3000)},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
@@ -3297,10 +3386,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <label style={{display:"block",fontSize:11,color:K.red,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
             <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={1} placeholder="Specific event or metric that would change my mind" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
           </div>
-          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+          {sellGateOpen&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"25",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:4}}>
+            <div style={{fontSize:13,fontWeight:700,color:K.red,marginBottom:6}}>{f.action==="SELL"?"Before you sell":"Before you trim"}</div>
+            <div style={{fontSize:13,color:K.txt,marginBottom:10,lineHeight:1.6}}>{f.action==="SELL"?"Has the thesis changed \u2014 or are you reacting to price?":"What specifically changed that reduces conviction?"}</div>
+            <textarea value={sellQ} onChange={function(e){setSellQ(e.target.value)}} rows={2}
+              placeholder={f.action==="SELL"?"e.g. Revenue growth missed my 20% threshold two quarters running":"e.g. Position grew to 25% of portfolio, trimming to manage size"}
+              style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.5,marginBottom:10}}/>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={function(){setSellGateOpen(false);setSellQ("")}} style={{flex:1,padding:"8px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>Go back</button>
+              <button onClick={function(){setSellGateOpen(false);setTimeout(addDecision,50)}} style={{flex:2,padding:"8px",borderRadius:_isBm?0:8,border:"none",background:K.red,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Confirm "+f.action}</button>
+            </div>
+          </div>}
+          {!sellGateOpen&&<div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
             <button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button>
             <button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.4})} onClick={addDecision}>Save</button>
-          </div>
+          </div>}
         </div>}
         {/* Entries */}
         {decisions.length===0&&!adding&&<div style={{padding:"24px 20px",textAlign:"center"}}>
@@ -4079,7 +4179,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/></div>})}</div>
         <div style={{textAlign:"center",fontSize:12,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from FMP...</div></div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:12,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available.<br/>
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:12,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>
+{isIntlTicker(c.ticker)
+  ?"Detailed financial statements for TSX Venture and other international exchanges have limited coverage on our data plan. KPI checking and metrics (gross margin, ROIC etc.) use Finnhub which does support this ticker."
+  :"Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available."}<br/>
         {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:6,color:K.amb,fontSize:11,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
         <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:_isBm?0:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
@@ -5664,6 +5767,36 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           onSecondary:{type:"go", c:c}
         });
       }
+    });
+
+    // LAYER 6: Ownership anniversaries
+    portfolio.forEach(function(c){
+      if(!c.purchaseDate)return;
+      var daysHeld=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);
+      [1,2,3,5,7,10].forEach(function(yr){
+        var target=yr*365;
+        if(daysHeld>=target&&daysHeld<target+7){
+          var pos=c.position||{};var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
+          signals.push({layer:"anniversary",priority:3,icon:"shield",color:"#D4AF37",
+            title:yr+"yr anniversary owning "+c.ticker+" "+String.fromCodePoint(0x1F389),
+            sub:"You\u2019ve held "+c.name+" for "+yr+" year"+(yr>1?"s":"")+(ret!=null?" \u00b7 "+(ret>=0?"+":"")+ret.toFixed(1)+"% return":"")+". Does the thesis still hold?",
+            action:"Review thesis",onAction:{type:"go",c:c,modal:"thesis"},
+            secondary:"Annual AI check",onSecondary:{type:"ai",aiType:"annual",c:c}});
+        }
+      });
+    });
+
+    // LAYER 7: Above intrinsic value estimate
+    portfolio.forEach(function(c){
+      if(!c.ivEstimate||c.ivEstimate<=0)return;
+      var cp=(c.position||{}).currentPrice||0;if(!cp)return;
+      var prem=(cp-c.ivEstimate)/c.ivEstimate*100;
+      if(prem<15)return;
+      signals.push({layer:"above_iv",priority:2,icon:"trending",color:K.amb,
+        title:c.ticker+" is trading "+prem.toFixed(0)+"% above your IV estimate",
+        sub:"Your IV: "+cSym+c.ivEstimate.toFixed(0)+" \u00b7 Current: "+cSym+cp.toFixed(0)+". Is conviction keeping up with price?",
+        action:"Review valuation",onAction:{type:"go",c:c,modal:"valuation"},
+        secondary:"Sell discipline",onSecondary:{type:"ai",aiType:"sell",c:c}});
     });
 
     // Sort by priority, cap at 4
@@ -9285,6 +9418,9 @@ function WeeklyReview(){
           {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 12px",fontSize:12,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
             {emailNotify?"KPI Email ON":"+ KPI Email"}</button>}
+          <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{businessMode:!p.businessMode});try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}} style={{display:"flex",alignItems:"center",gap:6,background:dashSet.businessMode?K.grn+"15":"transparent",border:"1px solid "+(dashSet.businessMode?K.grn+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 12px",fontSize:12,color:dashSet.businessMode?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title="Owner Mode: hides price noise, shows conviction + thesis health">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            Owner mode</button>
           <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
           <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:12})} onClick={function(){exportCSV(filtered)}}>CSV</button>
           <button style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:13})} onClick={function(){setModal({type:"add"})}}>+ Add</button></div>}
@@ -9994,7 +10130,7 @@ function WeeklyReview(){
           <span style={{width:40}}/>
           <span style={{flex:1,minWidth:100}}>Company</span>
           <span style={{width:75,textAlign:"right"}}>{sideTab==="watchlist"?"Price":"Avg Price"}</span>
-          <span style={{width:65,textAlign:"right"}}>{sideTab==="watchlist"?"Target":"Ret / Day"}</span>
+          <span style={{width:65,textAlign:"right"}}>{sideTab==="watchlist"?"Target":dashSet.businessMode?"Conv":"Ret / Day"}</span>
           {!isMobile&&<span style={{width:85,textAlign:"right"}}>{sideTab==="watchlist"?"Gap":"Value"}</span>}
           <span style={{width:isMobile?70:140,paddingLeft:8}}>{sideTab==="watchlist"?"Sector":"Allocation"}</span>
           {(function(){var oo=dashSet.listColOrder||["conviction","kpis","earnings","price","mastery"];var hw={conviction:{w:40,a:"center",l:"C"},kpis:{w:55,a:"right",l:"KPIs",d:true},earnings:{w:60,a:"right",l:"Earn.",d:true},price:{w:70,a:"right",l:"Price",d:true},mastery:{w:55,a:"center",l:"Mastery"}};return oo.map(function(k2){var h2=hw[k2];if(!h2)return null;if(!(dashSet.listCols||{})[k2])return null;if(h2.d&&isMobile)return null;return<span key={k2} style={{width:h2.w,textAlign:h2.a}}>{h2.l}</span>})})()}
@@ -10024,8 +10160,10 @@ function WeeklyReview(){
               <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
               <div style={{fontSize:13,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cc.name}</div></div>
             <div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>
-              {(cc._dayChangePct||0)!==0&&<div style={{fontSize:11,fontWeight:600,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}% today</div>}
+              {dashSet.businessMode
+                ?<div style={{fontSize:15,fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:cc.conviction>0?K.red:K.dim,fontFamily:fm}}>{cc.conviction>0?cc.conviction+"/10":"—"}</div>
+                :<div style={{fontSize:15,fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>}
+              {!dashSet.businessMode&&(cc._dayChangePct||0)!==0&&<div style={{fontSize:11,fontWeight:600,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}% today</div>}
               <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginTop:1}}>{weight>0?weight.toFixed(1)+"% alloc":"—"}</div></div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>}
@@ -10033,12 +10171,15 @@ function WeeklyReview(){
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
             <span style={{width:40}}><CoLogo domain={cc.domain} ticker={cc.ticker} size={24}/></span>
             <span style={{flex:1,minWidth:100}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{cc.ticker}</div>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>{cc.ticker}{cc.ivEstimate>0&&(function(){var iv=cc.ivEstimate;var cp=(cc.position||{}).currentPrice||0;if(!cp)return null;var mos=(iv-cp)/iv*100;var buyBelow=iv*(1-(cc.mosPct||30)/100);var col=cp<=buyBelow?K.grn:mos>0?K.amb:K.red;var lbl=cp<=buyBelow?"MoS":mos>0?mos.toFixed(0)+"%":"+"+Math.abs(mos).toFixed(0)+"%";return<span style={{fontSize:9,fontWeight:700,color:col,background:col+"15",border:"1px solid "+col+"30",borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,flexShrink:0}}>{lbl}</span>})()}</div>
               <div style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:140}}>{cc.name}</div></span>
             <span style={{width:75,textAlign:"right",fontSize:12,color:K.mid,fontFamily:fm}}>{sideTab==="watchlist"?(p2.currentPrice>0?cSym+p2.currentPrice.toFixed(2):"—"):(p2.avgCost>0?cSym+p2.avgCost.toFixed(2):"—")}</span>
             <span style={{width:65,textAlign:"right",fontSize:12,fontFamily:fm}}>
               {sideTab==="watchlist"?(cc.targetPrice>0?<span style={{fontWeight:600,color:K.txt}}>{cSym}{cc.targetPrice.toFixed(0)}</span>:<span style={{color:K.dim}}>—</span>):
-              <div><div style={{fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontSize:12}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>
+              dashSet.businessMode
+              ?<div><div style={{fontWeight:700,color:cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:cc.conviction>0?K.red:K.dim,fontSize:12}}>{cc.conviction>0?cc.conviction+"/10":"—"}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{cc.thesisUpdatedAt?(Math.ceil((Date.now()-new Date(cc.thesisUpdatedAt))/864e5))+"d ago":"No thesis"}</div></div>
+              :<div><div style={{fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontSize:12}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>
               {(cc._dayChangePct||0)!==0&&<div style={{fontSize:10,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}%</div>}</div>}
             </span>
             {!isMobile&&<span style={{width:85,textAlign:"right",fontSize:12,fontFamily:fm}}>{sideTab==="watchlist"?(function(){if(!cc.targetPrice||!p2.currentPrice)return<span style={{color:K.dim}}>{"—"}</span>;var gap=((cc.targetPrice-p2.currentPrice)/p2.currentPrice*100);return<span style={{color:gap>0?K.grn:K.red,fontWeight:600}}>{gap>0?gap.toFixed(0)+"% below":"At target"}</span>})():<span style={{color:K.txt}}>{val>0?cSym+val.toLocaleString(undefined,{maximumFractionDigits:0}):"—"}</span>}</span>}
