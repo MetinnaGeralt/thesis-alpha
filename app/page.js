@@ -3209,9 +3209,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
     var scored=decisions.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
     return<div style={{marginBottom:20}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={S.sec}><IC name="book" size={14} color={K.dim}/>Research Journal</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>{scored.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{rights}/{scored.length} right ({Math.round(rights/scored.length*100)}%)</span>}
-        <button style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:12})} onClick={function(){setAdding(!adding)}}>+ Log Decision</button></div></div>
+      {scored.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"8px 14px",background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
+        <span style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>{rights}/{scored.length} decisions scored correctly ({Math.round(rights/scored.length*100)}% right)</span>
+      </div>}
+      <button id="dj-add-btn" onClick={function(){setAdding(true)}} style={{display:"none"}}/>
       {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:12}}>
         <div style={{fontSize:12,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION</div>
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
@@ -5032,19 +5034,39 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
             </div>:null;
           return<div id="ds-research" style={{marginBottom:24,marginTop:8}}>
-            <div style={{paddingTop:16,borderTop:"1px solid "+K.bdr,marginBottom:14}}>
-              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>RESEARCH TRAIL</div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                <div style={{display:"flex",gap:2,background:K.bg,borderRadius:_isBm?0:9,padding:3,border:"1px solid "+K.bdr}}>
-                  {RT_TABS.map(function(tb){
-                    var active=rtTab===tb.id;
-                    return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:11,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,boxShadow:active?"0 1px 3px rgba(0,0,0,0.15)":"none",transition:"all .15s"}}>
-                      {tb.label}
-                      {tb.count>0&&<span style={{fontSize:9,background:active?K.acc+"20":K.bdr,color:active?K.acc:K.dim,borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,fontWeight:600}}>{tb.count}</span>}
-                    </button>;
-                  })}
+            <div style={{paddingTop:20,borderTop:"1px solid "+K.bdr,marginBottom:0}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+                  <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>Research Journal</div>
+                  {nDec>0&&<span style={{fontSize:10,fontWeight:700,color:K.acc,background:K.acc+"15",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{nDec}</span>}
                 </div>
-                {addBtn}
+                <button style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12,display:"flex",alignItems:"center",gap:5})} onClick={function(){
+                  setRtTab("decisions");
+                  setTimeout(function(){var el=document.getElementById("dj-add-btn");if(el)el.click()},80);
+                }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Log Decision
+                </button>
+              </div>
+              <div style={{display:"flex",gap:4,marginBottom:14}}>
+                {RT_TABS.map(function(tb){
+                  var active=rtTab===tb.id;
+                  var isPrimary=tb.id==="decisions";
+                  return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{
+                    padding:active?"6px 16px":"5px 14px",
+                    borderRadius:_isBm?0:999,
+                    border:"1px solid "+(active?(isPrimary?K.acc:K.acc+"60"):K.bdr),
+                    background:active?(isPrimary?K.acc:K.acc+"12"):"transparent",
+                    color:active?(isPrimary?"#fff":K.acc):K.dim,
+                    fontSize:11,fontWeight:active?700:400,cursor:"pointer",fontFamily:fm,
+                    display:"flex",alignItems:"center",gap:4,transition:"all .15s"
+                  }}>
+                    {tb.label}
+                    {tb.count>0&&<span style={{fontSize:9,background:active?(isPrimary?"rgba(255,255,255,0.25)":K.acc+"25"):K.bdr,color:active?(isPrimary?"#fff":K.acc):K.dim,borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,fontWeight:700}}>{tb.count}</span>}
+                  </button>;
+                })}
+                {rtTab!=="decisions"&&addBtn&&<div style={{marginLeft:"auto"}}>{addBtn}</div>}
               </div>
             </div>
             {rtTab==="decisions"&&<DecisionJournal company={c}/>}
@@ -9500,7 +9522,7 @@ function WeeklyReview(){
                   <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
                     <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}} title="Refresh news"><IC name="refresh" size={9} color={K.dim}/>{"Refresh"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={11} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
