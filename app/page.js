@@ -5472,6 +5472,53 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       });
     }
 
+    // ── LAYER 1b: Conviction LOW + position LARGE ──────────────────
+    portfolio.forEach(function(c){
+      if(!c.conviction||c.conviction===0)return;
+      if(c.conviction>=5)return; // only flag low conviction
+      var pos=c.position||{};
+      if(!(pos.shares>0&&pos.currentPrice>0))return;
+      var val=pos.shares*pos.currentPrice;
+      var totalV=portfolio.reduce(function(s,x){var p=x.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
+      if(totalV<=0)return;
+      var pct=Math.round(val/totalV*100);
+      if(pct<10)return; // only flag meaningful positions
+      var lastReview=c.thesisUpdatedAt?Math.ceil((Date.now()-new Date(c.thesisUpdatedAt))/864e5):null;
+      signals.push({
+        layer:"conv_size",
+        priority:1,
+        icon:"alert",
+        color:K.amb,
+        title:c.ticker+" conviction is your lowest \u2014 it\u2019s also your largest position",
+        sub:"Conviction: "+c.conviction+"/10 \u00b7 Position weight: "+pct+"% \u00b7 "+(lastReview?("Last reviewed: "+lastReview+"d ago"):"Thesis not reviewed"),
+        action:"Review thesis",
+        onAction:{type:"go",c:c,modal:"thesis"},
+        secondary:"Challenge AI",
+        onSecondary:{type:"ai",aiType:"challenge",c:c}
+      });
+    });
+
+    // ── LAYER 1c: Stale thesis — post last earnings ──────────────────
+    portfolio.forEach(function(c){
+      if(!c.thesisUpdatedAt)return;
+      var days=Math.ceil((Date.now()-new Date(c.thesisUpdatedAt))/864e5);
+      if(days<90)return;
+      // Only add if not already covered by alignment signal
+      if(signals.some(function(s){return s.layer==="conv_size"&&s.title.indexOf(c.ticker)>=0}))return;
+      signals.push({
+        layer:"stale_thesis",
+        priority:2,
+        icon:"file",
+        color:K.blue||"#3B82F6",
+        title:c.ticker+" thesis hasn\u2019t been reviewed since "+Math.round(days/30)+" months ago",
+        sub:"Thesis health \u00b7 Last updated: "+days+"d ago",
+        action:"Re-read thesis",
+        onAction:{type:"go",c:c},
+        secondary:"Challenge AI",
+        onSecondary:{type:"ai",aiType:"challenge",c:c}
+      });
+    });
+
     // ── LAYER 2: Process — KPI miss streak (2+ consecutive) ──
     portfolio.forEach(function(c){
       if(!c.kpis || c.kpis.length === 0) return;
@@ -9307,9 +9354,8 @@ function WeeklyReview(){
                 {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
-        <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:isMobile?16:17,fontWeight:600,color:K.txt,fontFamily:fh}}>{greeting}</div>
-          <div style={{fontSize:11,color:K.dim,marginTop:2}}>{now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
+        <div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:isMobile?13:12,color:K.dim,fontFamily:fm}}>{greeting+" \u00b7 "+now.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
         </div>
 
         {/* ── ONE FOCUS ── */}
@@ -9354,30 +9400,40 @@ function WeeklyReview(){
             else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
           }
 
+          var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
+          var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
           return<div style={{borderBottom:"1px solid "+K.bdr}}>
-            <div style={{padding:isMobile?"10px 16px 0":"12px 24px 0"}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:8}}>Signals across your portfolio</div>
+            <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div>
+                  <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{"Your Morning Brief"}</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:1}}>{now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase()+" MORNING"}</div>
+                </div>
+              </div>
+              <div style={{background:K.acc,color:"#fff",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:_isBm?0:999,fontFamily:fm,flexShrink:0}}>
+                {sigs.length+" signal"+(sigs.length!==1?"s":"")}
+              </div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:0}}>
-              {sigs.map(function(sig,i){
-                return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:isMobile?"10px 16px":"10px 24px",borderTop:i===0?"none":"1px solid "+K.bdr+"50",background:"transparent"}}>
-                  <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:sig.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <IC name={sig.icon} size={12} color={sig.color}/>
+            <div style={{display:"flex",flexDirection:"column",gap:8,padding:isMobile?"0 12px 14px":"0 20px 16px"}}>
+              {visibleSigs.map(function(sig,i){
+                return<div key={i} onClick={function(){handleAction(sig.onAction)}} style={{display:"flex",alignItems:"flex-start",gap:14,padding:isMobile?"12px 14px":"14px 16px",background:sig.color+"0a",border:"1px solid "+sig.color+"25",borderLeft:"3px solid "+sig.color,borderRadius:_isBm?0:10,cursor:"pointer",transition:"background .15s"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=sig.color+"15"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background=sig.color+"0a"}}>
+                  <div style={{width:30,height:30,borderRadius:_isBm?0:8,background:sig.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                    <IC name={sig.icon} size={13} color={sig.color}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:1}}>{sig.title}</div>
-                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:isMobile?"nowrap":"normal"}}>{sig.sub}</div>
-                  </div>
-                  <div style={{display:"flex",gap:6,flexShrink:0}}>
-                    {sig.secondary&&sig.onSecondary&&!isMobile&&<button onClick={function(){handleAction(sig.onSecondary)}} style={{padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
-                      {sig.secondary}
-                    </button>}
-                    <button onClick={function(){handleAction(sig.onAction)}} style={{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+sig.color+"50",background:sig.color+"0d",color:sig.color,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
-                      {sig.action}
-                    </button>
+                    <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,lineHeight:1.35,marginBottom:4}}>{sig.title}</div>
+                    <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{sig.sub}</div>
+                    {!isMobile&&sig.secondary&&sig.onSecondary&&<div style={{marginTop:8,display:"flex",gap:6}}>
+                      <button onClick={function(e){e.stopPropagation();handleAction(sig.onSecondary)}} style={{padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>{sig.secondary}</button>
+                    </div>}
                   </div>
                 </div>;
               })}
+              {sigs.length>3&&<button onClick={function(){setSigsExpanded(!sigsExpanded)}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"2px 0",textAlign:"left"}}>
+                {sigsExpanded?"Show less":"Show "+(sigs.length-3)+" more signal"+(sigs.length-3!==1?"s":"")+" →"}
+              </button>}
             </div>
           </div>;
         })()}
