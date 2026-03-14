@@ -10061,8 +10061,8 @@ function WeeklyReview(){
       // Library items linked to portfolio companies
       var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
       var isEmpty=rl.length===0&&libItems.length===0;
-      return<div style={{marginBottom:20}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+      return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div style={{display:"flex",alignItems:"center",gap:7}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
