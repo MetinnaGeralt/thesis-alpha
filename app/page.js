@@ -10126,11 +10126,11 @@ function WeeklyReview(){
                    note:"Does management apologise for raising prices, or do customers barely notice?"},
                   {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
                    fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return fcf;return null},
+                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return Math.min(fcf*5,150);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;var ey=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(fcfy&&fcfy>0&&ey&&ey>0)return Math.min(fcfy/(1/ey)*100,200);return null},
                    note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
                   {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
                    fmt:function(v){return v.toFixed(1)+"%"},
-                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return(1/pe*100);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy;},
+                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return Math.min(1/pe*100,50);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy&&fcfy>0?fcfy:null;},
                    note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
                   {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
                    fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
@@ -10151,53 +10151,73 @@ function WeeklyReview(){
 
               // ── State: active preset ───────────────────────────────────
               var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
+              var _exR=useState(null),expandedRow=_exR[0],setExpandedRow=_exR[1];
               var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
-
-              // ── Weighted avg helper ────────────────────────────────────
               var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-              function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
+              function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
               function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
-
+              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
+              var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
+              var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
+              var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
+              var napkinGrade=_gr===null?"?":_gr>=0.8?"A":_gr>=0.6?"B":_gr>=0.4?"C":"D";
+              var napkinColor=napkinGrade==="A"?K.grn:napkinGrade==="B"?K.acc:napkinGrade==="C"?K.amb:K.red;
+              var hasSpBench=preset.rows.some(function(r){return r.bv!=null&&!r.qual});
               return<div style={{marginBottom:16}}>
-                {/* Section label + preset pills */}
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
-                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
-                  <div style={{display:"flex",gap:3}}>
-                    {PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}
+                  <div style={{display:"flex",alignItems:"center",gap:7}}>
+                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
+                    {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
                   </div>
+                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
                 </div>
-
-                {/* Table */}
                 <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
                     <div style={{padding:"5px 10px"}}/>
                     <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
-                    <div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>
+                    {hasSpBench&&<div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>}
                   </div>
                   {preset.rows.map(function(r,i){
-                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get);
+                    var isEarny=r.key==="earny";
+                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get,isEarny?function(v){return v>0}:null);
+                    var holdings=perHolding(r);
                     var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
                     var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
-                    return<div key={r.key} title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null?"72px":"0px"),borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
-                      <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-                        {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.6}}>ⓘ</span>}
-                        {r.qual&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"10",padding:"1px 5px",borderRadius:2,marginLeft:3}}>qualitative</span>}
+                    var isOpen=expandedRow===r.key;
+                    var vArr=holdings.map(function(h){return h.v});
+                    var vMin=vArr.length?Math.min.apply(null,vArr):0;
+                    var vMax=vArr.length?Math.max.apply(null,vArr):1;
+                    var vSpan=Math.max(vMax-vMin,0.001);
+                    return<div key={r.key} style={{borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:isOpen?K.acc+"04":"transparent"}}>
+                      <div title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null&&hasSpBench?"72px":""),cursor:holdings.length>0?"pointer":"default"}} onClick={function(){if(holdings.length>0)setExpandedRow(isOpen?null:r.key)}}>
+                        <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+                          {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.5}}>ⓘ</span>}
+                          {r.qual&&<span style={{fontSize:8,color:K.acc,background:K.acc+"10",padding:"1px 4px",borderRadius:2,marginLeft:2,fontFamily:fm}}>qual</span>}
+                          {holdings.length>0&&<span style={{fontSize:8,color:K.dim,marginLeft:"auto",opacity:.4}}>{isOpen?"▲":"▼"}</span>}
+                        </div>
+                        <div style={{padding:"7px 0",textAlign:"center"}}>
+                          {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:r.qual?<button onClick={function(e){e.stopPropagation();setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"ledger"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(er){}return n})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"2px 7px",cursor:"pointer",fontFamily:fm}}>Rate →</button>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data" onClick={function(e){e.stopPropagation();filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,ii){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},ii*800)})}}>{"↺"}</span>}
+                        </div>
+                        {r.bv!=null&&hasSpBench&&<div style={{padding:"7px 0",textAlign:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span></div>}
                       </div>
-                      <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>{"↺"}</span>}
-                      </div>
-                      {r.bv!=null&&<div style={{padding:"7px 0",textAlign:"center"}}>
-                        <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
+                      {isOpen&&holdings.length>0&&<div style={{padding:"4px 12px 10px",borderTop:"1px solid "+K.bdr+"30"}}>
+                        {isEarny&&holdings.length<portfolio.length&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3,fontStyle:"italic"}}>Loss-making companies excluded</div>}
+                        <div style={{position:"relative",height:24,marginBottom:4}}>
+                          <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
+                          {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
+                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
                       </div>}
-                    </div>})}
+                    </div>;})}
                   {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
-                    {"\u201c"+preset.mungerNote+"\u201d"}
+                    {"“"+preset.mungerNote+"”"}
                   </div>}
                 </div>
               </div>
             })()}
 
-            {/* Post-earnings review needed */}
+                        {/* Post-earnings review needed */}
             {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
               if(needReview.length===0)return null;
               return<div style={{marginBottom:14}}>
