@@ -3197,53 +3197,101 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {(!d.cardType||d.cardType==="note")&&d.reasoning&&<div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{d.reasoning}</div>}
     </div>}
   function DecisionJournal(p){var c=p.company;var decisions=c.decisions||[];
+    var _open=useState(false),open=_open[0],setOpen=_open[1];
     var _adding=useState(false),adding=_adding[0],setAdding=_adding[1];
     var _f=useState({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
     function addDecision(){if(!f.reasoning.trim())return;
       logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim(),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
-      ;
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
       if(allDecCount<=1)setTimeout(function(){showToast("\u2713 First decision logged","info",3000)},300);
       setF({action:"BUY",price:"",shares:"",reasoning:"",invalidator:"",timeHorizon:"long"});setAdding(false)}
     function markOutcome(decId,outcome){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(d){return d.id===decId?Object.assign({},d,{outcome:outcome,outcomeDate:new Date().toISOString()}):d})})})}
-    var scored=decisions.filter(function(d){return d.outcome});var rights=scored.filter(function(d){return d.outcome==="right"}).length;
-    return<div style={{marginBottom:20}}>
-      {scored.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"8px 14px",background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8}}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>
-        <span style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>{rights}/{scored.length} decisions scored correctly ({Math.round(rights/scored.length*100)}% right)</span>
-      </div>}
-      <button id="dj-add-btn" onClick={function(){setAdding(true)}} style={{display:"none"}}/>
-      {adding&&<div style={{background:K.card,border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:600,color:K.acc,marginBottom:14,fontFamily:fm,letterSpacing:2}}>NEW DECISION</div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
-          <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
-          <Inp label="Price" value={f.price} onChange={function(v){set("price",v)}} type="number" placeholder="$" K={K}/>
-          <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/>
-          <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1-3yr"},{v:"long",l:"3-10yr"}]} K={K}/></div>
-        <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,color:K.txt,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why am I making this decision? *</label>
-          <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={3} placeholder="What do I believe that the market doesn't?" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
-        <div style={{marginBottom:14}}><label style={{display:"block",fontSize:12,color:K.red,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
-          <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={2} placeholder="Specific events or metrics that would invalidate this" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,color:K.txt,padding:"12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/></div>
-        {/* Auto-context preview */}
-        <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-          {c.conviction>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>Conviction: {c.conviction}/10</span>}
-          {c.position&&c.position.currentPrice>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>Price: ${c.position.currentPrice}</span>}
-          {c.kpis.length>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,background:K.bg,padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr}}>{c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length}/{c.kpis.filter(function(k){return k.lastResult}).length} KPIs met</span>}
+    var scored=decisions.filter(function(d){return d.outcome});
+    var rights=scored.filter(function(d){return d.outcome==="right"}).length;
+    var pct=scored.length>0?Math.round(rights/scored.length*100):null;
+    var actionColors={BUY:K.grn,SELL:K.red,ADD:K.grn,TRIM:K.red,HOLD:K.amb,PASS:K.dim};
+    return<div style={{marginBottom:12}}>
+      {/* ── Folder header ── */}
+      <div onClick={function(){setOpen(!open);setAdding(false)}} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:(open?"12px 12px 0 0":12),cursor:"pointer",userSelect:"none"}}
+        onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08"}}
+        onMouseLeave={function(e){e.currentTarget.style.background=K.card}}>
+        {/* Folder icon */}
+        <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:K.acc+"12",border:"1px solid "+K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>
         </div>
-        <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.3})} onClick={addDecision}>Save to Journal</button></div></div>}
-      {/* Journal entries — beautiful cards */}
-      {decisions.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:24,textAlign:"center"}}><div style={{fontSize:36,marginBottom:8}}>{"📖"}</div><div style={{fontSize:14,color:K.dim,marginBottom:4}}>Your research journal is empty</div><div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Entries appear automatically as you check earnings, update your thesis, and adjust conviction. You can also log decisions manually.</div></div>}
-      {decisions.length>0&&<div>
-        {decisions.slice(0,15).map(function(d){return<div key={d.id}>
-          <JournalCard entry={d}/>
-          {/* Outcome scoring for decisions */}
-          {d.cardType==="decision"&&!d.outcome&&<div style={{display:"flex",gap:6,padding:"0 18px 10px",marginTop:-6}}>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:"24px"}}>Score:</span>
-            <button style={{fontSize:11,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"right")}}>Right</button>
-            <button style={{fontSize:11,color:K.red,background:K.red+"12",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"wrong")}}>Wrong</button>
-            <button style={{fontSize:11,color:K.amb,background:K.amb+"12",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:4,padding:"2px 10px",cursor:"pointer",fontFamily:fm}} onClick={function(){markOutcome(d.id,"mixed")}}>Mixed</button></div>}
-        </div>})}</div>}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Decision Log</div>
+          <div style={{fontSize:11,color:K.dim,marginTop:1}}>
+            {decisions.length===0?"No decisions yet":decisions.length+" entr"+(decisions.length===1?"y":"ies")+(pct!==null?" · "+pct+"% right":"")}
+          </div>
+        </div>
+        {/* Recent actions preview */}
+        {decisions.length>0&&!open&&<div style={{display:"flex",gap:4,flexShrink:0}}>
+          {decisions.slice(0,3).map(function(d,i){var ac=d.action;var cl=actionColors[ac]||K.dim;return<span key={i} style={{fontSize:9,fontWeight:700,color:cl,background:cl+"15",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm,border:"1px solid "+cl+"25"}}>{ac||"NOTE"}</span>})}
+        </div>}
+        {/* Log button — only when open */}
+        {open&&<button onClick={function(e){e.stopPropagation();setAdding(!adding)}} style={Object.assign({},S.btnP,{padding:"4px 12px",fontSize:11,flexShrink:0})}>
+          {adding?"Cancel":"+ Log"}
+        </button>}
+        {/* Chevron */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" style={{flexShrink:0,transform:open?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      {/* ── Expanded content ── */}
+      {open&&<div style={{border:"1px solid "+K.bdr,borderTop:"none",borderRadius:_isBm?0:"0 0 12px 12px",overflow:"hidden"}}>
+        {/* Add form */}
+        {adding&&<div style={{padding:"16px 20px",background:K.acc+"05",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr 1fr",gap:"0 10px"}}>
+            <Sel label="Action" value={f.action} onChange={function(v){set("action",v)}} options={[{v:"BUY",l:"BUY"},{v:"SELL",l:"SELL"},{v:"ADD",l:"ADD"},{v:"TRIM",l:"TRIM"},{v:"HOLD",l:"HOLD"},{v:"PASS",l:"PASS"}]} K={K}/>
+            <Inp label="Price" value={f.price} onChange={function(v){set("price",v)}} type="number" placeholder="$" K={K}/>
+            <Inp label="Shares" value={f.shares} onChange={function(v){set("shares",v)}} type="number" placeholder="Qty" K={K}/>
+            <Sel label="Horizon" value={f.timeHorizon} onChange={function(v){set("timeHorizon",v)}} options={[{v:"short",l:"< 1yr"},{v:"medium",l:"1-3yr"},{v:"long",l:"3-10yr"}]} K={K}/>
+          </div>
+          <div style={{marginBottom:10}}>
+            <label style={{display:"block",fontSize:11,color:K.txt,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why? *</label>
+            <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={2} placeholder={"What do I believe that the market doesn't?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+          </div>
+          <div style={{marginBottom:12}}>
+            <label style={{display:"block",fontSize:11,color:K.red,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
+            <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={1} placeholder="Specific event or metric that would change my mind" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+            <button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button>
+            <button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.4})} onClick={addDecision}>Save</button>
+          </div>
+        </div>}
+        {/* Entries */}
+        {decisions.length===0&&!adding&&<div style={{padding:"24px 20px",textAlign:"center"}}>
+          <div style={{fontSize:13,color:K.dim,marginBottom:4}}>No decisions logged yet</div>
+          <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>Track every buy, sell, and hold — with your reasoning.</div>
+        </div>}
+        {decisions.slice(0,15).map(function(d,i){
+          var ac=d.action;var cl=actionColors[ac]||K.dim;
+          var timeAgo=(function(){if(!d.date)return"";var diff=Math.floor((Date.now()-new Date(d.date))/86400000);if(diff===0)return"Today";if(diff===1)return"Yesterday";if(diff<30)return diff+"d ago";return Math.floor(diff/30)+"mo ago"})();
+          return<div key={d.id} style={{padding:"12px 16px",borderBottom:i<decisions.slice(0,15).length-1?"1px solid "+K.bdr+"40":"none"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <span style={{fontSize:10,fontWeight:800,color:cl,background:cl+"15",padding:"3px 8px",borderRadius:_isBm?0:4,fontFamily:fm,border:"1px solid "+cl+"25",flexShrink:0,marginTop:1}}>{ac||"NOTE"}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,color:K.txt,lineHeight:1.6,fontFamily:fb}}>{d.reasoning&&d.reasoning.substring(0,160)}{d.reasoning&&d.reasoning.length>160?"...":""}</div>
+                {d.invalidator&&<div style={{fontSize:11,color:K.dim,marginTop:3,fontStyle:"italic"}}>{"If wrong: "+d.invalidator.substring(0,80)}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                  {d.priceAtTime&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"@ $"+d.priceAtTime}</span>}
+                  {d.outcome&&<span style={{fontSize:10,fontWeight:700,color:d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.amb,fontFamily:fm}}>{d.outcome==="right"?"✓ Right":d.outcome==="wrong"?"✗ Wrong":"Mixed"}</span>}
+                </div>
+              </div>
+            </div>
+            {d.cardType==="decision"&&!d.outcome&&<div style={{display:"flex",gap:5,marginTop:8}}>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,lineHeight:"22px"}}>Score:</span>
+              {["right","wrong","mixed"].map(function(o){var cl2=o==="right"?K.grn:o==="wrong"?K.red:K.amb;return<button key={o} onClick={function(){markOutcome(d.id,o)}} style={{fontSize:10,color:cl2,background:cl2+"10",border:"1px solid "+cl2+"30",borderRadius:_isBm?0:4,padding:"2px 9px",cursor:"pointer",fontFamily:fm,textTransform:"capitalize"}}>{o}</button>})}
+            </div>}
+          </div>
+        })}
+        {scored.length>0&&<div style={{padding:"8px 16px",borderTop:"1px solid "+K.bdr,background:K.bg,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>{rights}/{scored.length} right · {pct}% accuracy</span>
+        </div>}
+      </div>}
     </div>}
 
   // ── SEC Filings (Finnhub FREE) ──
