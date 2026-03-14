@@ -649,6 +649,51 @@ async function fetchFMPMetrics(ticker){
   return null;
 }
 
+// ── MR MARKET ─────────────────────────────────────────────────────────────────
+async function fetchMrMarketData(){
+  try{
+    var results=await Promise.all([fmp("quote/%5EVIX"),fmp("quote/%5EGSPC")]);
+    var vixQ=results[0]&&results[0][0]?results[0][0]:null;
+    var spyQ=results[1]&&results[1][0]?results[1][0]:null;
+    if(!vixQ&&!spyQ)return null;
+    var scores=[];var details=[];
+    if(vixQ&&vixQ.price!=null){
+      var vix=parseFloat(vixQ.price);
+      var vixScore=Math.max(0,Math.min(100,100-((vix-12)/(35-12))*100));
+      scores.push(vixScore);
+      details.push({label:"VIX",value:vix.toFixed(1),score:Math.round(vixScore)});
+    }
+    if(spyQ&&spyQ.changesPercentage!=null){
+      var spChg=parseFloat(spyQ.changesPercentage);
+      var spScore=Math.max(0,Math.min(100,((spChg+3)/6)*100));
+      scores.push(spScore);
+      details.push({label:"S&P 500 (1d)",value:(spChg>=0?"+":"")+spChg.toFixed(2)+"%",score:Math.round(spScore)});
+    }
+    if(spyQ&&spyQ.price!=null&&spyQ.yearHigh!=null){
+      var pct=(parseFloat(spyQ.price)/parseFloat(spyQ.yearHigh))*100;
+      var highScore=Math.max(0,Math.min(100,(pct-88)/(100-88)*100));
+      scores.push(highScore);
+      details.push({label:"vs 52w high",value:pct.toFixed(1)+"%",score:Math.round(highScore)});
+    }
+    if(!scores.length)return null;
+    var composite=Math.round(scores.reduce(function(s,v){return s+v},0)/scores.length);
+    var mood,label,offer,color;
+    if(composite<=20){mood="extreme_fear";label="Extreme Fear";color="#EF4444";
+      offer="Mr. Market is in panic. He is offering wonderful businesses at distressed prices. This is Buffett weather.";}
+    else if(composite<=38){mood="fear";label="Fear";color="#F97316";
+      offer="Mr. Market is nervous. He is pricing in more bad news than is likely to materialise.";}
+    else if(composite<=62){mood="neutral";label="Neutral";color="#6B7280";
+      offer="Mr. Market is unusually rational today. Prices reflect something close to fair value.";}
+    else if(composite<=80){mood="greed";label="Greed";color="#10B981";
+      offer="Mr. Market is feeling optimistic. He is asking full price for most businesses.";}
+    else{mood="extreme_greed";label="Extreme Greed";color="#8B5CF6";
+      offer="Mr. Market is euphoric. He is paying prices that future returns cannot justify. Step back.";}
+    return{composite:composite,mood:mood,label:label,offer:offer,color:color,details:details,
+      vix:vixQ?parseFloat(vixQ.price):null,spyChg:spyQ?parseFloat(spyQ.changesPercentage):null,
+      fetched:new Date().toISOString()};
+  }catch(e){console.warn("[MrMarket]",e);return null;}
+}
+
 async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
   // Step 1: Finnhub basic financials (FREE, $0)
@@ -1201,6 +1246,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function saveLibrary(next){setLibrary(next);try{localStorage.setItem('ta-library',JSON.stringify(next))}catch(e){}}
   var _bn=useState(null),briefNews=_bn[0],setBriefNews=_bn[1];
   var _bnl=useState(false),briefNewsLoading=_bnl[0],setBriefNewsLoading=_bnl[1];
+  var _mm=useState(null),mrMarket=_mm[0],setMrMarket=_mm[1];
+  var _mml=useState(false),mrMarketLoading=_mml[0],setMrMarketLoading=_mml[1];
   var _bnp=useState(function(){try{var s=localStorage.getItem('ta-news-prefs');return s?JSON.parse(s):{leadership:true,capital:true,earnings:true,deals:true,product:true,restructuring:true,legal:true,insider:true}}catch(e){return{leadership:true,capital:true,earnings:true,deals:true,product:true,restructuring:true,legal:true,insider:true}}}),briefNewsPrefs=_bnp[0],setBriefNewsPrefs=_bnp[1];
   function saveBriefNewsPrefs(next){setBriefNewsPrefs(next);try{localStorage.setItem('ta-news-prefs',JSON.stringify(next))}catch(e){}}
   var NEWS_CATS=[
@@ -1409,6 +1456,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function checkMilestone(key,msg){if(!milestones[key]){var nm=Object.assign({},milestones);nm[key]=new Date().toISOString();setMilestones(nm);try{localStorage.setItem('ta-milestones',JSON.stringify(nm))}catch(e){}showToast(msg,"milestone",5000);return true}return false}
 
   // ── Achievement Badges ──
+
+  useEffect(function(){
+    if(!loaded||sideTab!=="portfolio")return;
+    if(mrMarket&&mrMarket.fetched){
+      // Refresh if older than 30 mins
+      var age=(Date.now()-new Date(mrMarket.fetched).getTime())/60000;
+      if(age<30)return;
+    }
+    setMrMarketLoading(true);
+    fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false);});
+  },[loaded,sideTab]);
 
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
@@ -10219,6 +10277,119 @@ function WeeklyReview(){
         </div>;
       }
       return null;
+    })()}
+
+    {/* ── MR MARKET WIDGET ── */}
+    {sideTab==="portfolio"&&!isMobile&&(function(){
+      function MrMarketFace(props){
+        var mood=props.mood;var color=props.color;var size=props.size||120;
+        var skinMap={extreme_fear:"#FECACA",fear:"#FED7AA",neutral:"#FDE68A",greed:"#D1FAE5",extreme_greed:"#DDD6FE"};
+        var skin=skinMap[mood]||"#FDE68A";
+        var isScared=mood==="extreme_fear"||mood==="fear";
+        var isHappy=mood==="greed"||mood==="extreme_greed";
+        var isManic=mood==="extreme_greed";
+        var isPanic=mood==="extreme_fear";
+        return<svg width={size} height={size*1.2} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{overflow:"visible"}}>
+          <rect x="28" y="78" width="44" height="36" rx="4" fill={color+"30"} stroke={color} strokeWidth="1.5"/>
+          <polygon points="50,78 46,94 50,100 54,94" fill={color} opacity="0.7"/>
+          <path d="M44 78 L50 86 L56 78" stroke={color} strokeWidth="1.2" fill="none"/>
+          {isHappy
+            ?<g><path d="M28 88 Q14 78 12 68" stroke={color} strokeWidth="4" strokeLinecap="round"/>
+               <path d="M72 88 Q86 78 88 68" stroke={color} strokeWidth="4" strokeLinecap="round"/>
+               {isManic&&<g><circle cx="12" cy="68" r="5" fill={color} opacity="0.4"/><circle cx="88" cy="68" r="5" fill={color} opacity="0.4"/></g>}</g>
+            :isScared
+            ?<g><path d="M28 88 Q14 96 12 108" stroke={color} strokeWidth="4" strokeLinecap="round"/>
+               <path d="M72 88 Q86 96 88 108" stroke={color} strokeWidth="4" strokeLinecap="round"/></g>
+            :<g><path d="M28 88 Q16 92 14 98" stroke={color} strokeWidth="4" strokeLinecap="round"/>
+               <path d="M72 88 Q84 92 86 98" stroke={color} strokeWidth="4" strokeLinecap="round"/></g>}
+          {!isPanic&&<g transform="translate(80,90)">
+            <rect x="0" y="4" width="14" height="10" rx="2" fill={color+"40"} stroke={color} strokeWidth="1.2"/>
+            <path d="M4 4 L4 2 Q7 0 10 2 L10 4" stroke={color} strokeWidth="1.2" fill="none"/>
+          </g>}
+          {isPanic&&<g opacity="0.6">
+            <rect x="78" y="72" width="12" height="16" rx="1" fill={color+"50"} stroke={color} strokeWidth="1" transform="rotate(25,84,80)"/>
+            <rect x="82" y="60" width="10" height="14" rx="1" fill={color+"40"} stroke={color} strokeWidth="1" transform="rotate(-15,87,67)"/>
+          </g>}
+          <ellipse cx="50" cy="42" rx="22" ry="24" fill={skin} stroke={color} strokeWidth="1.5"/>
+          <path d="M28 36 Q30 18 50 18 Q70 18 72 36" fill={color+"60"} stroke={color} strokeWidth="1"/>
+          <path d={isScared?"M30 56 Q32 72 50 74 Q68 72 70 56 Q60 64 50 64 Q40 64 30 56":"M31 54 Q33 70 50 72 Q67 70 69 54 Q59 62 50 62 Q41 62 31 54"} fill={color+"50"} stroke={color} strokeWidth="1.2"/>
+          <path d="M42 53 Q50 57 58 53" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+          {isManic
+            ?<g><circle cx="40" cy="40" r="5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <circle cx="60" cy="40" r="5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <circle cx="41" cy="40" r="2.5" fill={color}/>
+               <circle cx="61" cy="40" r="2.5" fill={color}/>
+               <path d="M35 35 L45 33" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+               <path d="M55 33 L65 35" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></g>
+            :isPanic
+            ?<g><ellipse cx="40" cy="40" rx="4" ry="5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <ellipse cx="60" cy="40" rx="4" ry="5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <circle cx="40" cy="41" r="2" fill={color}/>
+               <circle cx="60" cy="41" r="2" fill={color}/>
+               <path d="M36 34 Q40 36 44 34" stroke={color} strokeWidth="1.5" fill="none"/>
+               <path d="M56 34 Q60 36 64 34" stroke={color} strokeWidth="1.5" fill="none"/></g>
+            :isHappy
+            ?<g><path d="M36 40 Q40 36 44 40" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
+               <path d="M56 40 Q60 36 64 40" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/></g>
+            :<g><circle cx="40" cy="40" r="3.5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <circle cx="60" cy="40" r="3.5" fill="white" stroke={color} strokeWidth="1.2"/>
+               <circle cx="40" cy="40" r="1.5" fill={color}/>
+               <circle cx="60" cy="40" r="1.5" fill={color}/></g>}
+          {isPanic?<path d="M42 59 Q50 54 58 59" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :isManic?<path d="M40 58 Q50 66 60 58" stroke={color} strokeWidth="2" fill={color+"30"} strokeLinecap="round"/>
+            :isHappy?<path d="M42 58 Q50 63 58 58" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :mood==="fear"?<path d="M42 59 Q50 55 58 59" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :<path d="M44 58 Q50 60 56 58" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round"/>}
+          {isScared&&<g><circle cx={isPanic?24:26} cy={isPanic?52:56} r="2" fill={color} opacity="0.5"/><circle cx={isPanic?22:24} cy={isPanic?60:64} r="1.5" fill={color} opacity="0.35"/></g>}
+          {isManic&&<text x="16" y="36" fontSize="16" fill={color} fontWeight="bold" opacity="0.7">{"!"}</text>}
+        </svg>;
+      }
+      return<div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
+          <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
+          {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
+        </div>
+        <div style={{background:K.card,border:"1px solid "+(mrMarket?mrMarket.color+"30":K.bdr),borderRadius:_isBm?0:16,overflow:"hidden",transition:"border-color .3s"}}>
+          {mrMarketLoading&&!mrMarket&&<div style={{padding:"24px 20px",textAlign:"center",color:K.dim,fontSize:11,fontFamily:fm}}>{"Reading the market’s mood…"}</div>}
+          {!mrMarketLoading&&!mrMarket&&<div style={{padding:"20px",textAlign:"center"}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Market sentiment unavailable</div>
+            <button onClick={function(){setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>Check now</button>
+          </div>}
+          {mrMarket&&(function(){
+            var d=mrMarket;
+            return<div>
+              <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
+                <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
+                  <MrMarketFace mood={d.mood} color={d.color} size={90}/>
+                </div>
+                <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
+                    <div style={{fontSize:32,fontWeight:900,color:d.color,fontFamily:fm,lineHeight:1}}>{d.composite}</div>
+                    <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
+                  </div>
+                  <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F59E0B 40%, #10B981 70%, #8B5CF6 100%)",borderRadius:999}}/>
+                    <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
+                  </div>
+                  <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {d.details.map(function(det,i){return<div key={i} style={{background:d.color+"10",border:"1px solid "+d.color+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
+                      <span style={{color:K.dim}}>{det.label+": "}</span>
+                      <span style={{fontWeight:700,color:d.color}}>{det.value}</span>
+                    </div>;})}
+                  </div>
+                </div>
+              </div>
+              <div style={{padding:"7px 14px",borderTop:"1px solid "+d.color+"15",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Mr. Market is your servant, not your guide. — Buffett"}</span>
+                {d.fetched&&<span style={{fontSize:8,color:K.bdr,fontFamily:fm}}>{new Date(d.fetched).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
+              </div>
+            </div>;
+          })()}
+        </div>
+      </div>;
     })()}
 
     {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
