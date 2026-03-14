@@ -9207,6 +9207,25 @@ function WeeklyReview(){
         <button onClick={function(){if(requirePro("earnings"))checkAll()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:K.acc+"15",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Check All</button>
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
           {autoNotify?"Auto ON":"Auto-check"}</button></div>}</div>
+        {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:8,marginTop:16,marginBottom:4,flexWrap:"wrap"}}>
+          {[
+            {label:"Earnings Calendar",icon:"calendar",page:"calendar",color:K.amb,desc:(function(){var n=filtered.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30}).length;return n>0?n+" upcoming":"No upcoming"})()},
+            {label:"Dividends",icon:"dollar",page:"dividends",color:K.grn,desc:totalAnnualDiv>0?"$"+Math.round(totalAnnualDiv/12)+"/mo":"No income"},
+            {label:"Analytics",icon:"bar",page:"analytics",color:K.blue,desc:"Portfolio breakdown"},
+            {label:"Timeline",icon:"trending",page:"timeline",color:K.acc,desc:"Decision history"},
+            {label:"All Assets",icon:"castle",page:"assets",color:"#9333EA",desc:"Net worth view"},
+          ].map(function(item){
+            return<button key={item.page} onClick={function(){setPage(item.page)}} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,cursor:"pointer",transition:"all .15s",flexShrink:0}}
+              onMouseEnter={function(e){e.currentTarget.style.background=item.color+"10";e.currentTarget.style.borderColor=item.color+"40"}}
+              onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.borderColor=K.bdr}}>
+              <IC name={item.icon} size={13} color={item.color}/>
+              <div style={{textAlign:"left"}}>
+                <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.2}}>{item.label}</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>{item.desc}</div>
+              </div>
+            </button>;
+          })}
+        </div>}
         {xpFloat&&<div key={xpFloat.id} style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:9999,pointerEvents:"none",animation:"xpfloat 1.8s ease-out forwards"}}>
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
