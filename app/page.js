@@ -345,7 +345,7 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
       // Grab earnings date from Finnhub (free, $0) — include date range for better coverage
       var ed="TBD",et="TBD";
       try{var from2=new Date(Date.now()-30*86400000).toISOString().slice(0,10);var to2=new Date(Date.now()+120*86400000).toISOString().slice(0,10);
-        var ec=await finnhub("calendar/earnings?symbol="+t+"&from="+from2+"&to="+to2);
+        var ec=await finnhub("calendar/earnings?symbol="+toFinnhubSymbol(t)+"&from="+from2+"&to="+to2);
         if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
           var now=new Date().toISOString().slice(0,10);
           var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
@@ -375,11 +375,23 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   }
   return{error:"Not found — enter details manually. For international stocks, try adding the exchange suffix (e.g. RY.TO for TSX, VOD.L for LSE)"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
-async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+ticker);if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
+async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+toFinnhubSymbol(ticker));if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
 var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN"];
+// Convert exchange-suffixed ticker to Finnhub exchange format
+// e.g. RY.TO → RY:TSX, TOI.V → TOI:TSXV, VOD.L → VOD:LSE
+function toFinnhubSymbol(ticker){
+  var SUFFIX_MAP={".TO":":TSX",".V":":TSXV",".L":":LSE",".DE":":XETRA",".PA":":EPA",
+    ".AS":":ENXTAM",".HK":":HKEX",".AX":":ASX",".NS":":NSE",".BO":":BSE",
+    ".MI":":XMIL",".MC":":XMAD"};
+  var t=ticker.toUpperCase();
+  for(var sfx in SUFFIX_MAP){if(t.endsWith(sfx))return t.slice(0,t.length-sfx.length)+SUFFIX_MAP[sfx]}
+  return ticker}
+// Detect if a ticker is non-US (has exchange suffix)
+function isIntlTicker(ticker){return /\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i.test(ticker)}
+
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
-  var met=await finnhub("stock/metric?symbol="+ticker+"&metric=all");
+  var met=await finnhub("stock/metric?symbol="+toFinnhubSymbol(ticker)+"&metric=all");
   if(!met||!met.metric)return null;var m=met.metric;
   var annDiv=m["dividendPerShareAnnual"]||0;
   var divYield=m["dividendYieldIndicatedAnnual"]||0;
@@ -468,8 +480,9 @@ async function fetchFinancialStatements(ticker,period){
         return row});
       var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
-    console.log("[ThesisAlpha] FMP returned empty, trying SEC EDGAR fallback...");
-    // Fallback: SEC EDGAR (free, no API key needed)
+    console.log("[ThesisAlpha] FMP returned empty"+(isIntlTicker(ticker)?" (international — skipping SEC EDGAR)":". Trying SEC EDGAR fallback..."));
+    if(isIntlTicker(ticker))return{income:[],balance:[],cashflow:[]};
+    // Fallback: SEC EDGAR (US companies only)
     var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
     if(r.ok){var d=await r.json();
       if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
@@ -511,8 +524,9 @@ async function fetchEarnings(co,kpis){
   var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
   // Step 1: Finnhub basic financials (FREE, $0)
   var fhMap={};
-  try{var met=await finnhub("stock/metric?symbol="+co.ticker+"&metric=all");
-    var earn=await finnhub("stock/earnings?symbol="+co.ticker);
+  var _fhSym=toFinnhubSymbol(co.ticker);
+  try{var met=await finnhub("stock/metric?symbol="+_fhSym+"&metric=all");
+    var earn=await finnhub("stock/earnings?symbol="+_fhSym);
     console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
     console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
     if(met&&met.metric){var m=met.metric;
@@ -726,11 +740,11 @@ async function lookupNextEarnings(ticker){
       if(recent.length)return{earningsDate:recent[0].date,earningsTime:recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}catch(e){}
   return{earningsDate:"TBD",earningsTime:"TBD"}}
 // Finnhub data — all FREE tier ($0)
-async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+ticker);return r&&r.data?(r.data).slice(0,15):[]}catch(e){return[]}}
+async function fetchInsiders(ticker){try{var r=await finnhub("stock/insider-transactions?symbol="+toFinnhubSymbol(ticker));return r&&r.data?(r.data).slice(0,15):[]}catch(e){return[]}}
 async function fetchInstitutionalHolders(ticker){try{var r=await fmp("institutional-holder/"+ticker);if(r&&Array.isArray(r))return r.slice(0,10);return[]}catch(e){return[]}}
-async function fetchRecommendations(ticker){try{var r=await finnhub("stock/recommendation?symbol="+ticker);return(r||[]).slice(0,6)}catch(e){return[]}}
-async function fetchEPSHistory(ticker){try{var r=await finnhub("stock/earnings?symbol="+ticker);return(r||[]).slice(0,8)}catch(e){return[]}}
-async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+ticker);return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
+async function fetchRecommendations(ticker){try{var r=await finnhub("stock/recommendation?symbol="+toFinnhubSymbol(ticker));return(r||[]).slice(0,6)}catch(e){return[]}}
+async function fetchEPSHistory(ticker){try{var r=await finnhub("stock/earnings?symbol="+toFinnhubSymbol(ticker));return(r||[]).slice(0,8)}catch(e){return[]}}
+async function fetchPeers(ticker){try{var r=await finnhub("stock/peers?symbol="+toFinnhubSymbol(ticker));return(r||[]).filter(function(p){return p!==ticker}).slice(0,8)}catch(e){return[]}}
 async function fetchCompanyNews(ticker,days){try{var to=new Date().toISOString().slice(0,10);var from=new Date(Date.now()-(days||14)*86400000).toISOString().slice(0,10);
   var n=await finnhub("company-news?symbol="+ticker+"&from="+from+"&to="+to);return(n||[]).slice(0,8)}catch(e){return[]}}
 // SEC filings from Finnhub (FREE, $0)
@@ -1524,7 +1538,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       else if(r&&r.name){
         // Verify the result is actually for the ticker we asked about
         setF(function(p){if(p.ticker.toUpperCase().trim()!==t)return p;
-          return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0});});
+          return Object.assign({},p,{ticker:r._foundAs||p.ticker,name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0});});
         setLs("done");
         var info=["Auto-filled ✓"+(r._foundAs?" ("+r._foundAs+")":"")];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "));
         }else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
