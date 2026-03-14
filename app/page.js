@@ -4846,7 +4846,20 @@ function calcMoatFromData(finData,businessModelType){
             <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"20px 20px":"28px 32px"}}>
-              <div style={{fontSize:16,color:K.txt,lineHeight:1.9,marginBottom:sec.moat||sec.risks||sec.sell?24:0,fontFamily:"'Lora', serif",fontStyle:"italic",fontWeight:400}}>{sec.core}</div>
+              {(function(){
+                var LIMIT=280;
+                var _sm2=useState(sec.core.length<=LIMIT),showFullCore=_sm2[0],setShowFullCore=_sm2[1];
+                return<div>
+                  <div style={{fontSize:16,color:K.txt,lineHeight:1.9,marginBottom:4,fontFamily:"'Lora', serif",fontStyle:"italic",fontWeight:400}}>
+                    {showFullCore?sec.core:sec.core.slice(0,LIMIT)+(sec.core.length>LIMIT?"...":"")}
+                  </div>
+                  {sec.core.length>LIMIT&&<button onClick={function(){setShowFullCore(function(v){return!v})}} style={{background:"none",border:"none",color:K.acc,fontSize:12,cursor:"pointer",padding:"2px 0",fontFamily:fm,marginBottom:sec.moat||sec.risks||sec.sell?20:0,display:"flex",alignItems:"center",gap:4}}>
+                    {showFullCore
+                      ?<><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="18 15 12 9 6 15"/></svg>{"Show less"}</>
+                      :<><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>{"Read more"}</>}
+                  </button>}
+                </div>;
+              })()}
               {sec.moat&&<div style={{padding:"14px 18px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.grn,marginBottom:10}}>
                 <div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Moat — Why it’s defensible"}</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.moat}</div></div>}
@@ -12623,7 +12636,80 @@ function WeeklyReview(){
       <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
-    <Sidebar/><div style={{flex:1,overflowY:"auto",overflowX:"hidden",width:isMobile?"100%":"auto",paddingBottom:isMobile?56:0}}><TopBar/>
+    {(!selId||isMobile)&&<Sidebar/>}
+    {/* Dossier internal sidebar — desktop only, shown when company selected */}
+    {selId&&!isMobile&&sel&&(function(){
+      var sections=[
+        {id:"ds-story",   label:"Thesis",       icon:"M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z",  color:K.acc},
+        {id:"ds-score",   label:"Mastery",      icon:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z", color:"#F59E0B"},
+        {id:"ds-evidence",label:"Evidence",     icon:"M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11", color:K.grn},
+        {id:"ds-numbers", label:"Numbers",      icon:"M18 20V10 M12 20V4 M6 20v-6",  color:K.blue},
+        {id:"ds-ledger",  label:"Conviction",   icon:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z", color:"#8B5CF6"},
+        {id:"ds-research",label:"Research",     icon:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z", color:K.acc},
+      ];
+      var pos=sel.position||{};
+      var pctReturn=pos.currentPrice>0&&pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
+      return<div style={{width:200,minWidth:200,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:"sticky",top:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:1}}>
+        {/* Back to portfolio */}
+        <div style={{padding:"18px 16px 14px",borderBottom:"1px solid "+K.bdr}}>
+          <button onClick={function(){setSelId(null);setSubPage(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.dim,cursor:"pointer",padding:0,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:12,letterSpacing:0.2}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            {sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too Hard":"Portfolio"}
+          </button>
+          {/* Company mini-header */}
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <CoLogo domain={sel.domain} ticker={sel.ticker} size={32}/>
+            <div style={{minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",lineHeight:1}}>{sel.ticker}</div>
+              <div style={{fontSize:10,color:K.dim,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:110}}>{sel.name}</div>
+            </div>
+          </div>
+          {/* Price + return */}
+          {pos.currentPrice>0&&<div style={{marginTop:10,display:"flex",alignItems:"baseline",gap:6}}>
+            <span style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</span>
+            {pctReturn!=null&&<span style={{fontSize:11,fontWeight:600,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</span>}
+          </div>}
+        </div>
+        {/* Section nav */}
+        <div style={{flex:1,padding:"8px 0"}}>
+          {sections.map(function(sec2){
+            var isActive=false;
+            try{
+              var el=typeof document!=="undefined"&&document.getElementById(sec2.id);
+              // highlight based on scroll position would be ideal but use URL-like state
+              isActive=false;
+            }catch(e){}
+            return<button key={sec2.id} onClick={function(){
+              var el=document.getElementById(sec2.id);
+              if(el){
+                var container=document.querySelector(".ta-detail-pad")&&document.querySelector(".ta-detail-pad").closest("[style*='overflow-y']");
+                if(container){container.scrollTop=el.offsetTop-80}
+                else el.scrollIntoView({behavior:"smooth",block:"start"});
+              }
+            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.mid,transition:"all .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10";e.currentTarget.style.color=K.acc}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d={sec2.icon}/>
+              </svg>
+              <span style={{fontSize:12,fontWeight:500,fontFamily:fm}}>{sec2.label}</span>
+            </button>;
+          })}
+        </div>
+        {/* Quick actions */}
+        <div style={{padding:"10px 12px",borderTop:"1px solid "+K.bdr,display:"flex",flexDirection:"column",gap:6}}>
+          <button onClick={function(){setModal({type:"position",id:sel.id})}} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 10px",background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:7,color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:500}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Update position
+          </button>
+          <button onClick={function(){setModal({type:"thesis"})}} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 10px",background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Edit thesis
+          </button>
+        </div>
+      </div>;
+    })()}
+    <div style={{flex:1,overflowY:"auto",overflowX:"hidden",width:isMobile?"100%":"auto",paddingBottom:isMobile?56:0}}><TopBar/>
     {/* ── BREADCRUMB NAV ── */}
     {!isMobile&&(function(){
       // Build crumb trail from current state
