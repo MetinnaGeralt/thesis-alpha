@@ -2025,7 +2025,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         {isChanged&&<div style={{fontSize:11,color:K.acc,fontFamily:fm}}>Unsaved changes</div>}
         {!isChanged&&<div/>}
-        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){versions.push({date:new Date().toISOString().split("T")[0],summary:f.core?f.core.substring(0,80):"Updated thesis"})}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
+        <div style={{display:"flex",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:isChanged?1:.4})} onClick={function(){if(!isChanged){setModal(null);return}var newNote=joinThesis(f);var versions=(sel.thesisVersions||[]).slice();if(newNote.trim()&&newNote!==sel.thesisNote){
+              var _parsedNew=parseThesis(newNote);
+              versions.push({
+                date:new Date().toISOString().split("T")[0],
+                savedAt:new Date().toISOString(),
+                summary:f.core?f.core.substring(0,80):"Updated thesis",
+                fullText:newNote,
+                core:_parsedNew.core||"",
+                moat:_parsedNew.moat||"",
+                risks:_parsedNew.risks||"",
+                sell:_parsedNew.sell||""
+              })}upd(selId,{thesisNote:newNote,thesisVersions:versions.slice(-30),thesisUpdatedAt:new Date().toISOString()});
               // Auto-log thesis snapshot
               logJournalEntry(selId,{cardType:"thesis_snapshot",ticker:sel.ticker,version:versions.length+1,sectionsFilled:filled,core:f.core?f.core.substring(0,120):"",hasMoat:!!f.moat,hasRisks:!!f.risks,hasSell:!!f.sell,isNew:!sel.thesisNote||sel.thesisNote.trim().length<20});if(filled===4){checkMilestone("thesis4","✨ Complete thesis! All 4 sections written.")}else{var allMet=kpiResults.every(function(x){return x.status==="met"});var allMiss=kpiResults.every(function(x){return x.status!=="met"});
         var numMissed=kpiResults.filter(function(x){return x.status==="missed"}).length;
@@ -2033,6 +2044,118 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(totalKpis>0&&allMet){launchConfetti(3000);showCelebration(co.ticker+" KPIs: All Met!","Every metric hit its target. Your thesis is being confirmed by the numbers.",null,K.grn)}
         else if(totalKpis>0&&allMiss){showToast(co.ticker+" KPIs need attention - "+metCount+"/"+totalKpis+" met. Review your thesis.","info",6000)}
         else{showToast(co.ticker+" earnings checked - "+metCount+"/"+totalKpis+" KPIs met","info",4000)}};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+  // ── THESIS DIARY MODAL ────────────────────────────────────────────────────
+  function ThesisDiaryModal(){
+    if(!sel)return null;
+    var versions=(sel.thesisVersions||[]).slice();
+    var currentParsed=parseThesis(sel.thesisNote||"");
+    var allEntries=versions.map(function(v,i){return{version:i+1,date:v.savedAt||v.date||"",parsed:{core:v.core||"",moat:v.moat||"",risks:v.risks||"",sell:v.sell||""},isCurrent:false,fullText:v.fullText||""};});
+    allEntries.push({version:versions.length+1,date:sel.thesisUpdatedAt||new Date().toISOString(),parsed:currentParsed,isCurrent:true,fullText:sel.thesisNote||""});
+    var entries=allEntries.slice().reverse();
+    function wordDiff(prev,curr){
+      var pWords=(prev||"").trim().split(/\s+/).filter(Boolean);
+      var cWords=(curr||"").trim().split(/\s+/).filter(Boolean);
+      var pSet=new Set(pWords);
+      var added=cWords.filter(function(w){return!pSet.has(w)}).length;
+      var removed=pWords.filter(function(w){return!new Set(cWords).has(w)}).length;
+      return{added:added,removed:removed,total:cWords.length};
+    }
+    function driftLabel(prev,curr){
+      if(!prev&&curr)return{label:"Written",color:K.acc};
+      if(prev&&!curr)return{label:"Removed",color:K.red};
+      var d=wordDiff(prev,curr);
+      var changed=d.added+d.removed;
+      var ratio=d.total>0?changed/d.total:0;
+      if(ratio>0.5)return{label:"Major rewrite",color:K.amb};
+      if(ratio>0.2)return{label:"Significant update",color:K.blue};
+      if(ratio>0)return{label:"Minor refinement",color:K.grn};
+      return{label:"Unchanged",color:K.bdr};
+    }
+    var _dv=useState(null),activeEntry=_dv[0],setActiveEntry=_dv[1];
+    var active=activeEntry!==null?activeEntry:0;
+    var entry=entries[active];
+    var prevEntry=entries[active+1]||null;
+    return<Modal title="" onClose={function(){setModal(null)}} wide={true}>
+      <div style={{display:"flex",gap:0,height:"70vh",minHeight:480}}>
+        {/* Left timeline nav */}
+        <div style={{width:200,flexShrink:0,borderRight:"1px solid "+K.bdr,overflowY:"auto",padding:"0 0 20px"}}>
+          <div style={{padding:"14px 16px 12px",borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <CoLogo domain={sel.domain} ticker={sel.ticker} size={22}/>
+              <div>
+                <div style={{fontSize:13,fontWeight:800,color:K.txt,fontFamily:fh}}>{sel.ticker}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{entries.length+" version"+(entries.length!==1?"s":"")}</div>
+              </div>
+            </div>
+          </div>
+          <div style={{padding:"10px 0",position:"relative"}}>
+            <div style={{position:"absolute",left:26,top:10,bottom:10,width:1,background:K.bdr,zIndex:0}}/>
+            {entries.map(function(ent,i){
+              var prevEnt=entries[i+1]||null;
+              var drift=prevEnt?driftLabel(prevEnt.parsed.core+(prevEnt.parsed.moat||""),ent.parsed.core+(ent.parsed.moat||"")):ent.version===1?{label:"First draft",color:K.acc}:{label:"Written",color:K.acc};
+              var isActive=i===active;
+              var entDate=ent.date?new Date(ent.date):null;
+              var daysAgo=entDate?Math.floor((new Date()-entDate)/864e5):null;
+              return<div key={i} onClick={function(){setActiveEntry(i)}} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"7px 14px",cursor:"pointer",background:isActive?K.acc+"08":"transparent",position:"relative",zIndex:1}}>
+                <div style={{width:9,height:9,borderRadius:"50%",background:isActive?K.acc:ent.isCurrent?K.acc+"60":K.bdr,border:"2px solid "+K.bg,flexShrink:0,marginTop:3}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:1}}>
+                    <span style={{fontSize:11,fontWeight:isActive?700:500,color:isActive?K.acc:K.txt,fontFamily:fm}}>{"v"+ent.version}</span>
+                    {ent.isCurrent&&<span style={{fontSize:8,color:K.acc,background:K.acc+"15",padding:"0 4px",borderRadius:2,fontFamily:fm,fontWeight:700}}>NOW</span>}
+                  </div>
+                  {entDate&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>{entDate.toLocaleDateString([],{month:"short",day:"numeric",year:"2-digit"})}{daysAgo!=null&&daysAgo>0?" · "+(daysAgo>365?Math.floor(daysAgo/365)+"y":daysAgo>30?Math.floor(daysAgo/30)+"mo":daysAgo+"d"):""}</div>}
+                  <span style={{fontSize:8,color:drift.color,background:drift.color+"12",border:"1px solid "+drift.color+"20",borderRadius:2,padding:"1px 4px",fontFamily:fm,fontWeight:600}}>{drift.label}</span>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>
+        {/* Right: entry content */}
+        <div style={{flex:1,overflowY:"auto",padding:"22px 28px"}}>
+          {entry&&<div>
+            <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:16,paddingBottom:14,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{fontSize:20,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{"v"+entry.version}</div>
+              {entry.date&&<div style={{fontSize:13,color:K.mid,fontFamily:fm}}>{new Date(entry.date).toLocaleDateString([],{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>}
+              {entry.isCurrent&&<span style={{fontSize:9,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm,fontWeight:700,letterSpacing:0.5,marginLeft:"auto"}}>Current</span>}
+              {!entry.isCurrent&&entry.fullText&&<button onClick={function(){if(window.confirm("Restore v"+entry.version+"? Current thesis auto-saved.")){var cur=(sel.thesisVersions||[]).slice();var cp=parseThesis(sel.thesisNote||"");cur.push({date:new Date().toISOString().split("T")[0],savedAt:new Date().toISOString(),summary:"Auto-saved before restore",fullText:sel.thesisNote||"",core:cp.core||"",moat:cp.moat||"",risks:cp.risks||"",sell:cp.sell||""});upd(selId,{thesisNote:entry.fullText,thesisVersions:cur,thesisUpdatedAt:new Date().toISOString()});setModal(null);}}} style={{marginLeft:"auto",padding:"4px 12px",borderRadius:_isBm?0:5,background:K.bg,border:"1px solid "+K.bdr,color:K.mid,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Restore</button>}
+            </div>
+            {/* What changed */}
+            {prevEntry&&(function(){
+              var secs=[{key:"core",label:"Core thesis",color:K.acc},{key:"moat",label:"Moat",color:K.grn},{key:"risks",label:"Risks",color:K.amb},{key:"sell",label:"Sell criteria",color:K.red}];
+              var changed=secs.filter(function(s){return(entry.parsed[s.key]||"")!==(prevEntry.parsed[s.key]||"")&&((entry.parsed[s.key]||"")||(prevEntry.parsed[s.key]||""))});
+              if(!changed.length)return null;
+              return<div style={{marginBottom:16,padding:"10px 14px",background:K.blue+"08",border:"1px solid "+K.blue+"20",borderRadius:_isBm?0:8}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.blue,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{"Changes from v"+(entry.version-1)}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                  {changed.map(function(s){var d=wordDiff(prevEntry.parsed[s.key]||"",entry.parsed[s.key]||"");return<span key={s.key} style={{fontSize:9,color:s.color,background:s.color+"10",border:"1px solid "+s.color+"20",borderRadius:2,padding:"1px 7px",fontFamily:fm,fontWeight:600}}>{s.label+(d.added?" +"+d.added:"")+(d.removed?" −"+d.removed:"")}</span>;})}
+                </div>
+              </div>;
+            })()}
+            {/* Thesis content */}
+            {entry.parsed.core&&<div style={{marginBottom:20}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>Core thesis</div>
+              <div style={{fontSize:16,color:K.txt,lineHeight:1.9,fontFamily:"'Lora', serif",fontStyle:"italic"}}>{entry.parsed.core}</div>
+            </div>}
+            {entry.parsed.moat&&<div style={{padding:"12px 16px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.grn,marginBottom:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>{"Moat — Why it’s defensible"}</div>
+              <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{entry.parsed.moat}</div>
+            </div>}
+            {entry.parsed.risks&&<div style={{padding:"12px 16px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.amb,marginBottom:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>{"Risks — What I’m watching"}</div>
+              <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{entry.parsed.risks}</div>
+            </div>}
+            {entry.parsed.sell&&<div style={{padding:"12px 16px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.red}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>{"Sell criteria — When I’d exit"}</div>
+              <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{entry.parsed.sell}</div>
+            </div>}
+            {!entry.parsed.core&&!entry.parsed.moat&&!entry.parsed.sell&&<div style={{color:K.dim,fontSize:13,fontFamily:fm,fontStyle:"italic"}}>No content in this version.</div>}
+          </div>}
+        </div>
+      </div>
+    </Modal>;
+  }
+
+
   function KpiModal(){if(!sel)return null;var kid=modal.data;var ex=kid?sel.kpis.find(function(k){return k.id===kid}):null;
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];
     var _kpiS=useState(""),kpiSearch=_kpiS[0],setKpiSearch=_kpiS[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
@@ -3205,7 +3328,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -4842,8 +4965,16 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
               <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>Thesis</div>
+              {(sel.thesisVersions||[]).length>0&&<span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm,letterSpacing:0.5}}>{"v"+(sel.thesisVersions.length+1)}</span>}
+              {_thesisAgeDays!=null&&_thesisAgeDays>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{_thesisAgeDays>365?Math.floor(_thesisAgeDays/365)+"y ago":_thesisAgeDays>30?Math.floor(_thesisAgeDays/30)+"mo ago":_thesisAgeDays+"d ago"}</span>}
             </div>
-            <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {(sel.thesisVersions||[]).length>=1&&<button onClick={function(){setModal({type:"thesisDiary"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                History
+              </button>}
+              <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button>
+            </div></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"20px 20px":"28px 32px"}}>
               {(function(){
@@ -4878,6 +5009,138 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:13,color:K.dim,lineHeight:1.65,maxWidth:320,margin:"0 auto"}}>{"Why do you own it? What’s the moat? What would make you sell? This is the most important thing you can do as an owner."}</div>
             <div style={{marginTop:20,display:"inline-flex",alignItems:"center",gap:6,background:K.acc,color:"#fff",padding:"9px 20px",borderRadius:_isBm?0:8,fontSize:13,fontWeight:600}}>{"Start writing →"}</div>
           </div>}
+          {/* ── THESIS HISTORY + DRIFT ── */}
+          {(function(){
+            var versions=sel.thesisVersions||[];
+            var thesisAge=sel.thesisUpdatedAt?Math.ceil((new Date()-new Date(sel.thesisUpdatedAt))/864e5):null;
+            var earnDays=dU(sel.earningsDate);
+            var preEarningsAlert=thesisAge!=null&&thesisAge>90&&earnDays>=0&&earnDays<=21;
+            var hasHistory=versions.length>=2;
+
+            // Drift detection — compare current to previous version
+            function diffSection(curr,prev){
+              if(!prev||!curr)return null;
+              if(!prev.trim()&&curr.trim())return"added";
+              if(prev.trim()&&!curr.trim())return"removed";
+              var prevWords=prev.trim().split(/\s+/);
+              var currWords=curr.trim().split(/\s+/);
+              // Simple word-level change ratio
+              var maxLen=Math.max(prevWords.length,currWords.length);
+              if(maxLen===0)return null;
+              var sameCount=0;
+              var minLen=Math.min(prevWords.length,currWords.length);
+              for(var wi=0;wi<minLen;wi++){if(prevWords[wi].toLowerCase()===currWords[wi].toLowerCase())sameCount++;}
+              var similarity=sameCount/maxLen;
+              if(similarity<0.7)return"major";
+              if(similarity<0.9)return"minor";
+              return null;
+            }
+
+            var _dh=useState(false),showHistory=_dh[0],setShowHistory=_dh[1];
+            var _dv=useState(null),diffWith=_dv[0],setDiffWith=_dv[1];
+            var currentParsed=parseThesis(sel.thesisNote||"");
+
+            // Compute drift from last version
+            var driftSignals=[];
+            if(hasHistory){
+              var lastV=versions[versions.length-1];
+              var prevParsed={core:lastV.core||"",moat:lastV.moat||"",risks:lastV.risks||"",sell:lastV.sell||""};
+              var coreDrift=diffSection(currentParsed.core,prevParsed.core);
+              var moatDrift=diffSection(currentParsed.moat,prevParsed.moat);
+              var risksDrift=diffSection(currentParsed.risks,prevParsed.risks);
+              var sellDrift=diffSection(currentParsed.sell,prevParsed.sell);
+              if(coreDrift)driftSignals.push({section:"Core thesis",change:coreDrift,color:coreDrift==="major"?K.amb:K.blue});
+              if(moatDrift)driftSignals.push({section:"Moat",change:moatDrift,color:moatDrift==="major"?K.amb:K.blue});
+              if(risksDrift)driftSignals.push({section:"Risks",change:risksDrift,color:K.amb});
+              if(sellDrift)driftSignals.push({section:"Sell criteria",change:sellDrift,color:K.red});
+            }
+
+            return<div style={{marginTop:16}}>
+              {/* Pre-earnings nudge */}
+              {preEarningsAlert&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,marginBottom:12}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0,marginTop:2}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>{"Earnings in "+earnDays+"d \u2014 thesis is "+thesisAge+" days old"}</div>
+                  <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{"Worth a quick re-read before results drop. Is your thesis still intact?"}</div>
+                </div>
+                <button onClick={function(){setModal({type:"thesis"})}} style={{flexShrink:0,padding:"5px 12px",background:K.amb+"15",border:"1px solid "+K.amb+"40",borderRadius:_isBm?0:6,color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{"Review \u2192"}</button>
+              </div>}
+
+              {/* Drift signals */}
+              {driftSignals.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                <span style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",alignSelf:"center"}}>Since last version:</span>
+                {driftSignals.map(function(d,i){return<span key={i} style={{fontSize:10,fontWeight:600,color:d.color,background:d.color+"10",border:"1px solid "+d.color+"25",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{d.section+": "+(d.change==="major"?"major change":d.change==="minor"?"refined":d.change==="added"?"added":d.change==="removed"?"removed":"changed")}</span>;})}
+              </div>}
+
+              {/* History toggle */}
+              {versions.length>0&&<div>
+                <button onClick={function(){setShowHistory(!showHistory)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",color:K.dim,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:showHistory?10:0}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {versions.length} version{versions.length!==1?"s":""} saved
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">{showHistory?<polyline points="18 15 12 9 6 15"/>:<polyline points="6 9 12 15 18 9"/>}</svg>
+                </button>
+
+                {showHistory&&<div style={{display:"flex",flexDirection:"column",gap:0,borderLeft:"2px solid "+K.bdr,marginLeft:5}}>
+                  {versions.slice().reverse().map(function(v,i){
+                    var isLatest=i===0;
+                    var isCurrent=isLatest;
+                    var isDiffing=diffWith===i;
+                    var vParsed={core:v.core||"",moat:v.moat||"",risks:v.risks||"",sell:v.sell||""};
+                    var vDate=v.savedAt?new Date(v.savedAt):new Date(v.date);
+                    var daysAgo=Math.floor((new Date()-vDate)/864e5);
+                    var daysLabel=daysAgo===0?"Today":daysAgo===1?"Yesterday":daysAgo+"d ago";
+
+                    return<div key={i} style={{marginLeft:12,marginBottom:8}}>
+                      {/* Version header */}
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <div style={{width:7,height:7,borderRadius:"50%",background:isCurrent?K.acc:K.bdr,flexShrink:0,marginLeft:-15.5,border:"2px solid "+K.bg}}/>
+                        <span style={{fontSize:11,fontWeight:isCurrent?700:500,color:isCurrent?K.acc:K.mid,fontFamily:fm}}>{v.date||vDate.toISOString().split("T")[0]}</span>
+                        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{daysLabel}</span>
+                        {isCurrent&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm,fontWeight:700}}>Current</span>}
+                        {!isCurrent&&v.fullText&&<button onClick={function(){setDiffWith(isDiffing?null:i)}} style={{fontSize:9,color:isDiffing?K.acc:K.dim,background:"none",border:"1px solid "+(isDiffing?K.acc+"40":K.bdr),borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>{isDiffing?"Hide diff":"Diff"}</button>}
+                        {!isCurrent&&v.fullText&&<button onClick={function(){
+                          // Restore this version
+                          if(window.confirm("Restore this version? Your current thesis will be saved as a snapshot first.")){
+                            var curVersions=(sel.thesisVersions||[]).slice();
+                            var curParsed=parseThesis(sel.thesisNote||"");
+                            curVersions.push({date:new Date().toISOString().split("T")[0],savedAt:new Date().toISOString(),summary:"Auto-saved before restore",fullText:sel.thesisNote||"",core:curParsed.core||"",moat:curParsed.moat||"",risks:curParsed.risks||"",sell:curParsed.sell||""});
+                            upd(selId,{thesisNote:v.fullText,thesisVersions:curVersions,thesisUpdatedAt:new Date().toISOString()});
+                          }
+                        }} style={{fontSize:9,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>Restore</button>}
+                      </div>
+
+                      {/* Version excerpt or diff */}
+                      {isDiffing&&v.fullText?<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:11,fontFamily:fm,lineHeight:1.7}}>
+                        {["core","moat","risks","sell"].map(function(field){
+                          var currText=currentParsed[field]||"";
+                          var prevText=vParsed[field]||"";
+                          if(!currText&&!prevText)return null;
+                          var changed=currText!==prevText;
+                          var fieldLabels={core:"Core thesis",moat:"Moat",risks:"Risks",sell:"Sell criteria"};
+                          var fieldColors={core:K.acc,moat:K.grn,risks:K.amb,sell:K.red};
+                          return<div key={field} style={{marginBottom:8}}>
+                            <div style={{fontSize:9,fontWeight:700,color:changed?fieldColors[field]:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3,display:"flex",alignItems:"center",gap:6}}>
+                              {fieldLabels[field]}
+                              {changed&&<span style={{fontWeight:600,color:fieldColors[field],background:fieldColors[field]+"15",padding:"0px 5px",borderRadius:2}}>changed</span>}
+                            </div>
+                            {changed?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                              <div style={{borderLeft:"2px solid "+K.red+"60",paddingLeft:8,color:K.dim,fontSize:11,lineHeight:1.6,opacity:0.8}}>{prevText.substring(0,200)+(prevText.length>200?"...":"")}</div>
+                              <div style={{borderLeft:"2px solid "+K.grn+"60",paddingLeft:8,color:K.txt,fontSize:11,lineHeight:1.6}}>{currText.substring(0,200)+(currText.length>200?"...":"")}</div>
+                            </div>
+                            :<div style={{color:K.dim,fontSize:11,lineHeight:1.6}}>{currText.substring(0,120)+(currText.length>120?"...":"")}</div>}
+                          </div>;
+                        })}
+                      </div>
+                      :(v.core||v.summary)&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5,fontStyle:"italic",paddingLeft:2}}>
+                        {"\u201c"+(v.core||v.summary||"").substring(0,120)+((v.core||v.summary||"").length>120?"...":"")+"\u201d"}
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+              </div>}
+            </div>;
+          })()}
+
           {/* Lynch Test */}
           <div style={{marginTop:12}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
