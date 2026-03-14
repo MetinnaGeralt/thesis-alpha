@@ -2044,6 +2044,198 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(totalKpis>0&&allMet){launchConfetti(3000);showCelebration(co.ticker+" KPIs: All Met!","Every metric hit its target. Your thesis is being confirmed by the numbers.",null,K.grn)}
         else if(totalKpis>0&&allMiss){showToast(co.ticker+" KPIs need attention - "+metCount+"/"+totalKpis+" met. Review your thesis.","info",6000)}
         else{showToast(co.ticker+" earnings checked - "+metCount+"/"+totalKpis+" KPIs met","info",4000)}};if(sel.kpis.length===0)setTimeout(function(){showToast("Next step: define 2-3 KPIs that prove your thesis → click + Add under Key Metrics","info",5000)},1500);setModal(null)}}>Save & Snapshot</button></div></div></Modal>}
+  // ── SHARE THESIS MODAL ───────────────────────────────────────────────────
+  function ShareThesisModal(){
+    if(!sel)return null;
+    var sec=parseThesis(sel.thesisNote||"");
+    var snap=sel.financialSnapshot||{};
+    var conv=sel.conviction||0;
+    var versionNum=(sel.thesisVersions||[]).length+1;
+    var thesisDate=sel.thesisUpdatedAt?new Date(sel.thesisUpdatedAt).toLocaleDateString([],{year:"numeric",month:"long",day:"numeric"}):"";
+    var _copied=useState(false),copied=_copied[0],setCopied=_copied[1];
+    var _imgCopied=useState(false),imgCopied=_imgCopied[0],setImgCopied=_imgCopied[1];
+
+    // Conviction label
+    var convLabel=conv>=9?"Extremely High":conv>=7?"High":conv>=5?"Moderate":conv>=3?"Measured":"Exploratory";
+    var convColor=conv>=7?K.grn:conv>=5?K.acc:K.amb;
+    var convDots=Array.from({length:10},function(_,i){return i<conv});
+
+    // Pick 4 most informative snapshot metrics
+    var metricKeys=["grossMargin","roic","roe","netMargin","pe","pb","fcf","revGrowth","opMargin","currentRatio"];
+    var displayMetrics=metricKeys.map(function(k){return snap[k]?{label:snap[k].label,value:snap[k].value}:null}).filter(Boolean).slice(0,4);
+
+    // Plain-text version for copy
+    function buildPlainText(){
+      var lines=[];
+      lines.push("Thesis: "+sel.ticker+" — "+sel.name);
+      if(thesisDate)lines.push("Updated: "+thesisDate+" · v"+versionNum);
+      lines.push("");
+      if(sec.core)lines.push(sec.core);
+      if(sec.moat){lines.push(""); lines.push("Moat:"); lines.push(sec.moat);}
+      if(sec.risks){lines.push(""); lines.push("Risks:"); lines.push(sec.risks);}
+      if(sec.sell){lines.push(""); lines.push("Sell criteria:"); lines.push(sec.sell);}
+      if(displayMetrics.length){
+        lines.push("");
+        lines.push("Key metrics: "+displayMetrics.map(function(m){return m.label+" "+m.value}).join(" · "));
+      }
+      lines.push("");
+      lines.push("Conviction: "+convLabel+" ("+conv+"/10)");
+      lines.push("— Shared from ThesisAlpha");
+      return lines.join("
+");
+    }
+
+    function copyText(){
+      try{navigator.clipboard.writeText(buildPlainText());setCopied(true);setTimeout(function(){setCopied(false)},2500);}catch(e){}
+    }
+
+    // Capture card as image using html2canvas
+    function copyImage(){
+      var card=document.getElementById("ta-share-card");
+      if(!card){return;}
+      if(typeof html2canvas==="undefined"){
+        // Fallback: load html2canvas dynamically
+        var s=document.createElement("script");
+        s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        s.onload=function(){doCapture();}
+        document.head.appendChild(s);
+      } else {doCapture();}
+      function doCapture(){
+        html2canvas(card,{backgroundColor:null,scale:2,logging:false,useCORS:true}).then(function(canvas){
+          canvas.toBlob(function(blob){
+            if(navigator.clipboard&&window.ClipboardItem){
+              navigator.clipboard.write([new ClipboardItem({"image/png":blob})]).then(function(){
+                setImgCopied(true);setTimeout(function(){setImgCopied(false)},2500);
+              }).catch(function(){
+                // fallback: download
+                var a=document.createElement("a");a.href=URL.createObjectURL(blob);
+                a.download=sel.ticker+"-thesis.png";a.click();
+              });
+            } else {
+              var a=document.createElement("a");a.href=canvas.toDataURL();
+              a.download=sel.ticker+"-thesis.png";a.click();
+            }
+          },"image/png");
+        });
+      }
+    }
+
+    return<Modal title="" onClose={function(){setModal(null)}} wide={false}>
+      <div style={{padding:"4px 0 0"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div>
+            <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>Share thesis</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>{"Your position size and cost are never included."}</div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={copyText} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:_isBm?0:8,background:copied?K.grn+"15":"transparent",border:"1px solid "+(copied?K.grn+"40":K.bdr),color:copied?K.grn:K.mid,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
+              {copied
+                ?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!</>
+                :<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy text</>}
+            </button>
+            <button onClick={copyImage} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:_isBm?0:8,background:imgCopied?K.acc+"15":K.acc,border:"1px solid "+(imgCopied?K.acc+"40":K.acc),color:imgCopied?K.acc:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
+              {imgCopied
+                ?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>Copied!</>
+                :<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Copy image</>}
+            </button>
+          </div>
+        </div>
+
+        {/* THE SHARE CARD — this is what gets rendered to image */}
+        <div id="ta-share-card" style={{
+          background:"linear-gradient(135deg,#0f0f13 0%,#141420 60%,#1a1428 100%)",
+          borderRadius:16,overflow:"hidden",padding:"32px 32px 28px",
+          fontFamily:"system-ui,-apple-system,sans-serif",
+          border:"1px solid rgba(255,255,255,0.08)",
+          maxWidth:560,margin:"0 auto"
+        }}>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:48,height:48,borderRadius:12,overflow:"hidden",background:"rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <CoLogo domain={sel.domain} ticker={sel.ticker} size={48}/>
+              </div>
+              <div>
+                <div style={{fontSize:22,fontWeight:900,color:"#ffffff",letterSpacing:"-0.5px",lineHeight:1}}>{sel.ticker}</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginTop:3,fontWeight:400}}>{sel.name}</div>
+                {sel.sector&&<div style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginTop:2,letterSpacing:0.5,textTransform:"uppercase"}}>{sel.sector}</div>}
+              </div>
+            </div>
+            {/* Conviction */}
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.35)",letterSpacing:1.5,textTransform:"uppercase",marginBottom:5,fontWeight:600}}>Conviction</div>
+              <div style={{display:"flex",gap:3,justifyContent:"flex-end",marginBottom:4}}>
+                {convDots.map(function(filled,i){return<div key={i} style={{width:5,height:5,borderRadius:"50%",background:filled?convColor:"rgba(255,255,255,0.12)"}}/> })}
+              </div>
+              <div style={{fontSize:11,color:convColor,fontWeight:700}}>{convLabel}</div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{height:1,background:"linear-gradient(90deg,rgba(160,100,255,0.4),rgba(255,255,255,0.05))",marginBottom:20}}/>
+
+          {/* Core thesis — serif italic */}
+          {sec.core&&<div style={{fontSize:15,color:"rgba(255,255,255,0.88)",lineHeight:1.85,marginBottom:20,fontFamily:"Georgia,'Times New Roman',serif",fontStyle:"italic",fontWeight:400}}>
+            {"“"}{sec.core.length>320?sec.core.slice(0,317)+"...":sec.core}{"”"}
+          </div>}
+
+          {/* Moat / Risks / Sell — compact */}
+          {(sec.moat||sec.risks||sec.sell)&&<div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+            {sec.moat&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+              <div style={{width:3,height:"100%",minHeight:16,borderRadius:2,background:"#22C55E",flexShrink:0,marginTop:3}}/>
+              <div>
+                <div style={{fontSize:8,fontWeight:700,color:"#22C55E",letterSpacing:1.5,textTransform:"uppercase",marginBottom:3}}>Moat</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",lineHeight:1.6}}>{sec.moat.length>160?sec.moat.slice(0,157)+"...":sec.moat}</div>
+              </div>
+            </div>}
+            {sec.risks&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+              <div style={{width:3,height:"100%",minHeight:16,borderRadius:2,background:"#F59E0B",flexShrink:0,marginTop:3}}/>
+              <div>
+                <div style={{fontSize:8,fontWeight:700,color:"#F59E0B",letterSpacing:1.5,textTransform:"uppercase",marginBottom:3}}>Risks</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",lineHeight:1.6}}>{sec.risks.length>120?sec.risks.slice(0,117)+"...":sec.risks}</div>
+              </div>
+            </div>}
+            {sec.sell&&<div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+              <div style={{width:3,height:"100%",minHeight:16,borderRadius:2,background:"#EF4444",flexShrink:0,marginTop:3}}/>
+              <div>
+                <div style={{fontSize:8,fontWeight:700,color:"#EF4444",letterSpacing:1.5,textTransform:"uppercase",marginBottom:3}}>{"Sell criteria"}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",lineHeight:1.6}}>{sec.sell.length>120?sec.sell.slice(0,117)+"...":sec.sell}</div>
+              </div>
+            </div>}
+          </div>}
+
+          {/* Metrics row */}
+          {displayMetrics.length>0&&<div style={{display:"flex",gap:0,marginBottom:20,background:"rgba(255,255,255,0.04)",borderRadius:10,overflow:"hidden",border:"1px solid rgba(255,255,255,0.07)"}}>
+            {displayMetrics.map(function(m,i){return<div key={i} style={{flex:1,padding:"10px 12px",borderRight:i<displayMetrics.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
+              <div style={{fontSize:8,color:"rgba(255,255,255,0.35)",letterSpacing:1,textTransform:"uppercase",marginBottom:3,fontWeight:600}}>{m.label}</div>
+              <div style={{fontSize:14,fontWeight:700,color:"rgba(255,255,255,0.88)"}}>{m.value}</div>
+            </div>;})}
+          </div>}
+
+          {/* Footer */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {/* TA logo mark */}
+              <div style={{width:20,height:20,borderRadius:5,background:"linear-gradient(135deg,#7c3aed,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <span style={{fontSize:10,color:"rgba(255,255,255,0.35)",fontWeight:600,letterSpacing:0.5}}>ThesisAlpha</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              {thesisDate&&<span style={{fontSize:9,color:"rgba(255,255,255,0.25)",letterSpacing:0.3}}>{"Updated "+thesisDate}</span>}
+              <span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{"v"+versionNum}</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{marginTop:12,fontSize:10,color:K.dim,textAlign:"center",fontFamily:fm,lineHeight:1.6}}>
+          {"Position size, cost basis and returns are never included in shared theses."}
+        </div>
+      </div>
+    </Modal>;
+  }
+
+
   // ── THESIS DIARY MODAL ────────────────────────────────────────────────────
   function ThesisDiaryModal(){
     if(!sel)return null;
@@ -3328,7 +3520,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -4972,6 +5164,10 @@ function calcMoatFromData(finData,businessModelType){
               {(sel.thesisVersions||[]).length>=1&&<button onClick={function(){setModal({type:"thesisDiary"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 History
+              </button>}
+              {sel.thesisNote&&sel.thesisNote.trim().length>20&&<button onClick={function(){setModal({type:"shareThesis"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Share
               </button>}
               <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button>
             </div></div>
