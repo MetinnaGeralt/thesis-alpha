@@ -3307,7 +3307,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
-    {/* ── DAILY QUOTE ── */}
+
+
+    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
+      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
+        {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
+        {isDark?"Switch to Light":"Switch to Dark"}</button>}
+      <div style={{display:"flex",gap:6}}>
+        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}} title="Add holding (N)">+ Add</button>
+        <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:12})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div>
+    {/* ── DAILY QUOTE — floats below buttons ── */}
     {!isMobile&&!bm&&(function(){
       var QUOTES=[
         {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
@@ -3316,28 +3325,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {q:"The best investment you can make is an investment in yourself.",a:"Warren Buffett"},
         {q:"Invert, always invert. Turn a problem upside down.",a:"Charlie Munger"},
         {q:"In the short run, the market is a voting machine. In the long run, it is a weighing machine.",a:"Benjamin Graham"},
-        {q:"All I want to know is where I\u2019m going to die, so I\u2019ll never go there.",a:"Charlie Munger"},
+        {q:"All I want to know is where I’m going to die, so I’ll never go there.",a:"Charlie Munger"},
         {q:"Behind every stock is a company. Find out what it is doing.",a:"Peter Lynch"},
         {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
         {q:"Go to bed smarter than when you woke up.",a:"Charlie Munger"},
-        {q:"The investor\u2019s chief problem \u2014 and even his worst enemy \u2014 is likely to be himself.",a:"Benjamin Graham"},
-        {q:"It\u2019s not the employer who pays the wages. Employers only handle the money. The customer pays the wages.",a:"Henry Ford"},
+        {q:"The investor’s chief problem — and even his worst enemy — is likely to be himself.",a:"Benjamin Graham"},
         {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
-        {q:"Risk comes from not knowing what you\u2019re doing.",a:"Warren Buffett"},
-        {q:"You only have to do a very few things right in your life so long as you don\u2019t do too many things wrong.",a:"Warren Buffett"},
+        {q:"Risk comes from not knowing what you’re doing.",a:"Warren Buffett"},
+        {q:"You only have to do a very few things right in your life so long as you don’t do too many things wrong.",a:"Warren Buffett"},
         {q:"In the business world, the rearview mirror is always clearer than the windshield.",a:"Warren Buffett"},
-        {q:"I never attempt to make money on the stock market. I buy on the assumption that they could close the market the next day and not reopen it for five years.",a:"Warren Buffett"},
-        {q:"The four most dangerous words in investing are: this time it\u2019s different.",a:"John Templeton"},
+        {q:"The four most dangerous words in investing are: this time it’s different.",a:"John Templeton"},
         {q:"The big money is not in the buying and the selling, but in the waiting.",a:"Charlie Munger"},
         {q:"Our favourite holding period is forever.",a:"Warren Buffett"},
-        {q:"Twenty years in this business convinces me that any normal person using the customary three percent of the brain can pick stocks just as well, if not better, than the average Wall Street expert.",a:"Peter Lynch"},
-        {q:"Compound interest is the eighth wonder of the world. He who understands it, earns it; he who doesn\u2019t, pays it.",a:"Albert Einstein"},
         {q:"A great business at a fair price is superior to a fair business at a great price.",a:"Charlie Munger"},
         {q:"The job is to find a few intelligent things to do, not to keep up with every damn thing in the world.",a:"Charlie Munger"},
         {q:"It takes 20 years to build a reputation and five minutes to ruin it.",a:"Warren Buffett"},
-        {q:"Simplicity is the ultimate sophistication.",a:"Leonardo da Vinci"},
         {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
-        {q:"The best time to plant a tree was 20 years ago. The second best time is now.",a:"Chinese Proverb"},
         {q:"I am a better investor because I am a businessman, and a better businessman because I am an investor.",a:"Warren Buffett"},
         {q:"Never invest in a business you cannot understand.",a:"Warren Buffett"},
         {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
@@ -3345,31 +3348,29 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
         {q:"The market is a pendulum that forever swings between unsustainable optimism and unjustified pessimism.",a:"Benjamin Graham"},
         {q:"Lethargy bordering on sloth remains the cornerstone of our investment style.",a:"Warren Buffett"},
-        {q:"It\u2019s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
-        {q:"I don\u2019t look to jump over 7-foot bars; I look around for 1-foot bars that I can step over.",a:"Warren Buffett"},
+        {q:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
         {q:"We simply attempt to be fearful when others are greedy and to be greedy only when others are fearful.",a:"Warren Buffett"},
+        {q:"Knowing what you don’t know is more useful than being brilliant.",a:"Charlie Munger"},
         {q:"The difference between successful people and really successful people is that really successful people say no to almost everything.",a:"Warren Buffett"},
-        {q:"Knowing what you don\u2019t know is more useful than being brilliant.",a:"Charlie Munger"},
+        {q:"I don’t look to jump over 7-foot bars; I look around for 1-foot bars that I can step over.",a:"Warren Buffett"},
+        {q:"Twenty years in this business convinces me that any normal person using the customary three percent of the brain can pick stocks just as well, if not better, than the average Wall Street expert.",a:"Peter Lynch"},
+        {q:"Compound interest is the eighth wonder of the world. He who understands it, earns it; he who doesn’t, pays it.",a:"Albert Einstein"},
+        {q:"Simplicity is the ultimate sophistication.",a:"Leonardo da Vinci"},
+        {q:"The best time to plant a tree was 20 years ago. The second best time is now.",a:"Chinese Proverb"},
+        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
+        {q:"In investing, what is comfortable is rarely profitable.",a:"Robert Arnott"},
       ];
-      // Pick by day-of-year — same quote all day, changes daily
       var now=new Date();
       var start=new Date(now.getFullYear(),0,0);
       var dayOfYear=Math.floor((now-start)/864e5);
       var q=QUOTES[dayOfYear%QUOTES.length];
-      return<div style={{padding:"16px 16px 8px",textAlign:"center"}}>
+      return<div style={{padding:"20px 16px 16px",textAlign:"center",flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
         <style>{"@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');"}</style>
-        <p style={{fontFamily:"'Caveat', cursive",fontSize:13.5,lineHeight:1.6,color:isDark?"rgba(255,255,255,0.55)":"rgba(22,22,29,0.45)",margin:"0 0 8px",letterSpacing:0.2}}>{q.q}</p>
-        <span style={{fontFamily:fm,fontSize:8,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.25)":"rgba(22,22,29,0.28)"}}>{"— "+q.a}</span>
+        <p style={{fontFamily:"'Caveat', cursive",fontSize:13.5,lineHeight:1.65,color:isDark?"rgba(255,255,255,0.5)":"rgba(22,22,29,0.4)",margin:"0 0 10px",letterSpacing:0.2}}>{q.q}</p>
+        <span style={{fontFamily:fm,fontSize:8,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.22)":"rgba(22,22,29,0.25)"}}>{"— "+q.a}</span>
       </div>;
     })()}
-
-    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
-      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
-        {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
-        {isDark?"Switch to Light":"Switch to Dark"}</button>}
-      <div style={{display:"flex",gap:6}}>
-        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}} title="Add holding (N)">+ Add</button>
-        <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:12})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div></div></div>}
+    </div></div>}
   function TopBar(){
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
