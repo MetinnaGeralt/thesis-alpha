@@ -4278,9 +4278,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _hovD=useState(null),hovD=_hovD[0],setHovD=_hovD[1];
     var _descExp=useState(false),descExpanded=_descExp[0],setDescExpanded=_descExp[1];
     var _insiderData=useState(null),insiderData=_insiderData[0],setInsiderData=_insiderData[1];
+    var _peersData=useState(null),peersData=_peersData[0],setPeersData=_peersData[1];
+    var _peersLd=useState(false),peersLoading=_peersLd[0],setPeersLoading=_peersLd[1];
     useEffect(function(){if(!c||!isPro){setInsiderData(null);return}
       Promise.all([fetchInsiders(c.ticker).catch(function(){return[]}),fetchInstitutionalHolders(c.ticker).catch(function(){return[]})]).then(function(res){
         setInsiderData({transactions:res[0],institutions:res[1]})}).catch(function(){setInsiderData(null)})},[c&&c.ticker,isPro]);
+    useEffect(function(){if(!c)return;setPeersLoading(true);
+      fetchPeers(c.ticker).then(function(tickers){
+        if(!tickers||!tickers.length){setPeersData([]);setPeersLoading(false);return}
+        Promise.all(tickers.slice(0,6).map(function(tk){
+          return fetchFMPMetrics(tk).then(function(m){return{ticker:tk,metrics:m}}).catch(function(){return{ticker:tk,metrics:null}})
+        })).then(function(results){
+          setPeersData(results.filter(function(r){return r.metrics}));
+          setPeersLoading(false);
+        }).catch(function(){setPeersData([]);setPeersLoading(false)})
+      }).catch(function(){setPeersData([]);setPeersLoading(false)})
+    },[c&&c.ticker]);
     useEffect(function(){
       // Backfill description from FMP profile if missing (free for all users)
       if(!c.description){fmp("profile/"+c.ticker).then(function(p){
@@ -4507,6 +4520,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
         })()}
 
+        {/* ── OWNER'S SCORECARD ── */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"16px 20px",marginBottom:20,display:"flex",flexWrap:"wrap",gap:0}}>
+          {[
+            {label:"Conviction",value:conv>0?conv+"/10":"—",sub:conv>=7?"High":conv>=4?"Medium":conv>0?"Low":"Unrated",color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,onClick:function(){setModal({type:"conviction"})}},
+            {label:"Thesis",value:_tScore+"%",sub:_tScore>=80?"Strong":_tScore>=50?"Developing":"Weak",color:_tScoreColor,onClick:function(){setModal({type:"thesis"})}},
+            {label:"KPIs",value:h.m>0?h.ok+"/"+h.m:"None",sub:h.m>0?(h.ok===h.m?"All met":h.ok>0?"Partial":"Missed"):"Add KPIs",color:h.m>0?(h.ok===h.m?K.grn:h.ok>0?K.amb:K.red):K.dim,onClick:function(){setDetailTab("dossier")}},
+            {label:"Held",value:(function(){if(!c.purchaseDate)return"—";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<30?d+"d":d<365?Math.floor(d/30)+"mo":Math.floor(d/365)+"yr"+(Math.floor((d%365)/30)>0?" "+Math.floor((d%365)/30)+"mo":"")})(),sub:(function(){if(!c.purchaseDate)return"Set date";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<90?"Short term":d<730?"Medium term":"Long term"})(),color:K.mid,onClick:function(){setModal({type:"position"})}},
+            {label:"Return",value:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"—";return((p2.currentPrice-p2.avgCost)/p2.avgCost*100).toFixed(1)+"%"})(),sub:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"No position";var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=20?"Performing":r>=0?"Positive":r>=-10?"Small loss":"Deep loss"})(),color:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return K.dim;var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=0?K.grn:K.red})(),onClick:function(){setModal({type:"position"})}},
+            {label:"Thesis age",value:_thesisStaleBadge,sub:_thesisStale?"Needs review":_thesisAgeDays!=null&&_thesisAgeDays<30?"Fresh":"OK",color:_thesisStale?K.amb:K.grn,onClick:function(){setModal({type:"thesis"})}},
+          ].map(function(item,i){return<div key={i} onClick={item.onClick} style={{flex:"1 1 0",minWidth:80,padding:"6px 12px",cursor:"pointer",borderLeft:i>0?"1px solid "+K.bdr:"none",textAlign:"center"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.bg}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:4}}>{item.label}</div>
+            <div style={{fontSize:17,fontWeight:800,color:item.color,fontFamily:fm,lineHeight:1,marginBottom:2}}>{item.value}</div>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.sub}</div>
+          </div>})}
+        </div>
+
         {/* ── 1. THE STORY ── */}
         <div id="ds-story" style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -4528,6 +4559,30 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
             <div style={{fontSize:14,color:K.acc,fontWeight:600,marginBottom:4}}>Write your thesis</div>
             <div style={{fontSize:12,color:K.dim}}>Why do you own {c.ticker}? What’s the moat? When would you sell?</div></div>}
+          {/* Lynch Test */}
+          <div style={{marginTop:12}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                The Lynch Test
+              </div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Can you explain this to an 11-year-old?</span>
+            </div>
+            {c.lynchExplanation
+              ?<div style={{background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,padding:"10px 14px",fontSize:13,color:K.txt,lineHeight:1.7,cursor:"pointer"}}
+                onClick={function(){var v=window.prompt("Explain "+c.ticker+" to an 11-year-old — what does this business do, why do people pay for it, and why can't someone else just copy it?",c.lynchExplanation||"");if(v!==null)upd(c.id,{lynchExplanation:v.trim()})}}>
+                {c.lynchExplanation}
+              </div>
+              :<div style={{background:K.acc+"08",border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:8,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+                onClick={function(){var v=window.prompt("Explain "+c.ticker+" to an 11-year-old — what does this business do, why do people pay for it, and why can't someone else just copy it?","");if(v&&v.trim())upd(c.id,{lynchExplanation:v.trim()})}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.acc}}>Write the Lynch Test</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:2}}>{"If you can't explain it simply, you don't understand it well enough — Peter Lynch"}</div>
+                </div>
+              </div>}
+          </div>
+
           {/* Thesis Timeline */}
           {(function(){
             var tevents=[];
@@ -4825,9 +4880,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(snap.fcfYield&&snap.fcfYield.numVal!=null){valuation.push({l:"FCF Yield",v:snap.fcfYield.value,isGood:snap.fcfYield.numVal>4})}
           else if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.\-]/g,""))||0;if(fcfVal2!==0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
           if(snap.hi52&&snap.lo52&&snap.hi52.value){var cp=pos.currentPrice||0;if(cp>0){var _h52=parseFloat(String(snap.hi52.value).replace(/[^0-9.]/g,""))||0;if(_h52>0){var pctOfHi=((cp/_h52)*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}}
-          if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,tip:"Return on invested capital",isGood:parseFloat(snap.roic.value)>=12});
-          if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,tip:"Return on equity",isGood:parseFloat(snap.roe.value)>=15});
-          if(snap.roce&&snap.roce.value)returns.push({l:"ROCE",v:snap.roce.value,isGood:parseFloat(snap.roce.value)>=12});
+          if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,numVal:snap.roic.numVal,sp500:12,tip:"Return on invested capital — S&P 500 avg ~12%",isGood:snap.roic.numVal>=12});
+          if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,numVal:snap.roe.numVal,sp500:18,tip:"Return on equity — S&P 500 avg ~18%",isGood:snap.roe.numVal>=15});
+          if(snap.roce&&snap.roce.value)returns.push({l:"ROCE",v:snap.roce.value,numVal:snap.roce.numVal,sp500:13,tip:"Return on capital employed — S&P 500 avg ~13%",isGood:parseFloat(snap.roce.value)>=12});
           if(snap.grossMargin)returns.push({l:"Gross Margin",v:snap.grossMargin.value,tip:"Revenue minus COGS"});
           if(snap.opMargin)returns.push({l:"Op. Margin",v:snap.opMargin.value,tip:"Operating income / revenue"});
           if(snap.netMargin)returns.push({l:"Net Margin",v:snap.netMargin.value,tip:"Net income / revenue"});
@@ -4924,19 +4979,48 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
           if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
-          if(returns.length>0)sections.push({title:"RETURNS & GROWTH",items:returns,color:K.grn});
+          if(returns.length>0)sections.push({title:"CAPITAL RETURNS",items:returns,color:K.grn,gauge:true});
           if(divInfo.length>0)sections.push({title:"DIVIDENDS",items:divInfo,color:K.amb});
           if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
           if(sections.length===0)return null;
           return<div id="ds-numbers" style={{marginBottom:24}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {sections.map(function(sec,si){return<div key={si}>
-                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:sec.color,fontFamily:fm,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:sec.color,flexShrink:0}}/>
+              {sections.map(function(sec,si){
+                var secColor=sec.color;
+                return<div key={si}>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:secColor,fontFamily:fm,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:secColor,flexShrink:0}}/>
                   {sec.title}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
+                {sec.gauge
+                  ?<div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(sec.items.filter(function(it){return it.numVal!=null}).length,4)+",1fr)",gap:8}}>
+                    {sec.items.filter(function(it){return it.numVal!=null}).map(function(item,ii){
+                      var v=item.numVal;var sp=item.sp500||15;var maxV=Math.max(sp*2.5,v*1.2,40);
+                      var pct=Math.min(v/maxV,1);var spPct=Math.min(sp/maxV,1);
+                      var col=v>=sp*1.5?K.grn:v>=sp?K.acc:v>=sp*0.6?K.amb:K.red;
+                      var cx=40,cy=42,r=32;
+                      var ang=function(frac){return Math.PI*(1-frac);};
+                      var ptX=function(frac){return(cx+r*Math.cos(ang(frac))).toFixed(1)};
+                      var ptY=function(frac){return(cy-r*Math.sin(ang(frac))).toFixed(1)};
+                      var arcD="M"+(cx-r).toFixed(1)+" "+cy+" A"+r+" "+r+" 0 0 1 "+(cx+r).toFixed(1)+" "+cy;
+                      var fillD="M"+(cx-r).toFixed(1)+" "+cy+" A"+r+" "+r+" 0 0 1 "+ptX(pct)+" "+ptY(pct);
+                      return<div key={ii} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:_isBm?0:10,padding:"12px 8px 8px",textAlign:"center",cursor:"help"}} title={item.tip||""}>
+                        <svg width="80" height="46" viewBox="0 0 80 46" style={{display:"block",margin:"0 auto 4px"}}>
+                          <path d={arcD} fill="none" stroke={K.bdr} strokeWidth="6" strokeLinecap="round"/>
+                          <path d={fillD} fill="none" stroke={col} strokeWidth="6" strokeLinecap="round"/>
+                          {/* S&P500 benchmark tick */}
+                          <line x1={(cx+r*0.72*Math.cos(ang(spPct))).toFixed(1)} y1={(cy-r*0.72*Math.sin(ang(spPct))).toFixed(1)} x2={(cx+r*1.28*Math.cos(ang(spPct))).toFixed(1)} y2={(cy-r*1.28*Math.sin(ang(spPct))).toFixed(1)} stroke={K.dim} strokeWidth="1.5" opacity="0.6"/>
+                          {/* Needle */}
+                          <line x1={cx} y1={cy} x2={ptX(pct)} y2={ptY(pct)} stroke={col} strokeWidth="1.5" strokeLinecap="round"/>
+                          <circle cx={cx} cy={cy} r="2.5" fill={col}/>
+                        </svg>
+                        <div style={{fontSize:13,fontWeight:800,color:col,fontFamily:fm,lineHeight:1}}>{item.v}</div>
+                        <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,letterSpacing:.3}}>{item.l}</div>
+                        <div style={{fontSize:8,color:K.dim,fontFamily:fm,marginTop:1,opacity:.7}}>S&P avg {item.sp500}%</div>
+                      </div>})}
+                  </div>
+                  :<div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
                   {sec.items.map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
                     return<div key={ii} title={item.tip||""} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:_isBm?0:9,padding:"9px 12px",cursor:item.tip?"help":"default",borderLeft:"2px solid "+valColor+"60"}}>
@@ -4944,7 +5028,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                         {item.l}{item.tip&&<span style={{color:K.dim,fontSize:9,marginLeft:3}}>ⓘ</span>}
                       </div>
                       <div style={{fontSize:14,fontWeight:700,fontFamily:fm,color:valColor,lineHeight:1}}>{item.v}</div>
-                    </div>})}</div>
+                    </div>})}</div>}
               </div>})}</div></div>})()}
 
 
@@ -5058,6 +5142,58 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
         </div>})()}
       </div>}{/* end dossierMktOpen */}
+
+        {/* ── PEERS & COMPETITORS ── */}
+        <div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>PEERS & COMPETITORS</div>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>via Finnhub</span>
+          </div>
+          {peersLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}><div style={{fontSize:12,color:K.dim}}>Loading peers...</div></div>}
+          {!peersLoading&&peersData&&peersData.length>0&&(function(){
+            var COLS=[
+              {label:"Gross Margin",key:function(m){return m&&m.ratios?m.ratios.grossProfitMarginTTM!=null?m.ratios.grossProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>40}},
+              {label:"Op Margin",key:function(m){return m&&m.ratios?m.ratios.operatingProfitMarginTTM!=null?m.ratios.operatingProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>15}},
+              {label:"ROIC",key:function(m){return m&&m.km?m.km.returnOnInvestedCapitalTTM!=null?m.km.returnOnInvestedCapitalTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>12}},
+              {label:"P/E",key:function(m){return m&&m.km?m.km.peRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},good:function(v){return v<25}},
+              {label:"Rev Growth",key:function(m){return m&&m.ratios?m.ratios.revenueGrowthTTM!=null?m.ratios.revenueGrowthTTM*100:null:null},fmt:function(v){return(v>0?"+":"")+v.toFixed(1)+"%"},good:function(v){return v>5}},
+            ];
+            var mySnap=c.financialSnapshot||{};
+            var myRow={ticker:c.ticker,isSelf:true,metrics:{
+              ratios:{grossProfitMarginTTM:mySnap.grossMargin&&mySnap.grossMargin.numVal!=null?mySnap.grossMargin.numVal/100:null,
+                operatingProfitMarginTTM:mySnap.opMargin&&mySnap.opMargin.numVal!=null?mySnap.opMargin.numVal/100:null,
+                revenueGrowthTTM:mySnap.revGrowth&&mySnap.revGrowth.numVal!=null?mySnap.revGrowth.numVal/100:null},
+              km:{returnOnInvestedCapitalTTM:mySnap.roic&&mySnap.roic.numVal!=null?mySnap.roic.numVal/100:null,peRatioTTM:mySnap.pe&&mySnap.pe.numVal!=null?mySnap.pe.numVal:null}
+            }};
+            var allRows=[myRow].concat(peersData);
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              {/* Header */}
+              <div style={{display:"flex",padding:"8px 16px",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
+                <div style={{width:70,fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+                {COLS.map(function(col,ci){return<div key={ci} style={{flex:1,textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>})}
+              </div>
+              {allRows.map(function(row,ri){
+                return<div key={ri} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?K.acc+"06":"transparent",cursor:row.isSelf?"default":"pointer"}}
+                  onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker});if(found){setSelId(found.id);setDetailTab("dossier")}}}}
+                  onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"04"}}
+                  onMouseLeave={function(e){if(!row.isSelf)e.currentTarget.style.background="transparent"}}>
+                  <div style={{width:70,display:"flex",alignItems:"center",gap:4}}>
+                    <CoLogo ticker={row.ticker} domain={row.isSelf?c.domain:""} size={16}/>
+                    <span style={{fontSize:11,fontWeight:row.isSelf?700:500,color:row.isSelf?K.acc:K.txt,fontFamily:fm}}>{row.ticker}</span>
+                    {row.isSelf&&<span style={{fontSize:8,color:K.acc,fontFamily:fm}}>you</span>}
+                  </div>
+                  {COLS.map(function(col,ci){
+                    var val=col.key(row.metrics);
+                    var isGood=val!=null&&col.good(val);
+                    var color=val!=null?(isGood?K.grn:K.red):K.dim;
+                    return<div key={ci} style={{flex:1,textAlign:"right",fontSize:11,fontWeight:600,color:color,fontFamily:fm}}>
+                      {val!=null?col.fmt(val):"—"}
+                    </div>})}
+                </div>})}
+            </div>;
+          })()}
+          {!peersLoading&&(!peersData||peersData.length===0)&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",fontSize:12,color:K.dim}}>No peer data available for {c.ticker}.</div>}
+        </div>
 
                 {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
