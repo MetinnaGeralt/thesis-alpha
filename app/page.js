@@ -11841,24 +11841,12 @@ function WeeklyReview(){
         </div>}
       </div>
 
-      {/* ── Streak card ── */}
-      <div style={{margin:"20px 16px 0",padding:"18px 20px",background:streak>0?K.grn+"10":K.card,border:"1px solid "+(streak>0?K.grn+"30":K.bdr),borderRadius:_isBm?0:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:40,height:40,borderRadius:_isBm?0:12,background:streak>0?K.grn+"15":K.bdr+"30",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {streak>0
-              ?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8" strokeLinecap="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-              :<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>}
-          </div>
-          <div style={{flex:1}}>
-            {streak>0?<><div style={{fontSize:22,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{streak} week{streak!==1?"s":""} <span style={{fontSize:13,fontWeight:500,color:K.dim}}>streak</span></div>
-              <div style={{fontSize:12,color:K.dim,marginTop:3}}>{alreadyReviewed?"This week: done ✓":"Review due this week"}{streakData.best>streak?" · best "+streakData.best:""}  </div></>
-            :<><div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fm}}>Start your streak</div>
-              <div style={{fontSize:12,color:K.dim,marginTop:2}}>Complete your first weekly review</div></>}
-          </div>
-          {!alreadyReviewed&&<button onClick={function(){setPage("review")}} style={{padding:"9px 16px",borderRadius:_isBm?0:10,background:K.acc,border:"none",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Review</button>}
-          {alreadyReviewed&&<div style={{width:32,height:32,borderRadius:"50%",background:K.grn+"20",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>}
-        </div>
-      </div>
+      {/* ── Streak nudge — only shown when review is due, compact ── */}
+      {!alreadyReviewed&&<div style={{margin:"12px 16px 0",padding:"10px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,display:"flex",alignItems:"center",gap:10}} onClick={function(){setPage("review")}} >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span style={{flex:1,fontSize:12,color:K.mid,fontFamily:fm}}>{streak>0?"Weekly review due — keep your "+streak+" week streak":"Weekly review due"}</span>
+        <span style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>Review →</span>
+      </div>}
 
       {/* ── Quarterly letter notification ── */}
       {hasUnreadLetter&&<div style={{margin:"12px 16px 0",padding:"14px 16px",background:"linear-gradient(135deg,#D4AF3710,#D4AF3705)",border:"1px solid #D4AF3730",borderRadius:_isBm?0:14,cursor:"pointer",display:"flex",alignItems:"center",gap:12}} onClick={function(){var now=new Date();var q=Math.floor(now.getMonth()/3);var y=now.getFullYear();if(q===0){q=4;y--;}setShowQLetter("Q"+q+"-"+y)}}>
