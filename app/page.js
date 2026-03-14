@@ -4589,7 +4589,7 @@ function calcMoatFromData(finData,businessModelType){
     // Per-company thesis completeness (0-100)
     var _tScore=(function(){var s=0;var t=c.thesisNote||"";if(t.length>20)s+=20;if(t.length>300)s+=10;if(t.indexOf("## CORE")>=0||t.length>200)s+=15;if(t.indexOf("## MOAT")>=0||t.indexOf("moat")>=0)s+=15;if(t.indexOf("## RISKS")>=0||t.indexOf("risk")>=0)s+=15;if(t.indexOf("## SELL")>=0||t.indexOf("sell")>=0)s+=15;if(c.thesisVersions&&c.thesisVersions.length>1)s+=10;if(_thesisAgeDays!=null&&_thesisAgeDays>180)s=Math.max(0,s-20);else if(_thesisAgeDays!=null&&_thesisAgeDays>90)s=Math.max(0,s-10);return Math.min(100,s)})();
     var _tScoreColor=_tScore>=80?K.grn:_tScore>=50?K.acc:_tScore>0?K.amb:K.dim;
-    return<div className="ta-detail-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
+    return<div className="ta-detail-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 36px 60px",maxWidth:860}}>
       {/* Thesis staleness + conviction drift banners */}
       {(_thesisStale||_tScore>0)&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:_thesisStale&&c.thesisNote?0:8}}>
         {_tScore>0&&<div style={{display:"flex",alignItems:"center",gap:5,background:_tScoreColor+"12",border:"1px solid "+_tScoreColor+"30",borderRadius:_isBm?0:6,padding:"4px 10px"}}>
@@ -4610,14 +4610,14 @@ function calcMoatFromData(finData,businessModelType){
       {/* ── Mobile back ── */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:13,cursor:"pointer",padding:"10px 0 2px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Portfolio</button>}
       {/* ── Simplified Header ── */}
-      <div className="ta-detail-head" style={{padding:isMobile?"16px 0 12px":"28px 0 16px"}}>
+      <div className="ta-detail-head" style={{padding:isMobile?"16px 0 14px":"36px 0 20px",borderBottom:"1px solid "+K.bdr+"50",marginBottom:8}}>
         {/* Top row: logo + name + conviction */}
         <div style={{display:"flex",alignItems:"center",gap:isMobile?12:16,marginBottom:10}}>
           <CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?40:48}/>
           <div style={{flex:1,minWidth:0}}>
             <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
-              <span style={{fontSize:isMobile?22:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1}}>{c.ticker}</span>
-              <span style={{fontSize:isMobile?13:15,color:K.mid,fontWeight:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:isMobile?160:300}}>{c.name}</span>
+              <span style={{fontSize:isMobile?24:32,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-1px",lineHeight:1}}>{c.ticker}</span>
+              <span style={{fontSize:isMobile?13:16,color:K.mid,fontWeight:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:isMobile?160:360}}>{c.name}</span>
             </div>
             <div style={{display:"flex",gap:8,marginTop:5,alignItems:"center",flexWrap:"wrap"}}>
               {c.sector&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>}
@@ -4650,7 +4650,7 @@ function calcMoatFromData(finData,businessModelType){
       </div>
       {/* ── Mobile section anchors ── */}
       {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:2}}>
-        {[{label:"Thesis",anchor:"ds-story"},{label:"Evidence",anchor:"ds-evidence"},{label:"Numbers",anchor:"ds-numbers"},{label:"Research",anchor:"ds-research"}].map(function(s){return<button key={s.anchor} onClick={function(){var el=document.getElementById(s.anchor);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}} style={{flexShrink:0,padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:12,fontFamily:fm,cursor:"pointer"}}>{s.label}</button>})}
+        {[{label:"Thesis",anchor:"ds-story"},{label:"Evidence",anchor:"ds-evidence"},{label:"Numbers",anchor:"ds-numbers"},{label:"Research",anchor:"ds-research"}].map(function(s){return<button key={s.anchor} onClick={function(){var el=document.getElementById(s.anchor);if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}} style={{flexShrink:0,padding:"6px 16px",borderRadius:_isBm?0:999,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:500,letterSpacing:0.3}}>{s.label}</button>})}
       </div>}
       {/* ── Company view (dossier always shown, no tab UI) ── */}
       {detailTab==="dossier"&&<div className="ta-fade">
@@ -4837,26 +4837,34 @@ function calcMoatFromData(finData,businessModelType){
         </div>
 
         {/* ── 1. THE STORY ── */}
-        <div id="ds-story" style={{marginBottom:24}}>
+        <div id="ds-story" style={{marginBottom:48}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE STORY</div>
-            <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit thesis</button></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+              <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>Thesis</div>
+            </div>
+            <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
-              <div style={{fontSize:14,color:K.txt,lineHeight:1.8,marginBottom:sec.moat||sec.risks||sec.sell?16:0}}>{sec.core}</div>
-              {sec.moat&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.grn,marginBottom:8}}>
-                <div style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:3}}>MOAT</div>
-                <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.moat}</div></div>}
-              {sec.risks&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.amb,marginBottom:8}}>
-                <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1,marginBottom:3}}>RISKS</div>
-                <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.risks}</div></div>}
-              {sec.sell&&<div style={{padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,borderLeft:"3px solid "+K.red}}>
-                <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1,marginBottom:3}}>SELL CRITERIA</div>
-                <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{sec.sell}</div></div>}
+            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"20px 20px":"28px 32px"}}>
+              <div style={{fontSize:16,color:K.txt,lineHeight:1.9,marginBottom:sec.moat||sec.risks||sec.sell?24:0,fontFamily:"'Lora', serif",fontStyle:"italic",fontWeight:400}}>{sec.core}</div>
+              {sec.moat&&<div style={{padding:"14px 18px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.grn,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Moat — Why it’s defensible"}</div>
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.moat}</div></div>}
+              {sec.risks&&<div style={{padding:"14px 18px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.amb,marginBottom:10}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Risks — What I’m watching"}</div>
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.risks}</div></div>}
+              {sec.sell&&<div style={{padding:"14px 18px",background:K.bg,borderRadius:_isBm?0:10,borderLeft:"3px solid "+K.red}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Sell criteria — When I’d exit"}</div>
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.sell}</div></div>}
             </div>})()
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:12,padding:"32px 24px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={{fontSize:14,color:K.acc,fontWeight:600,marginBottom:4}}>Write your thesis</div>
-            <div style={{fontSize:12,color:K.dim}}>Why do you own {c.ticker}? What’s the moat? When would you sell?</div></div>}
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:14,padding:"40px 32px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
+            <div style={{width:44,height:44,borderRadius:_isBm?0:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.6" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <div style={{fontSize:15,color:K.txt,fontWeight:700,marginBottom:6,fontFamily:fh}}>{"Write your thesis for "+c.ticker}</div>
+            <div style={{fontSize:13,color:K.dim,lineHeight:1.65,maxWidth:320,margin:"0 auto"}}>{"Why do you own it? What’s the moat? What would make you sell? This is the most important thing you can do as an owner."}</div>
+            <div style={{marginTop:20,display:"inline-flex",alignItems:"center",gap:6,background:K.acc,color:"#fff",padding:"9px 20px",borderRadius:_isBm?0:8,fontSize:13,fontWeight:600}}>{"Start writing →"}</div>
+          </div>}
           {/* Lynch Test */}
           <div style={{marginTop:12}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
@@ -5033,8 +5041,11 @@ function calcMoatFromData(finData,businessModelType){
           </div>;
         })()}
         {/* ── 2. THE EVIDENCE ── */}
-        <div id="ds-evidence" style={{marginBottom:24}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
+        <div id="ds-evidence" style={{marginBottom:48}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+            <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.grn,flexShrink:0}}/>
+            <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>Evidence</div>
+          </div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -5218,7 +5229,10 @@ function calcMoatFromData(finData,businessModelType){
           var isIntl=isIntlTicker(c.ticker);
           var isSparse=isIntl&&snapKeys.length<4;
           if(!hasSnap&&isIntl)return<div style={{marginBottom:24}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+              <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.blue,flexShrink:0}}/>
+              <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>{"Owner’s Numbers"}</div>
+            </div>
             {isSparse&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span style={{fontSize:10,color:K.amb,fontFamily:fm,flex:1}}>{"Limited data for "+c.ticker+" — international coverage is partial. Key metrics sourced from available data."}</span>
@@ -5397,7 +5411,7 @@ function calcMoatFromData(finData,businessModelType){
           if(sections.length===0&&!bsSection)return null;
           var _bmt2=c.businessModelType||"";
           var _bmtCtx=BUSINESS_MODEL_CONTEXT[_bmt2]||null;
-          return<div id="ds-numbers" style={{marginBottom:24}}>
+          return<div id="ds-numbers" style={{marginBottom:48}}>
             {_bmtCtx&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:K.blue+"08",border:"1px solid "+K.blue+"20",borderRadius:_isBm?0:10,marginBottom:12}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="1.8" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <div style={{flex:1}}>
