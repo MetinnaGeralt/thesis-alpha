@@ -12610,6 +12610,61 @@ function WeeklyReview(){
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
     <Sidebar/><div style={{flex:1,overflowY:"auto",overflowX:"hidden",width:isMobile?"100%":"auto",paddingBottom:isMobile?56:0}}><TopBar/>
+    {/* ── BREADCRUMB NAV ── */}
+    {!isMobile&&(function(){
+      // Build crumb trail from current state
+      var crumbs=[];
+      var sep=<svg key="sep" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>;
+
+      // Root crumb — always present
+      var rootLabel=sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too-Hard Pile":"Portfolio";
+      crumbs.push(<button key="root" onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim:K.acc,fontSize:11,fontWeight:selId||page!=="dashboard"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0.1,whiteSpace:"nowrap"}}>{rootLabel}</button>);
+
+      // Page-level crumb
+      var pageLabels={analytics:"Analytics",calendar:"Earnings Calendar",dividends:"Dividends",
+        timeline:"Timeline",assets:"All Assets",review:"Weekly Review",library:"Library",
+        ai:"Research Prompts",hub:"Owner's Hub"};
+      if(page!=="dashboard"&&!selId){
+        crumbs.push(sep);
+        var hubTabLabels={docs:"Research Trail",lenses:"Investor Lenses",goals:"Goals",feed:"Feed",reading:"Reading",guide:"How It Works",command:"Command Center"};
+        var pageLabel=page==="hub"?"Owner's Hub":(pageLabels[page]||page);
+        crumbs.push(<span key="page" style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:0.1}}>{pageLabel}</span>);
+        if(page==="hub"&&hubTab){
+          crumbs.push(sep);
+          crumbs.push(<span key="hubtab" style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>{hubTabLabels[hubTab]||hubTab}</span>);
+        }
+      }
+
+      // Company + dossier crumb
+      if(selId&&sel){
+        crumbs.push(sep);
+        crumbs.push(<button key="co" onClick={function(){setSubPage(null);setDetailTab("dossier")}} style={{background:"none",border:"none",color:subPage||detailTab!=="dossier"?K.mid:K.acc,fontSize:11,fontWeight:subPage||detailTab!=="dossier"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0.1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          <span style={{width:14,height:14,borderRadius:3,overflow:"hidden",flexShrink:0,display:"inline-flex"}}>
+            <CoLogo domain={sel.domain} ticker={sel.ticker} size={14}/>
+          </span>
+          {sel.ticker}
+        </button>);
+
+        // Sub-page crumb
+        if(subPage){
+          crumbs.push(sep);
+          var spLabels={financials:"Financials",moat:"Moat Tracker"};
+          crumbs.push(<button key="sp" onClick={function(){}} style={{background:"none",border:"none",color:K.acc,fontSize:11,fontWeight:700,cursor:"default",padding:"0 2px",fontFamily:fm}}>{spLabels[subPage]||subPage}</button>);
+        } else if(detailTab&&detailTab!=="dossier"){
+          crumbs.push(sep);
+          var dtLabels={kpis:"KPI Tracker",library:"Research"};
+          crumbs.push(<span key="dt" style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>{dtLabels[detailTab]||detailTab}</span>);
+        }
+      }
+
+      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.bg,position:"sticky",top:_isBm?0:56,zIndex:40,minHeight:30}}>
+        {/* Home icon */}
+        <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Portfolio home">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </button>
+        {crumbs}
+      </div>;
+    })()}
     {/* ── Profile Panel ── */}
     {showProfile&&<div style={{position:"fixed",inset:0,zIndex:199}} onClick={function(){setShowProfile(false)}}/>}
     {showProfile&&(function(){
