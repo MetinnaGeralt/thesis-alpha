@@ -11518,7 +11518,7 @@ function WeeklyReview(){
           <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
         </div>}
 
-        {/* ── Owner's Intel feed ── */}}
+        {/* ── Owner's Intel feed ── */}
         {(function(){
           var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
           var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
