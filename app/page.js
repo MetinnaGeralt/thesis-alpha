@@ -10249,28 +10249,27 @@ function WeeklyReview(){
     {/* ── MR MARKET WIDGET ── */}
     {sideTab==="portfolio"&&!isMobile&&(function(){
       function MrMarketFace(props){
-        var mood=props.mood;var color=props.color;var size=props.size||120;
+        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||120;
         var isScared=mood==="extreme_fear"||mood==="fear";
         var isHappy=mood==="greed"||mood==="extreme_greed";
         var isManic=mood==="extreme_greed";
         var isPanic=mood==="extreme_fear";
-        // Skin tones by mood
-        var skinMap={extreme_fear:"#FECDD3",fear:"#FED7AA",neutral:"#FEF3C7",greed:"#D1FAE5",extreme_greed:"#EDE9FE"};
-        var skin=skinMap[mood]||"#FEF3C7";
+        var skinMap={extreme_fear:"#FFE4E6",fear:"#FEF3C7",neutral:"#FEF9EC",greed:"#ECFDF5",extreme_greed:"#F5F3FF"};
+        var skin=skinMap[mood]||"#FEF9EC";
         var stroke=color;
         var sw="1.8";
         return<svg width={size} height={size*1.3} viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg" style={{overflow:"visible"}}>
 
           {/* ── BODY / TUXEDO ── */}
           {/* Coat body */}
-          <path d="M25 90 Q22 115 24 126 L76 126 Q78 115 75 90 Q65 98 50 98 Q35 98 25 90Z" fill={color+"25"} stroke={stroke} strokeWidth={sw}/>
+          <path d="M25 90 Q22 115 24 126 L76 126 Q78 115 75 90 Q65 98 50 98 Q35 98 25 90Z" fill={tint+"25"} stroke={stroke} strokeWidth={sw}/>
           {/* Lapels */}
-          <path d="M44 90 L50 105 L56 90" fill={color+"40"} stroke={stroke} strokeWidth="1.2"/>
+          <path d="M44 90 L50 105 L56 90" fill={tint+"40"} stroke={stroke} strokeWidth="1.2"/>
           <path d="M44 90 L38 80" stroke={stroke} strokeWidth="1.2"/>
           <path d="M56 90 L62 80" stroke={stroke} strokeWidth="1.2"/>
           {/* Shirt / bow tie */}
           <path d="M46 90 L50 96 L54 90" fill="white" stroke={stroke} strokeWidth="1"/>
-          <ellipse cx="50" cy="88" rx="4" ry="2" fill={color} opacity="0.8"/>
+          <ellipse cx="50" cy="88" rx="4" ry="2" fill={tint} opacity="0.8"/>
           {/* Buttons */}
           <circle cx="50" cy="104" r="1.2" fill={stroke} opacity="0.5"/>
           <circle cx="50" cy="112" r="1.2" fill={stroke} opacity="0.5"/>
@@ -10298,14 +10297,14 @@ function WeeklyReview(){
           </g>}
           {/* Panic: papers flying */}
           {isPanic&&<g opacity="0.65">
-            <rect x="82" y="58" width="14" height="18" rx="1.5" fill={color+"40"} stroke={stroke} strokeWidth="1" transform="rotate(20,89,67)"/>
-            <rect x="72" y="50" width="11" height="15" rx="1.5" fill={color+"30"} stroke={stroke} strokeWidth="1" transform="rotate(-12,77,57)"/>
+            <rect x="82" y="58" width="14" height="18" rx="1.5" fill={tint+"40"} stroke={stroke} strokeWidth="1" transform="rotate(20,89,67)"/>
+            <rect x="72" y="50" width="11" height="15" rx="1.5" fill={tint+"30"} stroke={stroke} strokeWidth="1" transform="rotate(-12,77,57)"/>
             <line x1="83" y1="63" x2="92" y2="63" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
             <line x1="84" y1="67" x2="91" y2="67" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
           </g>}
 
           {/* ── ROUND BELLY ── */}
-          <ellipse cx="50" cy="108" rx="19" ry="12" fill={color+"15"} stroke={stroke} strokeWidth="1" opacity="0.6"/>
+          <ellipse cx="50" cy="108" rx="19" ry="12" fill={tint+"15"} stroke={stroke} strokeWidth="1" opacity="0.6"/>
 
           {/* ── HEAD ── */}
           <ellipse cx="50" cy="52" rx="20" ry="22" fill={skin} stroke={stroke} strokeWidth={sw}/>
@@ -10316,7 +10315,7 @@ function WeeklyReview(){
           {/* Hat body */}
           <rect x="33" y="8" width="34" height="26" rx="2" fill={isManic?color+"50":color+"30"} stroke={stroke} strokeWidth={sw}/>
           {/* Hat band */}
-          <rect x="33" y="30" width="34" height="5" fill={color+"60"} stroke={stroke} strokeWidth="1"/>
+          <rect x="33" y="30" width="34" height="5" fill={tint+"60"} stroke={stroke} strokeWidth="1"/>
           {/* Monocle glint if greedy */}
           {isHappy&&<circle cx="63" cy="45" r="5" fill="none" stroke={stroke} strokeWidth="1.2" opacity="0.6"/>}
 
@@ -10357,18 +10356,18 @@ function WeeklyReview(){
             :isPanic
             ?"M36 60 Q43 56 50 59 Q57 56 64 60 Q58 65 50 63 Q42 65 36 60Z"
             :"M36 59 Q43 55 50 58 Q57 55 64 59 Q58 65 50 62 Q42 65 36 59Z"}
-            fill={color+"60"} stroke={stroke} strokeWidth="1.2"/>
+            fill={tint+"60"} stroke={stroke} strokeWidth="1.2"/>
           {/* Cheeks when happy */}
           {isHappy&&<g>
-            <ellipse cx="33" cy="56" rx="6" ry="4" fill={color} opacity="0.2"/>
-            <ellipse cx="67" cy="56" rx="6" ry="4" fill={color} opacity="0.2"/>
+            <ellipse cx="33" cy="56" rx="6" ry="4" fill={tint} opacity="0.2"/>
+            <ellipse cx="67" cy="56" rx="6" ry="4" fill={tint} opacity="0.2"/>
           </g>}
 
           {/* ── MOUTH ── */}
           {isPanic
             ?<path d="M42 67 Q50 63 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
             :isManic
-            ?<path d="M40 67 Q50 76 60 67" stroke={stroke} strokeWidth="2" fill={color+"30"} strokeLinecap="round"/>
+            ?<path d="M40 67 Q50 76 60 67" stroke={stroke} strokeWidth="2" fill={tint+"30"} strokeLinecap="round"/>
             :isHappy
             ?<path d="M42 67 Q50 73 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
             :mood==="fear"
@@ -10383,15 +10382,15 @@ function WeeklyReview(){
 
           {/* ── MANIC EFFECTS ── */}
           {isManic&&<g>
-            <text x="80" y="30" fontSize="14" fill={color} fontWeight="bold" opacity="0.8">{"$"}</text>
-            <text x="10" y="28" fontSize="12" fill={color} fontWeight="bold" opacity="0.6">{"$"}</text>
+            <text x="80" y="30" fontSize="14" fill={tint} fontWeight="bold" opacity="0.8">{"$"}</text>
+            <text x="10" y="28" fontSize="12" fill={tint} fontWeight="bold" opacity="0.6">{"$"}</text>
           </g>}
         </svg>;
       }
       return<div style={{marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
           <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
           {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
         </div>
@@ -10406,7 +10405,7 @@ function WeeklyReview(){
             return<div>
               <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
                 <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
-                  <MrMarketFace mood={d.mood} color={d.color} size={90}/>
+                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
                 </div>
                 <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
                   <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
@@ -10419,9 +10418,9 @@ function WeeklyReview(){
                   </div>
                   <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {d.details.map(function(det,i){return<div key={i} style={{background:d.color+"10",border:"1px solid "+d.color+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
+                    {d.details.map(function(det,i){return<div key={i} style={{background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
                       <span style={{color:K.dim}}>{det.label+": "}</span>
-                      <span style={{fontWeight:700,color:d.color}}>{det.value}</span>
+                      <span style={{fontWeight:700,color:K.acc}}>{det.value}</span>
                     </div>;})}
                   </div>
                 </div>
