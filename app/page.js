@@ -5334,6 +5334,30 @@ function calcMoatFromData(finData,businessModelType){
             </div>;
           })()}
 
+          {/* Flywheel Note — Nick Sleep profile only */}
+          {investorProfile==="sleep"&&sel&&<div style={{marginTop:12,marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#3B82F6",fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Flywheel Note
+              </div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>Does scale get shared with customers?</span>
+            </div>
+            {c.flywheelNote
+              ?<div style={{background:K.bg,borderRadius:_isBm?0:8,border:"1px solid #3B82F630",borderLeft:"3px solid #3B82F6",padding:"10px 14px",fontSize:13,color:K.txt,lineHeight:1.7,cursor:"pointer"}}
+                onClick={function(){var v=window.prompt("Does "+c.ticker+" share its scale economics with customers? How does the flywheel compound?",c.flywheelNote||"");if(v!==null)upd(c.id,{flywheelNote:v.trim()})}}>
+                {c.flywheelNote}
+              </div>
+              :<div style={{background:"#3B82F608",border:"1px dashed #3B82F640",borderRadius:_isBm?0:8,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+                onClick={function(){var v=window.prompt("Does "+c.ticker+" share its scale economics with customers? How does the flywheel compound?","");if(v&&v.trim())upd(c.id,{flywheelNote:v.trim()})}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#3B82F6",marginBottom:2}}>Add flywheel note</div>
+                  <div style={{fontSize:10,color:K.dim}}>{"“Destination companies make more economic sense over time.” — Nick Sleep"}</div>
+                </div>
+              </div>}
+          </div>}
+
           {/* Lynch Test */}
           <div style={{marginTop:12}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
@@ -11151,14 +11175,14 @@ function WeeklyReview(){
         </div>
 
         {/* ── ONE FOCUS ── */}
-        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"07"}}>
-          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>Today's Focus</div>
+        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
             <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={focus.icon} size={14} color={focus.color}/>
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:700,color:K.txt,marginBottom:1}}>{focus.title}</div>
+              <div style={{fontSize:14,fontWeight:800,color:K.txt,marginBottom:2,fontFamily:fh}}>{focus.title}</div>
               <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{focus.sub}</div>
             </div>
             <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
@@ -11488,7 +11512,13 @@ function WeeklyReview(){
           </div>
         </div>
 
-        {/* ── Owner's Intel feed ── */}
+        {/* ── Done for today ── */}
+        {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
+        </div>}
+
+        {/* ── Owner's Intel feed ── */}}
         {(function(){
           var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
           var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
