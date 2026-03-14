@@ -1584,12 +1584,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     return<Modal title="Edit Company" onClose={function(){setModal(null)}} K={K}>
-      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}>
-<div>
-  <Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K} spellCheck={false} autoCorrect="off"/>
-  <div style={{fontSize:10,color:K.dim,marginTop:-10,marginBottom:10,fontFamily:fm,lineHeight:1.5}}>Canadian: RY.TO · UK: VOD.L · German: SAP.DE</div>
-</div>
-<Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
+      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K}/><Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"},{v:"TBD",l:"TBD"}]} K={K}/></div>
       <Inp label="Logo Domain" value={f.domain} onChange={function(v){set("domain",v)}} placeholder="apple.com" K={K}/>
       <Inp label="IR URL" value={f.irUrl} onChange={function(v){set("irUrl",v)}} placeholder="https://investor.apple.com" K={K}/>
@@ -1598,14 +1593,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div></div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){
-  var newTicker=f.ticker.toUpperCase().trim();
-  var tickerChanged=newTicker!==sel.ticker;
-  upd(selId,Object.assign({ticker:newTicker,name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle},
-    tickerChanged?{financialSnapshot:{},lastChecked:null,latestNews:[],earningsHistory:[]}:{}));
-  if(tickerChanged){setTimeout(function(){checkOne(selId)},300);showToast("Ticker updated to "+newTicker+" — re-fetching data","info",3000);}
-  setModal(null);
-}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setSelPrompt(null);setResp("")}}>Back</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
   function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
     var sections={core:"",moat:"",risks:"",sell:""};var cur="core";
     var lines=(note||"").split("\n");
