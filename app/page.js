@@ -9910,7 +9910,7 @@ function WeeklyReview(){
                 </div>
                 <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
                 {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
-                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{"""+book.notes.substring(0,100)+(book.notes.length>100?"...":"")+""" }</div>}
+                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
                 <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
                   <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
                   {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
@@ -9946,7 +9946,7 @@ function WeeklyReview(){
                 <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
-                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{"""+book.notes.substring(0,60)+(book.notes.length>60?"...":"")+""" }</div>}
+                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes.substring(0,60)+(book.notes.length>60?"...":"")}</div>}
                 </div>
               </div>})}
             </div>}
