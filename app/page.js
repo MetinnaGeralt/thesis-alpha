@@ -480,9 +480,60 @@ async function fetchFinancialStatements(ticker,period){
         return row});
       var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
       _fincache[key]=res;return res}
-    console.log("[ThesisAlpha] FMP returned empty"+(isIntlTicker(ticker)?" (international — skipping SEC EDGAR)":". Trying SEC EDGAR fallback..."));
-    if(isIntlTicker(ticker))return{income:[],balance:[],cashflow:[]};
-    // Fallback: SEC EDGAR (US companies only)
+    console.log("[ThesisAlpha] FMP returned empty for "+ticker);
+    // For international tickers: try the base ticker (without suffix) with FMP
+    if(isIntlTicker(ticker)){
+      var baseTicker=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i,"");
+      if(baseTicker!==ticker){
+        console.log("[ThesisAlpha] Trying base ticker "+baseTicker+" for FMP financials...");
+        var r2=await Promise.all([fmp("income-statement/"+baseTicker+qs),fmp("balance-sheet-statement/"+baseTicker+qs),fmp("cash-flow-statement/"+baseTicker+qs)]);
+        var _is2=r2[0],_bs2=r2[1],_cf2=r2[2];
+        if(_is2&&Array.isArray(_is2))_is2=_is2.filter(function(x){return x&&x.revenue!=null});
+        if(_bs2&&Array.isArray(_bs2))_bs2=_bs2.filter(function(x){return x&&x.totalAssets!=null});
+        if(_cf2&&Array.isArray(_cf2))_cf2=_cf2.filter(function(x){return x&&x.netIncome!=null});
+        if((_is2&&_is2.length>0)||(_bs2&&_bs2.length>0)||(_cf2&&_cf2.length>0)){
+          console.log("[ThesisAlpha] Base ticker fallback success for "+baseTicker);
+          var incRows2=(_is2||[]).reverse().map(function(row){
+            if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
+            if(row.operatingIncomeRatio==null&&row.operatingIncome!=null&&row.revenue!=null&&row.revenue!==0)row.operatingIncomeRatio=row.operatingIncome/row.revenue;
+            if(row.netIncomeRatio==null&&row.netIncome!=null&&row.revenue!=null&&row.revenue!==0)row.netIncomeRatio=row.netIncome/row.revenue;
+            return row});
+          var res2={income:incRows2,balance:(_bs2||[]).reverse(),cashflow:(_cf2||[]).reverse(),source:"fmp-base"};
+          _fincache[key]=res2;return res2;
+        }
+      }
+      // Last resort: synthesise minimal rows from Finnhub metrics (TTM data only)
+      console.log("[ThesisAlpha] Trying Finnhub metrics fallback for "+ticker);
+      try{
+        var fhSym=toFinnhubSymbol(ticker);
+        var fhMet=await finnhub("stock/metric?symbol="+fhSym+"&metric=all");
+        var fhEarn=await finnhub("stock/earnings?symbol="+fhSym);
+        if(fhMet&&fhMet.metric&&Object.keys(fhMet.metric).length>0){
+          var m=fhMet.metric;
+          var yr=new Date().getFullYear();
+          // Build a synthetic TTM income row from Finnhub metrics
+          var synthIncome={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            revenue:m.revenuePerShareTTM!=null?m.revenuePerShareTTM*1e6:null,
+            grossProfitRatio:m.grossMarginTTM!=null?m.grossMarginTTM/100:null,
+            operatingIncomeRatio:m.operatingMarginTTM!=null?m.operatingMarginTTM/100:null,
+            netIncomeRatio:m.netProfitMarginTTM!=null?m.netProfitMarginTTM/100:null,
+            eps:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            epsDiluted:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            _isSynthetic:true};
+          var synthBalance={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            totalDebt:null,totalEquity:null,
+            debtToEquity:m["totalDebt/totalEquityQuarterly"]||null,
+            currentRatio:m.currentRatioQuarterly||null,_isSynthetic:true};
+          var synthCF={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            freeCashFlow:m.freeCashFlowPerShareTTM!=null?m.freeCashFlowPerShareTTM*1e6:null,
+            _isSynthetic:true};
+          var resFh={income:[synthIncome],balance:[synthBalance],cashflow:[synthCF],source:"finnhub-metrics"};
+          _fincache[key]=resFh;return resFh;
+        }
+      }catch(fhErr){console.warn("[ThesisAlpha] Finnhub metrics fallback failed:",fhErr)}
+      return{income:[],balance:[],cashflow:[]};
+    }
+    // US companies only — try SEC EDGAR
     var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
     if(r.ok){var d=await r.json();
       if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
@@ -1584,7 +1635,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     return<Modal title="Edit Company" onClose={function(){setModal(null)}} K={K}>
-      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K}/><Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
+      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}>
+<div>
+  <Inp label="Ticker" value={f.ticker} onChange={function(v){set("ticker",v)}} K={K} spellCheck={false} autoCorrect="off"/>
+  <div style={{fontSize:10,color:K.dim,marginTop:-10,marginBottom:10,fontFamily:fm,lineHeight:1.5}}>Canadian: RY.TO · UK: VOD.L · German: SAP.DE</div>
+</div>
+<Inp label="Name" value={f.name} onChange={function(v){set("name",v)}} K={K}/></div>
       <div className="ta-form-3col" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 12px"}}><Inp label="Sector" value={f.sector} onChange={function(v){set("sector",v)}} K={K}/><Inp label="Earnings Date" value={f.earningsDate} onChange={function(v){set("earningsDate",v)}} type="date" K={K}/><Sel label="Timing" value={f.earningsTime} onChange={function(v){set("earningsTime",v)}} options={[{v:"BMO",l:"Before Open"},{v:"AMC",l:"After Close"},{v:"TBD",l:"TBD"}]} K={K}/></div>
       <Inp label="Logo Domain" value={f.domain} onChange={function(v){set("domain",v)}} placeholder="apple.com" K={K}/>
       <Inp label="IR URL" value={f.irUrl} onChange={function(v){set("irUrl",v)}} placeholder="https://investor.apple.com" K={K}/>
@@ -1593,7 +1649,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div></div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setSelPrompt(null);setResp("")}}>Back</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){
+  var newTicker=f.ticker.toUpperCase().trim();
+  var tickerChanged=newTicker!==sel.ticker;
+  upd(selId,Object.assign({ticker:newTicker,name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle},
+    tickerChanged?{financialSnapshot:{},lastChecked:null,latestNews:[],earningsHistory:[]}:{}));
+  if(tickerChanged){setTimeout(function(){checkOne(selId)},300);showToast("Ticker updated to "+newTicker+" — re-fetching data","info",3000);}
+  setModal(null);
+}}>Save</button></div></Modal>}
   function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
     var sections={core:"",moat:"",risks:"",sell:""};var cur="core";
     var lines=(note||"").split("\n");
@@ -4079,7 +4142,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/>
           <div className="ta-skel" style={{height:12,width:80,background:K.bdr}}/></div>})}</div>
         <div style={{textAlign:"center",fontSize:12,color:K.dim,marginTop:16,fontFamily:fm}}>Loading {c.ticker} financial data from FMP...</div></div>:
-      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:12,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available.<br/>
+      rows.length===0?<div style={{padding:60,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No {stab.l.toLowerCase()} data available for {c.ticker}</div><div style={{fontSize:12,color:K.dim,lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>
+{isIntlTicker(c.ticker)
+  ?"Detailed financial statements for TSX Venture and other international exchanges have limited coverage on our data plan. KPI checking and metrics (gross margin, ROIC etc.) use Finnhub which does support this ticker."
+  :"Data is fetched from FMP (primary) with SEC EDGAR as fallback. This company may not have filings available."}<br/>
         {diag&&<div style={{marginTop:8,padding:"8px 12px",background:K.red+"10",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:6,color:K.amb,fontSize:11,fontFamily:fm,textAlign:"left"}}>{diag}</div>}
         <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}>
         <button onClick={function(){setLd(true);setDiag("");delete _fincache[c.ticker+"-"+(per||"annual")];fetchFinancialStatements(c.ticker,per==="quarter"?"quarter":"annual").then(function(r){setData(r);setLd(false);var ic=(r&&r.income?r.income.length:0);if(ic===0)setDiag("Still 0 rows. Check browser console for details.")}).catch(function(e){setLd(false);setDiag("Error: "+e.message)})}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",color:K.acc,padding:"6px 14px",borderRadius:_isBm?0:6,fontSize:12,cursor:"pointer",fontFamily:fm}}>Retry</button></div></div></div>:
