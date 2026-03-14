@@ -445,7 +445,15 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   }
   return{error:"Not found — enter details manually. For international stocks, try adding the exchange suffix (e.g. RY.TO for TSX, VOD.L for LSE)"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
-async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+toFinnhubSymbol(ticker));if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
+async function fetchQuote(ticker){
+  // Try Finnhub first
+  try{var q=await finnhub("quote?symbol="+toFinnhubSymbol(ticker));if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};}catch(e){}
+  // FMP fallback — try original ticker, then base ticker for intl
+  var fmpTickers=[ticker];
+  if(isIntlTicker(ticker)){var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");if(base!==ticker)fmpTickers.push(base);}
+  for(var _fi=0;_fi<fmpTickers.length;_fi++){
+    try{var fq=await fmp("quote/"+fmpTickers[_fi]);if(fq&&Array.isArray(fq)&&fq[0]&&fq[0].price>0){var _fq=fq[0];return{price:_fq.price,prevClose:_fq.previousClose||0,change:_fq.change||0,changePct:_fq.changesPercentage||0,source:"fmp"};}}catch(e){}}
+  return null;}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
 var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN"];
 // Convert exchange-suffixed ticker to Finnhub exchange format
@@ -453,12 +461,14 @@ var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JE
 function toFinnhubSymbol(ticker){
   var SUFFIX_MAP={".TO":":TSX",".V":":TSXV",".L":":LSE",".DE":":XETRA",".PA":":EPA",
     ".AS":":ENXTAM",".HK":":HKEX",".AX":":ASX",".NS":":NSE",".BO":":BSE",
-    ".MI":":XMIL",".MC":":XMAD"};
+    ".MI":":XMIL",".MC":":XMAD",".SW":":SWX",".ST":":STO",".OL":":OSLO",
+    ".CO":":CPH",".HE":":HEL",".BR":":ENXTBR",".LS":":ENXTLS",".AT":":XATH",
+    ".NZ":":NZX"};
   var t=ticker.toUpperCase();
   for(var sfx in SUFFIX_MAP){if(t.endsWith(sfx))return t.slice(0,t.length-sfx.length)+SUFFIX_MAP[sfx]}
   return ticker}
 // Detect if a ticker is non-US (has exchange suffix)
-function isIntlTicker(ticker){return /\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i.test(ticker)}
+function isIntlTicker(ticker){return /\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i.test(ticker)}
 
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+toFinnhubSymbol(ticker)+"&metric=all");
@@ -553,7 +563,7 @@ async function fetchFinancialStatements(ticker,period){
     console.log("[ThesisAlpha] FMP returned empty for "+ticker);
     // For international tickers: try the base ticker (without suffix) with FMP
     if(isIntlTicker(ticker)){
-      var baseTicker=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i,"");
+      var baseTicker=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");
       if(baseTicker!==ticker){
         console.log("[ThesisAlpha] Trying base ticker "+baseTicker+" for FMP financials...");
         var r2=await Promise.all([fmp("income-statement/"+baseTicker+qs),fmp("balance-sheet-statement/"+baseTicker+qs),fmp("cash-flow-statement/"+baseTicker+qs)]);
@@ -632,7 +642,18 @@ async function fetchFMPMetrics(ticker){
   if(_fmpmetricscache[ticker])return _fmpmetricscache[ticker];
   // Try with suffix first, then base ticker for international stocks
   var tickersToTry=[ticker];
-  if(isIntlTicker(ticker)){var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC)$/i,"");if(base!==ticker)tickersToTry.push(base);}
+  if(isIntlTicker(ticker)){
+    var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");
+    if(base!==ticker)tickersToTry.push(base);
+    // FMP sometimes lists Canadian stocks with exchange prefix: TSX:RY, TSXV:TOI
+    var sfxUpper=ticker.match(/\.([A-Z]+)$/i);
+    if(sfxUpper){
+      var FMP_EXCHANGE_MAP={TO:"TSX",V:"TSXV",L:"LSE",DE:"XETRA",PA:"EPA",AS:"ENXTAM",
+        HK:"HKEX",AX:"ASX",NS:"NSE",BO:"BSE",MI:"XMIL",MC:"XMAD",OL:"OSL",SW:"SWX",ST:"STO"};
+      var exCode=FMP_EXCHANGE_MAP[sfxUpper[1].toUpperCase()];
+      if(exCode)tickersToTry.push(base+"."+exCode);
+    }
+  }
   for(var _ti=0;_ti<tickersToTry.length;_ti++){
     var _tk=tickersToTry[_ti];
     try{
@@ -5192,7 +5213,31 @@ function calcMoatFromData(finData,businessModelType){
         })()}
         {dossierMktOpen!==false&&<div>
         {/* ── OWNER'S NUMBERS ── */}
-        {(function(){var snap=c.financialSnapshot||{};var hasSnap=Object.keys(snap).length>0;
+        {(function(){var snap=c.financialSnapshot||{};var snapKeys=Object.keys(snap).filter(function(k){return snap[k]&&snap[k].value});var hasSnap=snapKeys.length>0;
+          // If international and very sparse data — show manual prompt
+          var isIntl=isIntlTicker(c.ticker);
+          var isSparse=isIntl&&snapKeys.length<4;
+          if(!hasSnap&&isIntl)return<div style={{marginBottom:24}}>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
+            {isSparse&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span style={{fontSize:10,color:K.amb,fontFamily:fm,flex:1}}>{"Limited data for "+c.ticker+" — international coverage is partial. Key metrics sourced from available data."}</span>
+            </div>}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 18px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:12}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0,marginTop:2}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>{"Financial data unavailable for "+c.ticker}</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"FMP and Finnhub don’t carry full data for this ticker. This is common for smaller international stocks."}</div>
+                </div>
+              </div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:10,lineHeight:1.6}}>{"You can still track this company by setting KPIs manually from the company’s annual reports and updating conviction after each earnings release."}</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={function(){setDetailTab("kpis")}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,background:K.acc+"12",border:"1px solid "+K.acc+"30",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{"Set KPIs manually →"}</button>
+                <button onClick={function(){setModal({type:"position",id:c.id})}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,background:"transparent",border:"1px solid "+K.bdr,color:K.mid,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Update position</button>
+              </div>
+            </div>
+          </div>;
           if(!hasSnap)return null;
           // Group metrics
           var valuation=[];var returns=[];var divInfo=[];var health=[];
