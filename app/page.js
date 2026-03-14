@@ -3307,8 +3307,70 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
+    {/* ── DAILY QUOTE ── */}
+    {!isMobile&&!bm&&(function(){
+      var QUOTES=[
+        {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
+        {q:"It is remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid.",a:"Charlie Munger"},
+        {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
+        {q:"The best investment you can make is an investment in yourself.",a:"Warren Buffett"},
+        {q:"Invert, always invert. Turn a problem upside down.",a:"Charlie Munger"},
+        {q:"In the short run, the market is a voting machine. In the long run, it is a weighing machine.",a:"Benjamin Graham"},
+        {q:"All I want to know is where I\u2019m going to die, so I\u2019ll never go there.",a:"Charlie Munger"},
+        {q:"Behind every stock is a company. Find out what it is doing.",a:"Peter Lynch"},
+        {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
+        {q:"Go to bed smarter than when you woke up.",a:"Charlie Munger"},
+        {q:"The investor\u2019s chief problem \u2014 and even his worst enemy \u2014 is likely to be himself.",a:"Benjamin Graham"},
+        {q:"It\u2019s not the employer who pays the wages. Employers only handle the money. The customer pays the wages.",a:"Henry Ford"},
+        {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
+        {q:"Risk comes from not knowing what you\u2019re doing.",a:"Warren Buffett"},
+        {q:"You only have to do a very few things right in your life so long as you don\u2019t do too many things wrong.",a:"Warren Buffett"},
+        {q:"In the business world, the rearview mirror is always clearer than the windshield.",a:"Warren Buffett"},
+        {q:"I never attempt to make money on the stock market. I buy on the assumption that they could close the market the next day and not reopen it for five years.",a:"Warren Buffett"},
+        {q:"The four most dangerous words in investing are: this time it\u2019s different.",a:"John Templeton"},
+        {q:"The big money is not in the buying and the selling, but in the waiting.",a:"Charlie Munger"},
+        {q:"Our favourite holding period is forever.",a:"Warren Buffett"},
+        {q:"Twenty years in this business convinces me that any normal person using the customary three percent of the brain can pick stocks just as well, if not better, than the average Wall Street expert.",a:"Peter Lynch"},
+        {q:"Compound interest is the eighth wonder of the world. He who understands it, earns it; he who doesn\u2019t, pays it.",a:"Albert Einstein"},
+        {q:"A great business at a fair price is superior to a fair business at a great price.",a:"Charlie Munger"},
+        {q:"The job is to find a few intelligent things to do, not to keep up with every damn thing in the world.",a:"Charlie Munger"},
+        {q:"It takes 20 years to build a reputation and five minutes to ruin it.",a:"Warren Buffett"},
+        {q:"Simplicity is the ultimate sophistication.",a:"Leonardo da Vinci"},
+        {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
+        {q:"The best time to plant a tree was 20 years ago. The second best time is now.",a:"Chinese Proverb"},
+        {q:"I am a better investor because I am a businessman, and a better businessman because I am an investor.",a:"Warren Buffett"},
+        {q:"Never invest in a business you cannot understand.",a:"Warren Buffett"},
+        {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
+        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
+        {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+        {q:"The market is a pendulum that forever swings between unsustainable optimism and unjustified pessimism.",a:"Benjamin Graham"},
+        {q:"Lethargy bordering on sloth remains the cornerstone of our investment style.",a:"Warren Buffett"},
+        {q:"It\u2019s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
+        {q:"I don\u2019t look to jump over 7-foot bars; I look around for 1-foot bars that I can step over.",a:"Warren Buffett"},
+        {q:"We simply attempt to be fearful when others are greedy and to be greedy only when others are fearful.",a:"Warren Buffett"},
+        {q:"The difference between successful people and really successful people is that really successful people say no to almost everything.",a:"Warren Buffett"},
+        {q:"Knowing what you don\u2019t know is more useful than being brilliant.",a:"Charlie Munger"},
+      ];
+      // Pick by day-of-year — same quote all day, changes daily
+      var now=new Date();
+      var start=new Date(now.getFullYear(),0,0);
+      var dayOfYear=Math.floor((now-start)/864e5);
+      var q=QUOTES[dayOfYear%QUOTES.length];
+      return<div style={{margin:"0 12px 0",padding:"12px 14px",background:isDark?"rgba(255,255,255,0.04)":K.sand||"#F7F5EE",borderRadius:_isBm?0:10,border:"1px solid "+(isDark?"rgba(255,255,255,0.07)":K.bdr),position:"relative",overflow:"hidden"}}>
+        {/* Decorative opening quote mark */}
+        <div style={{position:"absolute",top:-4,left:8,fontSize:42,color:K.acc,opacity:0.12,fontFamily:"Georgia, serif",lineHeight:1,userSelect:"none",pointerEvents:"none"}}>{"\u201C"}</div>
+        {/* Caveat handwriting font loaded inline */}
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');`}</style>
+        <p style={{fontFamily:"'Caveat', cursive",fontSize:13,lineHeight:1.55,color:isDark?"rgba(255,255,255,0.75)":K.mid,margin:"0 0 8px",paddingLeft:4,paddingTop:6,letterSpacing:0.2}}>{q.q}</p>
+        <div style={{display:"flex",alignItems:"center",gap:5}}>
+          <div style={{width:12,height:1,background:K.acc,opacity:0.5}}/>
+          <span style={{fontFamily:fm,fontSize:8.5,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:K.acc,opacity:0.8}}>{q.a}</span>
+        </div>
+      </div>;
+    })()}
+
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
-      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
+      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>,"thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
         {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
         {isDark?"Switch to Light":"Switch to Dark"}</button>}
       <div style={{display:"flex",gap:6}}>
@@ -5263,7 +5325,36 @@ function calcMoatFromData(finData,businessModelType){
           if(returns.length>0)sections.push({title:"CAPITAL RETURNS",items:returns,color:K.grn,gauge:true});
           if(divInfo.length>0)sections.push({title:"DIVIDENDS",items:divInfo,color:K.amb});
           if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
-          if(sections.length===0)return null;
+          // ── BUFFETT BALANCE SHEET SECTION ────────────────────────────────────
+          var bsSection=null;
+          if(investorProfile==="buffett"){
+            var bs=c.financialSnapshot||{};
+            var bsRows=[];
+            // Book value per share
+            if(bs.bookValue&&bs.bookValue.numVal!=null){var bvps=bs.bookValue.numVal;bsRows.push({l:"Book Value/Share",v:"$"+bvps.toFixed(2),tip:"Accumulated equity per share — watch the 10-year trend",isGood:bvps>0,highlight:true});}
+            // Cash & equivalents
+            if(bs.cashPerShare&&bs.cashPerShare.numVal!=null){bsRows.push({l:"Cash/Share",v:"$"+bs.cashPerShare.numVal.toFixed(2),tip:"Cash & equivalents per share",isGood:true});}
+            else if(bs.mktCap&&bs.mktCap.numVal!=null&&bs.cashPerShare==null){/* skip */}
+            // Net cash position
+            if(bs.netDebtEbitda&&bs.netDebtEbitda.numVal!=null){
+              var nd=bs.netDebtEbitda.numVal;
+              var isNetCash=nd<0;
+              bsRows.push({l:"Net Debt/EBITDA",v:isNetCash?"Net cash":nd.toFixed(1)+"x",tip:"Buffett prefers net cash or < 2x EBITDA",isGood:isNetCash||nd<2,isNeutral:nd>=2&&nd<3});
+            }
+            // Long-term debt trend signal
+            if(bs.debtEquity&&bs.debtEquity.numVal!=null){var de=bs.debtEquity.numVal;bsRows.push({l:"Debt/Equity",v:de.toFixed(2)+"x",tip:"Is the company borrowing to grow or to survive?",isGood:de<0.5,isNeutral:de>=0.5&&de<1.5});}
+            // Retained earnings (proxy for compounding)
+            if(bs.roe&&bs.roe.numVal!=null){var roe2=bs.roe.numVal;bsRows.push({l:"Return on Equity",v:roe2.toFixed(1)+"%",tip:"Buffett: ROE > 15% consistently = durable compounding machine",isGood:roe2>=15,isNeutral:roe2>=10&&roe2<15});}
+            // Goodwill signal
+            if(bs.goodwillAndIntangibleAssets&&bs.goodwillAndIntangibleAssets.numVal!=null&&bs.totalAssets&&bs.totalAssets.numVal!=null&&bs.totalAssets.numVal>0){
+              var gwPct=(bs.goodwillAndIntangibleAssets.numVal/bs.totalAssets.numVal)*100;
+              if(gwPct>5)bsRows.push({l:"Goodwill % Assets",v:gwPct.toFixed(0)+"%",tip:"High goodwill signals acquisition-driven growth — examine carefully",isNeutral:gwPct<30,isGood:gwPct<15});
+            }
+            // Current ratio — liquidity fortress
+            if(bs.currentRatio&&bs.currentRatio.numVal!=null){var cr2=bs.currentRatio.numVal;bsRows.push({l:"Current Ratio",v:cr2.toFixed(2),tip:"Can it pay short-term obligations? > 1.5 is comfortable",isGood:cr2>=1.5,isNeutral:cr2>=1&&cr2<1.5});}
+            if(bsRows.length>=3)bsSection=bsRows;
+          }
+          if(sections.length===0&&!bsSection)return null;
           var _bmt2=c.businessModelType||"";
           var _bmtCtx=BUSINESS_MODEL_CONTEXT[_bmt2]||null;
           return<div id="ds-numbers" style={{marginBottom:24}}>
@@ -5275,6 +5366,26 @@ function calcMoatFromData(finData,businessModelType){
               </div>
             </div>}
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
+            {bsSection&&<div style={{marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:"#EF4444",flexShrink:0}}/>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:"#EF4444",fontFamily:fm,fontWeight:700}}>BALANCE SHEET</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.8}}>{"Buffett: “Read the 10-year balance sheet first. Things are harder to hide there.”"}</div>
+              </div>
+              <div style={{background:K.card,border:"1px solid #EF444420",borderRadius:_isBm?0:10,overflow:"hidden"}}>
+                {bsSection.map(function(row,ri){
+                  var col=row.highlight?K.acc:row.isGood?K.grn:row.isNeutral?K.amb:K.mid;
+                  return<div key={ri} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",borderBottom:ri<bsSection.length-1?"1px solid "+K.bdr+"40":"none",background:row.highlight?"#EF444406":"transparent"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      {row.highlight&&<div style={{width:4,height:4,borderRadius:"50%",background:"#EF4444",flexShrink:0}}/>}
+                      <span style={{fontSize:11,color:K.mid,fontFamily:fm}} title={row.tip||""}>{row.l}</span>
+                      {row.tip&&<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+                    </div>
+                    <span style={{fontSize:12,fontWeight:700,color:col,fontFamily:fm}}>{row.v}</span>
+                  </div>;
+                })}
+              </div>
+            </div>}
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {sections.map(function(sec,si){
                 var secColor=sec.color;
