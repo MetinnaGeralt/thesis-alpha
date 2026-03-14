@@ -10113,15 +10113,50 @@ function WeeklyReview(){
                   {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
                   {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
                 ]},
+                {id:"munger",label:"Munger",tip:"Munger napkin: pre-tax returns, pricing power, owner earnings, fortress balance sheet",
+                 mungerNote:"The numbers confirm. They do not decide.",
+                 rows:[
+                  {key:"pretax_roe", label:"Pre-tax return on equity",bv:22,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var roe=s.roe&&s.roe.numVal!=null?s.roe.numVal:null;if(roe==null)return null;return Math.min(roe*1.35,150)},
+                   note:"ROE grossed up for ~25% tax — Munger wants 15%+ pretax on tangible equity"},
+                  {key:"gross",  label:"Gross margin (pricing power)", bv:SP.grossMargin,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){return s.grossMargin?s.grossMargin.numVal:null},
+                   note:"Does management apologise for raising prices, or do customers barely notice?"},
+                  {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return fcf;return null},
+                   note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
+                  {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"%"},
+                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return(1/pe*100);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy;},
+                   note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
+                  {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
+                   fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
+                   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},
+                   note:"Munger hates leverage. Under 2x EBITDA, or ideally net cash."},
+                  {key:"circle", label:"Circle of competence",          bv:3.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"/5"},
+                   qual:true,
+                   getQ:function(c2){return c2.circleScore||null},
+                   note:"Do you truly understand these businesses? Munger: 'Invert, always invert'"},
+                  {key:"mgmt",   label:"Management quality",            bv:null,hb:true,
+                   fmt:function(v){return v===4?"A avg":v>=3?"B avg":v>=2?"C avg":"D avg"},
+                   qual:true,
+                   getQ:function(c2){return c2.managementGrade?({A:4,B:3,C:2,D:1}[c2.managementGrade]||null):null},
+                   note:"The most important quality is integrity — Munger"},
+                ]},
               ];
 
               // ── State: active preset ───────────────────────────────────
-              var _ltp=useState("terry"),activePreset=_ltp[0],setActivePreset=_ltp[1];
+              var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
               var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
 
               // ── Weighted avg helper ────────────────────────────────────
               var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
               function wavg(fn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
+              function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
 
               return<div style={{marginBottom:16}}>
                 {/* Section label + preset pills */}
@@ -10140,18 +10175,24 @@ function WeeklyReview(){
                     <div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>
                   </div>
                   {preset.rows.map(function(r,i){
-                    var pv=wavg(r.get);
-                    var beat=pv!=null&&(r.hb?pv>r.bv:pv<r.bv);
+                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get);
+                    var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
                     var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
-                    return<div key={r.key} style={{display:"grid",gridTemplateColumns:"1fr 72px 72px",borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
-                      <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm}}>{r.label}</div>
-                      <div style={{padding:"7px 0",textAlign:"center"}}>
-                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>↺</span>}
+                    return<div key={r.key} title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null?"72px":"0px"),borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:i%2===0?"transparent":K.acc+"03"}}>
+                      <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+                        {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.6}}>ⓘ</span>}
+                        {r.qual&&<span style={{fontSize:8,color:K.acc,fontFamily:fm,background:K.acc+"10",padding:"1px 5px",borderRadius:2,marginLeft:3}}>qualitative</span>}
                       </div>
                       <div style={{padding:"7px 0",textAlign:"center"}}>
+                        {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data to populate" onClick={function(){filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)})}}>{"↺"}</span>}
+                      </div>
+                      {r.bv!=null&&<div style={{padding:"7px 0",textAlign:"center"}}>
                         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span>
-                      </div>
+                      </div>}
                     </div>})}
+                  {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
+                    {"\u201c"+preset.mungerNote+"\u201d"}
+                  </div>}
                 </div>
               </div>
             })()}
