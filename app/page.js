@@ -11819,15 +11819,7 @@ function WeeklyReview(){
                   {/* Circle */}
                   <div style={{display:"flex",alignItems:"center",gap:3}}>
                     {[1,2,3,4,5].map(function(n){return<div key={n} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:n<=coc?cocColor:K.bdr+"50"}}/>})}
-                    {!coc&&<button onClick={function(e){e.stopPropagation();var v=parseInt(window.prompt("Circle of competence — "+cc.ticker+"
-
-1 Barely understand
-2 Know the basics
-3 Solid understanding
-4 Deep knowledge
-5 Expert
-
-Rate 1–5:","3"));if(!isNaN(v)&&v>=1&&v<=5)upd(cc.id,{circleScore:v})}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginLeft:2}}>Rate</button>}
+                    {!coc&&<button onClick={function(e){e.stopPropagation();var v=parseInt(window.prompt("Circle of competence — "+cc.ticker+"\n\n1 Barely understand\n2 Know the basics\n3 Solid understanding\n4 Deep knowledge\n5 Expert\n\nRate 1-5:","3"));if(!isNaN(v)&&v>=1&&v<=5)upd(cc.id,{circleScore:v})}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginLeft:2}}>Rate</button>}
                   </div>
                   {/* Weight */}
                   {weight>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{weight.toFixed(1)+"%"}</span>}
