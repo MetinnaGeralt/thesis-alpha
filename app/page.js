@@ -9975,8 +9975,254 @@ function WeeklyReview(){
       </div>;
     })()}
 
-    {/* ── MORNING BRIEFING ── */}
-    {sideTab==="portfolio"&&filtered.length>0&&(function(){
+    {/* ── PROFILE-SPECIFIC WIDGETS ── */}
+    {sideTab==="portfolio"&&!isMobile&&investorProfile&&investorProfile!=="munger"&&investorProfile!=="custom"&&(function(){
+      var portfolio=filtered;
+      // ── TERRY SMITH: The Three Tests ─────────────────────────────
+      if(investorProfile==="terry"){
+        var terryRows=portfolio.map(function(c){
+          var s=c.financialSnapshot||{};
+          var roic=s.roic&&s.roic.numVal!=null?s.roic.numVal:s.roce&&s.roce.numVal!=null?s.roce.numVal:null;
+          var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
+          var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;
+          var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
+          var rev=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+          var t1=roic!=null&&gm!=null?(roic>=15&&gm>=40):roic!=null?roic>=15:null;
+          var t2=rev!=null&&fcf!=null?(rev>=5&&fcf>0):rev!=null?rev>=5:null;
+          var t3=pe!=null?(pe>0&&pe<30):(fcf!=null?fcf>3:null);
+          var passed=[t1,t2,t3].filter(function(t){return t===true}).length;
+          var judged=[t1,t2,t3].filter(function(t){return t!==null}).length;
+          return{c:c,t1:t1,t2:t2,t3:t3,passed:passed,judged:judged};
+        });
+        var allPass=terryRows.filter(function(r){return r.passed===3}).length;
+        var hasData=terryRows.some(function(r){return r.judged>0});
+        function dot(t){return t===true?<span style={{color:K.grn,fontSize:14}}>{"✓"}</span>:t===false?<span style={{color:K.red,fontSize:13}}>{"✗"}</span>:<span style={{color:K.bdr,fontSize:11}}>{"—"}</span>}
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="shield" size={12} color={K.grn}/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>The Three Tests</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Fundsmith framework</span>
+            </div>
+            {hasData&&<div style={{fontSize:10,color:allPass===portfolio.length?K.grn:K.amb,fontFamily:fm,fontWeight:700}}>{allPass+"/"+portfolio.length+" pass all three"}</div>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+              {["High returns","Can reinvest","Fair price"].map(function(l,i){return<div key={i} style={{fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>})}
+            </div>
+            {terryRows.map(function(row){
+              var c=row.c;
+              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",padding:"8px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    <div style={{fontSize:9,color:K.dim}}>{c.name.substring(0,24)+(c.name.length>24?"...":"")}</div>
+                  </div>
+                </div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t1)}</div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t2)}</div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t3)}</div>
+              </div>;
+            })}
+            {!hasData&&<div style={{padding:"14px",textAlign:"center",fontSize:12,color:K.dim}}>Refresh fundamentals to populate the three tests.</div>}
+            <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",gap:12"}}>
+              {[{l:"1. High returns on capital",s:"ROIC > 15% + gross margin > 40%"},
+                {l:"2. Can reinvest those returns",s:"Rev growth > 5% + positive FCF"},
+                {l:"3. Reasonable valuation",s:"P/E < 30 or FCF yield > 3%"}].map(function(item,i){return<div key={i} style={{flex:1}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.mid,fontFamily:fm,marginBottom:1}}>{item.l}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.s}</div>
+              </div>})}
+            </div>
+          </div>
+        </div>;
+      }
+      // ── NICK SLEEP: Flywheel Check ────────────────────────────────
+      if(investorProfile==="sleep"){
+        var totalVal2=portfolio.reduce(function(s,c){var p=c.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
+        var top3W=portfolio.slice().sort(function(a,b){var va=(a.position||{}).shares>0&&(a.position||{}).currentPrice>0?(a.position.shares*a.position.currentPrice):0;var vb=(b.position||{}).shares>0&&(b.position||{}).currentPrice>0?(b.position.shares*b.position.currentPrice):0;return vb-va}).slice(0,3).reduce(function(s,c){var p=c.position||{};return s+(totalVal2>0&&p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice/totalVal2*100:0)},0);
+        var avgConv=portfolio.length>0?Math.round(portfolio.reduce(function(s,c){return s+(c.conviction||0)},0)/portfolio.length*10)/10:0;
+        var concColor=portfolio.length<=4?K.grn:portfolio.length<=7?K.amb:K.red;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",marginBottom:10,gap:7}}>
+            <IC name="trending" size={12} color={K.blue}/>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Flywheel Check</div>
+            <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Nomad framework</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              <div style={{padding:"7px 14px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Scale economies shared — does it get better for customers?</div>
+              </div>
+              {portfolio.map(function(c){
+                var s=c.financialSnapshot||{};
+                var revGr=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+                var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
+                var sec=parseThesis(c.thesisNote||"");
+                var excerpt=c.flywheelNote||(sec.core?sec.core.substring(0,80)+(sec.core.length>80?"...":""):"");
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    {excerpt?<div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{excerpt}</div>:
+                    <div style={{fontSize:10,color:K.dim,fontStyle:"italic"}}>Does this business share scale with customers? Add a flywheel note in the dossier.</div>}
+                  </div>
+                  <div style={{display:"flex",gap:8,flexShrink:0}}>
+                    {revGr!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:revGr>=10?K.grn:revGr>=5?K.amb:K.red,fontFamily:fm}}>{(revGr>=0?"+":"")+revGr.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Rev gr</div></div>}
+                    {gm!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:gm>=50?K.grn:gm>=30?K.amb:K.dim,fontFamily:fm}}>{gm.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Margin</div></div>}
+                  </div>
+                </div>;
+              })}
+              <div style={{padding:"7px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>
+                {"\u201cDestination companies make more economic sense over time.\u201d \u2014 Nick Sleep"}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[{l:"Concentration",v:portfolio.length+" co.",sub:portfolio.length<=4?"Highly concentrated":portfolio.length<=7?"Moderate":"Too diversified?",col:concColor},
+                {l:"Top 3 weight",v:totalVal2>0?top3W.toFixed(0)+"%":"—",sub:"Sleep: top 3 often 60-80%",col:top3W>=60?K.grn:top3W>=40?K.amb:K.dim},
+                {l:"Avg conviction",v:avgConv>0?avgConv+"/10":"—",sub:"Own fewer, know more",col:avgConv>=7?K.grn:avgConv>=5?K.amb:K.red}].map(function(item,i){return<div key={i} style={{background:K.card,border:"1px solid "+item.col+"30",borderRadius:_isBm?0:10,padding:"10px 12px",flex:1}}>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{item.l}</div>
+                <div style={{fontSize:18,fontWeight:800,color:item.col,fontFamily:fm,lineHeight:1,marginBottom:2}}>{item.v}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.sub}</div>
+              </div>})}
+            </div>
+          </div>
+        </div>;
+      }
+      // ── PETER LYNCH: Category Classifier ─────────────────────────
+      if(investorProfile==="lynch"){
+        var LCATS=[{id:"fast_grower",label:"Fast Grower",sym:"F",color:"#22C55E",tip:"20-25%+ annual growth. Sell when growth slows."},
+          {id:"stalwart",label:"Stalwart",sym:"S",color:"#3B82F6",tip:"Large, solid, 10-12% growth. Sell at 30-50% gain."},
+          {id:"slow_grower",label:"Slow Grower",sym:"SG",color:"#6B7280",tip:"GDP growth. Own for dividends only."},
+          {id:"cyclical",label:"Cyclical",sym:"C",color:"#F59E0B",tip:"Buy at high P/E (trough), sell at low P/E (peak)."},
+          {id:"turnaround",label:"Turnaround",sym:"T",color:"#EF4444",tip:"Broken but fixable. Define the thesis clearly."},
+          {id:"asset_play",label:"Asset Play",sym:"A",color:"#8B5CF6",tip:"Hidden assets not in price. Market will recognise."}];
+        var catCounts={};LCATS.forEach(function(cat){catCounts[cat.id]=0});
+        portfolio.forEach(function(c){if(c.lynchCategory)catCounts[c.lynchCategory]=(catCounts[c.lynchCategory]||0)+1});
+        var unclassified=portfolio.filter(function(c){return!c.lynchCategory}).length;
+        var pegVals=[];portfolio.forEach(function(c){var s=c.financialSnapshot||{};var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;var eg=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;if(pe&&pe>0&&eg&&eg>0)pegVals.push(pe/eg)});
+        var avgPeg=pegVals.length>0?(pegVals.reduce(function(s,v){return s+v},0)/pegVals.length):null;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="search" size={12} color="#8B5CF6"/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Lynch Categories</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Know what you own</span>
+            </div>
+            {avgPeg!=null&&<div style={{fontSize:10,fontFamily:fm,color:avgPeg<1?K.grn:avgPeg<2?K.acc:K.red,fontWeight:700}}>{"Avg PEG: "+avgPeg.toFixed(2)}</div>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              {portfolio.map(function(c){
+                var cat=c.lynchCategory?LCATS.find(function(x){return x.id===c.lynchCategory}):null;
+                var s=c.financialSnapshot||{};
+                var pe2=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
+                var eg2=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+                var peg2=pe2&&pe2>0&&eg2&&eg2>0?(pe2/eg2):null;
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    {peg2!=null&&<div style={{fontSize:9,color:peg2<1?K.grn:peg2<2?K.acc:K.red,fontFamily:fm,fontWeight:600}}>{"PEG "+peg2.toFixed(2)}</div>}
+                  </div>
+                  {cat
+                    ?<button onClick={function(e){e.stopPropagation();var v=window.prompt("Lynch category for "+c.ticker+"\n1.Fast Grower 2.Stalwart 3.Slow Grower 4.Cyclical 5.Turnaround 6.Asset Play\nEnter number:",String(LCATS.indexOf(cat)+1));if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,fontWeight:700,color:cat.color,background:cat.color+"12",border:"1px solid "+cat.color+"30",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>{cat.sym+" "+cat.label}</button>
+                    :<button onClick={function(e){e.stopPropagation();var v=window.prompt("Classify "+c.ticker+":\n1.Fast Grower\n2.Stalwart\n3.Slow Grower\n4.Cyclical\n5.Turnaround\n6.Asset Play\nEnter number:");if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Classify</button>}
+                </div>;
+              })}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Portfolio mix</div>
+                {LCATS.filter(function(cat){return catCounts[cat.id]>0}).map(function(cat){return<div key={cat.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
+                  <span style={{fontSize:11,color:K.mid,flex:1,fontFamily:fm}}>{cat.label}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:cat.color,fontFamily:fm}}>{catCounts[cat.id]}</span>
+                </div>})}
+                {unclassified>0&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,fontStyle:"italic"}}>{unclassified+" unclassified"}</div>}
+              </div>
+              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",flex:1}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Sell rules by type</div>
+                {LCATS.map(function(cat){return<div key={cat.id} style={{marginBottom:5,display:"flex",alignItems:"flex-start",gap:4}}>
+                  <span style={{fontSize:9,fontWeight:700,color:cat.color,fontFamily:fm,flexShrink:0,minWidth:16}}>{cat.sym}</span>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,lineHeight:1.4}}>{cat.tip}</span>
+                </div>})}
+              </div>
+            </div>
+          </div>
+        </div>;
+      }
+      // ── WARREN BUFFETT: IV Scorecard ──────────────────────────────
+      if(investorProfile==="buffett"){
+        var ivCos=portfolio.filter(function(c){return c.ivEstimate>0});
+        var inZoneN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<=c.ivEstimate*(1-(c.mosPct||30)/100)}).length;
+        var belowIVN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<c.ivEstimate}).length;
+        var noIV2=portfolio.filter(function(c){return!c.ivEstimate||c.ivEstimate<=0}).length;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="dollar" size={12} color="#EF4444"/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Intrinsic Value Scorecard</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Price is what you pay, value is what you get</span>
+            </div>
+            {ivCos.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{inZoneN+" in buy zone \u00b7 "+belowIVN+"/"+ivCos.length+" below IV"}</span>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            {portfolio.map(function(c){
+              var pos=c.position||{};var cp=pos.currentPrice||0;
+              var iv=c.ivEstimate||0;var mos=c.mosPct||30;
+              var buyBelow=iv*(1-mos/100);
+              var mosNow=iv>0&&cp>0?((iv-cp)/iv*100):null;
+              var inZone=iv>0&&cp>0&&cp<=buyBelow;
+              var aboveIV=iv>0&&cp>0&&cp>iv;
+              var sCol=!iv?K.bdr:inZone?K.grn:aboveIV?K.red:K.amb;
+              var sLbl=!iv?"No IV set":inZone?"In buy zone":aboveIV?"Above IV":"Below IV, above buy zone";
+              return<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                  <div style={{fontSize:10,color:sCol,fontFamily:fm,fontWeight:600}}>{sLbl}</div>
+                </div>
+                {iv>0?(function(){
+                  return<div style={{display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>IV est.</div><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+iv.toFixed(0)}</div></div>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Buy below</div><div style={{fontSize:12,fontWeight:700,color:K.grn,fontFamily:fm}}>{cSym+buyBelow.toFixed(0)}</div></div>
+                    {mosNow!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>MoS</div><div style={{fontSize:12,fontWeight:700,color:sCol,fontFamily:fm}}>{mosNow.toFixed(0)+"%"}</div></div>}
+                    {cp>0&&<div style={{width:64}}>
+                      <div style={{position:"relative",height:4,background:K.bdr,borderRadius:2,marginBottom:2}}>
+                        <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(cp/Math.max(iv*1.5,cp)*100,100)+"%",background:sCol,borderRadius:2,transition:"width .3s"}}/>
+                        <div style={{position:"absolute",left:Math.min(iv/Math.max(iv*1.5,cp)*100,100)+"%",top:-3,width:1,height:10,background:K.grn,opacity:.6}}/>
+                      </div>
+                      <div style={{fontSize:8,color:K.dim,fontFamily:fm,textAlign:"right"}}>{cSym+cp.toFixed(0)}</div>
+                    </div>}
+                  </div>;
+                })()
+                :<button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"position"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 10px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Set IV \u2192</button>}
+              </div>;
+            })}
+            {noIV2>0&&<div style={{padding:"8px 16px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>{noIV2+" holding"+(noIV2>1?"s":"")+" without IV estimate \u2014 open Position to set your intrinsic value."}</div>}
+            <div style={{padding:"8px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>{"\u201cPrice is what you pay. Value is what you get.\u201d \u2014 Warren Buffett"}</div>
+          </div>
+        </div>;
+      }
+      return null;
+    })()}
+
+    {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){{
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
       var dow=now.getDay();// 0=Sun,6=Sat
       var isWeekend=dow===0||dow===6;
