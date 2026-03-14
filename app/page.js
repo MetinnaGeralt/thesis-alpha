@@ -4721,7 +4721,7 @@ function calcMoatFromData(finData,businessModelType){
             {label:"Conviction",value:conv>0?conv+"/10":"—",sub:conv>=7?"High":conv>=4?"Medium":conv>0?"Low":"Unrated",color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,onClick:function(){setModal({type:"conviction"})}},
             {label:"Thesis",value:_tScore+"%",sub:_tScore>=80?"Strong":_tScore>=50?"Developing":"Weak",color:_tScoreColor,onClick:function(){setModal({type:"thesis"})}},
             {label:"KPIs",value:h.m>0?h.ok+"/"+h.m:"None",sub:h.m>0?(h.ok===h.m?"All met":h.ok>0?"Partial":"Missed"):"Add KPIs",color:h.m>0?(h.ok===h.m?K.grn:h.ok>0?K.amb:K.red):K.dim,onClick:function(){setDetailTab("dossier")}},
-            {label:"Held",value:(function(){if(!c.purchaseDate)return"—";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<30?d+"d":d<365?Math.floor(d/30)+"mo":Math.floor(d/365)+"yr"+(Math.floor((d%365)/30)>0?" "+Math.floor((d%365)/30)+"mo":"")})(),sub:(function(){if(!c.purchaseDate)return"Set date";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<90?"Short term":d<730?"Medium term":"Long term"})(),color:K.mid,onClick:function(){setModal({type:"position"})}},
+            {label:"Held",value:(function(){if(!c.purchaseDate)return"—";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);if(d<=0||d>18250)return"—";return d<30?d+"d":d<365?Math.floor(d/30)+"mo":Math.floor(d/365)+"yr"+(Math.floor((d%365)/30)>0?" "+Math.floor((d%365)/30)+"mo":"")})(),sub:(function(){if(!c.purchaseDate)return"Set date";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<90?"Short term":d<730?"Medium term":"Long term"})(),color:K.mid,onClick:function(){setModal({type:"position"})}},
             {label:"Return",value:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"—";return((p2.currentPrice-p2.avgCost)/p2.avgCost*100).toFixed(1)+"%"})(),sub:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"No position";var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=20?"Performing":r>=0?"Positive":r>=-10?"Small loss":"Deep loss"})(),color:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return K.dim;var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=0?K.grn:K.red})(),onClick:function(){setModal({type:"position"})}},
             {label:"Thesis age",value:_thesisStaleBadge,sub:_thesisStale?"Needs review":_thesisAgeDays!=null&&_thesisAgeDays<30?"Fresh":"OK",color:_thesisStale?K.amb:K.grn,onClick:function(){setModal({type:"thesis"})}},
           ].map(function(item,i){return<div key={i} onClick={item.onClick} style={{flex:"1 1 0",minWidth:80,padding:"6px 12px",cursor:"pointer",borderLeft:i>0?"1px solid "+K.bdr:"none",textAlign:"center"}}
@@ -6184,7 +6184,7 @@ function calcMoatFromData(finData,businessModelType){
     // LAYER 6: Ownership anniversaries
     portfolio.forEach(function(c){
       if(!c.purchaseDate)return;
-      var daysHeld=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);
+      var _rawHeld=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);var daysHeld=(_rawHeld>0&&_rawHeld<18250)?_rawHeld:0;
       [1,2,3,5,7,10].forEach(function(yr){
         var target=yr*365;
         if(daysHeld>=target&&daysHeld<target+7){
@@ -10013,7 +10013,7 @@ function WeeklyReview(){
           }
 
           var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
-          var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){return s+Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5)},0)/_heldCos2.length/365):0;
+          var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/_heldCos2.length/365):0;
           return<div style={{borderBottom:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -10336,7 +10336,7 @@ function WeeklyReview(){
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="ledger"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p=cc.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
       var heldCos=filtered.filter(function(cc){return cc.purchaseDate});
-      var avgYrs=heldCos.length?(heldCos.reduce(function(s,cc){return s+Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5)},0)/heldCos.length/365).toFixed(1):0;
+      var avgYrs=heldCos.length?(heldCos.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/heldCos.length/365).toFixed(1):0;
       var sorted=filtered.slice().sort(function(a,b){var da=a.purchaseDate?Math.ceil((Date.now()-new Date(a.purchaseDate))/864e5):0;var db=b.purchaseDate?Math.ceil((Date.now()-new Date(b.purchaseDate))/864e5):0;return db-da;});
       return<div style={{marginBottom:28}}>
         {/* Patience header */}
@@ -10358,7 +10358,7 @@ function WeeklyReview(){
         </div>
         {sorted.map(function(cc,ci){
           var pos=cc.position||{};
-          var days=cc.purchaseDate?Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5):0;
+          var _rawDays=cc.purchaseDate?Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5):0;var days=(_rawDays>0&&_rawDays<18250)?_rawDays:0;
           var holdLabel=days>365?(days/365).toFixed(1)+"yr":days>30?Math.floor(days/30)+"mo":days>0?days+"d":"—";
           var moatObjs=Object.keys(cc.moatTypes||{}).filter(function(k){return cc.moatTypes[k]&&cc.moatTypes[k].active}).map(function(k){return MOAT_TYPES.find(function(t){return t.id===k})}).filter(Boolean);
           var sec=parseThesis(cc.thesisNote||"");
