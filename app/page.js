@@ -3595,7 +3595,38 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <span style={{fontSize:12,color:K.mid,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{n.headline}</span>
           <span style={{fontSize:10,color:K.dim,whiteSpace:"nowrap",fontFamily:fm}}>{n.source} · {new Date(n.datetime*1000).toLocaleDateString()}</span></a>})}</div>}</div>}
 
-  function calcMoatFromData(finData,businessModelType){
+  // Business model context — explains why standard metrics can mislead
+var BUSINESS_MODEL_CONTEXT={
+  serial_acquirer:{
+    label:"Serial Acquirer",
+    roic:{note:"Serial acquirers constantly deploy capital into new acquisitions before returns fully mature. Reported ROIC understates the true return on each individual acquisition. Look at per-acquisition IRR and organic ROIC of legacy businesses instead.",expectLow:true,adjustedBenchmark:8},
+    grossMargin:{note:"Margin varies widely by acquisition mix and sector. Portfolio-level gross margin is less meaningful than unit economics per acquisition.",expectLow:false},
+    opMargin:{note:"M&A amortization charges reduce reported operating margin materially. Add back amortization of acquired intangibles to see true operating performance.",expectLow:true},
+    guidance:"Focus on: (1) Acquisition IRR > cost of capital, (2) Organic growth in acquired businesses, (3) Decentralised management track record, (4) Runway of M&A candidates. Think Constellation Software, Topicus, Danaher."
+  },
+  distributor:{
+    label:"Low-Margin Distributor",
+    grossMargin:{note:"Distributors operate on thin margins by design — their value is scale, logistics, and supplier relationships, not product pricing power. 5-15% gross margin is normal for best-in-class distributors.",expectLow:true,adjustedBenchmark:10},
+    opMargin:{note:"Low absolute margins compensated by high asset turns (ROIC = margin × turns). A 3% op margin with 5x asset turnover beats a 30% margin business with 0.3x turns.",expectLow:true},
+    roic:{note:"Asset-light business model generates high ROIC through turnover despite low margins. Focus on ROIC rather than gross or op margin in isolation.",expectLow:false},
+    guidance:"The key metric is ROIC, not margin. Distributors win through density, scale, and inventory management. Think Fastenal, Grainger, Copart."
+  },
+  asset_light:{
+    label:"Asset-Light / Platform",
+    roic:{note:"Asset-light platforms often report extremely high ROIC (50-100%+) because their capital base is small relative to earnings. This is a feature, not a red flag.",expectLow:false},
+    grossMargin:{note:"High gross margins (60-80%+) are characteristic of platforms and software. Operating leverage means incremental revenue flows mostly to the bottom line.",expectLow:false},
+    guidance:"Key metrics: net revenue retention, CAC payback, gross margin expansion, FCF conversion. Traditional asset/debt ratios are less meaningful."
+  },
+  financial:{
+    label:"Financial / Insurance",
+    roic:{note:"Traditional ROIC is not meaningful for financials — their business model is to lever up a capital base profitably. Use ROE and combined ratio instead.",expectLow:true},
+    grossMargin:{note:"Gross margin is not a standard metric for banks and insurers. Use net interest margin (banks) or combined ratio (insurers) instead.",expectLow:true},
+    opMargin:{note:"Operating margin is not standard for financials. Use efficiency ratio (banks: non-interest expense / revenue) or operating ratio (insurers) instead.",expectLow:true},
+    guidance:"For banks: focus on ROE, net interest margin, loan growth, credit quality. For insurers: combined ratio, float, investment returns."
+  }
+};
+
+function calcMoatFromData(finData,businessModelType){
     if(!finData)return null;
     var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
     if(inc.length<2)return null;
@@ -3878,11 +3909,15 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <option value="">Not Set</option><option value="Strengthening">▲ Strengthening</option><option value="Stable">─ Stable</option><option value="Eroding">▼ Eroding</option></select></div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}} title="Business model structure affects how leverage should be interpreted. A monopoly can safely carry debt that would destroy a commodity business.">
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:6}}>BUSINESS MODEL</div>
-              <select value={c.businessModelType||""} onChange={function(e){upd(c.id,{businessModelType:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:c.businessModelType==="monopoly"?K.grn:c.businessModelType==="oligopoly"?K.grn:c.businessModelType==="commodity"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
+              <select value={c.businessModelType||""} onChange={function(e){upd(c.id,{businessModelType:e.target.value})}} style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:c.businessModelType==="monopoly"?K.grn:c.businessModelType==="oligopoly"?K.grn:c.businessModelType==="asset_light"?K.grn:c.businessModelType==="serial_acquirer"?K.blue:c.businessModelType==="distributor"?K.amb:c.businessModelType==="financial"?K.blue:c.businessModelType==="commodity"?K.red:K.txt,padding:"8px 10px",fontSize:12,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
                 <option value="">Not Set</option>
-                <option value="monopoly">👑 Monopoly</option>
+                <option value="monopoly">👑 Monopoly / Pricing Power</option>
                 <option value="oligopoly">🏰 Oligopoly</option>
                 <option value="niche">🎯 Niche Dominant</option>
+                <option value="serial_acquirer">🧩 Serial Acquirer</option>
+                <option value="asset_light">⚡ Asset-Light / Platform</option>
+                <option value="distributor">🚚 Low-Margin Distributor</option>
+                <option value="financial">🏦 Financial / Insurance</option>
                 <option value="competitive">⚔ Competitive</option>
                 <option value="commodity">📦 Commodity</option>
               </select>
@@ -4880,7 +4915,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(snap.fcfYield&&snap.fcfYield.numVal!=null){valuation.push({l:"FCF Yield",v:snap.fcfYield.value,isGood:snap.fcfYield.numVal>4})}
           else if(snap.fcf&&pos.currentPrice>0){var fcfVal2=parseFloat(String(snap.fcf.value).replace(/[^0-9.\-]/g,""))||0;if(fcfVal2!==0){var fcfY=fcfVal2/pos.currentPrice*100;valuation.push({l:"FCF Yield",v:fcfY.toFixed(1)+"%",isGood:fcfY>4})}}
           if(snap.hi52&&snap.lo52&&snap.hi52.value){var cp=pos.currentPrice||0;if(cp>0){var _h52=parseFloat(String(snap.hi52.value).replace(/[^0-9.]/g,""))||0;if(_h52>0){var pctOfHi=((cp/_h52)*100).toFixed(0);valuation.push({l:"vs 52w High",v:pctOfHi+"%",tip:"Current price as % of 52-week high",isNeutral:true})}}}
-          if(snap.roic)returns.push({l:"ROIC",v:snap.roic.value,numVal:snap.roic.numVal,sp500:12,tip:"Return on invested capital — S&P 500 avg ~12%",isGood:snap.roic.numVal>=12});
+          var _roicCtx=BUSINESS_MODEL_CONTEXT[c.businessModelType||""];
+          var _roicNote=_roicCtx&&_roicCtx.roic?_roicCtx.roic.note:null;
+          var _roicBench=_roicCtx&&_roicCtx.roic&&_roicCtx.roic.adjustedBenchmark?_roicCtx.roic.adjustedBenchmark:12;
+          var _roicExpectLow=_roicCtx&&_roicCtx.roic&&_roicCtx.roic.expectLow;
+          if(snap.roic)returns.push({l:"ROIC"+(c.businessModelType&&_roicExpectLow?" *":""),v:snap.roic.value,numVal:snap.roic.numVal,sp500:_roicBench,tip:(_roicNote?"["+(_roicCtx?_roicCtx.label:"")+" context] "+_roicNote+" — ":"")+"S&P 500 avg ~12%",isGood:_roicExpectLow?(snap.roic.numVal>=_roicBench):(snap.roic.numVal>=12),contextNote:_roicNote});
           if(snap.roe)returns.push({l:"ROE",v:snap.roe.value,numVal:snap.roe.numVal,sp500:18,tip:"Return on equity — S&P 500 avg ~18%",isGood:snap.roe.numVal>=15});
           if(snap.roce&&snap.roce.value)returns.push({l:"ROCE",v:snap.roce.value,numVal:snap.roce.numVal,sp500:13,tip:"Return on capital employed — S&P 500 avg ~13%",isGood:parseFloat(snap.roce.value)>=12});
           if(snap.grossMargin)returns.push({l:"Gross Margin",v:snap.grossMargin.value,tip:"Revenue minus COGS"});
@@ -4965,7 +5004,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
             // — Buffett Quality Checklist (5 criteria) —
             var _bScore=0;var _bTotal=0;var _bLines=[];
-            if(_mfRoic!==null){_bTotal++;if(_mfRoic>15){_bScore++;_bLines.push("ROIC>"+_mfRoic.toFixed(0)+"%")}}
+            var _skipRoic=c.businessModelType==="serial_acquirer"||c.businessModelType==="financial"||c.businessModelType==="distributor";
+            if(_mfRoic!==null&&!_skipRoic){_bTotal++;if(_mfRoic>15){_bScore++;_bLines.push("ROIC>"+_mfRoic.toFixed(0)+"%")}}
+            else if(_mfRoic!==null&&_skipRoic){/* ROIC benchmark not applied for this business model */}
             if(snap.grossMargin&&snap.grossMargin.numVal!=null){_bTotal++;if(snap.grossMargin.numVal>40){_bScore++;_bLines.push("Gross margin>"+snap.grossMargin.numVal.toFixed(0)+"%")}}
             if(snap.fcfYield&&snap.fcfYield.numVal!=null){_bTotal++;if(snap.fcfYield.numVal>0){_bScore++;_bLines.push("FCF positive")}}
             if(snap.debtEquity&&snap.debtEquity.numVal!=null){_bTotal++;if(snap.debtEquity.numVal<0.5){_bScore++;_bLines.push("Low debt")}else if(snap.debtEquity.numVal<1.5){_bLines.push("Moderate debt (ok for moat co.)")}}
@@ -4983,7 +5024,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           if(divInfo.length>0)sections.push({title:"DIVIDENDS",items:divInfo,color:K.amb});
           if(health.length>0)sections.push({title:"FINANCIAL HEALTH",items:health,color:K.mid});
           if(sections.length===0)return null;
+          var _bmt2=c.businessModelType||"";
+          var _bmtCtx=BUSINESS_MODEL_CONTEXT[_bmt2]||null;
           return<div id="ds-numbers" style={{marginBottom:24}}>
+            {_bmtCtx&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:K.blue+"08",border:"1px solid "+K.blue+"20",borderRadius:_isBm?0:10,marginBottom:12}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="1.8" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,fontWeight:700,color:K.blue,fontFamily:fm,marginBottom:3}}>{_bmtCtx.label+": standard benchmarks may not apply"}</div>
+                <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{_bmtCtx.guidance}</div>
+              </div>
+            </div>}
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               {sections.map(function(sec,si){
@@ -5020,6 +5070,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                         <div style={{fontSize:8,color:K.dim,fontFamily:fm,marginTop:1,opacity:.7}}>S&P avg {item.sp500}%</div>
                       </div>})}
                   </div>
+                  {sec.items.some(function(it){return it.contextNote})&&<div style={{display:"flex",alignItems:"flex-start",gap:6,marginTop:8,padding:"8px 12px",background:K.blue+"06",border:"1px solid "+K.blue+"15",borderRadius:_isBm?0:8}}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div style={{fontSize:10,color:K.mid,lineHeight:1.6,fontFamily:fm}}>{sec.items.find(function(it){return it.contextNote}).contextNote}</div>
+                  </div>}
                   :<div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
                   {sec.items.map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
