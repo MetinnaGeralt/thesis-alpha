@@ -11761,67 +11761,88 @@ function WeeklyReview(){
             </div>
           </div>
         </div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"0 24px",marginBottom:16}}>
         {sorted.map(function(cc,ci){
           var pos=cc.position||{};
-          var _rawDays=cc.purchaseDate?Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5):0;var days=(_rawDays>0&&_rawDays<18250)?_rawDays:0;
-          var holdLabel=days>365?(days/365).toFixed(1)+"yr":days>30?Math.floor(days/30)+"mo":days>0?days+"d":"—";
+          var _rawDays=cc.purchaseDate?Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5):0;
+          var days=(_rawDays>0&&_rawDays<18250)?_rawDays:0;
+          var holdYrs=days>=365?(days/365).toFixed(1)+"yr":days>=30?Math.floor(days/30)+"mo":days>0?days+"d":null;
           var moatObjs=Object.keys(cc.moatTypes||{}).filter(function(k){return cc.moatTypes[k]&&cc.moatTypes[k].active}).map(function(k){return MOAT_TYPES.find(function(t){return t.id===k})}).filter(Boolean);
           var sec=parseThesis(cc.thesisNote||"");
-          var riskLine=sec.risks?sec.risks.split(".")[0].trim().substring(0,120):null;
-          var convColor=cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:cc.conviction>0?K.red:K.dim;
+          var bearLine=sec.risks?sec.risks.split(".")[0].trim():null;
+          var coreLine=sec.core?sec.core.substring(0,180)+(sec.core.length>180?"...":""):null;
+          var convColor=cc.conviction>=7?K.grn:cc.conviction>=4?K.acc:cc.conviction>0?K.amb:K.bdr;
           var coc=cc.circleScore||0;
-          var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.bdr;
+          var cocColor=coc>=4?K.grn:coc>=3?K.acc:coc>0?K.amb:K.bdr;
           var weight=totalVal>0&&pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice/totalVal*100):0;
-          var borderColor=coc>0&&coc<3?K.amb+"50":K.bdr;
-          return<div key={cc.id} style={{background:K.card,border:"1px solid "+borderColor,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:10,cursor:"pointer",transition:"all .15s"}}
+          var isLast=ci===sorted.length-1;
+          return<div key={cc.id}
+            style={{padding:"22px 4px",borderBottom:isLast?"none":"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .12s"}}
             onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
-            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"04";e.currentTarget.style.borderColor=K.acc+"40"}}
-            onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.borderColor=borderColor}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
-              <div style={{flexShrink:0,textAlign:"center",width:44}}>
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"05"}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:16}}>
+
+              {/* LEFT — logo + hold */}
+              <div style={{flexShrink:0,width:48,display:"flex",flexDirection:"column",alignItems:"center",gap:4,paddingTop:2}}>
                 <CoLogo domain={cc.domain} ticker={cc.ticker} size={32}/>
-                {days>0&&<div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,marginTop:3}}>{holdLabel}</div>}
+                {holdYrs&&<div style={{fontSize:8,color:K.dim,fontFamily:fm,fontWeight:600,letterSpacing:.3}}>{holdYrs}</div>}
               </div>
+
+              {/* CENTRE — the writing */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                  <span style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm}}>{cc.ticker}</span>
-                  <span style={{fontSize:12,color:K.dim}}>{cc.name}</span>
-                  {moatObjs.slice(0,2).map(function(mt){return<span key={mt.id} style={{fontSize:9,fontWeight:700,color:mt.color,background:mt.color+"12",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}>{mt.label}</span>})}
-                  {cc.managementGrade&&<span style={{fontSize:9,fontWeight:700,color:cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.amb:K.red,background:(cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.amb:K.red)+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}>{"Mgmt "+cc.managementGrade}</span>}
+                {/* Company line */}
+                <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                  <span style={{fontSize:17,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{cc.ticker}</span>
+                  <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{cc.name}</span>
+                  {moatObjs.slice(0,3).map(function(mt){return<span key={mt.id} style={{fontSize:8,fontWeight:700,color:mt.color,background:mt.color+"12",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm,letterSpacing:.3}}>{mt.label}</span>})}
+                  {cc.managementGrade&&<span style={{fontSize:8,fontWeight:700,color:cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.acc:K.amb,background:(cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.acc:K.amb)+"12",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>{"Mgmt "+cc.managementGrade}</span>}
                 </div>
-                {riskLine
-                  ?<div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.6,marginBottom:7}}>{"Bear case: "+riskLine+(sec.risks&&sec.risks.length>120?"...":"")}</div>
-                  :cc.thesisNote
-                    ?<div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:7}}>{sec.core?sec.core.substring(0,110)+(sec.core.length>110?"...":""):"Write your bear case in the risks section."}</div>
-                    :<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:7}}>No thesis — what do you own this for?</div>}
-                <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+
+                {/* Thesis / bear — the meat */}
+                {bearLine
+                  ?<div style={{fontSize:13,color:K.mid,lineHeight:1.75,marginBottom:10,maxWidth:640}}>
+                    <span style={{color:K.dim,fontSize:11,fontFamily:fm,fontWeight:600,marginRight:6}}>Bear case</span>
+                    {bearLine+(sec.risks&&sec.risks.length>bearLine.length+2?"...":"")}
+                  </div>
+                  :coreLine
+                    ?<div style={{fontSize:13,color:K.mid,lineHeight:1.75,marginBottom:10,maxWidth:640}}>{coreLine}</div>
+                    :<div style={{fontSize:12,color:K.bdr,fontStyle:"italic",marginBottom:10,fontFamily:fm}}>No thesis written — what do you own this for?</div>}
+
+                {/* Stats line — quiet, single row */}
+                <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+                  {/* Conviction */}
                   <div style={{display:"flex",alignItems:"center",gap:5}}>
-                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Circle</span>
-                    <div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{width:7,height:7,borderRadius:_isBm?1:"50%",background:n<=coc?cocColor:K.bdr}}/>})}</div>
-                    {!coc&&<button onClick={function(e){e.stopPropagation();var v=parseInt(window.prompt("Circle of competence — "+cc.ticker+"\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:","3"));if(!isNaN(v)&&v>=1&&v<=5)upd(cc.id,{circleScore:v})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>Rate</button>}
-                    {coc>0&&coc<3&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{"Outside comfort zone \u2014 is this in your circle?"}</span>}
+                    {Array.from({length:10},function(_,i){return<div key={i} style={{width:3,height:i<(cc.conviction||0)?10:5,borderRadius:1,background:i<(cc.conviction||0)?convColor:K.bdr+"60",flexShrink:0}}/>})}
+                    <span style={{fontSize:10,fontWeight:700,color:cc.conviction>0?convColor:K.bdr,fontFamily:fm,marginLeft:2}}>{cc.conviction>0?cc.conviction+"/10":"—"}</span>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Conviction</span>
-                    <span style={{fontSize:12,fontWeight:700,color:convColor,fontFamily:fm}}>{cc.conviction>0?cc.conviction+"/10":"\u2014"}</span>
+                  {/* Circle */}
+                  <div style={{display:"flex",alignItems:"center",gap:3}}>
+                    {[1,2,3,4,5].map(function(n){return<div key={n} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:n<=coc?cocColor:K.bdr+"50"}}/>})}
+                    {!coc&&<button onClick={function(e){e.stopPropagation();var v=parseInt(window.prompt("Circle of competence — "+cc.ticker+"
+
+1 Barely understand
+2 Know the basics
+3 Solid understanding
+4 Deep knowledge
+5 Expert
+
+Rate 1–5:","3"));if(!isNaN(v)&&v>=1&&v<=5)upd(cc.id,{circleScore:v})}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginLeft:2}}>Rate</button>}
                   </div>
-                  {weight>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Weight</span>
-                    <span style={{fontSize:12,fontWeight:600,color:K.mid,fontFamily:fm}}>{weight.toFixed(1)+"%"}</span>
-                  </div>}
-                  {cc.inversionNote&&<span style={{fontSize:9,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"20",padding:"1px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>Inversion written</span>}
-                  {!cc.inversionNote&&<button onClick={function(e){e.stopPropagation();setSelId(cc.id);setDetailTab("dossier")}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>+ Inversion</button>}
+                  {/* Weight */}
+                  {weight>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{weight.toFixed(1)+"%"}</span>}
+                  {/* Inversion */}
+                  {cc.inversionNote
+                    ?<span style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:600}}>✓ Inversion</span>
+                    :<button onClick={function(e){e.stopPropagation();setSelId(cc.id);setDetailTab("dossier")}} style={{fontSize:9,color:K.dim,background:"none",border:"none",padding:0,cursor:"pointer",fontFamily:fm,textDecoration:"underline",textUnderlineOffset:2}}>+ inversion</button>}
+                  {coc>0&&coc<3&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>⚠ outside circle</span>}
                 </div>
               </div>
-              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:52,gap:3}}>
-                <div style={{display:"flex",gap:2}}>
-                  {Array.from({length:10},function(_,i){return<div key={i} style={{width:3,height:i<(cc.conviction||0)?14:8,borderRadius:2,background:i<(cc.conviction||0)?convColor:K.bdr+"80",transition:"height .3s",flexShrink:0}}/>})}
-                </div>
-                <div style={{fontSize:9,color:cc.conviction>0?convColor:K.dim,fontFamily:fm,fontWeight:700,marginTop:1}}>{cc.conviction>0?cc.conviction+"/10":"—"}</div>
-              </div>
+
             </div>
           </div>;
         })}
+        </div>
         {filtered.some(function(cc){return !cc.circleScore||!cc.inversionNote||!cc.managementGrade})&&<div style={{marginTop:8,padding:"10px 16px",background:K.acc+"06",border:"1px dashed "+K.acc+"25",borderRadius:_isBm?0:8,fontSize:11,color:K.dim,lineHeight:1.6}}>
           Open a holding to complete: Circle of Competence rating, Inversion note, Management grade. The three things Munger checks before anything else.
         </div>}
