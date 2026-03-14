@@ -10222,7 +10222,7 @@ function WeeklyReview(){
     })()}
 
     {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
-    {sideTab==="portfolio"&&filtered.length>0&&(function(){{
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
       var dow=now.getDay();// 0=Sun,6=Sat
       var isWeekend=dow===0||dow===6;
