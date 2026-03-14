@@ -5044,7 +5044,8 @@ function calcMoatFromData(finData,businessModelType){
                   {sec.title}
                 </div>
                 {sec.gauge
-                  ?<div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(sec.items.filter(function(it){return it.numVal!=null}).length,4)+",1fr)",gap:8}}>
+                  ?<>
+                <div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(sec.items.filter(function(it){return it.numVal!=null}).length,4)+",1fr)",gap:8}}>
                     {sec.items.filter(function(it){return it.numVal!=null}).map(function(item,ii){
                       var v=item.numVal;var sp=item.sp500||15;var maxV=Math.max(sp*2.5,v*1.2,40);
                       var pct=Math.min(v/maxV,1);var spPct=Math.min(sp/maxV,1);
@@ -5074,6 +5075,7 @@ function calcMoatFromData(finData,businessModelType){
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div style={{fontSize:10,color:K.mid,lineHeight:1.6,fontFamily:fm}}>{sec.items.find(function(it){return it.contextNote}).contextNote}</div>
                   </div>}
+                  </>
                   :<div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
                   {sec.items.map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
