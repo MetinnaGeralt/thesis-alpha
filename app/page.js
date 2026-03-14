@@ -10030,7 +10030,7 @@ function WeeklyReview(){
               </div>;
             })}
             {!hasData&&<div style={{padding:"14px",textAlign:"center",fontSize:12,color:K.dim}}>Refresh fundamentals to populate the three tests.</div>}
-            <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",gap:12"}}>
+            <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",gap:12}}>
               {[{l:"1. High returns on capital",s:"ROIC > 15% + gross margin > 40%"},
                 {l:"2. Can reinvest those returns",s:"Rev growth > 5% + positive FCF"},
                 {l:"3. Reasonable valuation",s:"P/E < 30 or FCF yield > 3%"}].map(function(item,i){return<div key={i} style={{flex:1}}>
