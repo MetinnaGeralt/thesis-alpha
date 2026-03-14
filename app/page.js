@@ -3307,39 +3307,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
-    <div style={{padding:"10px 16px 6px"}}>
-      <select value={sideTab} onChange={function(e){setSideTab(e.target.value)}} style={{width:"100%",background:K.bg,border:"1px solid "+(sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb)+"50",borderRadius:_isBm?0:_isForest?999:8,color:sideTab==="portfolio"?K.acc:sideTab==="toohard"?K.red:K.amb,padding:"9px 14px",fontSize:13,fontFamily:fm,fontWeight:600,outline:"none",cursor:"pointer"}}>
-        <option value="portfolio">Portfolio ({cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length})</option>
-        <option value="watchlist">Watchlist ({cos.filter(function(c){return c.status==="watchlist"}).length})</option>
-        <option value="toohard">Too Hard ({cos.filter(function(c){return c.status==="toohard"}).length})</option>
-      </select>
-      {cos.length>4&&<input value={sideSearch} onChange={function(e){setSideSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",marginTop:8,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"7px 10px",fontSize:12,fontFamily:fm,outline:"none"}}/>}</div>
-    {!isMobile&&pCos.length>0&&<div style={{padding:"4px 16px 0",display:"flex",gap:8,flexWrap:"wrap"}}>
-      {[["↑↓","Navigate"],["N","Add"],["R","Review"],["T","Thesis"]].map(function(h){return<span key={h[0]} style={{display:"flex",alignItems:"center",gap:3,fontSize:9,color:sideDim2,fontFamily:fm}}>
-        <span style={{background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)",borderRadius:_isBm?0:3,padding:"1px 4px",fontWeight:600}}>{h[0]}</span>{h[1]}
-      </span>})}
-    </div>}
-    <div style={{flex:1,overflowY:"auto",paddingTop:4}}>{pCos.map(function(c){var active=selId===c.id,h=gH(c.kpis),d=dU(c.earningsDate);
-      var pos=c.position||{};var hasPrice=pos.currentPrice>0;var hasTarget=c.targetPrice>0&&hasPrice;
-      var pctToTarget=hasTarget?((c.targetPrice-pos.currentPrice)/pos.currentPrice*100):0;
-      var pctReturn=hasPrice&&pos.avgCost>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):0;
-      var isWatchlist=c.status==="watchlist";
-      var thesisAge=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):999;
-      var thesisStaleIndicator=thesisAge>180?"●":thesisAge>90?"·":null;
-      return<div key={c.id} className="ta-side-item" style={{padding:bm?"5px 10px":isThesis?"11px 18px 11px 20px":"10px 16px 10px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,background:active?(_isForest?"rgba(255,255,255,0.15)":isThesis?K.acc+"15":K.blue+"10"):_isForest?"rgba(255,255,255,0.04)":h.c+"08",borderLeft:_isForest?"none":isThesis?"none":(active?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"3px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(c.id);setExpKpi(null);setSubPage(null);setDetailTab("dossier");setPage("dashboard")})}>
-        <div style={{position:"relative",flexShrink:0}}>
-          <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-          {thesisStaleIndicator&&<span style={{position:"absolute",top:-3,right:-3,fontSize:7,color:thesisAge>180?K.amb:K.dim,lineHeight:1}}>{thesisStaleIndicator}</span>}
-        </div>
-        <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>{c.ticker}</div><div style={{fontSize:11,color:sideDim2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div></div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-          {hasPrice&&<div style={{fontSize:11,fontWeight:600,color:active?sideText:sideMid,fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</div>}
-          {isWatchlist&&hasTarget&&<div style={{fontSize:10,color:pctToTarget>0?K.grn:K.amb,fontFamily:fm}}>{pctToTarget>0?pctToTarget.toFixed(0)+"% below":"At target"}</div>}
-          {!isWatchlist&&hasPrice&&pos.avgCost>0&&<div style={{fontSize:10,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</div>}
-          {d>=0&&d<=7&&<div style={{fontSize:10,color:d<=2?K.red:K.amb,fontWeight:700,fontFamily:fm,background:(d<=2?K.red:K.amb)+"15",borderRadius:_isBm?0:4,padding:"1px 5px"}}>{d===0?"Today":d===1?"Tmrw":d+"d"}</div>}
-          {d>7&&d<=14&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{d}d</div>}
-          {!hasPrice&&(c.earningsDate==="TBD"||!c.earningsDate)&&<div style={{fontSize:10,color:sideDim2,fontFamily:fm}}>TBD</div>}
-          <div style={{width:20,height:4,borderRadius:_isBm?0:2,background:h.c,opacity:isDark?0.8:1,marginTop:1,boxShadow:isDark?"none":"0 0 0 1px "+h.c+"30"}}/></div></div>})}</div>
     <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
       {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
         {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
@@ -10283,65 +10250,142 @@ function WeeklyReview(){
     {sideTab==="portfolio"&&!isMobile&&(function(){
       function MrMarketFace(props){
         var mood=props.mood;var color=props.color;var size=props.size||120;
-        var skinMap={extreme_fear:"#FECACA",fear:"#FED7AA",neutral:"#FDE68A",greed:"#D1FAE5",extreme_greed:"#DDD6FE"};
-        var skin=skinMap[mood]||"#FDE68A";
         var isScared=mood==="extreme_fear"||mood==="fear";
         var isHappy=mood==="greed"||mood==="extreme_greed";
         var isManic=mood==="extreme_greed";
         var isPanic=mood==="extreme_fear";
-        return<svg width={size} height={size*1.2} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" style={{overflow:"visible"}}>
-          <rect x="28" y="78" width="44" height="36" rx="4" fill={color+"30"} stroke={color} strokeWidth="1.5"/>
-          <polygon points="50,78 46,94 50,100 54,94" fill={color} opacity="0.7"/>
-          <path d="M44 78 L50 86 L56 78" stroke={color} strokeWidth="1.2" fill="none"/>
-          {isHappy
-            ?<g><path d="M28 88 Q14 78 12 68" stroke={color} strokeWidth="4" strokeLinecap="round"/>
-               <path d="M72 88 Q86 78 88 68" stroke={color} strokeWidth="4" strokeLinecap="round"/>
-               {isManic&&<g><circle cx="12" cy="68" r="5" fill={color} opacity="0.4"/><circle cx="88" cy="68" r="5" fill={color} opacity="0.4"/></g>}</g>
-            :isScared
-            ?<g><path d="M28 88 Q14 96 12 108" stroke={color} strokeWidth="4" strokeLinecap="round"/>
-               <path d="M72 88 Q86 96 88 108" stroke={color} strokeWidth="4" strokeLinecap="round"/></g>
-            :<g><path d="M28 88 Q16 92 14 98" stroke={color} strokeWidth="4" strokeLinecap="round"/>
-               <path d="M72 88 Q84 92 86 98" stroke={color} strokeWidth="4" strokeLinecap="round"/></g>}
-          {!isPanic&&<g transform="translate(80,90)">
-            <rect x="0" y="4" width="14" height="10" rx="2" fill={color+"40"} stroke={color} strokeWidth="1.2"/>
-            <path d="M4 4 L4 2 Q7 0 10 2 L10 4" stroke={color} strokeWidth="1.2" fill="none"/>
-          </g>}
-          {isPanic&&<g opacity="0.6">
-            <rect x="78" y="72" width="12" height="16" rx="1" fill={color+"50"} stroke={color} strokeWidth="1" transform="rotate(25,84,80)"/>
-            <rect x="82" y="60" width="10" height="14" rx="1" fill={color+"40"} stroke={color} strokeWidth="1" transform="rotate(-15,87,67)"/>
-          </g>}
-          <ellipse cx="50" cy="42" rx="22" ry="24" fill={skin} stroke={color} strokeWidth="1.5"/>
-          <path d="M28 36 Q30 18 50 18 Q70 18 72 36" fill={color+"60"} stroke={color} strokeWidth="1"/>
-          <path d={isScared?"M30 56 Q32 72 50 74 Q68 72 70 56 Q60 64 50 64 Q40 64 30 56":"M31 54 Q33 70 50 72 Q67 70 69 54 Q59 62 50 62 Q41 62 31 54"} fill={color+"50"} stroke={color} strokeWidth="1.2"/>
-          <path d="M42 53 Q50 57 58 53" stroke={color} strokeWidth="2" strokeLinecap="round"/>
-          {isManic
-            ?<g><circle cx="40" cy="40" r="5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <circle cx="60" cy="40" r="5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <circle cx="41" cy="40" r="2.5" fill={color}/>
-               <circle cx="61" cy="40" r="2.5" fill={color}/>
-               <path d="M35 35 L45 33" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-               <path d="M55 33 L65 35" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></g>
-            :isPanic
-            ?<g><ellipse cx="40" cy="40" rx="4" ry="5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <ellipse cx="60" cy="40" rx="4" ry="5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <circle cx="40" cy="41" r="2" fill={color}/>
-               <circle cx="60" cy="41" r="2" fill={color}/>
-               <path d="M36 34 Q40 36 44 34" stroke={color} strokeWidth="1.5" fill="none"/>
-               <path d="M56 34 Q60 36 64 34" stroke={color} strokeWidth="1.5" fill="none"/></g>
+        // Skin tones by mood
+        var skinMap={extreme_fear:"#FECDD3",fear:"#FED7AA",neutral:"#FEF3C7",greed:"#D1FAE5",extreme_greed:"#EDE9FE"};
+        var skin=skinMap[mood]||"#FEF3C7";
+        var stroke=color;
+        var sw="1.8";
+        return<svg width={size} height={size*1.3} viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg" style={{overflow:"visible"}}>
+
+          {/* ── BODY / TUXEDO ── */}
+          {/* Coat body */}
+          <path d="M25 90 Q22 115 24 126 L76 126 Q78 115 75 90 Q65 98 50 98 Q35 98 25 90Z" fill={color+"25"} stroke={stroke} strokeWidth={sw}/>
+          {/* Lapels */}
+          <path d="M44 90 L50 105 L56 90" fill={color+"40"} stroke={stroke} strokeWidth="1.2"/>
+          <path d="M44 90 L38 80" stroke={stroke} strokeWidth="1.2"/>
+          <path d="M56 90 L62 80" stroke={stroke} strokeWidth="1.2"/>
+          {/* Shirt / bow tie */}
+          <path d="M46 90 L50 96 L54 90" fill="white" stroke={stroke} strokeWidth="1"/>
+          <ellipse cx="50" cy="88" rx="4" ry="2" fill={color} opacity="0.8"/>
+          {/* Buttons */}
+          <circle cx="50" cy="104" r="1.2" fill={stroke} opacity="0.5"/>
+          <circle cx="50" cy="112" r="1.2" fill={stroke} opacity="0.5"/>
+
+          {/* ── ARMS ── */}
+          {/* Left arm — holds cane */}
+          <path d={isPanic
+            ?"M25 92 Q12 85 8 75"
             :isHappy
-            ?<g><path d="M36 40 Q40 36 44 40" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
-               <path d="M56 40 Q60 36 64 40" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/></g>
-            :<g><circle cx="40" cy="40" r="3.5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <circle cx="60" cy="40" r="3.5" fill="white" stroke={color} strokeWidth="1.2"/>
-               <circle cx="40" cy="40" r="1.5" fill={color}/>
-               <circle cx="60" cy="40" r="1.5" fill={color}/></g>}
-          {isPanic?<path d="M42 59 Q50 54 58 59" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :isManic?<path d="M40 58 Q50 66 60 58" stroke={color} strokeWidth="2" fill={color+"30"} strokeLinecap="round"/>
-            :isHappy?<path d="M42 58 Q50 63 58 58" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :mood==="fear"?<path d="M42 59 Q50 55 58 59" stroke={color} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :<path d="M44 58 Q50 60 56 58" stroke={color} strokeWidth="1.5" fill="none" strokeLinecap="round"/>}
-          {isScared&&<g><circle cx={isPanic?24:26} cy={isPanic?52:56} r="2" fill={color} opacity="0.5"/><circle cx={isPanic?22:24} cy={isPanic?60:64} r="1.5" fill={color} opacity="0.35"/></g>}
-          {isManic&&<text x="16" y="36" fontSize="16" fill={color} fontWeight="bold" opacity="0.7">{"!"}</text>}
+            ?"M25 92 Q14 80 16 68"
+            :"M25 92 Q14 88 12 100"}
+            stroke={stroke} strokeWidth="5" strokeLinecap="round"/>
+          {/* Right arm — raised/dropped */}
+          <path d={isHappy
+            ?"M75 92 Q86 80 84 68"
+            :isPanic
+            ?"M75 92 Q88 85 92 75"
+            :"M75 92 Q86 88 88 100"}
+            stroke={stroke} strokeWidth="5" strokeLinecap="round"/>
+
+          {/* ── CANE (left hand) ── */}
+          {!isPanic&&<g>
+            <line x1={isHappy?"16":"12"} y1={isHappy?"68":"100"} x2={isHappy?"18":"14"} y2={isHappy?"85":"118"} stroke={stroke} strokeWidth="2.5" strokeLinecap="round"/>
+            <path d={isHappy?"M13 68 Q16 64 20 67":"M9 100 Q12 96 16 99"} stroke={stroke} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          </g>}
+          {/* Panic: papers flying */}
+          {isPanic&&<g opacity="0.65">
+            <rect x="82" y="58" width="14" height="18" rx="1.5" fill={color+"40"} stroke={stroke} strokeWidth="1" transform="rotate(20,89,67)"/>
+            <rect x="72" y="50" width="11" height="15" rx="1.5" fill={color+"30"} stroke={stroke} strokeWidth="1" transform="rotate(-12,77,57)"/>
+            <line x1="83" y1="63" x2="92" y2="63" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
+            <line x1="84" y1="67" x2="91" y2="67" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
+          </g>}
+
+          {/* ── ROUND BELLY ── */}
+          <ellipse cx="50" cy="108" rx="19" ry="12" fill={color+"15"} stroke={stroke} strokeWidth="1" opacity="0.6"/>
+
+          {/* ── HEAD ── */}
+          <ellipse cx="50" cy="52" rx="20" ry="22" fill={skin} stroke={stroke} strokeWidth={sw}/>
+
+          {/* ── TOP HAT ── */}
+          {/* Brim */}
+          <path d="M28 34 Q50 36 72 34" stroke={stroke} strokeWidth="2.5" strokeLinecap="round"/>
+          {/* Hat body */}
+          <rect x="33" y="8" width="34" height="26" rx="2" fill={isManic?color+"50":color+"30"} stroke={stroke} strokeWidth={sw}/>
+          {/* Hat band */}
+          <rect x="33" y="30" width="34" height="5" fill={color+"60"} stroke={stroke} strokeWidth="1"/>
+          {/* Monocle glint if greedy */}
+          {isHappy&&<circle cx="63" cy="45" r="5" fill="none" stroke={stroke} strokeWidth="1.2" opacity="0.6"/>}
+
+          {/* ── EYES ── */}
+          {isManic
+            ?<g>
+               <circle cx="41" cy="50" r="5" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <circle cx="59" cy="50" r="5" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <circle cx="42" cy="50" r="2.5" fill={stroke}/>
+               <circle cx="60" cy="50" r="2.5" fill={stroke}/>
+               <path d="M37 44 L46 42" stroke={stroke} strokeWidth="1.8" strokeLinecap="round"/>
+               <path d="M54 42 L63 44" stroke={stroke} strokeWidth="1.8" strokeLinecap="round"/>
+             </g>
+            :isPanic
+            ?<g>
+               <ellipse cx="41" cy="50" rx="4.5" ry="5.5" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <ellipse cx="59" cy="50" rx="4.5" ry="5.5" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <circle cx="41" cy="51" r="2" fill={stroke}/>
+               <circle cx="59" cy="51" r="2" fill={stroke}/>
+               <path d="M37 44 Q41 47 45 44" stroke={stroke} strokeWidth="1.5" fill="none"/>
+               <path d="M55 44 Q59 47 63 44" stroke={stroke} strokeWidth="1.5" fill="none"/>
+             </g>
+            :isHappy
+            ?<g>
+               <path d="M37 50 Q41 45 45 50" stroke={stroke} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+               <path d="M55 50 Q59 45 63 50" stroke={stroke} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+             </g>
+            :<g>
+               <circle cx="41" cy="50" r="4" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <circle cx="59" cy="50" r="4" fill="white" stroke={stroke} strokeWidth="1.2"/>
+               <circle cx="41" cy="50" r="1.8" fill={stroke}/>
+               <circle cx="59" cy="50" r="1.8" fill={stroke}/>
+             </g>}
+
+          {/* ── BIG MOUSTACHE ── */}
+          <path d={isManic
+            ?"M34 60 Q42 56 50 60 Q58 56 66 60 Q60 68 50 66 Q40 68 34 60Z"
+            :isPanic
+            ?"M36 60 Q43 56 50 59 Q57 56 64 60 Q58 65 50 63 Q42 65 36 60Z"
+            :"M36 59 Q43 55 50 58 Q57 55 64 59 Q58 65 50 62 Q42 65 36 59Z"}
+            fill={color+"60"} stroke={stroke} strokeWidth="1.2"/>
+          {/* Cheeks when happy */}
+          {isHappy&&<g>
+            <ellipse cx="33" cy="56" rx="6" ry="4" fill={color} opacity="0.2"/>
+            <ellipse cx="67" cy="56" rx="6" ry="4" fill={color} opacity="0.2"/>
+          </g>}
+
+          {/* ── MOUTH ── */}
+          {isPanic
+            ?<path d="M42 67 Q50 63 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :isManic
+            ?<path d="M40 67 Q50 76 60 67" stroke={stroke} strokeWidth="2" fill={color+"30"} strokeLinecap="round"/>
+            :isHappy
+            ?<path d="M42 67 Q50 73 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :mood==="fear"
+            ?<path d="M43 68 Q50 64 57 68" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
+            :<path d="M44 67 Q50 69 56 67" stroke={stroke} strokeWidth="1.5" fill="none" strokeLinecap="round"/>}
+
+          {/* ── SWEAT DROPS (fear) ── */}
+          {isScared&&<g>
+            <ellipse cx={isPanic?27:29} cy={isPanic?55:58} rx="1.5" ry="2.5" fill={stroke} opacity="0.4"/>
+            <ellipse cx={isPanic?25:27} cy={isPanic?63:66} rx="1" ry="2" fill={stroke} opacity="0.25"/>
+          </g>}
+
+          {/* ── MANIC EFFECTS ── */}
+          {isManic&&<g>
+            <text x="80" y="30" fontSize="14" fill={color} fontWeight="bold" opacity="0.8">{"$"}</text>
+            <text x="10" y="28" fontSize="12" fill={color} fontWeight="bold" opacity="0.6">{"$"}</text>
+          </g>}
         </svg>;
       }
       return<div style={{marginBottom:20}}>
