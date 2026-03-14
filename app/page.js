@@ -361,7 +361,19 @@ async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
       if(divData.divPerShare===0&&pr.lastDiv>0){divData.divPerShare=pr.lastDiv;divData.lastDiv=pr.lastDiv;divData.divFrequency="quarterly";divData.divYield=pr.price>0?pr.lastDiv*4/pr.price*100:0}
       return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
   }catch(e){console.warn("FMP lookup failed:",e)}
-  return{error:"Not found — enter details manually"}}
+  // Try common international suffixes if bare ticker failed
+  var SUFFIXES=[".TO",".V",".L",".DE",".PA",".AS",".MI",".MC",".HK",".AX",".BO",".NS"];
+  for(var si=0;si<SUFFIXES.length;si++){
+    try{
+      var pt=await fmp("profile/"+t+SUFFIXES[si]);
+      if(pt&&pt.length&&pt[0].companyName){
+        var pr2=pt[0];var domain2="",irUrl2="";
+        if(pr2.website){try{domain2=new URL(pr2.website).hostname.replace("www.","")}catch(e2){domain2=pr2.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}}
+        return{name:pr2.companyName,sector:pr2.sector||pr2.industry||"",industry:pr2.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain2,irUrl:irUrl2,price:pr2.price||0,lastDiv:pr2.lastDiv||0,divPerShare:pr2.lastDiv||0,divFrequency:"quarterly",exDivDate:"",divYield:0,mktCap:pr2.mktCap||0,description:pr2.description||"",ceo:pr2.ceo||"",employees:pr2.fullTimeEmployees||0,country:pr2.country||"",exchange:pr2.exchangeShortName||pr2.exchange||"",ipoDate:pr2.ipoDate||"",image:pr2.image||"",_foundAs:t+SUFFIXES[si]}
+      }
+    }catch(e2){}
+  }
+  return{error:"Not found — enter details manually. For international stocks, try adding the exchange suffix (e.g. RY.TO for TSX, VOD.L for LSE)"}}
 async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
 async function fetchQuote(ticker){try{var q=await finnhub("quote?symbol="+ticker);if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};return null}catch(e){return null}}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
@@ -1507,11 +1519,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
-      else if(r&&r.name){setF(function(p){return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
-        var info=["Auto-filled ✓"];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "))}
-      else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
+      else if(r&&r.name){
+        // Verify the result is actually for the ticker we asked about
+        setF(function(p){if(p.ticker.toUpperCase().trim()!==t)return p; // user changed ticker, discard
+        return Object.assign({},p,{name:p.name||r.name||"",sector:p.sector||r.sector||"",earningsDate:p.earningsDate||r.earningsDate||"",earningsTime:r.earningsTime||p.earningsTime,domain:p.domain||r.domain||"",irUrl:p.irUrl||r.irUrl||"",_price:r.price||0,_lastDiv:r.lastDiv||0,_divPerShare:r.divPerShare||0,_divFrequency:r.divFrequency||"none",_exDivDate:r.exDivDate||"",_divYield:r.divYield||0,_industry:r.industry||"",_description:r.description||"",_ceo:r.ceo||"",_employees:r.employees||0,_country:r.country||"",_exchange:r.exchange||"",_ipoDate:r.ipoDate||"",_mktCap:r.mktCap||0})});setLs("done");
+        var info=["Auto-filled ✓"+(r._foundAs?" ("+r._foundAs+")":"")];if(r.earningsDate&&r.earningsDate!=="TBD")info.push("Earnings: "+r.earningsDate);if(r.price)info.push("$"+r.price.toFixed(2));if(r.divYield>0)info.push("Div: "+r.divYield.toFixed(1)+"% ("+r.divFrequency+")");else if(r.price)info.push("No dividend");setLm(info.join(" · "))})
+        }else{setLs("error");setLm("Not found")}}catch(e){setLs("error");setLm("Lookup failed — try manually")}}
     function onTicker(v){set("ticker",v);if(tmr.current)clearTimeout(tmr.current);var t=v.toUpperCase().trim();
-      if(t.length>=1&&t.length<=6&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},500)}else{setLs("idle");setLm("")}}
+      if(t.length>=2&&t.length<=8&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},800)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
       var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString(),purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};
@@ -1521,7 +1536,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
-      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
+      <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL · RY.TO · VOD.L" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
+        {ls==="idle"&&!lm&&<div style={{fontSize:10,color:K.dim,marginTop:-10,marginBottom:10,lineHeight:1.5,fontFamily:fm}}>US: AAPL · Canada: RY.TO · UK: VOD.L · Germany: SAP.DE</div>}
         {ls!=="idle"&&<div style={{fontSize:12,color:ls==="loading"?K.dim:ls==="done"?K.grn:K.amb,marginTop:-10,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
           {ls==="loading"&&<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+K.bdr2,borderTopColor:K.blue,borderRadius:"50%",animation:"spin .8s linear infinite"}}/>}{ls==="loading"?"Looking up…":lm}</div>}</div>
         <Inp label="Company Name" value={f.name} onChange={function(v){set("name",v)}} placeholder="Apple Inc." K={K}/></div>
