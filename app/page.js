@@ -2760,7 +2760,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                   {active&&<span style={{fontSize:9,fontWeight:700,color:prof.color,background:prof.color+"20",padding:"1px 7px",borderRadius:_isBm?0:3,fontFamily:fm,marginLeft:"auto"}}>ACTIVE</span>}
                 </div>
                 <div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginBottom:active&&prof.quote?6:0}}>{prof.focus}</div>
-                {active&&prof.quote&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",borderLeft:"2px solid "+prof.color+"40",paddingLeft:8,lineHeight:1.5}}>{"“"+prof.quote+"”"}</div>}
+                {active&&prof.quote&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",borderLeft:"2px solid "+prof.color+"40",paddingLeft:8,lineHeight:1.5}}>{"\u201c"+prof.quote+"\u201d"}</div>}
               </div>
               {active&&<div style={{width:16,height:16,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -2997,7 +2997,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function doSave(){upd(selId,function(prev){return Object.assign({},prev,{valuation:{metrics:vMetrics,updatedAt:new Date().toISOString()}})});setModal(null)}
     var activeIds=vMetrics.map(function(m){return m.id});
     return<Modal title={"Valuation Framework \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={560} K={K}>
-      <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:16}}>Define what “good value” means to you. Pick metrics and set your thresholds — the system will tell you when the numbers match your criteria.</div>
+      <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:16}}>Define what \u201cgood value\u201d means to you. Pick metrics and set your thresholds — the system will tell you when the numbers match your criteria.</div>
       {/* Active metrics */}
       {vMetrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
         var current=getValMetricValue(def,snap,price,c);
@@ -3429,7 +3429,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* ── THESIS SNAPSHOT CARD ── */}
       {d.cardType==="thesis_snapshot"&&<div>
         <div style={{fontSize:13,color:K.mid,lineHeight:1.5,marginBottom:8}}>{d.isNew?"Initial thesis written":"Thesis updated to v"+d.version}</div>
-        {d.core&&<div style={{padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:6,borderLeft:"2px solid "+ct.color,fontSize:12,color:K.mid,lineHeight:1.5,fontStyle:"italic",marginBottom:6}}>{"“"}{d.core}...{"”"}</div>}
+        {d.core&&<div style={{padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:6,borderLeft:"2px solid "+ct.color,fontSize:12,color:K.mid,lineHeight:1.5,fontStyle:"italic",marginBottom:6}}>{"\u201c"}{d.core}...{"\u201d"}</div>}
         <div style={{display:"flex",gap:3}}>
           {[{k:"core",c:K.acc,l:"Core"},{k:"hasMoat",c:K.grn,l:"Moat"},{k:"hasRisks",c:K.amb,l:"Risks"},{k:"hasSell",c:K.red,l:"Sell"}].map(function(s){var done=s.k==="core"?d.sectionsFilled>=1:d[s.k];
             return<span key={s.k} style={{fontSize:10,padding:"2px 6px",borderRadius:_isBm?0:3,background:done?s.c+"15":"transparent",color:done?s.c:K.dim,fontFamily:fm,border:"1px solid "+(done?s.c+"25":K.bdr)}}>{done?"●":"○"} {s.l}</span>})}</div>
@@ -4216,7 +4216,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:11,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
       {/* Munger quote */}
       <div style={{marginTop:24,padding:"16px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
-        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"“"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"”"}</div>
+        <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:"italic"}}>{"\u201c"}The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company and, above all, the durability of that advantage.{"\u201d"}</div>
         <div style={{fontSize:12,color:K.dim,marginTop:6,fontFamily:fm}}>{"—"} Warren Buffett (Munger's partner)</div></div>
       </div>}</div>}
 
@@ -8487,7 +8487,7 @@ function WeeklyReview(){
               <div style={{flex:1}}>
                 <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{card.type==="quote"?"Investor Wisdom":"Did You Know?"}</div>
                 {card.title&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>{card.title}</div>}
-                <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:card.type==="quote"?"italic":"normal"}}>{card.type==="quote"?"“"+card.text+"”":card.text}</div>
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:card.type==="quote"?"italic":"normal"}}>{card.type==="quote"?"\u201c"+card.text+"\u201d":card.text}</div>
                 {card.author&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:6}}>— {card.author}</div>}
               </div>
             </div>
@@ -9890,7 +9890,7 @@ function WeeklyReview(){
           <div style={{display:"flex",alignItems:"center",gap:7}}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
-            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"“In my whole life, I have known no wise people who didn’t read all the time”"}</span>}
+            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
           </div>
           <div style={{display:"flex",gap:6}}>
             <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
@@ -9932,7 +9932,7 @@ function WeeklyReview(){
             :<div style={{textAlign:"center",padding:"8px 0"}}>
               <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
               {investorProfile==="munger"
-                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Munger: "Go to bed smarter than when you woke up.""}</div>
+                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Go to bed smarter than when you woke up. — Munger"}</div>
                 :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
               <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
             </div>}
@@ -10311,7 +10311,7 @@ function WeeklyReview(){
                       </div>}
                     </div>;})}
                   {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
-                    {"“"+preset.mungerNote+"”"}
+                    {"\u201c"+preset.mungerNote+"\u201d"}
                   </div>}
                 </div>
               </div>
@@ -11732,7 +11732,7 @@ function WeeklyReview(){
             <div style={{fontSize:15,color:K.txt,lineHeight:1.85,fontFamily:fb}}>{storyText}</div>
           </div>
           <div style={{borderLeft:"3px solid "+K.acc,paddingLeft:16,marginBottom:24}}>
-            <div style={{fontSize:14,color:K.mid,lineHeight:1.75,fontStyle:"italic",fontFamily:fb}}>{"“"+matchedQuote.quote+"”"}</div>
+            <div style={{fontSize:14,color:K.mid,lineHeight:1.75,fontStyle:"italic",fontFamily:fb}}>{"\u201c"+matchedQuote.quote+"\u201d"}</div>
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>{"— "+matchedQuote.author}</div>
           </div>
           {/* Performance banner */}
