@@ -6724,7 +6724,7 @@ function WeeklyReview(){
     var _milestone=useState(null),milestone=_milestone[0],setMilestone=_milestone[1];
     var c=portfolio[idx];
     var sw=streakData.current||0;
-    var isFree=plan!=="pro";
+    var isFree=plan!=="pro"&&!trialActive; // trial = full pro experience
 
     // Master unlock journey — single source of truth
     var JOURNEY=[
@@ -6813,7 +6813,8 @@ function WeeklyReview(){
         // Unlock journey track — show all milestones
         return<div>
           {/* Journey track */}
-          {isFree&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
+          {trialExpired&&<div style={{background:K.amb+"0d",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}><div style={{fontSize:22}}>{"\u23F3"}</div><div><div style={{fontSize:13,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>Your Pro trial has ended</div><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{"Build your streak to unlock themes, lenses and investor wisdom. Each week unlocks something new."}</div><button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{marginTop:8,padding:"5px 14px",fontSize:11,fontWeight:700,background:K.acc,border:"none",color:"#fff",borderRadius:_isBm?0:6,cursor:"pointer",fontFamily:fm}}>Upgrade to keep Pro</button></div></div>}
+          {isFree&&!trialExpired&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
             <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:14,display:"flex",alignItems:"center",gap:6}}><IC name="trending" size={12} color={K.dim}/>Your Unlock Journey</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {JOURNEY.map(function(j){var done=sw>=j.w;var isNext=!done&&j.w===nextUnlock?.w;
@@ -7010,7 +7011,7 @@ function WeeklyReview(){
             </div>
           </div>}
           {/* Next unlock nudge */}
-          {isFree&&nextUnlock&&<div style={{marginBottom:14,textAlign:"center",fontSize:12,color:K.acc,fontFamily:fm}}>
+          {isFree&&!trialExpired&&nextUnlock&&<div style={{marginBottom:14,textAlign:"center",fontSize:12,color:K.acc,fontFamily:fm}}>
             {sw+1>=nextUnlock.w?"🎉 Complete this review to unlock "+nextUnlock.label+"!":"Keep going — "+nextUnlock.label+" unlocks at week "+nextUnlock.w}
           </div>}
           <div style={{marginBottom:16}}>
@@ -7062,7 +7063,7 @@ function WeeklyReview(){
               </div>
             </div>})()}
           {/* Pro post-review health report */}
-          {!isFree&&(function(){
+          {(!isFree||trialActive)&&(function(){
             var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=14});
             var noKpi=portfolio.filter(function(c2){return c2.kpis.length===0});
             var staleThesis=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
