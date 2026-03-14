@@ -137,6 +137,76 @@ var INVEST_STYLES=[
     sellPrompt:"What timeline for recovery? What would prove the turnaround thesis is dead?"}
 ];
 var STYLE_MAP={};INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
+var INVESTOR_PROFILES=[
+  {id:"terry",name:"Terry Smith",fund:"Fundsmith",
+   tagline:"Buy wonderful companies at fair prices. Never sell.",
+   focus:"Financial quality: ROIC, gross margin, FCF conversion. If the numbers aren't exceptional, the moat isn't real.",
+   color:"#22C55E",icon:"shield",
+   dashDefault:"fundamentals",
+   fundCols:["grossMargin","opMargin","roic","fcfYield","revGrowth"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:["kpi_streak","conv_size","above_iv"],
+   dossierFirst:"numbers",
+   quote:"We do not invest in businesses we do not understand or which we believe have poor prospects.",
+   newWidget:"quality_scorecard"},
+  {id:"sleep",name:"Nick Sleep",fund:"Nomad Investment Partnership",
+   tagline:"Scale economies shared. Find the businesses that get better for customers as they get bigger.",
+   focus:"Unit economics, reinvestment rate, customer obsession. The financial metrics are a lagging indicator — the flywheel is what matters.",
+   color:"#3B82F6",icon:"trending",
+   dashDefault:"list",
+   fundCols:["revGrowth","grossMargin","fcfYield","revPerShare"],
+   listCols:{conviction:true,kpis:false,mastery:true},
+   morningPriority:["stale_thesis","conv_size","anniversary"],
+   dossierFirst:"story",
+   quote:"The best investments I have made have been where I could see ten years ahead.",
+   newWidget:"reinvestment_widget"},
+  {id:"munger",name:"Charlie Munger",fund:"Berkshire Hathaway",
+   tagline:"All I want to know is where I am going to die, so I will never go there.",
+   focus:"Moat first. Business model classification. Circle of competence. Inversion. The financials confirm — they don't decide.",
+   color:"#F59E0B",icon:"castle",
+   dashDefault:"list",
+   fundCols:["grossMargin","roic","opMargin","netDebtEbitda"],
+   listCols:{conviction:true,mastery:true,kpis:true},
+   morningPriority:["conv_size","stale_thesis","above_iv"],
+   dossierFirst:"moat",
+   quote:"It is remarkable how much long-term advantage we have gotten by trying to be consistently not stupid.",
+   newWidget:"checklist_widget"},
+  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",
+   tagline:"Know what you own and know why you own it.",
+   focus:"Can you explain the business simply? Growth relative to price. Everyday observation. The best stock is one you understand deeply.",
+   color:"#8B5CF6",icon:"search",
+   dashDefault:"list",
+   fundCols:["revGrowth","epsGrowth","pe","grossMargin"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:["stale_thesis","conv_size","kpi_streak"],
+   dossierFirst:"story",
+   quote:"Behind every stock is a company. Find out what it is doing.",
+   newWidget:"lynch_widget"},
+  {id:"buffett",name:"Warren Buffett",fund:"Berkshire Hathaway",
+   tagline:"Price is what you pay. Value is what you get.",
+   focus:"Intrinsic value, margin of safety, economic moats, management quality. Only invest when the price makes sense relative to business value.",
+   color:"#EF4444",icon:"dollar",
+   dashDefault:"list",
+   fundCols:["grossMargin","roic","roe","pe","fcfYield"],
+   listCols:{conviction:true,kpis:true,mastery:true},
+   morningPriority:["above_iv","conv_size","kpi_streak"],
+   dossierFirst:"ledger",
+   quote:"Our favourite holding period is forever.",
+   newWidget:"iv_widget"},
+  {id:"custom",name:"Custom",fund:"",
+   tagline:"Your own framework.",
+   focus:"No preset. Configure the dashboard exactly as you like.",
+   color:"#6B7280",icon:"gear",
+   dashDefault:"fundamentals",
+   fundCols:["revGrowth","grossMargin","opMargin","roic","netDebtEbitda"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:[],
+   dossierFirst:"story",
+   quote:"",
+   newWidget:null}
+];
+var PROFILE_MAP={};INVESTOR_PROFILES.forEach(function(p){PROFILE_MAP[p.id]=p});
+
 var SUPERINVESTORS=[
   {id:"berkshire",name:"Warren Buffett",fund:"Berkshire Hathaway",style:"Quality Value",desc:"Wonderful companies at fair prices. Concentrated, low turnover, moat-focused.",
     holdings:["AAPL","BAC","AXP","KO","CVX","OXY","MCO","KHC","CB","DVA","ALLY","VRSN","NU","AMZN","LLY"],
@@ -1005,6 +1075,12 @@ function TrackerApp(props){
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qL=useState(function(){try{var s=localStorage.getItem("ta-qletters");return s?JSON.parse(s):{}}catch(e){return{}}}),qLetters=_qL[0],setQLetters=_qL[1];
   var _uname=useState(function(){try{return localStorage.getItem("ta-username")||""}catch(e){return""}}),username=_uname[0],setUsername=_uname[1];
+  var _ip=useState(function(){try{return localStorage.getItem("ta-investor-profile")||"custom"}catch(e){return"custom"}}),investorProfile=_ip[0],setInvestorProfile=_ip[1];
+  function saveInvestorProfile(id){setInvestorProfile(id);try{localStorage.setItem("ta-investor-profile",id)}catch(e){}
+    var p=PROFILE_MAP[id];if(!p||id==="custom")return;
+    // Apply profile defaults to dashSet
+    setDashSet(function(prev){var n=Object.assign({},prev,{portfolioView:p.dashDefault,fundCols:p.fundCols,listCols:p.listCols});try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n});
+  }
   var _avUrl=useState(function(){try{return localStorage.getItem("ta-avatar")||""}catch(e){return""}}),avatarUrl=_avUrl[0],setAvatarUrl=_avUrl[1];
   var _editN=useState(false),editingName=_editN[0],setEditingName=_editN[1];
   var _nameI=useState(""),nameInput=_nameI[0],setNameInput=_nameI[1];
@@ -1030,6 +1106,7 @@ function TrackerApp(props){
         if(d.liabilities)setLiabilities(d.liabilities);
         if(d.profile){
           if(d.profile.username)setUsername(d.profile.username);
+          if(d.profile.investorProfile)setInvestorProfile(d.profile.investorProfile);
           if(d.profile.avatar)setAvatarUrl(d.profile.avatar);
           if(d.profile.milestones)setMilestones(d.profile.milestones);
           if(d.profile.weeklyReviews)setWeeklyReviews(d.profile.weeklyReviews);
@@ -1333,7 +1410,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Achievement Badges ──
 
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
@@ -2654,12 +2731,52 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var csv=lines.join("\n");
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-research-"+today+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
-    var _st=useState("widgets"),sTab=_st[0],setSTab=_st[1];
+    var _st=useState("profile"),sTab=_st[0],setSTab=_st[1];
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Playful green. Pill buttons.",color:"#f7f7f5",accent:"#58cc02",unlock:1},{id:"purple",name:"Midnight",desc:"Deep purple. Hedge-fund dark.",color:"#0d0b14",accent:"#a78bfa",unlock:1},{id:"paypal",name:"Ocean",desc:"Clean professional blue",color:"#f0f4f8",accent:"#1a56db",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"White on black. Amber labels. Terminal density.",color:"#000000",accent:"#F39F41",unlock:10}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"widgets",l:"Widgets"},{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"profile",l:"Investor"},{id:"widgets",l:"Widgets"},{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      {/* ── Investor Profile Tab ── */}
+      {sTab==="profile"&&<div>
+        <div style={{fontSize:13,color:K.dim,marginBottom:20,lineHeight:1.7}}>{"Your investor profile shapes what the dashboard prioritises — which metrics lead, what the morning brief surfaces, and how your dossier is organised. You can always override per-holding."}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+          {INVESTOR_PROFILES.map(function(prof){
+            var active=investorProfile===prof.id;
+            return<div key={prof.id} onClick={function(){saveInvestorProfile(prof.id)}}
+              style={{display:"flex",alignItems:"flex-start",gap:14,padding:"14px 16px",
+                borderRadius:_isBm?0:12,border:"2px solid "+(active?prof.color:K.bdr),
+                background:active?prof.color+"10":K.card,cursor:"pointer",transition:"all .15s"}}
+              onMouseEnter={function(e){if(!active)e.currentTarget.style.borderColor=prof.color+"40"}}
+              onMouseLeave={function(e){if(!active)e.currentTarget.style.borderColor=K.bdr}}>
+              <div style={{width:36,height:36,borderRadius:_isBm?0:10,background:active?prof.color:prof.color+"20",
+                display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                <IC name={prof.icon} size={16} color={active?"#fff":prof.color}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                  <span style={{fontSize:14,fontWeight:700,color:active?prof.color:K.txt,fontFamily:fm}}>{prof.name}</span>
+                  {prof.fund&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{prof.fund}</span>}
+                  {active&&<span style={{fontSize:9,fontWeight:700,color:prof.color,background:prof.color+"20",padding:"1px 7px",borderRadius:_isBm?0:3,fontFamily:fm,marginLeft:"auto"}}>ACTIVE</span>}
+                </div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginBottom:active&&prof.quote?6:0}}>{prof.focus}</div>
+                {active&&prof.quote&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",borderLeft:"2px solid "+prof.color+"40",paddingLeft:8,lineHeight:1.5}}>{"“"+prof.quote+"”"}</div>}
+              </div>
+              {active&&<div style={{width:16,height:16,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>
+                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>}
+            </div>;
+          })}
+        </div>
+        {investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&<div style={{padding:"12px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,fontSize:11,color:K.mid,lineHeight:1.6}}>
+          {"\u2139\uFE0F Dashboard defaults updated — portfolio view set to \""}
+          <strong style={{color:K.txt}}>{PROFILE_MAP[investorProfile].dashDefault==="fundamentals"?"Fundamentals":"Holdings"}</strong>
+          {"\" with "+(PROFILE_MAP[investorProfile].fund||"curated")+" columns. Change anytime in the dashboard."}
+        </div>}
+        <div style={{display:"flex",justifyContent:"flex-end",marginTop:20}}>
+          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button>
+        </div>
+      </div>}
       {/* ── Display Tab ── */}
       {sTab==="display"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Choose how values are displayed across the app. Note: this changes the currency symbol only — no FX conversion is applied. Stock prices from market data remain in their original currency.</div>
@@ -4435,6 +4552,30 @@ function calcMoatFromData(finData,businessModelType){
       {/* ── Company view (dossier always shown, no tab UI) ── */}
       {detailTab==="dossier"&&<div className="ta-fade">
         {!subPage&&<div>
+        {/* First-visit profile prompt */}
+        {!selId&&sideTab==="portfolio"&&(!investorProfile||investorProfile==="custom")&&cos.length>0&&!isMobile&&(function(){
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px",marginBottom:20}}>
+            <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Which investor do you identify with most?</div>
+            <div style={{fontSize:13,color:K.dim,marginBottom:16}}>This shapes your dashboard — what it prioritises, what the morning brief surfaces, how your dossier is organised.</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:16}}>
+              {INVESTOR_PROFILES.filter(function(p){return p.id!=="custom"}).map(function(prof){
+                return<button key={prof.id} onClick={function(){saveInvestorProfile(prof.id)}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 16px",
+                    borderRadius:_isBm?0:10,border:"1px solid "+prof.color+"40",
+                    background:prof.color+"0d",cursor:"pointer",transition:"all .15s"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=prof.color+"20"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background=prof.color+"0d"}}>
+                  <IC name={prof.icon} size={14} color={prof.color}/>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:prof.color,fontFamily:fm}}>{prof.name}</div>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm,maxWidth:160}}>{prof.tagline}</div>
+                  </div>
+                </button>;
+              })}
+            </div>
+            <button onClick={function(){saveInvestorProfile("custom")}} style={{fontSize:11,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Skip — I'll set this later →</button>
+          </div>;
+        })()}
         {/* Guided Setup Flow */}
         {guidedSetup===c.id&&(function(){
           // Only show guided setup within 48h of adding company
@@ -9645,6 +9786,17 @@ function WeeklyReview(){
         <button onClick={function(){if(requirePro("earnings"))checkAll()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:K.acc+"15",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600}}>Check All</button>
         <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:_isBm?0:10,padding:"10px",fontSize:14,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
           {autoNotify?"Auto ON":"Auto-check"}</button></div>}</div>
+        {/* ── Investor Profile banner ── */}
+        {!isMobile&&sideTab==="portfolio"&&investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&(function(){
+          var prof=PROFILE_MAP[investorProfile];
+          return<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:prof.color+"08",border:"1px solid "+prof.color+"20",borderRadius:_isBm?0:8,marginTop:8,marginBottom:0,cursor:"pointer"}}
+            onClick={function(){setModal({type:"settings"})}}>
+            <IC name={prof.icon} size={12} color={prof.color}/>
+            <span style={{fontSize:11,color:prof.color,fontWeight:700,fontFamily:fm}}>{prof.name} lens</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1}}>{prof.tagline}</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Change →</span>
+          </div>;
+        })()}
         {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:8,marginTop:16,marginBottom:4,flexWrap:"wrap"}}>
           {[
             {label:"Earnings Calendar",icon:"calendar",page:"calendar",color:K.amb,desc:(function(){var n=filtered.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30}).length;return n>0?n+" upcoming":"No upcoming"})()},
@@ -9767,6 +9919,18 @@ function WeeklyReview(){
         {/* ── Today's Signals — cross-layer ── */}
         {(function(){
           var sigs=calcMorningSignals(portfolio,library);
+          // Re-sort by investor profile priority if set
+          if(investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]){
+            var profPrio=PROFILE_MAP[investorProfile].morningPriority||[];
+            if(profPrio.length>0){
+              sigs=sigs.slice().sort(function(a,b){
+                var ai=profPrio.indexOf(a.layer);var bi=profPrio.indexOf(b.layer);
+                if(ai>=0&&bi>=0)return ai-bi;
+                if(ai>=0)return-1;if(bi>=0)return 1;
+                return a.priority-b.priority;
+              });
+            }
+          }
           var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
           var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
           if(sigs.length===0)return null;
