@@ -193,6 +193,17 @@ var INVESTOR_PROFILES=[
    dossierFirst:"ledger",
    quote:"Our favourite holding period is forever.",
    newWidget:"iv_widget"},
+  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",
+   tagline:"Three legs: extraordinary business, exceptional management, reinvestment opportunity.",
+   focus:"Compounding machines. Return on equity, reinvestment rate, and management quality. Find businesses that can compound at high rates for decades and do nothing.",
+   color:"#F97316",icon:"trending",
+   dashDefault:"fundamentals",
+   fundCols:["roe","roic","revGrowth","fcfYield","grossMargin"],
+   listCols:{conviction:true,kpis:true,mastery:true},
+   morningPriority:["stale_thesis","kpi_streak","anniversary"],
+   dossierFirst:"story",
+   quote:"The compounding of money over long periods of time is not limited by markets, economies, or politics. It is limited only by the quality of the businesses in which we invest.",
+   newWidget:"akre_widget"},
   {id:"custom",name:"Custom",fund:"",
    tagline:"Your own framework.",
    focus:"No preset. Configure the dashboard exactly as you like.",
@@ -10827,6 +10838,108 @@ function WeeklyReview(){
           </div>
         </div>;
       }
+      // ── CHUCK AKRE: Three-Legged Stool ──────────────────────────
+      if(investorProfile==="akre"){
+        var orange="#F97316";
+        // Leg 1: Extraordinary Business — ROE + gross margin + FCF
+        // Leg 2: Exceptional Management — conviction history trend + decision quality
+        // Leg 3: Reinvestment Opportunity — revenue growth + retained earnings proxy
+        var akreRows=portfolio.map(function(c){
+          var s=c.financialSnapshot||{};
+          function pv(k2){if(!s[k2])return null;if(s[k2].numVal!=null)return s[k2].numVal;var v2=s[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||null:null}
+          // Leg 1: Extraordinary Business
+          var roe=pv("roe");var gm=pv("grossMargin");var fcf=pv("fcfYield")||pv("fcf");
+          var leg1Score=0;var leg1Pts=0;
+          if(roe!=null){leg1Pts++;if(roe>=20)leg1Score+=2;else if(roe>=15)leg1Score+=1;}
+          if(gm!=null){leg1Pts++;if(gm>=50)leg1Score+=2;else if(gm>=35)leg1Score+=1;}
+          if(fcf!=null){leg1Pts++;if(fcf>0)leg1Score+=2;}
+          var leg1=leg1Pts>0?Math.round(leg1Score/leg1Pts*50):null;
+          // Leg 2: Exceptional Management — conviction consistency + decisions logged
+          var convH=c.convictionHistory||[];var recentConv=convH.slice(-4);
+          var convStable=recentConv.length>=2&&recentConv.every(function(ch){return ch.rating>=6});
+          var decCount=(c.decisions||[]).length;
+          var leg2=convH.length===0?null:Math.min(100,convStable?70:40)+(decCount>=3?30:decCount>=1?15:0);
+          leg2=leg2!==null?Math.min(100,leg2):null;
+          // Leg 3: Reinvestment Opportunity — rev growth + roic
+          var revGr=pv("revGrowth");var roic=pv("roic")||pv("roe");
+          var leg3Score=0;var leg3Pts=0;
+          if(revGr!=null){leg3Pts++;if(revGr>=15)leg3Score+=2;else if(revGr>=8)leg3Score+=1;}
+          if(roic!=null){leg3Pts++;if(roic>=20)leg3Score+=2;else if(roic>=12)leg3Score+=1;}
+          var leg3=leg3Pts>0?Math.round(leg3Score/leg3Pts*50):null;
+          var allLegs=[leg1,leg2,leg3];
+          var avgLeg=allLegs.filter(function(l){return l!=null}).length>0?Math.round(allLegs.filter(function(l){return l!=null}).reduce(function(a,b){return a+b},0)/allLegs.filter(function(l){return l!=null}).length):null;
+          return{c:c,leg1:leg1,leg2:leg2,leg3:leg3,avg:avgLeg};
+        });
+        var allStrong=akreRows.filter(function(r){return r.avg!=null&&r.avg>=70}).length;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="star" size={12} color={orange}/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Three-Legged Stool</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Akre framework</span>
+            </div>
+            {akreRows.some(function(r){return r.avg!=null})&&<div style={{fontSize:10,color:allStrong===portfolio.length?orange:K.mid,fontFamily:fm,fontWeight:700}}>{allStrong+"/"+portfolio.length+" all-leg pass"}</div>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            {/* Header row */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+              {[["Leg 1","Biz quality"],["Leg 2","Management"],["Leg 3","Reinvest"]].map(function(l,i){return<div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:9,color:orange,fontFamily:fm,fontWeight:700,letterSpacing:.5}}>{l[0]}</div>
+                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{l[1]}</div>
+              </div>})}
+              <div style={{textAlign:"center",fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg</div>
+            </div>
+            {/* Rows */}
+            {akreRows.map(function(row){
+              var c=row.c;
+              function leg(val){
+                if(val===null)return<div style={{textAlign:"center",color:K.bdr,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>{"—"}</div>;
+                var col=val>=70?K.grn:val>=45?orange:K.red;
+                return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                  <div style={{fontSize:10,fontWeight:700,color:col,fontFamily:fm}}>{val}</div>
+                  <div style={{width:36,height:3,background:K.bdr+"50",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:val+"%",background:col,borderRadius:2}}/>
+                  </div>
+                </div>;
+              }
+              var avgCol=row.avg!=null?(row.avg>=70?K.grn:row.avg>=45?orange:K.red):K.bdr;
+              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",alignItems:"center"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    <div style={{fontSize:9,color:K.dim}}>{(c.name||"").substring(0,20)+(c.name&&c.name.length>20?"...":"")}</div>
+                  </div>
+                </div>
+                {leg(row.leg1)}{leg(row.leg2)}{leg(row.leg3)}
+                <div style={{textAlign:"center"}}>
+                  {row.avg!=null?<div style={{width:32,height:32,borderRadius:"50%",background:avgCol+"18",border:"2px solid "+avgCol,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
+                    <span style={{fontSize:10,fontWeight:800,color:avgCol,fontFamily:fm}}>{row.avg}</span>
+                  </div>:<span style={{color:K.bdr}}>{"—"}</span>}
+                </div>
+              </div>;
+            })}
+            {/* Legend */}
+            <div style={{padding:"10px 14px",borderTop:"1px solid "+K.bdr+"40",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {[
+                {l:"Leg 1 — Extraordinary Business",s:"ROE >15%, gross margin >35%, positive FCF"},
+                {l:"Leg 2 — Exceptional Management",s:"Conviction stability + decision journal"},
+                {l:"Leg 3 — Reinvestment Opportunity",s:"Revenue growth >8%, ROIC >12%"}
+              ].map(function(item,i){return<div key={i}>
+                <div style={{fontSize:9,fontWeight:700,color:orange,fontFamily:fm,marginBottom:1}}>{item.l}</div>
+                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{item.s}</div>
+              </div>})}
+            </div>
+            <div style={{padding:"7px 14px",borderTop:"1px solid "+K.bdr+"40",fontSize:9,color:K.dim,fontStyle:"italic"}}>
+              {"“A business that can reinvest its earnings at high rates of return for a long period of time is an extraordinary compounder.” — Chuck Akre"}
+            </div>
+          </div>
+        </div>;
+      }
       // ── PETER LYNCH: Category Classifier ─────────────────────────
       if(investorProfile==="lynch"){
         var LCATS=[{id:"fast_grower",label:"Fast Grower",sym:"F",color:"#22C55E",tip:"20-25%+ annual growth. Sell when growth slows."},
@@ -13688,6 +13801,7 @@ function OnboardingFlow(p){
       {id:"munger",  name:"Charlie Munger", fund:"Berkshire Hathaway",       color:"#F59E0B", tagline:"Invert, always invert. Moat first.",             icon:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"},
       {id:"lynch",   name:"Peter Lynch",    fund:"Magellan Fund",            color:"#8B5CF6", tagline:"Know what you own and know why you own it.",      icon:"M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0"},
       {id:"buffett", name:"Warren Buffett", fund:"Berkshire Hathaway",       color:"#EF4444", tagline:"Price is what you pay. Value is what you get.",  icon:"M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"},
+      {id:"akre",    name:"Chuck Akre",     fund:"Akre Capital",               color:"#F97316", tagline:"Three-legged stool. Compound forever.",             icon:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2"},
     ];
     return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
       {stepDots()}
