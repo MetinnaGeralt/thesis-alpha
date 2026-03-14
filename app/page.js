@@ -9762,6 +9762,7 @@ function WeeklyReview(){
       var DEFAULT_FUND_COLS=["revGrowth","grossMargin","opMargin","roic","netDebtEbitda"];
       var activeCols=(dashSet.fundCols||DEFAULT_FUND_COLS).map(function(id){return FUND_METRICS.find(function(m){return m.id===id})}).filter(Boolean);
       var _fcfgState=useState(false),showFundCfg=_fcfgState[0],setShowFundCfg=_fcfgState[1];
+      var _fcfgPos=useState({top:0,right:0}),fundCfgPos=_fcfgPos[0],setFundCfgPos=_fcfgPos[1];
 
       // ── Color helper ──────────────────────────────────────────────────────
       function metricColor(m,v){if(v==null)return K.dim;if(m.good(v))return K.grn;if(m.ok(v))return K.amb;return K.red;}
@@ -9790,11 +9791,11 @@ function WeeklyReview(){
           </div>})}
           <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
             {showFundCfg&&<div style={{position:"fixed",inset:0,zIndex:499}} onClick={function(){setShowFundCfg(false)}}/>}
-            <button onClick={function(){setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
+            <button onClick={function(e){var r=e.currentTarget.getBoundingClientRect();setFundCfgPos({top:r.bottom+6,right:window.innerWidth-r.right});setShowFundCfg(!showFundCfg)}} style={{background:showFundCfg?K.acc+"15":"none",border:"1px solid "+(showFundCfg?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",padding:"3px 6px",display:"flex",alignItems:"center",gap:2}} title="Customize columns">
               <IC name="gear" size={10} color={showFundCfg?K.acc:K.dim}/>
             </button>
             {/* Column picker dropdown */}
-            {showFundCfg&&<div style={{position:"fixed",right:16,top:"auto",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",boxShadow:"0 8px 32px rgba(0,0,0,.3)",zIndex:500,minWidth:280,maxHeight:"min(480px,70vh)",overflowY:"auto"}} onClick={function(e){e.stopPropagation()}}>
+            {showFundCfg&&<div style={{position:"fixed",right:fundCfgPos.right,top:fundCfgPos.top,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",boxShadow:"0 8px 32px rgba(0,0,0,.3)",zIndex:500,width:300,maxHeight:"min(500px,70vh)",overflowY:"auto",overflowX:"hidden"}} onClick={function(e){e.stopPropagation()}}>
               <div style={{fontSize:11,fontWeight:700,color:K.txt,marginBottom:10}}>Customize columns</div>
               <div style={{fontSize:10,color:K.dim,marginBottom:10}}>Pick up to 6 metrics for your look-through view</div>
               {["Growth","Margins","Returns","Value","Health","Price"].map(function(cat){
