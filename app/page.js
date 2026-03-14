@@ -3631,7 +3631,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="hub"?(_isForest?"rgba(255,255,255,0.18)":bm?"rgba(243,159,65,0.08)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
     {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"},{l:"Frameworks of Legends",t:"frameworks",icon:"castle"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
@@ -7430,7 +7430,7 @@ function calcMoatFromData(finData,businessModelType){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"target"}];
+        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"target"},{id:"frameworks",l:"Frameworks of Legends",icon:"castle"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -8321,6 +8321,177 @@ function WeeklyReview(){
               </div>})}
           </div>}
         </div>
+      })()}
+
+
+      {/* ═══ FRAMEWORKS OF LEGENDS ═══ */}
+      {ht==="frameworks"&&(function(){
+        var fwTab=useState("overview");var fwT=fwTab[0],setFwT=fwTab[1];
+        var checkState=useState(function(){try{var s=localStorage.getItem("ta-fw-checklist");return s?JSON.parse(s):Array(20).fill(false)}catch(e){return Array(20).fill(false)}});
+        var checks=checkState[0],setChecks=checkState[1];
+        function toggleCheck(i){var n=checks.slice();n[i]=!n[i];setChecks(n);try{localStorage.setItem("ta-fw-checklist",JSON.stringify(n))}catch(e){}}
+        var done=checks.filter(Boolean).length;
+
+        var FW_TABS=[
+          {id:"overview",l:"Framework Overview"},
+          {id:"business",l:"The Business"},
+          {id:"moat",l:"The Moat"},
+          {id:"management",l:"Management"},
+          {id:"capital",l:"Capital Allocation"},
+          {id:"inversion",l:"Munger\u2019s Inversion"},
+          {id:"checklist",l:"Full Checklist \u2014 "+done+"/20"},
+        ];
+        var buffCol="#22C55E",mungCol="#3B82F6",bothCol="#8B5CF6";
+        function attr(type){var col=type==="buffett"?buffCol:type==="munger"?mungCol:bothCol;var lbl=type==="buffett"?"Buffett":type==="munger"?"Munger":"Both";return<span style={{display:"inline-flex",alignItems:"center",padding:"2px 7px",borderRadius:_isBm?0:4,background:col+"14",border:"1px solid "+col+"30",fontFamily:fm,fontSize:8,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:col,flexShrink:0}}>{lbl}</span>}
+        function PropCard(p){var col=p.type==="buffett"?buffCol:p.type==="munger"?mungCol:bothCol;return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 22px",marginBottom:10,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:col,borderRadius:"12px 0 0 12px"}}/>
+          <div style={{paddingLeft:14}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:8}}>{attr(p.type)}<div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.45,flex:1}}>{p.title}</div></div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.8}}>{p.body}</div>
+            {p.quote&&<div style={{borderLeft:"2px solid "+K.bdr,paddingLeft:14,marginTop:12}}>
+              <div style={{fontFamily:fh,fontSize:13,fontStyle:"italic",color:K.mid,lineHeight:1.75,marginBottom:5}}>{"\u201c"+p.quote+"\u201d"}</div>
+              <div style={{fontFamily:fm,fontSize:9,letterSpacing:.8,textTransform:"uppercase",color:K.dim}}>{p.source}</div>
+            </div>}
+          </div>
+        </div>}
+
+        var CHECKLIST_ITEMS=[
+          {q:"Can you explain in two sentences how this company makes money and why customers pay?",type:"buffett",note:"circle of competence"},
+          {q:"Is the product necessary or merely desirable — would operations fail without it?",type:"both",note:"franchise vs commodity test"},
+          {q:"Can the company raise prices 10% tomorrow without losing meaningful volume?",type:"buffett",note:"pricing power, 2011"},
+          {q:"Is the moat structural (hard to replicate) or circumstantial (temporarily ahead)?",type:"both",note:"moat durability"},
+          {q:"Is the moat widening or narrowing? What is doing the widening?",type:"buffett",note:"moat direction, annual meetings 2000\u20132010"},
+          {q:"Are there multiple reinforcing advantages (lollapalooza) or just one?",type:"munger",note:"lollapalooza effect"},
+          {q:"Does the business have network effects \u2014 does each new customer make it more valuable?",type:"both",note:"rarest and most durable moat"},
+          {q:"What are the switching costs \u2014 in money, time, risk, and regulatory compliance?",type:"munger",note:"must be quantifiable and operationally severe"},
+          {q:"Who profits if this company struggles \u2014 and are they actively trying to make it struggle?",type:"munger",note:"incentive inversion"},
+          {q:"What does management discuss in their shareholder letters \u2014 wins or failures?",type:"munger",note:"honest communication test"},
+          {q:"What have they done with retained earnings over the last 10 years?",type:"buffett",note:"1987 letter \u2014 has retained earnings created market value?"},
+          {q:"Have they made acquisitions? If so, small and strategic, or large and ego-driven?",type:"buffett",note:"empire-building test"},
+          {q:"What does management compensation look like \u2014 aligned with long-term returns or short-term EPS?",type:"munger",note:"show me the incentive"},
+          {q:"Do key executives own significant personal stock \u2014 and did they buy it or receive it?",type:"both",note:"skin in the game"},
+          {q:"What would a brilliant, well-funded competitor do first to attack this business?",type:"munger",note:"moat stress test via inversion"},
+          {q:"Is the underlying human need this business serves permanent or cyclical?",type:"munger",note:"100-year business test"},
+          {q:"If the stock market closed for 10 years starting tomorrow, would you still be comfortable owning this?",type:"buffett",note:"10-year closed market test"},
+          {q:"Is the high ROIC from the business model, or from the current cycle?",type:"munger",note:"cycle vs moat"},
+          {q:"What is management most likely to do wrong with the capital in the next 5 years?",type:"munger",note:"capital misallocation inversion"},
+          {q:"What am I not seeing because I want this investment to be good?",type:"munger",note:"confirmation bias check"},
+        ];
+
+        return<div>
+          {/* Header */}
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700,marginBottom:6}}>Analytical Framework</div>
+            <div style={{fontFamily:fh,fontSize:isMobile?22:26,fontWeight:900,color:K.txt,letterSpacing:"-0.3px",marginBottom:8}}>Frameworks of Legends</div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.7,maxWidth:560}}>{"Run these questions before opening a spreadsheet. Most investment mistakes are not analytical failures \u2014 they are failures of the preliminary qualitative filters."}</div>
+          </div>
+
+          {/* Sub-tab bar */}
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:24,borderBottom:"1px solid "+K.bdr,paddingBottom:0}}>
+            {FW_TABS.map(function(t){var on=fwT===t.id;return<button key={t.id} onClick={function(){setFwT(t.id)}} style={{padding:"9px 14px",fontSize:11,fontWeight:on?700:400,fontFamily:fm,color:on?K.txt:K.dim,background:"none",border:"none",borderBottom:"2px solid "+(on?K.acc:"transparent"),cursor:"pointer",whiteSpace:"nowrap",transition:"color .12s,border-color .12s",marginBottom:-1}}>{t.l}</button>})}
+          </div>
+
+          {/* ── OVERVIEW ── */}
+          {fwT==="overview"&&<div>
+            <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+              {[["Buffett",buffCol],["Munger",mungCol],["Both",bothCol]].map(function(x){return<div key={x[0]} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:600,color:x[1]}}><div style={{width:7,height:7,borderRadius:"50%",background:x[1]}}/>{x[0]}</div>})}
+            </div>
+            <PropCard type="both" title={"The product is necessary, not optional \u2014 the \u201cwhat if we didn\u2019t have it\u201d test"} body={"Not \u201cis the product good\u201d but \u201cwould customers\u2019 lives or operations be meaningfully worse without it?\u201d Enterprise software embedded in workflows, medical devices used mid-surgery, financial exchange infrastructure \u2014 these pass at an operational level. The best businesses pass it at both an operational and psychological level simultaneously."} quote={"We want businesses that can raise prices without losing customers. If you need a calculator to figure out whether you\u2019re making money, you probably aren\u2019t."} source={"Buffett, 2011"}/>
+            <PropCard type="buffett" title={"Consumer franchise vs commodity business"} body={"A franchise has something in the customer\u2019s mind \u2014 brand, habit, trust, dependency \u2014 meaning the customer returns without being persuaded anew each time. A commodity competes purely on price. The franchise creates a toll."} quote={"The franchise arises in an industry or product that (1) is needed or desired, (2) has no close substitute, and (3) is not subject to price regulation."} source={"Buffett, 1991 Annual Letter"}/>
+            <PropCard type="munger" title={"The lollapalooza effect \u2014 multiple reinforcing advantages"} body={"When multiple moats all push in the same direction simultaneously, the result is multiplicative, not additive. A business with switching costs AND network effects AND pricing power AND a data moat is potentially 40\u00d7 as strong as one with only one. Planisware has switching costs from years of embedded project data AND regulatory audit trail requirements AND the sheer organisational pain of migrating during a live drug program. That is not a moat \u2014 that is a fortress."} quote={"The model I like is a dam. The waters pile up behind it. Water goes over it, but the dam captures the benefit. That\u2019s what a really great business is like."} source={"Munger, USC Law School 2007"}/>
+            <PropCard type="munger" title={"Show me the incentive \u2014 the psychology of operators"} body={"Before trusting any management action, ask what they are paid to do. A CEO compensated on EPS will buy back shares at any price and cut R&D. A CEO compensated on long-term total return will do the opposite. Look at the proxy statement before the earnings release."}/>
+            <PropCard type="buffett" title={"The moat widening \u2014 not just existence but direction"} body={"A moat that is not actively being widened is being narrowed. The question is not \u201cdoes a moat exist today\u201d but \u201cwhat is management doing to deepen it, and is the underlying structural advantage growing or eroding?\u201d"} quote={"We think in terms of that moat and the ability to keep its width and its impossibility of being crossed as the primary criterion of a great business."} source={"Buffett, 2000"}/>
+            <PropCard type="both" title={"Management integrity before intelligence"} body={"Intelligence and energy without integrity is lethal. A brilliant, hard-working, dishonest manager is worse than a mediocre honest one because the damage is proportional to their capability."} quote={"We look for three things: intelligence, energy, and integrity. If they don\u2019t have the last one, don\u2019t even bother with the first two."} source={"Buffett, University of Georgia 2001"}/>
+            <PropCard type="munger" title={"The 100-year business \u2014 structural not cyclical"} body={"Not \u201cwill this company exist in 10 years\u201d but \u201cis the underlying human need this business serves permanent?\u201d People will always need to eat, be healed, communicate, trade. The format may change \u2014 the need doesn\u2019t."} quote={"Invert, always invert. Turn a situation or problem upside down. Look at it backwards."} source={"Munger"}/>
+          </div>}
+
+          {/* ── THE BUSINESS ── */}
+          {fwT==="business"&&<div>
+            <PropCard type="buffett" title={"Pricing power \u2014 the single most important test"} body={"Can the company raise prices without a strategy meeting? 80%+ gross margins held stable over many years is the statistical proof."} quote={"If you have the power to raise prices without losing business to a competitor, you\u2019ve got a very good business. And if you have to have a prayer session before raising the price by 10 percent, then you\u2019ve got a terrible business."} source={"Buffett, 2011"}/>
+            <PropCard type="both" title={"The \u201cinevitable\u201d concept \u2014 businesses that cannot be disintermediated"} body={"If a rival had $10 billion to spend attacking this company, could they succeed? Visa and Mastercard: you cannot build a competing payment network because the network already exists in every pocket in the world."} quote={"Truly great businesses, earning enormous returns on tangible assets, are often the most easily identified."} source={"Buffett, 1996 Annual Letter"}/>
+            <PropCard type="buffett" title={"The newspaper test \u2014 would a thoughtful reporter find anything alarming?"} body={"Not \u201cis it legal\u201d but \u201cis it honourable?\u201d Companies that consistently fail this test in small ways are usually failing it in large ways not yet visible. A management team that makes aggressive accounting decisions in immaterial areas is telling you something about how they will behave when the stakes are high."}/>
+            <PropCard type="munger" title={"The basics \u2014 human needs that are permanent"} body={"Munger gravitates toward businesses that do something fundamentally basic \u2014 feed people, heal people, process financial transactions, keep records that matter. His admiration for Costco: the permanent human desire to buy good things cheaply."}/>
+            <PropCard type="buffett" title={"The \u201c10-year closed market\u201d test"} body={"If the stock market closed for 10 years starting tomorrow, would you still be happy owning this business? Eliminates all businesses whose value depends on someone else\u2019s willingness to buy the stock at a higher price. Forces you to evaluate the underlying cash generation as if it were a private business you could never sell."}/>
+          </div>}
+
+          {/* ── THE MOAT ── */}
+          {fwT==="moat"&&<div>
+            <PropCard type="both" title={"Five sources of moats \u2014 ranked by durability"} body={<ol style={{listStyle:"none",padding:0,margin:0,counterReset:"moat"}}>{[["Regulatory / legal monopoly","Most durable. Government-granted, cannot be taken regardless of competitor quality. Hellenic Exchanges. Rating agencies."],["Network effects","Value grows with each user. Widens automatically. Nearly impossible to displace once dominant. Visa, Doximity, Veeva."],["Switching costs","Customer\u2019s pain of leaving exceeds benefit of switching. Psychological and operational. Medistim, KSI, Planisware."],["Brand","Customer preference that persists even when rational alternatives exist. Requires maintenance."],["Cost advantages","Ability to produce cheaper than anyone else. Requires continuous reinvestment."]].map(function(m,i){return<li key={i} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 0",borderBottom:i<4?"1px solid "+K.bdr:"none",fontSize:13,color:K.mid,lineHeight:1.65}}><span style={{fontFamily:fm,fontSize:9,fontWeight:700,color:bothCol,background:bothCol+"14",border:"1px solid "+bothCol+"25",borderRadius:3,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>{i+1}</span><div><span style={{fontWeight:700,color:K.txt}}>{m[0]}</span>{" \u2014 "+m[1]}</div></li>})}
+            </ol>} quote={"The key to investing is not assessing how much an industry is going to affect society... but rather determining the competitive advantage of any given company and, above all, the durability of that advantage."} source={"Buffett, Fortune 1999"}/>
+            <PropCard type="buffett" title={"The moat widening test \u2014 is the castle getting bigger?"} body={"A static moat is a shrinking moat. For Visa: every new merchant makes Visa more useful to cardholders, which attracts more merchants \u2014 the network grows itself. For a patent: it ages by one year every year. The widening mechanism must be identified explicitly, not assumed."}/>
+            <PropCard type="munger" title={"Customer captivity \u2014 habit, necessity, and psychology"} body={"Customers stay for three reasons: habit, necessity, social proof. A hospital information system creates necessity (clinical workflows depend on it), habit (clinicians learn it over years), and social proof (all colleagues use it). All three simultaneously creates near-permanent lock-in."}/>
+            <PropCard type="both" title={"The \u201cbrilliant CEO with unlimited capital\u201d test"} body={"Imagine the most capable CEO given $10 billion to destroy this company\u2019s position in 5 years. Can they do it? Visa: no \u2014 cannot rebuild the network. Doximity: no \u2014 cannot convince 80% of US doctors to join a new platform. Most companies that look like they have moats fail this test on reflection."}/>
+          </div>}
+
+          {/* ── MANAGEMENT ── */}
+          {fwT==="management"&&<div>
+            <PropCard type="buffett" title={"Integrity above all"} body={"Intelligence and energy without integrity is lethal. Look for this in small signals: failures discussed as prominently as successes, shareholder letters that read like conversations not press releases, acknowledgement of structural problems before they become visible in the numbers."} quote={"We look for three things when we hire people: intelligence, energy, and integrity. And if they don\u2019t have the last one, the first two will kill you."} source={"Buffett, University of Georgia 2001"}/>
+            <PropCard type="both" title={"Owner-operators \u2014 skin in the game, not a renter mentality"} body={"A manager with 80% of their net worth in company stock makes different decisions than one who treats the position as a job. Distinguish between stock received as compensation (free) and stock purchased with personal capital (commitment)."}/>
+            <PropCard type="buffett" title={"The institutional imperative \u2014 resisting what everyone else is doing"} body={"The institutional imperative is the tendency for managers to imitate peers, expand regardless of returns, and resist change because change creates personal risk. Best management teams actively resist: they shrink the business when returns are poor, return cash when they cannot invest wisely, and resist acquisitions that serve ego."} quote={"As if governed by Newton\u2019s First Law of Motion, an institution will resist any change in its current direction; just as work expands to fill available time, corporate projects will materialize to soak up available funds."} source={"Buffett, 1989 Annual Letter"}/>
+            <PropCard type="munger" title={"Honest communication \u2014 failures discussed first, wins second"} body={"Read the last three annual letters. Count the words spent on things that went wrong versus things that went right. 90% wins, 10% \u201cheadwinds\u201d is not information \u2014 it is investor relations. A management team that spends equal time on both is telling you they understand their own business."}/>
+          </div>}
+
+          {/* ── CAPITAL ALLOCATION ── */}
+          {fwT==="capital"&&<div>
+            <PropCard type="buffett" title={"Capital allocation as the CEO\u2019s defining skill"} body={"A CEO who earns 25% returns on operating capital but allocates free cash flow to bad acquisitions will destroy more value than they create. Look at what the company has done with retained earnings over 10 years \u2014 has market value increased by at least as much?"} quote={"The heads of many companies are not skilled in capital allocation. Their inadequacy is not surprising. Most bosses rise to the top because they have excelled in an area such as marketing, production, engineering..."} source={"Buffett, 1987 Annual Letter"}/>
+            <PropCard type="both" title={"Buybacks at the right price \u2014 the most honest management signal"} body={"Distinguish between buybacks done to support the stock price (cosmetic) and buybacks done because management genuinely believes the stock is cheap (owner-operator signal). Check whether buybacks accelerate when prices fall or when prices rise."} quote={"When companies with outstanding businesses find their shares selling far below intrinsic value, no alternative action can benefit shareholders as surely as repurchases."} source={"Buffett, 1984 Annual Letter"}/>
+            <PropCard type="munger" title={"The reinvestment question \u2014 can they deploy capital at high rates?"} body={"A business that earns 20% ROIC but can only reinvest 10% of earnings at that rate is less valuable than one that can reinvest 80% at the same rate. The compounding machine requires both a high return AND large reinvestment capacity."}/>
+            <PropCard type="buffett" title={"The See\u2019s Candies lesson \u2014 franchise value lives in the mind"} body={"Buffett paid $25M for a business with $7M in book value. The franchise value \u2014 the customer\u2019s willingness to pay more for a See\u2019s box than a generic chocolate box \u2014 was not on the balance sheet. It lived in the customer\u2019s mind. This was the teaching moment that moved Buffett permanently from Graham\u2019s statistical cheapness to Munger\u2019s wonderful-business framework."} quote={"Charlie shoved me in the direction of not just buying bargains, as Ben Graham had taught me."} source={"Buffett, 2014 Annual Letter"}/>
+          </div>}
+
+          {/* ── MUNGER'S INVERSION ── */}
+          {fwT==="inversion"&&<div>
+            {[["What would have to be true for this business to be completely worthless in 10 years?","Start with the worst case, not the best case. If you cannot construct a credible disaster scenario you have not thought hard enough. If the disaster requires three or four simultaneous unlikely events \u2014 the moat is probably real."],["What is management most likely to do wrong with the capital?","List the three worst things management could plausibly do with the next 5 years of free cash flow. Then look at their history \u2014 did they do any of those things in the last 10 years?"],["Who profits if this company struggles?","Every weak business has someone who benefits from its weakness: a competitor who takes its customers, a regulator who saw it growing too fast. Those parties will actively pursue the risks most likely to materialise."],["What would a brilliant, well-funded competitor do first?","What is the first entry point an intelligent attacker would exploit? If the answer is \u201cnothing \u2014 there\u2019s no entry point,\u201d the moat is real. If the answer is \u201cundercut on price\u201d or \u201csign a partnership with the two largest customers,\u201d you have found the moat\u2019s weakest point."],["Is the current high ROIC the business or the cycle?","Many businesses look exceptional in a screener because their ROIC is high today due to a commodity price peak, a regulatory windfall, or a temporary competitive absence. If the cycle turns, where does the ROIC normalise?"],["What am I not seeing because I want this to be good?","Once enthusiastic about a company, the brain filters for confirming evidence. After building the bull case, spend equal time genuinely trying to prove it wrong. Ask someone who dislikes the investment to make their best argument. Then steelman it."]].map(function(inv,i){
+              return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"22px 22px 22px 24px",marginBottom:10,display:"flex",gap:18,alignItems:"flex-start"}}>
+                <div style={{fontFamily:fh,fontSize:26,fontWeight:900,color:bothCol,opacity:.28,lineHeight:1,flexShrink:0,marginTop:2}}>{i+1}</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:700,color:K.txt,lineHeight:1.5,marginBottom:8}}>{inv[0]}</div>
+                  <div style={{fontSize:13,color:K.mid,lineHeight:1.75}}>{inv[1]}</div>
+                </div>
+              </div>;
+            })}
+          </div>}
+
+          {/* ── FULL CHECKLIST ── */}
+          {fwT==="checklist"&&<div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px",marginBottom:16,display:"flex",alignItems:"center",gap:20}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:K.txt,marginBottom:4}}>Run this before opening a spreadsheet</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.65}}>{"Munger\u2019s view was explicit: most investment mistakes are not analytical failures \u2014 they are failures of the preliminary qualitative filters."}</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,flexShrink:0}}>
+                <div style={{position:"relative",width:52,height:52}}>
+                  <svg width="52" height="52" viewBox="0 0 52 52" style={{transform:"rotate(-90deg)"}}>
+                    <circle cx="26" cy="26" r="20" fill="none" stroke={K.bdr} strokeWidth="3"/>
+                    <circle cx="26" cy="26" r="20" fill="none" stroke={done===20?K.grn:K.acc} strokeWidth="3" strokeLinecap="round" strokeDasharray="125.7" strokeDashoffset={(125.7*(1-done/20)).toFixed(2)} style={{transition:"stroke-dashoffset .4s"}}/>
+                  </svg>
+                  <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}>
+                    <span style={{fontSize:13,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{done}</span>
+                    <span style={{fontSize:8,color:K.dim,fontFamily:fm}}>/20</span>
+                  </div>
+                </div>
+                <button onClick={function(){setChecks(Array(20).fill(false));try{localStorage.setItem("ta-fw-checklist",JSON.stringify(Array(20).fill(false)))}catch(e){}}} style={{fontSize:9,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm,fontWeight:600}}>Reset</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:16,marginBottom:14}}>
+              {[["Buffett",buffCol],["Munger",mungCol],["Both",bothCol]].map(function(x){return<div key={x[0]} style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:600,color:x[1]}}><div style={{width:6,height:6,borderRadius:"50%",background:x[1]}}/>{x[0]}</div>})}
+            </div>
+            {CHECKLIST_ITEMS.map(function(item,i){
+              var col=item.type==="buffett"?buffCol:item.type==="munger"?mungCol:bothCol;
+              var checked=checks[i];
+              return<div key={i} onClick={function(){toggleCheck(i)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"13px 14px",borderRadius:_isBm?0:9,cursor:"pointer",marginBottom:3,background:checked?"rgba(34,197,94,0.04)":"transparent",border:"1px solid "+(checked?"rgba(34,197,94,0.12)":"transparent"),transition:"background .12s"}}>
+                <div style={{width:17,height:17,borderRadius:5,border:"2px solid "+(checked?K.grn:K.bdr),background:checked?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1,transition:"all .15s"}}>
+                  {checked&&<svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,6 5,9 10,3"/></svg>}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:600,color:checked?K.dim:K.txt,lineHeight:1.5,marginBottom:3,textDecoration:checked?"line-through":"none",textDecorationColor:K.dim}}>{item.q}</div>
+                  <div style={{fontFamily:fm,fontSize:9,letterSpacing:.6,color:col,opacity:.75}}>{item.type==="buffett"?"Buffett":item.type==="munger"?"Munger":"Both"}{" \u2014 "+item.note}</div>
+                </div>
+              </div>;
+            })}
+          </div>}
+
+        </div>;
       })()}
 
       {/* ═══ REVIEW STEP ═══ */}
