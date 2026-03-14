@@ -9551,7 +9551,7 @@ function WeeklyReview(){
             if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
             return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
           var visible=newsExpanded?shown:shown.slice(0,3);
-          if(!briefNewsLoading&&(!briefNews||shown.length===0)&&briefNews!==null)return null;
+          if(!briefNewsLoading&&briefNews===null)return null; // never loaded yet
           return<div style={{borderTop:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
@@ -9563,7 +9563,7 @@ function WeeklyReview(){
                   <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
                     <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={11} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={11} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
@@ -9596,7 +9596,7 @@ function WeeklyReview(){
                 </a>})}
               </div>}
               {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
-              {briefNews&&shown.length===0&&!briefNewsLoading&&<div style={{fontSize:12,color:K.dim,padding:"4px 0"}}>{"No matching news in the last 14 days."}</div>}
+              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
             </div>
           </div>})()}
       </div>})()}
