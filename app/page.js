@@ -3641,7 +3641,7 @@ function calcMoatFromData(finData,businessModelType){
     // 1. GROSS MARGIN
     var gm=vals(recent,"grossProfitRatio");
     if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2)+(gmStd<3?1:gmStd>10?-1:0))),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)",trend:gm.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}
+      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:(function(){var _isDistrib=businessModelType==="distributor";var _base=_isDistrib?(gmAvg>=20?8:gmAvg>=12?7:gmAvg>=8?6:gmAvg>=5?5:3):(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2);return Math.min(10,Math.max(1,Math.round(_base+(gmStd<3?1:gmStd>10?-1:0))))})(),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)"+((businessModelType==="distributor")?" [distributor — thin margin expected]":""),trend:gm.map(function(v){return v*100}),icon:"shield",desc:businessModelType==="distributor"?"Distributors win on scale and asset turns, not gross margin. Stability matters more than the absolute level.":"High & stable margins indicate pricing power"})}
     else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
       if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
         if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
@@ -3666,7 +3666,17 @@ function calcMoatFromData(finData,businessModelType){
       // Fallback: if invested capital is tiny/negative (net cash > equity+debt), use equity alone
       if(ic!=null&&ic<eq*0.1&&eq>0)ic=eq;
       if(opInc!=null&&ic&&ic>0)roics.push(opInc/ic*100)}
-      if(roics.length>=2){metrics.push({id:"roic",name:"Return on Invested Capital",score:Math.min(10,Math.max(1,Math.round(avg(roics)>30?9:avg(roics)>20?8:avg(roics)>15?7:avg(roics)>10?6:avg(roics)>5?4:2))),value:avg(roics).toFixed(1)+"%",detail:"Avg ROIC "+avg(roics).toFixed(1)+"% over "+roics.length+"yr",trend:roics,icon:"target",desc:"High ROIC is the hallmark of a true moat"})}}
+      if(roics.length>=2){
+        var _roicAvg=avg(roics);
+        var _isAcquirer=businessModelType==="serial_acquirer";
+        var _isFinancial=businessModelType==="financial";
+        var _roicThresh=_isAcquirer?8:15;
+        var _roicScore=_isAcquirer
+          ?Math.min(10,Math.max(1,Math.round(_roicAvg>20?9:_roicAvg>15?8:_roicAvg>10?7:_roicAvg>8?6:_roicAvg>5?5:3)))
+          :Math.min(10,Math.max(1,Math.round(_roicAvg>30?9:_roicAvg>20?8:_roicAvg>15?7:_roicAvg>10?6:_roicAvg>5?4:2)));
+        var _roicDesc=_isAcquirer?"ROIC is understated for serial acquirers due to ongoing M&A deployment. A growing acquired portfolio with improving organic returns matters more than the absolute number.":"High ROIC is the hallmark of a true moat";
+        var _roicName=_isAcquirer?"ROIC (acquisition-adjusted)":"Return on Invested Capital";
+        metrics.push({id:"roic",name:_roicName,score:_roicScore,value:_roicAvg.toFixed(1)+"%",detail:"Avg ROIC "+_roicAvg.toFixed(1)+"% over "+roics.length+"yr"+(_isAcquirer?" [serial acquirer — lower threshold applied]":""),trend:roics,icon:"target",desc:_roicDesc})}}
     // 5. FCF CONVERSION
     if(recentCf.length>=2&&recent.length>=2){var fcfC=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){var fcf=recentCf[fi].freeCashFlow!=null?recentCf[fi].freeCashFlow:((recentCf[fi].operatingCashFlow!=null&&recentCf[fi].capitalExpenditure!=null)?(recentCf[fi].operatingCashFlow+Math.min(0,recentCf[fi].capitalExpenditure)):null);var ni=recent[fi].netIncome;if(fcf!=null&&ni&&ni>0)fcfC.push(fcf/ni*100)}
       if(fcfC.length>=2){metrics.push({id:"fcfConversion",name:"FCF Conversion",score:Math.min(10,Math.max(1,Math.round(avg(fcfC)>120?9:avg(fcfC)>100?8:avg(fcfC)>80?7:avg(fcfC)>50?5:avg(fcfC)>0?3:1))),value:avg(fcfC).toFixed(0)+"%",detail:"FCF/NI ratio avg "+avg(fcfC).toFixed(0)+"%",trend:fcfC,icon:"dollar",desc:"High FCF relative to net income shows earnings quality"})}}
@@ -3876,6 +3886,7 @@ function calcMoatFromData(finData,businessModelType){
         <div style={{flex:1}}>
           <div style={{fontSize:20,fontWeight:500,color:cColor,fontFamily:fh,marginBottom:4}}>{cLabel}</div>
           <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{adjComposite>=8?"This company shows strong competitive advantages across multiple dimensions. Durable moats deserve premium conviction.":adjComposite>=6?"Some competitive advantages are visible, but not all dimensions are strong. Monitor for moat erosion.":adjComposite>=4?"Limited competitive advantages detected. This company may be vulnerable to competition.":"No clear competitive moat identified. High conviction requires a special thesis."}</div>
+          {BUSINESS_MODEL_CONTEXT[c.businessModelType||""]&&<div style={{fontSize:11,color:K.blue,marginTop:6,fontFamily:fm,padding:"6px 10px",background:K.blue+"08",borderRadius:_isBm?0:6,lineHeight:1.5}}>{"\u2139\uFE0F "+(BUSINESS_MODEL_CONTEXT[c.businessModelType].label)+": this quantitative score uses financial statement ratios. "+ (c.businessModelType==="serial_acquirer"?"For serial acquirers, the moat is better assessed by acquisition IRR, organic growth rate of acquired businesses, and the decentralised management model. The score below understates true competitive advantage.":c.businessModelType==="distributor"?"Distributors will score lower on gross margin — this is expected. Their moat is in logistics density, supplier relationships, and customer switching costs.":"Standard financial benchmarks may not apply to this business model.")}</div>}
           <div style={{fontSize:11,color:K.dim,marginTop:8,fontFamily:fm}}>Based on {moat.years} years of SEC EDGAR data · {moat.metrics.length} dimensions analyzed{c.pricingPower&&c.pricingPower.score!=null?" · Pricing power adjusted by owner":""}
           </div></div></div>
       {/* Moat Type Classification */}
@@ -5259,6 +5270,7 @@ function calcMoatFromData(finData,businessModelType){
           {dossierMoat?(function(){
             var comp=dossierMoat.composite;var mColor=comp>=8?K.grn:comp>=6?K.amb:K.red;
             var mLabel=comp>=8?"Wide Moat":comp>=6?"Narrow Moat":comp>=4?"Weak Moat":"No Moat";
+            var _moatBmtCtx=BUSINESS_MODEL_CONTEXT[c.businessModelType||""]||null;
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
               <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
                 <div style={{width:56,height:56,borderRadius:"50%",border:"3px solid "+mColor,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -5266,7 +5278,11 @@ function calcMoatFromData(finData,businessModelType){
                   <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>/10</div></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:15,fontWeight:600,color:mColor,fontFamily:fh}}>{mLabel}</div>
-                  <div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Based on financial fundamentals — ROIC, margins, moat persistence</div>
+                  {_moatBmtCtx
+                    ?<div style={{fontSize:10,color:K.blue,fontFamily:fb,lineHeight:1.5}}>
+                       {"\u2139\uFE0F "+_moatBmtCtx.label+": score based on financial metrics. "+(_moatBmtCtx===BUSINESS_MODEL_CONTEXT.serial_acquirer?"The real moat is acquisition discipline & organic growth — not fully captured here.":_moatBmtCtx===BUSINESS_MODEL_CONTEXT.distributor?"Low margins are structural. Moat lives in logistics density & switching costs.":"Adjust expectations for this business model.")}
+                    </div>
+                    :<div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Based on financial fundamentals — ROIC, margins, moat persistence</div>}
                   <div style={{fontSize:11,color:K.dim}}>{dossierMoat.years}yr data · {dossierMoat.metrics.length} dimensions</div></div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
                   {(function(){var mt2=c.moatTypes||{};var activeMts=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return activeMts.length>0?<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
