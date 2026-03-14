@@ -13012,8 +13012,7 @@ function OnboardingFlow(p){
           </div>
         </div>
         <h2 style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,margin:"0 0 6px",letterSpacing:"-0.3px"}}>{"You’re set up."}</h2>
-        <p style={{fontSize:13,color:K.dim,margin:0,lineHeight:1.65}}>{"Most investors never write down why they own something.
-You just did."}</p>
+        <p style={{fontSize:13,color:K.dim,margin:0,lineHeight:1.65}}>{"Most investors never write down why they own something. You just did."}</p>
       </div>
       <div style={{display:"grid",gap:8,marginBottom:20}}>
         {[{label:"Company added",done:!!co5,icon:"✓"},
