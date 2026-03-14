@@ -11841,6 +11841,82 @@ function WeeklyReview(){
         </div>}
       </div>
 
+      {/* ── Ownership actions ── */}
+      {(function(){
+        var actions=[];
+        var now=new Date();
+        portfolio.forEach(function(c){
+          var daysOwned=c.addedAt?Math.floor((now-new Date(c.addedAt))/864e5):999;
+          var thesisAge=c.thesisUpdatedAt?Math.floor((now-new Date(c.thesisUpdatedAt))/864e5):999;
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>30;
+          var hasSell=(c.thesisNote||"").toLowerCase().indexOf("sell")>=0||(c.thesisNote||"").indexOf("SELL")>=0;
+          var hasKpis=c.kpis&&c.kpis.length>0;
+          var hasConviction=c.conviction>0;
+          var earnDays=dU(c.earningsDate);
+
+          // No thesis yet and owned >7 days
+          if(!hasThesis&&daysOwned>7)
+            actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
+              icon:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
+              color:K.acc,label:"Write your thesis for "+c.ticker,
+              sub:"You've owned it "+daysOwned+" days — why do you own it?",
+              tab:"dossier"});
+
+          // Thesis but no sell criteria
+          else if(hasThesis&&!hasSell&&actions.length<4)
+            actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
+              icon:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",
+              color:K.amb,label:"Define sell criteria for "+c.ticker,
+              sub:"What specific event would make you sell?",
+              tab:"dossier"});
+
+          // Thesis stale >120 days + earnings soon
+          else if(hasThesis&&thesisAge>120&&earnDays>=0&&earnDays<=21&&actions.length<4)
+            actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
+              icon:"M12 2v4 M12 18v4 M4.93 4.93l2.83 2.83 M16.24 16.24l2.83 2.83 M2 12h4 M18 12h4",
+              color:K.blue,label:"Review "+c.ticker+" thesis — "+thesisAge+"d old",
+              sub:"Earnings in "+earnDays+"d. Is your thesis still intact?",
+              tab:"dossier"});
+
+          // No conviction rated
+          else if(hasThesis&&!hasConviction&&actions.length<4)
+            actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
+              icon:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+              color:K.grn,label:"Rate your conviction on "+c.ticker,
+              sub:"How confident are you in this position right now?",
+              tab:"dossier"});
+
+          // No KPIs set
+          else if(hasThesis&&!hasKpis&&actions.length<4)
+            actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
+              icon:"M9 11 12 14 22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",
+              color:K.grn,label:"Set KPIs to track for "+c.ticker,
+              sub:"What numbers prove or disprove your thesis?",
+              tab:"dossier"});
+        });
+
+        if(actions.length===0)return null;
+        return<div style={{margin:"20px 16px 0"}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>{"Your move"}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:7}}>
+            {actions.slice(0,4).map(function(a,i){
+              return<div key={i} onClick={function(){setSelId(a.id);setDetailTab(a.tab||"dossier");setPage("dashboard")}} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,cursor:"pointer"}}>
+                <div style={{width:34,height:34,borderRadius:_isBm?0:10,background:a.color+"12",border:"1px solid "+a.color+"25",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <CoLogo domain={a.domain} ticker={a.ticker} size={18}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.3}}>{a.label}</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:2,lineHeight:1.3}}>{a.sub}</div>
+                </div>
+                <div style={{flexShrink:0,width:20,height:20,borderRadius:"50%",background:a.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>;
+      })()}
+
       {/* ── Streak nudge — only shown when review is due, compact ── */}
       {!alreadyReviewed&&<div style={{margin:"12px 16px 0",padding:"10px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,display:"flex",alignItems:"center",gap:10}} onClick={function(){setPage("review")}} >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
