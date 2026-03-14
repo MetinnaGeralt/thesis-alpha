@@ -1220,6 +1220,9 @@ function TrackerApp(props){
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var xpFloat=null;
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
+  var _fwTab=useState("overview"),fwTab=_fwTab[0],setFwTab=_fwTab[1];
+  var _fwChk=useState(function(){try{var s=localStorage.getItem("ta-fw-checklist");return s?JSON.parse(s):Array(20).fill(false)}catch(e){return Array(20).fill(false)}}),fwChecks=_fwChk[0],setFwChecks=_fwChk[1];
+  function toggleFwCheck(i){var n=fwChecks.slice();n[i]=!n[i];setFwChecks(n);try{localStorage.setItem("ta-fw-checklist",JSON.stringify(n))}catch(e){}}
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
   var _oa=useState([]),otherAssets=_oa[0],setOtherAssets=_oa[1];
@@ -8326,11 +8329,10 @@ function WeeklyReview(){
 
       {/* ═══ FRAMEWORKS OF LEGENDS ═══ */}
       {ht==="frameworks"&&(function(){
-        var fwTab=useState("overview");var fwT=fwTab[0],setFwT=fwTab[1];
-        var checkState=useState(function(){try{var s=localStorage.getItem("ta-fw-checklist");return s?JSON.parse(s):Array(20).fill(false)}catch(e){return Array(20).fill(false)}});
-        var checks=checkState[0],setChecks=checkState[1];
-        function toggleCheck(i){var n=checks.slice();n[i]=!n[i];setChecks(n);try{localStorage.setItem("ta-fw-checklist",JSON.stringify(n))}catch(e){}}
-        var done=checks.filter(Boolean).length;
+        var fwT=fwTab,setFwT=setFwTab;
+        var checks=fwChecks,setChecks=setFwChecks;
+        function toggleCheck(i){toggleFwCheck(i);}
+        var done=fwChecks.filter(Boolean).length;
 
         var FW_TABS=[
           {id:"overview",l:"Framework Overview"},
