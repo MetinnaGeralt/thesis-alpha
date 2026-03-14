@@ -3356,16 +3356,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var start=new Date(now.getFullYear(),0,0);
       var dayOfYear=Math.floor((now-start)/864e5);
       var q=QUOTES[dayOfYear%QUOTES.length];
-      return<div style={{margin:"0 12px 0",padding:"12px 14px",background:isDark?"rgba(255,255,255,0.04)":K.sand||"#F7F5EE",borderRadius:_isBm?0:10,border:"1px solid "+(isDark?"rgba(255,255,255,0.07)":K.bdr),position:"relative",overflow:"hidden"}}>
-        {/* Decorative opening quote mark */}
-        <div style={{position:"absolute",top:-4,left:8,fontSize:42,color:K.acc,opacity:0.12,fontFamily:"Georgia, serif",lineHeight:1,userSelect:"none",pointerEvents:"none"}}>{"\u201C"}</div>
-        {/* Caveat handwriting font loaded inline */}
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');`}</style>
-        <p style={{fontFamily:"'Caveat', cursive",fontSize:13,lineHeight:1.55,color:isDark?"rgba(255,255,255,0.75)":K.mid,margin:"0 0 8px",paddingLeft:4,paddingTop:6,letterSpacing:0.2}}>{q.q}</p>
-        <div style={{display:"flex",alignItems:"center",gap:5}}>
-          <div style={{width:12,height:1,background:K.acc,opacity:0.5}}/>
-          <span style={{fontFamily:fm,fontSize:8.5,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:K.acc,opacity:0.8}}>{q.a}</span>
-        </div>
+      return<div style={{padding:"16px 16px 8px",textAlign:"center"}}>
+        <style>{"@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');"}</style>
+        <p style={{fontFamily:"'Caveat', cursive",fontSize:13.5,lineHeight:1.6,color:isDark?"rgba(255,255,255,0.55)":"rgba(22,22,29,0.45)",margin:"0 0 8px",letterSpacing:0.2}}>{q.q}</p>
+        <span style={{fontFamily:fm,fontSize:8,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.25)":"rgba(22,22,29,0.28)"}}>{"— "+q.a}</span>
       </div>;
     })()}
 
