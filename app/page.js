@@ -9376,6 +9376,8 @@ function WeeklyReview(){
         {/* ── Today's Signals — cross-layer ── */}
         {(function(){
           var sigs=calcMorningSignals(portfolio,library);
+          var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
+          var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
           if(sigs.length===0)return null;
 
           function handleAction(act){
@@ -9400,8 +9402,6 @@ function WeeklyReview(){
             else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
           }
 
-          var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
-          var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
           return<div style={{borderBottom:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
