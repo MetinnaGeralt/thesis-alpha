@@ -5066,58 +5066,46 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
         {/* ── RESEARCH TRAIL (tabbed) ── */}
         {(function(){
-          var _rtT=useState("decisions"),rtTab=_rtT[0],setRtTab=_rtT[1];
-          var nDec=(c.decisions||[]).length;var nDoc=(c.docs||[]).length;
+          var _rtT=useState("notes"),rtTab=_rtT[0],setRtTab=_rtT[1];
+          var nDoc=(c.docs||[]).length;
           var nLinks=(c.researchLinks||[]).length;
           var RT_TABS=[
-            {id:"decisions",label:"Decisions",count:nDec,icon:"file"},
-            {id:"notes",label:"Notes",count:nDoc,icon:"book"},
-            {id:"links",label:"Links",count:nLinks,icon:"search"},
-            {id:"filings",label:"Filings",icon:"shield"},
+            {id:"notes",label:"Notes",count:nDoc},
+            {id:"links",label:"Links",count:nLinks},
+            {id:"filings",label:"Filings"},
           ];
-          var addBtn=rtTab==="decisions"?null:
-            rtTab==="notes"?<div style={{display:"flex",gap:6}}>
+          var addBtn=rtTab==="notes"?<div style={{display:"flex",gap:6}}>
               <button style={Object.assign({},S.btnP,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip</button>
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
             </div>:null;
           return<div id="ds-research" style={{marginBottom:24,marginTop:8}}>
             <div style={{paddingTop:20,borderTop:"1px solid "+K.bdr,marginBottom:0}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
-                  <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>Research Journal</div>
-                  {nDec>0&&<span style={{fontSize:10,fontWeight:700,color:K.acc,background:K.acc+"15",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{nDec}</span>}
+                  <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>Research Trail</div>
                 </div>
-                <button style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12,display:"flex",alignItems:"center",gap:5})} onClick={function(){
-                  setRtTab("decisions");
-                  setTimeout(function(){var el=document.getElementById("dj-add-btn");if(el)el.click()},80);
-                }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Log Decision
-                </button>
+                {addBtn}
               </div>
               <div style={{display:"flex",gap:4,marginBottom:14}}>
                 {RT_TABS.map(function(tb){
                   var active=rtTab===tb.id;
-                  var isPrimary=tb.id==="decisions";
                   return<button key={tb.id} onClick={function(){setRtTab(tb.id)}} style={{
                     padding:active?"6px 16px":"5px 14px",
                     borderRadius:_isBm?0:999,
-                    border:"1px solid "+(active?(isPrimary?K.acc:K.acc+"60"):K.bdr),
-                    background:active?(isPrimary?K.acc:K.acc+"12"):"transparent",
-                    color:active?(isPrimary?"#fff":K.acc):K.dim,
+                    border:"1px solid "+(active?K.acc:K.bdr),
+                    background:active?K.acc+"12":"transparent",
+                    color:active?K.acc:K.dim,
                     fontSize:11,fontWeight:active?700:400,cursor:"pointer",fontFamily:fm,
                     display:"flex",alignItems:"center",gap:4,transition:"all .15s"
                   }}>
                     {tb.label}
-                    {tb.count>0&&<span style={{fontSize:9,background:active?(isPrimary?"rgba(255,255,255,0.25)":K.acc+"25"):K.bdr,color:active?(isPrimary?"#fff":K.acc):K.dim,borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,fontWeight:700}}>{tb.count}</span>}
+                    {tb.count>0&&<span style={{fontSize:9,background:active?K.acc+"25":K.bdr,color:active?K.acc:K.dim,borderRadius:_isBm?0:3,padding:"1px 5px",fontFamily:fm,fontWeight:700}}>{tb.count}</span>}
                   </button>;
                 })}
-                {rtTab!=="decisions"&&addBtn&&<div style={{marginLeft:"auto"}}>{addBtn}</div>}
               </div>
             </div>
-            {rtTab==="decisions"&&<DecisionJournal company={c}/>}
             {rtTab==="notes"&&<ThesisVault company={c}/>}
             {rtTab==="links"&&<ResearchLinks company={c}/>}
             {rtTab==="filings"&&<div>
@@ -5140,6 +5128,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 <div style={{fontSize:11,color:K.dim,lineHeight:1.6}}>{"ℹ️"} Data from SEC EDGAR + FMP + Finnhub</div>
               </div>
             </div>}
+            {/* Decision Log folder — always visible */}
+            <DecisionJournal company={c}/>
           </div>;
         })()}
         {/* ── Research Prompts (dossier inline) ── */}
