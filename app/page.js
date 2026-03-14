@@ -3793,7 +3793,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <Inp label="URL" value={url} onChange={setUrl} placeholder="https://..." K={K}/>
         <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Label (optional)" value={label} onChange={setLabel} placeholder="Article title" K={K}/><Sel label="Type" value={cat} onChange={setCat} options={cats} K={K}/></div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:url.trim()?1:.4})} onClick={addLink}>Add</button></div></div>}
-      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:20,textAlign:"center",fontSize:13,color:K.dim}}>Save links to articles, reports, podcasts.</div>}
+      {links.length===0&&!adding&&<div style={{background:K.card,border:"1px dashed "+K.acc+"25",borderRadius:_isBm?0:14,padding:"24px 20px",textAlign:"center"}}>
+      <div style={{width:36,height:36,borderRadius:_isBm?0:10,background:K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px"}}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:3}}>{"No links saved for "+c.ticker}</div>
+      <div style={{fontSize:11,color:K.dim,marginBottom:12,lineHeight:1.5}}>Bookmark articles, reports, investor letters, podcasts.</div>
+      <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setAdding(true)}}>+ Add link</button>
+    </div>}
       {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
         {links.map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
           <IC name={catIcons[l.category]||"link"} size={14} color={K.dim}/>
@@ -4034,7 +4041,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
         {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
-      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:28,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"doc"})}}>Create note</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
+      {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.acc+"25",borderRadius:_isBm?0:14,padding:"28px 24px",textAlign:"center"}}>
+        <div style={{width:38,height:38,borderRadius:_isBm?0:10,background:K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>{af==="all"?"No research notes yet":"Nothing in this folder"}</div>
+        <div style={{fontSize:11,color:K.dim,marginBottom:14,lineHeight:1.5}}>{"Save your thinking about "+c.ticker+" — deep dives, key quotes, earnings notes."}</div>
+        <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+          <button style={Object.assign({},S.btnP,{padding:"7px 14px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
+          <button style={Object.assign({},S.btn,{padding:"7px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
+        </div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
         return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -4922,10 +4938,12 @@ function calcMoatFromData(finData,businessModelType){
       {/* ── Mobile back ── */}
       {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:13,cursor:"pointer",padding:"10px 0 2px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Portfolio</button>}
       {/* ── Simplified Header ── */}
-      <div className="ta-detail-head" style={{padding:isMobile?"16px 0 14px":"36px 0 20px",borderBottom:"1px solid "+K.bdr+"50",marginBottom:8}}>
+      <div className="ta-detail-head" style={{padding:isMobile?"16px 0 14px":"36px 0 24px",borderBottom:"1px solid "+K.bdr+"50",marginBottom:8}}>
         {/* Top row: logo + name + conviction */}
         <div style={{display:"flex",alignItems:"center",gap:isMobile?12:16,marginBottom:10}}>
-          <CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?40:48}/>
+          <div style={{width:isMobile?48:56,height:isMobile?48:56,borderRadius:_isBm?0:14,background:"linear-gradient(135deg,"+K.acc+"18,"+K.acc+"06)",border:"1px solid "+K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <CoLogo domain={c.domain} ticker={c.ticker} size={isMobile?36:44}/>
+            </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:isMobile?24:32,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-1px",lineHeight:1}}>{c.ticker}</span>
@@ -5119,10 +5137,11 @@ function calcMoatFromData(finData,businessModelType){
             </div>}
             {/* Conviction + quick thesis preview */}
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
-                <IC name="star" size={12} color={K.amb}/>
-                <span style={{color:K.mid}}>Conviction</span>
-                <span style={{color:K.txt,fontWeight:700}}>{c.conviction}/10</span>
+              {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
+                <div style={{display:"flex",gap:1.5,alignItems:"flex-end"}}>
+                  {Array.from({length:10},function(_,i){return<div key={i} style={{width:3,borderRadius:1,background:i<c.conviction?(c.conviction>=7?K.grn:c.conviction>=5?K.acc:K.amb):K.bdr+"60",height:i<c.conviction?(6+i*0.8)+"px":"4px",transition:"height .3s"}}/>})}
+                </div>
+                <span style={{color:K.mid,fontSize:10}}>{c.conviction+"/10"}</span>
               </div>}
               <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"1px solid "+urgency+"30",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:urgency,fontFamily:fm,cursor:"pointer"}}>Review thesis →</button>
               {allDone&&<span style={{marginLeft:"auto",fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>✓ You're prepared</span>}
@@ -5151,9 +5170,12 @@ function calcMoatFromData(finData,businessModelType){
         {/* ── 1. THE STORY ── */}
         <div id="ds-story" style={{marginBottom:48}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
-              <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>Thesis</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+              <div>
+                <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Thesis</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Your investment case</div>
+              </div>
               {(sel.thesisVersions||[]).length>0&&<span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm,letterSpacing:0.5}}>{"v"+(sel.thesisVersions.length+1)}</span>}
               {_thesisAgeDays!=null&&_thesisAgeDays>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{_thesisAgeDays>365?Math.floor(_thesisAgeDays/365)+"y ago":_thesisAgeDays>30?Math.floor(_thesisAgeDays/30)+"mo ago":_thesisAgeDays+"d ago"}</span>}
             </div>
@@ -5459,22 +5481,28 @@ function calcMoatFromData(finData,businessModelType){
                 {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
                 {/* Filled shape — rounded, more opaque */}
                 {(function(){var dataPts=axes.map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
-                  return<path d={roundedPath(dataPts)} fill={"#3B82F635"} stroke={"#3B82F6"} strokeWidth="2.5"/>})()}
+                  return<g>
+                    <path d={roundedPath(dataPts)} fill={"#3B82F618"} stroke={"#3B82F6"} strokeWidth="2"/>
+                    {dataPts.map(function(p4,i4){return<circle key={i4} cx={p4.x} cy={p4.y} r="3" fill={axes[i4].color} stroke={K.bg} strokeWidth="1.5"/>})}
+                  </g>;})()}
                 {/* Axis labels with hover tooltips */}
                 {axes.map(function(a2,i3){var lp=pt(i3,118);
                   return<g key={i3} style={{cursor:"help"}}><title>{a2.label}: {a2.score}/100 — {a2.tip}</title>
                     <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle" style={{cursor:"help"}}>{a2.label}</text></g>})}
                 {/* Center score */}
-                <text x={cx} y={cy-4} fill={K.txt} fontSize="22" fontWeight="800" fontFamily={fm} textAnchor="middle">{avgScore}</text>
-                <text x={cx} y={cy+10} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1">MASTERY</text>
+                <text x={cx} y={cy-5} fill={avgScore>=70?K.grn:avgScore>=45?K.acc:K.amb} fontSize="22" fontWeight="900" fontFamily={fm} textAnchor="middle">{avgScore}</text>
+                <text x={cx} y={cy+8} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1.5">OWNER SCORE</text>
               </svg>
               <div style={{flex:1}}>
                 <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
-                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                  <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
-                  <span style={{fontSize:11,color:K.mid,fontFamily:fm,width:70}}>{a2.label}</span>
-                  <div style={{flex:1,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:a2.score+"%",borderRadius:_isBm?0:2,background:a2.color,transition:"width .4s"}}/></div>
-                  <span style={{fontSize:11,fontWeight:600,color:a2.score>=70?K.grn:a2.score>=40?K.amb:a2.score>0?K.red:K.dim,fontFamily:fm,width:24,textAlign:"right"}}>{a2.score}</span></div>})}
+                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                  <div style={{width:5,height:5,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
+                  <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:75}}>{a2.label}</span>
+                  <div style={{flex:1,height:5,borderRadius:_isBm?0:3,background:K.bdr+"50",overflow:"hidden"}}>
+                    <div style={{height:"100%",width:a2.score+"%",background:a2.color,borderRadius:_isBm?0:3,transition:"width .4s"}}/>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,color:a2.score>=70?a2.color:K.dim,fontFamily:fm,width:28,textAlign:"right"}}>{a2.score}</span>
+                </div>})}
               </div></div></div>})()}
 
 
@@ -5535,9 +5563,12 @@ function calcMoatFromData(finData,businessModelType){
         })()}
         {/* ── 2. THE EVIDENCE ── */}
         <div id="ds-evidence" style={{marginBottom:48}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-            <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.grn,flexShrink:0}}/>
-            <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>Evidence</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.grn,flexShrink:0}}/>
+            <div>
+              <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Evidence</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>KPIs, earnings, stress tests</div>
+            </div>
           </div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
@@ -5581,9 +5612,17 @@ function calcMoatFromData(finData,businessModelType){
             </div>
             <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
           </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",marginBottom:12}}>
-            <div style={{fontSize:13,color:K.dim,marginBottom:6}}>No KPIs tracked yet</div>
-            <button onClick={function(){setModal({type:"kpi"})}} style={Object.assign({},S.btn,{fontSize:11,padding:"5px 12px"})}>+ Add KPIs</button></div>}
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:14,padding:"32px 24px",textAlign:"center",marginBottom:12}}>
+            <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:5}}>{"Define your KPIs for "+c.ticker}</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:280,margin:"0 auto 16px"}}>{"Pick 2–3 metrics that would prove or disprove your thesis. You’ll check them after each earnings release."}</div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:12,fontSize:10,color:K.dim,fontFamily:fm}}>
+              {["Gross margin","Revenue growth","ROIC","Free cash flow","Net income"].map(function(eg){return<span key={eg} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,padding:"3px 10px"}}>{eg}</span>})}
+            </div>
+            <button onClick={function(){setModal({type:"kpi"})}} style={{padding:"9px 20px",borderRadius:_isBm?0:8,background:K.blue,border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"+ Add KPIs →"}</button>
+          </div>}
           {/* Earnings check */}
           <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
             <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:12,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
@@ -5722,9 +5761,12 @@ function calcMoatFromData(finData,businessModelType){
           var isIntl=isIntlTicker(c.ticker);
           var isSparse=isIntl&&snapKeys.length<4;
           if(!hasSnap&&isIntl)return<div style={{marginBottom:24}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
-              <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.blue,flexShrink:0}}/>
-              <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>{"Owner’s Numbers"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+              <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.blue,flexShrink:0}}/>
+              <div>
+                <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>{"Owner’s Numbers"}</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Fundamentals, ratios, valuation</div>
+              </div>
             </div>
             {isSparse&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -6319,12 +6361,15 @@ function calcMoatFromData(finData,businessModelType){
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip</button>
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
             </div>:null;
-          return<div id="ds-research" style={{marginBottom:24,marginTop:8}}>
+          return<div id="ds-research" style={{marginBottom:48,marginTop:8}}>
             <div style={{paddingTop:20,borderTop:"1px solid "+K.bdr,marginBottom:0}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:3,height:18,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
-                  <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>Research Trail</div>
+                  <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Research Trail</div>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Notes, links, filings</div>
+                  </div>
                 </div>
                 {addBtn}
               </div>
@@ -11071,7 +11116,7 @@ function WeeklyReview(){
                     <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
                   </div>
                   <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
-                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F59E0B 40%, #10B981 70%, #8B5CF6 100%)",borderRadius:999}}/>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F97316 20%, #6B7280 45%, #6B7280 55%, #10B981 80%, #8B5CF6 100%)",borderRadius:999}}/>
                     <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
                   </div>
                   <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
@@ -11652,10 +11697,11 @@ function WeeklyReview(){
                   {!cc.inversionNote&&<button onClick={function(e){e.stopPropagation();setSelId(cc.id);setDetailTab("dossier")}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>+ Inversion</button>}
                 </div>
               </div>
-              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:52}}>
-                <div style={{width:4,height:40,background:K.bg,borderRadius:2,overflow:"hidden",position:"relative"}}>
-                  <div style={{position:"absolute",bottom:0,left:0,right:0,height:cc.conviction>0?(cc.conviction/10*100)+"%":"0%",background:convColor,borderRadius:2,transition:"height .4s"}}/>
+              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:52,gap:3}}>
+                <div style={{display:"flex",gap:2}}>
+                  {Array.from({length:10},function(_,i){return<div key={i} style={{width:3,height:i<(cc.conviction||0)?14:8,borderRadius:2,background:i<(cc.conviction||0)?convColor:K.bdr+"80",transition:"height .3s",flexShrink:0}}/>})}
                 </div>
+                <div style={{fontSize:9,color:cc.conviction>0?convColor:K.dim,fontFamily:fm,fontWeight:700,marginTop:1}}>{cc.conviction>0?cc.conviction+"/10":"—"}</div>
               </div>
             </div>
           </div>;
@@ -12132,7 +12178,11 @@ function WeeklyReview(){
             var daysParked=c.parkedAt?Math.floor((new Date()-new Date(c.parkedAt))/864e5):null;
             var isStale=daysParked!==null&&daysParked>180;
             var tl=daysParked===null?"Unknown":daysParked<30?(daysParked+"d ago"):daysParked<365?(Math.floor(daysParked/30)+"mo ago"):(Math.floor(daysParked/365)+"yr "+Math.floor((daysParked%365)/30)+"mo ago");
-            return<div key={c.id} style={{background:K.card,border:"1px solid "+(isStale?K.amb+"50":K.bdr),borderRadius:_isBm?0:12,padding:"16px 20px"}}>
+            return<div key={c.id}
+              onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+              style={{background:K.card,border:"1px solid "+(isStale?K.amb+"50":K.bdr),borderRadius:_isBm?0:12,padding:"16px 20px",cursor:"pointer",transition:"transform .15s, box-shadow .15s, border-color .15s"}}
+              onMouseEnter={function(e){if(!isMobile){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 8px 24px rgba(0,0,0,0.12)";e.currentTarget.style.borderColor=K.acc+"40"}}}
+              onMouseLeave={function(e){if(!isMobile){e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";e.currentTarget.style.borderColor=isStale?K.amb+"50":K.bdr}}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
                 <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
@@ -13172,9 +13222,9 @@ function WeeklyReview(){
                 if(container){container.scrollTop=el.offsetTop-80}
                 else el.scrollIntoView({behavior:"smooth",block:"start"});
               }
-            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.mid,transition:"all .15s"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10";e.currentTarget.style.color=K.acc}}
-            onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid}}>
+            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.mid,transition:"all .2s ease",borderLeft:"2px solid transparent"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"12";e.currentTarget.style.color=K.acc;e.currentTarget.style.paddingLeft="20px"}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid;e.currentTarget.style.paddingLeft="16px"}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d={sec2.icon}/>
               </svg>
