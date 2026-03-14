@@ -1554,7 +1554,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {INVEST_STYLES.map(function(st){var isSel=f.investStyle===st.id;return<button key={st.id} onClick={function(){set("investStyle",isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
             <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}</div></div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btnD} onClick={function(){setModal({type:"del"})}}>Delete Company</button><div style={{flex:1}}/><button style={S.btn} onClick={function(){setSelPrompt(null);setResp("")}}>Back</button><button style={S.btnP} onClick={function(){upd(selId,{ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,investStyle:f.investStyle});setModal(null)}}>Save</button></div></Modal>}
   function parseThesis(note){if(!note)return{core:"",moat:"",risks:"",sell:""};
     var sections={core:"",moat:"",risks:"",sell:""};var cur="core";
     var lines=(note||"").split("\n");
@@ -2693,11 +2693,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     function doSave(){if(!selPrompt||!resp.trim())return;var entry={id:existing?existing.id:nId(scenarios),promptId:selPrompt,prompt:activePrompt?activePrompt.q:"",category:activePrompt?activePrompt.cat:"",response:resp.trim(),answeredAt:new Date().toISOString()};
       if(existing){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).map(function(s){return s.id===existing.id?entry:s})})})}
       else{upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).concat([entry])})})}
-      setModal(null)}
+      setSelPrompt(null);setResp("");showToast("\u2713 Saved","info",1500);}
     return<Modal title={"Stress Test \u2014 "+c.ticker} onClose={function(){setModal(null)}} w={600} K={K}>
       <div style={{fontSize:13,color:K.mid,lineHeight:1.7,marginBottom:16}}>Plan your response to difficult situations before they happen — when your mind is clear and emotions are quiet.</div>
       {!selPrompt&&<div>
-        <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>Choose a scenario</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{fontSize:11,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm}}>Choose a scenario</div>
+          <div style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>{answered.length>0?answered.length+"/"+prompts.length+" answered":""}</div>
+        </div>
         <div style={{display:"grid",gap:8}}>{prompts.map(function(p2){var done=answered.indexOf(p2.id)>=0;
             return<div key={p2.id} onClick={function(){setSelPrompt(p2.id);var ex=scenarios.find(function(s){return s.promptId===p2.id});if(ex)setResp(ex.response)}} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:done?K.grn+"06":K.card,border:"1px solid "+(done?K.grn+"25":K.bdr),borderRadius:_isBm?0:10,cursor:"pointer"}}>
               <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:done?K.grn+"12":K.acc+"10",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{done?<IC name="check" size={14} color={K.grn}/>:<IC name={p2.icon} size={14} color={K.acc}/>}</div>
@@ -2714,7 +2717,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:12}}>
           {existing&&<button style={S.btnD} onClick={function(){upd(selId,function(prev){return Object.assign({},prev,{scenarios:(prev.scenarios||[]).filter(function(s){return s.id!==existing.id})})});setModal(null)}}>Delete</button>}
           <div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
-          <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave}>Save Plan</button></div></div>}
+          <button style={Object.assign({},S.btnP,{opacity:resp.trim().length>10?1:.4})} onClick={doSave}>Save &amp; continue</button></div></div>}
     </Modal>}
   // ── Valuation Modal ──
   var VALUATION_METRICS=[
