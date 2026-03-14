@@ -2080,9 +2080,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       }
       lines.push("");
       lines.push("Conviction: "+convLabel+" ("+conv+"/10)");
-      lines.push("— Shared from ThesisAlpha");
-      return lines.join("
-");
+      lines.push("\u2014 Shared from ThesisAlpha");
+      return lines.join("\n");
     }
 
     function copyText(){
