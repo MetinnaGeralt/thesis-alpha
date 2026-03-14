@@ -980,7 +980,7 @@ function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
   if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
   return<div style={{width:sz,height:sz,borderRadius:_isBm?0:4,background:"rgba(128,128,128,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:sz*.4,fontWeight:700,color:"rgba(128,128,128,.6)",fontFamily:fm,flexShrink:0}}>{(p.ticker||"?")[0]}</div>}
 // ── Icon System (clean line SVGs, NotebookLM-inspired) ──
-function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.5;
+function IC(p){var s=p.size||16,c=p.color||"currentColor",w=p.strokeWidth||1.8;
   var paths={
     overview:"M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2",
     analysis:"M21 21H4.6c-.56 0-.84 0-1.054-.109a1 1 0 0 1-.437-.437C3 20.24 3 19.96 3 19.4V3m17 5-4.5 4.5L12 9l-4 4",
@@ -1978,14 +1978,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",gap:4}}>
           {sections.map(function(s){var done=f[s.key]&&f[s.key].trim().length>15;
             return<div key={s.key} style={{width:20,height:20,borderRadius:_isBm?0:4,display:"flex",alignItems:"center",justifyContent:"center",background:done?s.color+"15":"transparent",border:"1px solid "+(done?s.color+"30":K.bdr)}} title={s.label}>
-              {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={9} color={K.dim}/>}</div>})}</div></div>
+              {done?<IC name="check" size={10} color={s.color}/>:<IC name={s.icon} size={10} color={K.dim}/>}</div>})}</div></div>
       <div style={{fontSize:13,color:K.dim,marginBottom:16,lineHeight:1.6,fontStyle:"italic"}}>{"\u201cIf you can\u2019t state the argument against your position, you don\u2019t understand it well enough.\u201d — Munger"}</div>
       {sections.map(function(sec){var wordCount=(f[sec.key]||"").trim().split(/\s+/).filter(function(w){return w}).length;var done=f[sec.key]&&f[sec.key].trim().length>15;
         var showSeed=sec.key==="sell"&&!f.sell&&kpiSeed;
         return<div key={sec.key} style={{marginBottom:18}}>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
           <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:done?sec.color:K.mid,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600,flex:1}}>
-          {done?<IC name="check" size={11} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
+          {done?<IC name="check" size={12} color={sec.color}/>:<IC name={sec.icon} size={12} color={K.dim}/>}{sec.label}
           {wordCount>0&&<span style={{fontSize:10,color:K.dim,fontWeight:400,textTransform:"none",letterSpacing:0,marginLeft:"auto"}}>{wordCount}w</span>}</label></div>
         {!done&&<div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginBottom:6,lineHeight:1.5,paddingLeft:2}}>{getQ(sec.key)}</div>}
         {showSeed&&<div style={{marginBottom:8,padding:"10px 14px",background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:8}}>
@@ -2308,7 +2308,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <button onClick={function(){setSelId(c.id);setAiModal({title:"Sell Discipline Check — "+c.ticker,framing:{why:"This prompt takes your sell criteria and asks the AI to evaluate objectively whether they have been triggered.",dataPoints:["Your sell criteria","Recent conviction history","KPIs","Decisions log"]},prompt:buildPrompt("sell",c)});setSellCheckTgt(null)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"6px 14px",display:"flex",alignItems:"center",gap:5}}>
-          <IC name="lightbulb" size={11} color={K.acc}/>Get AI perspective
+          <IC name="lightbulb" size={12} color={K.acc}/>Get AI perspective
         </button>
         <div style={{display:"flex",gap:8}}>
           <button onClick={function(){setSellCheckTgt(null)}} style={S.btn}>Dismiss</button>
@@ -2965,7 +2965,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
                 {active&&prof.quote&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",borderLeft:"2px solid "+prof.color+"40",paddingLeft:8,lineHeight:1.5}}>{"\u201c"+prof.quote+"\u201d"}</div>}
               </div>
               {active&&<div style={{width:16,height:16,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
               </div>}
             </div>;
           })}
@@ -3416,7 +3416,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:_isForest?"20px 16px":bm?"10px 14px":isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(_isForest?"rgba(255,255,255,0.12)":sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:bm?10:isThesis?15:13,fontWeight:bm?700:isThesis?800:600,color:bm?"#F39F41":sideText,letterSpacing:bm?2:isThesis?"-0.3px":1.5,fontFamily:fm,textTransform:bm?"uppercase":"none"}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
     {!isMobile&&<div style={{padding:"10px 14px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr)}} onClick={function(e){e.stopPropagation();setCmdOpen(true);setCmdQuery("");setCmdIdx(0)}}>
       <div style={{display:"flex",alignItems:"center",gap:8,background:sideDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)",borderRadius:_isForest?999:isThesis?10:6,padding:"7px 12px",cursor:"text",border:"1px solid "+(_isForest?"rgba(255,255,255,0.15)":sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"),transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"50"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}}>
-        <IC name="search" size={13} color={sideDim2}/>
+        <IC name="search" size={14} color={sideDim2}/>
         <span style={{flex:1,fontSize:12,color:sideDim2,fontFamily:fm}}>Search…</span>
         <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:_isBm?0:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
       </div>
@@ -3448,7 +3448,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"→"} +{TRIAL_BONUS} days</div></div>}
         {trialBonusEarned&&<div style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{width:"100%",marginTop:8,padding:"7px 12px",background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,fontSize:11,fontWeight:600,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
       :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
 
@@ -3519,7 +3519,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
       <button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flexShrink:0}}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       {/* Centre — logo + wordmark */}
       <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={function(){setSelId(null);setPage("dashboard")}}>
         <TLogo size={24} dark={isDark}/>
@@ -3538,14 +3538,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:14,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={n.type==="quarterly"?{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,cursor:"pointer",background:"linear-gradient(135deg,#D4AF3712,transparent)",borderLeft:"3px solid #D4AF37"}:{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}else if(n.type==="quarterly"){setShowQLetter(n.qKey);setShowNotifs(false);}}}>
           {n.type==="quarterly"?<div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:14,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:2}}>{"Your "+n.qKey+" Letter is ready"}</div>
               <div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{"Your quarterly owner's letter has arrived."}</div>
               <div style={{fontSize:11,color:K.dim,marginTop:4}}>{fT(n.time)}</div>
             </div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
           </div>:<div style={{display:"flex",alignItems:"flex-start",gap:10}}>
             <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:5}}/><div><div style={{fontSize:14,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span></div><div style={{fontSize:12,color:K.dim,marginTop:4}}>{fT(n.time)}</div></div>
           </div>}</div>})}
@@ -3562,14 +3562,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {notifs.length===0?<div style={{padding:"36px 18px",textAlign:"center",fontSize:13,color:K.dim}}>No notifications</div>:notifs.slice(0,15).map(function(n){return<div key={n.id} style={n.type==="quarterly"?{padding:"14px 18px",borderBottom:"1px solid "+K.bdr,cursor:"pointer",background:"linear-gradient(135deg,#D4AF3712,transparent)",borderLeft:"3px solid #D4AF37"}:{padding:"12px 18px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10,cursor:n.type==="email-alert"?"pointer":"default"}} onClick={function(){if(n.type==="email-alert"){var fresh=cos.find(function(c){return c.ticker===n.ticker});if(fresh)sendEarningsEmail(fresh);setNotifs(function(p){return p.filter(function(x){return x.id!==n.id})})}else if(n.type==="quarterly"){setShowQLetter(n.qKey);setShowNotifs(false);}}}>
         {n.type==="quarterly"?<div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:36,height:36,borderRadius:_isBm?0:8,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:2}}>{"Your "+n.qKey+" Letter is ready"}</div>
             <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{"Your quarterly owner's letter has arrived. Tap to read."}</div>
             <div style={{fontSize:11,color:K.dim,marginTop:4}}>{fT(n.time)}</div>
           </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
         </div>:<div style={{display:"flex",alignItems:"flex-start",gap:10}}>
           <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:n.type==="found"?K.grn:n.type==="upcoming"?K.amb:n.type==="ready"?K.blue:n.type==="system"?K.acc:n.type==="price-alert"?"#9333EA":n.type==="milestone"?"#FFD700":n.type==="email-alert"?K.blue:K.dim,flexShrink:0,marginTop:4}}/><div><div style={{fontSize:13,color:K.txt,fontFamily:fm}}><strong>{n.ticker}</strong> <span style={{color:K.mid,fontWeight:400}}>{n.msg}</span>{n.type==="email-alert"&&<span style={{fontSize:11,color:K.blue,marginLeft:6}}>Send email</span>}</div><div style={{fontSize:11,color:K.dim,marginTop:3}}>{fT(n.time)}</div></div>
         </div>}</div>})}</div>}
@@ -3700,7 +3700,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         onMouseLeave={function(e){e.currentTarget.style.background=K.card}}>
         {/* Folder icon */}
         <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:K.acc+"12",border:"1px solid "+K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Decision Log</div>
@@ -3781,7 +3781,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
         })}
         {scored.length>0&&<div style={{padding:"8px 16px",borderTop:"1px solid "+K.bdr,background:K.bg,display:"flex",alignItems:"center",gap:6}}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           <span style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600}}>{rights}/{scored.length} right · {pct}% accuracy</span>
         </div>}
       </div>}
@@ -3844,7 +3844,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button></div></div>
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
-        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
+        {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
       {filtered.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:28,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>{af==="all"?"No notes yet for "+c.ticker:"No notes in this folder"}</div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"doc"})}}>Create note</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
         return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
@@ -4258,7 +4258,7 @@ function calcMoatFromData(finData,businessModelType){
         return<div style={{marginBottom:24}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={S.sec}><IC name="castle" size={14} color={K.dim}/>Moat Classification</div>
-            {classified.length>0&&<button onClick={function(){setSubPage(null);setDetailTab("dossier");showToast(c.ticker+" moat classified — "+classified.length+" type"+(classified.length>1?"s":"")+" identified","info",3000)}} style={Object.assign({},S.btnP,{padding:"6px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="shield" size={11} color={"#fff"}/>Done — Back to Dossier</button>}</div>
+            {classified.length>0&&<button onClick={function(){setSubPage(null);setDetailTab("dossier");showToast(c.ticker+" moat classified — "+classified.length+" type"+(classified.length>1?"s":"")+" identified","info",3000)}} style={Object.assign({},S.btnP,{padding:"6px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="shield" size={12} color={"#fff"}/>Done — Back to Dossier</button>}</div>
           {/* Morningstar Reference + Moat Trend */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:16}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}}>
@@ -4722,16 +4722,16 @@ function calcMoatFromData(finData,businessModelType){
         {c.thesisUpdatedAt&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>· {_thesisStaleBadge}</span>}
       </div>}
       {_thesisStale&&c.thesisNote&&<div style={{background:K.amb+"12",border:"1px solid "+K.amb+"40",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.amb}}>
-        <IC name="alert" size={13} color={K.amb}/>
+        <IC name="alert" size={14} color={K.amb}/>
         <span>Thesis last updated <strong>{_thesisStaleBadge}</strong> — worth a review?</span>
         <button onClick={function(){setDetailTab("dossier");setTimeout(function(){document.getElementById("thesis-editor")&&document.getElementById("thesis-editor").focus()},100)}} style={{marginLeft:"auto",background:"none",border:"1px solid "+K.amb+"60",borderRadius:_isBm?0:4,padding:"2px 8px",fontSize:11,color:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>Review Now</button>
       </div>}
       {_convDrift&&<div style={{background:K.blue+"10",border:"1px solid "+K.blue+"30",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:8,fontSize:12,color:K.blue}}>
-        <IC name="target" size={13} color={K.blue}/>
+        <IC name="target" size={14} color={K.blue}/>
         <span>Conviction last updated <strong>{_convDriftDays}d ago</strong> — still feels right?</span>
       </div>}
       {/* ── Mobile back ── */}
-      {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:13,cursor:"pointer",padding:"10px 0 2px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Portfolio</button>}
+      {isMobile&&<button onClick={function(){setSelId(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.mid,fontSize:13,cursor:"pointer",padding:"10px 0 2px",fontFamily:fm}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Portfolio</button>}
       {/* ── Simplified Header ── */}
       <div className="ta-detail-head" style={{padding:isMobile?"16px 0 14px":"36px 0 20px",borderBottom:"1px solid "+K.bdr+"50",marginBottom:8}}>
         {/* Top row: logo + name + conviction */}
@@ -4745,7 +4745,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{display:"flex",gap:8,marginTop:5,alignItems:"center",flexWrap:"wrap"}}>
               {c.sector&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.sector}</span>}
               {c.sector&&(c.investStyle||true)&&<span style={{color:K.bdr,fontSize:11}}>·</span>}
-              {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fm,cursor:"pointer"}} onClick={function(){setModal({type:"edit"})}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
+              {c.investStyle&&STYLE_MAP[c.investStyle]&&<span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"12",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fm,cursor:"pointer"}} onClick={function(){setModal({type:"edit"})}}><IC name={STYLE_MAP[c.investStyle].icon} size={10} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span>}
               <button onClick={function(){var next=c.status==="portfolio"?"watchlist":c.status==="watchlist"?"toohard":"portfolio";upd(c.id,{status:next})}} style={{background:(c.status||"portfolio")==="portfolio"?K.grn+"15":c.status==="toohard"?K.red+"15":K.amb+"15",border:"1px solid "+((c.status||"portfolio")==="portfolio"?K.grn+"30":c.status==="toohard"?K.red+"30":K.amb+"30"),borderRadius:_isBm?0:4,padding:"1px 7px",fontSize:10,color:(c.status||"portfolio")==="portfolio"?K.grn:c.status==="toohard"?K.red:K.amb,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{(c.status||"portfolio")==="portfolio"?"Portfolio":c.status==="toohard"?"Too Hard":"Watchlist"}</button>
             </div>
           </div>
@@ -4758,7 +4758,7 @@ function calcMoatFromData(finData,businessModelType){
         {/* Second row: earnings + quick actions */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexWrap:"wrap"}}>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <IC name="target" size={11} color={dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7?K.amb:K.dim}/>
+            <IC name="target" size={12} color={dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7?K.amb:K.dim}/>
             <span style={{fontSize:12,color:dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7?K.amb:K.dim,fontFamily:fm}}>
               {c.earningsDate==="TBD"?"Earnings TBD":c.earningsDate?("Earnings "+fD(c.earningsDate)+(c.earningsTime?" · "+c.earningsTime:"")):"No earnings date"}
             </span>
@@ -4931,7 +4931,7 @@ function calcMoatFromData(finData,businessModelType){
             {/* Conviction + quick thesis preview */}
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               {c.conviction>0&&<div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm}}>
-                <IC name="star" size={11} color={K.amb}/>
+                <IC name="star" size={12} color={K.amb}/>
                 <span style={{color:K.mid}}>Conviction</span>
                 <span style={{color:K.txt,fontWeight:700}}>{c.conviction}/10</span>
               </div>}
@@ -4970,7 +4970,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {(sel.thesisVersions||[]).length>=1&&<button onClick={function(){setModal({type:"thesisDiary"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 History
               </button>}
               <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button>
@@ -5058,7 +5058,7 @@ function calcMoatFromData(finData,businessModelType){
             return<div style={{marginTop:16}}>
               {/* Pre-earnings nudge */}
               {preEarningsAlert&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,marginBottom:12}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0,marginTop:2}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0,marginTop:2}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>{"Earnings in "+earnDays+"d \u2014 thesis is "+thesisAge+" days old"}</div>
                   <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{"Worth a quick re-read before results drop. Is your thesis still intact?"}</div>
@@ -5075,7 +5075,7 @@ function calcMoatFromData(finData,businessModelType){
               {/* History toggle */}
               {versions.length>0&&<div>
                 <button onClick={function(){setShowHistory(!showHistory)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",color:K.dim,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:showHistory?10:0}}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {versions.length} version{versions.length!==1?"s":""} saved
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">{showHistory?<polyline points="18 15 12 9 6 15"/>:<polyline points="6 9 12 15 18 9"/>}</svg>
                 </button>
@@ -5145,7 +5145,7 @@ function calcMoatFromData(finData,businessModelType){
           <div style={{marginTop:12}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
               <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 The Lynch Test
               </div>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Can you explain this to an 11-year-old?</span>
@@ -5194,7 +5194,7 @@ function calcMoatFromData(finData,businessModelType){
           <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:6,fontFamily:fm}}>What type of investment is {c.ticker}?</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
             {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:_isBm?0:5,border:"1px solid "+st.color+"30",background:st.color+"08",color:st.color,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
-              <IC name={st.icon} size={8} color={st.color}/>{st.label}</button>})}</div></div>}
+              <IC name={st.icon} size={10} color={st.color}/>{st.label}</button>})}</div></div>}
 
 
         {/* ── OWNERSHIP SNOWFLAKE ── */}
@@ -5490,7 +5490,7 @@ function calcMoatFromData(finData,businessModelType){
             <div onClick={function(){setDossierMktOpen(function(v){return v===false?true:false})}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 0",marginBottom:mktOpen?16:0,userSelect:"none"}}>
               <div style={{flex:1,height:1,background:K.bdr}}/>
               <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:_isBm?0:999,background:K.card,border:"1px solid "+K.bdr,flexShrink:0}}>
-                <IC name="bar" size={11} color={K.dim}/>
+                <IC name="bar" size={12} color={K.dim}/>
                 <span style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Market Data</span>
                 <span style={{fontSize:11,color:K.dim,transform:mktOpen?"rotate(0)":"rotate(-90deg)",transition:"transform .2s",display:"inline-block",lineHeight:1}}>▾</span>
               </div>
@@ -5510,7 +5510,7 @@ function calcMoatFromData(finData,businessModelType){
               <div style={{fontSize:13,letterSpacing:1.5,textTransform:"uppercase",color:K.txt,fontFamily:fm,fontWeight:700}}>{"Owner’s Numbers"}</div>
             </div>
             {isSparse&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               <span style={{fontSize:10,color:K.amb,fontFamily:fm,flex:1}}>{"Limited data for "+c.ticker+" — international coverage is partial. Key metrics sourced from available data."}</span>
             </div>}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 18px"}}>
@@ -5709,7 +5709,7 @@ function calcMoatFromData(finData,businessModelType){
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
                       {row.highlight&&<div style={{width:4,height:4,borderRadius:"50%",background:"#EF4444",flexShrink:0}}/>}
                       <span style={{fontSize:11,color:K.mid,fontFamily:fm}} title={row.tip||""}>{row.l}</span>
-                      {row.tip&&<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
+                      {row.tip&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>}
                     </div>
                     <span style={{fontSize:12,fontWeight:700,color:col,fontFamily:fm}}>{row.v}</span>
                   </div>;
@@ -5744,7 +5744,7 @@ function calcMoatFromData(finData,businessModelType){
                           {/* S&P500 benchmark tick */}
                           <line x1={(cx+r*0.72*Math.cos(ang(spPct))).toFixed(1)} y1={(cy-r*0.72*Math.sin(ang(spPct))).toFixed(1)} x2={(cx+r*1.28*Math.cos(ang(spPct))).toFixed(1)} y2={(cy-r*1.28*Math.sin(ang(spPct))).toFixed(1)} stroke={K.dim} strokeWidth="1.5" opacity="0.6"/>
                           {/* Needle */}
-                          <line x1={cx} y1={cy} x2={ptX(pct)} y2={ptY(pct)} stroke={col} strokeWidth="1.5" strokeLinecap="round"/>
+                          <line x1={cx} y1={cy} x2={ptX(pct)} y2={ptY(pct)} stroke={col} strokeWidth="1.8" strokeLinecap="round"/>
                           <circle cx={cx} cy={cy} r="2.5" fill={col}/>
                         </svg>
                         <div style={{fontSize:13,fontWeight:800,color:col,fontFamily:fm,lineHeight:1}}>{item.v}</div>
@@ -5753,7 +5753,7 @@ function calcMoatFromData(finData,businessModelType){
                       </div>})}
                   </div>
                   {sec.items.some(function(it){return it.contextNote})&&<div style={{display:"flex",alignItems:"flex-start",gap:6,marginTop:8,padding:"8px 12px",background:K.blue+"06",border:"1px solid "+K.blue+"15",borderRadius:_isBm?0:8}}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div style={{fontSize:10,color:K.mid,lineHeight:1.6,fontFamily:fm}}>{sec.items.find(function(it){return it.contextNote}).contextNote}</div>
                   </div>}
                   </>
@@ -5814,7 +5814,7 @@ function calcMoatFromData(finData,businessModelType){
                         var role=(t2.name||"").toLowerCase();var isExec=role.indexOf("ceo")>=0||role.indexOf("cfo")>=0||role.indexOf("chief")>=0||role.indexOf("president")>=0||role.indexOf("director")>=0;
                         return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 0",borderBottom:i2<5?"1px solid "+K.bdr+"30":"none"}}>
                           <div style={{width:24,height:24,borderRadius:"50%",background:isExec?K.acc+"15":K.bg,border:"1px solid "+(isExec?K.acc+"30":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isExec?K.acc:K.dim} strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isExec?K.acc:K.dim} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
                           <div style={{flex:1,overflow:"hidden"}}>
                             <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t2.name}</div>
                             <div style={{fontSize:9,color:K.dim}}>{t2.transactionDate}</div>
@@ -5837,7 +5837,7 @@ function calcMoatFromData(finData,businessModelType){
                   var isPassive=isVanguard||isBlackrock||isFidelity;
                   return<div key={i2} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i2<6?"1px solid "+K.bdr+"30":"none"}}>
                     <div style={{width:24,height:24,borderRadius:"50%",background:isPassive?K.blue+"12":K.acc+"12",border:"1px solid "+(isPassive?K.blue+"25":K.acc+"25"),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isPassive?K.blue:K.acc} strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg></div>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isPassive?K.blue:K.acc} strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 3h-8l-2 4h12l-2-4z"/></svg></div>
                     <div style={{flex:1,overflow:"hidden"}}>
                       <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{inst.holder}</div>
                       <div style={{fontSize:8,color:K.dim}}>{inst.dateReported?inst.dateReported.substring(0,10):""}</div></div>
@@ -5958,7 +5958,7 @@ function calcMoatFromData(finData,businessModelType){
                   {(function(){var mt2=c.moatTypes||{};var activeMts=MOAT_TYPES.filter(function(t2){return mt2[t2.id]&&mt2[t2.id].active});return activeMts.length>0?<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
                     <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:0.5}}>YOUR MOAT TYPES</div>
                     <div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                      {activeMts.map(function(t2){return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={8} color={t2.color}/>{t2.label}</span>})}
+                      {activeMts.map(function(t2){return<span key={t2.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:8,color:t2.color,background:t2.color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm,fontWeight:600}}><IC name={t2.icon} size={10} color={t2.color}/>{t2.label}</span>})}
                     </div>
                   </div>:<button onClick={function(){setSubPage("moat")}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm}}>+ Tag moat types</button>})()}</div></div>
               <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"4px 16px"}}>
@@ -6424,7 +6424,7 @@ function calcMoatFromData(finData,businessModelType){
                 <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginBottom:8}}>{item.action}</div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                   {item.aiType&&onAI&&<button onClick={function(){onAI(item)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.acc+"50",background:K.acc+"0d",color:K.acc,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
-                    <IC name="lightbulb" size={11} color={K.acc}/>Generate AI Review
+                    <IC name="lightbulb" size={12} color={K.acc}/>Generate AI Review
                   </button>}
                   {onGo&&<button onClick={function(){onGo(item.c)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fb}}>
                     Open {item.ticker} →
@@ -7002,7 +7002,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {allHistory.slice(0,6).map(function(item){
                 return<div key={item.key} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",display:"flex",alignItems:"flex-start",gap:12}}>
-                  <IC name="lightbulb" size={13} color={K.acc} style={{marginTop:2}}/>
+                  <IC name="lightbulb" size={14} color={K.acc} style={{marginTop:2}}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                       <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{item.title}</div>
@@ -7138,7 +7138,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
               <div style={{width:isMobile?120:140,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:_isBm?0:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={11} color={K.dim}/>{currentLevel.name}</span>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={12} color={K.dim}/>{currentLevel.name}</span>
             </div></div></div>
         {/* Quick stats */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:isMobile?8:16,marginTop:isMobile?12:16}}>
@@ -7367,7 +7367,7 @@ function calcMoatFromData(finData,businessModelType){
             {/* Top match */}
             <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:14,padding:"12px 14px",background:K.acc+"06",borderRadius:_isBm?0:10,border:"1px solid "+K.acc+"15"}}>
               <div style={{width:44,height:44,borderRadius:"50%",background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
               <div style={{flex:1}}>
                 <div style={{fontSize:15,fontWeight:700,color:K.txt}}>{best.investor.name}</div>
                 <div style={{fontSize:12,color:K.acc,fontWeight:600}}>{best.investor.style}</div>
@@ -7428,7 +7428,7 @@ function calcMoatFromData(finData,businessModelType){
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
             {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:4}}>
-              <IC name={p2.icon} size={13} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
+              <IC name={p2.icon} size={14} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
         {/* ═══ STRESS TEST ═══ */}
         {portfolio.length>0&&<div style={{marginTop:24}}>
@@ -7681,7 +7681,7 @@ function calcMoatFromData(finData,businessModelType){
             {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
           <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
           {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d2){return d2.folder===fo.id&&(hc==="all"||d2.companyId===parseInt(hc))}).length;
-            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={11} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
+            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
         <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
           <div>
             {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:32,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:13,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
@@ -8010,7 +8010,7 @@ function WeeklyReview(){
                 </div>})}
             </div>
             <div style={{marginTop:14,padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,display:"flex",alignItems:"center",gap:10}}>
-              <IC name="lightbulb" size={13} color={K.acc}/>
+              <IC name="lightbulb" size={14} color={K.acc}/>
               <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>Pro users get all themes and lenses immediately. <span style={{color:K.acc,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}}>See what's included →</span></div>
             </div>
           </div>}
@@ -8264,7 +8264,7 @@ function WeeklyReview(){
             </div>})()}
           {/* Free user — subtle Pro nudge */}
           {isFree&&<div style={{padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-            <IC name="lightbulb" size={13} color={K.acc}/>
+            <IC name="lightbulb" size={14} color={K.acc}/>
             <div style={{flex:1,fontSize:12,color:K.dim,lineHeight:1.5}}>Pro members see a full health report after every review — upcoming earnings, stale theses, insider trades.</div>
             <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,flexShrink:0}}>⚡ Pro</button>
           </div>}
@@ -8652,7 +8652,7 @@ function WeeklyReview(){
             <MiniSparkline/>
             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
               <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:fetching?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
-                {fetching?<span style={{display:"inline-block",width:10,height:10,border:"1.5px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .7s linear infinite"}}/>:<IC name="gear" size={11} color={K.dim}/>}
+                {fetching?<span style={{display:"inline-block",width:10,height:10,border:"1.5px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .7s linear infinite"}}/>:<IC name="gear" size={12} color={K.dim}/>}
                 {fetching?"Refreshing…":"Refresh prices"}
               </button>
               {lastRefresh&&<div style={{fontSize:9,color:K.dim,fontFamily:fb}}>Updated {lastRefresh.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>}
@@ -8666,7 +8666,7 @@ function WeeklyReview(){
         {[["overview","Overview","bar"],["history","History","chart"],["income","Income","dollar"],["targets","Allocation","target"]].map(function(tb){
           var active=nwTab===tb[0];
           return<button key={tb[0]} onClick={function(){setNwTab(tb[0])}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:_isBm?"0":"8px 8px 0 0",border:"1px solid "+(active?K.bdr:"transparent"),borderBottom:active?"1px solid "+K.card:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:13,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,marginBottom:active?-1:0}}>
-            <IC name={tb[2]} size={13} color={active?K.txt:K.dim}/>{tb[1]}
+            <IC name={tb[2]} size={14} color={active?K.txt:K.dim}/>{tb[1]}
           </button>;
         })}
       </div>
@@ -8779,7 +8779,7 @@ function WeeklyReview(){
                 var allocPct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
                 return<div key={a.id} style={{padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <IC name={atp.icon} size={13} color={atp.color}/>
+                    <IC name={atp.icon} size={14} color={atp.color}/>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
@@ -8818,7 +8818,7 @@ function WeeklyReview(){
         {/* Liabilities section */}
         <div style={{marginTop:8,marginBottom:4}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <IC name="alert" size={13} color={K.red}/>
+            <IC name="alert" size={14} color={K.red}/>
             <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Liabilities</div>
             <div style={{fontSize:12,color:K.dim,fontFamily:fb,flex:1}}>— {fmtM(totalLiabUSD)} total debt</div>
             <button onClick={function(){setLmodal("pick")}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add</button>
@@ -9247,7 +9247,7 @@ function WeeklyReview(){
             <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab("dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:_isBm?0:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
-                <CoLogo domain={ev.domain} ticker={ev.ticker} size={13}/>
+                <CoLogo domain={ev.domain} ticker={ev.ticker} size={14}/>
                 <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{ev.ticker}</span>
                 <span style={{fontSize:12,color:K.mid,flex:1,lineHeight:1.3}}>{ev.heading}</span>
               </div>
@@ -10086,9 +10086,9 @@ function WeeklyReview(){
               </div>
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
-              {it.url&&!canEmbed&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Open link"><IC name="link" size={13} color={K.dim}/></button>}
-              <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Edit"><IC name="edit" size={13} color={K.dim}/></button>
-              <button onClick={function(){deleteItem(it.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Remove"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+              {it.url&&!canEmbed&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Open link"><IC name="link" size={14} color={K.dim}/></button>}
+              <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Edit"><IC name="edit" size={14} color={K.dim}/></button>
+              <button onClick={function(){deleteItem(it.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
             </div>
           </div>
           {it.notes&&<p style={{margin:0,fontSize:12,color:K.dim,lineHeight:1.5,fontFamily:fm}}>{it.notes}</p>}
@@ -10104,14 +10104,14 @@ function WeeklyReview(){
           <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>Videos, articles, and resources that shape your thinking</p>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={13} color={K.mid}/>New Folder</button>
-          <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="plus" size={13} color={K.primTxt}/>Add Resource</button>
+          <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={14} color={K.mid}/>New Folder</button>
+          <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="plus" size={14} color={K.primTxt}/>Add Resource</button>
         </div>
       </div>
       {/* Search + type filter */}
       <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
         <div style={{position:"relative",flex:1,minWidth:180,maxWidth:300}}>
-          <IC name="search" size={13} color={K.dim} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",flexShrink:0}}/>
+          <IC name="search" size={14} color={K.dim} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",flexShrink:0}}/>
           <input value={libSearch} onChange={function(e){setLibSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?12:8,color:K.txt,padding:"9px 12px 9px 34px",fontSize:13,fontFamily:fm,outline:"none"}}/>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -10291,13 +10291,13 @@ function WeeklyReview(){
         <div><h1 style={{margin:0,fontSize:isMobile?24:isThesis?32:26,fontWeight:isThesis||isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis||isMobile?"-0.5px":"normal"}}>{sideTab==="portfolio"?"Portfolio":sideTab==="toohard"?"Too-Hard Pile":"Watchlist"}</h1><p style={{margin:"6px 0 0",fontSize:isMobile?13:14,color:K.dim}}>{filtered.length} companies{sideTab==="toohard"?" • Outside your circle of competence":priceLoading?" • Updating prices…":""}</p></div>
         {!isMobile&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button onClick={function(){if(requirePro("earnings"))toggleAutoNotify()}} style={{display:"flex",alignItems:"center",gap:6,background:autoNotify?K.grn+"15":"transparent",border:"1px solid "+(autoNotify?K.grn+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 14px",fontSize:12,color:autoNotify?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title={autoNotify?"Auto-check ON":"Click to enable"}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={autoNotify?K.grn:"none"} stroke={autoNotify?K.grn:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             {autoNotify?"Auto-check ON":"Auto-check"}</button>
           {autoNotify&&<button onClick={toggleEmailNotify} style={{display:"flex",alignItems:"center",gap:5,background:emailNotify?K.blue+"15":"transparent",border:"1px solid "+(emailNotify?K.blue+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 12px",fontSize:12,color:emailNotify?K.blue:K.dim,cursor:"pointer",fontFamily:fm}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={emailNotify?K.blue:K.dim} strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
             {emailNotify?"KPI Email ON":"+ KPI Email"}</button>}
           <button onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{businessMode:!p.businessMode});try{localStorage.setItem("ta-dashsettings",JSON.stringify(n))}catch(e){}return n})}} style={{display:"flex",alignItems:"center",gap:6,background:dashSet.businessMode?K.grn+"15":"transparent",border:"1px solid "+(dashSet.businessMode?K.grn+"40":K.bdr),borderRadius:_isBm?0:6,padding:"7px 12px",fontSize:12,color:dashSet.businessMode?K.grn:K.dim,cursor:"pointer",fontFamily:fm}} title="Owner Mode: hides price noise, shows conviction + thesis health">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
             Owner mode</button>
           <button style={S.btnChk} onClick={function(){if(requirePro("earnings"))checkAll()}}>Check All</button>
           <button style={Object.assign({},S.btn,{padding:"9px 14px",fontSize:12})} onClick={function(){exportCSV(filtered)}}>CSV</button>
@@ -10329,7 +10329,7 @@ function WeeklyReview(){
             return<button key={item.page} onClick={function(){setPage(item.page)}} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,cursor:"pointer",transition:"all .15s",flexShrink:0}}
               onMouseEnter={function(e){e.currentTarget.style.background=item.color+"10";e.currentTarget.style.borderColor=item.color+"40"}}
               onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.borderColor=K.bdr}}>
-              <IC name={item.icon} size={13} color={item.color}/>
+              <IC name={item.icon} size={14} color={item.color}/>
               <div style={{textAlign:"left"}}>
                 <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.2}}>{item.label}</div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>{item.desc}</div>
@@ -10354,7 +10354,7 @@ function WeeklyReview(){
       return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
             {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
           </div>
@@ -10830,7 +10830,7 @@ function WeeklyReview(){
       }
       return<div style={{marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
           <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
           {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
@@ -11023,7 +11023,7 @@ function WeeklyReview(){
                   <div style={{fontSize:11,color:K.dim,marginTop:1}}>{now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase()+" MORNING"}</div>
                 </div>
                 {_avgYrs2>0&&investorProfile==="munger"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:K.grn+"10",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:6}}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm}}>{_avgYrs2.toFixed(1)+" yr avg hold"}</span>
                 </div>}
               </div>
@@ -11037,7 +11037,7 @@ function WeeklyReview(){
                   onMouseEnter={function(e){e.currentTarget.style.background=sig.color+"15"}}
                   onMouseLeave={function(e){e.currentTarget.style.background=sig.color+"0a"}}>
                   <div style={{width:30,height:30,borderRadius:_isBm?0:8,background:sig.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-                    <IC name={sig.icon} size={13} color={sig.color}/>
+                    <IC name={sig.icon} size={14} color={sig.color}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,lineHeight:1.35,marginBottom:4}}>{sig.title}</div>
@@ -11314,9 +11314,9 @@ function WeeklyReview(){
                 </div>
                 <div style={{display:"flex",gap:6,alignItems:"center"}}>
                   <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="gear" size={9} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
+                    <IC name="gear" size={10} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
                   </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={11} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={12} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
                 </div>
               </div>
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
@@ -11349,7 +11349,7 @@ function WeeklyReview(){
                 </a>})}
               </div>}
               {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
-              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
+              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
             </div>
           </div>})()}
       </div>})()}
@@ -11476,7 +11476,7 @@ function WeeklyReview(){
         {/* Step buttons */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:11,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
-            {s.done?<IC name="check" size={9} color={K.grn}/>:<IC name={s.icon} size={9} color={s.color}/>}{s.label}</button>})}</div>
+            {s.done?<IC name="check" size={10} color={K.grn}/>:<IC name={s.icon} size={10} color={s.color}/>}{s.label}</button>})}</div>
       </div>})()}
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
       var held=filtered.filter(function(c){var p=c.position||{};return p.shares>0&&p.avgCost>0&&p.currentPrice>0});
@@ -11556,7 +11556,7 @@ function WeeklyReview(){
         showToast("Refreshing fundamentals…","info",3000);
         toRefresh.forEach(function(c2,i){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},i*800)});
       }} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,cursor:"pointer",padding:"4px 10px",display:"flex",alignItems:"center",gap:4,fontSize:10,color:K.dim,fontFamily:fm}}>
-        <IC name="refresh" size={9} color={K.dim}/> Refresh fundamentals
+        <IC name="refresh" size={10} color={K.dim}/> Refresh fundamentals
       </button>}
     </div>}
 
@@ -11703,7 +11703,7 @@ function WeeklyReview(){
                   :<span style={{fontSize:11,color:K.bdr,fontFamily:fm}}>{"—"}</span>}
               </div>})}
             {!isMobile&&<div style={{width:28,display:"flex",justifyContent:"flex-end"}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>}
           </div>})}
 
@@ -11757,7 +11757,7 @@ function WeeklyReview(){
                 :<div style={{fontSize:15,fontWeight:700,color:ret!=null?(ret>=0?K.grn:K.red):K.dim,fontFamily:fm}}>{ret!=null?(ret>=0?"+":"")+ret.toFixed(1)+"%":"—"}</div>}
               {!dashSet.businessMode&&(cc._dayChangePct||0)!==0&&<div style={{fontSize:11,fontWeight:600,color:(cc._dayChangePct||0)>=0?K.grn:K.red,fontFamily:fm}}>{(cc._dayChangePct||0)>=0?"+":""}{(cc._dayChangePct||0).toFixed(2)}% today</div>}
               <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginTop:1}}>{weight>0?weight.toFixed(1)+"% alloc":"—"}</div></div>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
           </div>}
           return<div key={cc.id} style={{display:"flex",alignItems:"center",padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer",transition:"background .1s",gap:0}} onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
@@ -11828,12 +11828,12 @@ function WeeklyReview(){
           </div>}
           {/* Investment style + Moat type micro-badges — hidden on mobile */}
           {!isMobile&&c.investStyle&&STYLE_MAP[c.investStyle]&&<div style={{display:"flex",gap:4,marginBottom:8}}>
-            <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={8} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
+            <span style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,fontWeight:600,color:STYLE_MAP[c.investStyle].color,background:STYLE_MAP[c.investStyle].color+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}><IC name={STYLE_MAP[c.investStyle].icon} size={10} color={STYLE_MAP[c.investStyle].color}/>{STYLE_MAP[c.investStyle].label}</span></div>}
           {!isMobile&&function(){var mt=c.moatTypes||{};var active=MOAT_TYPES.filter(function(t){return mt[t.id]&&mt[t.id].active});
             if(active.length===0)return null;
             return<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
               {active.slice(0,4).map(function(t){return<span key={t.id} style={{display:"inline-flex",alignItems:"center",gap:3,fontSize:10,color:t.color,background:t.color+"10",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>
-                <IC name={t.icon} size={8} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
+                <IC name={t.icon} size={10} color={t.color}/>{t.label.split(" ")[0]}</span>})}</div>}()}
           {/* Progress Path — hidden on mobile */}
           {!isMobile&&(function(){var sec=parseThesis(c.thesisNote);var steps=[
             {id:"thesis",label:"Thesis",done:c.thesisNote&&c.thesisNote.trim().length>20,color:K.grn},
@@ -11876,7 +11876,7 @@ function WeeklyReview(){
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}}>
               <CoLogo domain={it.domain} ticker={it.ticker} size={20}/>
               <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,width:44,flexShrink:0}}>{it.ticker}</span>
-              <div style={{display:"flex",gap:2,flexShrink:0}}>{[1,2,3,4,5,6].map(function(s2){return<svg key={s2} width="13" height="13" viewBox="0 0 12 12"><polygon points="6,0.5 7.8,4.2 12,4.7 8.8,7.5 9.7,11.5 6,9.3 2.3,11.5 3.2,7.5 0,4.7 4.2,4.2" fill={s2<=it.m.stars?it.m.color:K.bdr} stroke={s2<=it.m.stars?it.m.color:K.bdr} strokeWidth="0.5"/></svg>})}</div>
+              <div style={{display:"flex",gap:2,flexShrink:0}}>{[1,2,3,4,5,6].map(function(s2){return<svg key={s2} width="14" height="14" viewBox="0 0 12 12"><polygon points="6,0.5 7.8,4.2 12,4.7 8.8,7.5 9.7,11.5 6,9.3 2.3,11.5 3.2,7.5 0,4.7 4.2,4.2" fill={s2<=it.m.stars?it.m.color:K.bdr} stroke={s2<=it.m.stars?it.m.color:K.bdr} strokeWidth="0.5"/></svg>})}</div>
               <span style={{fontSize:11,fontWeight:600,color:it.m.color,fontFamily:fm,flexShrink:0}}>{it.m.label}</span>
             </div>
             {it.m.stars<6&&<span style={{fontSize:11,color:K.dim,flex:1,minWidth:isMobile?"100%":0,paddingLeft:isMobile?34:0,lineHeight:1.5}}>{nextSteps[it.m.label]||""}</span>}
@@ -11900,7 +11900,7 @@ function WeeklyReview(){
           <div style={{fontSize:13,color:K.mid,lineHeight:1.6}}>{"\u201cAcknowledging what you don\u2019t know is the dawning of wisdom.\u201d"} {filtered.length} {filtered.length===1?"company":"companies"} parked here.{stale.length>0?" \u2014 "+stale.length+" have been here 6+ months. Worth a second look?":""}</div>
         </div>
         {stale.length>0&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-          <IC name="clock" size={13} color={K.amb}/>
+          <IC name="clock" size={14} color={K.amb}/>
           <span style={{fontSize:13,color:K.amb,fontFamily:fm,fontWeight:600}}>{stale.length} entr{stale.length===1?"y":"ies"} older than 6 months</span>
           <span style={{fontSize:12,color:K.dim,flex:1}}>Has your understanding changed? Consider reconsidering.</span>
         </div>}
@@ -12171,7 +12171,7 @@ function WeeklyReview(){
             <CoLogo domain={sig.domain} ticker={sig.ticker} size={18}/>
             <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{sig.ticker}</span>
             <span style={{fontSize:11,color:K.mid,fontFamily:fm,flex:1}}>{sig.label}</span>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
           </div>;})}
         </div>}
       </div>
@@ -12244,7 +12244,7 @@ function WeeklyReview(){
                   <div style={{fontSize:11,color:K.dim,marginTop:2,lineHeight:1.3}}>{a.sub}</div>
                 </div>
                 <div style={{flexShrink:0,width:20,height:20,borderRadius:"50%",background:a.color+"15",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
               </div>;
             })}
@@ -12262,13 +12262,13 @@ function WeeklyReview(){
       {/* ── Quarterly letter notification ── */}
       {hasUnreadLetter&&<div style={{margin:"12px 16px 0",padding:"14px 16px",background:"linear-gradient(135deg,#D4AF3710,#D4AF3705)",border:"1px solid #D4AF3730",borderRadius:_isBm?0:14,cursor:"pointer",display:"flex",alignItems:"center",gap:12}} onClick={function(){var now=new Date();var q=Math.floor(now.getMonth()/3);var y=now.getFullYear();if(q===0){q=4;y--;}setShowQLetter("Q"+q+"-"+y)}}>
         <div style={{width:38,height:38,borderRadius:_isBm?0:10,background:"#D4AF3720",border:"1px solid #D4AF3740",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,7 12,13 2,7"/></svg>
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:13,fontWeight:700,color:"#D4AF37",fontFamily:fm,marginBottom:1}}>Your quarterly letter is ready</div>
           <div style={{fontSize:12,color:K.dim}}>Tap to read your owner's report</div>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><polyline points="9 18 15 12 9 6"/></svg>
       </div>}
 
       {/* ── Portfolio snapshot ── */}
@@ -12427,7 +12427,7 @@ function WeeklyReview(){
         <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:4}}>Log</div>
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Capture a decision or save something to read</div>
         <div style={{display:"flex",gap:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:3,marginBottom:20}}>
-          {types.map(function(t){var act=logType===t.id;return<button key={t.id} onClick={function(){setLogType(t.id);setSaved(false)}} style={{flex:1,padding:"9px 0",borderRadius:_isBm?0:8,background:act?K.acc:"transparent",border:"none",color:act?"#fff":K.mid,fontSize:14,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IC name={t.icon} size={13} color={act?"#fff":K.mid}/>{t.l}</button>})}
+          {types.map(function(t){var act=logType===t.id;return<button key={t.id} onClick={function(){setLogType(t.id);setSaved(false)}} style={{flex:1,padding:"9px 0",borderRadius:_isBm?0:8,background:act?K.acc:"transparent",border:"none",color:act?"#fff":K.mid,fontSize:14,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><IC name={t.icon} size={14} color={act?"#fff":K.mid}/>{t.l}</button>})}
         </div>
       </div>
 
@@ -12817,7 +12817,7 @@ function WeeklyReview(){
             if(!highlight)return null;
             return<div style={{background:"linear-gradient(135deg,"+K.grn+"08,"+K.acc+"05)",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,padding:"18px 20px",marginBottom:16}}>
               <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:hlColor,fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill={hlColor}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={hlColor}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 {"Highlight of the Quarter"}
               </div>
               <div style={{fontSize:14,color:K.txt,lineHeight:1.78,fontFamily:fb}}>{highlight}</div>
@@ -12859,7 +12859,7 @@ function WeeklyReview(){
           <div style={{fontSize:13,color:K.dim,fontStyle:"italic",marginTop:24,marginBottom:28,lineHeight:1.8,fontFamily:fb}}>{qRevs.length>=10?"Exceptional discipline. Your process is your edge \u2014 and it\u2019s compounding.":qRevs.length>=6?"Strong quarter. Consistency is the most underrated investment skill.":qRevs.length>=3?"Solid start. The investors who outperform aren\u2019t smarter \u2014 they\u2019re more disciplined.":"Every journey starts somewhere. Build the weekly habit next quarter."}</div>
           {/* Actions */}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"2px solid "+K.txt,paddingTop:14}}>
-            <button onClick={sendQLEmail} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
+            <button onClick={sendQLEmail} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>Email</button>
             <button onClick={exportPDF} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}><IC name="file" size={12} color={K.mid}/>Export PDF</button>
             <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:13})}>Close</button></div>
         </div></div>})()}
@@ -12916,7 +12916,7 @@ function WeeklyReview(){
         {/* Back to portfolio */}
         <div style={{padding:"18px 16px 14px",borderBottom:"1px solid "+K.bdr}}>
           <button onClick={function(){setSelId(null);setSubPage(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.dim,cursor:"pointer",padding:0,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:12,letterSpacing:0.2}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             {sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too Hard":"Portfolio"}
           </button>
           {/* Company mini-header */}
@@ -12952,7 +12952,7 @@ function WeeklyReview(){
             }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.mid,transition:"all .15s"}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10";e.currentTarget.style.color=K.acc}}
             onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid}}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d={sec2.icon}/>
               </svg>
               <span style={{fontSize:12,fontWeight:500,fontFamily:fm}}>{sec2.label}</span>
@@ -12962,11 +12962,11 @@ function WeeklyReview(){
         {/* Quick actions */}
         <div style={{padding:"10px 12px",borderTop:"1px solid "+K.bdr,display:"flex",flexDirection:"column",gap:6}}>
           <button onClick={function(){setModal({type:"position",id:sel.id})}} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 10px",background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:7,color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:500}}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             Update position
           </button>
           <button onClick={function(){setModal({type:"thesis"})}} style={{display:"flex",alignItems:"center",gap:7,padding:"7px 10px",background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:7,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Edit thesis
           </button>
         </div>
@@ -12977,7 +12977,7 @@ function WeeklyReview(){
     {!isMobile&&(function(){
       // Build crumb trail from current state
       var crumbs=[];
-      var sep=<svg key="sep" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>;
+      var sep=<svg key="sep" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>;
 
       // Root crumb — always present
       var rootLabel=sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too-Hard Pile":"Portfolio";
@@ -13023,7 +13023,7 @@ function WeeklyReview(){
       return<div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.bg,position:"sticky",top:_isBm?0:56,zIndex:40,minHeight:30}}>
         {/* Home icon */}
         <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Portfolio home">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </button>
         {crumbs}
       </div>;
@@ -13042,7 +13042,7 @@ function WeeklyReview(){
             {avatarUrl
               ?<img src={avatarUrl} style={{width:56,height:56,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
               :<div style={{width:56,height:56,borderRadius:"50%",background:K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:K.acc,fontWeight:700,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-            <div style={{position:"absolute",bottom:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={8} color={K.dim}/></div>
+            <div style={{position:"absolute",bottom:0,right:0,background:K.card,border:"1px solid "+K.bdr,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center"}}><IC name="edit" size={10} color={K.dim}/></div>
             <input ref={avatarFileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleAvatarUpload}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
@@ -13254,7 +13254,7 @@ function WeeklyReview(){
           <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts. Drag to reorder.</div>
           {FAB_ALL.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
             <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <IC name={s.icon} size={13} color={s.color}/>
+              <IC name={s.icon} size={14} color={s.color}/>
             </div>
             <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{s.label}</span>
             <div style={{width:18,height:18,borderRadius:_isBm?0:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
@@ -13363,7 +13363,7 @@ function OnboardingFlow(p){
         {path:"M9 11l3 3L22 4 M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11",c:K.blue,t:"Pick 2 numbers to check at the next earnings report"}
       ].map(function(r,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"7px 0",borderBottom:i<2?"1px solid "+K.bdr+"40":"none"}}>
         <div style={{width:26,height:26,borderRadius:_isBm?0:8,background:r.c+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={r.c} strokeWidth="2" strokeLinecap="round"><path d={r.path}/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={r.c} strokeWidth="1.8" strokeLinecap="round"><path d={r.path}/></svg>
         </div>
         <span style={{fontSize:12,color:K.mid,lineHeight:1.55,paddingTop:4}}>{r.t}</span>
       </div>})}
@@ -13423,13 +13423,13 @@ function OnboardingFlow(p){
         {profiles.map(function(prof){var isSel=oStyle===("profile_"+prof.id);
           return<button key={prof.id} onClick={function(){setOStyle("profile_"+prof.id)}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:_isBm?0:10,border:"2px solid "+(isSel?prof.color:K.bdr),background:isSel?prof.color+"10":"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s",width:"100%"}}>
             <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:prof.color+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={prof.color} strokeWidth="2" strokeLinecap="round"><path d={prof.icon}/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={prof.color} strokeWidth="1.8" strokeLinecap="round"><path d={prof.icon}/></svg>
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{prof.name} <span style={{fontSize:10,color:K.dim,fontWeight:400}}>· {prof.fund}</span></div>
               <div style={{fontSize:11,color:K.dim,marginTop:1}}>{prof.tagline}</div>
             </div>
-            {isSel&&<div style={{width:18,height:18,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>}
+            {isSel&&<div style={{width:18,height:18,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg></div>}
           </button>;
         })}
       </div>
@@ -13470,7 +13470,7 @@ function OnboardingFlow(p){
       <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>How do you invest in this?</label>
       <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
         {INVEST_STYLES.map(function(st){var isSel=oStyle===st.id;return<button key={st.id} onClick={function(){setOStyle(isSel?"":st.id)}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"5px 11px",borderRadius:_isBm?0:6,border:"1px solid "+(isSel?st.color+"60":K.bdr),background:isSel?st.color+"15":"transparent",color:isSel?st.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isSel?600:400,transition:"all .15s"}}>
-          <IC name={st.icon} size={9} color={isSel?st.color:K.dim}/>{st.label}</button>})}
+          <IC name={st.icon} size={10} color={isSel?st.color:K.dim}/>{st.label}</button>})}
       </div>
       {oStyle&&STYLE_MAP[oStyle]&&<div style={{fontSize:11,color:K.dim,marginTop:6,lineHeight:1.5}}>{STYLE_MAP[oStyle].desc}</div>}
     </div>}
@@ -13589,7 +13589,7 @@ function OnboardingFlow(p){
       <div style={{textAlign:"center",marginBottom:22}}>
         <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
           <div style={{width:52,height:52,borderRadius:_isBm?0:16,background:K.grn+"15",border:"1px solid "+K.grn+"30",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
         </div>
         <h2 style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,margin:"0 0 6px",letterSpacing:"-0.3px"}}>{"You’re set up."}</h2>
