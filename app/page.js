@@ -1514,9 +1514,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
 
   // ── Modals ─────────────────────────────────────────────────
-  function AddModal(){var _f=useState({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:sideTab==="watchlist"?"watchlist":sideTab==="toohard"?"toohard":"portfolio",investStyle:"",purchaseDate:""}),f=_f[0],setF=_f[1];
+  function AddModal(){
+    var _defaultStatus=sideTab==="watchlist"?"watchlist":sideTab==="toohard"?"toohard":"portfolio";
+    var _f=useState(function(){try{var d=localStorage.getItem("ta-add-draft");if(d){var p=JSON.parse(d);return Object.assign({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:_defaultStatus,investStyle:"",purchaseDate:""},p)}}catch(e){}return{ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:_defaultStatus,investStyle:"",purchaseDate:""}}),f=_f[0],setF=_f[1];
     var _ls=useState("idle"),ls=_ls[0],setLs=_ls[1];var _lm=useState(""),lm=_lm[0],setLm=_lm[1];var tmr=useRef(null);
-    var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
+    var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;try{localStorage.setItem("ta-add-draft",JSON.stringify(n))}catch(e){}return n})};
     async function doLookup(t){setLs("loading");setLm("");try{var r=await lookupTicker(t);
       if(r&&r.error){setLs("error");setLm(r.error)}
       else if(r&&r.name){
@@ -1530,13 +1532,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(t.length>=2&&t.length<=8&&/^[A-Za-z.]+$/.test(t)){setLs("idle");tmr.current=setTimeout(function(){doLookup(t)},800)}else{setLs("idle");setLm("")}}
     function submit(){if(!f.ticker.trim()||!f.name.trim())return;if(tmr.current)clearTimeout(tmr.current);
       var nc={id:nId(cos),ticker:f.ticker.toUpperCase().trim(),name:f.name.trim(),sector:f.sector.trim(),industry:f._industry||"",domain:f.domain.trim(),irUrl:f.irUrl.trim(),earningsDate:f.earningsDate||"TBD",earningsTime:f.earningsTime,thesisNote:f.thesis?f.thesis.trim():"",kpis:[],docs:[],earningsHistory:[],researchLinks:[],decisions:[],thesisReviews:[],targetPrice:f._targetPrice?parseFloat(f._targetPrice):0,position:{shares:parseFloat(f._shares)||0,avgCost:parseFloat(f._avgCost)||0,currentPrice:f._price||0},conviction:0,convictionHistory:[],status:f.status||"portfolio",investStyle:f.investStyle||"",tooHardReason:f._tooHardReason||"",parkedAt:f.status==="toohard"?new Date().toISOString().split("T")[0]:"",lastDiv:f._lastDiv||0,divPerShare:f._divPerShare||f._lastDiv||0,divFrequency:f._divFrequency||(f._lastDiv>0?"quarterly":"none"),exDivDate:f._exDivDate||"",_divChecked:true,lastChecked:null,notes:f._watchNote||"",earningSummary:null,sourceUrl:null,sourceLabel:null,moatTypes:{},pricingPower:null,morningstarMoat:"",moatTrend:"",thesisVersions:[],thesisUpdatedAt:"",addedAt:new Date().toISOString(),purchaseDate:f.purchaseDate||"",description:f._description||"",ceo:f._ceo||"",employees:f._employees||0,country:f._country||"",exchange:f._exchange||"",ipoDate:f._ipoDate||"",mktCap:f._mktCap||0};
+      try{localStorage.removeItem("ta-add-draft")}catch(e){}
       setCos(function(p){return p.concat([nc])});setSelId(nc.id);setDetailTab("dossier");if(f.status==="portfolio"){setGuidedSetup(nc.id)};
       // Contrarian badge — added while down 20%+
       var _p=nc.position;if(_p.currentPrice>0&&_p.avgCost>0&&((_p.currentPrice-_p.avgCost)/_p.avgCost)<=-0.2){checkMilestone("contrarian","⚔️ Contrarian move — bought during a 20%+ drawdown!")}
       
       setModal(null)}
     useEffect(function(){return function(){if(tmr.current)clearTimeout(tmr.current)}},[]);
+    var hasDraft=!!(f.ticker||f.name||f.thesis);
     return<Modal title="Add Company" onClose={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}} K={K}>
+      {hasDraft&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"8px 12px",background:K.acc+"0d",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:8}}>
+        <div style={{fontSize:12,color:K.acc,fontFamily:fm}}>{"\uD83D\uDCBE Draft restored — your progress was saved"}</div>
+        <button onClick={function(){try{localStorage.removeItem("ta-add-draft")}catch(e){}setF({ticker:"",name:"",sector:"",earningsDate:"",earningsTime:"AMC",domain:"",irUrl:"",thesis:"",status:_defaultStatus,investStyle:"",purchaseDate:""});setLs("idle");setLm("")}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>Clear draft</button>
+      </div>}
       <div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"140px 1fr",gap:"0 16px"}}><div><Inp label="Ticker" value={f.ticker} onChange={onTicker} placeholder="AAPL · RY.TO · VOD.L" K={K} spellCheck={false} autoCorrect="off" autoComplete="off"/>
         {ls==="idle"&&!lm&&<div style={{fontSize:10,color:K.dim,marginTop:-10,marginBottom:10,lineHeight:1.5,fontFamily:fm}}>US: AAPL · Canada: RY.TO · UK: VOD.L · Germany: SAP.DE</div>}
         {ls!=="idle"&&<div style={{fontSize:12,color:ls==="loading"?K.dim:ls==="done"?K.grn:K.amb,marginTop:-10,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
