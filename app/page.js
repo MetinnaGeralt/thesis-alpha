@@ -1124,7 +1124,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }catch(e){console.warn("Brief news load error:",e)}
     setBriefNewsLoading(false)}
     function saveReview(rev){setWeeklyReviews(function(p){var n=[rev].concat(p).slice(0,100);try{localStorage.setItem('ta-weekly-reviews',JSON.stringify(n))}catch(e){}
-    ;updateStreak(true);
+    ;var newStrk=(p.length===0?1:(streakData.current||0)+1);var newBest=Math.max(streakData.best||0,newStrk);var sd={current:newStrk,best:newBest};setStreakData(sd);try{localStorage.setItem("ta-streak",JSON.stringify(sd))}catch(e){}
     if(p.length===0)setTimeout(function(){checkMilestone("first_review",String.fromCodePoint(0x1F6E1)+" First weekly review completed! Discipline starts here.");showCelebration(String.fromCodePoint(0x1F6E1)+" First Review","You completed your first weekly conviction check-in. This is how great investors build discipline.",null,"#4ade80")},500);
     return n})}
   function getWeekId(){var d=new Date();var day=d.getDay();var diff=d.getDate()-day+(day===0?-6:1);var mon=new Date(d.setDate(diff));return mon.toISOString().split('T')[0]}
@@ -6073,7 +6073,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <div style={{fontSize:20,marginBottom:8}}>{String.fromCodePoint(0x1F3C6)}</div>
               <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:4}}>All quests complete!</div>
               <div style={{fontSize:12,color:K.dim,marginBottom:12}}>All actions complete! Claim your weekly insight</div>
-              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openQuestChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:14,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
+              <button onClick={function(){setQuestData(function(p){var n=Object.assign({},p,{weekId:getWeekId(),chestClaimed:true});try{localStorage.setItem("ta-quests",JSON.stringify(n))}catch(e){}return n});setTimeout(function(){openChest()},300)}} style={Object.assign({},S.btnP,{padding:"10px 28px",fontSize:14,background:K.acc,borderColor:K.acc})}>Claim Weekly Insight</button></div>}
             {allDone2&&questChestClaimed&&<div style={{marginTop:12,textAlign:"center",padding:"14px",background:K.grn+"06",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8}}>
               <div style={{fontSize:13,color:K.grn,fontWeight:500}}>All actions complete this week ✓</div>
               <div style={{fontSize:11,color:K.dim}}>New actions every Monday</div></div>}
