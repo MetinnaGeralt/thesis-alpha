@@ -164,7 +164,7 @@ var INVESTOR_PROFILES=[
    tagline:"All I want to know is where I am going to die, so I will never go there.",
    focus:"Moat first. Business model classification. Circle of competence. Inversion. The financials confirm — they don't decide.",
    color:"#F59E0B",icon:"castle",
-   dashDefault:"list",
+   dashDefault:"ledger",
    fundCols:["grossMargin","roic","opMargin","netDebtEbitda"],
    listCols:{conviction:true,mastery:true,kpis:true},
    morningPriority:["conv_size","stale_thesis","above_iv"],
@@ -4874,6 +4874,61 @@ function calcMoatFromData(finData,businessModelType){
               </div></div></div>})()}
 
 
+        {/* ── QUALITATIVE CHECKS (Munger's three questions) ── */}
+        {(function(){
+          var coc=c.circleScore||0;
+          var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.dim;
+          var cocLabel=coc===5?"Expert":coc===4?"Deep knowledge":coc===3?"Solid understanding":coc===2?"Know the basics":coc===1?"Barely understand":"Not rated";
+          return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+            {/* 1. Circle of Competence */}
+            <div style={{background:K.card,border:"1px solid "+(coc>0&&coc<3?K.amb+"40":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
+              onClick={function(){var v=parseInt(window.prompt("Circle of competence — "+c.ticker+"\n\nCould you give a one-hour lecture on this industry,\nits economics, and its competitive dynamics?\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:",String(coc||3)));if(!isNaN(v)&&v>=1&&v<=5)upd(c.id,{circleScore:v})}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Circle of Competence</div>
+              <div style={{display:"flex",gap:4,marginBottom:6}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{flex:1,height:6,borderRadius:_isBm?0:3,background:n<=coc?cocColor:K.bdr,transition:"background .2s"}}/>})}</div>
+              <div style={{fontSize:13,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</div>
+              {coc>0&&coc<3&&<div style={{fontSize:10,color:K.amb,marginTop:4,lineHeight:1.5}}>{"Outside your circle? If you can't describe this business clearly, that's information."}</div>}
+              {!coc&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>Click to rate your understanding</div>}
+            </div>
+            {/* 2. Inversion — pre-mortem */}
+            <div style={{background:K.card,border:"1px solid "+(c.inversionNote?K.bdr:K.acc+"20"),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
+              onClick={function(){var v=window.prompt("Inversion: imagine it is 5 years from now and this investment has failed completely.\n\nWhat happened? Be specific.\n\n(Munger: 'Invert, always invert')",c.inversionNote||"");if(v!==null)upd(c.id,{inversionNote:v.trim()})}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Inversion</div>
+              {c.inversionNote
+                ?<div>
+                  <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:4}}>{c.inversionNote.substring(0,120)+(c.inversionNote.length>120?"...":"")}</div>
+                  <div style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:700}}>{"Pre-mortem written \u2713"}</div>
+                </div>
+                :<div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.acc,marginBottom:3}}>Write the pre-mortem</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"\"Invert, always invert.\" Imagine total failure. What happened?"}</div>
+                </div>}
+            </div>
+            {/* 3. Management Quality */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
+              onClick={function(){
+                var grade=window.prompt("Management grade for "+c.ticker+"\n\nA — Exceptional. Capital allocation, integrity, owner-operator mentality.\nB — Competent. Does the job well.\nC — Average. Some concerns.\nD — Poor. Material concerns about honesty or ability.\n\nEnter A/B/C/D:",c.managementGrade||"");
+                if(!grade)return;
+                grade=grade.trim().toUpperCase();
+                if(!"ABCD".includes(grade)||grade.length!==1)return;
+                var note=window.prompt("One line: what makes you rate management "+grade+"?",c.managementNote||"");
+                upd(c.id,{managementGrade:grade,managementNote:note&&note.trim()?note.trim():c.managementNote||""});
+              }}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
+              {c.managementGrade
+                ?<div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
+                    <span style={{fontSize:28,fontWeight:900,color:c.managementGrade==="A"?K.grn:c.managementGrade==="B"?K.acc:c.managementGrade==="C"?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{c.managementGrade}</span>
+                    <span style={{fontSize:11,color:K.dim}}>{c.ceo||"CEO"}</span>
+                  </div>
+                  {c.managementNote&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{c.managementNote}</div>}
+                </div>
+                :<div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>Not graded yet</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"\"The most important quality is integrity.\" — Munger"}</div>
+                </div>}
+            </div>
+          </div>;
+        })()}
         {/* ── 2. THE EVIDENCE ── */}
         <div id="ds-evidence" style={{marginBottom:24}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:10}}>THE EVIDENCE</div>
@@ -9957,6 +10012,8 @@ function WeeklyReview(){
             else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
           }
 
+          var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
+          var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){return s+Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5)},0)/_heldCos2.length/365):0;
           return<div style={{borderBottom:"1px solid "+K.bdr}}>
             <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -9964,6 +10021,10 @@ function WeeklyReview(){
                   <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{"Your Morning Brief"}</div>
                   <div style={{fontSize:11,color:K.dim,marginTop:1}}>{now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase()+" MORNING"}</div>
                 </div>
+                {_avgYrs2>0&&investorProfile==="munger"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:K.grn+"10",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:6}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm}}>{_avgYrs2.toFixed(1)+" yr avg hold"}</span>
+                </div>}
               </div>
               <div style={{background:K.acc,color:"#fff",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:_isBm?0:999,fontFamily:fm,flexShrink:0}}>
                 {sigs.length+" signal"+(sigs.length!==1?"s":"")}
@@ -10230,6 +10291,95 @@ function WeeklyReview(){
             </div>
           </div>})()}
       </div>})()}
+    {/* ── CONVICTION LEDGER VIEW ── */}
+    {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="ledger"&&(function(){
+      var totalVal=filtered.reduce(function(s,cc){var p=cc.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
+      var heldCos=filtered.filter(function(cc){return cc.purchaseDate});
+      var avgYrs=heldCos.length?(heldCos.reduce(function(s,cc){return s+Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5)},0)/heldCos.length/365).toFixed(1):0;
+      var sorted=filtered.slice().sort(function(a,b){var da=a.purchaseDate?Math.ceil((Date.now()-new Date(a.purchaseDate))/864e5):0;var db=b.purchaseDate?Math.ceil((Date.now()-new Date(b.purchaseDate))/864e5):0;return db-da;});
+      return<div style={{marginBottom:28}}>
+        {/* Patience header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,padding:"16px 22px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14}}>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Conviction Ledger</div>
+            <div style={{fontSize:14,color:K.txt,fontFamily:fh,fontWeight:600}}>{"Businesses you own, not stocks you hold"}</div>
+          </div>
+          <div style={{display:"flex",gap:28}}>
+            {Number(avgYrs)>0&&<div style={{textAlign:"right"}}>
+              <div style={{fontSize:26,fontWeight:800,color:Number(avgYrs)>=3?K.grn:Number(avgYrs)>=1?K.amb:K.dim,fontFamily:fm,lineHeight:1}}>{avgYrs}<span style={{fontSize:12,fontWeight:400,color:K.dim}}> yr</span></div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>avg hold time</div>
+            </div>}
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:26,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{filtered.length}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>businesses</div>
+            </div>
+          </div>
+        </div>
+        {sorted.map(function(cc,ci){
+          var pos=cc.position||{};
+          var days=cc.purchaseDate?Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5):0;
+          var holdLabel=days>365?(days/365).toFixed(1)+"yr":days>30?Math.floor(days/30)+"mo":days>0?days+"d":"—";
+          var moatObjs=Object.keys(cc.moatTypes||{}).filter(function(k){return cc.moatTypes[k]&&cc.moatTypes[k].active}).map(function(k){return MOAT_TYPES.find(function(t){return t.id===k})}).filter(Boolean);
+          var sec=parseThesis(cc.thesisNote||"");
+          var riskLine=sec.risks?sec.risks.split(".")[0].trim().substring(0,120):null;
+          var convColor=cc.conviction>=7?K.grn:cc.conviction>=4?K.amb:cc.conviction>0?K.red:K.dim;
+          var coc=cc.circleScore||0;
+          var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.bdr;
+          var weight=totalVal>0&&pos.shares>0&&pos.currentPrice>0?(pos.shares*pos.currentPrice/totalVal*100):0;
+          var borderColor=coc>0&&coc<3?K.amb+"50":K.bdr;
+          return<div key={cc.id} style={{background:K.card,border:"1px solid "+borderColor,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:10,cursor:"pointer",transition:"all .15s"}}
+            onClick={function(){setSelId(cc.id);setDetailTab("dossier")}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"04";e.currentTarget.style.borderColor=K.acc+"40"}}
+            onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.borderColor=borderColor}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
+              <div style={{flexShrink:0,textAlign:"center",width:44}}>
+                <CoLogo domain={cc.domain} ticker={cc.ticker} size={32}/>
+                {days>0&&<div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,marginTop:3}}>{holdLabel}</div>}
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+                  <span style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fm}}>{cc.ticker}</span>
+                  <span style={{fontSize:12,color:K.dim}}>{cc.name}</span>
+                  {moatObjs.slice(0,2).map(function(mt){return<span key={mt.id} style={{fontSize:9,fontWeight:700,color:mt.color,background:mt.color+"12",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}>{mt.label}</span>})}
+                  {cc.managementGrade&&<span style={{fontSize:9,fontWeight:700,color:cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.amb:K.red,background:(cc.managementGrade==="A"?K.grn:cc.managementGrade==="B"?K.amb:K.red)+"10",padding:"2px 7px",borderRadius:_isBm?0:3,fontFamily:fm}}>{"Mgmt "+cc.managementGrade}</span>}
+                </div>
+                {riskLine
+                  ?<div style={{fontSize:12,color:K.mid,fontStyle:"italic",lineHeight:1.6,marginBottom:7}}>{"Bear case: "+riskLine+(sec.risks&&sec.risks.length>120?"...":"")}</div>
+                  :cc.thesisNote
+                    ?<div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:7}}>{sec.core?sec.core.substring(0,110)+(sec.core.length>110?"...":""):"Write your bear case in the risks section."}</div>
+                    :<div style={{fontSize:11,color:K.dim,fontStyle:"italic",marginBottom:7}}>No thesis — what do you own this for?</div>}
+                <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:5}}>
+                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Circle</span>
+                    <div style={{display:"flex",gap:2}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{width:7,height:7,borderRadius:_isBm?1:"50%",background:n<=coc?cocColor:K.bdr}}/>})}</div>
+                    {!coc&&<button onClick={function(e){e.stopPropagation();var v=parseInt(window.prompt("Circle of competence — "+cc.ticker+"\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:","3"));if(!isNaN(v)&&v>=1&&v<=5)upd(cc.id,{circleScore:v})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>Rate</button>}
+                    {coc>0&&coc<3&&<span style={{fontSize:9,color:K.amb,fontFamily:fm}}>{"Outside comfort zone \u2014 is this in your circle?"}</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Conviction</span>
+                    <span style={{fontSize:12,fontWeight:700,color:convColor,fontFamily:fm}}>{cc.conviction>0?cc.conviction+"/10":"\u2014"}</span>
+                  </div>
+                  {weight>0&&<div style={{display:"flex",alignItems:"center",gap:4}}>
+                    <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>Weight</span>
+                    <span style={{fontSize:12,fontWeight:600,color:K.mid,fontFamily:fm}}>{weight.toFixed(1)+"%"}</span>
+                  </div>}
+                  {cc.inversionNote&&<span style={{fontSize:9,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"20",padding:"1px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>Inversion written</span>}
+                  {!cc.inversionNote&&<button onClick={function(e){e.stopPropagation();setSelId(cc.id);setDetailTab("dossier")}} style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>+ Inversion</button>}
+                </div>
+              </div>
+              <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",height:52}}>
+                <div style={{width:4,height:40,background:K.bg,borderRadius:2,overflow:"hidden",position:"relative"}}>
+                  <div style={{position:"absolute",bottom:0,left:0,right:0,height:cc.conviction>0?(cc.conviction/10*100)+"%":"0%",background:convColor,borderRadius:2,transition:"height .4s"}}/>
+                </div>
+              </div>
+            </div>
+          </div>;
+        })}
+        {filtered.some(function(cc){return !cc.circleScore||!cc.inversionNote||!cc.managementGrade})&&<div style={{marginTop:8,padding:"10px 16px",background:K.acc+"06",border:"1px dashed "+K.acc+"25",borderRadius:_isBm?0:8,fontSize:11,color:K.dim,lineHeight:1.6}}>
+          Open a holding to complete: Circle of Competence rating, Inversion note, Management grade. The three things Munger checks before anything else.
+        </div>}
+      </div>;
+    })()}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {/* ── Owner's Checklist (persistent onboarding) ── */}
     {sideTab==="portfolio"&&filtered.length>0&&!milestones.onboard_dismissed&&(function(){
@@ -10334,7 +10484,7 @@ function WeeklyReview(){
     {/* View toggle */}
     {filtered.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
       <div style={{display:"flex",gap:4}}>
-        {[{v:"fundamentals",label:"Fundamentals",icon:"chart"},{v:"list",label:"Holdings",icon:"file"},{v:"cards",label:"Cards",icon:"overview"}].map(function(opt){var active=dashSet.portfolioView===opt.v||(opt.v==="fundamentals"&&!dashSet.portfolioView);return<button key={opt.v} onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:opt.v});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:active?K.acc+"18":"transparent",color:active?K.acc:K.dim,border:"1px solid "+(active?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+        {[{v:"fundamentals",label:"Fundamentals",icon:"chart"},{v:"list",label:"Holdings",icon:"file"},{v:"ledger",label:"Conviction Ledger",icon:"book"},{v:"cards",label:"Cards",icon:"overview"}].map(function(opt){var active=dashSet.portfolioView===opt.v||(opt.v==="fundamentals"&&!dashSet.portfolioView);return<button key={opt.v} onClick={function(){setDashSet(function(p){var n=Object.assign({},p,{portfolioView:opt.v});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{padding:"5px 10px",fontSize:11,fontFamily:fm,background:active?K.acc+"18":"transparent",color:active?K.acc:K.dim,border:"1px solid "+(active?K.acc+"40":K.bdr),borderRadius:_isBm?0:5,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
           <IC name={opt.icon} size={10} color={active?K.acc:K.dim}/>{opt.label}
         </button>})}
       </div>
