@@ -2639,10 +2639,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{padding:"14px 0",borderBottom:"1px solid "+K.bdr}}>
           <div style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:6}}>Subscription</div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div><div style={{fontSize:14,fontWeight:600,color:plan==="pro"?K.grn:K.txt}}>{plan==="pro"?"Pro Plan":trialActive?"Trial ("+trialDaysLeft+"d left)":"Free Plan"}</div>
-              {plan==="pro"&&<div style={{fontSize:11,color:K.dim,marginTop:2}}>Manage billing, change plan, or cancel</div>}
-              {plan!=="pro"&&<div style={{fontSize:11,color:K.dim,marginTop:2}}>{trialActive?"Upgrade anytime to keep Pro features":"Upgrade to unlock data features"}</div>}</div>
-            {plan==="pro"?<button onClick={function(){openManage()}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>Manage in Stripe</button>
+            <div><div style={{fontSize:14,fontWeight:600,color:effectivePlan==="pro"?K.grn:K.txt}}>{effectivePlan==="pro"?"Pro Plan":trialActive?"Trial ("+trialDaysLeft+"d left)":"Free Plan"}</div>
+              {effectivePlan==="pro"&&<div style={{fontSize:11,color:K.dim,marginTop:2}}>Manage billing, change plan, or cancel</div>}
+              {effectivePlan!=="pro"&&<div style={{fontSize:11,color:K.dim,marginTop:2}}>{trialActive?"Upgrade anytime to keep Pro features":"Upgrade to unlock data features"}</div>}</div>
+            {effectivePlan==="pro"?<button onClick={function(){openManage()}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>Manage in Stripe</button>
               :<button onClick={function(){setModal(null);setShowUpgrade(true);setUpgradeCtx("")}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>Upgrade to Pro</button>}</div></div>
         {/* Logout */}
         <div style={{padding:"14px 0"}}>
@@ -2982,7 +2982,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:bm?"6px 12px":"10px 20px"}}>
-      {plan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
+      {effectivePlan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
         <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
         <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
       :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8}}>
@@ -9222,7 +9222,7 @@ function WeeklyReview(){
             <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
           </div>
           <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
-                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>\uD83D\uDD04 Full Reset (Owner)</button>}
+                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"14px 16px 12px":"18px 24px 14px",borderBottom:"1px solid "+K.bdr}}>
@@ -10901,7 +10901,7 @@ function WeeklyReview(){
                 <IC name="edit" size={10} color={K.dim}/>
               </div>}
             <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
-              <span style={{fontSize:11,color:plan==="pro"?K.grn:K.dim,fontWeight:plan==="pro"?600:400,fontFamily:fm}}>{plan==="pro"?"Pro":"Free"}</span>
+              <span style={{fontSize:11,color:effectivePlan==="pro"?K.grn:K.dim,fontWeight:effectivePlan==="pro"?600:400,fontFamily:fm}}>{effectivePlan==="pro"?"Pro":"Free"}</span>
               {styleLabel&&<span style={{fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm}}>{styleLabel}</span>}
             </div>
           </div>
