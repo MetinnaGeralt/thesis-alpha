@@ -242,7 +242,6 @@ var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JE
 
 export {
   DARK, LIGHT, FOREST, PURPLE, BLOOMBERG, PAYPAL, THESIS_DARK, THESIS_LIGHT, THEMES,
-  fm, fh, fb,
   FOLDERS, SAMPLE,
   METRICS, METRIC_MAP,
   INVEST_STYLES, STYLE_MAP,
@@ -250,6 +249,3 @@ export {
   SUPERINVESTORS, MSTAR_RATINGS,
   KNOWN_MONTHLY,
 };
-// Note: _isThesis, _isBm, _isForest, _isPurple, _isOcean are mutable globals —
-// they stay exported as vars so TrackerApp can update them in place.
-export { _isThesis, _isBm, _isForest, _isPurple, _isOcean };
