@@ -49,6 +49,10 @@ export default function DetailView({
 }) {
   // ── Array prop guards ──
   cos = cos || [];
+  dashSet = dashSet || {};
+  goals = goals || {};
+  library = library || {};
+  cos = cos || [];
 
   var checkSt={};
 if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
