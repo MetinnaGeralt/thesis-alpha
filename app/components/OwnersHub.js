@@ -43,6 +43,7 @@ export default function OwnersHub({
   plan,
   setChestOverlay,
   setShowQLetter,
+  calcMoatFromData,
 }) {
   var _al=React.useState("quality"),activeLens=_al[0],setActiveLens=_al[1];
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
