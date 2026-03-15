@@ -5736,7 +5736,6 @@ function openChest(){
       </div>})()}
     </div>)}
 
-}
 // ═══ ROOT ═══
 export default function App(){
   var _user=useState(null),user=_user[0],setUser=_user[1];
