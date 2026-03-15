@@ -29,7 +29,6 @@ export default function TopBar({
   Inp,
   Sel,
   username,
-  conviction,
   streakData,
   notifs,
   setNotifs,
