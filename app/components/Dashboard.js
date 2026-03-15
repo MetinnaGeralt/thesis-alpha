@@ -81,6 +81,9 @@ export default function Dashboard({
   parseThesis,
   getWeekId,
   toggleEmailNotify,
+  calcMorningSignals,
+  calcAlignmentSignals,
+  buildPrompt,
 }) {
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
