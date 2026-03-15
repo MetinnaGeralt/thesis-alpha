@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS, KNOWN_MONTHLY } from "./constants";
 var NEWS_CATS = [{id:"earnings",label:"Earnings"},{id:"analyst",label:"Analyst"},{id:"macro",label:"Macro"},{id:"company",label:"Company"},{id:"sector",label:"Sector"}];
-import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcMorningSignals, calcAlignmentSignals} from "./utils";
+import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat } from "./utils";
 
 export default function Dashboard({
   cos,
@@ -81,8 +81,17 @@ export default function Dashboard({
   parseThesis,
   getWeekId,
   toggleEmailNotify,
+  calcMorningSignals,
+  calcAlignmentSignals,
+  buildPrompt,
   exportCSV,
 }) {
+  // ── Array prop guards ──
+  briefNews = briefNews || [];
+  cos = cos || [];
+  readingList = readingList || [];
+  weeklyReviews = weeklyReviews || [];
+
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
   var _pr=React.useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
@@ -887,7 +896,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
 
         {/* ── Today's Signals — cross-layer ── */}
         {(function(){
-          var sigs=calcMorningSignals(K, portfolio, library);
+          var sigs=calcMorningSignals(portfolio,library);
           // Re-sort by investor profile priority if set
           if(investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]){
             var profPrio=PROFILE_MAP[investorProfile].morningPriority||[];
@@ -1457,7 +1466,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     {sideTab==="portfolio"&&function(){
       var portCos2=filtered.filter(function(c){return(c.status||"portfolio")==="portfolio"});
       if(portCos2.length<2)return null;
-      var signals=calcAlignmentSignals(K, portCos2);
+      var signals=calcAlignmentSignals(portCos2);
       if(signals.mismatches.length===0&&signals.flags.length===0)return null;
       return<AlignmentWidget
         signals={signals}
