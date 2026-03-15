@@ -12671,7 +12671,6 @@ function openChest(){
               logJournalEntry={logJournalEntry}
               setShowUpgrade={setShowUpgrade} setUpgradeCtx={setUpgradeCtx}
               showToast={showToast}
-              countdownStr={countdownStr} setCountdownStr={setCountdownStr}
               milestones={milestones}
               trialActive={trialActive} trialExpired={trialExpired}
               effectivePlan={effectivePlan}
