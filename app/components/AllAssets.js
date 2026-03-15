@@ -4,31 +4,13 @@ import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, 
 import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat } from "./utils";
 
 export default function AllAssets({
-  cos,
-  page,
-  setPage,
-  setSelId,
-  setDetailTab,
-  setModal,
-  modal,
-  K,
-  fm,
-  fh,
-  fb,
-  isMobile,
-  _isBm,
-  conviction,
-  IC,
-  CoLogo,
-  Modal,
+  cos, page, setPage, setSelId, setDetailTab,
+  K, fm, fh, fb, isMobile, _isBm, conviction,
+  IC, CoLogo, Modal,
   currency,
-  livePrices,
-  setLivePrices,
-  otherAssets,
-  setOtherAssets,
-  netWorthHistory,
-  setNetWorthHistory,
-  setAiModal
+  otherAssets, setOtherAssets,
+  netWorthHistory, setNetWorthHistory,
+  setAiModal,
 }) {
     var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
     var _lmodal=useState(null),lmodal=_lmodal[0],setLmodal=_lmodal[1];
