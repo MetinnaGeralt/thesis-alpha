@@ -40,7 +40,14 @@ export default function TopBar({
   logJournalEntry,
   toggleTheme,
   upd
+  avatarUrl,
+  plan,
+  showProfile,
+  setShowProfile,
+  setShowQLetter,
+  setSideOpen,
 }) {
+  var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
