@@ -52,6 +52,8 @@ export default function DetailView({
   dashSet = dashSet || {};
   goals = goals || {};
   library = library || {};
+  library.items = library.items || [];
+  library.folders = library.folders || [];
   cos = cos || [];
 
   var checkSt={};
