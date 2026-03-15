@@ -822,7 +822,7 @@ function TrackerApp(props){
   var _pr=useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
   // ── Quick-Access FAB ──
   var _fabO=useState(false),fabOpen=_fabO[0],setFabOpen=_fabO[1];
-  var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");return s?JSON.parse(s):["trail","hub","review","add"]}catch(e){return["trail","hub","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
+  var _fabCfg=useState(function(){try{var s=localStorage.getItem("ta-fab-cfg");var p=s?JSON.parse(s):null;return Array.isArray(p)?p:["trail","hub","review","add"]}catch(e){return["trail","hub","review","add"]}}),fabCfg=_fabCfg[0],setFabCfg=_fabCfg[1];
   var _fabCust=useState(false),fabCustomize=_fabCust[0],setFabCustomize=_fabCust[1];
   function saveFabCfg(v){setFabCfg(v);try{localStorage.setItem("ta-fab-cfg",JSON.stringify(v))}catch(e){}}
   // ── Command Palette ──
@@ -5882,7 +5882,7 @@ function openChest(){
         {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
         {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
       ];
-      var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
+      var activeShortcuts=(fabCfg||[]).map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
       return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
         {/* Customize panel */}
         {fabCustomize&&<div style={{background:K.card,border:"1px solid "+K.bdr2,borderRadius:_isBm?0:16,padding:"20px 22px",boxShadow:"0 16px 48px rgba(0,0,0,.35)",width:260,marginBottom:6}} onClick={function(e){e.stopPropagation()}}>
@@ -5891,7 +5891,7 @@ function openChest(){
             <button onClick={function(){setFabCustomize(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:"2px 6px",borderRadius:_isBm?0:6}}>✕</button>
           </div>
           <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts. Drag to reorder.</div>
-          {FAB_ALL.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
+          {FAB_ALL.map(function(s){var on=(fabCfg||[]).indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?(fabCfg||[]).filter(function(x){return x!==s.id}):(fabCfg||[]).length<5?(fabCfg||[]).concat([s.id]):fabCfg;saveFabCfg(next)}}>
             <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={s.icon} size={14} color={s.color}/>
             </div>
@@ -5900,7 +5900,7 @@ function openChest(){
               {on&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
             </div>
           </div>})}
-          <div style={{marginTop:12,fontSize:10,color:K.dim,fontFamily:fm,textAlign:"center"}}>{fabCfg.length}/5 selected</div>
+          <div style={{marginTop:12,fontSize:10,color:K.dim,fontFamily:fm,textAlign:"center"}}>{(fabCfg||[]).length}/5 selected</div>
         </div>}
         {/* Action pills — fan upward when open */}
         {fabOpen&&activeShortcuts.map(function(s,si){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,animation:"fabSlideIn "+(0.06+si*0.04)+"s ease-out both",transformOrigin:"right center"}}>
