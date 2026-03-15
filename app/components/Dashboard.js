@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS, KNOWN_MONTHLY } from "./constants";
 var NEWS_CATS = [{id:"earnings",label:"Earnings"},{id:"analyst",label:"Analyst"},{id:"macro",label:"Macro"},{id:"company",label:"Company"},{id:"sector",label:"Sector"}];
-import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat } from "./utils";
+import {calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcAlignmentSignals, calcMorningSignals} from "./utils";
 
 export default function Dashboard({
   cos,
@@ -81,9 +81,6 @@ export default function Dashboard({
   parseThesis,
   getWeekId,
   toggleEmailNotify,
-  calcMorningSignals,
-  calcAlignmentSignals,
-  buildPrompt,
   exportCSV,
 }) {
   // ── Array prop guards ──
@@ -91,6 +88,16 @@ export default function Dashboard({
   cos = cos || [];
   readingList = readingList || [];
   weeklyReviews = weeklyReviews || [];
+  dashSet = dashSet || {};
+  streakData = streakData || {};
+  milestones = milestones || {};
+  mrMarket = mrMarket || {};
+  library = library || {};
+  briefNews = briefNews || [];
+  cos = cos || [];
+  weeklyReviews = weeklyReviews || [];
+  readingList = readingList || [];
+  notifs = notifs || [];
 
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
