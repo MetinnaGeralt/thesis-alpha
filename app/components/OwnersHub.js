@@ -38,7 +38,7 @@ export default function OwnersHub({
   getLevel,
   questData,
   setQuestData,
-  trialActive
+  trialActive,
   LEVELS,
   plan,
   setChestOverlay,
