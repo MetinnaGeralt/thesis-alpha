@@ -52,8 +52,13 @@ export default function TopBar({
   onLogout,
   sendEarningsEmail,
 }) {
+  // ── Array prop guards ──
+  cos = cos || [];
+  notifs = notifs || [];
+
   var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
+  var _fcs=useState("revenue"),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
       <button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flexShrink:0}}>
@@ -1077,7 +1082,6 @@ function calcMoatFromData(finData,businessModelType){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
-    var _fcs=useState("revenue"),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
     var chartSel=finChartSel,setChartSel=setFinChartSel;
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
