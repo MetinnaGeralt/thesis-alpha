@@ -6,7 +6,6 @@ export default function WeeklyReview({
   K, S, fm, fh, fb, theme, isMobile, _isBm,
   getWeekId, IC, upd, logJournalEntry,
   setShowUpgrade, setUpgradeCtx, showToast,
-  countdownStr, setCountdownStr,
   milestones,
   trialActive, trialExpired, effectivePlan,
 }) {
