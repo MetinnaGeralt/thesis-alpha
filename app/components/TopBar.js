@@ -50,6 +50,7 @@ export default function TopBar({
   setShowNotifs,
   user,
   onLogout,
+  sendEarningsEmail,
 }) {
   var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
