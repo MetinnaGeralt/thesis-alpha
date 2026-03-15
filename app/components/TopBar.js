@@ -46,6 +46,8 @@ export default function TopBar({
   setShowProfile,
   setShowQLetter,
   setSideOpen,
+  showNotifs,
+  setShowNotifs,
 }) {
   var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
