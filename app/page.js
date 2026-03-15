@@ -23,8 +23,6 @@ import DetailView from './components/DetailView';
 import TopBar from './components/TopBar';
 import OwnersHub from './components/OwnersHub';
 import AllAssets from './components/AllAssets';
-import Dashboard from './components/Dashboard';
-import DetailView from './components/DetailView';
 
 // Mutable globals — updated by TrackerApp on each theme change
 var fm = "'JetBrains Mono','SF Mono',monospace";
