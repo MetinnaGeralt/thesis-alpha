@@ -29,7 +29,6 @@ export default function OwnersHub({
   readingList,
   saveRL,
   streakData,
-  conviction,
   library,
   isPro,
   requirePro,
