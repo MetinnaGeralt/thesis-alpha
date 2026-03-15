@@ -12,6 +12,9 @@ export default function WeeklyReview({
   // ── Array prop guards ──
   cos = cos || [];
   weeklyReviews = weeklyReviews || [];
+  streakData = streakData || {};
+  cos = cos || [];
+  weeklyReviews = weeklyReviews || [];
 
   var _saved=React.useState(false),saved=_saved[0],setSaved=_saved[1];
   var trial=null;
