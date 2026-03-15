@@ -44,6 +44,7 @@ export default function OwnersHub({
   setChestOverlay,
   setShowQLetter,
 }) {
+  var _al=React.useState("quality"),activeLens=_al[0],setActiveLens=_al[1];
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var watchlist=cos.filter(function(c){return c.status==="watchlist"});
