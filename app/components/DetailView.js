@@ -38,7 +38,7 @@ export default function DetailView({
   setShowUpgrade,
   setUpgradeCtx,
   showToast,
-  upd
+  upd,
   cSym,
   sideTab,
   setAiModal,
