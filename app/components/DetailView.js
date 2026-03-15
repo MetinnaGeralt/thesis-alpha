@@ -39,6 +39,9 @@ export default function DetailView({
   setUpgradeCtx,
   showToast,
   upd
+  cSym,
+  sideTab,
+  setAiModal,
 }) {
 if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
     var _sm=useState(false),showMore=_sm[0],setShowMore=_sm[1];
