@@ -55,6 +55,7 @@ export default function TopBar({
   // ── Array prop guards ──
   cos = cos || [];
   notifs = notifs || [];
+  streakData = streakData || {};
 
   var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
