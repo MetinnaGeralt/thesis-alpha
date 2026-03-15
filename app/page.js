@@ -8196,7 +8196,7 @@ function WeeklyReview(){
           </div>}
         </div>
       })()}
-ht==="goals"&&(function(){
+      {ht==="goals"&&(function(){
         var portf=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
         var tgt=goals.targetCAGR||10;
         var horizon=goals.horizon||10;
