@@ -93,6 +93,8 @@ export default function Dashboard({
   milestones = milestones || {};
   mrMarket = mrMarket || {};
   library = library || {};
+  library.items = library.items || [];
+  library.folders = library.folders || [];
   briefNews = briefNews || [];
   cos = cos || [];
   weeklyReviews = weeklyReviews || [];
