@@ -9,6 +9,8 @@ export default function WeeklyReview({
   milestones,
   trialActive, trialExpired, effectivePlan,
 }) {
+  var isThesis = theme === "thesis_dark" || theme === "thesis_light";
+  var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
     var today=new Date().getDay();
