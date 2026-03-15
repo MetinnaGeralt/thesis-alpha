@@ -11,6 +11,8 @@ export default function AllAssets({
   otherAssets, setOtherAssets,
   netWorthHistory, setNetWorthHistory,
   setAiModal,
+  cSym,
+  setSellCheckTgt,
 }) {
     var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
     var _lmodal=useState(null),lmodal=_lmodal[0],setLmodal=_lmodal[1];
