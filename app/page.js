@@ -4914,6 +4914,116 @@ function openChest(){
     </div>;
   }
 
+  // ── Sidebar + TopBar ──────────────────────────────────────
+  var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
+  function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
+    if(sideSearch.trim()){var q=sideSearch.toLowerCase();pCos=pCos.filter(function(c){return c.ticker.toLowerCase().indexOf(q)>=0||c.name.toLowerCase().indexOf(q)>=0||(c.sector||"").toLowerCase().indexOf(q)>=0})}
+    if(isMobile&&!sideOpen)return null;
+    function navClick(fn){return function(){fn();if(isMobile)setSideOpen(false)}}
+    return<div>{isMobile&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:299}} onClick={function(){setSideOpen(false)}}/>}
+    <div style={{width:isMobile?300:bm?200:isThesis?268:240,minWidth:isMobile?300:bm?200:isThesis?268:240,background:_isForest?"linear-gradient(180deg, #1a4a00 0%, #235a00 60%, #1a4a00 100%)":K.side,borderRight:"1px solid "+(_isForest?"transparent":K.bdr),height:"100vh",position:isMobile?"fixed":"sticky",top:0,left:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:isMobile?300:1,boxShadow:isMobile?"4px 0 24px rgba(0,0,0,.3)":_isForest?"4px 0 32px rgba(26,74,0,0.4)":isThesis?"4px 0 40px rgba(0,0,0,.2)":"none",transition:"transform .2s ease"}}>
+    <div style={{padding:_isForest?"20px 16px":bm?"10px 14px":isThesis?"22px 20px":"18px 20px",borderBottom:"1px solid "+(_isForest?"rgba(255,255,255,0.12)":sideDark?K.bdr2:K.bdr),display:"flex",alignItems:"center",gap:isThesis?12:10,cursor:"pointer"}} onClick={navClick(function(){setSelId(null)})}><TLogo size={isThesis?30:22} dark={sideDark}/><span style={{fontSize:bm?10:isThesis?15:13,fontWeight:bm?700:isThesis?800:600,color:bm?"#F39F41":sideText,letterSpacing:bm?2:isThesis?"-0.3px":1.5,fontFamily:fm,textTransform:bm?"uppercase":"none"}}>ThesisAlpha</span>{isMobile&&<div style={{flex:1}}/> }{isMobile&&<button onClick={function(){setSideOpen(false)}} style={{background:"none",border:"none",color:sideDim2,fontSize:18,cursor:"pointer",padding:4}}>{"✕"}</button>}</div>
+    {!isMobile&&<div style={{padding:"10px 14px",borderBottom:"1px solid "+(sideDark?K.bdr2:K.bdr)}} onClick={function(e){e.stopPropagation();setCmdOpen(true);setCmdQuery("");setCmdIdx(0)}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,background:sideDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.05)",borderRadius:_isForest?999:isThesis?10:6,padding:"7px 12px",cursor:"text",border:"1px solid "+(_isForest?"rgba(255,255,255,0.15)":sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"),transition:"border-color .15s"}} onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc+"50"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=sideDark?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.07)"}}>
+        <IC name="search" size={14} color={sideDim2}/>
+        <span style={{flex:1,fontSize:12,color:sideDim2,fontFamily:fm}}>Search…</span>
+        <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:_isBm?0:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
+      </div>
+    </div>}
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:bm?11:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="hub"?(_isForest?"rgba(255,255,255,0.18)":bm?"rgba(243,159,65,0.08)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
+      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="ai"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
+    {/* More pages accessible via links, not sidebar */}
+    {/* Plan badge */}
+    <div style={{padding:bm?"6px 12px":"10px 20px"}}>
+      {effectivePlan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
+        <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
+        <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Manage plan</span></div>
+      :trialActive?<div style={{padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <span style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1}}>TRIAL</span>
+          <span style={{fontSize:11,color:trialDaysLeft<=3?K.red:trialDaysLeft<=7?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{trialDaysLeft}d left</span></div>
+        {!trialBonusEarned&&<div>
+          <div style={{display:"flex",gap:3,marginBottom:4}}>{[0,1,2].map(function(i){return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:i<thesisProgress?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{thesisProgress}/{THESIS_UNLOCK} theses {"→"} +{TRIAL_BONUS} days</div></div>}
+        {trialBonusEarned&&<div style={{fontSize:10,color:K.grn,fontFamily:fm}}>{"✓"} Bonus earned — {TRIAL_TOTAL} day trial</div>}
+        <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-ending")}} style={{width:"100%",marginTop:8,padding:"7px 12px",background:K.acc+"12",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,fontSize:11,fontWeight:600,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button></div>
+      :<button onClick={function(){setShowUpgrade(true);setUpgradeCtx(trialExpired?"trial-expired":"")}} style={{width:"100%",padding:"9px 14px",background:"transparent",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:8,fontSize:12,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Upgrade to Pro</button>}</div>
+
+
+    <div style={{padding:"12px 16px",borderTop:"1px solid "+K.bdr,display:"flex",gap:6,flexDirection:"column"}}>
+      {isMobile&&["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.mid,cursor:"pointer",fontSize:12,fontFamily:fm,width:"100%"}}>
+        {isDark?<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}
+        {isDark?"Switch to Light":"Switch to Dark"}</button>}
+      <div style={{display:"flex",gap:6}}>
+        <button style={Object.assign({},S.btnP,{flex:1,padding:"8px",fontSize:12})} onClick={function(){setModal({type:"add"});if(isMobile)setSideOpen(false)}} title="Add holding (N)">+ Add</button>
+        <button style={Object.assign({},S.btn,{padding:"8px 12px",fontSize:12})} onClick={function(){if(requirePro("import")){setModal({type:"csvImport"});if(isMobile)setSideOpen(false)}}} title="Bulk import tickers">Import</button></div></div>
+    {/* ── DAILY QUOTE — floats below buttons ── */}
+    {!isMobile&&!bm&&(function(){
+      var QUOTES=[
+        {q:"The stock market is a device for transferring money from the impatient to the patient.",a:"Warren Buffett"},
+        {q:"It is remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid.",a:"Charlie Munger"},
+        {q:"Know what you own, and know why you own it.",a:"Peter Lynch"},
+        {q:"The best investment you can make is an investment in yourself.",a:"Warren Buffett"},
+        {q:"Invert, always invert. Turn a problem upside down.",a:"Charlie Munger"},
+        {q:"In the short run, the market is a voting machine. In the long run, it is a weighing machine.",a:"Benjamin Graham"},
+        {q:"All I want to know is where I’m going to die, so I’ll never go there.",a:"Charlie Munger"},
+        {q:"Behind every stock is a company. Find out what it is doing.",a:"Peter Lynch"},
+        {q:"Price is what you pay. Value is what you get.",a:"Warren Buffett"},
+        {q:"Go to bed smarter than when you woke up.",a:"Charlie Munger"},
+        {q:"The investor’s chief problem — and even his worst enemy — is likely to be himself.",a:"Benjamin Graham"},
+        {q:"The most important quality for an investor is temperament, not intellect.",a:"Warren Buffett"},
+        {q:"Risk comes from not knowing what you’re doing.",a:"Warren Buffett"},
+        {q:"You only have to do a very few things right in your life so long as you don’t do too many things wrong.",a:"Warren Buffett"},
+        {q:"In the business world, the rearview mirror is always clearer than the windshield.",a:"Warren Buffett"},
+        {q:"The four most dangerous words in investing are: this time it’s different.",a:"John Templeton"},
+        {q:"The big money is not in the buying and the selling, but in the waiting.",a:"Charlie Munger"},
+        {q:"Our favourite holding period is forever.",a:"Warren Buffett"},
+        {q:"A great business at a fair price is superior to a fair business at a great price.",a:"Charlie Munger"},
+        {q:"The job is to find a few intelligent things to do, not to keep up with every damn thing in the world.",a:"Charlie Munger"},
+        {q:"It takes 20 years to build a reputation and five minutes to ruin it.",a:"Warren Buffett"},
+        {q:"Time is the friend of the wonderful company, the enemy of the mediocre.",a:"Warren Buffett"},
+        {q:"I am a better investor because I am a businessman, and a better businessman because I am an investor.",a:"Warren Buffett"},
+        {q:"Never invest in a business you cannot understand.",a:"Warren Buffett"},
+        {q:"Wide diversification is only required when investors do not understand what they are doing.",a:"Warren Buffett"},
+        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
+        {q:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+        {q:"The market is a pendulum that forever swings between unsustainable optimism and unjustified pessimism.",a:"Benjamin Graham"},
+        {q:"Lethargy bordering on sloth remains the cornerstone of our investment style.",a:"Warren Buffett"},
+        {q:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",a:"Warren Buffett"},
+        {q:"We simply attempt to be fearful when others are greedy and to be greedy only when others are fearful.",a:"Warren Buffett"},
+        {q:"Knowing what you don’t know is more useful than being brilliant.",a:"Charlie Munger"},
+        {q:"The difference between successful people and really successful people is that really successful people say no to almost everything.",a:"Warren Buffett"},
+        {q:"I don’t look to jump over 7-foot bars; I look around for 1-foot bars that I can step over.",a:"Warren Buffett"},
+        {q:"Twenty years in this business convinces me that any normal person using the customary three percent of the brain can pick stocks just as well, if not better, than the average Wall Street expert.",a:"Peter Lynch"},
+        {q:"Compound interest is the eighth wonder of the world. He who understands it, earns it; he who doesn’t, pays it.",a:"Albert Einstein"},
+        {q:"Simplicity is the ultimate sophistication.",a:"Leonardo da Vinci"},
+        {q:"The best time to plant a tree was 20 years ago. The second best time is now.",a:"Chinese Proverb"},
+        {q:"The stock market is filled with individuals who know the price of everything, but the value of nothing.",a:"Philip Fisher"},
+        {q:"In investing, what is comfortable is rarely profitable.",a:"Robert Arnott"},
+      ];
+      var now=new Date();
+      var start=new Date(now.getFullYear(),0,0);
+      var dayOfYear=Math.floor((now-start)/864e5);
+      var q=QUOTES[dayOfYear%QUOTES.length];
+      return<div style={{padding:"20px 16px 16px",textAlign:"center",flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+        <style>{"@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');"}</style>
+        <p style={{fontFamily:"'Caveat', cursive",fontSize:13.5,lineHeight:1.65,color:isDark?"rgba(255,255,255,0.5)":"rgba(22,22,29,0.4)",margin:"0 0 10px",letterSpacing:0.2}}>{q.q}</p>
+        <span style={{fontFamily:fm,fontSize:8,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.22)":"rgba(22,22,29,0.25)"}}>{"— "+q.a}</span>
+      </div>;
+    })()}
+    </div></div>}
   return(<div className={bm?"ta-bm":isForest?"ta-forest":theme==="purple"?"ta-purple":theme==="paypal"?"ta-ocean":""} style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden",position:"relative"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo} _isBm={_isBm}/>}{tourStep>0&&<DossierTour/>}
     {/* ── Weekly Insight Overlay ── */}
 
