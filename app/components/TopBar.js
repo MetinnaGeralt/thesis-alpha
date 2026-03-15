@@ -56,6 +56,11 @@ export default function TopBar({
   cos = cos || [];
   notifs = notifs || [];
   streakData = streakData || {};
+  streakData = streakData || {};
+  goals = goals || {};
+  cos = cos || [];
+  weeklyReviews = weeklyReviews || [];
+  readingList = readingList || [];
 
   var unread = (notifs || []).filter(function(n){return !n.read}).length;
   var bm = theme === "bloomberg";
