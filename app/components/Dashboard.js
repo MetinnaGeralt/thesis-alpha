@@ -59,6 +59,7 @@ export default function Dashboard({
   celebrate,
   ownerScore
 }) {
+  var bm = theme === "bloomberg";
 var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
     var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
