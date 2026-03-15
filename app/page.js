@@ -1,7 +1,22 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  DARK, LIGHT, FOREST, PURPLE, BLOOMBERG, PAYPAL, THESIS_DARK, THESIS_LIGHT, THEMES,
+  fm, fh, fb, _isThesis, _isBm, _isForest, _isPurple, _isOcean,
+  FOLDERS, SAMPLE, METRICS, METRIC_MAP,
+  INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
+  SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
+} from './components/constants';
 
+import {
+  ldS, svS, cacheGet, cacheSet,
+  xJSON, stripCite, autoFormat,
+  calcOwnerScore, classifyPortfolio, calcMastery,
+  resolveMetricId, isCustomKpi,
+  toFinnhubSymbol, isIntlTicker, estimatePayMonths,
+  dU, fD, fT, nId, gH, bT, eS,
+} from './components/utils';
 // ═══ SUPABASE AUTH ═══
 var supabase = typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL
   ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) : null;
