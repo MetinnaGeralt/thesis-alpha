@@ -16,6 +16,11 @@ export default function AllAssets({
   buildPrompt,
   calcAlignmentSignals,
 }) {
+  // ── Array prop guards ──
+  cos = cos || [];
+  netWorthHistory = netWorthHistory || [];
+  otherAssets = otherAssets || [];
+
   var _liab=React.useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
   var _nwt=React.useState("summary"),nwTab=_nwt[0],setNwTab=_nwt[1];
   var _at=React.useState({}),assetTargets=_at[0],setAssetTargets=_at[1];
@@ -31,7 +36,7 @@ export default function AllAssets({
     var _step=useState(0),step=_step[0],setStep=_step[1];
     var _editTgt=useState(false),editTgt=_editTgt[0],setEditTgt=_editTgt[1];
     var _tgtDraft=useState({}),tgtDraft=_tgtDraft[0],setTgtDraft=_tgtDraft[1];
-    var _fx=useState({}),localFx=_fx[0],setLocalFx=_fx[1];
+    var _lfx=useState({}),localFx=_lfx[0],setLocalFx=_lfx[1];
 
     var ATYPES=[
       {id:"real_estate",label:"Real Estate",color:"#8b5cf6",icon:"moat"},
