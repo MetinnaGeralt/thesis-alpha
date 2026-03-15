@@ -41,6 +41,7 @@ export default function TopBar({
   toggleTheme,
   upd
 }) {
+  var bm = theme === "bloomberg";
     if(isMobile){return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54,borderBottom:"1px solid "+K.bdr,background:K.card+"f0",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50}}>
       {/* Left — hamburger */}
       <button onClick={function(){setSideOpen(true)}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:0,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:36,height:36,flexShrink:0}}>
