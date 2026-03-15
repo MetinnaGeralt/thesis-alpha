@@ -7704,6 +7704,7 @@ function openChest(){
         </div>
       </div>})()}
     </div>)}
+}
 
 // ═══ ROOT ═══
 export default function App(){
