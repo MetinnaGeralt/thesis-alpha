@@ -896,7 +896,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
 
         {/* ── Today's Signals — cross-layer ── */}
         {(function(){
-          var sigs=calcMorningSignals(portfolio,library);
+          var sigs=calcMorningSignals(K, portfolio,library);
           // Re-sort by investor profile priority if set
           if(investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]){
             var profPrio=PROFILE_MAP[investorProfile].morningPriority||[];
@@ -1466,7 +1466,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     {sideTab==="portfolio"&&function(){
       var portCos2=filtered.filter(function(c){return(c.status||"portfolio")==="portfolio"});
       if(portCos2.length<2)return null;
-      var signals=calcAlignmentSignals(portCos2);
+      var signals=calcAlignmentSignals(K, portCos2);
       if(signals.mismatches.length===0&&signals.flags.length===0)return null;
       return<AlignmentWidget
         signals={signals}
