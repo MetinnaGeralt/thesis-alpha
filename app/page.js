@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
   DARK, LIGHT, FOREST, PURPLE, BLOOMBERG, PAYPAL, THESIS_DARK, THESIS_LIGHT, THEMES,
-  fm, fh, fb, _isThesis, _isBm, _isForest, _isPurple, _isOcean,
   FOLDERS, SAMPLE, METRICS, METRIC_MAP,
   INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
   SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
@@ -17,6 +16,16 @@ import {
   toFinnhubSymbol, isIntlTicker, estimatePayMonths,
   dU, fD, fT, nId, gH, bT, eS,
 } from './components/utils';
+
+// Mutable globals — updated by TrackerApp on each theme change
+var fm = "'JetBrains Mono','SF Mono',monospace";
+var fh = "'Instrument Serif',Georgia,serif";
+var fb = "'DM Sans','Helvetica Neue',sans-serif";
+var _isThesis = true;
+var _isBm = false;
+var _isForest = false;
+var _isPurple = false;
+var _isOcean = false;
 // ═══ SUPABASE AUTH ═══
 var supabase = typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL
   ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) : null;
