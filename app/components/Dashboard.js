@@ -39,7 +39,6 @@ export default function Dashboard({
   weeklyReviews,
   readingList,
   saveRL,
-  conviction,
   assets,
   library,
   briefNews,
