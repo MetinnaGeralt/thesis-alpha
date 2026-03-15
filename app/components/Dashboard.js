@@ -58,7 +58,17 @@ export default function Dashboard({
   showToast,
   celebrate,
   ownerScore
+  autoNotify,
+  toggleAutoNotify,
+  emailNotify,
+  cSym,
+  sideTab,
+  setQLetters,
+  setSellCheckTgt,
+  setAiModal,
+  OWNER_EMAIL,
 }) {
+  var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
 var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
