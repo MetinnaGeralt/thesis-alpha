@@ -9,6 +9,10 @@ export default function WeeklyReview({
   milestones,
   trialActive, trialExpired, effectivePlan,
 }) {
+  // ── Array prop guards ──
+  cos = cos || [];
+  weeklyReviews = weeklyReviews || [];
+
   var _saved=React.useState(false),saved=_saved[0],setSaved=_saved[1];
   var trial=null;
   var isThesis = theme === "thesis_dark" || theme === "thesis_light";
