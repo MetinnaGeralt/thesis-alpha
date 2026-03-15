@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS } from "./constants";
+import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS, KNOWN_MONTHLY } from "./constants";
+var NEWS_CATS = [{id:"earnings",label:"Earnings"},{id:"analyst",label:"Analyst"},{id:"macro",label:"Macro"},{id:"company",label:"Company"},{id:"sector",label:"Sector"}];
 import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat } from "./utils";
 
 export default function Dashboard({
@@ -68,9 +69,22 @@ export default function Dashboard({
   setAiModal,
   OWNER_EMAIL,
   user,
+  plan,
+  setObStep,
+  setTrial,
+  setReadingList,
+  setWeeklyReviews,
+  briefNewsLoading,
+  briefNewsPrefs,
+  saveBriefNewsPrefs,
+  loadBriefNews,
 }) {
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
+  var _pr=React.useState(false),priceLoading=_pr[0],setPriceLoading=_pr[1];
+  var _slc=React.useState(false),showListCfg=_slc[0],setShowListCfg=_slc[1];
+  var _xpf=React.useState(null),xpFloat=_xpf[0],setXpFloat=_xpf[1];
+  var checkSt={};
 var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     // Sector diversification
     var sectors={};filtered.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
