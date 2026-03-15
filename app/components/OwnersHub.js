@@ -51,6 +51,11 @@ export default function OwnersHub({
   weeklyReviews = weeklyReviews || [];
   streakData = streakData || {};
   goals = goals || {};
+  streakData = streakData || {};
+  goals = goals || {};
+  cos = cos || [];
+  weeklyReviews = weeklyReviews || [];
+  readingList = readingList || [];
 
   var _al=React.useState("quality"),activeLens=_al[0],setActiveLens=_al[1];
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
