@@ -39,7 +39,7 @@ export default function TopBar({
   checkMilestone,
   logJournalEntry,
   toggleTheme,
-  upd
+  upd,
   avatarUrl,
   plan,
   showProfile,
