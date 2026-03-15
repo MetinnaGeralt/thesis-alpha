@@ -39,7 +39,12 @@ export default function OwnersHub({
   questData,
   setQuestData,
   trialActive
+  LEVELS,
+  plan,
+  setChestOverlay,
+  setShowQLetter,
 }) {
+  var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var watchlist=cos.filter(function(c){return c.status==="watchlist"});
     var os=calcOwnerScore(cos);var bd=os.breakdown;
