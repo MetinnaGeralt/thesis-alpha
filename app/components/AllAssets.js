@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS } from "./constants";
-import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcAlignmentSignals, calcMoatFromData, buildPrompt, calcAlignmentSignals, calcMoatFromData} from "./utils";
+import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcAlignmentSignals, calcMoatFromData } from "./utils";
 
 export default function AllAssets({
   cos, page, setPage, setSelId, setDetailTab,
@@ -14,11 +14,14 @@ export default function AllAssets({
   cSym,
   setSellCheckTgt,
 }) {
-  // ── Prop guards ──
   cos = cos || [];
   otherAssets = otherAssets || [];
   netWorthHistory = netWorthHistory || [];
 
+  // ── Array prop guards ──
+  cos = cos || [];
+  netWorthHistory = netWorthHistory || [];
+  otherAssets = otherAssets || [];
 
   var _liab=React.useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
   var _nwt=React.useState("summary"),nwTab=_nwt[0],setNwTab=_nwt[1];
