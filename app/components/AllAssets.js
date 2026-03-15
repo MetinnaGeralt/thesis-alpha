@@ -14,6 +14,10 @@ export default function AllAssets({
   cSym,
   setSellCheckTgt,
 }) {
+  var _liab=React.useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
+  var _nwt=React.useState("summary"),nwTab=_nwt[0],setNwTab=_nwt[1];
+  var _at=React.useState({}),assetTargets=_at[0],setAssetTargets=_at[1];
+  var _fx=React.useState({}),fxRates=_fx[0],setFxRates=_fx[1];
     var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
     var _lmodal=useState(null),lmodal=_lmodal[0],setLmodal=_lmodal[1];
     var _form=useState({}),form=_form[0],setForm=_form[1];
