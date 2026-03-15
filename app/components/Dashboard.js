@@ -67,6 +67,7 @@ export default function Dashboard({
   setSellCheckTgt,
   setAiModal,
   OWNER_EMAIL,
+  user,
 }) {
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
@@ -844,7 +845,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
           </div>
           <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
-                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
+                {user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
         </div>}
         {/* ── Header: greeting only, no portfolio value ── */}
         <div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr}}>
