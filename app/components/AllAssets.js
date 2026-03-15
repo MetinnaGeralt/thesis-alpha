@@ -13,6 +13,8 @@ export default function AllAssets({
   setAiModal,
   cSym,
   setSellCheckTgt,
+  buildPrompt,
+  calcAlignmentSignals,
 }) {
   var _liab=React.useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
   var _nwt=React.useState("summary"),nwTab=_nwt[0],setNwTab=_nwt[1];
