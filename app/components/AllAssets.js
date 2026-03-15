@@ -13,10 +13,10 @@ export default function AllAssets({
   setAiModal,
   cSym,
   setSellCheckTgt,
-}) {
-  cos = cos || [];
+}) {  cos = cos || [];
   otherAssets = otherAssets || [];
   netWorthHistory = netWorthHistory || [];
+
 
   // ── Array prop guards ──
   cos = cos || [];
@@ -397,7 +397,7 @@ export default function AllAssets({
         {/* ── Conviction/Position Alignment Banner ── */}
         {(function(){
           if(portCos.length<2)return null;
-          var signals=calcAlignmentSignals(portCos);
+          var signals=calcAlignmentSignals(K, portCos);
           if(signals.mismatches.length===0&&signals.flags.length===0)return null;
           return<AlignmentWidget
             signals={signals}
