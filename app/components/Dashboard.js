@@ -84,6 +84,7 @@ export default function Dashboard({
   calcMorningSignals,
   calcAlignmentSignals,
   buildPrompt,
+  exportCSV,
 }) {
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
