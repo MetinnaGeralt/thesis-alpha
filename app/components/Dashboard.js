@@ -78,6 +78,9 @@ export default function Dashboard({
   briefNewsPrefs,
   saveBriefNewsPrefs,
   loadBriefNews,
+  parseThesis,
+  getWeekId,
+  toggleEmailNotify,
 }) {
   var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
   var bm = theme === "bloomberg";
