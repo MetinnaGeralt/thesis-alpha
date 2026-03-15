@@ -7985,8 +7985,6 @@ function calcMoatFromData(finData,businessModelType){
         </div>
       </div>}
 
-      {
-
       {ht==="reading"&&<div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
           <div style={{fontSize:14,fontWeight:600,color:K.txt}}>Reading List</div>
@@ -22174,8 +22172,6 @@ function calcMoatFromData(finData,businessModelType){
           </div>}
         </div>
       </div>}
-
-      {
 
       {ht==="reading"&&<div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
