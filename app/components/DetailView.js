@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS } from "./constants";
-import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, fmtBig, getValMetricValue, buildPrompt, calcMoatFromData, calcMorningSignals, calcAlignmentSignals} from "./utils";
+import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt} from "./utils";
 
 export default function DetailView({
   cos,
@@ -46,7 +46,6 @@ export default function DetailView({
   saveInvestorProfile,
   setGuidedSetup,
   guidedSetup,
-  exportPDF,
 }) {
   var checkSt={};
 if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
@@ -1641,7 +1640,143 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
 
 
   // ── Conviction/Position Alignment Engine ─────────────────
+  function calcAlignmentSignals(portCos){
+    var held=portCos.filter(function(c){
+      var p=c.position||{};return p.shares>0&&p.currentPrice>0;
+    });
+    if(held.length<2)return{mismatches:[],flags:[],score:100};
 
+    var totalValue=held.reduce(function(s,c){
+      return s+c.position.shares*c.position.currentPrice;
+    },0);
+    if(totalValue<=0)return{mismatches:[],flags:[],score:100};
+
+    var items=held.map(function(c){
+      var val=c.position.shares*c.position.currentPrice;
+      var pct=val/totalValue*100;
+      var conviction=c.conviction||0;
+      var hasThesis=c.thesisNote&&c.thesisNote.trim().length>40;
+      var hasSell=(function(){var s=parseThesis(c.thesisNote);return s.sell&&s.sell.trim().length>10})();
+      var convHistory=c.convictionHistory||[];
+      var trend=convHistory.length>=2
+        ?convHistory[convHistory.length-1].rating-convHistory[convHistory.length-2].rating
+        :0;
+      var staleDays=c.lastReviewed
+        ?Math.ceil((Date.now()-new Date(c.lastReviewed))/864e5)
+        :999;
+      return{c:c,val:val,pct:pct,conviction:conviction,hasThesis:hasThesis,hasSell:hasSell,trend:trend,staleDays:staleDays};
+    }).sort(function(a,b){return b.pct-a.pct});
+
+    // Compute conviction-weighted ideal allocation
+    // Ideal pct for each holding = conviction/sumConviction * 100
+    var sumConv=items.reduce(function(s,i){return s+(i.conviction||1)},0);
+    items=items.map(function(item){
+      var idealPct=sumConv>0?(item.conviction||1)/sumConv*100:100/items.length;
+      var drift=item.pct-idealPct;
+      return Object.assign({},item,{idealPct:idealPct,drift:drift});
+    });
+
+    var mismatches=[];
+    var flags=[];
+
+    items.forEach(function(item){
+      var ticker=item.c.ticker;
+      // High weight, low conviction
+      if(item.pct>=15&&item.conviction>0&&item.conviction<=4){
+        mismatches.push({
+          type:"overweight_low_conviction",
+          severity:"high",
+          color:"#ef4444",
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is "+item.pct.toFixed(1)+"% of your portfolio but conviction is only "+item.conviction+"/10",
+          action:"Review position size or rebuild conviction",
+          aiType:"challenge",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // Biggest position has falling conviction
+      else if(item===items[0]&&item.trend<=-2){
+        mismatches.push({
+          type:"top_holding_falling",
+          severity:"high",
+          color:"#ef4444",
+          ticker:ticker,
+          c:item.c,
+          msg:"Your largest holding "+ticker+" ("+item.pct.toFixed(1)+"%) had conviction drop "+Math.abs(item.trend)+" points last review",
+          action:"Sell discipline check or bear case",
+          aiType:"sell",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // High conviction, undersized
+      else if(item.conviction>=8&&item.pct<5&&items.length>=3){
+        mismatches.push({
+          type:"underweight_high_conviction",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is your highest conviction holding ("+item.conviction+"/10) but only "+item.pct.toFixed(1)+"% of portfolio",
+          action:"Consider whether sizing matches conviction",
+          aiType:"annual",
+          pct:item.pct,
+          conviction:item.conviction
+        });
+      }
+      // Large position, no thesis written
+      if(item.pct>=10&&!item.hasThesis){
+        flags.push({
+          type:"no_thesis",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" is "+item.pct.toFixed(1)+"% of portfolio but has no written thesis",
+          action:"Write a thesis"
+        });
+      }
+      // Falling conviction + no sell criteria
+      if(item.trend<=-2&&!item.hasSell){
+        flags.push({
+          type:"falling_no_sell",
+          severity:"medium",
+          color:K.amb,
+          ticker:ticker,
+          c:item.c,
+          msg:ticker+" conviction is falling but no sell criteria are written",
+          action:"Define your exit before emotion does"
+        });
+      }
+    });
+
+    // ── Sell trigger: flag held positions where conviction just dropped below 5 ──
+    items.forEach(function(item){
+      var c2=item.c;
+      var pos=c2.position||{};
+      var isHeld=pos.shares>0&&pos.currentPrice>0;
+      if(!isHeld)return;
+      if(item.conviction<=0)return; // not set yet, not a trigger
+      var hist=c2.convictionHistory||[];
+      var justDropped=hist.length>=2&&(hist[hist.length-1].rating||hist[hist.length-1].score||0)<=4&&(hist[hist.length-2].rating||hist[hist.length-2].score||0)>4;
+      var hasSellCheck=(c2.decisions||[]).some(function(d){return d._isSellCheck&&d.date&&Math.ceil((Date.now()-new Date(d.date))/864e5)<30});
+      if(justDropped&&!hasSellCheck){
+        flags.push({type:"sell_trigger",severity:"high",color:K.red,ticker:c2.ticker,c:c2,
+          msg:c2.ticker+" conviction just crossed below 5 — time for a sell discipline check",
+          action:"Run sell check",_sellCheck:true});
+      }
+    });
+
+    // Alignment score: 100 minus deductions
+    var deductions=mismatches.filter(function(m){return m.severity==="high"}).length*20
+      +mismatches.filter(function(m){return m.severity==="medium"}).length*10
+      +flags.filter(function(f){return f.severity==="medium"}).length*5;
+    var score=Math.max(0,100-deductions);
+
+    return{mismatches:mismatches,flags:flags,score:score,items:items};
+  }
 
 
 
@@ -1774,57 +1909,218 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
 
 
   // ── Morning Signals Engine — reads all 4 layers ───────────
+  function calcMorningSignals(portfolio, library){
+    var signals = [];
+    var now = Date.now();
 
+    // ── LAYER 1: Ownership × Process — alignment mismatches ──
+    var alignData = calcAlignmentSignals(portfolio);
+    if(alignData.mismatches.length > 0){
+      var top = alignData.mismatches[0];
+      signals.push({
+        layer: "alignment",
+        priority: top.severity === "high" ? 1 : 2,
+        icon: "alert",
+        color: top.color,
+        title: top.ticker + ": conviction/size mismatch",
+        sub: top.msg,
+        action: "AI Review",
+        onAction: {type: "ai", aiType: top.aiType, c: top.c},
+        secondary: "View holding",
+        onSecondary: {type: "go", c: top.c}
+      });
+    }
 
+    // ── LAYER 1b: Conviction LOW + position LARGE ──────────────────
+    portfolio.forEach(function(c){
+      if(!c.conviction||c.conviction===0)return;
+      if(c.conviction>=5)return; // only flag low conviction
+      var pos=c.position||{};
+      if(!(pos.shares>0&&pos.currentPrice>0))return;
+      var val=pos.shares*pos.currentPrice;
+      var totalV=portfolio.reduce(function(s,x){var p=x.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
+      if(totalV<=0)return;
+      var pct=Math.round(val/totalV*100);
+      if(pct<10)return; // only flag meaningful positions
+      var lastReview=c.thesisUpdatedAt?Math.ceil((Date.now()-new Date(c.thesisUpdatedAt))/864e5):null;
+      signals.push({
+        layer:"conv_size",
+        priority:1,
+        icon:"alert",
+        color:K.amb,
+        title:c.ticker+" conviction is your lowest \u2014 it\u2019s also your largest position",
+        sub:"Conviction: "+c.conviction+"/10 \u00b7 Position weight: "+pct+"% \u00b7 "+(lastReview?("Last reviewed: "+lastReview+"d ago"):"Thesis not reviewed"),
+        action:"Review thesis",
+        onAction:{type:"go",c:c,modal:"thesis"},
+        secondary:"Challenge AI",
+        onSecondary:{type:"ai",aiType:"challenge",c:c}
+      });
+    });
 
-  // ── AI Prompt Builder utilities ───────────────────────────
-  function buildPrompt(type, c){
-    var p=c.position||{};
-    var ticker=c.ticker||"this company";
-    var name=c.name||ticker;
-    var _parsedThesis=parseThesis(c.thesisNote);
-    var thesis=c.thesisNote||"No thesis written yet.";
-    var thesisMoat=_parsedThesis.moat||"";
-    var thesisRisk=_parsedThesis.risks||"";
-    var thesisSell=_parsedThesis.sell||"";
-    var conviction=c.conviction||0;
-    var sector=c.sector||"Unknown sector";
-    var style=(c.investStyle||"").replace(/_/g," ");
-    var kpis=(c.kpis||[]).map(function(k){return"- "+k.label+(k.target?" (target: "+k.target+(k.unit||"")+")":"")+(k.results&&k.results.length>0?" — last result: "+k.results[k.results.length-1].value:"")}).join("\n")||"No KPIs defined yet.";
-    var decisions=(c.decisions||[]).slice(-8).map(function(d){return"["+d.date+"] "+d.action.toUpperCase()+": "+(d.reasoning||"No reasoning logged")}).join("\n")||"No decisions logged.";
-    var journal=(c.journalEntries||[]).slice(-5).map(function(e){return"["+((e.date||e.createdAt)||"").slice(0,10)+"] "+(e.title?e.title+": ":"")+((e.content||"").slice(0,300))}).join("\n")||"No journal entries yet.";
-    var convHistory=(c.convictionHistory||[]).slice(-6).map(function(h){return h.date.slice(0,10)+" → "+(h.rating||h.score||0)+"/10"+(h.note?" ("+h.note+")":"")}).join("\n")||("Current: "+conviction+"/10");
-    var posSize=p.shares>0&&p.currentPrice>0?(p.shares*p.currentPrice).toFixed(0):"unknown";
-    var earnDate=c.earningsDate?c.earningsDate:"unknown date";
-    var monthsHeld=p.purchaseDate?Math.round((Date.now()-new Date(p.purchaseDate))/(1000*60*60*24*30))+" months":"unknown duration";
+    // ── LAYER 1c: Stale thesis — post last earnings ──────────────────
+    portfolio.forEach(function(c){
+      if(!c.thesisUpdatedAt)return;
+      var days=Math.ceil((Date.now()-new Date(c.thesisUpdatedAt))/864e5);
+      if(days<90)return;
+      // Only add if not already covered by alignment signal
+      if(signals.some(function(s){return s.layer==="conv_size"&&s.title.indexOf(c.ticker)>=0}))return;
+      signals.push({
+        layer:"stale_thesis",
+        priority:2,
+        icon:"file",
+        color:K.blue||"#3B82F6",
+        title:c.ticker+" thesis hasn\u2019t been reviewed since "+Math.round(days/30)+" months ago",
+        sub:"Thesis health \u00b7 Last updated: "+days+"d ago",
+        action:"Re-read thesis",
+        onAction:{type:"go",c:c},
+        secondary:"Challenge AI",
+        onSecondary:{type:"ai",aiType:"challenge",c:c}
+      });
+    });
 
-    if(type==="challenge"){
-      return"You are a rigorous investment analyst. I am not asking for general research on "+ticker+". I am asking you to challenge MY specific investment case using only my own words below.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nInvestment style: "+style+"\nConviction: "+conviction+"/10\nPosition held for: "+monthsHeld+"\n\nMY THESIS:\n"+thesis+"\n\nMY MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nRISKS I HAVE ACKNOWLEDGED:\n"+(thesisRisk||"Not written.")+"\n\nMY SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\nKPIs I TRACK:\n"+kpis+"\n\nRECENT DECISIONS:\n"+decisions+"\n\n--- YOUR TASK ---\n\n1. Identify the 3 weakest assumptions in my thesis above. Be specific — reference my own words.\n2. Present the strongest possible bear case. What do I most likely have wrong?\n3. List 3 questions I should be able to answer confidently but probably cannot.\n4. Rate my thesis quality 1–10 and explain exactly what would make it stronger.\n\nBe direct. Be uncomfortable. That is the point.";
-    }
-    if(type==="earnings"){
-      return"You are a focused investment analyst preparing a pre-earnings briefing.\n\nIMPORTANT: This is not a generic earnings preview. I want a briefing tailored entirely to my investment thesis and the specific metrics I track.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nEarnings date: "+earnDate+"\nMy conviction: "+conviction+"/10\nPosition value: $"+posSize+"\n\nMY THESIS (why I own this):\n"+thesis+"\n\nTHE SPECIFIC KPIs I TRACK:\n"+kpis+"\n\nMY SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\nRECENT DECISIONS:\n"+decisions+"\n\n--- YOUR TASK ---\n\n1. Based on MY thesis — not consensus estimates — what are the exact 2–3 numbers I must see to maintain conviction?\n2. What single question should I be listening for on the call that most investors will not think to ask?\n3. What result would force me to seriously revisit my sell criteria?\n4. What is the most likely way this earnings report could be misleading — strong headline numbers masking thesis deterioration?\n\nFocus only on what matters for my specific investment case. Ignore what does not.";
-    }
-    if(type==="annual"){
-      return"You are a disciplined long-term investor conducting an annual review. I need you to tell me honestly whether I should still own this.\n\n--- MY ORIGINAL INVESTMENT CASE ---\n\nCompany: "+name+" ("+ticker+")\nHeld for approximately: "+monthsHeld+"\nCurrent conviction: "+conviction+"/10\n\nORIGINAL THESIS:\n"+thesis+"\n\nORIGINAL MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nORIGINAL SELL CRITERIA:\n"+(thesisSell||"Not written.")+"\n\n--- WHAT HAS HAPPENED ---\n\nCONVICTION HISTORY:\n"+convHistory+"\n\nDECISIONS (recent):\n"+decisions+"\n\nJOURNAL ENTRIES (recent):\n"+journal+"\n\nKPIs I TRACK:\n"+kpis+"\n\n--- YOUR TASK ---\n\n1. Based on my own words: is my original thesis intact, weakened, or broken? Be specific.\n2. What is the single most important thing that has changed since I invested?\n3. Am I holding for the right reasons, or showing signs of sunk cost bias? What evidence in my own notes points to which?\n4. If I did not already own this — knowing what I know now — would I buy it today at this price?\n5. What is the most important question I need to answer before my next annual review?\n\nBe honest. I can handle it.";
-    }
-    if(type==="bear"){
-      return"You are a short-seller conducting due diligence on a company I currently own.\n\nIMPORTANT: I believe in this investment. I am asking you to build the strongest possible case AGAINST it — not to make me sell, but to ensure I have genuinely stress-tested my position.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nMy conviction: "+conviction+"/10\n\nMY BULL CASE (what I believe):\n"+thesis+"\n\nMY MOAT ARGUMENT:\n"+(thesisMoat||"Not written.")+"\n\nRISKS I HAVE ALREADY ACKNOWLEDGED:\n"+(thesisRisk||"None logged.")+"\n\n--- YOUR TASK ---\n\nBuild the most compelling bear case for "+ticker+". Structure it as follows:\n\n1. THE CORE BEAR THESIS — 2–3 sentences a short-seller would pitch to their fund.\n2. THE 3 FATAL FLAWS — attack my specific bull case arguments above.\n3. THE PATH TO -50% — what sequence of events gets us there from today?\n4. THE RED FLAGS I AM IGNORING — what signals am I likely rationalising away?\n5. THE QUESTIONS I CANNOT ANSWER — what would I need to disprove to sleep soundly?\n\nDo not be balanced. Be a bear. I already know the bull case.";
-    }
-    if(type==="sell"){
-      return"You are a trusted advisor helping me avoid an emotional investment decision.\n\nIMPORTANT: I am considering selling my position in "+ticker+". Before I act, I want you to challenge whether I am following my own investment framework or acting on emotion.\n\n--- MY INVESTMENT FRAMEWORK ---\n\nCompany: "+name+" ("+ticker+")\nCurrent conviction: "+conviction+"/10\nShares held: "+(p.shares||"unknown")+"\nHeld for: "+monthsHeld+"\n\nMY ORIGINAL THESIS:\n"+thesis+"\n\nMY SELL CRITERIA (written when I was calm and rational):\n"+(thesisSell||"No sell criteria written. This itself is a red flag.")+"\n\nRECENT DECISIONS AND REASONING:\n"+decisions+"\n\nRECENT JOURNAL ENTRIES:\n"+journal+"\n\n--- YOUR TASK ---\n\n1. Review my sell criteria above. Has any of them actually been triggered? Be specific — reference the criteria I wrote.\n2. What is the real reason I am likely considering selling — fear, boredom, recency bias, or a genuine thesis change? What evidence points to which?\n3. Ask me the 3 hardest questions I must answer honestly before I sell.\n4. If my sell criteria have NOT been triggered, what is the cost of selling early?\n5. What would a patient, rational investor do in this situation?\n\nHelp me think clearly — not feel better.";
-    }
-    if(type==="valuation"){
-      var price=p.currentPrice||0;var cost=p.avgCost||0;
-      return"You are a valuation analyst. I am not asking for a price target. I am asking you to stress-test the valuation assumptions embedded in my thesis.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nCurrent price: $"+price.toFixed(2)+"\nMy average cost: $"+cost.toFixed(2)+"\nConviction: "+conviction+"/10\n\nMY THESIS AND MOAT ARGUMENT:\n"+thesis+"\n"+(thesisMoat?("\nMY MOAT ARGUMENT:\n"+thesisMoat):"")+"\n\nKPIs I TRACK:\n"+kpis+"\n\n--- YOUR TASK ---\n\n1. What implicit growth and margin assumptions must be true for the current price to be fair value? Spell them out.\n2. What is the most common valuation mistake investors make with this type of business?\n3. At what price would this become obviously cheap, and what assumptions would have to hold?\n4. What single financial metric would most change your view on fair value if it came in 20% below expectations?\n5. What does my thesis get right about the business that the market may be undervaluing?\n\nBe specific. Use the context I have given you.";
-    }
-    if(type==="macro"){
-      return"You are a macro risk analyst reviewing my single-stock investment through a top-down lens.\n\n--- MY INVESTMENT CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nInvestment style: "+style+"\nConviction: "+conviction+"/10\n\nMY THESIS:\n"+thesis+"\n\nRISKS I HAVE ACKNOWLEDGED:\n"+(thesisRisk||"None logged.")+"\n\n--- YOUR TASK ---\n\n1. What are the 3 macro scenarios (rates, recession, FX, geopolitics, regulation) that would most damage this investment? Be specific to this sector and business model.\n2. Is my thesis explicitly or implicitly dependent on a particular macro environment continuing? Name the assumption.\n3. What would a 200bps rate move in either direction mean for this company specifically?\n4. What is the single biggest exogenous risk I appear to be ignoring?\n5. If I believe in this company's fundamentals but the macro turns against it — what is my playbook?\n\nFocus on risks I have not already named in my thesis.";
-    }
-    if(type==="initiation"){
-      return"You are a senior analyst writing an initiation memo. I am considering adding "+name+" ("+ticker+") to my portfolio.\n\nIMPORTANT: I want you to structure this as a rigorous buy/don't buy framework — not a price target, but a set of questions and thresholds I need to clear before committing capital.\n\n--- MY CONTEXT ---\n\nCompany: "+name+" ("+ticker+")\nSector: "+sector+"\nMy investment style: "+style+"\n\nWHAT I KNOW SO FAR:\n"+(thesis&&thesis.length>20?thesis:"I am still in research mode — limited thesis written yet.")+"\n\n--- YOUR TASK ---\n\n1. What are the 5 most important questions to answer before buying this company?\n2. What would constitute a genuinely durable moat in this business — and does the current business model qualify?\n3. What are the 3 things that bulls consistently get wrong about this type of business?\n4. What would make you say \'do not buy this at any price\'?\n5. Draft 3 specific sell criteria I should set before I buy a single share.\n\nHelp me build a rigorous entry framework — not excitement.";
-    }
-    return "";
+    // ── LAYER 2: Process — KPI miss streak (2+ consecutive) ──
+    portfolio.forEach(function(c){
+      if(!c.kpis || c.kpis.length === 0) return;
+      c.kpis.forEach(function(kpi){
+        var results = kpi.results || [];
+        if(results.length < 2) return;
+        var last2 = results.slice(-2);
+        var bothMissed = last2.every(function(r){
+          if(!kpi.target || !r.value) return false;
+          var v = parseFloat(r.value);
+          var t = parseFloat(kpi.target);
+          if(isNaN(v) || isNaN(t)) return false;
+          return v < t;
+        });
+        if(bothMissed){
+          signals.push({
+            layer: "kpi_streak",
+            priority: 2,
+            icon: "bar",
+            color: K.red,
+            title: c.ticker + ": " + kpi.label + " missed 2 quarters",
+            sub: "Target " + kpi.target + (kpi.unit||"") + " — missed in both recent checks. Bear case?",
+            action: "Bear Case",
+            onAction: {type: "ai", aiType: "bear", c: c},
+            secondary: "View KPIs",
+            onSecondary: {type: "go", c: c}
+          });
+        }
+      });
+    });
+
+    // ── LAYER 3: Process — conviction drop alert ──────────────
+    portfolio.forEach(function(c){
+      var hist = c.convictionHistory || [];
+      if(hist.length < 2) return;
+      var last = hist[hist.length - 1].rating;
+      var prev = hist[hist.length - 2].rating;
+      var drop = prev - last;
+      if(drop >= 2){
+        var hasSell = (function(){var s=parseThesis(c.thesisNote);return s.sell&&s.sell.trim().length>10})();
+        signals.push({
+          layer: "conviction_drop",
+          priority: 2,
+          icon: "trending",
+          color: K.amb,
+          title: c.ticker + ": conviction dropped " + drop + " points",
+          sub: prev + "/10 → " + last + "/10" + (hasSell ? ". Sell criteria written." : ". No sell criteria — write them now."),
+          action: hasSell ? "Sell Check" : "Add Sell Criteria",
+          onAction: hasSell
+            ? {type: "ai", aiType: "sell", c: c}
+            : {type: "go", c: c, modal: "thesis"},
+          secondary: "Challenge thesis",
+          onSecondary: {type: "ai", aiType: "challenge", c: c}
+        });
+      }
+    });
+
+    // ── LAYER 4: Library × Process — tagged items + earnings ──
+    var libItems = (library && library.items) || [];
+    var earningsSoon = portfolio.filter(function(c){
+      return c.earningsDate && c.earningsDate !== "TBD"
+        && dU(c.earningsDate) >= 0 && dU(c.earningsDate) <= 7;
+    });
+    earningsSoon.forEach(function(c){
+      var tagged = libItems.filter(function(it){return it.ticker === c.ticker});
+      if(tagged.length > 0){
+        signals.push({
+          layer: "library_earnings",
+          priority: 2,
+          icon: "book",
+          color: K.acc,
+          title: tagged.length + " saved item" + (tagged.length > 1 ? "s" : "") + " tagged to " + c.ticker,
+          sub: c.ticker + " reports in " + dU(c.earningsDate) + "d — review your saved material before the call",
+          action: "Open Library",
+          onAction: {type: "library"},
+          secondary: "Pre-Earnings AI",
+          onSecondary: {type: "ai", aiType: "earnings", c: c}
+        });
+      }
+    });
+
+    // ── LAYER 5: Decision post-mortems (decisions >90d with no outcome) ──
+    portfolio.forEach(function(c){
+      var decs = (c.decisions||[]).filter(function(d){
+        if(d.cardType!=="decision"&&(d.cardType||!d.reasoning))return false;
+        if(d.outcome)return false; // already reviewed
+        if(!d.date)return false;
+        var ageDays = Math.ceil((Date.now()-new Date(d.date))/864e5);
+        return ageDays >= 90;
+      });
+      if(decs.length > 0){
+        var oldest = decs[decs.length-1];
+        var ageDays = Math.ceil((Date.now()-new Date(oldest.date))/864e5);
+        signals.push({
+          layer:"postmortem",
+          priority:3,
+          icon:"clock",
+          color:K.blue||"#3B82F6",
+          title:c.ticker+": decision needs a post-mortem",
+          sub:(oldest.action||"Decision")+" logged "+ageDays+"d ago — was your reasoning right?",
+          action:"Post-Mortem",
+          onAction:{type:"postmortem", c:c, dec:oldest},
+          secondary:"View journal",
+          onSecondary:{type:"go", c:c}
+        });
+      }
+    });
+
+    // LAYER 6: Ownership anniversaries
+    portfolio.forEach(function(c){
+      if(!c.purchaseDate)return;
+      var _rawHeld=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);var daysHeld=(_rawHeld>0&&_rawHeld<18250)?_rawHeld:0;
+      [1,2,3,5,7,10].forEach(function(yr){
+        var target=yr*365;
+        if(daysHeld>=target&&daysHeld<target+7){
+          var pos=c.position||{};var ret=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
+          signals.push({layer:"anniversary",priority:3,icon:"shield",color:"#D4AF37",
+            title:yr+"yr anniversary owning "+c.ticker+" "+String.fromCodePoint(0x1F389),
+            sub:"You\u2019ve held "+c.name+" for "+yr+" year"+(yr>1?"s":"")+(ret!=null?" \u00b7 "+(ret>=0?"+":"")+ret.toFixed(1)+"% return":"")+". Does the thesis still hold?",
+            action:"Review thesis",onAction:{type:"go",c:c,modal:"thesis"},
+            secondary:"Annual AI check",onSecondary:{type:"ai",aiType:"annual",c:c}});
+        }
+      });
+    });
+
+    // LAYER 7: Above intrinsic value estimate
+    portfolio.forEach(function(c){
+      if(!c.ivEstimate||c.ivEstimate<=0)return;
+      var cp=(c.position||{}).currentPrice||0;if(!cp)return;
+      var prem=(cp-c.ivEstimate)/c.ivEstimate*100;
+      if(prem<15)return;
+      signals.push({layer:"above_iv",priority:2,icon:"trending",color:K.amb,
+        title:c.ticker+" is trading "+prem.toFixed(0)+"% above your IV estimate",
+        sub:"Your IV: "+cSym+c.ivEstimate.toFixed(0)+" \u00b7 Current: "+cSym+cp.toFixed(0)+". Is conviction keeping up with price?",
+        action:"Review valuation",onAction:{type:"go",c:c,modal:"valuation"},
+        secondary:"Sell discipline",onSecondary:{type:"ai",aiType:"sell",c:c}});
+    });
+
+    // Sort by priority, cap at 4
+    signals.sort(function(a, b){ return a.priority - b.priority });
+    return signals.slice(0, 4);
   }
+
 
   function buildPortfolioPrompt(type, portCos){
     var holdings=portCos.map(function(c){
