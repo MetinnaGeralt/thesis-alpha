@@ -1077,6 +1077,7 @@ function calcMoatFromData(finData,businessModelType){
     var _ld=useState(true),ld=_ld[0],setLd=_ld[1];
     var _per=useState("annual"),per=_per[0],setPer=_per[1];
     var _tab=useState("income"),tab=_tab[0],setTab=_tab[1];
+    var _fcs=useState("revenue"),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
     var chartSel=finChartSel,setChartSel=setFinChartSel;
     var _hov=useState(null),hov=_hov[0],setHov=_hov[1];
     var _diag=useState(""),diag=_diag[0],setDiag=_diag[1];
