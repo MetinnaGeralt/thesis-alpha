@@ -135,7 +135,7 @@ export default function OwnersHub({
     var _hf=useState("all"),hf=_hf[0],setHf=_hf[1];
     var _hc=useState("all"),hc=_hc[0],setHc=_hc[1];
     var _hd=useState(null),hd=_hd[0],setHd=_hd[1];
-    var companies=cos.map(function(c){return{ticker:c.ticker,id:c.id}});
+    var companies=(cos||[]).map(function(c){return{ticker:c.ticker,id:c.id}});
     var filteredDocs=allDocs.filter(function(d){return(hf==="all"||d.folder===hf)&&(hc==="all"||d.companyId===parseInt(hc))});
     var selectedDoc=hd?allDocs.find(function(d){return d.id===hd}):null;
     function exportDocPDF(doc){
@@ -195,12 +195,12 @@ export default function OwnersHub({
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
             <select value={ht} onChange={function(e){setHt(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
-              {tabs.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
+              {(tabs||[]).map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
             <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
         </div>}
         return<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto",msOverflowStyle:"none",scrollbarWidth:"none"}}>
-          {tabs.map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
+          {(tabs||[]).map(function(tab){return<button key={tab.id} onClick={function(){setHt(tab.id)}} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:ht===tab.id?700:500,color:ht===tab.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:ht===tab.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1,whiteSpace:"nowrap"}}>
             <IC name={tab.icon} size={12} color={ht===tab.id?K.acc:K.dim}/>{tab.l}{tab.dot>0&&<span style={{fontSize:9,fontWeight:700,color:"#fff",background:K.grn,borderRadius:_isBm?0:999,padding:"1px 5px",marginLeft:2,lineHeight:1.4}}>{tab.dot}</span>}</button>})}</div>
       })()}
 
@@ -415,7 +415,7 @@ export default function OwnersHub({
             {best.shared.length>0&&<div style={{marginBottom:12}}>
               <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Shared holdings with {best.investor.name} ({best.shared.length})</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                {best.shared.map(function(t2){return<span key={t2} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:K.grn+"10",border:"1px solid "+K.grn+"25",fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{t2}</span>})}</div></div>}
+                {(best.shared||[]).map(function(t2){return<span key={t2} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:K.grn+"10",border:"1px solid "+K.grn+"25",fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>{t2}</span>})}</div></div>}
             {/* Why this match */}
             <div style={{fontSize:12,color:K.mid,lineHeight:1.6,padding:"8px 10px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:14}}>
               {"Based on "}<strong style={{color:K.txt}}>{best.shared.length}</strong>{" shared holdings ("+best.overlapPct.toFixed(0)+"% of your portfolio) and "}
@@ -588,7 +588,7 @@ export default function OwnersHub({
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
-          var portMetrics=lens.metrics.map(function(m){
+          var portMetrics=(lens.metrics||[]).map(function(m){
             var weightedVal=0;var weightSum=0;var holdingData=[];
             portCos.forEach(function(c){
               var td=lensData[c.ticker];if(!td)return;
