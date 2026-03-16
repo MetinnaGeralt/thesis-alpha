@@ -406,7 +406,7 @@ export default function TopBar({
           <button style={Object.assign({},S.btnP,{padding:"7px 14px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
           <button style={Object.assign({},S.btn,{padding:"7px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
         </div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
-      {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
+      {(filtered||[]).map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
         return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
             <IC name="file" size={12} color={K.dim}/>
@@ -430,9 +430,9 @@ export default function TopBar({
       <div style={S.sec}>Earnings History</div>
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px"}}>
         <div style={{display:"flex",gap:6,marginBottom:12}}>
-          {sortedYears.map(function(yr){return<button key={yr} onClick={function(){setSelYear(yr);setSelQ(null)}} style={{background:selYear===yr?K.acc+"20":"transparent",border:"1px solid "+(selYear===yr?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 14px",fontSize:13,fontWeight:600,color:selYear===yr?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{yr}</button>})}</div>
+          {(sortedYears||[]).map(function(yr){return<button key={yr} onClick={function(){setSelYear(yr);setSelQ(null)}} style={{background:selYear===yr?K.acc+"20":"transparent",border:"1px solid "+(selYear===yr?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 14px",fontSize:13,fontWeight:600,color:selYear===yr?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>{yr}</button>})}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8}}>
-          {quarters.map(function(qt){var entry=years[selYear]?years[selYear][qt]:null;
+          {(quarters||[]).map(function(qt){var entry=years[selYear]?years[selYear][qt]:null;
             return<div key={qt} onClick={function(){if(entry)setSelQ(selQ===qt?null:qt)}} style={{background:entry?(selQ===qt?K.acc+"15":K.bg):K.bg,border:"1px solid "+(entry?(selQ===qt?K.acc+"40":K.bdr):K.bdr),borderRadius:_isBm?0:8,padding:"10px 12px",cursor:entry?"pointer":"default",opacity:entry?1:.4,textAlign:"center",transition:"all .2s"}}>
               <div style={{fontSize:13,fontWeight:600,color:entry?K.txt:K.dim,fontFamily:fm}}>{qt}</div>
               {entry&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>&#x2713; Tracked</div>}
@@ -473,7 +473,7 @@ export default function TopBar({
             {label:"Per Share",keys:["eps","bvps","fcfPerShare","revPerShare"],icon:"target"},
           ];
           var rendered=new Set();
-          var groups=SNAP_GROUPS.map(function(g){
+          var groups=(SNAP_GROUPS||[]).map(function(g){
             var items=g.keys.filter(function(k){return snap[k]&&snap[k].value&&!rendered.has(k)});
             items.forEach(function(k){rendered.add(k)});
             return{label:g.label,icon:g.icon,items:items}
@@ -481,7 +481,7 @@ export default function TopBar({
           // Any keys not in groups
           var leftover=Object.keys(snap).filter(function(k){return !rendered.has(k)&&snap[k]&&snap[k].value});
           if(leftover.length)groups.push({label:"Other",icon:"overview",items:leftover});
-          return groups.map(function(g){return<div key={g.label} style={{marginBottom:16}}>
+          return (groups||[]).map(function(g){return<div key={g.label} style={{marginBottom:16}}>
             <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
               <IC name={g.icon} size={10} color={K.dim}/>{g.label}
             </div>
@@ -544,7 +544,7 @@ function calcMoatFromData(finData,businessModelType){
     // Ensure oldest-first ordering (FMP returns newest-first)
     function sortOldFirst(arr){if(arr.length<2)return arr;var a=arr.slice();if(a[0].date&&a[1].date&&a[0].date>a[1].date)a.reverse();else if(a[0].calendarYear&&a[1].calendarYear&&parseInt(a[0].calendarYear)>parseInt(a[1].calendarYear))a.reverse();return a}
     inc=sortOldFirst(inc);bal=sortOldFirst(bal);cf=sortOldFirst(cf);
-    function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
+    function vals(rows,k){return (rows||[]).map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
     function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
     function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
     var recent=inc.slice(-5);var recentBal=bal.slice(-5);var recentCf=cf.slice(-5);
@@ -554,7 +554,7 @@ function calcMoatFromData(finData,businessModelType){
     if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
       metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:(function(){var _isDistrib=businessModelType==="distributor";var _base=_isDistrib?(gmAvg>=20?8:gmAvg>=12?7:gmAvg>=8?6:gmAvg>=5?5:3):(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2);return Math.min(10,Math.max(1,Math.round(_base+(gmStd<3?1:gmStd>10?-1:0))))})(),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)"+((businessModelType==="distributor")?" [distributor — thin margin expected]":""),trend:gm.map(function(v){return v*100}),icon:"shield",desc:businessModelType==="distributor"?"Distributors win on scale and asset turns, not gross margin. Stability matters more than the absolute level.":"High & stable margins indicate pricing power"})}
     else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
-      if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
+      if(revs0.length>=2&&gps0.length>=2){var gmC=(gps0||[]).map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
         if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
           metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
     // 2. REVENUE GROWTH
@@ -725,7 +725,7 @@ function calcMoatFromData(finData,businessModelType){
         <div style={{display:"flex",gap:4,alignItems:"center"}}>
           {hovPt&&<span style={{fontSize:12,fontFamily:fm,color:K.txt,marginRight:8}}>{hovPt.date} <strong>${hovPt.close.toFixed(2)}</strong></span>}
           <span style={{fontSize:11,fontWeight:600,color:totalRet>=0?K.grn:K.red,fontFamily:fm,marginRight:8}}>{totalRet>=0?"+":""}{totalRet.toFixed(1)}% ({range})</span>
-          {ranges.map(function(r){return<button key={r} onClick={function(){setRange(r)}} style={{padding:"3px 8px",fontSize:11,fontFamily:fm,background:range===r?K.acc+"18":"transparent",color:range===r?K.acc:K.dim,border:"1px solid "+(range===r?K.acc+"30":"transparent"),borderRadius:_isBm?0:4,cursor:"pointer"}}>{r}</button>})}</div></div>
+          {(ranges||[]).map(function(r){return<button key={r} onClick={function(){setRange(r)}} style={{padding:"3px 8px",fontSize:11,fontFamily:fm,background:range===r?K.acc+"18":"transparent",color:range===r?K.acc:K.dim,border:"1px solid "+(range===r?K.acc+"30":"transparent"),borderRadius:_isBm?0:4,cursor:"pointer"}}>{r}</button>})}</div></div>
       <div style={{overflowX:"auto"}}>
         <svg width={cW} height={cH} style={{display:"block"}} onMouseLeave={function(){setHov(null)}}>
           <defs><linearGradient id={"pg-"+c.id} x1="0" y1="0" x2="0" y2="1">
@@ -739,15 +739,15 @@ function calcMoatFromData(finData,businessModelType){
           {hov!==null&&<g><line x1={x(hov)} y1={pad.t} x2={x(hov)} y2={cH-pad.b} stroke={K.dim} strokeWidth="0.5" strokeDasharray="3,3"/>
             <circle cx={x(hov)} cy={y(pts[hov].close)} r={3} fill={K.txt} stroke={K.card} strokeWidth="2"/></g>}
           {/* Entry point markers */}
-          {entries.map(function(e,i){var cx2=x(e.idx);var cy2=y(pts[e.idx].close);var isBuy=e.action==="BUY"||e.action==="ADD";
+          {(entries||[]).map(function(e,i){var cx2=x(e.idx);var cy2=y(pts[e.idx].close);var isBuy=e.action==="BUY"||e.action==="ADD";
             return<g key={"e"+i}><circle cx={cx2} cy={cy2} r={5} fill={isBuy?K.grn:K.red} stroke={K.card} strokeWidth="2"/>
               <text x={cx2} y={cy2-10} textAnchor="middle" fill={isBuy?K.grn:K.red} fontSize="8" fontFamily="JetBrains Mono" fontWeight="600">{e.action}</text></g>})}
           {/* Conviction markers */}
-          {convMarks.map(function(cm,i){var cx2=x(cm.idx);var clr=cm.rating>=8?K.grn:cm.rating>=5?K.amb:K.red;
+          {(convMarks||[]).map(function(cm,i){var cx2=x(cm.idx);var clr=cm.rating>=8?K.grn:cm.rating>=5?K.amb:K.red;
             return<g key={"c"+i}><line x1={cx2} y1={cH-pad.b} x2={cx2} y2={cH-pad.b+3} stroke={clr} strokeWidth="2"/>
               <text x={cx2} y={cH-pad.b+12} textAnchor="middle" fill={clr} fontSize="8" fontFamily="JetBrains Mono" fontWeight="600">{cm.rating}</text></g>})}
           {/* Earnings markers */}
-          {earnDates.map(function(ed,i){var cx2=x(ed.idx);
+          {(earnDates||[]).map(function(ed,i){var cx2=x(ed.idx);
             return<g key={"ed"+i}><line x1={cx2} y1={pad.t} x2={cx2} y2={cH-pad.b} stroke={K.amb} strokeWidth="0.5" strokeDasharray="2,4" opacity="0.5"/>
               <text x={cx2} y={pad.t-2} textAnchor="middle" fill={K.amb} fontSize="7" fontFamily="JetBrains Mono" opacity="0.7">E</text></g>})}
           {/* Price axis labels */}
@@ -857,7 +857,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>})()}</div></div>
           {/* Active moat types */}
           {classified.length>0&&<div style={{marginBottom:16}}>
-            {classified.map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
+            {(classified||[]).map(function(t){var d=mt[t.id]||{};var sug=suggestions.find(function(s){return s.id===t.id});
               return<div key={t.id} style={{background:K.card,border:"1px solid "+t.color+"40",borderLeft:"4px solid "+t.color,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                   <IC name={t.icon} size={16} color={t.color}/>
@@ -880,7 +880,7 @@ function calcMoatFromData(finData,businessModelType){
             {classified.length===0&&<div style={{fontSize:13,color:K.mid,marginBottom:12,lineHeight:1.6}}>What type of competitive advantage does {c.ticker} have? Select the moat sources that apply. {hasSuggestions?"We've highlighted likely matches based on "+c.ticker+"'s sector and financials.":""}</div>}
             {classified.length>0&&<div style={{fontSize:12,color:K.dim,marginBottom:10}}>Add more moat sources:</div>}
             <div className="ta-grid-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              {unclassified.map(function(t){var sug=suggestions.find(function(s){return s.id===t.id});var isSuggested=!!sug;
+              {(unclassified||[]).map(function(t){var sug=suggestions.find(function(s){return s.id===t.id});var isSuggested=!!sug;
                 return<button key={t.id} onClick={function(){toggleType(t.id)}} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",borderRadius:_isBm?0:8,cursor:"pointer",textAlign:"left",background:isSuggested?t.color+"08":"transparent",border:"1px solid "+(isSuggested?t.color+"35":K.bdr),transition:"all .15s"}}>
                   <div style={{width:28,height:28,borderRadius:_isBm?0:6,display:"flex",alignItems:"center",justifyContent:"center",background:t.color+"15",flexShrink:0,marginTop:1}}>
                     <IC name={t.icon} size={14} color={t.color}/></div>
@@ -1102,10 +1102,10 @@ function calcMoatFromData(finData,businessModelType){
     // Build multi-metric chart data — use dates from longest statement so chart persists across tabs
     var _allDates={};if(data){["income","balance","cashflow"].forEach(function(st){(data[st]||[]).forEach(function(r){if(r.date)_allDates[r.date]=true})})}
     var dates=Object.keys(_allDates).sort();
-    if(dates.length===0)dates=rows.map(function(r){return r.date}).filter(Boolean);
-    var chartSeries=chartSel.map(function(key,si){
+    if(dates.length===0)dates=(rows||[]).map(function(r){return r.date}).filter(Boolean);
+    var chartSeries=(chartSel||[]).map(function(key,si){
       var def=chartItems.find(function(ci){return ci.k===key})||{k:key,l:key};
-      var pts=dates.map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
+      var pts=(dates||[]).map(function(dt){var v=null;if(data){var inc=(data.income||[]).find(function(x){return x.date===dt});var bal=(data.balance||[]).find(function(x){return x.date===dt});var cf=(data.cashflow||[]).find(function(x){return x.date===dt});if(inc&&inc[key]!=null)v=Number(inc[key]);else if(bal&&bal[key]!=null)v=Number(bal[key]);else if(cf&&cf[key]!=null)v=Number(cf[key])}return{date:dt,val:v}}).filter(function(p){return p.val!=null});
       return{key:key,def:def,pts:pts,color:CHART_COLORS[si%CHART_COLORS.length]}});
     // Compute shared axes
     var allVals=[];chartSeries.forEach(function(s){s.pts.forEach(function(p){allVals.push(p.val)})});
@@ -1124,11 +1124,11 @@ function calcMoatFromData(finData,businessModelType){
       {isMobile?<div style={{marginBottom:16}}>
         <div style={{position:"relative"}}>
           <select value={tab} onChange={function(e){setTab(e.target.value)}} style={{width:"100%",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:12,color:K.txt,padding:"13px 44px 13px 18px",fontSize:15,fontFamily:fm,fontWeight:700,outline:"none",appearance:"none",WebkitAppearance:"none",cursor:"pointer"}}>
-            {STMT_TABS.map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
+            {(STMT_TABS||[]).map(function(t){return<option key={t.id} value={t.id}>{t.l}</option>})}</select>
           <div style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg></div></div>
       </div>:<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {STMT_TABS.map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>}
+        {(STMT_TABS||[]).map(function(t){return<button key={t.id} onClick={function(){setTab(t.id)}} style={{padding:"10px 20px",fontSize:13,fontFamily:fm,fontWeight:tab===t.id?600:400,color:tab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:tab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>}
       {ld?<div style={{padding:"32px 0"}}><div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:24}}>
         {[0,1,2,3,4,5].map(function(i){return<div key={i} style={{display:"flex",gap:12,marginBottom:12}}>
           <div className="ta-skel" style={{height:12,flex:1,background:K.bdr}}/>
@@ -1147,7 +1147,7 @@ function calcMoatFromData(finData,businessModelType){
       {/* Interactive multi-metric chart */}
       <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
-          {chartItems.map(function(ci,ci2){var isOn=chartSel.indexOf(ci.k)>=0;var col=isOn?CHART_COLORS[chartSel.indexOf(ci.k)%CHART_COLORS.length]:K.dim;
+          {(chartItems||[]).map(function(ci,ci2){var isOn=chartSel.indexOf(ci.k)>=0;var col=isOn?CHART_COLORS[chartSel.indexOf(ci.k)%CHART_COLORS.length]:K.dim;
             return<button key={ci.k} onClick={function(){toggleChartMetric(ci.k)}} style={{padding:"3px 10px",fontSize:11,fontFamily:fm,background:isOn?col+"18":"transparent",color:isOn?col:K.dim,border:"1px solid "+(isOn?col+"40":"transparent"),borderRadius:_isBm?0:5,cursor:"pointer",whiteSpace:"nowrap",transition:"all .2s",fontWeight:isOn?600:400}}>
               {isOn&&<span style={{display:"inline-block",width:6,height:6,borderRadius:_isBm?1:"50%",background:col,marginRight:4}}/>}{ci.l}</button>})}</div>
         {hasPctMix&&<div style={{fontSize:10,color:K.amb,fontFamily:fm,marginBottom:8}}>{"⚠"} Mixing % and $ metrics — values share the Y-axis</div>}
@@ -1164,16 +1164,16 @@ function calcMoatFromData(finData,businessModelType){
           return<div style={{overflowX:"auto",position:"relative"}}>
             <svg width={cW} height={cH} style={{display:"block"}}>
               {/* Grid lines + Y labels */}
-              {ySteps.map(function(v,i){var y=pad.t+(1-(v-gMn)/gRange)*plotH;
+              {(ySteps||[]).map(function(v,i){var y=pad.t+(1-(v-gMn)/gRange)*plotH;
                 return<g key={i}><line x1={pad.l} y1={y} x2={cW-pad.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray={i===0?"0":"3,3"}/>
                   <text x={pad.l-6} y={y+3} textAnchor="end" fill={K.dim} fontSize={8} fontFamily="JetBrains Mono,monospace">{chartSeries.length===1&&chartSeries[0].def.p?(v*100).toFixed(0)+"%":fmtBig(v)}</text></g>})}
               {/* Zero line if needed */}
               {gMn<0&&<line x1={pad.l} y1={zeroY} x2={cW-pad.r} y2={zeroY} stroke={K.txt+"40"} strokeWidth={1.5}/>}
               {/* Grouped bars */}
-              {dates.map(function(dt,di){
+              {(dates||[]).map(function(dt,di){
                 var groupX=pad.l+di*(groupW+(numDates>1?groupGap:0));
                 return<g key={di}>
-                  {chartSeries.map(function(s,si){
+                  {(chartSeries||[]).map(function(s,si){
                     var pt=s.pts.find(function(p){return p.date===dt});if(!pt)return null;
                     var val=pt.val;var barH=Math.abs(val-Math.max(gMn,0))/gRange*plotH;
                     if(gMn<0){barH=Math.abs(val)/gRange*plotH}
@@ -1191,7 +1191,7 @@ function calcMoatFromData(finData,businessModelType){
             {(function(){var hovDate=hov||(dates.length>0?dates[dates.length-1]:null);if(!hovDate)return null;var hi=dates.indexOf(hovDate);if(hi<0)return null;var tx=pad.l+hi*(groupW+(numDates>1?groupGap:0));
               return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW-170),top:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>{per==="quarter"?((rows[hi]||{}).period||"")+" "+hovDate:hovDate.substring(0,4)}</div>
-                {chartSeries.map(function(s){var pt=s.pts.find(function(p){return p.date===hovDate});if(!pt)return null;
+                {(chartSeries||[]).map(function(s){var pt=s.pts.find(function(p){return p.date===hovDate});if(!pt)return null;
                   var prev=s.pts[s.pts.indexOf(pt)-1];var yoy=prev&&prev.val!==0?((pt.val-prev.val)/Math.abs(prev.val)*100):null;
                   return<div key={s.key} style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                     <span style={{width:6,height:6,borderRadius:_isBm?0:2,background:s.color,flexShrink:0}}/>
@@ -1201,7 +1201,7 @@ function calcMoatFromData(finData,businessModelType){
           </div>})():<div style={{padding:20,textAlign:"center",fontSize:12,color:K.dim}}>Click metrics above to chart them</div>}
         {/* Legend */}
         {chartSeries.length>0&&<div style={{display:"flex",gap:12,marginTop:10,flexWrap:"wrap"}}>
-          {chartSeries.map(function(s){return<div key={s.key} style={{display:"flex",alignItems:"center",gap:4}}>
+          {(chartSeries||[]).map(function(s){return<div key={s.key} style={{display:"flex",alignItems:"center",gap:4}}>
             <span style={{width:8,height:3,borderRadius:_isBm?0:2,background:s.color}}/>
             <span style={{fontSize:10,color:s.color,fontFamily:fm,fontWeight:600}}>{s.def.l}</span></div>})}</div>}
       </div>
@@ -1210,14 +1210,14 @@ function calcMoatFromData(finData,businessModelType){
         <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:fm}}>
           <thead><tr><th style={{position:"sticky",left:0,background:K.card,padding:"10px 14px",textAlign:"left",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,minWidth:200,zIndex:2}}>
             {stab.l} ({per==="quarter"?"Quarterly":"Annual"})</th>
-            {rows.map(function(r,i){return<th key={i} style={{padding:"10px 12px",textAlign:"right",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>{per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4)}</th>})}</tr></thead>
+            {(rows||[]).map(function(r,i){return<th key={i} style={{padding:"10px 12px",textAlign:"right",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>{per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4)}</th>})}</tr></thead>
           <tbody>{stab.items.map(function(item,ri){
             if(!item.k)return<tr key={ri}><td colSpan={rows.length+1} style={{height:8,background:K.bg}}></td></tr>;
             var isCharted=chartSel.indexOf(item.k)>=0;var chartColor=isCharted?CHART_COLORS[chartSel.indexOf(item.k)%CHART_COLORS.length]:null;
             return<tr key={ri} style={{background:isCharted?chartColor+"08":item.b?K.acc+"06":"transparent",cursor:"pointer",transition:"background .15s"}} onClick={function(){toggleChartMetric(item.k)}}>
               <td style={{position:"sticky",left:0,background:isCharted?chartColor+"10":item.b?K.acc+"08":K.card,padding:"7px 14px",color:isCharted?chartColor:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b||isCharted?600:400,borderBottom:"1px solid "+K.bdr,fontSize:item.b?11:10.5,zIndex:1,borderLeft:isCharted?"3px solid "+chartColor:"3px solid transparent"}}>
                 {item.l}</td>
-              {rows.map(function(r,ci){var v=r[item.k];var yoy=null;if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
+              {(rows||[]).map(function(r,ci){var v=r[item.k];var yoy=null;if(ci>0&&rows[ci-1]){var prev=rows[ci-1][item.k];if(prev&&v&&!item.p)yoy=((Number(v)-Number(prev))/Math.abs(Number(prev))*100)}
                 return<td key={ci} style={{padding:"7px 12px",textAlign:"right",color:isCharted?chartColor:v!=null&&Number(v)<0?K.red:item.d?K.dim:item.b?K.txt:K.mid,fontWeight:item.b||isCharted?600:400,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap",fontSize:item.b?11:10.5}}>
                   <div>{fmtCell(v,item)}</div>
                   {yoy!=null&&!isNaN(yoy)&&<div style={{fontSize:10,color:yoy>=0?K.grn:K.red,marginTop:1}}>{yoy>=0?"+":""}{yoy.toFixed(1)}%</div>}
