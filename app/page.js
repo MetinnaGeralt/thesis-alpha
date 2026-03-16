@@ -759,7 +759,7 @@ function TrackerApp(props){
       var local=await ldS("ta-data");
       var d=cloud||local;
       if(d){
-        if(d.cos&&d.cos.length>0)setCos(d.cos.map(function(c){return Object.assign({kpis:[],decisions:[],docs:[],scenarios:[]},c)}));
+        if(d.cos&&d.cos.length>0)setCos(d.cos.map(function(c){return Object.assign({kpis:[],decisions:[],docs:[],scenarios:[],convictionHistory:[],notes:[]},c)}));
         if(d.notifs)setNotifs(d.notifs);
         if(d.trial)setTrial(d.trial);
         if(d.readingList)setReadingList(d.readingList);
