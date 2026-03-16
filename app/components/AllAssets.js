@@ -145,7 +145,7 @@ export default function AllAssets({
       // CoinGecko for crypto
       if(cgTickers.length>0){
         try{
-          var cgIds=cgTickers.map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean).join(",");
+          var cgIds=(cgTickers||[]).map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean).join(",");
           var resp=await fetch("https://api.coingecko.com/api/v3/simple/price?ids="+cgIds+"&vs_currencies=usd&include_24hr_change=true");
           var cgData=await resp.json();
           cgTickers.forEach(function(t){var id=CRYPTO_IDS[t]||t.toLowerCase();if(cgData[id]){newPrices["CG_"+t]=cgData[id].usd;newPrices["CHG_"+t]=cgData[id].usd_24h_change||0}});
@@ -254,7 +254,7 @@ export default function AllAssets({
       return"M "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+large+" 1 "+e.x+" "+e.y;
     }
     var donutR=56,donutCx=75,donutCy=75,donutSW=18,donutCum=0;
-    var donutSegments=allocData.map(function(d){
+    var donutSegments=(allocData||[]).map(function(d){
       var frac=totalAssetsUSD>0?d.value/totalAssetsUSD:0;
       var startDeg=donutCum*360;donutCum+=frac;
       return{d:d,frac:frac,startDeg:startDeg,endDeg:Math.max(startDeg+0.5,donutCum*360-1.5)};
@@ -283,7 +283,7 @@ export default function AllAssets({
       if(!a.id)a.id="oa_"+Date.now();
       ["quantity","costBasis","manualValue","annualIncome"].forEach(function(k){if(a[k])a[k]=Number(a[k])});
       if(!a.holdings)a.holdings=[];
-      setOtherAssets(modal==="edit"?otherAssets.map(function(x){return x.id===a.id?a:x}):otherAssets.concat([a]));
+      setOtherAssets(modal==="edit"?(otherAssets||[]).map(function(x){return x.id===a.id?a:x}):otherAssets.concat([a]));
       setModal(null);setForm({});setStep(0);
     }
     function deleteAsset(id){setOtherAssets(otherAssets.filter(function(a){return a.id!==id}))}
@@ -301,7 +301,7 @@ export default function AllAssets({
       var l=Object.assign({},lform);
       if(!l.id)l.id="li_"+Date.now();
       ["balance","interestRate","monthlyPayment"].forEach(function(k){if(l[k])l[k]=Number(l[k])});
-      setLiabilities(lmodal==="edit"?liabilities.map(function(x){return x.id===l.id?l:x}):liabilities.concat([l]));
+      setLiabilities(lmodal==="edit"?(liabilities||[]).map(function(x){return x.id===l.id?l:x}):liabilities.concat([l]));
       setLmodal(null);setLform({});
     }
     function deleteLiab(id){setLiabilities(liabilities.filter(function(l){return l.id!==id}))}
@@ -312,11 +312,11 @@ export default function AllAssets({
     function MiniSparkline(){
       var hist=netWorthHistory.slice(-30);
       if(hist.length<2)return null;
-      var vals=hist.map(function(h){return toDisplay(h.value)});
+      var vals=(hist||[]).map(function(h){return toDisplay(h.value)});
       var minV=Math.min.apply(null,vals);var maxV=Math.max.apply(null,vals);
       if(maxV===minV)return null;
       var W=160,H=40;
-      var pts=vals.map(function(v,i){return(i/(vals.length-1)*W).toFixed(1)+","+(H-(v-minV)/(maxV-minV)*H).toFixed(1)}).join(" ");
+      var pts=(vals||[]).map(function(v,i){return(i/(vals.length-1)*W).toFixed(1)+","+(H-(v-minV)/(maxV-minV)*H).toFixed(1)}).join(" ");
       var clr=vals[vals.length-1]>=vals[0]?K.grn:K.red;
       return<svg width={W} height={H} style={{flexShrink:0}}><polyline points={pts} fill="none" stroke={clr} strokeWidth={1.5} strokeLinejoin="round" opacity={0.8}/></svg>;
     }
@@ -342,7 +342,7 @@ export default function AllAssets({
           <div style={{flexShrink:0}}>
             <svg width={150} height={150}>
               {allocData.length===0&&<circle cx={donutCx} cy={donutCy} r={donutR} fill="none" stroke={K.bdr} strokeWidth={donutSW}/>}
-              {donutSegments.map(function(seg){return<path key={seg.d.id} d={donutPath(seg.startDeg,seg.endDeg,donutR,donutCx,donutCy)} fill="none" stroke={seg.d.color} strokeWidth={donutSW} strokeLinecap="butt"/>})}
+              {(donutSegments||[]).map(function(seg){return<path key={seg.d.id} d={donutPath(seg.startDeg,seg.endDeg,donutR,donutCx,donutCy)} fill="none" stroke={seg.d.color} strokeWidth={donutSW} strokeLinecap="butt"/>})}
               <text x={donutCx} y={donutCy-10} textAnchor="middle" fontSize={9} fill={K.dim} fontFamily={fb} letterSpacing="0.5">NET WORTH</text>
               <text x={donutCx} y={donutCy+6} textAnchor="middle" fontSize={13} fill={K.txt} fontWeight={700} fontFamily={fm}>{fmtM(totalValueUSD)}</text>
               {totalLiabUSD>0&&<text x={donutCx} y={donutCy+18} textAnchor="middle" fontSize={8} fill={K.red} fontFamily={fb}>−{fmtM(totalLiabUSD)} debt</text>}
@@ -362,7 +362,7 @@ export default function AllAssets({
               </div>})}
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px"}}>
-              {allocData.map(function(d){var pct=totalAssetsUSD>0?(d.value/totalAssetsUSD*100):0;return<div key={d.id} style={{display:"flex",alignItems:"center",gap:5}}>
+              {(allocData||[]).map(function(d){var pct=totalAssetsUSD>0?(d.value/totalAssetsUSD*100):0;return<div key={d.id} style={{display:"flex",alignItems:"center",gap:5}}>
                 <div style={{width:8,height:8,borderRadius:_isBm?0:2,background:d.color,flexShrink:0}}/>
                 <span style={{fontSize:11,color:K.mid,fontFamily:fb}}>{d.label}</span>
                 <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{pct.toFixed(1)}%</span>
@@ -432,7 +432,7 @@ export default function AllAssets({
           </div>
           {expanded.stocks&&<div style={{borderTop:"1px solid "+K.bdr}}>
             {portCos.length===0&&<div style={{padding:"20px",textAlign:"center",color:K.dim,fontSize:13}}>No portfolio positions yet.</div>}
-            {portCos.map(function(c){
+            {(portCos||[]).map(function(c){
               var p=c.position||{};var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:null;
               var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
               var pct=val&&totalAssetsUSD>0?val/totalAssetsUSD*100:null;
@@ -469,7 +469,7 @@ export default function AllAssets({
         </div>
 
         {/* Other asset sections */}
-        {ATYPES.map(function(atp){
+        {(ATYPES||[]).map(function(atp){
           var assets=otherAssets.filter(function(a){return a.type===atp.id});
           var totalTypeVal=assets.reduce(function(s,a){return s+getAssetValue(a)},0);
           var totalTypeCost=assets.reduce(function(s,a){return s+getAssetCost(a)},0);
@@ -490,7 +490,7 @@ export default function AllAssets({
             </div>
             {isOpen&&<div style={{borderTop:"1px solid "+K.bdr}}>
               {assets.length===0&&<div style={{padding:"20px 24px",color:K.dim,fontSize:13,textAlign:"center"}}>No {atp.label.toLowerCase()} added yet. <span style={{color:atp.color,cursor:"pointer"}} onClick={function(){openAdd(atp.id)}}>Add one →</span></div>}
-              {assets.map(function(a){
+              {(assets||[]).map(function(a){
                 var val=getAssetValue(a),cost=getAssetCost(a),gain=val-cost,gainPct=cost>0?gain/cost*100:0;
                 var pct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
                 // Live price + day change
@@ -549,7 +549,7 @@ export default function AllAssets({
             No liabilities recorded. Add mortgages, loans or credit card balances to see your true net worth.
           </div>}
           {liabilities.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
-            {liabilities.map(function(l,i){
+            {(liabilities||[]).map(function(l,i){
               var lt=LTYPES_MAP[l.type]||{icon:"overview",color:K.red,label:l.type};
               var annualInt=l.balance>0&&l.interestRate>0?l.balance*l.interestRate/100:0;
               return<div key={l.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 20px",borderBottom:i<liabilities.length-1?"1px solid "+K.bdr+"50":"none"}}>
@@ -581,13 +581,13 @@ export default function AllAssets({
           {(function(){
             var hist=netWorthHistory.slice(-52);
             if(hist.length<2)return<div style={{padding:"30px 0",textAlign:"center",color:K.dim,fontSize:13}}>Your net worth history will build up as you use the app over time.</div>;
-            var vals=hist.map(function(h){return toDisplay(h.value)});
+            var vals=(hist||[]).map(function(h){return toDisplay(h.value)});
             var minV=Math.min.apply(null,vals)*0.97,maxV=Math.max.apply(null,vals)*1.03;
             var W=isMobile?300:520,H=160,padL=64,padR=16,padT=12,padB=28;
             var cW=W-padL-padR,cH=H-padT-padB;
             function xPos(i){return padL+(i/(hist.length-1))*cW}
             function yPos(v){return padT+cH-(v-minV)/(maxV-minV)*cH}
-            var pts=hist.map(function(h,i){return xPos(i)+","+yPos(toDisplay(h.value))}).join(" ");
+            var pts=(hist||[]).map(function(h,i){return xPos(i)+","+yPos(toDisplay(h.value))}).join(" ");
             var areaD="M "+xPos(0)+","+yPos(toDisplay(hist[0].value))+" "+hist.slice(1).map(function(h,i){return"L "+xPos(i+1)+","+yPos(toDisplay(h.value))}).join(" ")+" L "+xPos(hist.length-1)+","+(padT+cH)+" L "+xPos(0)+","+(padT+cH)+" Z";
             var lastVal=vals[vals.length-1],firstVal=vals[0];
             var delta=lastVal-firstVal,deltaPct=firstVal>0?delta/firstVal*100:0;
@@ -618,7 +618,7 @@ export default function AllAssets({
               <div style={{overflowX:"auto"}}>
                 <svg width={W} height={H} style={{overflow:"visible"}}>
                   <defs><linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={clr} stopOpacity="0.15"/><stop offset="100%" stopColor={clr} stopOpacity="0.01"/></linearGradient></defs>
-                  {yLabels.map(function(v,i){var y=yPos(v);return<g key={i}><line x1={padL} y1={y} x2={W-padR} y2={y} stroke={K.bdr} strokeWidth={1}/><text x={padL-6} y={y+4} textAnchor="end" fontSize={9} fill={K.dim} fontFamily={fm}>{fmtM(v)}</text></g>})}
+                  {(yLabels||[]).map(function(v,i){var y=yPos(v);return<g key={i}><line x1={padL} y1={y} x2={W-padR} y2={y} stroke={K.bdr} strokeWidth={1}/><text x={padL-6} y={y+4} textAnchor="end" fontSize={9} fill={K.dim} fontFamily={fm}>{fmtM(v)}</text></g>})}
                   <path d={areaD} fill="url(#nwGrad)"/>
                   <polyline points={pts} fill="none" stroke={clr} strokeWidth={2} strokeLinejoin="round"/>
                   <circle cx={xPos(hist.length-1)} cy={yPos(lastVal)} r={4} fill={clr}/>
@@ -702,7 +702,7 @@ export default function AllAssets({
             <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginLeft:"auto"}}>based on dividend frequencies</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:4}}>
-            {MONTHS.map(function(m,i){
+            {(MONTHS||[]).map(function(m,i){
               var val=monthlyIncome[i];var isNow=new Date().getMonth()===i;
               var barH=val>0?Math.max(8,val/maxMonthIncome*64):3;
               var detail=monthlyDetail[i];
@@ -734,7 +734,7 @@ export default function AllAssets({
             <div style={{display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={K.acc}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Stock Dividends</div></div>
             <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(stockIncome)}/yr</div>
           </div>
-          {incomeCos.map(function(item){return<div key={item.c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(item.c.id);setPage("dashboard")}}>
+          {(incomeCos||[]).map(function(item){return<div key={item.c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(item.c.id);setPage("dashboard")}}>
             <CoLogo ticker={item.c.ticker} domain={item.c.domain} size={28}/>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{item.c.ticker}</div>
@@ -751,7 +751,7 @@ export default function AllAssets({
         {incomeBreakdown.filter(function(x){return x.type!=="stock"}).length>0&&(function(){
           var groups=[{type:"etf",label:"ETF Dividends",icon:"chart",color:"#10b981"},{type:"bonds",label:"Bond Interest",icon:"overview",color:"#6b7280"},{type:"royalties",label:"Royalties & IP",icon:"book",color:"#a78bfa"},{type:"real_estate",label:"Rental Income",icon:"moat",color:"#8b5cf6"},{type:"other",label:"Other Income",icon:"dollar",color:K.grn},{type:"valuables",label:"Valuables Income",icon:"shield",color:"#ec4899"}];
           return<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:16}}>
-            {groups.map(function(g){
+            {(groups||[]).map(function(g){
               var items=otherAssets.filter(function(a){return a.type===g.type&&a.annualIncome>0});
               if(items.length===0)return null;
               var grpTotal=items.reduce(function(s,a){return s+Number(a.annualIncome)},0);
@@ -796,7 +796,7 @@ export default function AllAssets({
             </div>}
         </div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
-          {ALL_ALLOC_IDS.map(function(id,i){
+          {(ALL_ALLOC_IDS||[]).map(function(id,i){
             var current=getCurrentPct(id),target=getTargetPct(id),drift=getDrift(id);
             var hasTarget=target>0,bigDrift=Math.abs(drift)>5&&hasTarget;
             var color=ALLOC_COLORS[id]||K.dim;
@@ -839,7 +839,7 @@ export default function AllAssets({
             <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Asset</div>
             <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Select asset type</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {ATYPES.map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+              {(ATYPES||[]).map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
                 <IC name={t.icon} size={16} color={t.color}/>
                 <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
               </button>})}
@@ -896,7 +896,7 @@ export default function AllAssets({
             <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Liability</div>
             <div style={{fontSize:13,color:K.dim,marginBottom:20}}>What type of debt?</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {LTYPES.map(function(t){return<button key={t.id} onClick={function(){openAddLiab(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"1px solid "+K.bdr,background:K.bg,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+              {(LTYPES||[]).map(function(t){return<button key={t.id} onClick={function(){openAddLiab(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"1px solid "+K.bdr,background:K.bg,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <IC name={t.icon} size={16} color={t.color}/>
                 <span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
               </button>})}
