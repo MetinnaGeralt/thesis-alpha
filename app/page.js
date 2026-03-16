@@ -15,6 +15,7 @@ import {
   resolveMetricId, isCustomKpi,
   toFinnhubSymbol, isIntlTicker, estimatePayMonths,
   dU, fD, fT, nId, gH, bT, eS,
+  calcMoatFromData,
 } from './components/utils';
 import OnboardingFlow from './components/OnboardingFlow';
 import WeeklyReview from './components/WeeklyReview';
@@ -5024,85 +5025,7 @@ function openChest(){
       </div>;
     })()}
     </div></div>}
-  function fmtBig(v,pct){if(v==null||isNaN(v))return"—";if(pct)return(v*100).toFixed(1)+"%";
-    var neg=v<0;var a=Math.abs(v);var s;if(a>=1e12)s=(a/1e12).toFixed(1)+"T";else if(a>=1e9)s=(a/1e9).toFixed(2)+"B";else if(a>=1e6)s=(a/1e6).toFixed(1)+"M";else if(a>=1e3)s=(a/1e3).toFixed(1)+"K";else s=Math.abs(v)<100?v.toFixed(2):a.toFixed(0);return(neg?"-":"")+"$"+s}
 
-  function calcMoatFromData(finData,businessModelType){
-      if(!finData)return null;
-      var inc=finData.income||[],bal=finData.balance||[],cf=finData.cashflow||[];
-      if(inc.length<2)return null;
-      // Ensure oldest-first ordering (FMP returns newest-first)
-      function sortOldFirst(arr){if(arr.length<2)return arr;var a=arr.slice();if(a[0].date&&a[1].date&&a[0].date>a[1].date)a.reverse();else if(a[0].calendarYear&&a[1].calendarYear&&parseInt(a[0].calendarYear)>parseInt(a[1].calendarYear))a.reverse();return a}
-      inc=sortOldFirst(inc);bal=sortOldFirst(bal);cf=sortOldFirst(cf);
-      function vals(rows,k){return rows.map(function(r){return r[k]}).filter(function(v){return v!=null&&!isNaN(v)})}
-      function avg(arr){return arr.length?arr.reduce(function(s,v){return s+v},0)/arr.length:null}
-      function stdDev(arr){var m=avg(arr);if(m===null||arr.length<2)return null;return Math.sqrt(arr.reduce(function(s,v){return s+Math.pow(v-m,2)},0)/arr.length)}
-      var recent=inc.slice(-5);var recentBal=bal.slice(-5);var recentCf=cf.slice(-5);
-      var metrics=[];
-      // 1. GROSS MARGIN
-      var gm=vals(recent,"grossProfitRatio");
-      if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-        metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:(function(){var _isDistrib=businessModelType==="distributor";var _base=_isDistrib?(gmAvg>=20?8:gmAvg>=12?7:gmAvg>=8?6:gmAvg>=5?5:3):(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2);return Math.min(10,Math.max(1,Math.round(_base+(gmStd<3?1:gmStd>10?-1:0))))})(),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)"+((businessModelType==="distributor")?" [distributor — thin margin expected]":""),trend:gm.map(function(v){return v*100}),icon:"shield",desc:businessModelType==="distributor"?"Distributors win on scale and asset turns, not gross margin. Stability matters more than the absolute level.":"High & stable margins indicate pricing power"})}
-      else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
-        if(revs0.length>=2&&gps0.length>=2){var gmC=gps0.map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
-          if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
-            metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
-      // 2. REVENUE GROWTH
-      var revs=vals(recent,"revenue");
-      if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){if(revs[gi-1]>0){growths.push((revs[gi]-revs[gi-1])/revs[gi-1]*100)}}
-        var grAvg=avg(growths);var grStd=stdDev(growths);
-        metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (±"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"trending",desc:"Consistent growth signals durable demand"})}
-      // 3. OPERATING LEVERAGE
-      var om=vals(recent,"operatingIncomeRatio");
-      if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
-      if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;var expanding=omLast>omFirst;
-        metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"↑ Expanding":"↓ Contracting")+" ("+omFirst.toFixed(1)+"% → "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"gear",desc:"Expanding operating margins signal scale advantages"})}
-      // 4. ROIC — proper invested capital = equity + total debt - cash (excludes excess cash sitting on balance sheet)
-      if(recent.length>=2&&recentBal.length>=2){var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){
-        var opInc=recent[ri].operatingIncome!=null?recent[ri].operatingIncome:recent[ri].netIncome;
-        var eq=recentBal[ri]?recentBal[ri].totalStockholdersEquity:null;
-        var td=recentBal[ri]?(recentBal[ri].totalDebt||((recentBal[ri].longTermDebt||0)+(recentBal[ri].shortTermDebt||0))):0;
-        var cash=recentBal[ri]?(recentBal[ri].cashAndCashEquivalents||0):0;
-        var ic=eq!=null?(eq+td-cash):null;
-        // Fallback: if invested capital is tiny/negative (net cash > equity+debt), use equity alone
-        if(ic!=null&&ic<eq*0.1&&eq>0)ic=eq;
-        if(opInc!=null&&ic&&ic>0)roics.push(opInc/ic*100)}
-        if(roics.length>=2){
-          var _roicAvg=avg(roics);
-          var _isAcquirer=businessModelType==="serial_acquirer";
-          var _isFinancial=businessModelType==="financial";
-          var _roicThresh=_isAcquirer?8:15;
-          var _roicScore=_isAcquirer
-            ?Math.min(10,Math.max(1,Math.round(_roicAvg>20?9:_roicAvg>15?8:_roicAvg>10?7:_roicAvg>8?6:_roicAvg>5?5:3)))
-            :Math.min(10,Math.max(1,Math.round(_roicAvg>30?9:_roicAvg>20?8:_roicAvg>15?7:_roicAvg>10?6:_roicAvg>5?4:2)));
-          var _roicDesc=_isAcquirer?"ROIC is understated for serial acquirers due to ongoing M&A deployment. A growing acquired portfolio with improving organic returns matters more than the absolute number.":"High ROIC is the hallmark of a true moat";
-          var _roicName=_isAcquirer?"ROIC (acquisition-adjusted)":"Return on Invested Capital";
-          metrics.push({id:"roic",name:_roicName,score:_roicScore,value:_roicAvg.toFixed(1)+"%",detail:"Avg ROIC "+_roicAvg.toFixed(1)+"% over "+roics.length+"yr"+(_isAcquirer?" [serial acquirer — lower threshold applied]":""),trend:roics,icon:"target",desc:_roicDesc})}}
-      // 5. FCF CONVERSION
-      if(recentCf.length>=2&&recent.length>=2){var fcfC=[];for(var fi=0;fi<Math.min(recentCf.length,recent.length);fi++){var fcf=recentCf[fi].freeCashFlow!=null?recentCf[fi].freeCashFlow:((recentCf[fi].operatingCashFlow!=null&&recentCf[fi].capitalExpenditure!=null)?(recentCf[fi].operatingCashFlow+Math.min(0,recentCf[fi].capitalExpenditure)):null);var ni=recent[fi].netIncome;if(fcf!=null&&ni&&ni>0)fcfC.push(fcf/ni*100)}
-        if(fcfC.length>=2){metrics.push({id:"fcfConversion",name:"FCF Conversion",score:Math.min(10,Math.max(1,Math.round(avg(fcfC)>120?9:avg(fcfC)>100?8:avg(fcfC)>80?7:avg(fcfC)>50?5:avg(fcfC)>0?3:1))),value:avg(fcfC).toFixed(0)+"%",detail:"FCF/NI ratio avg "+avg(fcfC).toFixed(0)+"%",trend:fcfC,icon:"dollar",desc:"High FCF relative to net income shows earnings quality"})}}
-      // 6. FINANCIAL FORTRESS
-      if(recentBal.length>=1&&recent.length>=1){var lastBal=recentBal[recentBal.length-1];var lastInc=recent[recent.length-1];var nd=lastBal.netDebt||(lastBal.totalDebt||0)-(lastBal.cashAndCashEquivalents||0);var ebitda=lastInc.ebitda||(lastInc.operatingIncome&&lastInc.depreciationAndAmortization?(lastInc.operatingIncome+Math.abs(lastInc.depreciationAndAmortization)):null);
-        if(ebitda&&ebitda>0){var ratio=nd/ebitda;
-          // Business model-adjusted leverage tolerance
-          var _bmt=businessModelType||"competitive";
-          var _rawFortress=ratio<0?10:ratio<1?8:ratio<2?7:ratio<3?5:ratio<5?3:1;
-          var _floorByBM=_bmt==="monopoly"?7:_bmt==="oligopoly"?6:_bmt==="niche"?5:_bmt==="commodity"?1:3;
-          var _fortressScore=Math.min(10,Math.max(_floorByBM,Math.round(_rawFortress)));
-          var _adjNote=(_bmt==="monopoly"||_bmt==="oligopoly")&&ratio>=2?" (adjusted for "+_bmt+")":"";
-          metrics.push({id:"fortress",name:"Financial Fortress",score:_fortressScore,value:ratio<0?"Net Cash":ratio.toFixed(1)+"x",detail:"Net Debt/EBITDA = "+(ratio<0?"Net Cash":ratio.toFixed(1)+"x")+_adjNote,trend:null,icon:"castle",desc:"Low leverage = resilience and optionality. Score adjusts for business model type."})}
-        else if(nd<0){metrics.push({id:"fortress",name:"Financial Fortress",score:9,value:"Net Cash",detail:"More cash than debt",trend:null,icon:"castle",desc:"Low leverage = resilience and optionality"})}}
-      // 7. R&D
-      var rds=[];for(var rdi=0;rdi<recent.length;rdi++){var rd=recent[rdi].researchAndDevelopmentExpenses;var rv2=recent[rdi].revenue;if(rd&&rv2)rds.push(rd/rv2*100)}
-      if(rds.length>=2){metrics.push({id:"rdIntensity",name:"R&D Investment",score:Math.min(10,Math.max(1,Math.round(avg(rds)>20?8:avg(rds)>12?7:avg(rds)>6?6:avg(rds)>3?5:3))),value:avg(rds).toFixed(1)+"%",detail:"R&D/Revenue avg "+avg(rds).toFixed(1)+"%",trend:rds,icon:"flask",desc:"Sustained R&D builds innovation moats"})}
-      // 8. NET MARGIN
-      var nm=vals(recent,"netIncomeRatio");
-      if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
-      if(nm.length>=2){var nmF=nm[0]*100;var nmL=nm[nm.length-1]*100;var nmA=avg(nm)*100;var imp=nmL>nmF;
-        metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"↑":"↓")+" "+nmF.toFixed(1)+"% → "+nmL.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"bar",desc:"Improving profitability = strengthening position"})}
-      if(metrics.length===0)return null;
-      var composite=Math.round(avg(metrics.map(function(m){return m.score})));
-      return{metrics:metrics,composite:composite,years:recent.length}}
 
 
   return(<div className={bm?"ta-bm":isForest?"ta-forest":theme==="purple"?"ta-purple":theme==="paypal"?"ta-ocean":""} style={{display:"flex",height:"100vh",background:K.bg,color:K.txt,fontFamily:fb,overflow:"hidden",position:"relative"}}>{renderModal()}<AIPromptModal/>{sellCheckTgt&&<SellCheckModal/>}{showUpgrade&&<UpgradeModal/>}{obStep>0&&<OnboardingFlow K={K} S={S} fm={fm} fb={fb} fh={fh} isDark={isDark} isMobile={isMobile} cSym={cSym} nId={nId} cos={cos} setCos={setCos} selId={selId} setSelId={setSelId} obStep={obStep} setObStep={setObStep} obPath={obPath} setObPath={setObPath} oUsername={oUsername} setOUsername={setOUsername} oTicker={oTicker} setOTicker={setOTicker} oName={oName} setOName={setOName} oSector={oSector} setOSector={setOSector} oLook={oLook} setOLook={setOLook} oDomain={oDomain} setODomain={setODomain} oIndustry={oIndustry} setOIndustry={setOIndustry} oPrice={oPrice} setOPrice={setOPrice} oStyle={oStyle} setOStyle={setOStyle} oTCore={oTCore} setOTCore={setOTCore} oTMoat={oTMoat} setOTMoat={setOTMoat} oTRisk={oTRisk} setOTRisk={setOTRisk} oTSell={oTSell} setOTSell={setOTSell} oKpiSel={oKpiSel} setOKpiSel={setOKpiSel} oKpiTargets={oKpiTargets} setOKpiTargets={setOKpiTargets} oCoId={oCoId} setOCoId={setOCoId} oShares={oShares} setOShares={setOShares} oAvgCost={oAvgCost} setOAvgCost={setOAvgCost} oPurchDate={oPurchDate} setOPurchDate={setOPurchDate} oTmrRef={_oTmrRef} upd={upd} lookupTicker={lookupTicker} finishOnboarding={finishOnboarding} setDetailTab={setDetailTab} setGuidedSetup={setGuidedSetup} setTourStep={setTourStep} INVEST_STYLES={INVEST_STYLES} STYLE_MAP={STYLE_MAP} METRIC_MAP={METRIC_MAP} SAMPLE={SAMPLE} IC={IC} TLogo={TLogo} _isBm={_isBm}/>}{tourStep>0&&<DossierTour/>}
