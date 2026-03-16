@@ -1,436 +1,925 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS } from "./constants";
+import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcAlignmentSignals, calcMoatFromData } from "./utils";
 
-export default function WeeklyReview({
-  cos, weeklyReviews, saveReview, streakData, openChest,
-  K, S, fm, fh, fb, theme, isMobile, _isBm,
-  getWeekId, IC, upd, logJournalEntry,
-  setShowUpgrade, setUpgradeCtx, showToast,
-  milestones,
-  trialActive, trialExpired, effectivePlan,
-}) {
+export default function AllAssets({
+  cos, page, setPage, setSelId, setDetailTab,
+  K, fm, fh, fb, isMobile, _isBm, conviction,
+  IC, CoLogo, Modal,
+  currency,
+  otherAssets, setOtherAssets,
+  netWorthHistory, setNetWorthHistory,
+  setAiModal,
+  cSym,
+  setSellCheckTgt,
+}) {  cos = cos || [];
+  otherAssets = otherAssets || [];
+  netWorthHistory = netWorthHistory || [];
+
+
   // ── Array prop guards ──
   cos = cos || [];
-  weeklyReviews = weeklyReviews || [];
-  streakData = streakData || {};
-  cos = cos || [];
-  weeklyReviews = weeklyReviews || [];
+  netWorthHistory = netWorthHistory || [];
+  otherAssets = otherAssets || [];
 
-  var _saved=React.useState(false),saved=_saved[0],setSaved=_saved[1];
-  var trial=null;
-  var isThesis = theme === "thesis_dark" || theme === "thesis_light";
-  var currentWeekReviewed = weeklyReviews && weeklyReviews.length > 0 && weeklyReviews[0].weekId === getWeekId();
-    var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-    var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
-    var today=new Date().getDay();
-    var isReviewDay=today===0||today===5||today===6;
-    var _step=useState(alreadyDone?"done":"intro"),step=_step[0],setStep=_step[1];
-    var _idx=useState(0),idx=_idx[0],setIdx=_idx[1];
-    var _revs=useState({}),revs=_revs[0],setRevs=_revs[1];
-    var _notes=useState({}),notes=_notes[0],setNotes=_notes[1];
-    var _actions=useState({}),actions=_actions[0],setActions=_actions[1];
-    var _refl=useState(""),reflection=_refl[0],setReflection=_refl[1];
-    var _milestone=useState(null),milestone=_milestone[0],setMilestone=_milestone[1];
-    var c=portfolio[idx];
-    var sw=streakData.current||0;
-    var isFree=effectivePlan!=="pro"&&!trialActive; // trial = full pro experience
+  var _liab=React.useState([]),liabilities=_liab[0],setLiabilities=_liab[1];
+  var _nwt=React.useState("summary"),nwTab=_nwt[0],setNwTab=_nwt[1];
+  var _at=React.useState({}),assetTargets=_at[0],setAssetTargets=_at[1];
+  var _fx=React.useState({}),fxRates=_fx[0],setFxRates=_fx[1];
+    var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
+    var _lmodal=useState(null),lmodal=_lmodal[0],setLmodal=_lmodal[1];
+    var _form=useState({}),form=_form[0],setForm=_form[1];
+    var _lform=useState({}),lform=_lform[0],setLform=_lform[1];
+    var _prices=useState({}),livePrices=_prices[0],setLivePrices=_prices[1];
+    var _ftch=useState(false),fetching=_ftch[0],setFetching=_ftch[1];
+    var _p2form=useState({ticker:"",name:"",shares:"",avgCost:""}),p2form=_p2form[0],setP2form=_p2form[1];
+    var _expanded=useState({stocks:true}),expanded=_expanded[0],setExpanded=_expanded[1];
+    var _step=useState(0),step=_step[0],setStep=_step[1];
+    var _editTgt=useState(false),editTgt=_editTgt[0],setEditTgt=_editTgt[1];
+    var _tgtDraft=useState({}),tgtDraft=_tgtDraft[0],setTgtDraft=_tgtDraft[1];
+    var _lfx=useState({}),localFx=_lfx[0],setLocalFx=_lfx[1];
 
-    // Master unlock journey — single source of truth
-    var JOURNEY=[
-      {w:1,type:"theme",id:"forest",label:"Forest Theme",icon:"seedling",desc:"A calm dark-green workspace"},
-      {w:2,type:"lens",id:"munger",label:"Munger Lens",icon:"search",desc:"Quality at scale filter"},
-      {w:3,type:"theme",id:"paypal",label:"Ocean",icon:"shield",desc:"Clean professional blue"},
-      {w:4,type:"lens",id:"buffett",label:"Buffett Lens",icon:"castle",desc:"Owner earnings framework"},
-      {w:6,type:"theme",id:"purple",label:"Purple Theme",icon:"target",desc:"Twilight dark palette"},
-      {w:8,type:"lens",id:"greenblatt",label:"Magic Formula Lens",icon:"bar",desc:"Greenblatt's two-factor system"},
-      {w:10,type:"theme",id:"bloomberg",label:"Bloomberg Terminal",icon:"trending",desc:"Amber-on-black terminal workspace"},
-      {w:12,type:"lens",id:"lynch",label:"Lynch + Akre + Pabrai Lenses",icon:"book",desc:"Three more investor frameworks"},
+    var ATYPES=[
+      {id:"real_estate",label:"Real Estate",color:"#8b5cf6",icon:"moat"},
+      {id:"etf",label:"ETFs & Funds",color:"#10b981",icon:"chart"},
+      {id:"gold",label:"Gold & Precious Metals",color:"#f59e0b",icon:"shield"},
+      {id:"crypto",label:"Crypto",color:"#f97316",icon:"dice"},
+      {id:"portfolio2",label:"2nd Stock Portfolio",color:"#06b6d4",icon:"trending",isPortfolio2:true},
+      {id:"cash",label:"Cash & Savings",color:"#22c55e",icon:"dollar"},
+      {id:"bonds",label:"Bonds & Fixed Income",color:"#6b7280",icon:"overview"},
+      {id:"valuables",label:"Valuables & Collectibles",color:"#ec4899",icon:"shield",manual:true},
+      {id:"royalties",label:"Royalties & IP",color:"#a78bfa",icon:"book",manual:true},
+      {id:"other",label:"Other Assets",color:"#94a3b8",icon:"folder"},
     ];
+    var ATYPES_MAP={};ATYPES.forEach(function(t){ATYPES_MAP[t.id]=t});
 
-    // Countdown timer
-    var _ct=useState(null),countdownStr=_ct[0],setCountdownStr=_ct[1];
+    var LTYPES=[
+      {id:"mortgage",label:"Mortgage",color:K.red,icon:"moat"},
+      {id:"car_loan",label:"Car Loan",color:"#f97316",icon:"trending"},
+      {id:"student_loan",label:"Student Loan",color:"#f59e0b",icon:"journal"},
+      {id:"credit_card",label:"Credit Card",color:"#ef4444",icon:"overview"},
+      {id:"other_debt",label:"Other Debt",color:"#94a3b8",icon:"folder"},
+    ];
+    var LTYPES_MAP={};LTYPES.forEach(function(t){LTYPES_MAP[t.id]=t});
+
+    var CRYPTO_IDS={BTC:"bitcoin",ETH:"ethereum",SOL:"solana",BNB:"binancecoin",ADA:"cardano",XRP:"ripple",DOGE:"dogecoin",MATIC:"matic-network",POL:"matic-network",DOT:"polkadot",AVAX:"avalanche-2",LINK:"chainlink",UNI:"uniswap",LTC:"litecoin",ATOM:"cosmos",ALGO:"algorand",SHIB:"shiba-inu",NEAR:"near",ARB:"arbitrum",OP:"optimism",INJ:"injective-protocol",SUI:"sui",APT:"aptos",TON:"the-open-network",PEPE:"pepe",WIF:"dogwifcoin"};
+    var COMMODITY_MAP={GOLD:"XAUUSD",XAU:"XAUUSD",SILVER:"XAGUSD",XAG:"XAGUSD",OIL:"CLUSD",CRUDE:"CLUSD",PLATINUM:"XPTUSD",PALLADIUM:"XPDUSD"};
+
     useEffect(function(){
-      if(isReviewDay)return;
-      function tick(){var now=new Date();var fri=new Date(now);var daysUntil=(5-now.getDay()+7)%7;if(daysUntil===0)daysUntil=7;fri.setDate(now.getDate()+daysUntil);fri.setHours(0,0,0,0);
-        var diff=fri-now;if(diff<=0){setCountdownStr(null);return}
-        var d2=Math.floor(diff/86400000);var h=Math.floor((diff%86400000)/3600000);var m=Math.floor((diff%3600000)/60000);var s=Math.floor((diff%60000)/1000);
-        setCountdownStr((d2>0?d2+"d ":"")+h+"h "+m+"m "+s+"s")}
-      tick();var iv=setInterval(tick,1000);return function(){clearInterval(iv)}},[isReviewDay]);
+      async function fetchFx(){
+        if(currency==="USD"){setLocalFx({USD:1});return}
+        try{
+          var r=await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+          var d=await r.json();
+          if(d&&d.rates){setLocalFx(d.rates)}
+        }catch(e){setLocalFx({})}
+      }
+      fetchFx();
+    },[currency]);
 
-    function setConv(id,val){setRevs(function(p){var n=Object.assign({},p);n[id]=val;return n})}
-    function setNote(id,val){setNotes(function(p){var n=Object.assign({},p);n[id]=val;return n})}
-    function setAction(id,val){setActions(function(p){var n=Object.assign({},p);n[id]=val;return n})}
-    function nextHolding(){if(idx<portfolio.length-1){setIdx(idx+1)}else{setStep("summary")}}
-    function prevHolding(){if(idx>0)setIdx(idx-1)}
-
-    function finishReview(){
-      var entries=portfolio.map(function(c2){return{ticker:c2.ticker,id:c2.id,prev:c2.conviction||0,
-        new:revs[c2.id]!=null?revs[c2.id]:c2.conviction||0,note:notes[c2.id]||"",action:actions[c2.id]||"hold"}});
-      var rev={weekId:weekId,date:new Date().toISOString(),entries:entries,reflection:reflection.trim(),
-        summary:{total:portfolio.length,changed:entries.filter(function(e){return e.prev!==e.new}).length,
-        avgConv:Math.round(entries.reduce(function(s,e){return s+e.new},0)/Math.max(entries.length,1)*10)/10}};
-      saveReview(rev);
-      entries.forEach(function(e){if(e.new!==e.prev||e.note){
-        var hist=(cos.find(function(x){return x.id===e.id})||{}).convictionHistory||[];
-        hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
-        upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
-      entries.forEach(function(e2){if(Math.abs(e2.new-e2.prev)>=2){
-        logJournalEntry(e2.id,{cardType:"conviction_shift",ticker:e2.ticker,prevConviction:e2.prev,newConviction:e2.new,delta:e2.new-e2.prev,note:e2.note||"",action:e2.action||"hold",weekId:weekId})}});
-      // Check for milestone unlock (new streak = sw+1)
-      var newStreak=sw+1;
-      var hit=JOURNEY.find(function(j){return j.w===newStreak});
-      if(hit&&isFree){setMilestone(hit);setStep("milestone")}else{
-        showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
-        setTimeout(function(){openChest()},1500);setStep("done")}
+    var fxRate=(currency==="USD")?1:(localFx[currency]||fxRates[currency]||1);
+    function toDisplay(v){return v*fxRate}
+    function fmtM(v){
+      if(!v||isNaN(v))return cSym+"0";
+      var dv=toDisplay(Math.abs(v));
+      var s=dv>=1e6?(dv/1e6).toFixed(2)+"M":dv>=1e3?(dv/1e3).toFixed(1)+"K":dv.toFixed(0);
+      return(v<0?"-":"")+cSym+s;
     }
 
-    function dismissMilestone(){
-      showToast("✓ Week "+(sw+1)+" complete — "+milestone.label+" unlocked!","info",5000);
-      setTimeout(function(){openChest()},800);setStep("done")}
+    // Portfolio values
+    var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    var portValue=portCos.reduce(function(s,c){var p=c.position||{};return p.shares>0&&p.currentPrice>0?s+p.shares*p.currentPrice:s},0);
+    var portCost=portCos.reduce(function(s,c){var p=c.position||{};return p.shares>0&&p.avgCost>0?s+p.shares*p.avgCost:s},0);
 
-    var streakColor=sw>=8?K.grn:sw>=4?K.amb:K.mid;
-    var nextUnlock=JOURNEY.find(function(j){return j.w>sw});
-    var scored=[];var rights=0;
-    cos.forEach(function(c2){(c2.decisions||[]).forEach(function(d){if(d.outcome){scored.push(d);if(d.outcome==="right")rights++}})});
-    var dqPct=scored.length>0?Math.round(rights/scored.length*100):0;
+    function getAssetValue(a){
+      if(a.type==="portfolio2") return(a.holdings||[]).reduce(function(s,h){var px=livePrices["FMP_"+h.ticker]||h.currentPrice||h.avgCost||0;return s+h.shares*px},0);
+      if(a.type==="gold"&&a.ticker&&a.quantity){
+        var gt=a.ticker.toUpperCase();var gkey=COMMODITY_MAP[gt]?gt:(gt||"GOLD");
+        var gp=livePrices["FMP_"+gkey]||livePrices["FMP_XAUUSD"]||0;
+        return gp?a.quantity*gp:Number(a.costBasis)||0;
+      }
+      if(a.type==="etf"&&a.ticker&&a.quantity){var lp=livePrices["FMP_"+a.ticker.toUpperCase()];return lp?a.quantity*lp:Number(a.costBasis)||0}
+      if(a.type==="crypto"&&a.ticker&&a.quantity){var cp=livePrices["CG_"+a.ticker.toUpperCase()];return cp?a.quantity*cp:Number(a.costBasis)||0}
+      return Number(a.manualValue)||0;
+    }
+    function getAssetCost(a){
+      if(a.type==="portfolio2") return(a.holdings||[]).reduce(function(s,h){return s+h.shares*h.avgCost},0);
+      return Number(a.costBasis)||0;
+    }
 
-    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}>
-        <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Weekly Owner's Review</h1>
-        <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>3 minutes. One question per holding. Your portfolio, honestly examined.</p>
-      </div>
+    var _lastRefresh=useState(null),lastRefresh=_lastRefresh[0],setLastRefresh=_lastRefresh[1];
 
-      {/* ── Streak bar ── */}
-      <div style={{display:"flex",alignItems:"center",gap:16,padding:"14px 20px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,marginBottom:20}}>
+    async function refreshLivePrices(){
+      setFetching(true);
+      var fmpTickers=[];var cgTickers=[];var commodityTickers=[];
+      otherAssets.forEach(function(a){
+        if(a.type==="crypto"&&a.ticker){cgTickers.push(a.ticker.toUpperCase());return}
+        if(a.type==="gold"&&a.ticker){
+          var t=a.ticker.toUpperCase();
+          if(COMMODITY_MAP[t])commodityTickers.push(t);
+          else if(t==="GLD"||t==="SLV"||t==="IAU"||t==="PPLT")fmpTickers.push(t);
+          else{commodityTickers.push("GOLD");} // default gold
+          return;
+        }
+        if(a.type==="etf"&&a.ticker)fmpTickers.push(a.ticker.toUpperCase());
+        if(a.type==="portfolio2")(a.holdings||[]).forEach(function(h){if(h.ticker)fmpTickers.push(h.ticker.toUpperCase())});
+      });
+      fmpTickers=[...new Set(fmpTickers)];cgTickers=[...new Set(cgTickers)];commodityTickers=[...new Set(commodityTickers)];
+      var newPrices=Object.assign({},livePrices);
+      // FMP equities + ETFs
+      if(fmpTickers.length>0){
+        try{
+          var results=await Promise.all(fmpTickers.map(function(t){return fmp("quote/"+t)}));
+          fmpTickers.forEach(function(t,i){var d=results[i];if(d&&d[0]){newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0}});
+        }catch(e){}
+      }
+      // FMP commodities (XAUUSD etc.)
+      if(commodityTickers.length>0){
+        try{
+          var comResults=await Promise.all(commodityTickers.map(function(t){var sym=COMMODITY_MAP[t]||"XAUUSD";return fmp("quote/"+sym)}));
+          commodityTickers.forEach(function(t,i){var d=comResults[i];if(d&&d[0]){var sym=COMMODITY_MAP[t]||"XAUUSD";newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0;newPrices["FMP_"+sym]=d[0].price||0}});
+        }catch(e){}
+      }
+      // CoinGecko for crypto
+      if(cgTickers.length>0){
+        try{
+          var cgIds=cgTickers.map(function(t){return CRYPTO_IDS[t]||t.toLowerCase()}).filter(Boolean).join(",");
+          var resp=await fetch("https://api.coingecko.com/api/v3/simple/price?ids="+cgIds+"&vs_currencies=usd&include_24hr_change=true");
+          var cgData=await resp.json();
+          cgTickers.forEach(function(t){var id=CRYPTO_IDS[t]||t.toLowerCase();if(cgData[id]){newPrices["CG_"+t]=cgData[id].usd;newPrices["CHG_"+t]=cgData[id].usd_24h_change||0}});
+        }catch(e){}
+      }
+      setLivePrices(newPrices);setLastRefresh(new Date());setFetching(false);
+    }
+
+    useEffect(function(){if(otherAssets.length>0)refreshLivePrices()},[otherAssets.length]);
+
+    // Totals
+    var otherValue=otherAssets.reduce(function(s,a){return s+getAssetValue(a)},0);
+    var totalAssetsUSD=portValue+otherValue;
+    var totalLiabUSD=liabilities.reduce(function(s,l){return s+Number(l.balance||0)},0);
+    var totalValueUSD=totalAssetsUSD-totalLiabUSD;
+    var totalCostUSD=portCost+otherAssets.reduce(function(s,a){return s+getAssetCost(a)},0);
+    var totalGainUSD=totalAssetsUSD-totalCostUSD;
+    var totalGainPct=totalCostUSD>0?totalGainUSD/totalCostUSD*100:0;
+
+    // Auto-log snapshot
+    useEffect(function(){
+      if(!loaded||totalValueUSD<=0)return;
+      var today=new Date().toISOString().slice(0,10);
+      var last=netWorthHistory.length>0?netWorthHistory[netWorthHistory.length-1]:null;
+      if(last&&last.date===today)return;
+      var next=netWorthHistory.concat([{date:today,value:totalValueUSD}]).slice(-365);
+      setNetWorthHistory(next);
+    },[loaded,page]);
+
+    // Allocation
+    var allocData=[];
+    if(portValue>0) allocData.push({label:"Stock Portfolio",value:portValue,color:K.acc,id:"stocks"});
+    ATYPES.forEach(function(t){
+      var val=otherAssets.filter(function(a){return a.type===t.id}).reduce(function(s,a){return s+getAssetValue(a)},0);
+      if(val>0) allocData.push({label:t.label,value:val,color:t.color,id:t.id});
+    });
+
+    // Income
+    var stockIncome=portCos.reduce(function(s,c){
+      var p=c.position||{};if(!p.shares||p.shares<=0)return s;
+      var dps=c.divPerShare||c.lastDiv||0;
+      var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+      return s+dps*mult*p.shares;
+    },0);
+    var otherIncome=otherAssets.reduce(function(s,a){return s+Number(a.annualIncome||0)},0);
+    var totalIncomeUSD=stockIncome+otherIncome;
+    var incomeYield=totalAssetsUSD>0?totalIncomeUSD/totalAssetsUSD*100:0;
+
+    // Dividend-paying stocks for income tab
+    var incomeCos=portCos.filter(function(c){
+      var p=c.position||{};var dps=c.divPerShare||c.lastDiv||0;return dps>0&&p.shares>0;
+    }).map(function(c){
+      var p=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
+      var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+      var annual=dps*mult*p.shares;
+      return{c:c,annual:annual,monthly:annual/12,yld:p.currentPrice>0?dps*mult/p.currentPrice*100:0,freq:c.divFrequency||"quarterly"};
+    }).sort(function(a,b){return b.annual-a.annual});
+
+    // Monthly income calendar — spread by frequency
+    // Each source has: {label, annual, monthly, freq, color, type}
+    var MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var incomeBreakdown=[];
+    // Stock dividends
+    incomeCos.forEach(function(item){incomeBreakdown.push({label:item.c.ticker,annual:item.annual,monthly:item.annual/12,freq:item.freq,color:K.acc,type:"stock"})});
+    // ETF dividends (via annualIncome field or yield estimate)
+    otherAssets.filter(function(a){return a.type==="etf"&&a.annualIncome>0}).forEach(function(a){
+      var freq=a.divFrequency||"quarterly";
+      incomeBreakdown.push({label:a.ticker||a.name,annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:freq,color:"#10b981",type:"etf"})
+    });
+    // Bonds — typically semi-annual
+    otherAssets.filter(function(a){return a.type==="bonds"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Bond",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:a.divFrequency||"semi",color:"#6b7280",type:"bonds"})
+    });
+    // Royalties — steady monthly
+    otherAssets.filter(function(a){return a.type==="royalties"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Royalty",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:"#a78bfa",type:"royalties"})
+    });
+    // Real estate rental
+    otherAssets.filter(function(a){return a.type==="real_estate"&&a.annualIncome>0}).forEach(function(a){
+      incomeBreakdown.push({label:a.name||"Property",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:"#8b5cf6",type:"real_estate"})
+    });
+    // Everything else with income
+    otherAssets.filter(function(a){return["etf","bonds","royalties","real_estate"].indexOf(a.type)<0&&a.annualIncome>0}).forEach(function(a){
+      var atp2=ATYPES.find(function(t){return t.id===a.type})||{color:K.dim};
+      incomeBreakdown.push({label:a.name||a.ticker||"Other",annual:Number(a.annualIncome),monthly:Number(a.annualIncome)/12,freq:"monthly",color:atp2.color,type:a.type})
+    });
+    var monthlyIncome=Array(12).fill(0);
+    // Per-month breakdown for tooltip
+    var monthlyDetail=Array.from({length:12},function(){return[]});
+    incomeBreakdown.forEach(function(item){
+      var months=[];
+      if(item.freq==="monthly"){for(var m=0;m<12;m++)months.push([m,item.monthly])}
+      else if(item.freq==="quarterly"){[2,5,8,11].forEach(function(m){months.push([m,item.monthly*3])})}
+      else if(item.freq==="semi"){[5,11].forEach(function(m){months.push([m,item.monthly*6])})}
+      else if(item.freq==="annual"){months.push([11,item.annual])}
+      else{[2,5,8,11].forEach(function(m){months.push([m,item.monthly*3])})}
+      months.forEach(function(pair){monthlyIncome[pair[0]]+=pair[1];monthlyDetail[pair[0]].push({label:item.label,val:pair[1],color:item.color})});
+    });
+    var maxMonthIncome=Math.max.apply(null,monthlyIncome)||1;
+    var totalOtherIncome=incomeBreakdown.filter(function(x){return x.type!=="stock"}).reduce(function(s,x){return s+x.annual},0);
+
+    // Donut
+    function donutPath(startDeg,endDeg,r,cx,cy){
+      function pt(deg){var rad=(deg-90)*Math.PI/180;return{x:(cx+r*Math.cos(rad)).toFixed(2),y:(cy+r*Math.sin(rad)).toFixed(2)}}
+      var s=pt(startDeg),e=pt(endDeg),large=endDeg-startDeg>180?1:0;
+      return"M "+s.x+" "+s.y+" A "+r+" "+r+" 0 "+large+" 1 "+e.x+" "+e.y;
+    }
+    var donutR=56,donutCx=75,donutCy=75,donutSW=18,donutCum=0;
+    var donutSegments=allocData.map(function(d){
+      var frac=totalAssetsUSD>0?d.value/totalAssetsUSD:0;
+      var startDeg=donutCum*360;donutCum+=frac;
+      return{d:d,frac:frac,startDeg:startDeg,endDeg:Math.max(startDeg+0.5,donutCum*360-1.5)};
+    });
+
+    // Asset type helpers
+    var ALL_ALLOC_IDS=["stocks"].concat(ATYPES.map(function(t){return t.id}));
+    var ALLOC_LABELS={stocks:"Stock Portfolio",real_estate:"Real Estate",etf:"ETFs & Funds",gold:"Gold & Metals",crypto:"Crypto",portfolio2:"2nd Portfolio",cash:"Cash & Savings",bonds:"Bonds",valuables:"Valuables",royalties:"Royalties",other:"Other"};
+    var ALLOC_COLORS={stocks:K.acc,real_estate:"#8b5cf6",etf:"#10b981",gold:"#f59e0b",crypto:"#f97316",portfolio2:"#06b6d4",cash:"#22c55e",bonds:"#6b7280",valuables:"#ec4899",royalties:"#a78bfa",other:"#94a3b8"};
+    function getCurrentPct(id){
+      if(totalAssetsUSD<=0)return 0;
+      if(id==="stocks")return portValue/totalAssetsUSD*100;
+      return otherAssets.filter(function(a){return a.type===id}).reduce(function(s,a){return s+getAssetValue(a)},0)/totalAssetsUSD*100;
+    }
+    function getTargetPct(id){return Number(assetTargets[id])||0}
+    function getDrift(id){return getCurrentPct(id)-getTargetPct(id)}
+
+    // Modal helpers
+    var inputStyle={width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"9px 12px",fontSize:13,fontFamily:fm,outline:"none",boxSizing:"border-box"};
+    var secLabel={fontSize:11,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontWeight:600,fontFamily:fb,marginBottom:6,display:"block"};
+
+    function openAdd(type){setForm({type:type,name:"",ticker:"",quantity:"",costBasis:"",manualValue:"",annualIncome:"",divFrequency:type==="bonds"?"semi":"quarterly"});setStep(1);setModal("add")}
+    function openEdit(a){setForm(Object.assign({},a));setModal("edit")}
+    function saveAsset(){
+      var a=Object.assign({},form);
+      if(!a.id)a.id="oa_"+Date.now();
+      ["quantity","costBasis","manualValue","annualIncome"].forEach(function(k){if(a[k])a[k]=Number(a[k])});
+      if(!a.holdings)a.holdings=[];
+      setOtherAssets(modal==="edit"?otherAssets.map(function(x){return x.id===a.id?a:x}):otherAssets.concat([a]));
+      setModal(null);setForm({});setStep(0);
+    }
+    function deleteAsset(id){setOtherAssets(otherAssets.filter(function(a){return a.id!==id}))}
+
+    function addP2Holding(){
+      var t=p2form.ticker.toUpperCase().trim();if(!t||!p2form.shares||!p2form.avgCost)return;
+      setForm(Object.assign({},form,{holdings:(form.holdings||[]).concat([{id:"h_"+Date.now(),ticker:t,name:p2form.name||t,shares:Number(p2form.shares),avgCost:Number(p2form.avgCost)}])}));
+      setP2form({ticker:"",name:"",shares:"",avgCost:""});
+    }
+    function removeP2Holding(hid){setForm(Object.assign({},form,{holdings:(form.holdings||[]).filter(function(h){return h.id!==hid})}))}
+
+    function openAddLiab(type){setLform({type:type,name:"",balance:"",interestRate:"",monthlyPayment:""});setLmodal("add")}
+    function openEditLiab(l){setLform(Object.assign({},l));setLmodal("edit")}
+    function saveLiab(){
+      var l=Object.assign({},lform);
+      if(!l.id)l.id="li_"+Date.now();
+      ["balance","interestRate","monthlyPayment"].forEach(function(k){if(l[k])l[k]=Number(l[k])});
+      setLiabilities(lmodal==="edit"?liabilities.map(function(x){return x.id===l.id?l:x}):liabilities.concat([l]));
+      setLmodal(null);setLform({});
+    }
+    function deleteLiab(id){setLiabilities(liabilities.filter(function(l){return l.id!==id}))}
+
+    var atype=ATYPES.find(function(t){return t.id===form.type})||{};
+
+    // NW History sparkline in header card
+    function MiniSparkline(){
+      var hist=netWorthHistory.slice(-30);
+      if(hist.length<2)return null;
+      var vals=hist.map(function(h){return toDisplay(h.value)});
+      var minV=Math.min.apply(null,vals);var maxV=Math.max.apply(null,vals);
+      if(maxV===minV)return null;
+      var W=160,H=40;
+      var pts=vals.map(function(v,i){return(i/(vals.length-1)*W).toFixed(1)+","+(H-(v-minV)/(maxV-minV)*H).toFixed(1)}).join(" ");
+      var clr=vals[vals.length-1]>=vals[0]?K.grn:K.red;
+      return<svg width={W} height={H} style={{flexShrink:0}}><polyline points={pts} fill="none" stroke={clr} strokeWidth={1.5} strokeLinejoin="round" opacity={0.8}/></svg>;
+    }
+
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:1000}}>
+
+      {/* ── Header ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:isMobile?"20px 0 20px":"28px 0 20px"}}>
         <div>
-          <div style={{fontSize:30,fontWeight:800,color:streakColor,fontFamily:fm,lineHeight:1}}>{sw}</div>
-          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1}}>WEEK STREAK</div>
+          <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Net Worth</div>
+          <div style={{fontSize:13,color:K.dim}}>{portCos.length} stocks · {otherAssets.length} assets · {liabilities.length} liabilities{currency!=="USD"&&fxRate!==1?" · FX live":""}</div>
         </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:12,color:K.txt,fontWeight:500,marginBottom:5}}>{sw>=8?"Exceptional discipline — Munger-level consistency":sw>=4?"Building the habit — keep it going":sw>=1?"First steps — each week compounds":"Start your review streak today"}</div>
-          <div style={{display:"flex",gap:2}}>{[0,1,2,3,4,5,6,7,8,9,10,11].map(function(i){var done=i<sw;var isMil=JOURNEY.some(function(j){return j.w===i+1});return<div key={i} style={{flex:1,height:6,borderRadius:_isBm?0:2,background:done?streakColor:K.bdr,border:isMil&&!done?"1px solid "+K.acc+"60":"none",position:"relative"}} title={isMil?"Week "+(i+1)+" unlock":(done?"Done":"")}/>})}</div>
-          {nextUnlock&&<div style={{fontSize:10,color:K.acc,marginTop:4,fontFamily:fm}}>{sw>0?"Next: ":"Start to unlock: "}{nextUnlock.label} at week {nextUnlock.w}</div>}
-        </div>
-        <div style={{marginLeft:"auto",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-          {!isReviewDay&&countdownStr&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,textAlign:"right"}}>Next review<br/><span style={{fontWeight:600,color:K.txt}}>{countdownStr}</span></div>}
-          {isReviewDay&&<div style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>Today is review day</div>}
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setLmodal("pick")}} style={{padding:"9px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"50",background:K.red+"0d",color:K.red,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>+ Liability</button>
+          <button onClick={function(){setStep(0);setModal("add")}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 16px",borderRadius:_isBm?0:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}><IC name="plus" size={14} color="#fff"/>Add Asset</button>
         </div>
       </div>
 
-      {/* ═══ INTRO STEP ═══ */}
-      {step==="intro"&&(function(){
-        // Unlock journey track — show all milestones
-        return<div>
-          {/* Journey track */}
-          {trialExpired&&<div style={{background:K.amb+"0d",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}><div style={{fontSize:22}}>{"\u23F3"}</div><div><div style={{fontSize:13,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>Your Pro trial has ended</div><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{"Build your streak to unlock themes, lenses and investor wisdom. Each week unlocks something new."}</div><button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{marginTop:8,padding:"5px 14px",fontSize:11,fontWeight:700,background:K.acc,border:"none",color:"#fff",borderRadius:_isBm?0:6,cursor:"pointer",fontFamily:fm}}>Upgrade to keep Pro</button></div></div>}
-          {isFree&&!trialExpired&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
-            <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:14,display:"flex",alignItems:"center",gap:6}}><IC name="trending" size={12} color={K.dim}/>Your Unlock Journey</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {JOURNEY.map(function(j){var done=sw>=j.w;var isNext=!done&&j.w===nextUnlock?.w;
-                return<div key={j.w} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:_isBm?0:8,background:done?K.grn+"08":isNext?K.acc+"08":"transparent",border:"1px solid "+(done?K.grn+"30":isNext?K.acc+"30":K.bdr+"50"),opacity:done||isNext?1:0.55}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:done?K.grn+"20":isNext?K.acc+"20":K.bdr,border:"1px solid "+(done?K.grn+"60":isNext?K.acc+"60":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    {done?<IC name="check" size={12} color={K.grn}/>:<span style={{fontSize:11,fontWeight:700,color:isNext?K.acc:K.dim,fontFamily:fm}}>{j.w}</span>}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:done?K.grn:isNext?K.acc:K.txt,fontFamily:fm}}>{j.label}</div>
-                    <div style={{fontSize:11,color:K.dim}}>{j.desc}</div>
-                  </div>
-                  <div style={{fontSize:10,color:done?K.grn:isNext?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>{done?"Unlocked":isNext?"Up next":"Week "+j.w}</div>
-                </div>})}
-            </div>
-            <div style={{marginTop:14,padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,display:"flex",alignItems:"center",gap:10}}>
-              <IC name="lightbulb" size={14} color={K.acc}/>
-              <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>Pro users get all themes and lenses immediately. <span style={{color:K.acc,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}}>See what's included →</span></div>
-            </div>
-          </div>}
-          {!isFree&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
-            <IC name="shield" size={16} color={K.grn}/>
-            <div style={{fontSize:13,color:K.mid}}>Pro member — all themes and investor lenses are unlocked. Your review generates a full portfolio health report.</div>
-          </div>}
-          {/* Insight preview chest */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:40,marginBottom:10,display:"inline-block",animation:"glowPulse 2.5s ease-in-out infinite"}}>{String.fromCodePoint(0x1F4DC)}</div>
-            <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Weekly Insight awaits</div>
-            <div style={{fontSize:13,color:K.mid,lineHeight:1.6,maxWidth:340,margin:"0 auto 16px"}}>{isFree?"Complete your review to earn investor wisdom and claim your streak reward.":"Complete your review to receive curated wisdom and your portfolio health report."}</div>
-            {currentWeekReviewed
-              ?<div><div style={{fontSize:14,fontWeight:600,color:K.grn,marginBottom:4}}>{"✓"} Done for this week</div><div style={{fontSize:12,color:K.dim}}>Come back next week</div></div>
-              :<div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"center"}}>
-                <button onClick={function(){setStep("review")}} style={Object.assign({},S.btnP,{padding:"12px 40px",fontSize:14,borderRadius:_isBm?0:10})}>Start Review</button>
-                {alreadyDone&&<button onClick={function(){setStep("done")}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>View past results →</button>}
-              </div>}
+      {/* ── Summary card ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"20px":"24px 32px",marginBottom:16}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:24,alignItems:"center"}}>
+          {/* Donut */}
+          <div style={{flexShrink:0}}>
+            <svg width={150} height={150}>
+              {allocData.length===0&&<circle cx={donutCx} cy={donutCy} r={donutR} fill="none" stroke={K.bdr} strokeWidth={donutSW}/>}
+              {donutSegments.map(function(seg){return<path key={seg.d.id} d={donutPath(seg.startDeg,seg.endDeg,donutR,donutCx,donutCy)} fill="none" stroke={seg.d.color} strokeWidth={donutSW} strokeLinecap="butt"/>})}
+              <text x={donutCx} y={donutCy-10} textAnchor="middle" fontSize={9} fill={K.dim} fontFamily={fb} letterSpacing="0.5">NET WORTH</text>
+              <text x={donutCx} y={donutCy+6} textAnchor="middle" fontSize={13} fill={K.txt} fontWeight={700} fontFamily={fm}>{fmtM(totalValueUSD)}</text>
+              {totalLiabUSD>0&&<text x={donutCx} y={donutCy+18} textAnchor="middle" fontSize={8} fill={K.red} fontFamily={fb}>−{fmtM(totalLiabUSD)} debt</text>}
+            </svg>
           </div>
-          {/* Past review mini-history */}
-          {weeklyReviews.length>1&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px"}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:10}}>RECENT REVIEWS</div>
-            {weeklyReviews.slice(1,6).map(function(h,hi){var d2=h.date?new Date(h.date):null;var ds2=d2?d2.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";var inc=h.entries?h.entries.filter(function(e){return e.new>e.prev}).length:0;var dec=h.entries?h.entries.filter(function(e){return e.new<e.prev}).length:0;
-              return<div key={hi} style={{display:"flex",alignItems:"center",gap:10,padding:"5px 0",borderBottom:hi<Math.min(weeklyReviews.length-2,4)?"1px solid "+K.bdr+"30":"none"}}>
-                <div style={{width:5,height:5,borderRadius:"50%",background:K.grn,flexShrink:0}}/>
-                <div style={{flex:1,fontSize:11,color:K.mid,fontFamily:fm}}>{ds2}</div>
-                <div style={{display:"flex",gap:4}}>
-                  {inc>0&&<span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600}}>↑{inc}</span>}
-                  {dec>0&&<span style={{fontSize:10,color:K.red,fontFamily:fm,fontWeight:600}}>↓{dec}</span>}
-                  <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>avg {h.summary.avgConv}</span>
-                </div>
+          {/* Stats grid */}
+          <div style={{flex:1,minWidth:180}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px 24px",marginBottom:16}}>
+              {[
+                {label:"Total Assets",val:fmtM(totalAssetsUSD),color:K.txt},
+                {label:"Total Liabilities",val:fmtM(totalLiabUSD),color:totalLiabUSD>0?K.red:K.dim},
+                {label:"Unrealised Gain",val:(totalGainUSD>=0?"+":"")+fmtM(totalGainUSD)+" ("+totalGainPct.toFixed(1)+"%)",color:totalGainUSD>=0?K.grn:K.red},
+                {label:"Annual Income",val:fmtM(totalIncomeUSD)+" ("+incomeYield.toFixed(2)+"%)",color:K.grn},
+              ].map(function(s){return<div key={s.label}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{s.label}</div>
+                <div style={{fontSize:15,fontWeight:700,color:s.color,fontFamily:fm}}>{s.val}</div>
               </div>})}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:"6px 14px"}}>
+              {allocData.map(function(d){var pct=totalAssetsUSD>0?(d.value/totalAssetsUSD*100):0;return<div key={d.id} style={{display:"flex",alignItems:"center",gap:5}}>
+                <div style={{width:8,height:8,borderRadius:_isBm?0:2,background:d.color,flexShrink:0}}/>
+                <span style={{fontSize:11,color:K.mid,fontFamily:fb}}>{d.label}</span>
+                <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{pct.toFixed(1)}%</span>
+              </div>})}
+            </div>
+          </div>
+          {/* Sparkline + refresh */}
+          <div style={{display:"flex",flexDirection:"column",gap:12,alignSelf:"flex-start",alignItems:"flex-end"}}>
+            <MiniSparkline/>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+              <button onClick={refreshLivePrices} disabled={fetching} style={{padding:"6px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:fetching?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb,display:"flex",alignItems:"center",gap:5}}>
+                {fetching?<span style={{display:"inline-block",width:10,height:10,border:"1.5px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .7s linear infinite"}}/>:<IC name="gear" size={12} color={K.dim}/>}
+                {fetching?"Refreshing…":"Refresh prices"}
+              </button>
+              {lastRefresh&&<div style={{fontSize:9,color:K.dim,fontFamily:fb}}>Updated {lastRefresh.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div style={{display:"flex",gap:4,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {[["overview","Overview","bar"],["history","History","chart"],["income","Income","dollar"],["targets","Allocation","target"]].map(function(tb){
+          var active=nwTab===tb[0];
+          return<button key={tb[0]} onClick={function(){setNwTab(tb[0])}} style={{display:"flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:_isBm?"0":"8px 8px 0 0",border:"1px solid "+(active?K.bdr:"transparent"),borderBottom:active?"1px solid "+K.card:"none",background:active?K.card:"transparent",color:active?K.txt:K.dim,fontSize:13,fontWeight:active?600:400,cursor:"pointer",fontFamily:fm,marginBottom:active?-1:0}}>
+            <IC name={tb[2]} size={14} color={active?K.txt:K.dim}/>{tb[1]}
+          </button>;
+        })}
+      </div>
+
+      {/* ══ OVERVIEW TAB ══ */}
+      {nwTab==="overview"&&<div>
+        {/* ── Conviction/Position Alignment Banner ── */}
+        {(function(){
+          if(portCos.length<2)return null;
+          var signals=calcAlignmentSignals(K, portCos);
+          if(signals.mismatches.length===0&&signals.flags.length===0)return null;
+          return<AlignmentWidget
+            signals={signals}
+            compact={true}
+            onAI={function(item){
+              var FRAMING_MAP={
+                challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+                sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+              };
+              var fr=FRAMING_MAP[item.aiType]||FRAMING_MAP["challenge"];
+              setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
+            }}
+            onGo={function(c){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+            onSellCheck={function(c){setSellCheckTgt(c)}}
+          />;
+        })()}
+        {/* Main stock portfolio */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:12,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{stocks:!expanded.stocks}))}}>
+            <IC name="trending" size={14} color={K.acc}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Stock Portfolio</div>
+              <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginTop:2}}>{portCos.length} holdings</div>
+            </div>
+            <div style={{textAlign:"right",marginRight:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(portValue)}</div>
+              {portCost>0&&<div style={{fontSize:12,color:portValue>=portCost?K.grn:K.red,fontFamily:fb}}>{portValue>=portCost?"+":""}{((portValue-portCost)/portCost*100).toFixed(1)}%</div>}
+            </div>
+            <IC name={expanded.stocks?"alert":"plus"} size={12} color={K.dim}/>
+          </div>
+          {expanded.stocks&&<div style={{borderTop:"1px solid "+K.bdr}}>
+            {portCos.length===0&&<div style={{padding:"20px",textAlign:"center",color:K.dim,fontSize:13}}>No portfolio positions yet.</div>}
+            {portCos.map(function(c){
+              var p=c.position||{};var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:null;
+              var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
+              var pct=val&&totalAssetsUSD>0?val/totalAssetsUSD*100:null;
+              var todayChg=c._moatCache&&c._moatCache.priceChange!==undefined?c._moatCache.priceChange:null;
+              return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
+                <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
+                  <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                </div>
+                {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
+                {(function(){
+                  var conv=c.conviction||0;if(!conv)return null;
+                  var cc=conv>=8?K.grn:conv>=5?K.amb:K.red;
+                  var portVal2=portCos.reduce(function(s,pc){var pp=pc.position||{};return pp.shares>0&&pp.currentPrice>0?s+pp.shares*pp.currentPrice:s},0);
+                  var myVal2=c.position&&c.position.shares>0&&c.position.currentPrice>0?c.position.shares*c.position.currentPrice:0;
+                  var myPct2=portVal2>0?myVal2/portVal2*100:0;
+                  var sumConv2=portCos.reduce(function(s,pc){return s+(pc.conviction||1)},0);
+                  var idealPct2=sumConv2>0?(conv||1)/sumConv2*100:0;
+                  var drift2=myPct2-idealPct2;
+                  var showDrift=Math.abs(drift2)>5&&myPct2>0;
+                  return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:38}}>
+                    <div style={{fontSize:11,fontWeight:700,color:cc,fontFamily:fm,background:cc+"15",borderRadius:_isBm?0:4,padding:"1px 6px",whiteSpace:"nowrap"}}>{conv}/10</div>
+                    {showDrift&&<div style={{fontSize:9,color:drift2>0?K.red:K.grn,fontFamily:fb,whiteSpace:"nowrap"}}>{drift2>0?"↑ over":"↓ under"}</div>}
+                  </div>;
+                })()}
+                {val!==null&&<div style={{textAlign:"right",minWidth:70}}>
+                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
+                  {ret!==null&&<div style={{fontSize:11,color:ret>=0?K.grn:K.red,fontFamily:fb}}>{ret>=0?"+":""}{ret.toFixed(1)}%</div>}
+                </div>}
+              </div>;
+            })}
           </div>}
         </div>
-      })()}
 
-
-
-      {/* ═══ REVIEW STEP ═══ */}
-      {step==="review"&&c&&<div>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{idx+1} / {portfolio.length}</div>
-          <div style={{flex:1,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:((idx+1)/portfolio.length*100)+"%",borderRadius:_isBm?0:2,background:K.acc,transition:"width .3s"}}/></div>
-          <button onClick={function(){setStep("summary")}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,opacity:.6}}>Skip to summary →</button>
-        </div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"28px 32px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-            <CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
-            <div><div style={{fontSize:18,fontWeight:500,color:K.txt,fontFamily:fh}}>{c.ticker}</div>
-              <div style={{fontSize:12,color:K.dim}}>{c.name}</div></div>
-            <div style={{marginLeft:"auto",textAlign:"right"}}>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>CURRENT CONVICTION</div>
-              <div style={{fontSize:22,fontWeight:700,color:c.conviction>=7?K.grn:c.conviction>=4?K.amb:K.red,fontFamily:fm}}>{c.conviction||"—"}/10</div></div>
-          </div>
-          {/* Prior review comparison */}
-          {(function(){var prevWeek=weeklyReviews.length>0?weeklyReviews[0]:null;var prevEntry=prevWeek?prevWeek.entries.find(function(e){return e.id===c.id}):null;
-            if(!prevEntry)return null;
-            var prevAction=prevEntry.action||"hold";
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+        {/* Other asset sections */}
+        {ATYPES.map(function(atp){
+          var assets=otherAssets.filter(function(a){return a.type===atp.id});
+          var totalTypeVal=assets.reduce(function(s,a){return s+getAssetValue(a)},0);
+          var totalTypeCost=assets.reduce(function(s,a){return s+getAssetCost(a)},0);
+          var isOpen=expanded[atp.id];
+          return<div key={atp.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:12,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"16px 20px",cursor:"pointer"}} onClick={function(){setExpanded(Object.assign({},expanded,{[atp.id]:!isOpen}))}}>
+              <IC name={atp.icon} size={14} color={atp.color}/>
               <div style={{flex:1}}>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:3}}>LAST WEEK</div>
-                <div style={{fontSize:12,color:K.mid}}>Conviction: <strong style={{color:K.txt}}>{prevEntry.prev}→{prevEntry.new}</strong>{prevEntry.note?" · "+prevEntry.note.substring(0,60):""}</div>
+                <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{atp.label}</div>
+                <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginTop:2}}>{assets.length} asset{assets.length!==1?"s":""}</div>
               </div>
-              {prevAction!=="hold"&&<span style={{fontSize:10,fontWeight:700,color:prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb,background:(prevAction==="add"?K.grn:prevAction==="sell"?K.red:K.amb)+"15",padding:"3px 8px",borderRadius:_isBm?0:4,fontFamily:fm,textTransform:"uppercase",flexShrink:0}}>{prevAction}</span>}
-            </div>})()}
-          {/* Conviction sparkline */}
-          {(function(){var ch=c.convictionHistory||[];if(ch.length<2)return null;var pts=ch.slice(-8);
-            return<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5}}>CONVICTION HISTORY</div>
-                <div style={{display:"flex",alignItems:"flex-end",gap:3,height:24}}>
-                  {pts.map(function(p,pi){var h=Math.max(3,Math.round((p.rating/10)*24));var isLast=pi===pts.length-1;var clr=p.rating>=7?K.grn:p.rating>=4?K.amb:K.red;
-                    return<div key={pi} title={(p.date||"")+": "+p.rating} style={{width:16,height:h,borderRadius:_isBm?0:2,background:isLast?clr:clr+"60",flexShrink:0}}/>})}
+              {totalTypeVal>0&&<div style={{textAlign:"right",marginRight:12}}>
+                <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(totalTypeVal)}</div>
+                {totalTypeCost>0&&<div style={{fontSize:12,color:totalTypeVal>=totalTypeCost?K.grn:K.red,fontFamily:fb}}>{totalTypeVal>=totalTypeCost?"+":""}{((totalTypeVal-totalTypeCost)/totalTypeCost*100).toFixed(1)}%</div>}
+              </div>}
+              <button onClick={function(e){e.stopPropagation();openAdd(atp.id)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+atp.color+"60",background:atp.color+"12",color:atp.color,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600,flexShrink:0}}>+ Add</button>
+              <IC name={isOpen?"alert":"plus"} size={12} color={K.dim}/>
+            </div>
+            {isOpen&&<div style={{borderTop:"1px solid "+K.bdr}}>
+              {assets.length===0&&<div style={{padding:"20px 24px",color:K.dim,fontSize:13,textAlign:"center"}}>No {atp.label.toLowerCase()} added yet. <span style={{color:atp.color,cursor:"pointer"}} onClick={function(){openAdd(atp.id)}}>Add one →</span></div>}
+              {assets.map(function(a){
+                var val=getAssetValue(a),cost=getAssetCost(a),gain=val-cost,gainPct=cost>0?gain/cost*100:0;
+                var pct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
+                // Live price + day change
+                var tk=a.ticker?a.ticker.toUpperCase():"";
+                var livePrice=a.type==="crypto"?livePrices["CG_"+tk]:(a.type==="gold"?(livePrices["FMP_"+(COMMODITY_MAP[tk]?tk:"GOLD")]||livePrices["FMP_XAUUSD"]):livePrices["FMP_"+tk])||0;
+                var dayChg=livePrices["CHG_"+tk]||0;
+                var hasLive=livePrice>0;
+                var allocPct=totalAssetsUSD>0?val/totalAssetsUSD*100:0;
+                return<div key={a.id} style={{padding:"12px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <IC name={atp.icon} size={14} color={atp.color}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||"—"}</div>
+                        {tk&&a.type!=="portfolio2"&&<span style={{fontSize:10,background:atp.color+"15",color:atp.color,padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{tk}</span>}
+                        {hasLive&&<span style={{fontSize:10,color:dayChg>=0?K.grn:K.red,background:(dayChg>=0?K.grn:K.red)+"12",padding:"1px 7px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{dayChg>=0?"+":""}{dayChg.toFixed(2)}% today</span>}
+                      </div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:3,display:"flex",alignItems:"center",gap:8}}>
+                        {a.type==="portfolio2"&&<span>{(a.holdings||[]).length} holdings</span>}
+                        {(a.type==="etf"||a.type==="gold")&&a.quantity&&<span>{a.quantity.toLocaleString()} {a.type==="gold"?"oz":"units"}{hasLive?" @ "+cSym+livePrice.toLocaleString("en-US",{maximumFractionDigits:2}):""}</span>}
+                        {a.type==="crypto"&&a.quantity&&<span>{a.quantity.toLocaleString()} {tk}{hasLive?" @ "+cSym+livePrice.toLocaleString("en-US",{maximumFractionDigits:2}):""}</span>}
+                        {a.annualIncome>0&&<span style={{color:K.grn}}>{fmtM(a.annualIncome)}/yr</span>}
+                        {!hasLive&&(a.type==="etf"||a.type==="gold"||a.type==="crypto")&&tk&&<span style={{color:K.amb}}>⚠ No live price — check ticker</span>}
+                      </div>
+                    </div>
+                    {/* Allocation bar + % */}
+                    {allocPct>0&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:52}}>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{allocPct.toFixed(1)}%</div>
+                      <div style={{width:52,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...allocData.map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:_isBm?0:2}}/></div>
+                    </div>}
+                    <div style={{textAlign:"right",minWidth:80}}>
+                      <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
+                      {cost>0&&val>0&&<div style={{fontSize:11,color:gain>=0?K.grn:K.red,fontFamily:fb}}>{gain>=0?"+":""}{fmtM(gain)} ({gainPct>=0?"+":""}{gainPct.toFixed(1)}%)</div>}
+                      {!cost&&hasLive&&<div style={{fontSize:10,color:K.dim,fontFamily:fb}}>Live</div>}
+                    </div>
+                    <div style={{display:"flex",gap:5,flexShrink:0}}>
+                      <button onClick={function(){openEdit(a)}} style={{padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                      <button onClick={function(){if(window.confirm("Remove this asset?"))deleteAsset(a.id)}} style={{padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>✕</button>
+                    </div>
+                  </div>
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })}
+
+        {/* Liabilities section */}
+        <div style={{marginTop:8,marginBottom:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+            <IC name="alert" size={14} color={K.red}/>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Liabilities</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,flex:1}}>— {fmtM(totalLiabUSD)} total debt</div>
+            <button onClick={function(){setLmodal("pick")}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add</button>
+          </div>
+          {liabilities.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",color:K.dim,fontSize:13}}>
+            No liabilities recorded. Add mortgages, loans or credit card balances to see your true net worth.
+          </div>}
+          {liabilities.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
+            {liabilities.map(function(l,i){
+              var lt=LTYPES_MAP[l.type]||{icon:"overview",color:K.red,label:l.type};
+              var annualInt=l.balance>0&&l.interestRate>0?l.balance*l.interestRate/100:0;
+              return<div key={l.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 20px",borderBottom:i<liabilities.length-1?"1px solid "+K.bdr+"50":"none"}}>
+                <IC name={lt.icon} size={14} color={lt.color}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{l.name||lt.label}</div>
+                  <div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:2}}>
+                    {l.interestRate>0&&<span>{l.interestRate}% interest · </span>}
+                    {l.monthlyPayment>0&&<span>{fmtM(l.monthlyPayment)}/mo</span>}
+                    {annualInt>0&&<span style={{color:K.red,marginLeft:6}}>{fmtM(annualInt)}/yr interest cost</span>}
+                  </div>
                 </div>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                {(function(){var first=pts[0].rating;var last=pts[pts.length-1].rating;var delta=last-first;
-                  return<div><div style={{fontSize:18,fontWeight:800,color:last>=7?K.grn:last>=4?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{last}</div>
-                  {delta!==0&&<div style={{fontSize:10,fontWeight:700,color:delta>0?K.grn:K.red,fontFamily:fm}}>{delta>0?"+":""}{delta} vs start</div>}</div>})()}
-              </div>
-            </div>})()}
-          {/* Thesis reminder */}
-          {c.thesisNote&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,maxHeight:80,overflow:"hidden"}}>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:4}}>YOUR THESIS</div>
-            <div style={{fontSize:13,color:K.mid,lineHeight:1.5}}>{c.thesisNote.split("\n")[0].substring(0,200)}</div></div>}
-          {/* Reflection prompt */}
-          {(function(){var prompts=["If you couldn\u2019t look at the stock price for 5 years, would you still own this?","What do you understand about this business that the market doesn\u2019t?","Would you be comfortable if this was your only holding?","Is this business better or worse than when you first bought it?","Are you holding because of conviction or because selling feels like admitting a mistake?","What would a smart skeptic say about your thesis?","Has anything structurally changed, or is this just noise?","Would you buy more at today\u2019s price?"];
-            var pi=(idx+c.id)%prompts.length;
-            return<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,borderLeft:"2px solid "+K.acc}}>
-              <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontStyle:"italic"}}>{prompts[pi]}</div></div>})()}
-          {/* Conviction adjustment */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:8}}>ADJUST CONVICTION</div>
-            <div style={{display:"flex",gap:4}}>
-              {[1,2,3,4,5,6,7,8,9,10].map(function(v){var cur=revs[c.id]!=null?revs[c.id]:c.conviction;var active=cur===v;var clr=v>=7?K.grn:v>=4?K.amb:K.red;
-                return<button key={v} onClick={function(){setConv(c.id,v)}}
-                  style={{flex:1,height:36,borderRadius:_isBm?0:6,border:"1px solid "+(active?clr:K.bdr),background:active?clr+"20":"transparent",
-                    color:active?clr:K.dim,fontSize:14,fontWeight:active?700:500,cursor:"pointer",fontFamily:fm}}>{v}</button>})}
-            </div>
-            {revs[c.id]!=null&&revs[c.id]!==c.conviction&&<div style={{fontSize:11,color:K.acc,fontFamily:fm,marginTop:4}}>Changed from {c.conviction} to {revs[c.id]}</div>}
-          </div>
-          {/* Action flag */}
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:8}}>ACTION THIS WEEK</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {[{id:"hold",l:"Hold",c:K.mid},{id:"add",l:"Add",c:K.grn},{id:"trim",l:"Trim",c:K.amb},{id:"review",l:"Deep Review",c:K.acc},{id:"sell",l:"Consider Sell",c:K.red}].map(function(a){
-                var act=actions[c.id]||"hold";
-                return<button key={a.id} onClick={function(){setAction(c.id,a.id)}}
-                  style={{padding:"6px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(act===a.id?a.c+"60":K.bdr),
-                    background:act===a.id?a.c+"12":"transparent",color:act===a.id?a.c:K.dim,
-                    fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{a.l}</button>})}
-            </div>
-          </div>
-          {/* Note */}
-          <input value={notes[c.id]||""} onChange={function(e){setNote(c.id,e.target.value)}} placeholder="Quick note (optional)..."
-            style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fm,outline:"none"}}/>
-          <div style={{display:"flex",gap:12,marginTop:20}}>
-            <button onClick={prevHolding} disabled={idx===0} style={Object.assign({},S.btn,{opacity:idx===0?.3:1})}>← Prev</button>
-            <div style={{flex:1}}/>
-            <button onClick={nextHolding} style={S.btnP}>{idx===portfolio.length-1?"Finish →":"Next →"}</button>
-          </div>
+                <div style={{textAlign:"right",minWidth:80}}>
+                  <div style={{fontSize:14,fontWeight:700,color:K.red,fontFamily:fm}}>−{fmtM(l.balance)}</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={function(){openEditLiab(l)}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fb}}>Edit</button>
+                  <button onClick={function(){if(window.confirm("Remove this liability?"))deleteLiab(l.id)}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.red+"40",background:"transparent",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fb}}>Remove</button>
+                </div>
+              </div>;
+            })}
+          </div>}
         </div>
       </div>}
 
-      {/* ═══ SUMMARY STEP ═══ */}
-      {step==="summary"&&<div style={{position:"fixed",inset:0,zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.65)",backdropFilter:"blur(8px)",animation:"fadeInFast .2s ease"}}>
-        <div className="ta-celebrate" style={{background:K.card,borderRadius:_isBm?0:20,padding:isMobile?"24px 20px":"36px 40px",width:isMobile?"94vw":480,maxWidth:"94vw",maxHeight:"90vh",overflow:"auto",position:"relative",border:"2px solid "+K.grn+"40",boxShadow:"0 0 60px "+K.grn+"15, 0 20px 60px rgba(0,0,0,.3)"}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.acc+","+K.grn+")",backgroundSize:"200% 100%"}}/>
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:52,marginBottom:8,animation:"glowPulse 2.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 16px rgba(255,215,0,.5))"}}>{String.fromCodePoint(0x1F3C6)}</div>
-            <div style={{fontSize:20,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>Review Complete</div>
-            <div style={{fontSize:13,color:K.dim}}>Confirm to save and claim your weekly insight.</div>
-          </div>
-          {/* Stats */}
+      {/* ══ HISTORY TAB ══ */}
+      {nwTab==="history"&&<div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"24px",marginBottom:16}}>
           {(function(){
-            var changed=Object.keys(revs).filter(function(k){return revs[k]!==(cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{}).conviction});
-            var ups=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)>(co2.conviction||0)}).length;
-            var downs=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)<(co2.conviction||0)}).length;
-            var actCount=Object.values(actions).filter(function(a){return a!=="hold"}).length;
-            var avgNew=Math.round(portfolio.map(function(c2){return revs[c2.id]!=null?revs[c2.id]:(c2.conviction||0)}).reduce(function(s,v){return s+v},0)/Math.max(portfolio.length,1)*10)/10;
-            var pats=[];
-            if(weeklyReviews.length>=3){var neverLowered=weeklyReviews.slice(0,5).every(function(r){return r.entries.every(function(e){return e.new>=e.prev})});if(neverLowered&&downs===0)pats.push({c:K.amb,t:"You haven't lowered conviction in recent reviews. Honest reassessment is part of the process."});}
-            if(pats.length===0&&ups>downs&&ups>=2)pats.push({c:K.grn,t:"Building conviction across "+ups+" holding"+(ups>1?"s":"")+" this week."});
-            if(pats.length===0&&downs>ups&&downs>=2)pats.push({c:K.red,t:"Conviction fell on "+downs+" holding"+(downs>1?"s":"")+". Follow your process."});
-            if(weeklyReviews.length>=2){var prevAvg=(weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||0;var avgDelta=avgNew-prevAvg;if(Math.abs(avgDelta)>=0.5&&pats.length<2)pats.push({c:avgDelta>0?K.grn:K.amb,t:"Portfolio avg conviction "+(avgDelta>0?"rose":"fell")+" from "+prevAvg+" → "+avgNew+" this week."});}
+            var hist=netWorthHistory.slice(-52);
+            if(hist.length<2)return<div style={{padding:"30px 0",textAlign:"center",color:K.dim,fontSize:13}}>Your net worth history will build up as you use the app over time.</div>;
+            var vals=hist.map(function(h){return toDisplay(h.value)});
+            var minV=Math.min.apply(null,vals)*0.97,maxV=Math.max.apply(null,vals)*1.03;
+            var W=isMobile?300:520,H=160,padL=64,padR=16,padT=12,padB=28;
+            var cW=W-padL-padR,cH=H-padT-padB;
+            function xPos(i){return padL+(i/(hist.length-1))*cW}
+            function yPos(v){return padT+cH-(v-minV)/(maxV-minV)*cH}
+            var pts=hist.map(function(h,i){return xPos(i)+","+yPos(toDisplay(h.value))}).join(" ");
+            var areaD="M "+xPos(0)+","+yPos(toDisplay(hist[0].value))+" "+hist.slice(1).map(function(h,i){return"L "+xPos(i+1)+","+yPos(toDisplay(h.value))}).join(" ")+" L "+xPos(hist.length-1)+","+(padT+cH)+" L "+xPos(0)+","+(padT+cH)+" Z";
+            var lastVal=vals[vals.length-1],firstVal=vals[0];
+            var delta=lastVal-firstVal,deltaPct=firstVal>0?delta/firstVal*100:0;
+            // CAGR
+            var daysDiff=Math.max(1,(new Date(hist[hist.length-1].date)-new Date(hist[0].date))/(1000*60*60*24));
+            var years=daysDiff/365;
+            var cagr=years>0.1&&firstVal>0?((Math.pow(lastVal/firstVal,1/years)-1)*100):null;
+            var clr=delta>=0?K.grn:K.red;
+            var yLabels=[minV,(minV+maxV)/2,maxV];
+            function fmtDate(ds){var d=new Date(ds);return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}
             return<div>
-              <div style={{display:"flex",justifyContent:"center",gap:20,marginBottom:12}}>
-                <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{portfolio.length}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Reviewed</div></div>
-                {ups>0&&<div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>↑{ups}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Raised</div></div>}
-                {downs>0&&<div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.red,fontFamily:fm,lineHeight:1}}>↓{downs}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Lowered</div></div>}
-                <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.acc,fontFamily:fm,lineHeight:1}}>{avgNew}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Avg conv</div></div>
-                {actCount>0&&<div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:K.grn,fontFamily:fm,lineHeight:1}}>{actCount}</div><div style={{fontSize:10,color:K.dim,marginTop:2}}>Actions</div></div>}
-              </div>
-              {pats.slice(0,2).map(function(p2,pi){return<div key={pi} style={{background:p2.c+"10",border:"1px solid "+p2.c+"30",borderRadius:_isBm?0:8,padding:"8px 14px",marginBottom:6,fontSize:12,color:p2.c,textAlign:"center",fontStyle:"italic"}}>{p2.t}</div>})}
-            </div>})()}
-          {/* Holdings pills */}
-          <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:16,maxHeight:100,overflow:"auto"}}>
-            {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var chgd=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
-              return<div key={c2.id} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:_isBm?0:20,background:chgd?K.acc+"10":K.bg,border:"1px solid "+(chgd?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm}}>
-                <span style={{fontWeight:600,color:K.txt}}>{c2.ticker}</span>
-                {chgd?<span style={{color:K.acc,fontWeight:600}}>{c2.conviction+"→"+newConv}</span>:<span style={{color:K.dim}}>{newConv}</span>}
-                {act!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:act==="add"?K.grn:act==="sell"?K.red:K.amb,textTransform:"uppercase"}}>{act}</span>}
-              </div>})}
-          </div>
-          {/* Pro teasers for free users */}
-          {isFree&&<div style={{marginBottom:16,padding:"12px 14px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr}}>
-            <div style={{fontSize:10,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>Pro members also see after their review</div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {[{label:"Moat Health Delta",sub:"How your holdings scored vs last week"},
-                {label:"Earnings Prep Score",sub:"KPI readiness for upcoming reports"},
-                {label:"Insider Trade Alerts",sub:"Buys/sells since your last review"}
-              ].map(function(t){return<div key={t.label} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:600,color:K.txt,filter:"blur(0)"}}>{t.label}</div>
-                  <div style={{fontSize:11,color:K.dim}}>{t.sub}</div>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:12}}>
+                <div>
+                  <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Net worth over time</div>
+                  <div style={{fontSize:22,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(totalValueUSD)}</div>
                 </div>
-                <div style={{fontSize:13,fontWeight:700,color:K.dim,filter:"blur(4px)",userSelect:"none",minWidth:32,textAlign:"right"}}>9.1</div>
-                <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 8px",fontSize:10,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>⚡ Pro</button>
-              </div>})}
+                <div style={{display:"flex",gap:20}}>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Change</div>
+                    <div style={{fontSize:15,fontWeight:600,color:clr,fontFamily:fm}}>{delta>=0?"+":""}{fmtM(delta)} ({deltaPct>=0?"+":""}{deltaPct.toFixed(1)}%)</div>
+                  </div>
+                  {cagr!==null&&<div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>CAGR</div>
+                    <div style={{fontSize:15,fontWeight:600,color:cagr>=0?K.grn:K.red,fontFamily:fm}}>{cagr>=0?"+":""}{cagr.toFixed(1)}%</div>
+                  </div>}
+                </div>
+              </div>
+              <div style={{overflowX:"auto"}}>
+                <svg width={W} height={H} style={{overflow:"visible"}}>
+                  <defs><linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={clr} stopOpacity="0.15"/><stop offset="100%" stopColor={clr} stopOpacity="0.01"/></linearGradient></defs>
+                  {yLabels.map(function(v,i){var y=yPos(v);return<g key={i}><line x1={padL} y1={y} x2={W-padR} y2={y} stroke={K.bdr} strokeWidth={1}/><text x={padL-6} y={y+4} textAnchor="end" fontSize={9} fill={K.dim} fontFamily={fm}>{fmtM(v)}</text></g>})}
+                  <path d={areaD} fill="url(#nwGrad)"/>
+                  <polyline points={pts} fill="none" stroke={clr} strokeWidth={2} strokeLinejoin="round"/>
+                  <circle cx={xPos(hist.length-1)} cy={yPos(lastVal)} r={4} fill={clr}/>
+                  {[0,Math.floor((hist.length-1)/2),hist.length-1].map(function(i){return<text key={i} x={xPos(i)} y={H-4} textAnchor="middle" fontSize={9} fill={K.dim} fontFamily={fm}>{fmtDate(hist[i].date)}</text>})}
+                </svg>
+              </div>
+            </div>;
+          })()}
+        </div>
+        {/* Milestone progress */}
+        {(function(){
+          var milestoneVals=[10000,50000,100000,250000,500000,1000000,2000000,5000000];
+          var cur=toDisplay(totalValueUSD);
+          var next=milestoneVals.find(function(m){return cur<m});
+          var prev=milestoneVals.slice().reverse().find(function(m){return cur>=m});
+          if(!next)return null;
+          var progress=prev?(cur-prev)/(next-prev)*100:cur/next*100;
+          var needed=next-cur;
+          function fmtMilestone(m){return cSym+(m>=1e6?m/1e6+"M":m/1000+"K")}
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <IC name="target" size={14} color={K.acc}/>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Next milestone: {fmtMilestone(next)}</div>
             </div>
-          </div>}
-          {/* Next unlock nudge */}
-          {isFree&&!trialExpired&&nextUnlock&&<div style={{marginBottom:14,textAlign:"center",fontSize:12,color:K.acc,fontFamily:fm}}>
-            {sw+1>=nextUnlock.w?"🎉 Complete this review to unlock "+nextUnlock.label+"!":"Keep going — "+nextUnlock.label+" unlocks at week "+nextUnlock.w}
-          </div>}
-          <div style={{marginBottom:16}}>
-            <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:6}}>What did I learn this week? <span style={{fontWeight:400,color:K.dim,textTransform:"none",letterSpacing:0}}>(optional — saved to quarterly letter)</span></label>
-            <textarea value={reflection} onChange={function(e){setReflection(e.target.value)}} rows={3} placeholder={"A key insight, a mistake I noticed, something that shifted my thinking..."} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6}}/>
-          </div>
-          <button onClick={finishReview} className="ta-glow" style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 0",borderRadius:_isBm?0:12,width:"100%",fontWeight:700,background:K.grn,border:"2px solid "+K.grn,color:"#ffffff",boxShadow:"0 4px 20px "+K.grn+"40"})}>
-            {String.fromCodePoint(0x2705)+" Complete Review & Claim Insight"}</button>
-          <div style={{textAlign:"center",marginTop:10}}><button onClick={function(){setStep("review");setIdx(0)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>← Go back and edit</button></div>
-        </div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginBottom:12}}>{fmtM(needed)} to go · {progress.toFixed(1)}% of the way there</div>
+            <div style={{height:8,borderRadius:_isBm?0:4,background:K.bdr,overflow:"hidden"}}>
+              <div style={{height:"100%",width:Math.min(100,progress)+"%",borderRadius:_isBm?0:4,background:K.acc,transition:"width .5s"}}/>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fb}}>{prev?fmtMilestone(prev):"0"}</span>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fb}}>{fmtMilestone(next)}</span>
+            </div>
+          </div>;
+        })()}
+        {/* ── Did You Know / Wealth wisdom ── */}
+        {(function(){
+          var now=new Date();var idx=(now.getDate()+now.getMonth()*3)%8;
+          var cards=[
+            {type:"quote",author:"Charlie Munger",text:"The first $100,000 is a bitch, but you gotta do it. I don't care what you have to do — if it means walking everywhere and not eating anything that wasn't purchased with a coupon, find a way to get your hands on $100,000.",icon:"castle"},
+            {type:"fact",title:"Gold's purchasing power",text:"In 1920 you could buy a fine men's suit, a quality meal, and a pair of shoes for one gold coin (roughly 1 oz). Today, one ounce of gold (~$2,000+) still buys exactly that. Stocks and real estate compound — gold preserves.",icon:"shield"},
+            {type:"quote",author:"Warren Buffett",text:"Do not save what is left after spending, but spend what is left after saving.",icon:"dollar"},
+            {type:"fact",title:"The rule of 72",text:"Divide 72 by your annual return to find how many years it takes to double your money. At 8%: 9 years. At 12%: 6 years. At 6%: 12 years. Compound interest is the eighth wonder of the world.",icon:"trending"},
+            {type:"quote",author:"Morgan Housel",text:"Getting money requires taking risks, being optimistic, and putting yourself out there. Keeping money requires the opposite of taking risk. It requires humility, and fear that what you've made can be taken away just as fast.",icon:"shield"},
+            {type:"fact",title:"Real estate vs stocks",text:"Over 100 years, US equities have returned ~10% annually vs ~4% for residential real estate. But leverage — a mortgage — can dramatically amplify real estate returns on invested capital.",icon:"moat"},
+            {type:"quote",author:"John D. Rockefeller",text:"If you want to be wealthy, think of saving as buying your future self freedom.",icon:"book"},
+            {type:"fact",title:"The net worth tipping point",text:"Once your investment income exceeds your living expenses, your wealth compounds whether you work or not. This is the precise moment financial independence begins — not a number, but a ratio.",icon:"target"},
+          ];
+          var card=cards[idx];
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px",marginTop:12}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+              <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name={card.icon} size={14} color={K.acc}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{card.type==="quote"?"Investor Wisdom":"Did You Know?"}</div>
+                {card.title&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>{card.title}</div>}
+                <div style={{fontSize:13,color:K.mid,lineHeight:1.7,fontStyle:card.type==="quote"?"italic":"normal"}}>{card.type==="quote"?"\u201c"+card.text+"\u201d":card.text}</div>
+                {card.author&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,marginTop:6}}>— {card.author}</div>}
+              </div>
+            </div>
+          </div>;
+        })()}
       </div>}
 
-      {/* ═══ MILESTONE CELEBRATION ═══ */}
-      {step==="milestone"&&milestone&&<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,.75)",backdropFilter:"blur(12px)",animation:"fadeInFast .25s ease"}}>
-        <div style={{background:K.card,borderRadius:_isBm?0:24,padding:"40px 44px",width:isMobile?"90vw":400,maxWidth:"90vw",textAlign:"center",border:"2px solid "+K.grn+"60",boxShadow:"0 0 80px "+K.grn+"20, 0 24px 60px rgba(0,0,0,.4)",position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:"linear-gradient(90deg,"+K.grn+",#FFD700,"+K.grn+")",animation:"shimmer 2s linear infinite"}}/>
-          <div style={{fontSize:64,marginBottom:12,animation:"glowPulse 1.5s ease-in-out infinite",display:"inline-block",filter:"drop-shadow(0 0 20px rgba(255,215,0,.7))"}}>{String.fromCodePoint(0x1F381)}</div>
-          <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>Week {sw+1} Unlocked</div>
-          <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:8}}>{milestone.label}</div>
-          <div style={{fontSize:13,color:K.mid,lineHeight:1.6,marginBottom:20}}>{milestone.desc}<br/>{milestone.type==="theme"?"Head to Settings to activate it.":"Available now in Investor Lenses."}</div>
-          <div style={{padding:"10px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,marginBottom:20}}>
-            <div style={{fontSize:12,color:K.grn,fontWeight:600,fontFamily:fm}}>{"🔥"} {sw+1} week streak — keep it going!</div>
-            {nextUnlock&&sw+1<nextUnlock.w&&<div style={{fontSize:11,color:K.dim,marginTop:4}}>Next: {nextUnlock.label} at week {nextUnlock.w}</div>}
-          </div>
-          <button onClick={dismissMilestone} style={Object.assign({},S.btnP,{width:"100%",padding:"12px 0",fontSize:14,borderRadius:_isBm?0:10,background:K.grn,border:"none",color:"#fff",fontWeight:700})}>Claim Reward & See Insight</button>
-          {!isFree&&<div style={{marginTop:10,fontSize:11,color:K.dim}}>Pro users have this already — but the streak still counts.</div>}
+      {/* ══ INCOME TAB ══ */}
+      {nwTab==="income"&&<div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
+          {[{label:"Annual Income",val:fmtM(totalIncomeUSD)},{label:"Monthly Average",val:fmtM(totalIncomeUSD/12)},{label:"Portfolio Yield",val:incomeYield.toFixed(2)+"%"}].map(function(c){
+            return<div key={c.label} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 20px"}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{c.label}</div>
+              <div style={{fontSize:22,fontWeight:700,color:K.grn,fontFamily:fm}}>{c.val}</div>
+            </div>;
+          })}
         </div>
-      </div>}
 
-      {/* ═══ DONE STEP ═══ */}
-      {step==="done"&&<div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"28px 24px",marginBottom:20}}>
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:40,marginBottom:8,display:"inline-block",color:K.grn}}>{"✓"}</div>
-            <div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm,letterSpacing:1,marginBottom:4}}>THIS WEEK'S REVIEW COMPLETE</div>
-            <div style={{fontSize:13,color:K.dim}}>Come back next week to keep the streak alive.</div>
+        {/* Monthly calendar */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"20px 24px",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+            <IC name="clock" size={14} color={K.dim}/>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Monthly Income Calendar</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fb,marginLeft:"auto"}}>based on dividend frequencies</div>
           </div>
-          {/* 8-week conviction trend chart */}
-          {weeklyReviews.length>=2&&(function(){
-            var last8=weeklyReviews.slice(0,8).reverse();
-            return<div style={{background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>CONVICTION TREND (8 WEEKS)</div>
-              <div style={{display:"flex",alignItems:"flex-end",gap:4,height:40,justifyContent:"center"}}>
-                {last8.map(function(rev,ri){var avg=rev.summary?rev.summary.avgConv:0;var h=Math.max(4,Math.round((avg/10)*40));var isLatest=ri===last8.length-1;var clr=avg>=7?K.grn:avg>=4?K.acc:K.red;
-                  return<div key={ri} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                    <div style={{width:"100%",height:h,borderRadius:_isBm?0:2,background:isLatest?clr:clr+"50"}} title={"Wk "+rev.weekId+": avg "+avg}/>
-                    {isLatest&&<span style={{fontSize:7,color:clr,fontFamily:fm,fontWeight:700}}>{avg}</span>}
-                  </div>})}
-              </div>
-            </div>})()}
-          {/* Pro post-review health report */}
-          {(!isFree||trialActive)&&(function(){
-            var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=14});
-            var noKpi=portfolio.filter(function(c2){return c2.kpis.length===0});
-            var staleThesis=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c2.thesisUpdatedAt))/864e5)>90});
-            var withInsider=portfolio.filter(function(c2){return c2._insiderCache&&c2._insiderCache.length>0});
-            return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:16}}>
-              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,marginBottom:10,display:"flex",alignItems:"center",gap:5}}><IC name="shield" size={10} color={K.acc}/>Portfolio Health Report</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {[{icon:"target",label:"Earnings in next 14 days",value:upcoming.length,good:upcoming.length===0,warn:upcoming.length>0,detail:upcoming.length>0?upcoming.map(function(c2){return c2.ticker}).join(", "):"All clear"},
-                  {icon:"bar",label:"Holdings without KPIs",value:noKpi.length,good:noKpi.length===0,warn:noKpi.length>0,detail:noKpi.length>0?noKpi.map(function(c2){return c2.ticker}).join(", "):"All covered"},
-                  {icon:"clock",label:"Stale theses (90+ days)",value:staleThesis.length,good:staleThesis.length===0,warn:staleThesis.length>0,detail:staleThesis.length>0?staleThesis.map(function(c2){return c2.ticker}).join(", "):"All current"},
-                  {icon:"users",label:"Recent insider activity",value:withInsider.length,good:withInsider.length===0,warn:false,detail:withInsider.length>0?withInsider.map(function(c2){return c2.ticker}).join(", "):"None detected"}
-                ].map(function(s){return<div key={s.label} style={{display:"flex",alignItems:"center",gap:8}}>
-                  <IC name={s.icon} size={12} color={s.warn?K.amb:s.good?K.grn:K.dim}/>
-                  <div style={{flex:1}}><span style={{fontSize:12,color:K.txt}}>{s.label}</span>{s.detail&&<span style={{fontSize:11,color:K.dim}}> — {s.detail}</span>}</div>
-                  <div style={{fontSize:13,fontWeight:700,color:s.warn?K.amb:s.good?K.grn:K.dim,fontFamily:fm}}>{s.value}</div>
-                </div>})}
-              </div>
-            </div>})()}
-          {/* Free user — subtle Pro nudge */}
-          {isFree&&<div style={{padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-            <IC name="lightbulb" size={14} color={K.acc}/>
-            <div style={{flex:1,fontSize:12,color:K.dim,lineHeight:1.5}}>Pro members see a full health report after every review — upcoming earnings, stale theses, insider trades.</div>
-            <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,fontWeight:600,flexShrink:0}}>⚡ Pro</button>
-          </div>}
-        </div>
-        {/* Review history */}
-        {weeklyReviews.length>0&&<div>
-          <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Review History</div>
-          {weeklyReviews.slice(0,12).map(function(r,ri){
-            var increases=r.entries.filter(function(e){return e.new>e.prev});
-            var decreases=r.entries.filter(function(e){return e.new<e.prev});
-            var acts=r.entries.filter(function(e){return e.action&&e.action!=="hold"});
-            return<div key={ri} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>Week of {r.weekId}</div>
-                <div style={{display:"flex",gap:6}}>
-                  {increases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>↑{increases.length}</span>}
-                  {decreases.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.red,background:K.red+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>↓{decreases.length}</span>}
-                  {acts.length>0&&<span style={{fontSize:10,fontWeight:600,color:K.acc,background:K.acc+"12",padding:"2px 6px",borderRadius:_isBm?0:3,fontFamily:fm}}>{acts.length} action{acts.length>1?"s":""}</span>}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:4}}>
+            {MONTHS.map(function(m,i){
+              var val=monthlyIncome[i];var isNow=new Date().getMonth()===i;
+              var barH=val>0?Math.max(8,val/maxMonthIncome*64):3;
+              var detail=monthlyDetail[i];
+              return<div key={m} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}} className="ta-month-col">
+                <div style={{fontSize:9,color:isNow?K.acc:K.dim,fontFamily:fb,letterSpacing:0.5,fontWeight:isNow?700:400}}>{m}</div>
+                <div style={{width:"100%",height:72,display:"flex",flexDirection:"column",justifyContent:"flex-end",alignItems:"center",cursor:val>0?"pointer":"default"}}>
+                  <div style={{width:"100%",borderRadius:_isBm?0:4,background:val>0?(isNow?K.acc:K.grn):K.bdr,height:barH,transition:"height .3s",minHeight:3}}/>
                 </div>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>avg {r.summary.avgConv}/10</span>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {r.entries.map(function(e){var changed=e.prev!==e.new;var isUp=e.new>e.prev;
-                  return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:changed?(isUp?K.grn+"12":K.red+"12"):K.bg,border:"1px solid "+(changed?(isUp?K.grn+"30":K.red+"30"):K.bdr),fontSize:11,fontFamily:fm,color:changed?(isUp?K.grn:K.red):K.dim,display:"flex",alignItems:"center",gap:3}}>
-                    <span style={{fontWeight:600}}>{e.ticker}</span>
-                    {changed&&<span>{isUp?"↑":"↓"}{e.prev}→{e.new}</span>}
-                    {!changed&&<span style={{color:K.dim}}>{e.new}</span>}
-                    {e.action&&e.action!=="hold"&&<span style={{fontSize:8,fontWeight:700,color:e.action==="add"?K.grn:e.action==="sell"?K.red:K.amb,textTransform:"uppercase",marginLeft:2}}>{e.action}</span>}
+                <div style={{fontSize:9,color:val>0?K.txt:K.dim,fontFamily:fm,fontWeight:val>0?600:400,textAlign:"center",lineHeight:1.2}}>
+                  {val>0?fmtM(val):"—"}
+                </div>
+                {isNow&&<div style={{width:4,height:4,borderRadius:"50%",background:K.acc}}/>}
+                {val>0&&detail.length>0&&<div className="ta-month-tooltip" style={{position:"absolute",bottom:"100%",left:"50%",transform:"translateX(-50%)",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 10px",zIndex:50,minWidth:110,pointerEvents:"none",boxShadow:"0 4px 16px rgba(0,0,0,.15)"}}>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fb,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{m}</div>
+                  {detail.slice(0,6).map(function(d,di){return<div key={di} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:10,color:K.mid,fontFamily:fm,marginBottom:2}}>
+                    <span style={{color:d.color,fontWeight:600,maxWidth:60,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label}</span>
+                    <span style={{color:K.txt,fontWeight:600}}>{fmtM(d.val)}</span>
                   </div>})}
-              </div>
-              {r.entries.some(function(e){return e.note&&e.note.length>0})&&<div style={{marginTop:8,paddingTop:8,borderTop:"1px solid "+K.bdr+"50"}}>
-                {r.entries.filter(function(e){return e.note}).map(function(e){return<div key={e.ticker} style={{fontSize:11,color:K.mid,marginBottom:2}}><strong style={{color:K.txt}}>{e.ticker}:</strong> {e.note}</div>})}
-              </div>}
-            </div>})}
+                  {detail.length>6&&<div style={{fontSize:9,color:K.dim,fontFamily:fb}}>+{detail.length-6} more</div>}
+                </div>}
+              </div>;
+            })}
+          </div>
+        </div>
+
+        {/* Dividend-paying stocks */}
+        {incomeCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,marginBottom:16,overflow:"hidden"}}>
+          <div style={{padding:"16px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><IC name="trending" size={14} color={K.acc}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>Stock Dividends</div></div>
+            <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(stockIncome)}/yr</div>
+          </div>
+          {incomeCos.map(function(item){return<div key={item.c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(item.c.id);setPage("dashboard")}}>
+            <CoLogo ticker={item.c.ticker} domain={item.c.domain} size={28}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{item.c.ticker}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{item.freq} · {item.yld.toFixed(2)}% yield</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.grn,fontFamily:fm}}>{fmtM(item.annual)}/yr</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{fmtM(item.monthly)}/mo</div>
+            </div>
+          </div>})}
+        </div>}
+
+        {/* Other income sources — grouped by type */}
+        {incomeBreakdown.filter(function(x){return x.type!=="stock"}).length>0&&(function(){
+          var groups=[{type:"etf",label:"ETF Dividends",icon:"chart",color:"#10b981"},{type:"bonds",label:"Bond Interest",icon:"overview",color:"#6b7280"},{type:"royalties",label:"Royalties & IP",icon:"book",color:"#a78bfa"},{type:"real_estate",label:"Rental Income",icon:"moat",color:"#8b5cf6"},{type:"other",label:"Other Income",icon:"dollar",color:K.grn},{type:"valuables",label:"Valuables Income",icon:"shield",color:"#ec4899"}];
+          return<div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:16}}>
+            {groups.map(function(g){
+              var items=otherAssets.filter(function(a){return a.type===g.type&&a.annualIncome>0});
+              if(items.length===0)return null;
+              var grpTotal=items.reduce(function(s,a){return s+Number(a.annualIncome)},0);
+              return<div key={g.type} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
+                <div style={{padding:"14px 20px",borderBottom:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}><IC name={g.icon} size={14} color={g.color}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{g.label}</div></div>
+                  <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(grpTotal)}/yr</div>
+                </div>
+                {items.map(function(a){
+                  var freq=a.divFrequency||"monthly";
+                  return<div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
+                    <IC name={g.icon} size={14} color={g.color}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{a.name||a.ticker||g.label}</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{freq} · {a.ticker&&<span style={{background:g.color+"15",color:g.color,padding:"1px 5px",borderRadius:_isBm?0:3,marginRight:4}}>{a.ticker}</span>}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:K.grn,fontFamily:fm}}>{fmtM(a.annualIncome)}/yr</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{fmtM(a.annualIncome/12)}/mo</div>
+                    </div>
+                  </div>;
+                })}
+              </div>;
+            })}
+          </div>;
+        })()}
+
+        {incomeCos.length===0&&incomeBreakdown.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:14,padding:40,textAlign:"center",color:K.dim,fontSize:14}}>
+          No income data yet. Stock dividends appear automatically once positions and prices are set. Add rental income, bond interest, or royalties when editing an asset.
         </div>}
       </div>}
+
+      {/* ══ TARGETS TAB ══ */}
+      {nwTab==="targets"&&<div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{fontSize:13,color:K.dim,fontFamily:fb}}>Set your ideal allocation. Flags when you drift more than 5%.</div>
+          {!editTgt
+            ?<button onClick={function(){setTgtDraft(Object.assign({},assetTargets));setEditTgt(true)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Edit targets</button>
+            :<div style={{display:"flex",gap:8}}>
+              <button onClick={function(){setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb}}>Cancel</button>
+              <button onClick={function(){setAssetTargets(Object.assign({},tgtDraft));setEditTgt(false)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"none",background:K.acc,color:"#fff",fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>Save</button>
+            </div>}
+        </div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,overflow:"hidden"}}>
+          {ALL_ALLOC_IDS.map(function(id,i){
+            var current=getCurrentPct(id),target=getTargetPct(id),drift=getDrift(id);
+            var hasTarget=target>0,bigDrift=Math.abs(drift)>5&&hasTarget;
+            var color=ALLOC_COLORS[id]||K.dim;
+            return<div key={id} style={{padding:"14px 20px",borderBottom:i<ALL_ALLOC_IDS.length-1?"1px solid "+K.bdr+"50":"none",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:10,height:10,borderRadius:_isBm?0:2,background:color,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{ALLOC_LABELS[id]}</span>
+                  {bigDrift&&<span style={{fontSize:10,fontWeight:600,background:drift>0?K.amb+"20":K.blue+"20",color:drift>0?K.amb:"#60a5fa",borderRadius:_isBm?0:4,padding:"1px 6px"}}>{drift>0?"Overweight":"Underweight"}</span>}
+                </div>
+                <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:K.bdr,overflow:"hidden"}}>
+                  <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(100,current)+"%",borderRadius:_isBm?0:3,background:color,transition:"width .4s"}}/>
+                  {hasTarget&&<div style={{position:"absolute",top:-2,height:10,width:2,borderRadius:_isBm?0:1,background:K.txt+"90",left:Math.min(100,target)+"%"}}/>}
+                </div>
+              </div>
+              <div style={{textAlign:"right",minWidth:80,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+                <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{current.toFixed(1)}%</span>
+                {hasTarget&&<span style={{fontSize:11,color:bigDrift?(drift>0?K.amb:"#60a5fa"):K.dim,fontFamily:fb}}>target {target}%</span>}
+              </div>
+              {editTgt&&<div style={{flexShrink:0,width:72,display:"flex",alignItems:"center",gap:4}}>
+                <input type="number" min="0" max="100" value={tgtDraft[id]||""} onChange={function(e){setTgtDraft(Object.assign({},tgtDraft,{[id]:e.target.value}))}} placeholder="0" style={{width:"100%",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"5px 8px",fontSize:12,fontFamily:fm,outline:"none",textAlign:"right"}}/>
+                <span style={{fontSize:12,color:K.dim,fontFamily:fb}}>%</span>
+              </div>}
+            </div>;
+          })}
+        </div>
+        {(function(){
+          var total=editTgt?ALL_ALLOC_IDS.reduce(function(s,id){return s+Number(tgtDraft[id]||0)},0):ALL_ALLOC_IDS.reduce(function(s,id){return s+getTargetPct(id)},0);
+          if(total===0)return null;
+          return<div style={{marginTop:10,fontSize:12,color:editTgt?(total===100?K.grn:K.amb):K.dim,fontFamily:fb,textAlign:"right"}}>
+            Total: {total.toFixed(0)}%{editTgt&&total!==100?" — should sum to 100%":" ✓"}
+          </div>;
+        })()}
+      </div>}
+
+      {/* ── Asset Add/Edit Modal ── */}
+      {modal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setModal(null);setStep(0)}}>
+        <div style={{background:K.card,borderRadius:_isBm?0:18,padding:"28px",maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
+          {modal==="add"&&step===0&&<div>
+            <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Asset</div>
+            <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Select asset type</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {ATYPES.map(function(t){return<button key={t.id} onClick={function(){openAdd(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"2px solid "+t.color+"40",background:t.color+"0d",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10}}>
+                <IC name={t.icon} size={16} color={t.color}/>
+                <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
+              </button>})}
+            </div>
+          </div>}
+
+          {(modal==="edit"||(modal==="add"&&step===1))&&<div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+              {modal==="add"&&<button onClick={function(){setStep(0)}} style={{background:"transparent",border:"none",color:K.dim,fontSize:18,cursor:"pointer"}}>←</button>}
+              <IC name={atype.icon||"folder"} size={16} color={atype.color||K.acc}/>
+              <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh}}>{modal==="edit"?"Edit Asset":atype.label}</div>
+            </div>
+            <div style={{marginBottom:14}}><label style={secLabel}>Name</label><input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.isPortfolio2?"e.g. ISK Account":"Asset name"} style={inputStyle}/></div>
+            {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Ticker</label><input value={form.ticker||""} onChange={function(e){setForm(Object.assign({},form,{ticker:e.target.value.toUpperCase()}))}} placeholder="e.g. VOO, BTC" style={inputStyle}/></div>}
+            {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Quantity</label><input type="number" value={form.quantity||""} onChange={function(e){setForm(Object.assign({},form,{quantity:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
+            {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>Current Value ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
+            <div style={{marginBottom:14}}><label style={secLabel}>Total Cost Basis ({cSym})</label><input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/><div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid — used for gain/loss calculation</div></div>
+            {(atype.manual||atype.id==="bonds"||atype.id==="etf"||atype.id==="royalties"||atype.id==="valuables")&&<div style={{marginBottom:14}}>
+              <label style={secLabel}>Annual Income ({cSym}) — optional</label>
+              <input type="number" value={form.annualIncome||""} onChange={function(e){setForm(Object.assign({},form,{annualIncome:e.target.value}))}} placeholder={atype.id==="royalties"?"e.g. book/music royalties":atype.id==="etf"?"ETF dividend income p.a.":atype.id==="valuables"?"e.g. watch rental income":"e.g. rental income, bond coupons"} style={inputStyle}/>
+              {(atype.id==="etf"||atype.id==="bonds")&&form.annualIncome>0&&<div style={{marginTop:8}}>
+                <label style={Object.assign({},secLabel,{marginBottom:4})}>Payment Frequency</label>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {[{v:"monthly",l:"Monthly"},{v:"quarterly",l:"Quarterly"},{v:"semi",l:"Semi-Annual"},{v:"annual",l:"Annual"}].map(function(f){var a=form.divFrequency===f.v;return<button key={f.v} onClick={function(){setForm(Object.assign({},form,{divFrequency:f.v}))}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+(a?K.acc:K.bdr),background:a?K.acc+"15":"transparent",color:a?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:a?600:400}}>{f.l}</button>})}
+                </div>
+              </div>}
+            </div>}
+            {atype.isPortfolio2&&<div style={{marginBottom:14}}>
+              <label style={secLabel}>Holdings</label>
+              {(form.holdings||[]).map(function(h){return<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:8,marginBottom:6}}>
+                <div style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h.ticker}</span><span style={{fontSize:11,color:K.dim,marginLeft:8}}>{h.shares} @ {cSym}{h.avgCost}</span></div>
+                <button onClick={function(){removeP2Holding(h.id)}} style={{background:"transparent",border:"none",color:K.red,fontSize:14,cursor:"pointer"}}>✕</button>
+              </div>})}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}>
+                <input value={p2form.ticker} onChange={function(e){setP2form(Object.assign({},p2form,{ticker:e.target.value.toUpperCase()}))}} placeholder="Ticker" style={inputStyle}/>
+                <input value={p2form.name} onChange={function(e){setP2form(Object.assign({},p2form,{name:e.target.value}))}} placeholder="Name (optional)" style={inputStyle}/>
+                <input type="number" value={p2form.shares} onChange={function(e){setP2form(Object.assign({},p2form,{shares:e.target.value}))}} placeholder="Shares" style={inputStyle}/>
+                <input type="number" value={p2form.avgCost} onChange={function(e){setP2form(Object.assign({},p2form,{avgCost:e.target.value}))}} placeholder={"Avg cost ("+cSym+")"} style={inputStyle}/>
+              </div>
+              <button onClick={addP2Holding} style={{marginTop:8,padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.acc+"60",background:K.acc+"12",color:K.acc,fontSize:12,cursor:"pointer",fontFamily:fb,fontWeight:600}}>+ Add Holding</button>
+            </div>}
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={function(){setModal(null);setStep(0)}} style={{flex:1,padding:"10px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
+              <button onClick={saveAsset} style={{flex:2,padding:"10px",borderRadius:_isBm?0:10,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{modal==="edit"?"Save Changes":"Add Asset"}</button>
+            </div>
+          </div>}
+        </div>
+      </div>}
+
+      {/* ── Liability Pick/Add/Edit Modal ── */}
+      {lmodal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={function(){setLmodal(null);setLform({})}}>
+        <div style={{background:K.card,borderRadius:_isBm?0:18,padding:"28px",maxWidth:480,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.5)"}} onClick={function(e){e.stopPropagation()}}>
+          {lmodal==="pick"&&<div>
+            <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Add Liability</div>
+            <div style={{fontSize:13,color:K.dim,marginBottom:20}}>What type of debt?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {LTYPES.map(function(t){return<button key={t.id} onClick={function(){openAddLiab(t.id)}} style={{padding:"14px 16px",borderRadius:_isBm?0:12,border:"1px solid "+K.bdr,background:K.bg,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                <IC name={t.icon} size={16} color={t.color}/>
+                <span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{t.label}</span>
+              </button>})}
+            </div>
+          </div>}
+          {(lmodal==="add"||lmodal==="edit")&&<div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+              {lmodal==="add"&&<button onClick={function(){setLmodal("pick")}} style={{background:"transparent",border:"none",color:K.dim,fontSize:18,cursor:"pointer"}}>←</button>}
+              <IC name={(LTYPES_MAP[lform.type]||{icon:"overview"}).icon} size={16} color={K.red}/>
+              <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh}}>{lmodal==="edit"?"Edit Liability":(LTYPES_MAP[lform.type]||{label:""}).label}</div>
+            </div>
+            <div style={{marginBottom:14}}><label style={secLabel}>Name / Description</label><input value={lform.name||""} onChange={function(e){setLform(Object.assign({},lform,{name:e.target.value}))}} placeholder="e.g. Home mortgage, Car loan" style={inputStyle}/></div>
+            <div style={{marginBottom:14}}><label style={secLabel}>Outstanding Balance ({cSym})</label><input type="number" value={lform.balance||""} onChange={function(e){setLform(Object.assign({},lform,{balance:e.target.value}))}} placeholder="0" style={inputStyle}/></div>
+            <div style={{marginBottom:14}}><label style={secLabel}>Interest Rate (%) — optional</label><input type="number" value={lform.interestRate||""} onChange={function(e){setLform(Object.assign({},lform,{interestRate:e.target.value}))}} placeholder="e.g. 3.5" style={inputStyle}/></div>
+            <div style={{marginBottom:14}}><label style={secLabel}>Monthly Payment ({cSym}) — optional</label><input type="number" value={lform.monthlyPayment||""} onChange={function(e){setLform(Object.assign({},lform,{monthlyPayment:e.target.value}))}} placeholder="0" style={inputStyle}/></div>
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={function(){setLmodal(null);setLform({})}} style={{flex:1,padding:"10px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>Cancel</button>
+              <button onClick={saveLiab} style={{flex:2,padding:"10px",borderRadius:_isBm?0:10,border:"none",background:K.red,color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{lmodal==="edit"?"Save Changes":"Add Liability"}</button>
+            </div>
+          </div>}
+        </div>
+      </div>}
     </div>
- }
+  }
+
+
+  // ── Portfolio Timeline ─────────────────────────────────────
