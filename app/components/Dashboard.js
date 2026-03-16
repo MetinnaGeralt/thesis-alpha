@@ -58,7 +58,6 @@ export default function Dashboard({
   setUpgradeCtx,
   showToast,
   celebrate,
-  ownerScore,
   autoNotify,
   toggleAutoNotify,
   emailNotify,
