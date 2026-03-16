@@ -93,7 +93,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
       fetchFinancialStatements(c.ticker,"annual").then(function(r){
         if(r){setDossierMoat(calcMoatFromData(r));
           var inc=r.income||[];var cf=r.cashflow||[];
-          var pts=inc.map(function(row,i){var cfRow=cf[i]||{};return{date:row.date,revenue:row.revenue,netIncome:row.netIncome,fcf:cfRow.freeCashFlow||cfRow.operatingCashFlow,sbc:cfRow.stockBasedCompensation||row.stockBasedCompensation}}).filter(function(p){return p.revenue!=null});
+          var pts=(inc||[]).map(function(row,i){var cfRow=cf[i]||{};return{date:row.date,revenue:row.revenue,netIncome:row.netIncome,fcf:cfRow.freeCashFlow||cfRow.operatingCashFlow,sbc:cfRow.stockBasedCompensation||row.stockBasedCompensation}}).filter(function(p){return p.revenue!=null});
           if(pts.length>0)setKeyFin(pts)}
       }).catch(function(){})
     },[c.ticker,isPro]);
@@ -220,7 +220,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                 <div style={{fontSize:12,color:K.dim,marginTop:2}}>Step {currentStep+1} of {steps.length}</div></div>
               <button onClick={function(){setGuidedSetup(null)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm,padding:"2px 8px"}}>Skip</button></div>
             <div style={{display:"flex",gap:6,marginBottom:14}}>
-              {steps.map(function(s,i){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
+              {(steps||[]).map(function(s,i){return<div key={s.id} style={{display:"flex",alignItems:"center",gap:6,flex:1}}>
                 <div style={{width:22,height:22,borderRadius:"50%",background:s.done?K.grn:i===currentStep?K.acc:K.bdr,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {s.done?<svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none"/></svg>
                     :<span style={{fontSize:10,fontWeight:700,color:i===currentStep?"#fff":K.dim}}>{i+1}</span>}</div>
@@ -252,7 +252,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
               <span style={{fontSize:11,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Owner Checklist</span>
               <span style={{fontSize:11,color:doneCount>=3?K.grn:K.dim,fontFamily:fm,fontWeight:600}}>{doneCount}/{items.length}</span></div>
             <div style={{display:"flex",gap:6}}>
-              {items.map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:_isBm?0:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+              {(items||[]).map(function(it){return<button key={it.id} onClick={it.done?undefined:it.action} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"8px 4px",borderRadius:_isBm?0:8,background:it.done?K.grn+"08":"transparent",border:"1px solid "+(it.done?K.grn+"25":K.bdr),cursor:it.done?"default":"pointer",opacity:it.done?.7:1,transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=K.acc}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
                 {it.done?<svg width="14" height="14" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill={K.grn+"20"} stroke={K.grn} strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke={K.grn} strokeWidth="1.5" fill="none"/></svg>
                   :<IC name={it.icon} size={14} color={K.dim}/>}
                 <span style={{fontSize:10,color:it.done?K.grn:K.mid,fontFamily:fm,fontWeight:it.done?600:400}}>{it.label}</span></button>})}</div></div>})()}
@@ -306,7 +306,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
             </div>
             {/* Checklist */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:14}}>
-              {checklist.map(function(it){return<div key={it.id} onClick={function(){if(!it.done){tickItem(it.id);showToast(it.label+" ✓","info",2000);upd(c.id,{})}}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:_isBm?0:8,background:it.done?(K.grn+"10"):(K.card),border:"1px solid "+(it.done?(K.grn+"30"):K.bdr),cursor:it.done?"default":"pointer",transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=urgency+"60"}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
+              {(checklist||[]).map(function(it){return<div key={it.id} onClick={function(){if(!it.done){tickItem(it.id);showToast(it.label+" ✓","info",2000);upd(c.id,{})}}} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:_isBm?0:8,background:it.done?(K.grn+"10"):(K.card),border:"1px solid "+(it.done?(K.grn+"30"):K.bdr),cursor:it.done?"default":"pointer",transition:"all .15s"}} onMouseEnter={function(e){if(!it.done)e.currentTarget.style.borderColor=urgency+"60"}} onMouseLeave={function(e){if(!it.done)e.currentTarget.style.borderColor=K.bdr}}>
                 <div style={{width:18,height:18,borderRadius:_isBm?0:5,background:it.done?K.grn:"transparent",border:"2px solid "+(it.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all .15s"}}>
                   {it.done&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
                 </div>
@@ -317,7 +317,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
             {c.kpis.length>0&&<div style={{marginBottom:10}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Watch These Numbers</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {c.kpis.map(function(k){return<div key={k.id} style={{padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+                {(c.kpis||[]).map(function(k){return<div key={k.id} style={{padding:"4px 10px",borderRadius:_isBm?0:6,background:K.card,border:"1px solid "+K.bdr,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
                   <span style={{color:K.txt,fontWeight:600}}>{k.name}</span>
                   <span style={{color:K.dim}}>→ {k.target}</span>
                 </div>})}
@@ -472,7 +472,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
               {/* Drift signals */}
               {driftSignals.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
                 <span style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",alignSelf:"center"}}>Since last version:</span>
-                {driftSignals.map(function(d,i){return<span key={i} style={{fontSize:10,fontWeight:600,color:d.color,background:d.color+"10",border:"1px solid "+d.color+"25",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{d.section+": "+(d.change==="major"?"major change":d.change==="minor"?"refined":d.change==="added"?"added":d.change==="removed"?"removed":"changed")}</span>;})}
+                {(driftSignals||[]).map(function(d,i){return<span key={i} style={{fontSize:10,fontWeight:600,color:d.color,background:d.color+"10",border:"1px solid "+d.color+"25",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{d.section+": "+(d.change==="major"?"major change":d.change==="minor"?"refined":d.change==="added"?"added":d.change==="removed"?"removed":"changed")}</span>;})}
               </div>}
 
               {/* History toggle */}
@@ -606,7 +606,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
             return<div style={{marginTop:10,padding:"8px 12px",background:K.bg+"80",borderRadius:_isBm?0:8}}>
               <div style={{display:"flex",alignItems:"flex-start",position:"relative"}}>
                 <div style={{position:"absolute",left:"5%",right:"5%",height:1,background:K.bdr,top:4}}/>
-                {tevents.map(function(ev,ei){return<div key={ei} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
+                {(tevents||[]).map(function(ev,ei){return<div key={ei} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
                   <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:ev.today?K.bg:ev.color,border:"1.5px solid "+(ev.today?K.dim:ev.color)}}/>
                   <div style={{fontSize:8,color:ev.color,fontFamily:fm,textAlign:"center",lineHeight:1.2}}>{ev.label}</div>
                   {!ev.today&&ev.date&&<div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{ev.date.slice(0,7)}</div>}
@@ -666,15 +666,15 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                 {/* Rounded grid rings */}
                 {gridLevels.map(function(gl){return<path key={gl} d={roundedGridPath(gl)} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
                 {/* Axis lines — subtle */}
-                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
+                {(axes||[]).map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
                 {/* Filled shape — rounded, more opaque */}
-                {(function(){var dataPts=axes.map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
+                {(function(){var dataPts=(axes||[]).map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
                   return<g>
                     <path d={roundedPath(dataPts)} fill={"#3B82F618"} stroke={"#3B82F6"} strokeWidth="2"/>
                     {(dataPts||[]).map(function(p4,i4){return<circle key={i4} cx={p4.x} cy={p4.y} r="3" fill={axes[i4].color} stroke={K.bg} strokeWidth="1.5"/>})}
                   </g>;})()}
                 {/* Axis labels with hover tooltips */}
-                {axes.map(function(a2,i3){var lp=pt(i3,118);
+                {(axes||[]).map(function(a2,i3){var lp=pt(i3,118);
                   return<g key={i3} style={{cursor:"help"}}><title>{a2.label}: {a2.score}/100 — {a2.tip}</title>
                     <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle" style={{cursor:"help"}}>{a2.label}</text></g>})}
                 {/* Center score */}
@@ -683,7 +683,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
               </svg>
               <div style={{flex:1}}>
                 <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
-                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                {(axes||[]).map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
                   <div style={{width:5,height:5,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
                   <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:75}}>{a2.label}</span>
                   <div style={{flex:1,height:5,borderRadius:_isBm?0:3,background:K.bdr+"50",overflow:"hidden"}}>
@@ -769,7 +769,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
             </div>
             {/* KPI Tile Grid */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4}}>
-            {c.kpis.map(function(k){
+            {(c.kpis||[]).map(function(k){
               var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results.find(function(r){return r.kpi_name===mid||r.kpi_name===k.name||(k.metricId&&r.kpi_name===k.metricId)});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
               hist.sort(function(a,b){return a.q>b.q?1:-1});
               var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.bdr;
@@ -896,7 +896,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
 
         {/* ── VALUATION ── */}
         {(function(){var val=c.valuation||{metrics:[]};var snap2=c.financialSnapshot||{};var price2=(c.position||{}).currentPrice||(snap2.livePrice&&snap2.livePrice.numVal?snap2.livePrice.numVal:0)||(snap2.pe&&snap2.eps?(parseFloat(String(snap2.pe.value||"").replace(/[^0-9.]/g,""))||0)*(parseFloat(String(snap2.eps.value||"").replace(/[^0-9.\-]/g,""))||0):0);
-          var results=val.metrics.map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
+          var results=(val.metrics||[]).map(function(vm){var def=VALUATION_METRICS.find(function(m){return m.id===vm.id});if(!def)return null;
             var current=getValMetricValue(def,snap2,price2,c);var pass=current!=null&&vm.threshold>0?(vm.rule==="gte"?current>=vm.threshold:current<=vm.threshold):null;
             return{id:vm.id,label:def.label,unit:def.unit,rule:vm.rule,threshold:vm.threshold,current:current,pass:pass}}).filter(Boolean);
           var passCount=results.filter(function(r){return r.pass===true}).length;var failCount=results.filter(function(r){return r.pass===false}).length;
@@ -911,8 +911,8 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:16,fontWeight:800,color:verdictColor,fontFamily:fm}}>{verdict}</span>
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{passCount}/{totalJudged} criteria met</span></div>
-              <div style={{display:"flex",gap:3}}>{results.map(function(r){return<div key={r.id} style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
-            {results.map(function(r,ri){return<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:ri>0?"1px solid "+K.bdr+"30":"none"}}>
+              <div style={{display:"flex",gap:3}}>{(results||[]).map(function(r){return<div key={r.id} style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
+            {(results||[]).map(function(r,ri){return<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:ri>0?"1px solid "+K.bdr+"30":"none"}}>
               <span style={{fontSize:12,color:K.mid,flex:1}}>{r.label}</span>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{r.rule==="gte"?"\u2265":"\u2264"}{r.threshold}{r.unit}</span>
               <span style={{fontSize:13,fontWeight:700,color:r.pass===true?K.grn:r.pass===false?K.red:K.dim,fontFamily:fm,minWidth:48,textAlign:"right"}}>{r.current!=null?r.current.toFixed(r.unit==="%"?1:r.current<1?2:1)+r.unit:"\u2014"}</span>
@@ -1150,7 +1150,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                 <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.8}}>{"Buffett: “Read the 10-year balance sheet first. Things are harder to hide there.”"}</div>
               </div>
               <div style={{background:K.card,border:"1px solid #EF444420",borderRadius:_isBm?0:10,overflow:"hidden"}}>
-                {bsSection.map(function(row,ri){
+                {(bsSection||[]).map(function(row,ri){
                   var col=row.highlight?K.acc:row.isGood?K.grn:row.isNeutral?K.amb:K.mid;
                   return<div key={ri} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",borderBottom:ri<bsSection.length-1?"1px solid "+K.bdr+"40":"none",background:row.highlight?"#EF444406":"transparent"}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1164,7 +1164,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
               </div>
             </div>}
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {sections.map(function(sec,si){
+              {(sections||[]).map(function(sec,si){
                 var secColor=sec.color;
                 return<div key={si}>
                 <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:secColor,fontFamily:fm,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
@@ -1205,7 +1205,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                   </div>}
                   </>
                   :<div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
-                  {sec.items.map(function(item,ii){
+                  {(sec.items||[]).map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
                     return<div key={ii} title={item.tip||""} style={{background:K.bg,border:"1px solid "+K.bdr+"80",borderRadius:_isBm?0:9,padding:"9px 12px",cursor:item.tip?"help":"default",borderLeft:"2px solid "+valColor+"60"}}>
                       <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
@@ -1356,7 +1356,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                 <div style={{width:70,fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
                 {COLS.map(function(col,ci){return<div key={ci} style={{flex:1,textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>})}
               </div>
-              {allRows.map(function(row,ri){
+              {(allRows||[]).map(function(row,ri){
                 return<div key={ri} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?K.acc+"06":"transparent",cursor:row.isSelf?"default":"pointer"}}
                   onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker});if(found){setSelId(found.id);setDetailTab("dossier")}}}}
                   onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"04"}}
@@ -1483,7 +1483,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                     return<g key={fi}><line x1={pad3.l} y1={y} x2={cW3-pad3.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray="3,3"/>
                       <text x={pad3.l-6} y={y+3} textAnchor="end" fill={K.dim} fontSize={8} fontFamily="JetBrains Mono,monospace">{fmtBig(val)}</text></g>})}
                   {gMn2<0&&<line x1={pad3.l} y1={zY} x2={cW3-pad3.r} y2={zY} stroke={K.txt+"40"} strokeWidth={1.5}/>}
-                  {keyFin.map(function(pt,di){
+                  {(keyFin||[]).map(function(pt,di){
                     var gX=pad3.l+di*(gW+(nD>1?gG:0));
                     return<g key={di}>
                       {MK.map(function(m,si){
@@ -1588,12 +1588,12 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
                 <div style={S.sec}><IC name="trending" size={14} color={K.dim}/>Conviction Over Time</div>
                 <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px"}}>
                   <div style={{display:"flex",alignItems:"flex-end",gap:2,height:50,marginBottom:6}}>
-                    {c.convictionHistory.map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                    {(c.convictionHistory||[]).map(function(ch,i){var pct=ch.rating*10;return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                       <div style={{fontSize:8,fontWeight:600,color:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red,fontFamily:fm}}>{ch.rating}</div>
                       <div style={{width:"100%",maxWidth:20,height:pct+"%",minHeight:2,borderRadius:_isBm?0:2,background:ch.rating>=8?K.grn:ch.rating>=5?K.amb:K.red}}/></div>})}
                   </div>
                   <div style={{display:"flex",gap:2}}>
-                    {c.convictionHistory.map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
+                    {(c.convictionHistory||[]).map(function(ch,i){return<div key={i} style={{flex:1,textAlign:"center",fontSize:7,color:K.dim,fontFamily:fm}}>{ch.date.substring(5)}</div>})}
                   </div>
                 </div>
               </div>}
@@ -1684,7 +1684,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
           </button>
         </div>
         {open&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {all.map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:item.color+"08",borderRadius:_isBm?0:9,border:"1px solid "+item.color+"25"}}>
+          {(all||[]).map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:item.color+"08",borderRadius:_isBm?0:9,border:"1px solid "+item.color+"25"}}>
             <IC name={item.severity==="high"?"alert":"check"} size={12} color={item.color} style={{marginTop:2,flexShrink:0}}/>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{item.msg}</div>
@@ -1728,7 +1728,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
         {/* High severity first */}
         {high.length>0&&<div>
           <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Needs attention</div>
-          {high.map(function(item,i){
+          {(high||[]).map(function(item,i){
             return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:K.red+"08",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"25",marginBottom:8}}>
               <IC name="alert" size={14} color={K.red} style={{flexShrink:0,marginTop:1}}/>
               <div style={{flex:1,minWidth:0}}>
@@ -1755,7 +1755,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
         {/* Medium / flags */}
         {med.length>0&&<div>
           <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Worth considering</div>
-          {med.map(function(item,i){
+          {(med||[]).map(function(item,i){
             return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.amb+"08",borderRadius:_isBm?0:9,border:"1px solid "+K.amb+"25",marginBottom:6}}>
               <IC name="check" size={12} color={K.amb}/>
               <div style={{flex:1,minWidth:0}}>
@@ -1784,7 +1784,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
 
 
   function buildPortfolioPrompt(type, portCos){
-    var holdings=portCos.map(function(c){
+    var holdings=(portCos||[]).map(function(c){
       var p=c.position||{};
       var val=p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0;
       var ret=p.shares>0&&p.avgCost>0&&p.currentPrice>0?((p.currentPrice-p.avgCost)/p.avgCost*100):null;
@@ -1793,7 +1793,7 @@ if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.po
       return{c:c,val:val,ret:ret,hasThesis:hasThesis,hasSell:hasSell};
     }).sort(function(a,b){return b.val-a.val});
     var totalVal=holdings.reduce(function(s,h){return s+h.val},0);
-    var holdingLines=holdings.map(function(h){
+    var holdingLines=(holdings||[]).map(function(h){
       var pct=totalVal>0?(h.val/totalVal*100).toFixed(1):0;
       return"- "+h.c.ticker+" ("+pct+"% of portfolio, conviction "+h.c.conviction+"/10"+(h.ret!==null?", return "+(h.ret>=0?"+":"")+h.ret.toFixed(1)+"%":"")+", thesis: "+(h.hasThesis?"written":"MISSING")+", sell criteria: "+(h.hasSell?"written":"MISSING")+")";
     }).join("\n");
