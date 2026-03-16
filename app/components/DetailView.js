@@ -48,9 +48,15 @@ export default function DetailView({
   guidedSetup,
 }) {
   // ── Prop guards ──
+  cos = cos || [];
   dashSet = dashSet || {};
   goals = goals || {};
   library = library || {};
+  library.items = library.items || [];
+  library.folders = library.folders || [];
+
+  // ── Array prop guards ──
+  cos = cos || [];
 
   var checkSt={};
 if(!sel)return null;var c=sel;var h=gH(c.kpis);var cs=checkSt[c.id];var pos=c.position||{};var conv=c.conviction||0;
