@@ -131,14 +131,14 @@ export default function AllAssets({
       // FMP equities + ETFs
       if(fmpTickers.length>0){
         try{
-          var results=await Promise.all(fmpTickers.map(function(t){return fmp("quote/"+t)}));
+          var results=await Promise.all((fmpTickers||[]).map(function(t){return fmp("quote/"+t)}));
           fmpTickers.forEach(function(t,i){var d=results[i];if(d&&d[0]){newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0}});
         }catch(e){}
       }
       // FMP commodities (XAUUSD etc.)
       if(commodityTickers.length>0){
         try{
-          var comResults=await Promise.all(commodityTickers.map(function(t){var sym=COMMODITY_MAP[t]||"XAUUSD";return fmp("quote/"+sym)}));
+          var comResults=await Promise.all((commodityTickers||[]).map(function(t){var sym=COMMODITY_MAP[t]||"XAUUSD";return fmp("quote/"+sym)}));
           commodityTickers.forEach(function(t,i){var d=comResults[i];if(d&&d[0]){var sym=COMMODITY_MAP[t]||"XAUUSD";newPrices["FMP_"+t]=d[0].price||0;newPrices["CHG_"+t]=d[0].changesPercentage||0;newPrices["FMP_"+sym]=d[0].price||0}});
         }catch(e){}
       }
@@ -519,7 +519,7 @@ export default function AllAssets({
                     {/* Allocation bar + % */}
                     {allocPct>0&&<div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,minWidth:52}}>
                       <div style={{fontSize:11,color:K.dim,fontFamily:fb}}>{allocPct.toFixed(1)}%</div>
-                      <div style={{width:52,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...allocData.map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:_isBm?0:2}}/></div>
+                      <div style={{width:52,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:Math.min(100,allocPct/Math.max(...(allocData||[]).map(function(d){return totalAssetsUSD>0?d.value/totalAssetsUSD*100:0}),1)*100)+"%",background:atp.color,borderRadius:_isBm?0:2}}/></div>
                     </div>}
                     <div style={{textAlign:"right",minWidth:80}}>
                       <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{fmtM(val)}</div>
@@ -760,7 +760,7 @@ export default function AllAssets({
                   <div style={{display:"flex",alignItems:"center",gap:8}}><IC name={g.icon} size={14} color={g.color}/><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{g.label}</div></div>
                   <div style={{fontSize:13,color:K.grn,fontWeight:600,fontFamily:fm}}>{fmtM(grpTotal)}/yr</div>
                 </div>
-                {items.map(function(a){
+                {(items||[]).map(function(a){
                   var freq=a.divFrequency||"monthly";
                   return<div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 20px",borderBottom:"1px solid "+K.bdr+"50"}}>
                     <IC name={g.icon} size={14} color={g.color}/>
