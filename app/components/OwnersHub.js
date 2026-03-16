@@ -273,7 +273,7 @@ export default function OwnersHub({
                 <span style={{fontSize:12,fontWeight:600,color:allDone2?K.grn:K.acc,fontFamily:fm}}>{questPct}%</span></div></div>
             {/* Focus list */}
             <div style={{display:"grid",gap:6}}>
-              {quests.map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:_isBm?0:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
+              {(quests||[]).map(function(q){return<div key={q.id} className={q.done?"":"ta-card"} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:q.done?K.grn+"06":K.card,border:"1px solid "+(q.done?K.grn+"20":K.bdr),borderRadius:_isBm?0:10,cursor:q.done?"default":"pointer",opacity:q.done?.7:1}} onClick={q.done?undefined:q.onClick}>
                 <div style={{width:24,height:24,borderRadius:"50%",border:"2px solid "+(q.done?K.grn:q.color),background:q.done?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {q.done?<IC name="check" size={12} color="#fff" strokeWidth={3}/>:<IC name={q.icon} size={10} color={q.color}/>}</div>
                 <div style={{flex:1,fontSize:13,color:q.done?K.dim:K.txt,textDecoration:q.done?"line-through":"none"}}>{q.text}</div>
@@ -298,7 +298,7 @@ export default function OwnersHub({
         {/* Upcoming earnings */}
         {upcoming.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm}}>Earnings This Fortnight</div>
-          {upcoming.map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
+          {(upcoming||[]).map(function(c){var d3=dU(c.earningsDate);return<div key={c.id} className="ta-card" style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
             <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
             <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
             <span style={{fontSize:12,color:K.dim,flex:1}}>{c.name}</span>
@@ -313,9 +313,9 @@ export default function OwnersHub({
           return<div style={{background:K.amb+"06",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:12,padding:"12px 16px",marginBottom:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,fontFamily:fm,marginBottom:8}}>Needs Attention</div>
             {stale.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:stale.length>0&&unchecked.length>0?6:0}}>
-              <IC name="clock" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>Thesis refresh: <strong style={{color:K.txt}}>{stale.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
+              <IC name="clock" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>Thesis refresh: <strong style={{color:K.txt}}>{(stale||[]).map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
             {unchecked.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
-              <IC name="target" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>KPIs unchecked: <strong style={{color:K.txt}}>{unchecked.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
+              <IC name="target" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>KPIs unchecked: <strong style={{color:K.txt}}>{(unchecked||[]).map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
           </div>})()}
 
         {/* ── Zone 2: Your Portfolio ── */}
@@ -341,7 +341,7 @@ export default function OwnersHub({
           var totalCost=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.avgCost)},0);
           var totalVal2=held.reduce(function(s2,c2){return s2+(c2.position.shares*c2.position.currentPrice)},0);
           var totalRet=totalCost>0?((totalVal2-totalCost)/totalCost*100):0;
-          var attr=held.map(function(c2){var p2=c2.position;var cost=p2.shares*p2.avgCost;var ret2=(p2.shares*p2.currentPrice-cost)/cost*100;var weight=cost/totalCost;
+          var attr=(held||[]).map(function(c2){var p2=c2.position;var cost=p2.shares*p2.avgCost;var ret2=(p2.shares*p2.currentPrice-cost)/cost*100;var weight=cost/totalCost;
             var buyDec=(c2.decisions||[]).find(function(d2){return d2.action==="BUY"||d2.action==="ADD"});
             return{ticker:c2.ticker,ret:ret2,contrib:weight*ret2,weight:weight*100,reasoning:buyDec?buyDec.reasoning:"",id:c2.id}}).sort(function(a,b){return b.contrib-a.contrib});
           var bestD=attr[0];var worstD=attr[attr.length-1];
@@ -371,7 +371,7 @@ export default function OwnersHub({
                 <div style={{fontSize:14,fontWeight:700,color:g2.c,fontFamily:fm}}>{g2.v}</div><div style={{fontSize:8,color:K.dim}}>{g2.l}</div></div>})}</div></div>})()}
         {/* === INVESTOR DNA v2 === */}
         {portfolio.length>=2&&(function(){
-          var userTickers=portfolio.map(function(c2){return c2.ticker.toUpperCase()});
+          var userTickers=(portfolio||[]).map(function(c2){return c2.ticker.toUpperCase()});
           // Match against each superinvestor
           var matches=SUPERINVESTORS.map(function(si){
             var shared=si.holdings.filter(function(h2){return userTickers.indexOf(h2)>=0});
@@ -455,7 +455,7 @@ export default function OwnersHub({
           var lowers=0;var totalCh=0;cos.forEach(function(c2){var ch=c2.convictionHistory||[];totalCh+=ch.length;for(var i2=1;i2<ch.length;i2++){if(ch[i2].rating<ch[i2-1].rating)lowers++}});
           if(totalCh>5&&lowers===0)pats.push({icon:"alert",color:K.amb,t:"You have never lowered conviction on any holding. Stay honest with yourself."});
           var held2=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
-          if(held2.length>=3){var vals2=held2.map(function(c2){return c2.position.shares*c2.position.currentPrice});var tv2=vals2.reduce(function(a,b){return a+b},0);var mv2=Math.max.apply(null,vals2);
+          if(held2.length>=3){var vals2=(held2||[]).map(function(c2){return c2.position.shares*c2.position.currentPrice});var tv2=vals2.reduce(function(a,b){return a+b},0);var mv2=Math.max.apply(null,vals2);
             if(mv2/tv2>0.4)pats.push({icon:"search",color:K.blue,t:"Largest position is "+Math.round(mv2/tv2*100)+"% of portfolio. High concentration demands high conviction."})}
           if(weeklyReviews.length>=6){var gaps=[];for(var i2=1;i2<weeklyReviews.length;i2++){gaps.push(Math.round((new Date(weeklyReviews[i2].date)-new Date(weeklyReviews[i2-1].date))/604800000))}
             var ag=gaps.reduce(function(a,b){return a+b},0)/gaps.length;
@@ -463,7 +463,7 @@ export default function OwnersHub({
           if(pats.length===0)return null;
           return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginTop:16}}>
             <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Behavioral Patterns</div>
-            {pats.map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:4}}>
+            {(pats||[]).map(function(p2,i2){return<div key={i2} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 8px",background:K.bg,borderRadius:_isBm?0:6,marginBottom:4}}>
               <IC name={p2.icon} size={14} color={p2.color} style={{marginTop:2,flexShrink:0}}/><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{p2.t}</div></div>})}</div>})()}
 
         {/* ═══ STRESS TEST ═══ */}
@@ -616,7 +616,7 @@ export default function OwnersHub({
           return<div>
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-              {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+              {(LENSES||[]).map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
                 return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
                   {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
                   {l.name}
@@ -653,7 +653,7 @@ export default function OwnersHub({
                   <th style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>vs Benchmark</th>
                   <th style={{textAlign:"left",padding:"12px 14px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>By Holding</th>
                 </tr></thead>
-                <tbody>{portMetrics.map(function(m){
+                <tbody>{(portMetrics||[]).map(function(m){
                   return<tr key={m.id} style={{borderBottom:"1px solid "+K.bdr+"60"}}>
                     <td style={{padding:"12px 14px"}}><div style={{fontWeight:500,color:K.txt}}>{m.label}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{m.desc}</div></td>
                     <td style={{textAlign:"center",padding:"12px 8px",fontSize:12,color:K.dim,fontFamily:fm}}>{m.weight}%</td>
@@ -714,14 +714,14 @@ export default function OwnersHub({
           <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"doc"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>+ Quick Note</button>
           <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"7px 12px",fontSize:12,fontFamily:fm,outline:"none"}}>
             <option value="all">All Companies</option>
-            {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
+            {(companies||[]).map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
           <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
           {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d2){return d2.folder===fo.id&&(hc==="all"||d2.companyId===parseInt(hc))}).length;
             return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
         <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
           <div>
             {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:32,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:13,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
-            {filteredDocs.map(function(d3){var fo=FOLDERS.find(function(f){return f.id===d3.folder});var isActive=hd===d3.id;
+            {(filteredDocs||[]).map(function(d3){var fo=FOLDERS.find(function(f){return f.id===d3.folder});var isActive=hd===d3.id;
               return<div key={d3.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d3.id)}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                   <CoLogo domain={d3.domain} ticker={d3.ticker} size={18}/>
@@ -748,7 +748,7 @@ export default function OwnersHub({
       {ht==="goals"&&(function(){
         var portf=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
         // Per-holding TSR calculation (same logic as dossier contribution card)
-        var holdingReturns=portf.map(function(c){
+        var holdingReturns=(portf||[]).map(function(c){
           var fs=c.financialSnapshot||{};
           function dpv(field){if(!fs[field])return 0;var v=fs[field].value;if(typeof v==="number")return v;if(typeof v==="string")return parseFloat(v.replace(/[^\d.\-]/g,""))||0;return 0}
           var eg=0;var snapG=dpv("revGrowth")||dpv("epsGrowth");
@@ -772,7 +772,7 @@ export default function OwnersHub({
           return{id:c.id,ticker:c.ticker,name:c.name,expected:expected,eg:eg,dy:dy,mc:mc,weight:w,predictability:pred}
         });
         var totalW=holdingReturns.reduce(function(s,h){return s+h.weight},0)||1;
-        holdingReturns=holdingReturns.map(function(h){return Object.assign({},h,{weight:h.weight/totalW*100})});
+        holdingReturns=(holdingReturns||[]).map(function(h){return Object.assign({},h,{weight:h.weight/totalW*100})});
         var portCAGR=holdingReturns.reduce(function(s,h){return s+h.weight/100*h.expected},0);
         var portPred=holdingReturns.reduce(function(s,h){return s+h.weight/100*h.predictability},0);
         var uncertainty=(100-portPred)/100;
@@ -786,7 +786,7 @@ export default function OwnersHub({
         // Bell curve SVG points
         var svgW=400;var svgH=100;
         var bellPts=[];for(var bi=0;bi<=100;bi++){var x2=lowCAGR+(highCAGR-lowCAGR)*bi/100;var z=(x2-portCAGR)/sigma;var y2=Math.exp(-0.5*z*z);bellPts.push([bi/100*svgW,svgH-y2*svgH*0.85])}
-        var bellPath="M "+bellPts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1)}).join(" L ");
+        var bellPath="M "+(bellPts||[]).map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1)}).join(" L ");
         var tgtX=Math.max(0,Math.min(1,(goals.targetCAGR-lowCAGR)/(highCAGR-lowCAGR)))*svgW;
         var expX=Math.max(0,Math.min(1,(portCAGR-lowCAGR)/(highCAGR-lowCAGR)))*svgW;
         var onTarget=portCAGR>=goals.targetCAGR;
@@ -852,7 +852,7 @@ export default function OwnersHub({
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Expected Return by Holding</div>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:10}}>TSR = (1 + EPS Growth + Buyback) × (1 + Multiple Change) + Dividend Yield − 1. Growth adjusted by quality score (ROIC, margins). "Needed" = growth required to hit your target CAGR at current valuation.</div>
-              {holdingReturns.map(function(h){
+              {(holdingReturns||[]).map(function(h){
                 var needed=goals.targetCAGR-h.dy-h.mc;var onTgt=h.expected>=goals.targetCAGR;
                 return<div key={h.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+K.bdr+"60"}}>
                   <CoLogo ticker={h.ticker} size={22}/>
@@ -881,7 +881,7 @@ export default function OwnersHub({
           <div style={{fontSize:12}}>Add books, articles, and resources that shape your investment thinking.</div>
         </div>}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
-          {readingList.map(function(item,i){
+          {(readingList||[]).map(function(item,i){
             var statusColor=item.status==="read"?K.grn:item.status==="reading"?K.acc:K.dim;
             return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 18px"}}>
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
@@ -891,7 +891,7 @@ export default function OwnersHub({
                   {item.notes&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{item.notes}</div>}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-                  <select value={item.status||"want"} onChange={function(e){var updated=readingList.map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r});saveRL(updated)}} style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:statusColor,fontSize:11,padding:"2px 6px",fontFamily:fm,cursor:"pointer"}}>
+                  <select value={item.status||"want"} onChange={function(e){var updated=(readingList||[]).map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r});saveRL(updated)}} style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:statusColor,fontSize:11,padding:"2px 6px",fontFamily:fm,cursor:"pointer"}}>
                     <option value="want">Want to read</option>
                     <option value="reading">Reading</option>
                     <option value="read">Read</option>
