@@ -70,7 +70,7 @@ export default function TopBar({
         <span style={{fontSize:bm?11:15,fontWeight:bm?700:800,color:bm?"#F39F41":K.txt,fontFamily:fm,letterSpacing:bm?"3px":"-0.3px",textTransform:bm?"uppercase":"none"}}>ThesisAlpha</span></div>
       {/* Right — notifications + avatar only */}
       <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-        <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
+        <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return (p||[]).map(function(n){return Object.assign({},n,{read:true})})})}}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.txt:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           {unread>0&&<div style={{position:"absolute",top:2,right:2,width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
         <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
@@ -97,7 +97,7 @@ export default function TopBar({
     </div>}
     return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"6px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:bm?K.bg:K.card+"e6",backdropFilter:_isBm?"none":"blur(12px)",position:"sticky",top:0,zIndex:50,gap:12}}>
     {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
-    <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
+    <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return (p||[]).map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       {unread>0&&<div style={{position:"absolute",top:1,right:1,width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:K.grn,border:"2px solid "+K.card}}/>}</div>
     {showNotifs&&<div style={{position:"fixed",inset:0,zIndex:99}} onClick={function(){setShowNotifs(false)}}/>}
@@ -157,7 +157,7 @@ export default function TopBar({
       <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:11})} onClick={function(){setAdding(true)}}>+ Add link</button>
     </div>}
       {links.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-        {links.map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
+        {(links||[]).map(function(l,i){return<div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<links.length-1?"1px solid "+K.bdr:"none"}}>
           <IC name={catIcons[l.category]||"link"} size={14} color={K.dim}/>
           <a href={l.url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:13,color:K.blue,textDecoration:"none",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.label}</a>
           <span style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{l.category}</span>
@@ -440,7 +440,7 @@ export default function TopBar({
         {selectedEntry&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid "+K.bdr}}>
           <div style={{fontSize:14,color:K.mid,lineHeight:1.6,marginBottom:8}}>{selectedEntry.summary}</div>
           {selectedEntry.results&&selectedEntry.results.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
-            {selectedEntry.results.map(function(r,i){return<div key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 12px"}}>
+            {(selectedEntry.results||[]).map(function(r,i){return<div key={i} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 12px"}}>
               <div style={{fontSize:11,color:K.dim}}>{METRIC_MAP[r.kpi_name]?METRIC_MAP[r.kpi_name].label:r.kpi_name}</div>
               <div style={{fontSize:14,fontWeight:600,color:r.status==="met"?K.grn:r.status==="missed"?K.red:K.mid,fontFamily:fm}}>{r.actual_value!=null?r.actual_value:"—"}</div></div>})}</div>}
           {selectedEntry.sourceUrl&&<a href={selectedEntry.sourceUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:K.blue,textDecoration:"none"}}>{selectedEntry.sourceLabel||"Source"} &#x2197;</a>}
@@ -486,7 +486,7 @@ export default function TopBar({
               <IC name={g.icon} size={10} color={K.dim}/>{g.label}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:6}}>
-              {g.items.map(function(k){var item=snap[k];
+              {(g.items||[]).map(function(k){var item=snap[k];
                 var isGood=item.positive!=null?item.positive:item.beat!=null?item.beat:null;
                 var valColor=isGood===true?K.grn:isGood===false?K.red:K.txt;
                 return<div key={k} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"9px 11px",position:"relative",overflow:"hidden"}}>
@@ -552,11 +552,11 @@ function calcMoatFromData(finData,businessModelType){
     // 1. GROSS MARGIN
     var gm=vals(recent,"grossProfitRatio");
     if(gm.length>=2){var gmAvg=avg(gm)*100;var gmStd=stdDev(gm)*100;
-      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:(function(){var _isDistrib=businessModelType==="distributor";var _base=_isDistrib?(gmAvg>=20?8:gmAvg>=12?7:gmAvg>=8?6:gmAvg>=5?5:3):(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2);return Math.min(10,Math.max(1,Math.round(_base+(gmStd<3?1:gmStd>10?-1:0))))})(),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)"+((businessModelType==="distributor")?" [distributor — thin margin expected]":""),trend:gm.map(function(v){return v*100}),icon:"shield",desc:businessModelType==="distributor"?"Distributors win on scale and asset turns, not gross margin. Stability matters more than the absolute level.":"High & stable margins indicate pricing power"})}
+      metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:(function(){var _isDistrib=businessModelType==="distributor";var _base=_isDistrib?(gmAvg>=20?8:gmAvg>=12?7:gmAvg>=8?6:gmAvg>=5?5:3):(gmAvg>=60?8:gmAvg>=40?7:gmAvg>=25?6:gmAvg>=15?4:2);return Math.min(10,Math.max(1,Math.round(_base+(gmStd<3?1:gmStd>10?-1:0))))})(),value:gmAvg.toFixed(1)+"%",detail:"Avg "+gmAvg.toFixed(1)+"% (±"+gmStd.toFixed(1)+"%)"+((businessModelType==="distributor")?" [distributor — thin margin expected]":""),trend:(gm||[]).map(function(v){return v*100}),icon:"shield",desc:businessModelType==="distributor"?"Distributors win on scale and asset turns, not gross margin. Stability matters more than the absolute level.":"High & stable margins indicate pricing power"})}
     else{var revs0=vals(recent,"revenue");var gps0=vals(recent,"grossProfit");
       if(revs0.length>=2&&gps0.length>=2){var gmC=(gps0||[]).map(function(g,i){return revs0[i]?g/revs0[i]:null}).filter(function(v){return v!=null});
         if(gmC.length>=2){var gmA=avg(gmC)*100;var gmS=stdDev(gmC)*100;
-          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:gmC.map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
+          metrics.push({id:"grossMargin",name:"Gross Margin Stability",score:Math.min(10,Math.max(1,Math.round(gmA>=60?8:gmA>=40?7:gmA>=25?6:gmA>=15?4:2)+(gmS<3?1:gmS>10?-1:0))),value:gmA.toFixed(1)+"%",detail:"Avg "+gmA.toFixed(1)+"% (±"+gmS.toFixed(1)+"%)",trend:(gmC||[]).map(function(v){return v*100}),icon:"shield",desc:"High & stable margins indicate pricing power"})}}}
     // 2. REVENUE GROWTH
     var revs=vals(recent,"revenue");
     if(revs.length>=3){var growths=[];for(var gi=1;gi<revs.length;gi++){if(revs[gi-1]>0){growths.push((revs[gi]-revs[gi-1])/revs[gi-1]*100)}}
@@ -564,9 +564,9 @@ function calcMoatFromData(finData,businessModelType){
       metrics.push({id:"revGrowth",name:"Revenue Growth",score:Math.min(10,Math.max(1,Math.round(grAvg>30?8:grAvg>15?7:grAvg>5?6:grAvg>0?4:2)+Math.round(2-(grStd||0)/10))),value:(grAvg>=0?"+":"")+grAvg.toFixed(1)+"%",detail:"CAGR "+(grAvg>=0?"+":"")+grAvg.toFixed(1)+"% (±"+(grStd||0).toFixed(1)+"%)",trend:growths,icon:"trending",desc:"Consistent growth signals durable demand"})}
     // 3. OPERATING LEVERAGE
     var om=vals(recent,"operatingIncomeRatio");
-    if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=oi2.map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
+    if(om.length<2){var oi2=vals(recent,"operatingIncome");if(oi2.length>=2&&revs.length>=2){om=(oi2||[]).map(function(o,i){return revs[i]?o/revs[i]:null}).filter(function(v){return v!=null})}}
     if(om.length>=2){var omFirst=om[0]*100;var omLast=om[om.length-1]*100;var omAvg=avg(om)*100;var expanding=omLast>omFirst;
-      metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"↑ Expanding":"↓ Contracting")+" ("+omFirst.toFixed(1)+"% → "+omLast.toFixed(1)+"%)",trend:om.map(function(v){return v*100}),icon:"gear",desc:"Expanding operating margins signal scale advantages"})}
+      metrics.push({id:"opLeverage",name:"Operating Leverage",score:Math.min(10,Math.max(1,Math.round(omAvg>25?8:omAvg>15?7:omAvg>8?6:omAvg>0?4:2)+(expanding?1:-1))),value:omAvg.toFixed(1)+"%",detail:(expanding?"↑ Expanding":"↓ Contracting")+" ("+omFirst.toFixed(1)+"% → "+omLast.toFixed(1)+"%)",trend:(om||[]).map(function(v){return v*100}),icon:"gear",desc:"Expanding operating margins signal scale advantages"})}
     // 4. ROIC — proper invested capital = equity + total debt - cash (excludes excess cash sitting on balance sheet)
     if(recent.length>=2&&recentBal.length>=2){var roics=[];for(var ri=0;ri<Math.min(recent.length,recentBal.length);ri++){
       var opInc=recent[ri].operatingIncome!=null?recent[ri].operatingIncome:recent[ri].netIncome;
@@ -607,11 +607,11 @@ function calcMoatFromData(finData,businessModelType){
     if(rds.length>=2){metrics.push({id:"rdIntensity",name:"R&D Investment",score:Math.min(10,Math.max(1,Math.round(avg(rds)>20?8:avg(rds)>12?7:avg(rds)>6?6:avg(rds)>3?5:3))),value:avg(rds).toFixed(1)+"%",detail:"R&D/Revenue avg "+avg(rds).toFixed(1)+"%",trend:rds,icon:"flask",desc:"Sustained R&D builds innovation moats"})}
     // 8. NET MARGIN
     var nm=vals(recent,"netIncomeRatio");
-    if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=nis.map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
+    if(nm.length<2&&revs.length>=2){var nis=vals(recent,"netIncome");if(nis.length>=2){nm=(nis||[]).map(function(n,i){return revs[i]?n/revs[i]:null}).filter(function(v){return v!=null})}}
     if(nm.length>=2){var nmF=nm[0]*100;var nmL=nm[nm.length-1]*100;var nmA=avg(nm)*100;var imp=nmL>nmF;
-      metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"↑":"↓")+" "+nmF.toFixed(1)+"% → "+nmL.toFixed(1)+"%",trend:nm.map(function(v){return v*100}),icon:"bar",desc:"Improving profitability = strengthening position"})}
+      metrics.push({id:"netMargin",name:"Net Margin Trend",score:Math.min(10,Math.max(1,Math.round(nmA>20?8:nmA>12?7:nmA>5?5:nmA>0?3:1)+(imp?1:0))),value:nmA.toFixed(1)+"%",detail:(imp?"↑":"↓")+" "+nmF.toFixed(1)+"% → "+nmL.toFixed(1)+"%",trend:(nm||[]).map(function(v){return v*100}),icon:"bar",desc:"Improving profitability = strengthening position"})}
     if(metrics.length===0)return null;
-    var composite=Math.round(avg(metrics.map(function(m){return m.score})));
+    var composite=Math.round(avg((metrics||[]).map(function(m){return m.score})));
     return{metrics:metrics,composite:composite,years:recent.length}}
 
   function moatLabel(score){return score>=8?"Wide Moat":score>=6?"Narrow Moat":score>=4?"Weak Moat":"No Moat"}
@@ -695,11 +695,11 @@ function calcMoatFromData(finData,businessModelType){
       <div className="ta-skel" style={{height:140,background:K.bdr,borderRadius:_isBm?0:8}}/></div>;
     if(!pts||pts.length<5)return null;
     var cW=Math.max(600,pts.length>200?700:pts.length*3.5);var cH=160;var pad={l:0,r:0,t:10,b:20};
-    var prices=pts.map(function(p2){return p2.close});
+    var prices=(pts||[]).map(function(p2){return p2.close});
     var mn=Math.min.apply(null,prices);var mx=Math.max.apply(null,prices);var rng=mx-mn||1;
     function x(i){return pad.l+i/(pts.length-1)*(cW-pad.l-pad.r)}
     function y(v){return pad.t+(mx-v)/rng*(cH-pad.t-pad.b)}
-    var line=pts.map(function(p2,i){return(i===0?"M":"L")+x(i).toFixed(1)+","+y(p2.close).toFixed(1)}).join(" ");
+    var line=(pts||[]).map(function(p2,i){return(i===0?"M":"L")+x(i).toFixed(1)+","+y(p2.close).toFixed(1)}).join(" ");
     var area=line+" L"+x(pts.length-1)+","+(cH-pad.b)+" L"+x(0)+","+(cH-pad.b)+" Z";
     // Entry points from decisions
     var entries=[];(c.decisions||[]).forEach(function(d){if(!d.date||(!d.price&&!d.priceAtTime))return;
@@ -734,7 +734,7 @@ function calcMoatFromData(finData,businessModelType){
           <path d={area} fill={"url(#pg-"+c.id+")"}/>
           <path d={line} fill="none" stroke={totalRet>=0?K.grn:K.red} strokeWidth="1.5"/>
           {/* Hover detection rects */}
-          {pts.map(function(p2,i){return<rect key={i} x={x(i)-3} y={0} width={6} height={cH} fill="transparent" onMouseEnter={function(){setHov(i)}}/>})}
+          {(pts||[]).map(function(p2,i){return<rect key={i} x={x(i)-3} y={0} width={6} height={cH} fill="transparent" onMouseEnter={function(){setHov(i)}}/>})}
           {/* Hover crosshair */}
           {hov!==null&&<g><line x1={x(hov)} y1={pad.t} x2={x(hov)} y2={cH-pad.b} stroke={K.dim} strokeWidth="0.5" strokeDasharray="3,3"/>
             <circle cx={x(hov)} cy={y(pts[hov].close)} r={3} fill={K.txt} stroke={K.card} strokeWidth="2"/></g>}
@@ -873,7 +873,7 @@ function calcMoatFromData(finData,businessModelType){
                 {/* Note */}
                 <textarea value={d.note||""} onChange={function(e){setNote(t.id,e.target.value)}} placeholder={"Why does "+c.ticker+" have "+t.label.toLowerCase()+"? Be specific..."} rows={2} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"8px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
                 {sug&&sug.reasons.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:8}}>
-                  {sug.reasons.map(function(r,ri){return<span key={ri} style={{fontSize:10,color:t.color,background:t.color+"10",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>{r}</span>})}</div>}
+                  {(sug.reasons||[]).map(function(r,ri){return<span key={ri} style={{fontSize:10,color:t.color,background:t.color+"10",padding:"2px 8px",borderRadius:_isBm?0:3,fontFamily:fm}}>{r}</span>})}</div>}
               </div>})}</div>}
           {/* Suggestions + unclassified */}
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
@@ -938,7 +938,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
             {/* Guided questions */}
             <div style={{fontSize:12,color:K.mid,fontFamily:fm,marginBottom:14,lineHeight:1.5}}>Gross margins alone miss structural pricing power. Answer these to get a better score:</div>
-            {qs.map(function(q){var val=answers[q.id]||"";
+            {(qs||[]).map(function(q){var val=answers[q.id]||"";
               return<div key={q.id} style={{marginBottom:14}}>
                 <div style={{fontSize:13,color:K.txt,lineHeight:1.5,marginBottom:6}}>{q.q}</div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -980,7 +980,7 @@ function calcMoatFromData(finData,businessModelType){
         </div>}()}
       {/* Individual Metrics */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        {moat.metrics.map(function(m){
+        {(moat.metrics||[]).map(function(m){
           var ppOverride=m.id==="grossMargin"&&c.pricingPower&&c.pricingPower.score!=null;
           var displayScore=ppOverride?c.pricingPower.score:m.score;
           var barColor=displayScore>=8?K.grn:displayScore>=6?K.amb:K.red;
@@ -997,7 +997,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>{m.detail}</div>
             {/* Mini sparkline */}
             {m.trend&&m.trend.length>=2&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:24,marginTop:4}}>
-              {m.trend.map(function(v,ti){var mx=Math.max.apply(null,m.trend);var mn=Math.min.apply(null,m.trend);var range=mx-mn||1;var h=Math.max(3,((v-mn)/range)*22);
+              {(m.trend||[]).map(function(v,ti){var mx=Math.max.apply(null,m.trend);var mn=Math.min.apply(null,m.trend);var range=mx-mn||1;var h=Math.max(3,((v-mn)/range)*22);
                 return<div key={ti} style={{flex:1,height:h,borderRadius:_isBm?0:2,background:barColor+"60"}}/>})}</div>}
             <div style={{fontSize:11,color:K.dim,lineHeight:1.4,marginTop:8,fontStyle:"italic"}}>{m.desc}</div></div>})}</div>
       {/* Munger quote */}
@@ -1211,7 +1211,7 @@ function calcMoatFromData(finData,businessModelType){
           <thead><tr><th style={{position:"sticky",left:0,background:K.card,padding:"10px 14px",textAlign:"left",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,minWidth:200,zIndex:2}}>
             {stab.l} ({per==="quarter"?"Quarterly":"Annual"})</th>
             {(rows||[]).map(function(r,i){return<th key={i} style={{padding:"10px 12px",textAlign:"right",color:K.dim,borderBottom:"2px solid "+K.bdr,fontWeight:500,whiteSpace:"nowrap",minWidth:90}}>{per==="quarter"?(r.period||"")+" '"+(r.date||"").substring(2,4):(r.date||"").substring(0,4)}</th>})}</tr></thead>
-          <tbody>{stab.items.map(function(item,ri){
+          <tbody>{(stab.items||[]).map(function(item,ri){
             if(!item.k)return<tr key={ri}><td colSpan={rows.length+1} style={{height:8,background:K.bg}}></td></tr>;
             var isCharted=chartSel.indexOf(item.k)>=0;var chartColor=isCharted?CHART_COLORS[chartSel.indexOf(item.k)%CHART_COLORS.length]:null;
             return<tr key={ri} style={{background:isCharted?chartColor+"08":item.b?K.acc+"06":"transparent",cursor:"pointer",transition:"background .15s"}} onClick={function(){toggleChartMetric(item.k)}}>
