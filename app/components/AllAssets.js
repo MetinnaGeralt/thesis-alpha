@@ -1,11 +1,11 @@
-"use client";
+"use  otherAssets = otherAssets || [];
+ client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { DARK, THEMES, METRIC_MAP, INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP, SUPERINVESTORS, MSTAR_RATINGS, FOLDERS } from "./constants";
 import { calcMastery, calcOwnerScore, classifyPortfolio, dU, fD, fT, nId, gH, bT, eS, autoFormat, buildPrompt, calcAlignmentSignals, calcMoatFromData } from "./utils";
 
 export default function AllAssets({
   cos, page, setPage, setSelId, setDetailTab,
-  K, fm, fh, fb, isMobile, _isBm, conviction,
   IC, CoLogo, Modal,
   currency,
   otherAssets, setOtherAssets,
@@ -406,7 +406,6 @@ export default function AllAssets({
               var FRAMING_MAP={
                 challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
                 sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
-                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
               };
               var fr=FRAMING_MAP[item.aiType]||FRAMING_MAP["challenge"];
               setAiModal({title:(item.aiType==="sell"?"Sell Discipline Check":item.aiType==="annual"?"Annual Review":"Challenge My Thesis")+" — "+item.ticker,framing:fr,prompt:buildPrompt(item.aiType,item.c)});
@@ -444,12 +443,10 @@ export default function AllAssets({
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
                 {(function(){
-                  var conv=c.conviction||0;if(!conv)return null;
                   var cc=conv>=8?K.grn:conv>=5?K.amb:K.red;
                   var portVal2=portCos.reduce(function(s,pc){var pp=pc.position||{};return pp.shares>0&&pp.currentPrice>0?s+pp.shares*pp.currentPrice:s},0);
                   var myVal2=c.position&&c.position.shares>0&&c.position.currentPrice>0?c.position.shares*c.position.currentPrice:0;
                   var myPct2=portVal2>0?myVal2/portVal2*100:0;
-                  var sumConv2=portCos.reduce(function(s,pc){return s+(pc.conviction||1)},0);
                   var idealPct2=sumConv2>0?(conv||1)/sumConv2*100:0;
                   var drift2=myPct2-idealPct2;
                   var showDrift=Math.abs(drift2)>5&&myPct2>0;
