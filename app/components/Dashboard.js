@@ -206,7 +206,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
                 {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
                 <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
+                  <button onClick={function(){var updated=(readingList||[]).map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
                   {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
                 </div>
               </div>;
@@ -218,7 +218,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
                 {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
+                  <button onClick={function(){var updated=(readingList||[]).map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
                   {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
                 </div>
               </div>;
@@ -236,7 +236,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {/* Recently finished */}
             {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
               <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
-              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
+              {(recentlyRead||[]).map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
                 <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
@@ -247,7 +247,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {/* Library items linked to holdings */}
             {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
               <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
-              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
+              {(linkedItems||[]).map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
                 <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
@@ -274,7 +274,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
       var portfolio=filtered;
       // ── TERRY SMITH: The Three Tests ─────────────────────────────
       if(investorProfile==="terry"){
-        var terryRows=portfolio.map(function(c){
+        var terryRows=(portfolio||[]).map(function(c){
           var s=c.financialSnapshot||{};
           var roic=s.roic&&s.roic.numVal!=null?s.roic.numVal:s.roce&&s.roce.numVal!=null?s.roce.numVal:null;
           var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
@@ -305,7 +305,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
               {["High returns","Can reinvest","Fair price"].map(function(l,i){return<div key={i} style={{fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>})}
             </div>
-            {terryRows.map(function(row){
+            {(terryRows||[]).map(function(row){
               var c=row.c;
               return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",padding:"8px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
                 onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
@@ -352,7 +352,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               <div style={{padding:"7px 14px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
                 <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Scale economies shared — does it get better for customers?</div>
               </div>
-              {portfolio.map(function(c){
+              {(portfolio||[]).map(function(c){
                 var s=c.financialSnapshot||{};
                 var revGr=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
                 var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
@@ -396,7 +396,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
         // Leg 1: Extraordinary Business — ROE + gross margin + FCF
         // Leg 2: Exceptional Management — conviction history trend + decision quality
         // Leg 3: Reinvestment Opportunity — revenue growth + retained earnings proxy
-        var akreRows=portfolio.map(function(c){
+        var akreRows=(portfolio||[]).map(function(c){
           var s=c.financialSnapshot||{};
           function pv(k2){if(!s[k2])return null;if(s[k2].numVal!=null)return s[k2].numVal;var v2=s[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||null:null}
           // Leg 1: Extraordinary Business
@@ -443,7 +443,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               <div style={{textAlign:"center",fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg</div>
             </div>
             {/* Rows */}
-            {akreRows.map(function(row){
+            {(akreRows||[]).map(function(row){
               var c=row.c;
               function leg(val){
                 if(val===null)return<div style={{textAlign:"center",color:K.bdr,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>{"—"}</div>;
@@ -516,7 +516,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-              {portfolio.map(function(c){
+              {(portfolio||[]).map(function(c){
                 var cat=c.lynchCategory?LCATS.find(function(x){return x.id===c.lynchCategory}):null;
                 var s=c.financialSnapshot||{};
                 var pe2=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
@@ -549,7 +549,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               </div>
               <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",flex:1}}>
                 <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Sell rules by type</div>
-                {LCATS.map(function(cat){return<div key={cat.id} style={{marginBottom:5,display:"flex",alignItems:"flex-start",gap:4}}>
+                {(LCATS||[]).map(function(cat){return<div key={cat.id} style={{marginBottom:5,display:"flex",alignItems:"flex-start",gap:4}}>
                   <span style={{fontSize:9,fontWeight:700,color:cat.color,fontFamily:fm,flexShrink:0,minWidth:16}}>{cat.sym}</span>
                   <span style={{fontSize:9,color:K.dim,fontFamily:fm,lineHeight:1.4}}>{cat.tip}</span>
                 </div>})}
@@ -574,7 +574,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {ivCos.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{inZoneN+" in buy zone \u00b7 "+belowIVN+"/"+ivCos.length+" below IV"}</span>}
           </div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            {portfolio.map(function(c){
+            {(portfolio||[]).map(function(c){
               var pos=c.position||{};var cp=pos.currentPrice||0;
               var iv=c.ivEstimate||0;var mos=c.mosPct||30;
               var buyBelow=iv*(1-mos/100);
@@ -962,7 +962,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               </div>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8,padding:isMobile?"0 12px 14px":"0 20px 16px"}}>
-              {visibleSigs.map(function(sig,i){
+              {(visibleSigs||[]).map(function(sig,i){
                 return<div key={i} onClick={function(){handleAction(sig.onAction)}} style={{display:"flex",alignItems:"flex-start",gap:14,padding:isMobile?"12px 14px":"14px 16px",background:sig.color+"0a",border:"1px solid "+sig.color+"25",borderLeft:"3px solid "+sig.color,borderRadius:_isBm?0:10,cursor:"pointer",transition:"background .15s"}}
                   onMouseEnter={function(e){e.currentTarget.style.background=sig.color+"15"}}
                   onMouseLeave={function(e){e.currentTarget.style.background=sig.color+"0a"}}>
@@ -1087,7 +1087,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
               function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
               function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
-              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
+              function perHolding(r){return (portfolio||[]).map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
               var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
               var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
               var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
@@ -1100,7 +1100,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                     <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
                     {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
                   </div>
-                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
+                  <div style={{display:"flex",gap:3}}>{(PRESETS||[]).map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
                 </div>
                 <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
@@ -1115,7 +1115,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                     var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
                     var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
                     var isOpen=expandedRow===r.key;
-                    var vArr=holdings.map(function(h){return h.v});
+                    var vArr=(holdings||[]).map(function(h){return h.v});
                     var vMin=vArr.length?Math.min.apply(null,vArr):0;
                     var vMax=vArr.length?Math.max.apply(null,vArr):1;
                     var vSpan=Math.max(vMax-vMin,0.001);
@@ -1136,7 +1136,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                         <div style={{position:"relative",height:24,marginBottom:4}}>
                           <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
                           {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
-                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
+                          {(holdings||[]).map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
                       </div>}
@@ -1179,7 +1179,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {insiderSignals.length>0&&<div>
               <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+                {(insiderSignals||[]).map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
               </div>
             </div>}
 
@@ -1188,7 +1188,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           {/* RIGHT — ownership health (no prices) ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
-            {portfolio.map(function(c2){
+            {(portfolio||[]).map(function(c2){
               var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
               var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
               // --- Progress meter: 0-100 across 5 dimensions ---
@@ -1258,7 +1258,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
               {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
                 <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
+                  {(NEWS_CATS||[]).map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
                     <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
                     {cat.label}
                   </button>})}
@@ -1266,7 +1266,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
               </div>}
               {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
-              {shown.length>0&&<div>{visible.map(function(n,i){
+              {shown.length>0&&<div>{(visible||[]).map(function(n,i){
                 var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
                 var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
                 return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
@@ -1422,10 +1422,10 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           <button onClick={function(){var nm3=Object.assign({},milestones);nm3.onboard_dismissed=true;setMilestones(nm3);try{localStorage.setItem("ta-milestones",JSON.stringify(nm3))}catch(e){}}} style={{background:"none",border:"none",color:K.dim,fontSize:13,cursor:"pointer",padding:2}}>{"✕"}</button></div>
         {/* Progress bar */}
         <div style={{display:"flex",gap:3,marginBottom:12}}>
-          {steps.map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
+          {(steps||[]).map(function(s,i){return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:s.done?K.grn:K.bdr,transition:"background .3s"}}/>})}</div>
         {/* Step buttons */}
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {steps.map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:11,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
+          {(steps||[]).map(function(s,i){return<button key={i} onClick={s.done?undefined:s.onClick} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(s.done?K.grn+"40":s.color+"30"),background:s.done?K.grn+"08":"transparent",color:s.done?K.grn:s.color,fontSize:11,fontWeight:600,cursor:s.done?"default":"pointer",fontFamily:fm,opacity:s.done?.7:1}}>
             {s.done?<IC name="check" size={10} color={K.grn}/>:<IC name={s.icon} size={10} color={s.color}/>}{s.label}</button>})}</div>
       </div>})()}
     {dashSet.showSummary&&sideTab==="portfolio"&&function(){
@@ -1561,7 +1561,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
 
       // ── Portfolio aggregate row (weighted by position value) ──────────────
       var totalVal2=filtered.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-      var aggRow=activeCols.map(function(m){
+      var aggRow=(activeCols||[]).map(function(m){
         var wSum=0,wN=0;
         filtered.forEach(function(c2){
           var snap=c2.financialSnapshot||{};var v=m.get(snap);
@@ -1578,7 +1578,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           <div style={{flex:1,minWidth:isMobile?90:120}}>
             <span style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>Company</span>
           </div>
-          {activeCols.map(function(m){return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
+          {(activeCols||[]).map(function(m){return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
             <span style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:.3,textTransform:"uppercase",whiteSpace:"nowrap"}} title={m.tip}>{m.short}</span>
           </div>})}
           <div style={{width:28,flexShrink:0,display:"flex",justifyContent:"flex-end",position:"relative"}}>
@@ -1595,7 +1595,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 return<div key={cat} style={{marginBottom:10}}>
                   <div style={{fontSize:9,letterSpacing:1,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:5}}>{cat}</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {catMs.map(function(m){
+                    {(catMs||[]).map(function(m){
                       var on=(dashSet.fundCols||DEFAULT_FUND_COLS).indexOf(m.id)>=0;
                       return<button key={m.id} title={m.tip} onClick={function(){
                         setDashSet(function(p){
@@ -1620,7 +1620,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>Portfolio avg</div>
             <div style={{fontSize:9,color:K.dim}}>weighted by value</div>
           </div>
-          {aggRow.map(function(v,i){var m=activeCols[i];return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
+          {(aggRow||[]).map(function(v,i){var m=activeCols[i];return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
             {v!=null?<span style={{fontSize:12,fontWeight:700,color:metricColor(m,v),fontFamily:fm}}>{m.fmt(v)}</span>
             :<span style={{fontSize:11,color:K.dim}}>—</span>}
           </div>})}
@@ -1646,7 +1646,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 {!isMobile&&<div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:130}}>{cc.name}</div>}
               </div>
             </div>
-            {activeCols.map(function(m){var v=m.get(snap);var color=metricColor(m,v);
+            {(activeCols||[]).map(function(m){var v=m.get(snap);var color=metricColor(m,v);
               return<div key={m.id} style={{width:COL_W,textAlign:"right",flexShrink:0}}>
                 {v!=null
                   ?<span style={{fontSize:isMobile?11:12,fontWeight:600,color:color,fontFamily:fm,background:color+"10",padding:"2px 6px",borderRadius:_isBm?0:4}}>{m.fmt(v)}</span>
@@ -1680,10 +1680,10 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {showListCfg&&<div style={{position:"absolute",right:0,top:22,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.25)",zIndex:50,minWidth:150,textTransform:"none",letterSpacing:0}} onClick={function(e){e.stopPropagation()}}>
               <div style={{padding:"4px 12px 6px",fontSize:11,color:K.dim,fontWeight:600}}>Show columns</div>
               {(function(){var allCols=[{k:"conviction",l:"Conviction"},{k:"kpis",l:"KPI Status"},{k:"earnings",l:"Earnings"},{k:"price",l:"Current Price"},{k:"mastery",l:"Mastery Stars"}];
-              var order=dashSet.listColOrder||allCols.map(function(c2){return c2.k});
-              var sorted=order.map(function(k2){return allCols.find(function(c2){return c2.k===k2})}).filter(Boolean);
+              var order=dashSet.listColOrder||(allCols||[]).map(function(c2){return c2.k});
+              var sorted=(order||[]).map(function(k2){return allCols.find(function(c2){return c2.k===k2})}).filter(Boolean);
               allCols.forEach(function(c2){if(!sorted.find(function(s2){return s2.k===c2.k}))sorted.push(c2)});
-              function moveCol(k2,dir){setDashSet(function(p){var o=p.listColOrder||allCols.map(function(c3){return c3.k});var idx2=o.indexOf(k2);if(idx2<0)return p;var ni=Math.max(0,Math.min(o.length-1,idx2+dir));if(ni===idx2)return p;var no=o.slice();no.splice(idx2,1);no.splice(ni,0,k2);var n=Object.assign({},p,{listColOrder:no});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
+              function moveCol(k2,dir){setDashSet(function(p){var o=p.listColOrder||(allCols||[]).map(function(c3){return c3.k});var idx2=o.indexOf(k2);if(idx2<0)return p;var ni=Math.max(0,Math.min(o.length-1,idx2+dir));if(ni===idx2)return p;var no=o.slice();no.splice(idx2,1);no.splice(ni,0,k2);var n=Object.assign({},p,{listColOrder:no});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}
               return sorted.map(function(col){return<div key={col.k} style={{padding:"5px 12px",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
                 <div onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}} style={{width:12,height:12,borderRadius:_isBm?0:3,border:"1.5px solid "+((dashSet.listCols||{})[col.k]?K.acc:K.bdr),background:(dashSet.listCols||{})[col.k]?K.acc:"transparent",cursor:"pointer",flexShrink:0}}/>
                 <span style={{flex:1,cursor:"pointer"}} onClick={function(){setDashSet(function(p){var lc=Object.assign({},p.listCols||{});lc[col.k]=!lc[col.k];var n=Object.assign({},p,{listCols:lc});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(e){}return n})}}>{col.l}</span>
@@ -1738,7 +1738,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
       </div>})()}
     {/* Card view */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="cards"&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(auto-fill,minmax(320px,1fr))",gap:16,marginBottom:28}}>
-      {filtered.map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
+      {(filtered||[]).map(function(c,ci){var h=gH(c.kpis);var d=dU(c.earningsDate);var cs2=checkSt[c.id];var met=c.kpis.filter(function(k){return k.lastResult&&k.lastResult.status==="met"}).length;var total=c.kpis.filter(function(k){return k.lastResult}).length;var pos=c.position||{};
         var _snap=c.financialSnapshot||{};
         var _dayChg=c._dayChangePct||0;var _dayChgAbs=c._dayChangeAbs||0;
         var _totalRet=pos.avgCost>0&&pos.currentPrice>0?((pos.currentPrice-pos.avgCost)/pos.avgCost*100):null;
@@ -1794,7 +1794,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             var completed=steps.filter(function(s){return s.done}).length;
             if(completed===5)return null; // Don't show if all complete
             return<div style={{display:"flex",alignItems:"center",gap:3,marginBottom:10}}>
-              {steps.map(function(s,i){return React.createElement(React.Fragment,{key:s.id},
+              {(steps||[]).map(function(s,i){return React.createElement(React.Fragment,{key:s.id},
                 <div style={{display:"flex",alignItems:"center",gap:3}} title={s.label+(s.done?" ✓":" — not done")}>
                   <div style={{width:16,height:16,borderRadius:"50%",background:s.done?s.color:K.bdr,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:s.done?"#fff":K.dim,fontWeight:700}}>{s.done?"✓":(i+1)}</div>
                   <span style={{fontSize:8,color:s.done?s.color:K.dim,fontFamily:fm}}>{s.label}</span></div>,
@@ -1813,7 +1813,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           </div></div>})}</div>}
     {/* Mastery Overview */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
-      var items=filtered.map(function(cc2){return{ticker:cc2.ticker,id:cc2.id,m:calcMastery(cc2),domain:cc2.domain}}).sort(function(a,b){return a.m.stars-b.m.stars});
+      var items=(filtered||[]).map(function(cc2){return{ticker:cc2.ticker,id:cc2.id,m:calcMastery(cc2),domain:cc2.domain}}).sort(function(a,b){return a.m.stars-b.m.stars});
       var avgStars=items.reduce(function(s2,i2){return s2+i2.m.stars},0)/Math.max(items.length,1);
       var mastered=items.filter(function(i2){return i2.m.stars>=6}).length;
       var nextSteps={"Added":"Write a thesis with core investment case, moat, risks, and sell criteria","Thesis":"Define 2+ KPIs and rate your conviction","Tracked":"Check earnings and classify the competitive moat","Monitored":"Log a decision and review your thesis (keep it fresh)","Disciplined":"Accumulate 3+ quarters of earnings data and conviction history"};
@@ -1855,7 +1855,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           <span style={{fontSize:12,color:K.dim,flex:1}}>Has your understanding changed? Consider reconsidering.</span>
         </div>}
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {filtered.map(function(c){
+          {(filtered||[]).map(function(c){
             var daysParked=c.parkedAt?Math.floor((new Date()-new Date(c.parkedAt))/864e5):null;
             var isStale=daysParked!==null&&daysParked>180;
             var tl=daysParked===null?"Unknown":daysParked<30?(daysParked+"d ago"):daysParked<365?(Math.floor(daysParked/30)+"mo ago"):(Math.floor(daysParked/365)+"yr "+Math.floor((daysParked%365)/30)+"mo ago");
@@ -1881,7 +1881,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                     :<div style={{marginBottom:8}}>
                         <div style={{fontSize:12,color:K.dim,marginBottom:6}}>Why too hard? <span style={{opacity:.7}}>(helps you decide later)</span></div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                          {HARD_CHIPS.map(function(r){return<button key={r} onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:r})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"3px 10px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}>{r}</button>})}
+                          {(HARD_CHIPS||[]).map(function(r){return<button key={r} onClick={function(e){e.stopPropagation();upd(c.id,{tooHardReason:r})}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:999,padding:"3px 10px",fontSize:11,color:K.mid,cursor:"pointer",fontFamily:fm}}>{r}</button>})}
                         </div>
                       </div>}
                 </div>
@@ -1924,7 +1924,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           {/* CTAs */}
           <button onClick={function(){setObStep(1)}} style={Object.assign({},S.btnP,{width:"100%",padding:isMobile?"14px":"12px 24px",fontSize:15,borderRadius:_isBm?0:12,marginBottom:10})}>{"Get started →"}</button>
           <button onClick={function(){
-              var sampleWithFlag=SAMPLE.map(function(s){return Object.assign({},s,{_isSample:true})});
+              var sampleWithFlag=(SAMPLE||[]).map(function(s){return Object.assign({},s,{_isSample:true})});
               setCos(sampleWithFlag);
               try{localStorage.setItem("ta-onboarded","true")}catch(e){}
               setTimeout(function(){setSelId(SAMPLE[0].id);setDetailTab("dossier")},100)
@@ -1985,7 +1985,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
           var portYield=totalVal3>0?totalAnnualDiv/totalVal3*100:0;
           var monthlyInc=totalAnnualDiv/12;
           // Per-holding breakdown
-          var holdings=divCos.map(function(c2){var p2=c2.position||{};var dps=c2.divPerShare||c2.lastDiv||0;
+          var holdings=(divCos||[]).map(function(c2){var p2=c2.position||{};var dps=c2.divPerShare||c2.lastDiv||0;
             var mult=c2.divFrequency==="monthly"?12:c2.divFrequency==="semi"?2:c2.divFrequency==="annual"?1:4;
             var annDiv2=dps*mult;var yld=p2.currentPrice?annDiv2/p2.currentPrice*100:0;
             var yoc=p2.avgCost>0?annDiv2/p2.avgCost*100:0;var annPay=(p2.shares||0)*annDiv2;
@@ -1994,7 +1994,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             return{id:c2.id,ticker:c2.ticker,domain:c2.domain,dps:dps,freq:c2.divFrequency,annDiv:annDiv2,yield:yld,yoc:yoc,annPay:annPay,shares:p2.shares||0,exDiv:c2.exDivDate||"",payout:payoutPct}}).sort(function(a,b){return b.annPay-a.annPay});
           // Monthly income chart (estimate based on frequency)
           var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-          var monthlyArr=months.map(function(){return 0});
+          var monthlyArr=(months||[]).map(function(){return 0});
           holdings.forEach(function(h2){if(h2.shares<=0)return;
             var payMonths=estimatePayMonths({divFrequency:h2.freq,exDivDate:h2.exDiv});
             payMonths.forEach(function(mi){monthlyArr[mi]+=h2.dps*h2.shares})});
@@ -2022,7 +2022,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
             {isPro&&<div style={{marginBottom:16}}>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>Monthly Income Estimate</div>
               <div style={{display:"flex",gap:3,alignItems:"flex-end",height:60}}>
-                {monthlyArr.map(function(v2,mi){return<div key={mi} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
+                {(monthlyArr||[]).map(function(v2,mi){return<div key={mi} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center"}}>
                   <div style={{width:"100%",height:Math.max(v2/maxMonth*50,2),borderRadius:_isBm?0:3,background:v2>0?K.grn:K.bdr,marginBottom:3}}/>
                   <div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{months[mi]}</div>
                   {v2>0&&<div style={{fontSize:7,color:K.grn,fontFamily:fm}}>${v2.toFixed(0)}</div>}</div>})}</div></div>}
@@ -2036,7 +2036,7 @@ var filtered=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
                 {isPro&&<span style={{width:50,textAlign:"right"}}>YOC</span>}
                 <span style={{width:60,textAlign:"right"}}>Income</span>
                 {isPro&&<span style={{width:50,textAlign:"right"}}>Payout</span>}</div>
-              {holdings.map(function(h2){var safeColor=h2.payout>0?(h2.payout<60?K.grn:h2.payout<80?K.amb:K.red):K.dim;
+              {(holdings||[]).map(function(h2){var safeColor=h2.payout>0?(h2.payout<60?K.grn:h2.payout<80?K.amb:K.red):K.dim;
                 return<div key={h2.id} style={{display:"flex",alignItems:"center",padding:"6px 0",borderBottom:"1px solid "+K.bdr+"30",gap:0,cursor:"pointer"}} onClick={function(){setSelId(h2.id);setDetailTab("dossier");setPage("dashboard")}}>
                   <span style={{width:28}}><CoLogo domain={h2.domain} ticker={h2.ticker} size={18}/></span>
                   <span style={{flex:1}}><span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{h2.ticker}</span></span>
