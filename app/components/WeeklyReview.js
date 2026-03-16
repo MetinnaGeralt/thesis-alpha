@@ -9,6 +9,7 @@ export default function WeeklyReview({
   milestones,
   trialActive, trialExpired, effectivePlan,
 }) {
+  cos = cos || [];
   // ── Prop guards ──
   weeklyReviews = weeklyReviews || [];
   streakData = streakData || {};
@@ -61,7 +62,7 @@ export default function WeeklyReview({
     function prevHolding(){if(idx>0)setIdx(idx-1)}
 
     function finishReview(){
-      var entries=portfolio.map(function(c2){return{ticker:c2.ticker,id:c2.id,prev:c2.conviction||0,
+      var entries=(portfolio||[]).map(function(c2){return{ticker:c2.ticker,id:c2.id,prev:c2.conviction||0,
         new:revs[c2.id]!=null?revs[c2.id]:c2.conviction||0,note:notes[c2.id]||"",action:actions[c2.id]||"hold"}});
       var rev={weekId:weekId,date:new Date().toISOString(),entries:entries,reflection:reflection.trim(),
         summary:{total:portfolio.length,changed:entries.filter(function(e){return e.prev!==e.new}).length,
@@ -208,7 +209,7 @@ export default function WeeklyReview({
               <div style={{flex:1}}>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5}}>CONVICTION HISTORY</div>
                 <div style={{display:"flex",alignItems:"flex-end",gap:3,height:24}}>
-                  {pts.map(function(p,pi){var h=Math.max(3,Math.round((p.rating/10)*24));var isLast=pi===pts.length-1;var clr=p.rating>=7?K.grn:p.rating>=4?K.amb:K.red;
+                  {(pts||[]).map(function(p,pi){var h=Math.max(3,Math.round((p.rating/10)*24));var isLast=pi===pts.length-1;var clr=p.rating>=7?K.grn:p.rating>=4?K.amb:K.red;
                     return<div key={pi} title={(p.date||"")+": "+p.rating} style={{width:16,height:h,borderRadius:_isBm?0:2,background:isLast?clr:clr+"60",flexShrink:0}}/>})}
                 </div>
               </div>
@@ -276,7 +277,7 @@ export default function WeeklyReview({
             var ups=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)>(co2.conviction||0)}).length;
             var downs=changed.filter(function(k){var co2=cos.find(function(x){return x.id===parseInt(k)||x.id===k})||{};return(revs[k]||0)<(co2.conviction||0)}).length;
             var actCount=Object.values(actions).filter(function(a){return a!=="hold"}).length;
-            var avgNew=Math.round(portfolio.map(function(c2){return revs[c2.id]!=null?revs[c2.id]:(c2.conviction||0)}).reduce(function(s,v){return s+v},0)/Math.max(portfolio.length,1)*10)/10;
+            var avgNew=Math.round((portfolio||[]).map(function(c2){return revs[c2.id]!=null?revs[c2.id]:(c2.conviction||0)}).reduce(function(s,v){return s+v},0)/Math.max(portfolio.length,1)*10)/10;
             var pats=[];
             if(weeklyReviews.length>=3){var neverLowered=weeklyReviews.slice(0,5).every(function(r){return r.entries.every(function(e){return e.new>=e.prev})});if(neverLowered&&downs===0)pats.push({c:K.amb,t:"You haven't lowered conviction in recent reviews. Honest reassessment is part of the process."});}
             if(pats.length===0&&ups>downs&&ups>=2)pats.push({c:K.grn,t:"Building conviction across "+ups+" holding"+(ups>1?"s":"")+" this week."});
@@ -294,7 +295,7 @@ export default function WeeklyReview({
             </div>})()}
           {/* Holdings pills */}
           <div style={{display:"flex",flexWrap:"wrap",gap:5,justifyContent:"center",marginBottom:16,maxHeight:100,overflow:"auto"}}>
-            {portfolio.map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var chgd=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
+            {(portfolio||[]).map(function(c2){var newConv=revs[c2.id]!=null?revs[c2.id]:c2.conviction;var chgd=newConv!==c2.conviction;var act=actions[c2.id]||"hold";
               return<div key={c2.id} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 9px",borderRadius:_isBm?0:20,background:chgd?K.acc+"10":K.bg,border:"1px solid "+(chgd?K.acc+"30":K.bdr),fontSize:11,fontFamily:fm}}>
                 <span style={{fontWeight:600,color:K.txt}}>{c2.ticker}</span>
                 {chgd?<span style={{color:K.acc,fontWeight:600}}>{c2.conviction+"→"+newConv}</span>:<span style={{color:K.dim}}>{newConv}</span>}
@@ -363,7 +364,7 @@ export default function WeeklyReview({
             return<div style={{background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,padding:"12px 16px",marginBottom:16}}>
               <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>CONVICTION TREND (8 WEEKS)</div>
               <div style={{display:"flex",alignItems:"flex-end",gap:4,height:40,justifyContent:"center"}}>
-                {last8.map(function(rev,ri){var avg=rev.summary?rev.summary.avgConv:0;var h=Math.max(4,Math.round((avg/10)*40));var isLatest=ri===last8.length-1;var clr=avg>=7?K.grn:avg>=4?K.acc:K.red;
+                {(last8||[]).map(function(rev,ri){var avg=rev.summary?rev.summary.avgConv:0;var h=Math.max(4,Math.round((avg/10)*40));var isLatest=ri===last8.length-1;var clr=avg>=7?K.grn:avg>=4?K.acc:K.red;
                   return<div key={ri} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                     <div style={{width:"100%",height:h,borderRadius:_isBm?0:2,background:isLatest?clr:clr+"50"}} title={"Wk "+rev.weekId+": avg "+avg}/>
                     {isLatest&&<span style={{fontSize:7,color:clr,fontFamily:fm,fontWeight:700}}>{avg}</span>}
@@ -379,10 +380,10 @@ export default function WeeklyReview({
             return<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:16}}>
               <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,marginBottom:10,display:"flex",alignItems:"center",gap:5}}><IC name="shield" size={10} color={K.acc}/>Portfolio Health Report</div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {[{icon:"target",label:"Earnings in next 14 days",value:upcoming.length,good:upcoming.length===0,warn:upcoming.length>0,detail:upcoming.length>0?upcoming.map(function(c2){return c2.ticker}).join(", "):"All clear"},
-                  {icon:"bar",label:"Holdings without KPIs",value:noKpi.length,good:noKpi.length===0,warn:noKpi.length>0,detail:noKpi.length>0?noKpi.map(function(c2){return c2.ticker}).join(", "):"All covered"},
-                  {icon:"clock",label:"Stale theses (90+ days)",value:staleThesis.length,good:staleThesis.length===0,warn:staleThesis.length>0,detail:staleThesis.length>0?staleThesis.map(function(c2){return c2.ticker}).join(", "):"All current"},
-                  {icon:"users",label:"Recent insider activity",value:withInsider.length,good:withInsider.length===0,warn:false,detail:withInsider.length>0?withInsider.map(function(c2){return c2.ticker}).join(", "):"None detected"}
+                {[{icon:"target",label:"Earnings in next 14 days",value:upcoming.length,good:upcoming.length===0,warn:upcoming.length>0,detail:upcoming.length>0?(upcoming||[]).map(function(c2){return c2.ticker}).join(", "):"All clear"},
+                  {icon:"bar",label:"Holdings without KPIs",value:noKpi.length,good:noKpi.length===0,warn:noKpi.length>0,detail:noKpi.length>0?(noKpi||[]).map(function(c2){return c2.ticker}).join(", "):"All covered"},
+                  {icon:"clock",label:"Stale theses (90+ days)",value:staleThesis.length,good:staleThesis.length===0,warn:staleThesis.length>0,detail:staleThesis.length>0?(staleThesis||[]).map(function(c2){return c2.ticker}).join(", "):"All current"},
+                  {icon:"users",label:"Recent insider activity",value:withInsider.length,good:withInsider.length===0,warn:false,detail:withInsider.length>0?(withInsider||[]).map(function(c2){return c2.ticker}).join(", "):"None detected"}
                 ].map(function(s){return<div key={s.label} style={{display:"flex",alignItems:"center",gap:8}}>
                   <IC name={s.icon} size={12} color={s.warn?K.amb:s.good?K.grn:K.dim}/>
                   <div style={{flex:1}}><span style={{fontSize:12,color:K.txt}}>{s.label}</span>{s.detail&&<span style={{fontSize:11,color:K.dim}}> — {s.detail}</span>}</div>
@@ -415,7 +416,7 @@ export default function WeeklyReview({
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>avg {r.summary.avgConv}/10</span>
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                {r.entries.map(function(e){var changed=e.prev!==e.new;var isUp=e.new>e.prev;
+                {(r.entries||[]).map(function(e){var changed=e.prev!==e.new;var isUp=e.new>e.prev;
                   return<div key={e.ticker} style={{padding:"3px 8px",borderRadius:_isBm?0:4,background:changed?(isUp?K.grn+"12":K.red+"12"):K.bg,border:"1px solid "+(changed?(isUp?K.grn+"30":K.red+"30"):K.bdr),fontSize:11,fontFamily:fm,color:changed?(isUp?K.grn:K.red):K.dim,display:"flex",alignItems:"center",gap:3}}>
                     <span style={{fontWeight:600}}>{e.ticker}</span>
                     {changed&&<span>{isUp?"↑":"↓"}{e.prev}→{e.new}</span>}
