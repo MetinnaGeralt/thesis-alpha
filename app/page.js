@@ -6475,31 +6475,28 @@ function calcMoatFromData(finData,businessModelType){
       }
     });
 
-    // ── LAYER 5: Decision post-mortems (decisions >90d with no outcome) ──
+
+
+    // ── LAYER 5: Upcoming earnings — KPI ready check ──────────────
     portfolio.forEach(function(c){
-      var decs = (c.decisions||[]).filter(function(d){
-        if(d.cardType!=="decision"&&(d.cardType||!d.reasoning))return false;
-        if(d.outcome)return false; // already reviewed
-        if(!d.date)return false;
-        var ageDays = Math.ceil((Date.now()-new Date(d.date))/864e5);
-        return ageDays >= 90;
+      if(!c.earningsDate||c.earningsDate==="TBD")return;
+      var days=dU(c.earningsDate);
+      if(days<0||days>7)return;
+      var kpis=c.kpis||[];
+      var hasKpis=kpis.length>0;
+      var kpiStr=hasKpis?kpis.slice(0,3).map(function(k){return k.label}).join(", "):"no KPIs set";
+      signals.push({
+        layer:"earnings_soon",
+        priority:1,
+        icon:"bar",
+        color:K.acc,
+        title:c.ticker+" reports in "+(days===0?"today":days+"d"),
+        sub:hasKpis?"Tracking: "+kpiStr+" — know what to look for":"No KPIs set for this earnings — add them now",
+        action:hasKpis?"Pre-Earnings AI":"Add KPIs",
+        onAction:hasKpis?{type:"ai",aiType:"earnings",c:c}:{type:"go",c:c,modal:"kpi"},
+        secondary:"View thesis",
+        onSecondary:{type:"go",c:c}
       });
-      if(decs.length > 0){
-        var oldest = decs[decs.length-1];
-        var ageDays = Math.ceil((Date.now()-new Date(oldest.date))/864e5);
-        signals.push({
-          layer:"postmortem",
-          priority:3,
-          icon:"clock",
-          color:K.blue||"#3B82F6",
-          title:c.ticker+": decision needs a post-mortem",
-          sub:(oldest.action||"Decision")+" logged "+ageDays+"d ago — was your reasoning right?",
-          action:"Post-Mortem",
-          onAction:{type:"postmortem", c:c, dec:oldest},
-          secondary:"View journal",
-          onSecondary:{type:"go", c:c}
-        });
-      }
     });
 
     // LAYER 6: Ownership anniversaries
@@ -10969,8 +10966,7 @@ function WeeklyReview(){
               if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
             }
             else if(act.type==="library"){setSelId(null);setPage("library")}
-            else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
-          }
+            }
 
           var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
           var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/_heldCos2.length/365):0;
