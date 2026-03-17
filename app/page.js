@@ -11270,7 +11270,7 @@ function WeeklyReview(){
         </div>
 
         {/* ── ONE FOCUS ── */}
-        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
+        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,border:"1px solid rgba(212,175,55,0.22)",borderRadius:_isBm?0:10,margin:"0 0 0 0",background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
             <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
