@@ -2604,7 +2604,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       saveRL(updated);
       setModal(null);
     }
-    return<Modal title={"Note from \""+book.title+"""} onClose={function(){setModal(null)}} w={460} K={K}>
+    return<Modal title={"Note from \u201c"+book.title+"\u201d"} onClose={function(){setModal(null)}} w={460} K={K}>
       <div style={{marginBottom:12}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>What insight or idea does this spark?</div>
         <textarea
