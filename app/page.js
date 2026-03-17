@@ -10634,7 +10634,7 @@ function WeeklyReview(){
         {!isMobile&&sideTab==="portfolio"&&investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&(function(){
           var prof=PROFILE_MAP[investorProfile];
           var _pbe=useState(false),profBannerExp=_pbe[0],setProfBannerExp=_pbe[1];
-          return<div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:prof.color+"08",border:"1px solid "+prof.color+"20",borderRadius:_isBm?0:8,marginTop:8,marginBottom:0,cursor:"pointer",transition:"all .15s"}}
+          return<div style={{display:"flex",alignItems:"center",gap:8,padding:profBannerExp?"8px 14px":"4px 8px",background:profBannerExp?prof.color+"08":"none",border:profBannerExp?"1px solid "+prof.color+"20":"none",borderRadius:_isBm?0:8,marginTop:profBannerExp?8:4,marginBottom:0,cursor:"pointer",transition:"all .2s"}}
             onClick={function(){setProfBannerExp(function(v){return!v})}}>
             <IC name={prof.icon} size={12} color={prof.color}/>
             {profBannerExp&&<span style={{fontSize:11,color:prof.color,fontWeight:700,fontFamily:fm}}>{prof.name} lens</span>}
@@ -11270,7 +11270,7 @@ function WeeklyReview(){
         </div>
 
         {/* ── ONE FOCUS ── */}
-        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,border:"1px solid rgba(212,175,55,0.22)",borderRadius:_isBm?0:10,margin:"0 0 0 0",background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
+        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,border:"1px solid rgba(212,175,55,0.2)",borderRadius:_isBm?0:10,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
             <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
