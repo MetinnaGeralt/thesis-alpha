@@ -2013,19 +2013,72 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <Inp label="Evidence" value={ex} onChange={setEx} ta placeholder="Source..." K={K}/>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{kpi.lastResult&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:null}):k})})});setModal(null)}}>Clear</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:a?1:.4})} onClick={function(){if(!a)return;upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:{actual:parseFloat(a),status:eS(kpi.rule,kpi.value,a),excerpt:ex.trim()}}):k})})});setModal(null)}}>Save</button></div></Modal>}
   function DelModal(){if(!sel)return null;return<Modal title="Delete Company" onClose={function(){setModal(null)}} w={380} K={K}><p style={{fontSize:14,color:K.mid,marginTop:0}}>Delete <strong style={{color:K.txt}}>{sel.ticker}</strong> and all data?</p><div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnD} onClick={function(){delCo(selId)}}>Delete</button></div></Modal>}
-  function DocModal(){if(!sel)return null;var did=modal.data;var ex=did?sel.docs.find(function(d){return d.id===did}):null;
-    var _f=useState({title:ex?ex.title:"",content:ex?ex.content:"",folder:ex?ex.folder:"notes"}),f=_f[0],setF=_f[1];
+  function DocModal(){if(!sel)return null;
+    var did=modal&&modal.data;var ex=did?sel.docs.find(function(d){return d.id===did}):null;
+    var prefill=(modal&&modal.prefill)||{};
+    var DOC_TYPES=[
+      {id:"earnings",label:"Earnings Note",icon:"bar",color:K.acc,
+       prompt:"What happened vs what I expected.\n\nKPIs this quarter:\n\nSurprises (positive/negative):\n\nThesis status: intact / updating / weakening\n\nWhat to watch next quarter:\n"},
+      {id:"thesis_update",label:"Thesis Update",icon:"edit",color:K.grn,
+       prompt:"Something changed. Here is what and why I am staying or trimming.\n\nWhat changed:\n\nWhy I am staying / trimming:\n\nUpdated sell criteria:\n"},
+      {id:"bear_case",label:"Bear Case",icon:"alert",color:K.red,
+       prompt:"The strongest argument against this position.\n\nCore bear argument:\n\nWhat would have to be true:\n\nMy rebuttal:\n\nConclusion: I can live with this / need to reduce / I am wrong"},
+      {id:"annual_review",label:"Annual Review",icon:"clock",color:K.amb,
+       prompt:"One year of ownership. Has this business earned my confidence?\n\nWhat the business did this year:\n\nHow the thesis evolved:\n\nWhat I got right:\n\nWhat I got wrong:\n\nVerdict: add / hold / trim / sell"},
+      {id:"initial_thesis",label:"Initial Thesis",icon:"lightbulb",color:"#8B5CF6",
+       prompt:"Why I am buying this business.\n\nThe core insight:\n\nWhat makes this a durable compounder:\n\nWhat would make me sell:\n\nRisk I am accepting:\n"},
+      {id:"note",label:"Research Note",icon:"file",color:K.dim,prompt:""},
+    ];
+    var initType=prefill.docType||(ex&&ex.docType)||"note";
+    var _f=useState({
+      title:ex?ex.title:(prefill.title||""),
+      content:ex?ex.content:(prefill.content||""),
+      docType:initType,
+      sourceLibId:ex?ex.sourceLibId:(prefill.sourceLibId||null),
+      sourceLibTitle:ex?ex.sourceLibTitle:(prefill.sourceLibTitle||null),
+    }),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
-    function doSave(){if(!f.title.trim())return;var doc={title:f.title.trim(),content:f.content,folder:f.folder,updatedAt:new Date().toISOString()};
-      if(ex){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.map(function(d){return d.id===did?Object.assign({},d,doc):d})})})}
-      else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})})}setModal(null)}
-    return<Modal title={ex?"Edit Note":"New Note"} onClose={function(){setModal(null)}} w={560} K={K}>
-      <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder="e.g. Q4 2025 Earnings Analysis" K={K}/>
-      <Sel label="Save to Folder" value={f.folder} onChange={function(v){set("folder",v)}} options={FOLDERS.map(function(fo){return{v:fo.id,l:fo.label}})} K={K}/>
-      <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
-        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}} rows={10} placeholder="Write your analysis, notes, or paste external research..." style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.7}}/></div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}>{ex&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>Save</button></div></Modal>}
-  // ── Investment Memo Builder ──
+    var activeType=DOC_TYPES.find(function(t){return t.id===f.docType})||DOC_TYPES[5];
+    function doSave(){
+      if(!f.title.trim())return;
+      var doc={title:f.title.trim(),content:f.content,docType:f.docType,folder:"notes",
+               sourceLibId:f.sourceLibId||null,sourceLibTitle:f.sourceLibTitle||null,
+               updatedAt:new Date().toISOString()};
+      if(ex){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.map(function(d){return d.id===did?Object.assign({},d,doc):d})})});}
+      else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})});}
+      setModal(null);}
+    return<Modal title={ex?"Edit note":("New note — "+sel.ticker)} onClose={function(){setModal(null)}} w={600} K={K}>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:8}}>Note type</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {DOC_TYPES.map(function(dt){var on=f.docType===dt.id;return<button key={dt.id} onClick={function(){set("docType",dt.id);if(!f.content.trim()&&dt.prompt)set("content",dt.prompt);}} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:20,border:"1px solid "+(on?dt.color:K.bdr),background:on?dt.color+"15":"transparent",color:on?dt.color:K.dim,cursor:"pointer",fontSize:11,fontFamily:fm,fontWeight:on?700:400}}><IC name={dt.icon} size={10} color={on?dt.color:K.dim}/>{dt.label}</button>})}
+        </div>
+      </div>
+      {f.sourceLibTitle&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
+        <IC name="link" size={11} color={K.acc}/>
+        <span style={{fontSize:11,color:K.acc,fontFamily:fm,flex:1}}>From: {f.sourceLibTitle}</span>
+        <button onClick={function(){set("sourceLibId",null);set("sourceLibTitle",null)}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:12,lineHeight:1}}>x</button>
+      </div>}
+      <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
+      <div style={{marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+          <label style={{fontSize:12,color:K.dim,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            {activeType.prompt&&!f.content.trim()&&<button onClick={function(){set("content",activeType.prompt)}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Use template</button>}
+            {f.content.trim()&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{f.content.trim().split(" ").filter(function(w){return w.length>0}).length} words</span>}
+          </div>
+        </div>
+        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}}
+          rows={12} placeholder={activeType.prompt||"Write your research note..."}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.8}}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
+        {ex&&<button style={S.btnD} onClick={function(){if(!window.confirm("Delete this note?"))return;upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null);}}>Delete</button>}
+        <div style={{flex:1}}/>
+        <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
+        <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>{ex?"Save changes":"Save note"}</button>
+      </div></Modal>}
+    // ── Investment Memo Builder ──
   function SellCheckModal(){
     var c=sellCheckTgt;if(!c)return null;
     var pos=c.position||{};var isHeld=pos.shares>0&&pos.currentPrice>0;
@@ -6537,6 +6590,29 @@ function calcMoatFromData(finData,businessModelType){
       });
     });
 
+    // ── LAYER 5b: No earnings note after recent report ──────────────
+    portfolio.forEach(function(c){
+      if(!c.earningsDate||c.earningsDate==="TBD")return;
+      var daysSince=-dU(c.earningsDate); // negative dU means past
+      if(daysSince<0||daysSince>14)return; // reported in last 14 days
+      var hasEarningsNote=(c.docs||[]).some(function(d){
+        if(d.docType!=="earnings")return false;
+        var noteDate=new Date(d.updatedAt||0);
+        var earnDate=new Date(c.earningsDate);
+        return noteDate>earnDate;
+      });
+      if(hasEarningsNote)return;
+      signals.push({
+        layer:"earnings_note_missing",priority:2,icon:"edit",color:K.grn,
+        title:c.ticker+" reported "+daysSince+"d ago — no earnings note yet",
+        sub:"Capture what happened while it is fresh. Did the thesis hold up?",
+        action:"Write earnings note",
+        onAction:{type:"earnings_note",c:c},
+        secondary:"View holding",
+        onSecondary:{type:"go",c:c}
+      });
+    });
+
     // LAYER 6: Ownership anniversaries
     portfolio.forEach(function(c){
       if(!c.purchaseDate)return;
@@ -7531,75 +7607,108 @@ function calcMoatFromData(finData,businessModelType){
       </div>}
 
       {/* ═══ DOCUMENT VAULT TAB ═══ */}
-      {ht==="docs"&&<div>
-        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-        {/* Decisions journal embedded */}
-        {(function(){var _jf=["all","buy","sell","hold","add","trim"];
-          return<div style={{marginBottom:24}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><IC name="edit" size={12} color={K.dim}/>Decision Log</div>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{allDecs.length} decision{allDecs.length!==1?"s":""}{scored.length>0?" · "+dqPct+"% accuracy":""}</div>
+      {ht==="docs"&&(function(){
+        var DOC_TYPE_META={
+          earnings:{label:"Earnings Note",icon:"bar",color:K.acc},
+          thesis_update:{label:"Thesis Update",icon:"edit",color:K.grn},
+          bear_case:{label:"Bear Case",icon:"alert",color:K.red},
+          annual_review:{label:"Annual Review",icon:"clock",color:K.amb},
+          initial_thesis:{label:"Initial Thesis",icon:"lightbulb",color:"#8B5CF6"},
+          note:{label:"Research Note",icon:"file",color:K.dim},
+        };
+        var _trailFilter=useState("all"),trailFilter=_trailFilter[0],setTrailFilter=_trailFilter[1];
+        var _trailSearch=useState(""),trailSearch=_trailSearch[0],setTrailSearch=_trailSearch[1];
+        // Group docs by holding
+        var holdings=portfolio.filter(function(c){return(c.docs||[]).length>0});
+        var allFlat=[];holdings.forEach(function(c){(c.docs||[]).forEach(function(d){allFlat.push(Object.assign({},d,{ticker:c.ticker,companyName:c.name,companyId:c.id,domain:c.domain,convictionAtSave:c.conviction}))});});
+        allFlat.sort(function(a,b){return(b.updatedAt||"")>(a.updatedAt||"")?1:-1});
+        var q=trailSearch.toLowerCase();
+        var filtered=allFlat.filter(function(d){
+          if(trailFilter!=="all"&&d.docType!==trailFilter)return false;
+          if(q&&(d.title||"").toLowerCase().indexOf(q)<0&&(d.content||"").toLowerCase().indexOf(q)<0&&(d.ticker||"").toLowerCase().indexOf(q)<0)return false;
+          return true;
+        });
+        // Group filtered by company
+        var byCompany={};var companyOrder=[];
+        filtered.forEach(function(d){
+          if(!byCompany[d.companyId]){byCompany[d.companyId]={c:portfolio.find(function(c){return c.id===d.companyId}),docs:[]};companyOrder.push(d.companyId);}
+          byCompany[d.companyId].docs.push(d);
+        });
+        return<div>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
+            <div>
+              <div style={{fontSize:isMobile?20:24,fontWeight:_isThesis?800:400,color:K.txt,fontFamily:fh,marginBottom:4}}>Research Trail</div>
+              <div style={{fontSize:13,color:K.dim}}>Your thinking on every business you own — as it evolves over time.</div>
             </div>
-            {allDecs.length===0?<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:10,padding:"20px 24px",textAlign:"center",color:K.dim,fontSize:13}}>No decisions logged yet. Log BUY / SELL / HOLD decisions from company pages.</div>:
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {allDecs.slice().sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,20).map(function(dec,i){
-                var clr=dec.action==="BUY"||dec.action==="ADD"?K.grn:dec.action==="SELL"||dec.action==="TRIM"?K.red:dec.action==="HOLD"?K.blue:K.amb;
-                return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,padding:"11px 14px",borderLeft:"3px solid "+clr}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                    <span style={{fontSize:10,fontWeight:700,color:clr,background:clr+"12",padding:"2px 8px",borderRadius:_isBm?0:4,fontFamily:fm}}>{dec.action}</span>
-                    <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{dec.ticker}</span>
-                    {dec.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>@ ${dec.price}</span>}
-                    <span style={{flex:1}}/>
-                    {dec.outcome&&<span style={{fontSize:10,fontWeight:600,color:dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb,fontFamily:fm,background:(dec.outcome==="right"?K.grn:dec.outcome==="wrong"?K.red:K.amb)+"12",padding:"1px 6px",borderRadius:_isBm?0:3}}>{dec.outcome}</span>}
-                    <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{dec.date?fD(dec.date):""}</span>
-                  </div>
-                  {dec.reasoning&&<div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginTop:5}}>{dec.reasoning.substring(0,160)}{dec.reasoning.length>160?"…":""}</div>}
-                  {dec.invalidation&&<div style={{fontSize:11,color:K.amb,marginTop:4,fontStyle:"italic"}}>If wrong: {dec.invalidation}</div>}
-                </div>})}
-              {allDecs.length>20&&<div style={{fontSize:12,color:K.dim,textAlign:"center",padding:"8px 0"}}>Showing 20 of {allDecs.length} decisions. Full history in Investment Story →</div>}
-            </div>}
+            <button onClick={function(){if(portfolio.length>0){setSelId(portfolio[0].id);setModal({type:"doc"})}}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="edit" size={13} color="#fff"/>New note</button>
           </div>
-        })()}
-        {/* Research documents */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}><IC name="file" size={12} color={K.dim}/>Research Notes</div>
-        </div>
-          <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"memo"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btnP,{padding:"6px 14px",fontSize:12})}>+ Investment Memo</button>
-          <button onClick={function(){var co=portfolio[0];if(co){setSelId(co.id);setModal({type:"doc"})}else{showToast("Add a company first","info",3000)}}} style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})}>+ Quick Note</button>
-          <select value={hc} onChange={function(e){setHc(e.target.value);setHd(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"7px 12px",fontSize:12,fontFamily:fm,outline:"none"}}>
-            <option value="all">All Companies</option>
-            {companies.map(function(c){return<option key={c.id} value={c.id}>{c.ticker}</option>})}</select>
-          <button onClick={function(){setHf("all");setHd(null)}} style={{background:hf==="all"?K.acc+"20":"transparent",border:"1px solid "+(hf==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All</button>
-          {FOLDERS.map(function(fo){var ct=allDocs.filter(function(d2){return d2.folder===fo.id&&(hc==="all"||d2.companyId===parseInt(hc))}).length;
-            return<button key={fo.id} onClick={function(){setHf(fo.id);setHd(null)}} style={{background:hf===fo.id?K.acc+"20":"transparent",border:"1px solid "+(hf===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:hf===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={hf===fo.id?K.acc:K.dim}/>{fo.label}{ct>0?" ("+ct+")":""}</button>})}</div>
-        <div className="ta-grid-docs" style={{display:"grid",gridTemplateColumns:selectedDoc?"340px 1fr":"1fr",gap:20}}>
-          <div>
-            {filteredDocs.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:32,textAlign:"center"}}><div style={{fontSize:14,color:K.dim,marginBottom:8}}>No documents yet</div><div style={{fontSize:13,color:K.dim}}>Add notes in company pages and they'll appear here.</div></div>}
-            {filteredDocs.map(function(d3){var fo=FOLDERS.find(function(f){return f.id===d3.folder});var isActive=hd===d3.id;
-              return<div key={d3.id} style={{background:isActive?K.acc+"08":K.card,border:"1px solid "+(isActive?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:8,cursor:"pointer",transition:"all .15s"}} onClick={function(){setHd(isActive?null:d3.id)}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                  <CoLogo domain={d3.domain} ticker={d3.ticker} size={18}/>
-                  <span style={{fontSize:11,fontWeight:600,color:K.mid,fontFamily:fm}}>{d3.ticker}</span>
-                  <IC name={fo?fo.icon:"file"} size={12} color={K.dim}/>
-                  <span style={{flex:1}}/>
-                  <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{d3.updatedAt?new Date(d3.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
-                <div style={{fontSize:14,fontWeight:500,color:K.txt}}>{d3.title}</div>
-                {!selectedDoc&&d3.content&&<div style={{fontSize:13,color:K.dim,lineHeight:1.5,marginTop:4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d3.content.substring(0,200)}</div>}
-              </div>})}</div>
-          {selectedDoc&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
-              <CoLogo domain={selectedDoc.domain} ticker={selectedDoc.ticker} size={22}/>
-              <div style={{flex:1}}><div style={{fontSize:15,fontWeight:500,color:K.txt}}>{selectedDoc.title}</div>
-                <div style={{fontSize:12,color:K.dim}}>{selectedDoc.companyName}{selectedDoc.updatedAt?" • "+new Date(selectedDoc.updatedAt).toLocaleDateString():""}</div></div>
-              <button onClick={function(){if(requirePro("export"))exportDocPDF(selectedDoc)}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})}>{isPro?"PDF":"⚡ PDF"}</button>
-              {!selectedDoc.isThesis&&<button onClick={function(){setSelId(selectedDoc.companyId);setPage("dashboard");setModal({type:"doc",data:selectedDoc.id})}} style={Object.assign({},S.btn,{padding:"5px 12px",fontSize:11})}>Edit</button>}
+          {/* Filters */}
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+            <div style={{position:"relative",flex:1,minWidth:160,maxWidth:280}}>
+              <IC name="search" size={13} color={K.dim}/>
+              <input value={trailSearch} onChange={function(e){setTrailSearch(e.target.value)}} placeholder="Search notes..." style={{width:"100%",boxSizing:"border-box",paddingLeft:32,paddingRight:10,paddingTop:8,paddingBottom:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,fontSize:12,fontFamily:fm,outline:"none"}}/>
             </div>
-            <div style={{fontSize:14,color:K.mid,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{autoFormat(selectedDoc.content)}</div>
+            {["all","earnings","thesis_update","bear_case","annual_review","initial_thesis","note"].map(function(t){var meta=DOC_TYPE_META[t]||{label:"All",icon:"overview",color:K.acc};var on=trailFilter===t;return<button key={t} onClick={function(){setTrailFilter(t)}} style={{padding:"6px 12px",borderRadius:_isBm?0:20,border:"1px solid "+(on?(meta.color||K.acc):K.bdr),background:on?(meta.color||K.acc)+"15":"transparent",color:on?(meta.color||K.acc):K.dim,cursor:"pointer",fontSize:11,fontFamily:fm,fontWeight:on?700:400}}>{t==="all"?"All types":meta.label}</button>})}
+          </div>
+          {/* Empty state */}
+          {allFlat.length===0&&<div style={{textAlign:"center",padding:"60px 20px",background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12}}>
+            <div style={{fontSize:32,marginBottom:12}}>{"📝"}</div>
+            <div style={{fontSize:16,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>Your research trail starts here</div>
+            <div style={{fontSize:13,color:K.dim,maxWidth:400,margin:"0 auto 20px",lineHeight:1.7}}>Write an earnings note after every report. Log a bear case before you add. Do an annual review every year. This becomes your intellectual capital.</div>
+            {portfolio.length>0&&<button onClick={function(){setSelId(portfolio[0].id);setModal({type:"doc"})}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>Write your first note</button>}
           </div>}
-        </div>
-      </div>}
+          {/* Per-company timeline */}
+          {companyOrder.map(function(cid){
+            var group=byCompany[cid];
+            if(!group||!group.c)return null;
+            var c=group.c;
+            return<div key={cid} style={{marginBottom:28}}>
+              {/* Company header */}
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                <div style={{flex:1}}>
+                  <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
+                  <span style={{fontSize:12,color:K.dim,marginLeft:8}}>{c.name}</span>
+                </div>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{group.docs.length} note{group.docs.length!==1?"s":""}</span>
+                <button onClick={function(){setSelId(c.id);setModal({type:"doc"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"4px 10px",cursor:"pointer",fontFamily:fm,fontWeight:600}}>+ Note</button>
+              </div>
+              {/* Timeline */}
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {group.docs.map(function(d){
+                  var dt=DOC_TYPE_META[d.docType||"note"]||DOC_TYPE_META.note;
+                  var wordCount=d.content?d.content.trim().split(/\s+/).filter(function(w){return w.length>0}).length:0;
+                  return<div key={d.id} style={{display:"flex",gap:12,cursor:"pointer",padding:"12px 16px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,transition:"border-color .15s"}}
+                    onMouseEnter={function(e){e.currentTarget.style.borderColor=dt.color+"60"}}
+                    onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}
+                    onClick={function(){setSelId(c.id);setModal({type:"doc",data:d.id})}}>
+                    {/* Type indicator */}
+                    <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:dt.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>
+                      <IC name={dt.icon} size={14} color={dt.color}/>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <span style={{fontSize:10,fontWeight:700,color:dt.color,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{dt.label}</span>
+                        {d.sourceLibTitle&&<span style={{fontSize:10,color:K.acc,background:K.acc+"10",padding:"1px 6px",borderRadius:3,fontFamily:fm,display:"flex",alignItems:"center",gap:3}}><IC name="link" size={9} color={K.acc}/>{d.sourceLibTitle.length>30?d.sourceLibTitle.slice(0,30)+"...":d.sourceLibTitle}</span>}
+                      </div>
+                      <div style={{fontSize:13,fontWeight:600,color:K.txt,marginBottom:4,fontFamily:fm}}>{d.title}</div>
+                      {d.content&&<div style={{fontSize:12,color:K.dim,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.slice(0,160)}</div>}
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                      <span style={{fontSize:11,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):""}</span>
+                      {wordCount>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wordCount}w</span>}
+                    </div>
+                  </div>;
+                })}
+              </div>
+            </div>;
+          })}
+          {filtered.length===0&&allFlat.length>0&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:13}}>No notes match your filter.</div>}
+        </div>;
+      })()}
 
-      {ht==="goals"&&(function(){
+            {ht==="goals"&&(function(){
         var portf=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
         // Per-holding TSR calculation (same logic as dossier contribution card)
         var holdingReturns=portf.map(function(c){
@@ -9979,6 +10088,7 @@ function WeeklyReview(){
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
               {it.url&&!canEmbed&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Open link"><IC name="link" size={14} color={K.dim}/></button>}
+              {it.ticker&&cos.find(function(c){return c.ticker===it.ticker&&(c.status||"portfolio")==="portfolio"})&&<button onClick={function(){var co=cos.find(function(c){return c.ticker===it.ticker});if(co){setSelId(co.id);setModal({type:"doc",prefill:{docType:"note",title:it.title,sourceLibId:it.id,sourceLibTitle:it.title}});}}} style={{display:"flex",alignItems:"center",gap:4,background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:5,cursor:"pointer",padding:"3px 8px",color:K.acc,fontSize:10,fontFamily:fm,fontWeight:600}} title="Write a research note from this"><IC name="edit" size={10} color={K.acc}/>Note</button>}
               <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Edit"><IC name="edit" size={14} color={K.dim}/></button>
               <button onClick={function(){deleteItem(it.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
             </div>
@@ -10369,6 +10479,7 @@ function WeeklyReview(){
               if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
             }
             else if(act.type==="library"){setSelId(null);setPage("library")}
+            else if(act.type==="earnings_note"){setSelId(act.c.id);setPage("dashboard");setTimeout(function(){setModal({type:"doc",prefill:{docType:"earnings",title:act.c.ticker+" Earnings Note — "+new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"})}})},80);}
             }
 
           var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
