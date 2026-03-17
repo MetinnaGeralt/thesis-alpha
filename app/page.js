@@ -2999,14 +2999,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 16px",textAlign:"center"}}>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Monthly</div>
-          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$12.99<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/mo</span></div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$19.99<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/mo</span></div>
           <div style={{fontSize:11,color:K.dim,marginBottom:14}}>Cancel anytime</div>
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_MONTHLY||"price_1T8P7qB5sSVol2sMKMlNXT47")}} disabled={loading==="monthly"} style={Object.assign({},S.btn,{width:"100%",padding:"10px",fontSize:13,opacity:loading==="monthly"?.5:1})}>{loading==="monthly"?"Redirecting…":"Start Monthly"}</button></div>
         <div style={{background:K.card,border:"2px solid "+K.acc,borderRadius:_isBm?0:12,padding:"20px 16px",textAlign:"center",position:"relative"}}>
           <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:K.acc,color:K.bg,fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:_isBm?0:10,fontFamily:fm,letterSpacing:1}}>BEST VALUE</div>
           <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Annual</div>
-          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$129<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/yr</span></div>
-          <div style={{fontSize:11,color:K.grn,marginBottom:14}}>Save 17% — $10.75/mo</div>
+          <div style={{fontSize:28,fontWeight:700,color:K.txt,fontFamily:fm}}>$179<span style={{fontSize:13,fontWeight:400,color:K.dim}}>/yr</span></div>
+          <div style={{fontSize:11,color:K.grn,marginBottom:14}}>Save 25% — $14.92/mo</div>
           <button onClick={function(){startCheckout(process.env.NEXT_PUBLIC_STRIPE_ANNUAL||"price_1T8P8AB5sSVol2sM8w18CHMi")}} disabled={loading==="annual"} style={Object.assign({},S.btnP,{width:"100%",padding:"10px",fontSize:13,opacity:loading==="annual"?.5:1})}>{loading==="annual"?"Redirecting…":"Start Annual"}</button></div></div>
       <div style={{textAlign:"center",fontSize:11,color:K.dim,lineHeight:1.6}}>Free forever: unlimited companies, thesis editor, conviction tracking, weekly reviews, decision journal, all process tools</div>
     </Modal>}
