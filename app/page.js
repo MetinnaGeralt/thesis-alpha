@@ -1,26 +1,14 @@
 "use client";
-export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  DARK, LIGHT, FOREST, PURPLE, BLOOMBERG, PAYPAL, THESIS_DARK, THESIS_LIGHT, THEMES,
-  FOLDERS, SAMPLE, METRICS, METRIC_MAP,
-  INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
-  SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
-} from './components/constants';
-import {
-  ldS, svS, cacheGet, cacheSet, xJSON, stripCite, autoFormat,
-  calcOwnerScore, classifyPortfolio, calcMastery,
-  resolveMetricId, isCustomKpi,
-  toFinnhubSymbol, isIntlTicker, estimatePayMonths,
-  dU, fD, fT, nId, gH, bT, eS,
-} from './components/utils';
 
 // ═══ SUPABASE AUTH ═══
 var supabase = typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL
   ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) : null;
 
 // ═══ STORAGE (local + cloud) ═══
+function ldS(k){try{var r=localStorage.getItem(k);return Promise.resolve(r?JSON.parse(r):null)}catch(e){return Promise.resolve(null)}}
+function svS(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){}return Promise.resolve()}
 // Cloud sync via Supabase
 async function cloudLoad(userId){if(!supabase||!userId)return null;
   try{var res=await supabase.from("portfolios").select("data").eq("user_id",userId).single();
@@ -32,6 +20,9 @@ async function authFetch(url,opts){var token=await getAuthToken();var headers=Ob
 
 // ═══ FMP (server proxy — profiles & prices) ═══
 // ═══ API CACHE (1hr TTL — saves ~80% of FMP quota) ═══
+var _cache={};var CACHE_TTL=3600000;
+function cacheGet(k){var e=_cache[k];if(!e)return null;if(Date.now()-e.t>CACHE_TTL){delete _cache[k];return null}return e.d}
+function cacheSet(k,d){_cache[k]={d:d,t:Date.now()};return d}
 
 async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
 
@@ -39,11 +30,395 @@ async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.
 async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
 
 // ═══ AI (server proxy) ═══
+function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
+  for(var i=0;i<c.length;i++){if(c[i]==="{"){if(d===0)s=i;d++}else if(c[i]==="}"){d--;if(d===0&&s>=0)return JSON.parse(c.substring(s,i+1))}}throw new Error("No JSON")}
+function stripCite(s){if(!s)return s;return s.replace(/<\/?cite[^>]*>/gi,"").replace(/<\/?antml:cite[^>]*>/gi,"").trim()}
 // Auto-format text: capitalize sentences, fix spacing, clean up
+function autoFormat(text){if(!text)return text;
+  var s=text.trim();
+  // Fix multiple spaces
+  s=s.replace(/  +/g," ");
+  // Fix multiple newlines
+  s=s.replace(/\n{3,}/g,"\n\n");
+  // Capitalize after sentence endings
+  s=s.replace(/(^|[.!?]\s+)([a-z])/g,function(m,p,c){return p+c.toUpperCase()});
+  // Capitalize first character
+  s=s.charAt(0).toUpperCase()+s.slice(1);
+  // Fix standalone "i " -> "I "
+  s=s.replace(/(^|\s)i(\s|'|$)/g,function(m,b,a){return b+"I"+a});
+  // Add period at end if missing
+  s=s.replace(/([a-zA-Z0-9%])$/,"$1.");
+  // Fix spacing after commas
+  s=s.replace(/,([^\s])/g,", $1");
+  // Clean up dash spacing
+  s=s.replace(/\s*-\s*/g," — ");
+  // Format paragraphs nicely
+  var paras=s.split(/\n\n+/);
+  return paras.map(function(p){return p.trim()}).filter(function(p){return p}).join("\n\n")}
 // ═══ NO AI — all data from free APIs (Finnhub + FMP) ═══
 
+// ═══ DATA FUNCTIONS ═══
+// Predefined metrics — each maps to an exact Finnhub field
+var METRICS=[
+  // Revenue & Growth
+  {id:"revenue",label:"Revenue",unit:"$B",cat:"Revenue",fh:"revenue"},{id:"revGrowth",label:"Revenue Growth YoY",unit:"%",cat:"Revenue"},{id:"revPerShare",label:"Revenue Per Share",unit:"$",cat:"Revenue"},{id:"orgGrowth",label:"Organic Revenue Growth",unit:"%",cat:"Revenue"},{id:"arr",label:"Annual Recurring Revenue (ARR)",unit:"$M",cat:"Revenue"},{id:"nrr",label:"Net Revenue Retention",unit:"%",cat:"Revenue"},{id:"mrr",label:"Monthly Recurring Revenue (MRR)",unit:"$M",cat:"Revenue"},{id:"arpu",label:"ARPU",unit:"$",cat:"Revenue"},{id:"bookings",label:"Bookings / Backlog",unit:"$B",cat:"Revenue"},
+  // Earnings & Profitability
+  {id:"eps",label:"EPS",unit:"$",cat:"Earnings",fh:"earnings"},{id:"epsGrowth",label:"EPS Growth YoY",unit:"%",cat:"Earnings"},{id:"ebitda",label:"EBITDA",unit:"$B",cat:"Earnings"},{id:"ebitdaPerShare",label:"EBITDA / Share",unit:"$",cat:"Earnings"},{id:"ebitdaMargin",label:"EBITDA Margin",unit:"%",cat:"Earnings"},{id:"netIncome",label:"Net Income",unit:"$B",cat:"Earnings"},{id:"adjEPS",label:"Adjusted EPS",unit:"$",cat:"Earnings"},
+  // Margins
+  {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Margins"},{id:"opMargin",label:"Operating Margin",unit:"%",cat:"Margins"},{id:"netMargin",label:"Net Margin",unit:"%",cat:"Margins"},{id:"fcfMargin",label:"FCF Margin",unit:"%",cat:"Margins"},{id:"rndMargin",label:"R&D / Revenue",unit:"%",cat:"Margins"},{id:"sgaMargin",label:"SG&A / Revenue",unit:"%",cat:"Margins"},
+  // Cash Flow
+  {id:"fcf",label:"Free Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"fcfPerShare",label:"FCF / Share",unit:"$",cat:"Cash Flow"},{id:"ocf",label:"Operating Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"capex",label:"Capital Expenditure",unit:"$B",cat:"Cash Flow"},{id:"fcfConversion",label:"FCF Conversion",unit:"%",cat:"Cash Flow"},{id:"cashFromOps",label:"Cash from Operations",unit:"$B",cat:"Cash Flow"},
+  // Returns
+  {id:"roe",label:"ROE",unit:"%",cat:"Returns"},{id:"roa",label:"ROA",unit:"%",cat:"Returns"},{id:"roic",label:"ROIC",unit:"%",cat:"Returns"},{id:"roce",label:"ROCE",unit:"%",cat:"Returns"},{id:"rotce",label:"ROTCE",unit:"%",cat:"Returns"},
+  // Valuation
+  {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation"},{id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation"},{id:"ps",label:"P/S Ratio",unit:"x",cat:"Valuation"},{id:"evEbitda",label:"EV/EBITDA",unit:"x",cat:"Valuation"},{id:"evRevenue",label:"EV/Revenue",unit:"x",cat:"Valuation"},{id:"evFcf",label:"EV/FCF",unit:"x",cat:"Valuation"},{id:"bvps",label:"Book Value / Share",unit:"$",cat:"Valuation"},{id:"peg",label:"PEG Ratio",unit:"x",cat:"Valuation"},
+  // Health & Balance Sheet
+  {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health"},{id:"debtEquity",label:"Debt / Equity",unit:"x",cat:"Health"},{id:"netDebtEbitda",label:"Net Debt / EBITDA",unit:"x",cat:"Health"},{id:"interestCoverage",label:"Interest Coverage",unit:"x",cat:"Health"},{id:"cashOnHand",label:"Cash on Hand",unit:"$B",cat:"Health"},{id:"totalDebt",label:"Total Debt",unit:"$B",cat:"Health"},{id:"quickRatio",label:"Quick Ratio",unit:"x",cat:"Health"},
+  // Income & Dividends
+  {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income"},{id:"divPerShare",label:"Dividend / Share",unit:"$",cat:"Income"},{id:"payoutRatio",label:"Payout Ratio",unit:"%",cat:"Income"},{id:"divGrowth",label:"Dividend Growth YoY",unit:"%",cat:"Income"},{id:"buybackYield",label:"Buyback Yield",unit:"%",cat:"Income"},{id:"shareholderYield",label:"Shareholder Yield",unit:"%",cat:"Income"},
+  // SaaS / Tech
+  {id:"grossRetention",label:"Gross Retention Rate",unit:"%",cat:"SaaS"},{id:"netRetention",label:"Net Dollar Retention",unit:"%",cat:"SaaS"},{id:"cac",label:"Customer Acquisition Cost",unit:"$",cat:"SaaS"},{id:"ltv",label:"Customer LTV",unit:"$",cat:"SaaS"},{id:"ltvCac",label:"LTV/CAC Ratio",unit:"x",cat:"SaaS"},{id:"churnRate",label:"Churn Rate",unit:"%",cat:"SaaS"},{id:"ruleOf40",label:"Rule of 40",unit:"%",cat:"SaaS"},{id:"magicNumber",label:"Magic Number",unit:"x",cat:"SaaS"},
+  // Users & Engagement
+  {id:"mau",label:"Monthly Active Users (MAU)",unit:"M",cat:"Users"},{id:"dau",label:"Daily Active Users (DAU)",unit:"M",cat:"Users"},{id:"subscribers",label:"Subscribers",unit:"M",cat:"Users"},{id:"customers",label:"Customers",unit:"k",cat:"Users"},{id:"gmv",label:"GMV (Gross Merch Value)",unit:"$B",cat:"Users"},{id:"takeRate",label:"Take Rate",unit:"%",cat:"Users"},
+  // Segment-specific
+  {id:"sameStoreSales",label:"Same-Store Sales Growth",unit:"%",cat:"Retail"},{id:"storeCount",label:"Store Count",unit:"#",cat:"Retail"},{id:"revPerSqFt",label:"Revenue / Sq Ft",unit:"$",cat:"Retail"},{id:"occupancy",label:"Occupancy Rate",unit:"%",cat:"REIT"},{id:"ffo",label:"FFO / Share",unit:"$",cat:"REIT"},{id:"nim",label:"Net Interest Margin",unit:"%",cat:"Banking"},{id:"cet1",label:"CET1 Ratio",unit:"%",cat:"Banking"},{id:"combinedRatio",label:"Combined Ratio",unit:"%",cat:"Insurance"},{id:"ber",label:"Break-Even Ratio",unit:"%",cat:"Insurance"}
+];
+var METRIC_MAP={};METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
+// ── Investment Style System ──
+var INVEST_STYLES=[
+  {id:"quality",label:"Quality Compounder",icon:"shield",color:"#22C55E",
+    desc:"Wide moat, durable earnings, compound forever. Think Visa, Costco, MSFT.",
+    kpis:["roic","grossMargin","opMargin","fcfPerShare","roe"],
+    thesisPrompt:"What makes this a durable competitive advantage? How does the moat compound over time?",
+    moatPrompt:"What protects this business from competition for the next 10+ years?",
+    riskPrompt:"What could erode the moat? Disruption, complacency, regulatory change?",
+    sellPrompt:"At what valuation does even a great compounder become a sell?"},
+  {id:"growth",label:"High Growth",icon:"trending",color:"#3B82F6",
+    desc:"Rapid revenue growth, path to profitability matters. Think early CrowdStrike, Shopify.",
+    kpis:["revGrowth","grossMargin","opMargin","revPerShare","epsGrowth"],
+    thesisPrompt:"What's the total addressable market? Why will this company win it?",
+    moatPrompt:"What creates winner-take-most dynamics? Network effects, switching costs, data moats?",
+    riskPrompt:"Can growth sustain? Competition, customer concentration, burn rate?",
+    sellPrompt:"What growth deceleration would signal the thesis is broken?"},
+  {id:"prerev",label:"Pre-Revenue / Speculative",icon:"flask",color:"#EC4899",
+    desc:"No financials yet — catalysts and optionality matter. Think biotech, early-stage tech.",
+    kpis:["currentRatio","debtEquity"],
+    thesisPrompt:"What's the specific catalyst? FDA approval, product launch, key partnership?",
+    moatPrompt:"What IP, regulatory, or first-mover advantage exists? What's the optionality?",
+    riskPrompt:"Cash runway? Binary risk events? Dilution risk? What kills this if it fails?",
+    sellPrompt:"What catalyst failure or timeline miss would make you exit?"},
+  {id:"dividend",label:"Dividend / Income",icon:"dollar",color:"#F59E0B",
+    desc:"Stable cash flows, growing dividends. Think JNJ, Realty Income, Coca-Cola.",
+    kpis:["divYield","fcfPerShare","debtEquity","roe","opMargin"],
+    thesisPrompt:"Why is this dividend safe and growing? What drives the underlying cash flow?",
+    moatPrompt:"What ensures pricing power and demand stability through economic cycles?",
+    riskPrompt:"Payout ratio sustainability? Interest rate sensitivity? Earnings cyclicality?",
+    sellPrompt:"What dividend cut, yield threshold, or growth stall would trigger a sell?"},
+  {id:"garp",label:"GARP",icon:"bar",color:"#8B5CF6",
+    desc:"Growth at a reasonable price. PEG matters. Think FICO, Danaher, Mastercard.",
+    kpis:["revGrowth","epsGrowth","pe","grossMargin","roic"],
+    thesisPrompt:"Is this growth fairly priced? What's the PEG ratio telling you?",
+    moatPrompt:"What competitive advantage sustains above-market growth without excessive risk?",
+    riskPrompt:"Multiple compression risk? Can growth justify the premium? Cyclical exposure?",
+    sellPrompt:"At what P/E or PEG does the risk/reward no longer favor holding?"},
+  {id:"value",label:"Deep Value",icon:"search",color:"#6366F1",
+    desc:"Trading below intrinsic value. Margin of safety is everything. Think Buffett's cigar butts.",
+    kpis:["pb","pe","currentRatio","debtEquity","bvps"],
+    thesisPrompt:"What's the intrinsic value? Why is the market mispricing this asset?",
+    moatPrompt:"Is there hidden asset value, franchise value, or earnings power the market ignores?",
+    riskPrompt:"Value trap risk? Is it cheap for a reason? Management quality? Balance sheet?",
+    sellPrompt:"What's your intrinsic value estimate? At what price do you sell?"},
+  {id:"turnaround",label:"Turnaround",icon:"gear",color:"#EF4444",
+    desc:"Broken but fixable. Catalyst for recovery needed. Think post-crisis plays.",
+    kpis:["debtEquity","opMargin","currentRatio","revGrowth","fcfPerShare"],
+    thesisPrompt:"What's broken and what's the specific fix? New management, restructuring, spinoff?",
+    moatPrompt:"What underlying franchise value survives the current problems?",
+    riskPrompt:"Can the company survive long enough? Liquidity risk? Execution risk on the turnaround plan?",
+    sellPrompt:"What timeline for recovery? What would prove the turnaround thesis is dead?"}
+];
+var STYLE_MAP={};INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
+var INVESTOR_PROFILES=[
+  {id:"terry",name:"Terry Smith",fund:"Fundsmith",
+   tagline:"Buy wonderful companies at fair prices. Never sell.",
+   focus:"Financial quality: ROIC, gross margin, FCF conversion. If the numbers aren't exceptional, the moat isn't real.",
+   color:"#22C55E",icon:"shield",
+   dashDefault:"fundamentals",
+   fundCols:["grossMargin","opMargin","roic","fcfYield","revGrowth"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:["kpi_streak","conv_size","above_iv"],
+   dossierFirst:"numbers",
+   quote:"We do not invest in businesses we do not understand or which we believe have poor prospects.",
+   newWidget:"quality_scorecard"},
+  {id:"sleep",name:"Nick Sleep",fund:"Nomad Investment Partnership",
+   tagline:"Scale economies shared. Find the businesses that get better for customers as they get bigger.",
+   focus:"Unit economics, reinvestment rate, customer obsession. The financial metrics are a lagging indicator — the flywheel is what matters.",
+   color:"#3B82F6",icon:"trending",
+   dashDefault:"list",
+   fundCols:["revGrowth","grossMargin","fcfYield","revPerShare"],
+   listCols:{conviction:true,kpis:false,mastery:true},
+   morningPriority:["stale_thesis","conv_size","anniversary"],
+   dossierFirst:"story",
+   quote:"The best investments I have made have been where I could see ten years ahead.",
+   newWidget:"reinvestment_widget"},
+  {id:"munger",name:"Charlie Munger",fund:"Berkshire Hathaway",
+   tagline:"All I want to know is where I am going to die, so I will never go there.",
+   focus:"Moat first. Business model classification. Circle of competence. Inversion. The financials confirm — they don't decide.",
+   color:"#F59E0B",icon:"castle",
+   dashDefault:"ledger",
+   fundCols:["grossMargin","roic","opMargin","netDebtEbitda"],
+   listCols:{conviction:true,mastery:true,kpis:true},
+   morningPriority:["conv_size","stale_thesis","above_iv"],
+   dossierFirst:"moat",
+   quote:"It is remarkable how much long-term advantage we have gotten by trying to be consistently not stupid.",
+   newWidget:"checklist_widget"},
+  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",
+   tagline:"Know what you own and know why you own it.",
+   focus:"Can you explain the business simply? Growth relative to price. Everyday observation. The best stock is one you understand deeply.",
+   color:"#8B5CF6",icon:"search",
+   dashDefault:"list",
+   fundCols:["revGrowth","epsGrowth","pe","grossMargin"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:["stale_thesis","conv_size","kpi_streak"],
+   dossierFirst:"story",
+   quote:"Behind every stock is a company. Find out what it is doing.",
+   newWidget:"lynch_widget"},
+  {id:"buffett",name:"Warren Buffett",fund:"Berkshire Hathaway",
+   tagline:"Price is what you pay. Value is what you get.",
+   focus:"Intrinsic value, margin of safety, economic moats, management quality. Only invest when the price makes sense relative to business value.",
+   color:"#EF4444",icon:"dollar",
+   dashDefault:"list",
+   fundCols:["grossMargin","roic","roe","pe","fcfYield"],
+   listCols:{conviction:true,kpis:true,mastery:true},
+   morningPriority:["above_iv","conv_size","kpi_streak"],
+   dossierFirst:"ledger",
+   quote:"Our favourite holding period is forever.",
+   newWidget:"iv_widget"},
+  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",
+   tagline:"Three legs: extraordinary business, exceptional management, reinvestment opportunity.",
+   focus:"Compounding machines. Return on equity, reinvestment rate, and management quality. Find businesses that can compound at high rates for decades and do nothing.",
+   color:"#F97316",icon:"trending",
+   dashDefault:"fundamentals",
+   fundCols:["roe","roic","revGrowth","fcfYield","grossMargin"],
+   listCols:{conviction:true,kpis:true,mastery:true},
+   morningPriority:["stale_thesis","kpi_streak","anniversary"],
+   dossierFirst:"story",
+   quote:"The compounding of money over long periods of time is not limited by markets, economies, or politics. It is limited only by the quality of the businesses in which we invest.",
+   newWidget:"akre_widget"},
+  {id:"custom",name:"Custom",fund:"",
+   tagline:"Your own framework.",
+   focus:"No preset. Configure the dashboard exactly as you like.",
+   color:"#6B7280",icon:"gear",
+   dashDefault:"fundamentals",
+   fundCols:["revGrowth","grossMargin","opMargin","roic","netDebtEbitda"],
+   listCols:{conviction:true,kpis:true},
+   morningPriority:[],
+   dossierFirst:"story",
+   quote:"",
+   newWidget:null}
+];
+var PROFILE_MAP={};INVESTOR_PROFILES.forEach(function(p){PROFILE_MAP[p.id]=p});
 
+var SUPERINVESTORS=[
+  {id:"berkshire",name:"Warren Buffett",fund:"Berkshire Hathaway",style:"Quality Value",desc:"Wonderful companies at fair prices. Concentrated, low turnover, moat-focused.",
+    holdings:["AAPL","BAC","AXP","KO","CVX","OXY","MCO","KHC","CB","DVA","ALLY","VRSN","NU","AMZN","LLY"],
+    traits:{quality:0.9,value:0.7,growth:0.2,income:0.5,concentration:0.8,turnover:0.1}},
+  {id:"klarman",name:"Seth Klarman",fund:"Baupost Group",style:"Deep Value",desc:"Margin of safety obsessed. Contrarian, patient, often holds cash.",
+    holdings:["LBTYA","LBTYK","QRTEA","FOXA","GOOGL","INTC","EBAY","WBD","PYPL","META","PARA","CRH","BEPC"],
+    traits:{quality:0.4,value:0.95,growth:0.2,income:0.2,concentration:0.5,turnover:0.3}},
+  {id:"ackman",name:"Bill Ackman",fund:"Pershing Square",style:"Activist Quality",desc:"Concentrated bets on high-quality businesses. Activist approach, pushes for value creation.",
+    holdings:["GOOG","CMG","HLT","QSR","HHH","CP","LOW","NKE","UBER"],
+    traits:{quality:0.8,value:0.5,growth:0.5,income:0.2,concentration:0.95,turnover:0.3}},
+  {id:"smith",name:"Terry Smith",fund:"Fundsmith",style:"Quality Compounder",desc:"Buy good companies, don't overpay, do nothing. Ultra-low turnover, high ROIC focus.",
+    holdings:["META","MSFT","NOVO-B","L'OREAL","IDEXX","VISA","ESTC","AMZN","MASI","WAT","POOL","FICO","PAYC","VEEV"],
+    traits:{quality:0.95,value:0.3,growth:0.5,income:0.3,concentration:0.4,turnover:0.05}},
+  {id:"hohn",name:"Chris Hohn",fund:"TCI Fund",style:"Activist FCF",desc:"Concentrated on free cash flow machines. Activist shareholder, pushes capital returns.",
+    holdings:["GE","V","MSFT","MCO","SPGI","MA","GOOG","CNI","CSGP"],
+    traits:{quality:0.85,value:0.4,growth:0.4,income:0.3,concentration:0.8,turnover:0.15}},
+  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",style:"Growth at Reasonable Price",desc:"Know what you own. Everyday observation, PEG ratio, growth with margin of safety.",
+    holdings:["COST","HD","SBUX","NKE","TJX","WMT","MCD","PG","UNH","ABBV","JNJ","PEP","AMGN","TMO"],
+    traits:{quality:0.6,value:0.5,growth:0.7,income:0.4,concentration:0.2,turnover:0.4}},
+  {id:"greenblatt",name:"Joel Greenblatt",fund:"Gotham Asset Mgmt",style:"Magic Formula",desc:"High ROIC + high earnings yield. Systematic, quantitative approach to value.",
+    holdings:["GOOG","META","MSFT","AAPL","AMZN","BRK-B","UNH","JNJ","PG","V","MA","HD","COST"],
+    traits:{quality:0.6,value:0.8,growth:0.4,income:0.2,concentration:0.3,turnover:0.5}},
+  {id:"einhorn",name:"David Einhorn",fund:"Greenlight Capital",style:"Value + Shorts",desc:"Classic value investor who also shorts overvalued stocks. Contrarian, forensic accounting focus.",
+    holdings:["GPRE","TECK","GTN","ODP","CNX","GEN","JACK","CC","BHF","PRDO"],
+    traits:{quality:0.3,value:0.9,growth:0.2,income:0.3,concentration:0.6,turnover:0.4}},
+  {id:"marks",name:"Howard Marks",fund:"Oaktree Capital",style:"Distressed/Contrarian",desc:"Second-level thinker. Buys when others panic. Focused on risk control and cycles.",
+    holdings:["OC","TEL","WMB","BKNG","LYB","NRG","PVH","CZR","HCA","DAL"],
+    traits:{quality:0.4,value:0.85,growth:0.2,income:0.4,concentration:0.4,turnover:0.3}},
+  {id:"kantesaria",name:"Dev Kantesaria",fund:"Valley Forge Capital",style:"Quality Compounder",desc:"15%+ compounders with minimal risk of permanent loss. Ultra-concentrated, high conviction.",
+    holdings:["FICO","SPGI","MA","MCO","V","INTU","ROP","GOOG","MSFT"],
+    traits:{quality:0.95,value:0.3,growth:0.5,income:0.1,concentration:0.9,turnover:0.05}},
+  {id:"pabrai",name:"Mohnish Pabrai",fund:"Pabrai Investment Funds",style:"Cloner Value",desc:"Shamelessly clones the best ideas. Concentrated, high-conviction, Munger-inspired.",
+    holdings:["COAL","TRMD","AMPS","JSPR","BATT","SATS","EXPE","TROW"],
+    traits:{quality:0.5,value:0.8,growth:0.4,income:0.2,concentration:0.9,turnover:0.3}},
+  {id:"burry",name:"Michael Burry",fund:"Scion Asset Mgmt",style:"Deep Value Contrarian",desc:"The Big Short. Extreme contrarian, forensic research, often against consensus.",
+    holdings:["BABA","JD","GOOG","BKNG","ORLY","HCA","STLA","REAL"],
+    traits:{quality:0.3,value:0.9,growth:0.3,income:0.1,concentration:0.7,turnover:0.7}},
+  {id:"ainslie",name:"Lee Ainslie",fund:"Maverick Capital",style:"Long/Short Quality Growth",desc:"Growth-oriented with hedging. Deep fundamental research, sector-focused.",
+    holdings:["MSFT","AMZN","META","GOOG","NVDA","CRM","SNOW","UBER","DASH","ABNB","COIN","DDOG"],
+    traits:{quality:0.6,value:0.2,growth:0.9,income:0.0,concentration:0.4,turnover:0.5}},
+  {id:"gayner",name:"Tom Gayner",fund:"Markel",style:"Patient Quality",desc:"Insurance-funded long-term equity portfolio. Patient, quality-focused, Buffett-inspired.",
+    holdings:["BRK-B","GOOG","MSFT","DIS","BAM","AMZN","V","MA","HD","CME","WMT","KKR"],
+    traits:{quality:0.8,value:0.5,growth:0.4,income:0.3,concentration:0.3,turnover:0.1}},
+  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",style:"Compounding Machines",desc:"Three-legged stool: extraordinary business, exceptional management, reinvestment opportunity. Buy and hold forever.",
+    holdings:["MA","BN","KKR","V","MCO","FICO","CPRT","ORLY","MSCI","SPGI","CSGP","CCCS"],
+    traits:{quality:0.95,value:0.4,growth:0.7,income:0.05,concentration:0.6,turnover:0.03}}
+];
+var MSTAR_RATINGS=["Wide","Narrow","None","Not Rated"];
+function calcOwnerScore(cos){
+  var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+  if(portfolio.length===0)return{total:0,breakdown:{thesis:0,kpi:0,journal:0,conviction:0,moat:0,balance:0},max:100};
+  // 1. Thesis completeness (20 pts)
+  var thesisP=0;portfolio.forEach(function(c){var score=0;
+    if(c.thesisNote&&c.thesisNote.length>20)score+=1;
+    if(c.thesisNote&&(c.thesisNote.indexOf("## CORE")>=0||c.thesisNote.length>200))score+=1;
+    if(c.thesisNote&&(c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("moat")>=0))score+=1;
+    if(c.thesisNote&&(c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("risk")>=0))score+=1;
+    if(c.thesisNote&&(c.thesisNote.indexOf("## SELL")>=0||c.thesisNote.indexOf("sell")>=0))score+=1;
+    if(c.thesisVersions&&c.thesisVersions.length>1)score+=1;
+    // Conviction drift penalty: conviction not updated in 120+ days
+    if(c.conviction>0&&c.convictionHistory&&c.convictionHistory.length>0){var lastCH=c.convictionHistory[c.convictionHistory.length-1];var chAge=lastCH.date?Math.ceil((new Date()-new Date(lastCH.date))/864e5):999;if(chAge>120)score=Math.max(0,score-1)}
+    // Staleness penalty: decay 1pt per 90 days without update
+    if(c.thesisNote&&c.thesisUpdatedAt){var ageDays=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);if(ageDays>180)score=Math.max(0,score-2);else if(ageDays>90)score=Math.max(0,score-1)}
+    thesisP+=Math.min(score,6)});
+  thesisP=Math.round(thesisP/portfolio.length/6*20);
+  // 2. KPI discipline (20 pts)
+  var kpiP=0;portfolio.forEach(function(c){var score=0;
+    if(c.kpis&&c.kpis.length>=2)score+=2;if(c.kpis&&c.kpis.length>=4)score+=1;
+    var tracked=(c.kpis||[]).filter(function(k){return k.lastResult}).length;
+    if(tracked>0)score+=2;if(c.earningsHistory&&c.earningsHistory.length>=2)score+=1;
+    kpiP+=Math.min(score,5)});
+  kpiP=Math.round(kpiP/portfolio.length/5*20);
+  // 3. Journal consistency (20 pts)
+  var jrnP=0;portfolio.forEach(function(c){var score=0;
+    var decs=c.decisions||[];if(decs.length>=1)score+=2;if(decs.length>=3)score+=1;
+    var withReason=decs.filter(function(d){return d.reasoning&&d.reasoning.length>10}).length;if(withReason>=1)score+=1;
+    var withOutcome=decs.filter(function(d){return d.outcome}).length;if(withOutcome>=1)score+=1;
+    jrnP+=Math.min(score,5)});
+  jrnP=Math.round(jrnP/portfolio.length/5*20);
+  // 4. Conviction hygiene (15 pts)
+  var convP=0;portfolio.forEach(function(c){var score=0;
+    if(c.conviction>0)score+=2;if(c.convictionHistory&&c.convictionHistory.length>=2)score+=2;
+    var lastConv=c.convictionHistory&&c.convictionHistory.length?c.convictionHistory[c.convictionHistory.length-1]:null;
+    if(lastConv&&lastConv.biasFlags)score+=1;
+    convP+=Math.min(score,5)});
+  convP=Math.round(convP/portfolio.length/5*15);
+  // 5. Moat vigilance (10 pts)
+  var moatP=0;portfolio.forEach(function(c){var score=0;var mt=c.moatTypes||{};
+    var active=Object.keys(mt).filter(function(k){return mt[k]&&mt[k].active}).length;
+    if(active>=1)score+=2;if(active>=2)score+=1;
+    if(c.morningstarMoat)score+=1;if(c.moatTrend)score+=1;
+    moatP+=Math.min(score,5)});
+  moatP=Math.round(moatP/portfolio.length/5*10);
+  // 6. Portfolio balance (15 pts)
+  var balP=0;if(portfolio.length>=3)balP+=5;else if(portfolio.length>=2)balP+=3;
+  var sectors={};portfolio.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
+  var maxConc=Math.max.apply(null,Object.values(sectors).length?Object.values(sectors):[1])/Math.max(portfolio.length,1);
+  if(maxConc<=0.4)balP+=5;else if(maxConc<=0.6)balP+=3;
+  var styles={};portfolio.forEach(function(c){if(c.investStyle)styles[c.investStyle]=1});
+  if(Object.keys(styles).length>=2)balP+=5;else if(Object.keys(styles).length>=1)balP+=3;
+  balP=Math.min(balP,15);
+  var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
+  return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
+function classifyPortfolio(portfolio){
+  if(!portfolio||portfolio.length===0)return{summary:"",color:"#a0a0a0"};
+  // ── Per-company signal extraction (position-weighted) ─────────────────
+  var wGrowth=0,wYield=0,wROIC=0,wGrossMargin=0,wPE=0;
+  var growthN=0,yieldN=0,roicN=0,marginN=0,peN=0;
+  portfolio.forEach(function(c){
+    var pos=c.position||{};
+    var w=Math.max((pos.shares||0)*(pos.currentPrice||0),1);
+    var snap=c.financialSnapshot||{};
+    if(snap.revGrowth&&snap.revGrowth.numVal!=null){wGrowth+=snap.revGrowth.numVal*w;growthN+=w}
+    var dps=c.divPerShare||c.lastDiv||0;
+    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+    var divYld=pos.currentPrice>0?(dps*mult/pos.currentPrice*100):0;
+    if(divYld>=1.5){wYield+=divYld*w;yieldN+=w}
+    if(snap.roic&&snap.roic.numVal!=null){wROIC+=snap.roic.numVal*w;roicN+=w}
+    if(snap.grossMargin&&snap.grossMargin.numVal!=null){wGrossMargin+=snap.grossMargin.numVal*w;marginN+=w}
+    if(snap.pe&&snap.pe.numVal!=null&&snap.pe.numVal>0&&snap.pe.numVal<100){wPE+=snap.pe.numVal*w;peN+=w}
+  });
+  var avgGrowth = growthN>0 ? wGrowth/growthN   : null;
+  var avgYield  = yieldN>0  ? wYield/yieldN      : 0;
+  var avgROIC   = roicN>0   ? wROIC/roicN        : null;
+  var avgMargin = marginN>0 ? wGrossMargin/marginN : null;
+  var avgPE     = peN>0     ? wPE/peN            : null;
+  var n=portfolio.length;
+  var divPayerCount=portfolio.filter(function(c){
+    var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
+    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
+    return pos.currentPrice>0&&(dps*mult/pos.currentPrice*100)>=1.5}).length;
+  var divFraction=divPayerCount/n;
+  // ── Derive boolean signals ─────────────────────────────────────────────
+  var isConcentrated = n<=5;
+  var isHighGrowth   = avgGrowth!==null && avgGrowth>=18;
+  var isMidGrowth    = avgGrowth!==null && avgGrowth>=9 && avgGrowth<18;
+  var isLowGrowth    = avgGrowth!==null && avgGrowth<9;
+  var isQuality      = (avgROIC!==null&&avgROIC>=15)||(avgMargin!==null&&avgMargin>=40);
+  var isDeepIncome   = avgYield>=3.5 && divFraction>=0.5;
+  var isDivGrowth    = avgYield>=2.0 && divFraction>=0.4 && !isHighGrowth;
+  var isValue        = avgPE!==null && avgPE<15 && !isHighGrowth && !isMidGrowth;
+  var hasData        = growthN>0||roicN>0||marginN>0;
+  // investStyle tiebreaker (no financial data)
+  var styleCounts={};
+  portfolio.forEach(function(c){var s=c.investStyle||"";if(s)styleCounts[s]=(styleCounts[s]||0)+1});
+  var topStyle=Object.keys(styleCounts).sort(function(a,b){return styleCounts[b]-styleCounts[a]})[0]||"";
+  // ── Build sentence from stacked signals ────────────────────────────────
+  // Part 1: concentration prefix
+  var conc = isConcentrated ? "Concentrated, " : (n>=10 ? "Diversified, " : "");
+  // Part 2: core style (the most honest signal we have)
+  var core, color;
+  if(isQuality && isHighGrowth){core="high-growth quality compounder";color="#22C55E";}
+  else if(isQuality && isMidGrowth){core="quality compounder";color="#22C55E";}
+  else if(isQuality && isDeepIncome){core="quality income portfolio";color="#4ade80";}
+  else if(isQuality){core="quality-focused portfolio";color="#22C55E";}
+  else if(isHighGrowth){core="growth-oriented portfolio";color="#6ea8fe";}
+  else if(isDeepIncome && isLowGrowth){core="income-focused portfolio";color="#fbbf24";}
+  else if(isDivGrowth && isMidGrowth){core="dividend-growth portfolio";color="#4ade80";}
+  else if(isDivGrowth){core="income & growth portfolio";color="#a3e635";}
+  else if(isMidGrowth){core="balanced growth portfolio";color="#6ea8fe";}
+  else if(isValue){core="value-oriented portfolio";color:"#f87171";color="#f87171";}
+  else if(!hasData){
+    // fall back to style tags
+    var styleMap={"growth":"growth-oriented","aggressive":"high-growth","quality":"quality-focused","compounder":"quality compounder","value":"value-oriented","income":"income-focused","dividend":"dividend-income"};
+    core=(styleMap[topStyle]||"balanced")+" portfolio";color="#a0a0a0";}
+  else{core="balanced portfolio";color="#a0a0a0";}
+  // Part 3: optional modifier (avoids redundancy with core)
+  var mod="";
+  if(isDivGrowth&&!core.includes("dividend")&&!core.includes("income")){mod=", with growing dividends";}
+  else if(isDeepIncome&&!core.includes("income")&&avgYield>0){mod=", income-generating";}
+  else if(avgGrowth!==null&&avgGrowth>=25&&!core.includes("high-growth")){mod=", high-growth";}
+  // Capitalise first letter
+  var sentence=(conc+core+mod).trim();
+  sentence=sentence.charAt(0).toUpperCase()+sentence.slice(1);
+  return{summary:sentence,color:color,label:core}
+}
+function calcMastery(c){
+  var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
+  // Star 2: Thesis written (core + at least 1 section)
+  if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;if(hasSec)d.thesis=true}
+  // Star 3: KPIs defined + conviction rated
+  if(c.kpis&&c.kpis.length>=2&&c.conviction>0)d.tracked=true;
+  // Star 4: Earnings checked + moat classified
+  var mt=c.moatTypes||{};var hasMoat=Object.keys(mt).some(function(k){return mt[k]&&mt[k].active});
+  if(c.earningsHistory&&c.earningsHistory.length>=1&&hasMoat)d.monitored=true;
+  // Star 5: Decision logged + thesis reviewed within 90 days
+  var fresh=c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90;
+  if(c.decisions&&c.decisions.length>=1&&fresh)d.disciplined=true;
+  // Star 6: 3+ quarters earnings, 3+ conviction updates, fresh thesis
+  if(c.earningsHistory&&c.earningsHistory.length>=3&&c.convictionHistory&&c.convictionHistory.length>=3&&fresh)d.mastered=true;
+  var stars=1;if(d.thesis)stars=2;if(d.thesis&&d.tracked)stars=3;if(stars>=3&&d.monitored)stars=4;if(stars>=4&&d.disciplined)stars=5;if(stars>=5&&d.mastered)stars=6;
+  var lb=["Added","Thesis","Tracked","Monitored","Disciplined","Mastered"];
+  var cl=["#6B7280","#3B82F6","#F59E0B","#EC4899","#8B5CF6","#22C55E"];
+  return{stars:stars,max:6,label:lb[stars-1],color:cl[stars-1],pct:Math.round(stars/6*100),details:d}}
 
+// Legacy name → metricId mapping for existing user data
+var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
+var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","fcf margin":"fcfMargin","free cash flow margin":"fcfMargin","r&d margin":"rndMargin","r&d to revenue":"rndMargin","sga margin":"sgaMargin","sga to revenue":"sgaMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","p/s":"ps","price to sales":"ps","ev/ebitda":"evEbitda","ev/fcf":"evFcf","ev/revenue":"evRevenue","peg":"peg","peg ratio":"peg","current ratio":"currentRatio","quick ratio":"quickRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","net debt/ebitda":"netDebtEbitda","interest coverage":"interestCoverage","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf yield":"fcfYield","fcf per share":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth","shareholder yield":"shareholderYield","total shareholder yield":"shareholderYield","buyback yield":"buybackYield","graham number":"grahamNum","graham":"grahamNum","vs graham":"grahamDiscount"};
+Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
+function resolveMetricId(kpi){if(kpi.metricId)return kpi.metricId;var n=kpi.name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return LEGACY_MAP[n]||null}
+function isCustomKpi(name){if(METRIC_MAP[name])return false;var n=name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return!LEGACY_MAP[n]}
 
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
@@ -94,9 +469,20 @@ async function fetchQuote(ticker){
     try{var fq=await fmp("quote/"+fmpTickers[_fi]);if(fq&&Array.isArray(fq)&&fq[0]&&fq[0].price>0){var _fq=fq[0];return{price:_fq.price,prevClose:_fq.previousClose||0,change:_fq.change||0,changePct:_fq.changesPercentage||0,source:"fmp"};}}catch(e){}}
   return null;}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
+var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN"];
 // Convert exchange-suffixed ticker to Finnhub exchange format
 // e.g. RY.TO → RY:TSX, TOI.V → TOI:TSXV, VOD.L → VOD:LSE
+function toFinnhubSymbol(ticker){
+  var SUFFIX_MAP={".TO":":TSX",".V":":TSXV",".L":":LSE",".DE":":XETRA",".PA":":EPA",
+    ".AS":":ENXTAM",".HK":":HKEX",".AX":":ASX",".NS":":NSE",".BO":":BSE",
+    ".MI":":XMIL",".MC":":XMAD",".SW":":SWX",".ST":":STO",".OL":":OSLO",
+    ".CO":":CPH",".HE":":HEL",".BR":":ENXTBR",".LS":":ENXTLS",".AT":":XATH",
+    ".NZ":":NZX"};
+  var t=ticker.toUpperCase();
+  for(var sfx in SUFFIX_MAP){if(t.endsWith(sfx))return t.slice(0,t.length-sfx.length)+SUFFIX_MAP[sfx]}
+  return ticker}
 // Detect if a ticker is non-US (has exchange suffix)
+function isIntlTicker(ticker){return /\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i.test(ticker)}
 
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+toFinnhubSymbol(ticker)+"&metric=all");
@@ -143,6 +529,25 @@ async function fetchDividendInfo(ticker){try{
   return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDivident||0,divCagr:divCagr}
 }catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
 // Shared: estimate which months a company pays dividends based on frequency + exDivDate
+function estimatePayMonths(c){
+  var freq=c.divFrequency||"quarterly";
+  if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
+  if(freq==="none")return[];
+  // Use actual ex-div date if available — most accurate
+  if(c.exDivDate&&c.exDivDate!=""){
+    var exM=new Date(c.exDivDate).getMonth();
+    // Advance to a future or recent ex-div (dates can be stale)
+    if(freq==="annual")return[exM];
+    if(freq==="semi")return[exM,(exM+6)%12];
+    // Quarterly: derive cycle from last known ex-div month
+    return[exM,(exM+3)%12,(exM+6)%12,(exM+9)%12]}
+  // No ex-div date: use ticker hash to spread companies across cycles
+  // so not every unknown payer lands in the same 3 months
+  if(freq==="annual")return[5]; // June default
+  if(freq==="semi")return[2,8]; // Mar/Sep default
+  // Quarterly: pick cycle based on ticker first char to spread load
+  var t=c.ticker||"A";var code=t.charCodeAt(0);var offset=code%3; // 0,1,2
+  return[offset,(offset+3)%12,(offset+6)%12,(offset+9)%12]}
 // FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
@@ -556,7 +961,16 @@ async function fetchFilings(ticker){try{var r=await finnhub("stock/filings?symbo
 async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-target?symbol="+ticker);return r&&r.targetMean?r:null}catch(e){return null}}
 
 // ═══ THEME SYSTEM ═══
+var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
+var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
+var FOREST={bg:"#f7f7f5",side:"#1a4a00",card:"#ffffff",bdr:"#e2e8df",bdr2:"#c8d6c0",txt:"#1f2f1a",mid:"#4a6040",dim:"#8aaa80",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
+var PURPLE={bg:"#0d0b14",side:"#090711",card:"#17132a",bdr:"rgba(167,139,250,0.12)",bdr2:"rgba(167,139,250,0.22)",txt:"#f0ecff",mid:"#b8aee0",dim:"#7065a0",blue:"#818cf8",grn:"#34d399",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#ffffff",glow:"rgba(167,139,250,0.15)"};
+var BLOOMBERG={bg:"#000000",side:"#000000",card:"#0d0d0d",bdr:"#222222",bdr2:"#333333",txt:"#ffffff",mid:"#cccccc",dim:"#777777",blue:"#00c8d4",grn:"#00cc44",red:"#ff3333",amb:"#F39F41",acc:"#F39F41",prim:"#F39F41",primTxt:"#000000",sel:"#ffff00",selTxt:"#000000"};
+var PAYPAL={bg:"#f0f4f8",side:"#0a2463",card:"#ffffff",bdr:"#cdd9e8",bdr2:"#aec0d4",txt:"#0d1b2a",mid:"#3d5a80",dim:"#7a94ae",blue:"#1a56db",grn:"#057a55",red:"#c81e1e",amb:"#d97706",acc:"#1a56db",prim:"#1a56db",primTxt:"#ffffff"};
 // ── Thesis Themes — landing page aesthetic: Outfit font, heavy rounding, purple accent ──
+var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.07)",bdr2:"rgba(255,255,255,0.14)",txt:"#ffffff",mid:"rgba(255,255,255,0.82)",dim:"rgba(255,255,255,0.56)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.08)",bdr2:"rgba(0,0,0,0.14)",txt:"#16161D",mid:"rgba(22,22,29,0.75)",dim:"rgba(22,22,29,0.52)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
+var THEMES={thesis_dark:THESIS_DARK,thesis_light:THESIS_LIGHT,dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 // Global thesis flag — updated inside TrackerApp before mkS calls
 var _isThesis=true;
@@ -566,6 +980,15 @@ var _isPurple=false;
 var _isOcean=false;
 function TLogo(p){var s=p.size||28;var r=Math.round(s*0.22);if(_isBm)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #F39F41",color:"#F39F41",fontFamily:"'Consolas','Courier New',monospace",fontSize:Math.round(s*0.38),fontWeight:700,letterSpacing:0,flexShrink:0,boxSizing:"border-box"}}>{"TA"}</div>;if(_isForest)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",background:"#58cc02",borderRadius:Math.round(s*0.28),color:"#ffffff",fontFamily:"'Nunito','DM Sans',sans-serif",fontSize:Math.round(s*0.36),fontWeight:800,letterSpacing:-0.5,flexShrink:0}}>{"TA"}</div>;if(_isOcean)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",background:"#1a56db",borderRadius:Math.round(s*0.18),color:"#ffffff",fontFamily:"'Inter',sans-serif",fontSize:Math.round(s*0.36),fontWeight:700,letterSpacing:-0.5,flexShrink:0}}>{"TA"}</div>;return<img src="/logo.png" width={s} height={s} style={{borderRadius:_isThesis?r:6,objectFit:"contain"}} alt="T"/>;}
 // (sector suggestions removed — using predefined METRICS dropdown)
+var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"lightbulb"},{id:"my-writeups",label:"Investment Memos",icon:"edit"},{id:"deep-dives",label:"Research Clips",icon:"link"},{id:"reports",label:"IR Library",icon:"bar"},{id:"notes",label:"Quick Notes",icon:"file"}];
+var SAMPLE=[{id:1,ticker:"NVDA",name:"NVIDIA Corporation",sector:"Semiconductors",domain:"nvidia.com",irUrl:"https://investor.nvidia.com",earningsDate:"2026-02-26",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:"https://investor.nvidia.com",sourceLabel:"Q4 FY26",earningSummary:"Data Center revenue surged 93% YoY to $39.2B.",description:"NVIDIA designs and sells graphics processing units and system-on-chip units. The company's GPUs are the dominant platform for AI training and inference, powering data centers for hyperscalers, enterprises, and sovereign AI initiatives worldwide.",ceo:"Jensen Huang",employees:29600,country:"US",exchange:"NASDAQ",ipoDate:"1999-01-22",mktCap:3400000000000,thesisNote:"AI capex cycle still early innings.\n\n## MOAT\nNVIDIA owns the CUDA ecosystem — switching costs are massive. Every ML framework, every training pipeline, every inference stack is optimized for NVIDIA GPUs. This is a platform moat, not just a hardware moat.\n\n## RISKS\nCustom silicon (Google TPU, Amazon Trainium, AMD MI300) could erode share. Concentration in hyperscaler capex — if AI spending pauses, revenue craters.\n\n## SELL CRITERIA\nData Center growth below 30% YoY for 2 consecutive quarters. Gross margins below 65% sustained. Major customer (MSFT/GOOG/AMZN) publicly shifting >50% of AI training to non-NVIDIA silicon.",investStyle:"growth",position:{shares:50,avgCost:128.5},conviction:9,convictionHistory:[{date:"2025-06-01",rating:8,note:"Strong but expensive"},{date:"2025-11-20",rating:9,note:"Data center demand insatiable"},{date:"2026-01-15",rating:9,note:"AI capex still accelerating"}],status:"portfolio",docs:[{id:1,title:"Core Thesis: AI Infrastructure",folder:"why-i-own",content:"NVIDIA is the picks-and-shovels play on AI. Data center GPU demand is insatiable.",updatedAt:"2026-01-15T10:00:00Z"}],earningsHistory:[{quarter:"Q3 2025",summary:"Revenue $35.1B (+94% YoY). Data Center $30.8B. Gross margin 74.6%.",results:[{kpi_name:"Data Center Revenue",actual_value:30.8,status:"met",excerpt:"Data Center $30.8B"},{kpi_name:"Gross Margin",actual_value:74.6,status:"met",excerpt:"GAAP GM 74.6%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-11-20T18:00:00Z"},{quarter:"Q2 2025",summary:"Revenue $30.0B (+122% YoY). Data Center $26.3B. Gross margin 75.1%.",results:[{kpi_name:"Data Center Revenue",actual_value:26.3,status:"met",excerpt:"Data Center $26.3B"},{kpi_name:"Gross Margin",actual_value:75.1,status:"met",excerpt:"GAAP GM 75.1%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-08-28T18:00:00Z"}],kpis:[{id:1,name:"Data Center Revenue",target:"≥35B",rule:"gte",value:35,unit:"B",period:"Q4 FY26",notes:"",lastResult:{actual:39.2,status:"met",excerpt:"Data Center revenue was $39.2B."}},{id:2,name:"Gross Margin",target:"≥73%",rule:"gte",value:73,unit:"%",period:"Q4 FY26",notes:"GAAP",lastResult:{actual:73.5,status:"met",excerpt:"GAAP gross margin was 73.5%."}}]},{id:2,ticker:"CRWD",name:"CrowdStrike",sector:"Cybersecurity",domain:"crowdstrike.com",irUrl:"https://ir.crowdstrike.com",earningsDate:"2026-03-04",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:null,sourceLabel:null,earningSummary:null,description:"CrowdStrike provides cloud-delivered endpoint and workload protection. Its Falcon platform uses AI to detect and prevent breaches in real time across endpoints, cloud workloads, identity, and data.",ceo:"George Kurtz",employees:8500,country:"US",exchange:"NASDAQ",ipoDate:"2019-06-12",mktCap:85000000000,thesisNote:"Post-outage recovery.\n\n## MOAT\nFalcon platform has deep endpoint integration — rip-and-replace is painful. Threat intelligence network effect: more endpoints = better detection.\n\n## RISKS\nBrand damage from July 2024 outage may linger. Competitive pressure from SentinelOne, Palo Alto. Government contracts at risk.\n\n## SELL CRITERIA\nGross retention dropping below 95%. Net new ARR below $200M for 2+ quarters. Another major incident.",investStyle:"growth",position:{shares:0,avgCost:0},conviction:6,convictionHistory:[{date:"2025-09-01",rating:5,note:"Outage fallout"},{date:"2026-01-10",rating:6,note:"Recovery underway"}],status:"watchlist",docs:[],earningsHistory:[],kpis:[{id:1,name:"Net New ARR",target:"≥220M",rule:"gte",value:220,unit:"M",period:"Q4 FY26",notes:"",lastResult:null},{id:2,name:"Gross Retention",target:"≥95%",rule:"gte",value:95,unit:"%",period:"Q4 FY26",notes:"",lastResult:null}]}];
+var dU=function(d){if(!d||d==="TBD")return 999;return Math.ceil((new Date(d)-new Date())/864e5)};
+var fD=function(d){try{return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"})}catch(e){return d}};
+var fT=function(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})};
+var nId=function(a){return a.length?Math.max.apply(null,a.map(function(x){return x.id}))+1:1};
+function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.length)return{l:"Pending",c:"#6B7280"};var m=ev.filter(function(k){return k.lastResult.status==="met"}).length;var p=Math.round(m/ev.length*100);return p>=80?{l:"Strong",c:"#22C55E"}:p>=50?{l:"Mixed",c:"#F59E0B"}:{l:"Weak",c:"#EF4444"}}
+var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
+var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
   if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
   if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
@@ -1441,7 +1864,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
     var sid=sel.investStyle||"default";
-    var _profP=investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&PROFILE_MAP[investorProfile].thesisPrompt?PROFILE_MAP[investorProfile]:null;
     // ── Sharp thinking questions per section per style ──────────
     var Q={
       core:{
@@ -1485,8 +1907,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         d:"Define 2-3 specific, measurable conditions that would make you sell. Not \'if things get bad\' — exact numbers."
       }
     };
-    var _profQmap={core:"thesisPrompt",moat:"moatPrompt",risks:"riskPrompt",sell:"sellPrompt"};
-    var getQ=function(sec){return(_profP&&_profP[_profQmap[sec]])||Q[sec][sid]||Q[sec].d};
+    var getQ=function(sec){return Q[sec][sid]||Q[sec].d};
     // ── Auto-seed sell section from KPIs if blank ───────────────
     var kpiSeed=(function(){
       var kpis=sel.kpis||[];if(kpis.length===0)return null;
@@ -2164,6 +2585,51 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <button onClick={save} style={Object.assign({},S.btnP,{opacity:rating?1:.3})}>Save post-mortem</button>
       </div>
     </Modal>}
+
+  function ReadingNoteModal(){
+    var data=modal&&modal.type==="readingNote"?modal:null;
+    if(!data)return null;
+    var book=data.book;
+    var _nt=useState(""),noteText=_nt[0],setNoteText=_nt[1];
+    var _tk=useState(""),noteTicker=_tk[0],setNoteTicker=_tk[1];
+    var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
+    function save(){
+      if(!noteText.trim())return;
+      var note={id:Date.now(),text:noteText.trim(),ticker:noteTicker.trim()||null,date:new Date().toISOString()};
+      var updated=readingList.map(function(r){
+        if(r!==book)return r;
+        var existing=r.readingNotes||[];
+        return Object.assign({},r,{readingNotes:existing.concat([note])});
+      });
+      saveRL(updated);
+      setModal(null);
+    }
+    return<Modal title={"Note from \""+book.title+"""} onClose={function(){setModal(null)}} w={460} K={K}>
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>What insight or idea does this spark?</div>
+        <textarea
+          autoFocus
+          value={noteText}
+          onChange={function(e){setNoteText(e.target.value)}}
+          placeholder={"Write down the thought while it's fresh..."}
+          rows={4}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.6}}
+        />
+      </div>
+      {portfolio2.length>0&&<div style={{marginBottom:16}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Link to a holding? <span style={{opacity:.6}}>(optional)</span></div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+          <button onClick={function(){setNoteTicker("")}} style={{fontSize:10,padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid "+(noteTicker===""?K.acc:K.bdr),background:noteTicker===""?K.acc+"10":"none",color:noteTicker===""?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>None</button>
+          {portfolio2.map(function(c){return<button key={c.id} onClick={function(){setNoteTicker(c.ticker)}} style={{fontSize:10,padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid "+(noteTicker===c.ticker?K.acc:K.bdr),background:noteTicker===c.ticker?K.acc+"10":"none",color:noteTicker===c.ticker?K.acc:K.txt,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{c.ticker}</button>})}
+        </div>
+      </div>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+        <button onClick={function(){setModal(null)}} style={{fontSize:12,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Cancel</button>
+        <button onClick={save} disabled={!noteText.trim()} style={{fontSize:12,padding:"7px 20px",borderRadius:_isBm?0:8,background:noteText.trim()?K.acc:"transparent",border:"1px solid "+(noteText.trim()?K.acc:K.bdr),color:noteText.trim()?"#fff":K.dim,cursor:noteText.trim()?"pointer":"default",fontFamily:fm,fontWeight:600}}>Save note</button>
+      </div>
+    </Modal>;
+  }
+
 
   function MemoModal(){if(!sel)return null;var c2=sel;var pos=c2.position||{};var sec2=parseThesis(c2.thesisNote);
     var os2=calcOwnerScore([c2]);var h2=gH(c2.kpis);var style2=c2.investStyle&&STYLE_MAP[c2.investStyle]?STYLE_MAP[c2.investStyle]:null;
@@ -3110,7 +3576,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -6475,28 +6941,31 @@ function calcMoatFromData(finData,businessModelType){
       }
     });
 
-
-
-    // ── LAYER 5: Upcoming earnings — KPI ready check ──────────────
+    // ── LAYER 5: Decision post-mortems (decisions >90d with no outcome) ──
     portfolio.forEach(function(c){
-      if(!c.earningsDate||c.earningsDate==="TBD")return;
-      var days=dU(c.earningsDate);
-      if(days<0||days>7)return;
-      var kpis=c.kpis||[];
-      var hasKpis=kpis.length>0;
-      var kpiStr=hasKpis?kpis.slice(0,3).map(function(k){return k.label}).join(", "):"no KPIs set";
-      signals.push({
-        layer:"earnings_soon",
-        priority:1,
-        icon:"bar",
-        color:K.acc,
-        title:c.ticker+" reports in "+(days===0?"today":days+"d"),
-        sub:hasKpis?"Tracking: "+kpiStr+" — know what to look for":"No KPIs set for this earnings — add them now",
-        action:hasKpis?"Pre-Earnings AI":"Add KPIs",
-        onAction:hasKpis?{type:"ai",aiType:"earnings",c:c}:{type:"go",c:c,modal:"kpi"},
-        secondary:"View thesis",
-        onSecondary:{type:"go",c:c}
+      var decs = (c.decisions||[]).filter(function(d){
+        if(d.cardType!=="decision"&&(d.cardType||!d.reasoning))return false;
+        if(d.outcome)return false; // already reviewed
+        if(!d.date)return false;
+        var ageDays = Math.ceil((Date.now()-new Date(d.date))/864e5);
+        return ageDays >= 90;
       });
+      if(decs.length > 0){
+        var oldest = decs[decs.length-1];
+        var ageDays = Math.ceil((Date.now()-new Date(oldest.date))/864e5);
+        signals.push({
+          layer:"postmortem",
+          priority:3,
+          icon:"clock",
+          color:K.blue||"#3B82F6",
+          title:c.ticker+": decision needs a post-mortem",
+          sub:(oldest.action||"Decision")+" logged "+ageDays+"d ago — was your reasoning right?",
+          action:"Post-Mortem",
+          onAction:{type:"postmortem", c:c, dec:oldest},
+          secondary:"View journal",
+          onSecondary:{type:"go", c:c}
+        });
+      }
     });
 
     // LAYER 6: Ownership anniversaries
@@ -10164,12 +10633,13 @@ function WeeklyReview(){
         {/* ── Investor Profile banner ── */}
         {!isMobile&&sideTab==="portfolio"&&investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&(function(){
           var prof=PROFILE_MAP[investorProfile];
-          return<div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:prof.color+"08",border:"1px solid "+prof.color+"20",borderRadius:_isBm?0:8,marginTop:8,marginBottom:0,cursor:"pointer"}}
-            onClick={function(){setModal({type:"settings"})}}>
+          var _pbe=useState(false),profBannerExp=_pbe[0],setProfBannerExp=_pbe[1];
+          return<div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:prof.color+"08",border:"1px solid "+prof.color+"20",borderRadius:_isBm?0:8,marginTop:8,marginBottom:0,cursor:"pointer",transition:"all .15s"}}
+            onClick={function(){setProfBannerExp(function(v){return!v})}}>
             <IC name={prof.icon} size={12} color={prof.color}/>
-            <span style={{fontSize:11,color:prof.color,fontWeight:700,fontFamily:fm}}>{prof.name} lens</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1}}>{prof.tagline}</span>
-            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Change →</span>
+            {profBannerExp&&<span style={{fontSize:11,color:prof.color,fontWeight:700,fontFamily:fm}}>{prof.name} lens</span>}
+            {profBannerExp&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1}}>{prof.tagline}</span>}
+            {profBannerExp&&<span onClick={function(e){e.stopPropagation();setModal({type:"settings"})}} style={{fontSize:10,color:K.dim,fontFamily:fm}}>Change →</span>}
           </div>;
         })()}
         {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:8,marginTop:16,marginBottom:4,flexWrap:"wrap"}}>
@@ -10231,10 +10701,17 @@ function WeeklyReview(){
                 <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
                 {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
                 {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap"}}>
                   <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
+                  <button onClick={function(){setModal({type:"readingNote",book:book})}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Note</button>
                   {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
                 </div>
+                {book.readingNotes&&book.readingNotes.length>0&&<div style={{marginTop:8,borderTop:"1px solid "+K.bdr+"40",paddingTop:8}}>
+                  {book.readingNotes.slice(-2).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:3,display:"flex",gap:6}}>
+                    <span style={{color:K.acc,flexShrink:0,fontStyle:"normal"}}>—</span>
+                    <span>{n.text}{n.ticker&&<span style={{fontSize:9,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:3,marginLeft:6,fontStyle:"normal",fontFamily:fm,fontWeight:700}}>{n.ticker}</span>}</span>
+                  </div>})}
+                </div>}
               </div>;
             })()
             :wantToRead.length>0?(function(){
@@ -10646,143 +11123,22 @@ function WeeklyReview(){
     {/* ── MR MARKET WIDGET ── */}
     {sideTab==="portfolio"&&!isMobile&&(function(){
       function MrMarketFace(props){
-        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||120;
-        var isScared=mood==="extreme_fear"||mood==="fear";
-        var isHappy=mood==="greed"||mood==="extreme_greed";
-        var isManic=mood==="extreme_greed";
-        var isPanic=mood==="extreme_fear";
-        var skinMap={extreme_fear:"#FFE4E6",fear:"#FEF3C7",neutral:"#FEF9EC",greed:"#ECFDF5",extreme_greed:"#F5F3FF"};
-        var skin=skinMap[mood]||"#FEF9EC";
-        var stroke=color;
-        var sw="1.8";
-        return<svg width={size} height={size*1.3} viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg" style={{overflow:"visible"}}>
-
-          {/* ── BODY / TUXEDO ── */}
-          {/* Coat body */}
-          <path d="M25 90 Q22 115 24 126 L76 126 Q78 115 75 90 Q65 98 50 98 Q35 98 25 90Z" fill={tint+"25"} stroke={stroke} strokeWidth={sw}/>
-          {/* Lapels */}
-          <path d="M44 90 L50 105 L56 90" fill={tint+"40"} stroke={stroke} strokeWidth="1.2"/>
-          <path d="M44 90 L38 80" stroke={stroke} strokeWidth="1.2"/>
-          <path d="M56 90 L62 80" stroke={stroke} strokeWidth="1.2"/>
-          {/* Shirt / bow tie */}
-          <path d="M46 90 L50 96 L54 90" fill="white" stroke={stroke} strokeWidth="1"/>
-          <ellipse cx="50" cy="88" rx="4" ry="2" fill={tint} opacity="0.8"/>
-          {/* Buttons */}
-          <circle cx="50" cy="104" r="1.2" fill={stroke} opacity="0.5"/>
-          <circle cx="50" cy="112" r="1.2" fill={stroke} opacity="0.5"/>
-
-          {/* ── ARMS ── */}
-          {/* Left arm — holds cane */}
-          <path d={isPanic
-            ?"M25 92 Q12 85 8 75"
-            :isHappy
-            ?"M25 92 Q14 80 16 68"
-            :"M25 92 Q14 88 12 100"}
-            stroke={stroke} strokeWidth="5" strokeLinecap="round"/>
-          {/* Right arm — raised/dropped */}
-          <path d={isHappy
-            ?"M75 92 Q86 80 84 68"
-            :isPanic
-            ?"M75 92 Q88 85 92 75"
-            :"M75 92 Q86 88 88 100"}
-            stroke={stroke} strokeWidth="5" strokeLinecap="round"/>
-
-          {/* ── CANE (left hand) ── */}
-          {!isPanic&&<g>
-            <line x1={isHappy?"16":"12"} y1={isHappy?"68":"100"} x2={isHappy?"18":"14"} y2={isHappy?"85":"118"} stroke={stroke} strokeWidth="2.5" strokeLinecap="round"/>
-            <path d={isHappy?"M13 68 Q16 64 20 67":"M9 100 Q12 96 16 99"} stroke={stroke} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          </g>}
-          {/* Panic: papers flying */}
-          {isPanic&&<g opacity="0.65">
-            <rect x="82" y="58" width="14" height="18" rx="1.5" fill={tint+"40"} stroke={stroke} strokeWidth="1" transform="rotate(20,89,67)"/>
-            <rect x="72" y="50" width="11" height="15" rx="1.5" fill={tint+"30"} stroke={stroke} strokeWidth="1" transform="rotate(-12,77,57)"/>
-            <line x1="83" y1="63" x2="92" y2="63" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
-            <line x1="84" y1="67" x2="91" y2="67" stroke={stroke} strokeWidth="0.8" opacity="0.5"/>
-          </g>}
-
-          {/* ── ROUND BELLY ── */}
-          <ellipse cx="50" cy="108" rx="19" ry="12" fill={tint+"15"} stroke={stroke} strokeWidth="1" opacity="0.6"/>
-
-          {/* ── HEAD ── */}
-          <ellipse cx="50" cy="52" rx="20" ry="22" fill={skin} stroke={stroke} strokeWidth={sw}/>
-
-          {/* ── TOP HAT ── */}
-          {/* Brim */}
-          <path d="M28 34 Q50 36 72 34" stroke={stroke} strokeWidth="2.5" strokeLinecap="round"/>
-          {/* Hat body */}
-          <rect x="33" y="8" width="34" height="26" rx="2" fill={isManic?color+"50":color+"30"} stroke={stroke} strokeWidth={sw}/>
-          {/* Hat band */}
-          <rect x="33" y="30" width="34" height="5" fill={tint+"60"} stroke={stroke} strokeWidth="1"/>
-          {/* Monocle glint if greedy */}
-          {isHappy&&<circle cx="63" cy="45" r="5" fill="none" stroke={stroke} strokeWidth="1.2" opacity="0.6"/>}
-
-          {/* ── EYES ── */}
-          {isManic
-            ?<g>
-               <circle cx="41" cy="50" r="5" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <circle cx="59" cy="50" r="5" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <circle cx="42" cy="50" r="2.5" fill={stroke}/>
-               <circle cx="60" cy="50" r="2.5" fill={stroke}/>
-               <path d="M37 44 L46 42" stroke={stroke} strokeWidth="1.8" strokeLinecap="round"/>
-               <path d="M54 42 L63 44" stroke={stroke} strokeWidth="1.8" strokeLinecap="round"/>
-             </g>
-            :isPanic
-            ?<g>
-               <ellipse cx="41" cy="50" rx="4.5" ry="5.5" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <ellipse cx="59" cy="50" rx="4.5" ry="5.5" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <circle cx="41" cy="51" r="2" fill={stroke}/>
-               <circle cx="59" cy="51" r="2" fill={stroke}/>
-               <path d="M37 44 Q41 47 45 44" stroke={stroke} strokeWidth="1.5" fill="none"/>
-               <path d="M55 44 Q59 47 63 44" stroke={stroke} strokeWidth="1.5" fill="none"/>
-             </g>
-            :isHappy
-            ?<g>
-               <path d="M37 50 Q41 45 45 50" stroke={stroke} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-               <path d="M55 50 Q59 45 63 50" stroke={stroke} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
-             </g>
-            :<g>
-               <circle cx="41" cy="50" r="4" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <circle cx="59" cy="50" r="4" fill="white" stroke={stroke} strokeWidth="1.2"/>
-               <circle cx="41" cy="50" r="1.8" fill={stroke}/>
-               <circle cx="59" cy="50" r="1.8" fill={stroke}/>
-             </g>}
-
-          {/* ── BIG MOUSTACHE ── */}
-          <path d={isManic
-            ?"M34 60 Q42 56 50 60 Q58 56 66 60 Q60 68 50 66 Q40 68 34 60Z"
-            :isPanic
-            ?"M36 60 Q43 56 50 59 Q57 56 64 60 Q58 65 50 63 Q42 65 36 60Z"
-            :"M36 59 Q43 55 50 58 Q57 55 64 59 Q58 65 50 62 Q42 65 36 59Z"}
-            fill={tint+"60"} stroke={stroke} strokeWidth="1.2"/>
-          {/* Cheeks when happy */}
-          {isHappy&&<g>
-            <ellipse cx="33" cy="56" rx="6" ry="4" fill={tint} opacity="0.2"/>
-            <ellipse cx="67" cy="56" rx="6" ry="4" fill={tint} opacity="0.2"/>
-          </g>}
-
-          {/* ── MOUTH ── */}
-          {isPanic
-            ?<path d="M42 67 Q50 63 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :isManic
-            ?<path d="M40 67 Q50 76 60 67" stroke={stroke} strokeWidth="2" fill={tint+"30"} strokeLinecap="round"/>
-            :isHappy
-            ?<path d="M42 67 Q50 73 58 67" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :mood==="fear"
-            ?<path d="M43 68 Q50 64 57 68" stroke={stroke} strokeWidth="2" fill="none" strokeLinecap="round"/>
-            :<path d="M44 67 Q50 69 56 67" stroke={stroke} strokeWidth="1.5" fill="none" strokeLinecap="round"/>}
-
-          {/* ── SWEAT DROPS (fear) ── */}
-          {isScared&&<g>
-            <ellipse cx={isPanic?27:29} cy={isPanic?55:58} rx="1.5" ry="2.5" fill={stroke} opacity="0.4"/>
-            <ellipse cx={isPanic?25:27} cy={isPanic?63:66} rx="1" ry="2" fill={stroke} opacity="0.25"/>
-          </g>}
-
-          {/* ── MANIC EFFECTS ── */}
-          {isManic&&<g>
-            <text x="80" y="30" fontSize="14" fill={tint} fontWeight="bold" opacity="0.8">{"$"}</text>
-            <text x="10" y="28" fontSize="12" fill={tint} fontWeight="bold" opacity="0.6">{"$"}</text>
-          </g>}
-        </svg>;
+        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
+        var moodMap={
+          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
+          fear:{label:"FEAR",sub:"cautious",bars:2},
+          neutral:{label:"CALM",sub:"neutral",bars:3},
+          greed:{label:"GREED",sub:"optimistic",bars:4},
+          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
+        };
+        var md=moodMap[mood]||moodMap.neutral;
+        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
+          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
+          <div style={{display:"flex",gap:3,marginBottom:5}}>
+            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
+          </div>
+          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
+        </div>;
       }
       return<div style={{marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
@@ -10966,7 +11322,8 @@ function WeeklyReview(){
               if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
             }
             else if(act.type==="library"){setSelId(null);setPage("library")}
-            }
+            else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
+          }
 
           var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
           var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/_heldCos2.length/365):0;
@@ -11014,7 +11371,87 @@ function WeeklyReview(){
           {/* LEFT — business events ── */}
           <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
 
-            {/* ── Look-through portfolio table — preset switcher ── */}
+                        {/* Post-earnings review needed */}
+            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+              if(needReview.length===0)return null;
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
+                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
+                </div>})}
+              </div>})()}
+
+            {/* Upcoming earnings */}
+            {upcoming.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
+                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
+              </div>
+              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
+                </div>})}
+            </div>}
+
+            {/* Insider buying signals */}
+            {insiderSignals.length>0&&<div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+              </div>
+            </div>}
+
+          </div>
+
+          {/* RIGHT — ownership health (no prices) ── */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
+            {portfolio.map(function(c2){
+              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
+              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
+              // --- Progress meter: 0-100 across 5 dimensions ---
+              var _th=c2.thesisNote||"";
+              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
+              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
+              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
+              var _convScore=(c2.conviction||0)*10;
+              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
+              var _moatScore=_hasMoat?100:0;
+              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
+              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
+              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
+              // Weakest dimension label
+              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
+              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
+              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
+              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
+                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
+                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
+                  </div>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
+                </div>
+              </div>})}
+          </div>
+        </div>
+
+
+        {/* ── Portfolio Look-Through ── */}
+        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
+{/* ── Look-through portfolio table — preset switcher ── */}
             {(function(){
               // ── S&P 500 benchmarks ─────────────────────────────────────
               var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
@@ -11172,83 +11609,7 @@ function WeeklyReview(){
                 </div>
               </div>
             })()}
-
-                        {/* Post-earnings review needed */}
-            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-              if(needReview.length===0)return null;
-              return<div style={{marginBottom:14}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
-                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
-                </div>})}
-              </div>})()}
-
-            {/* Upcoming earnings */}
-            {upcoming.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
-                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
-              </div>
-              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
-                </div>})}
-            </div>}
-
-            {/* Insider buying signals */}
-            {insiderSignals.length>0&&<div>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
-              </div>
-            </div>}
-
-          </div>
-
-          {/* RIGHT — ownership health (no prices) ── */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
-            {portfolio.map(function(c2){
-              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
-              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
-              // --- Progress meter: 0-100 across 5 dimensions ---
-              var _th=c2.thesisNote||"";
-              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
-              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
-              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
-              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
-              var _convScore=(c2.conviction||0)*10;
-              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
-              var _moatScore=_hasMoat?100:0;
-              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
-              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
-              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
-              // Weakest dimension label
-              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
-              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
-              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
-              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
-                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
-                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
-                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
-                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
-                  </div>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
-                </div>
-              </div>})}
-          </div>
-        </div>
+        </div>}
 
         {/* ── Done for today ── */}
         {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
@@ -13484,7 +13845,7 @@ function OnboardingFlow(p){
   // STEP 5 — Write thesis inline
   // ─────────────────────────────────────────────────────────
   if(obStep===5){
-    var _profSty=oStyle&&oStyle.startsWith("profile_")?oStyle.replace("profile_",""):null;var _profPrompts=_profSty&&PROFILE_MAP[_profSty]&&PROFILE_MAP[_profSty].thesisPrompt?PROFILE_MAP[_profSty]:null;var sty3=_profPrompts||( oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null);
+    var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
     var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
     var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
     return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
