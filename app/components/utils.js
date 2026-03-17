@@ -1,3 +1,4 @@
+"use client";
 // app/components/utils.js
 // Pure utility functions — no React, no JSX
 import { METRIC_MAP, KNOWN_MONTHLY } from './constants';
