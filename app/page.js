@@ -1441,6 +1441,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
     var sid=sel.investStyle||"default";
+    var _profP=investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&PROFILE_MAP[investorProfile].thesisPrompt?PROFILE_MAP[investorProfile]:null;
     // ── Sharp thinking questions per section per style ──────────
     var Q={
       core:{
@@ -1484,7 +1485,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         d:"Define 2-3 specific, measurable conditions that would make you sell. Not \'if things get bad\' — exact numbers."
       }
     };
-    var getQ=function(sec){return Q[sec][sid]||Q[sec].d};
+    var _profQmap={core:"thesisPrompt",moat:"moatPrompt",risks:"riskPrompt",sell:"sellPrompt"};
+    var getQ=function(sec){return(_profP&&_profP[_profQmap[sec]])||Q[sec][sid]||Q[sec].d};
     // ── Auto-seed sell section from KPIs if blank ───────────────
     var kpiSeed=(function(){
       var kpis=sel.kpis||[];if(kpis.length===0)return null;
@@ -13486,7 +13488,7 @@ function OnboardingFlow(p){
   // STEP 5 — Write thesis inline
   // ─────────────────────────────────────────────────────────
   if(obStep===5){
-    var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
+    var _profSty=oStyle&&oStyle.startsWith("profile_")?oStyle.replace("profile_",""):null;var _profPrompts=_profSty&&PROFILE_MAP[_profSty]&&PROFILE_MAP[_profSty].thesisPrompt?PROFILE_MAP[_profSty]:null;var sty3=_profPrompts||( oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null);
     var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
     var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
     return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
