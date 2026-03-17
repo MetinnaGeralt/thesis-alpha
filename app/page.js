@@ -4642,315 +4642,6 @@ function calcMoatFromData(finData,businessModelType){
               })}
             </div>
             <button onClick={function(){saveInvestorProfile("custom")}} style={{fontSize:11,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Skip — I'll set this later →</button>
-
-
-        <div>
-          <div style={{padding:isMobile?"12px 16px":"14px 24px"}}>
-
-                        {/* Post-earnings review needed */}
-            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-              if(needReview.length===0)return null;
-              return<div style={{marginBottom:14}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
-                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
-                </div>})}
-              </div>})()}
-
-            {/* Upcoming earnings */}
-            {upcoming.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
-                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
-              </div>
-              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
-                </div>})}
-            </div>}
-
-            {/* Insider buying signals */}
-            {insiderSignals.length>0&&<div>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
-              </div>
-            </div>}
-
-          </div>
-
-          </div>
-          {/* OWNERSHIP HEALTH */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
-            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
-            {portfolio.map(function(c2){
-              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
-              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
-              // --- Progress meter: 0-100 across 5 dimensions ---
-              var _th=c2.thesisNote||"";
-              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
-              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
-              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
-              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
-              var _convScore=(c2.conviction||0)*10;
-              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
-              var _moatScore=_hasMoat?100:0;
-              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
-              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
-              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
-              // Weakest dimension label
-              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
-              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
-              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
-              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
-                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
-                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
-                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
-                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
-                  </div>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
-                </div>
-              </div>})}
-          </div>
-        </div>
-
-
-        {/* ── Portfolio Look-Through ── */}
-        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
-{/* ── Look-through portfolio table — preset switcher ── */}
-            {(function(){
-              // ── S&P 500 benchmarks ─────────────────────────────────────
-              var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
-                      roic:12,fcfMargin:11,netDebtEbitda:2.1,roe:18,
-                      revGrowth:5,epsGrowth:8,pe:22,peg:2.1,fcfYield:4.5,divYield:1.4};
-
-              // ── Preset definitions ─────────────────────────────────────
-              var PRESETS=[
-                {id:"terry",label:"Terry",tip:"Fundsmith-style: quality compounders",rows:[
-                  {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
-                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
-                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
-                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
-  // Primary: FCF margin / Op margin = what % of operating profit converts to cash
-  var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;
-  var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;
-  if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);
-  // Fallback 1: FCF margin as direct proxy
-  if(fcf!=null)return Math.max(0,fcf);
-  return null;}},
-                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
-  // Primary: direct interest coverage ratio
-  if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
-  // Fallback 1: net-cash company (netDebt negative) -> effectively very high coverage
-  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0)return 99;
-  // Fallback 2: near-zero leverage -> infer from ROIC
-  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0.5){
-    var rc=s.roce&&s.roce.numVal!=null?s.roce.numVal:(s.roic&&s.roic.numVal!=null?s.roic.numVal:null);
-    if(rc!=null&&rc>0)return Math.round(rc*2);}
-  // Fallback 3: very low debt/equity
-  if(s.debtEquity&&s.debtEquity.numVal!=null&&s.debtEquity.numVal<0.1)return 50;
-  return null;}},
-                ]},
-                {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
-                  {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
-                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
-                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
-                  {key:"fcfm",     label:"FCF margin",       bv:SP.fcfMargin,   hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null}},
-                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
-                ]},
-                {id:"garp",label:"GARP",tip:"Growth at a reasonable price",rows:[
-                  {key:"revgr",    label:"Rev growth",       bv:SP.revGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.revGrowth?s.revGrowth.numVal:null}},
-                  {key:"epsgr",    label:"EPS growth",       bv:SP.epsGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null}},
-                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
-                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
-                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
-                ]},
-                {id:"value",label:"Value",tip:"Income and deep value lens",rows:[
-                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
-                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
-                  {key:"divy",     label:"Div yield",        bv:SP.divYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.divYield?s.divYield.numVal:null}},
-                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
-                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
-                ]},
-                {id:"munger",label:"Munger",tip:"Munger napkin: pre-tax returns, pricing power, owner earnings, fortress balance sheet",
-                 mungerNote:"The numbers confirm. They do not decide.",
-                 rows:[
-                  {key:"pretax_roe", label:"Pre-tax return on equity",bv:22,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){var roe=s.roe&&s.roe.numVal!=null?s.roe.numVal:null;if(roe==null)return null;return Math.min(roe*1.35,150)},
-                   note:"ROE grossed up for ~25% tax — Munger wants 15%+ pretax on tangible equity"},
-                  {key:"gross",  label:"Gross margin (pricing power)", bv:SP.grossMargin,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){return s.grossMargin?s.grossMargin.numVal:null},
-                   note:"Does management apologise for raising prices, or do customers barely notice?"},
-                  {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return Math.min(fcf*5,150);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;var ey=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(fcfy&&fcfy>0&&ey&&ey>0)return Math.min(fcfy/(1/ey)*100,200);return null},
-                   note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
-                  {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
-                   fmt:function(v){return v.toFixed(1)+"%"},
-                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return Math.min(1/pe*100,50);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy&&fcfy>0?fcfy:null;},
-                   note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
-                  {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
-                   fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
-                   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},
-                   note:"Munger hates leverage. Under 2x EBITDA, or ideally net cash."},
-                  {key:"circle", label:"Circle of competence",          bv:3.5,hb:true,
-                   fmt:function(v){return v.toFixed(1)+"/5"},
-                   qual:true,
-                   getQ:function(c2){return c2.circleScore||null},
-                   note:"Do you truly understand these businesses? Munger: 'Invert, always invert'"},
-                  {key:"mgmt",   label:"Management quality",            bv:null,hb:true,
-                   fmt:function(v){return v===4?"A avg":v>=3?"B avg":v>=2?"C avg":"D avg"},
-                   qual:true,
-                   getQ:function(c2){return c2.managementGrade?({A:4,B:3,C:2,D:1}[c2.managementGrade]||null):null},
-                   note:"The most important quality is integrity — Munger"},
-                ]},
-              ];
-
-              // ── State: active preset ───────────────────────────────────
-              var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
-              var _exR=useState(null),expandedRow=_exR[0],setExpandedRow=_exR[1];
-              var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
-              var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-              function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
-              function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
-              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
-              var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
-              var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
-              var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
-              var napkinGrade=_gr===null?"?":_gr>=0.8?"A":_gr>=0.6?"B":_gr>=0.4?"C":"D";
-              var napkinColor=napkinGrade==="A"?K.grn:napkinGrade==="B"?K.acc:napkinGrade==="C"?K.amb:K.red;
-              var hasSpBench=preset.rows.some(function(r){return r.bv!=null&&!r.qual});
-              return<div style={{marginBottom:16}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7}}>
-                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
-                    {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
-                  </div>
-                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
-                </div>
-                <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
-                    <div style={{padding:"5px 10px"}}/>
-                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
-                    {hasSpBench&&<div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>}
-                  </div>
-                  {preset.rows.map(function(r,i){
-                    var isEarny=r.key==="earny";
-                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get,isEarny?function(v){return v>0}:null);
-                    var holdings=perHolding(r);
-                    var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
-                    var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
-                    var isOpen=expandedRow===r.key;
-                    var vArr=holdings.map(function(h){return h.v});
-                    var vMin=vArr.length?Math.min.apply(null,vArr):0;
-                    var vMax=vArr.length?Math.max.apply(null,vArr):1;
-                    var vSpan=Math.max(vMax-vMin,0.001);
-                    return<div key={r.key} style={{borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:isOpen?K.acc+"04":"transparent"}}>
-                      <div title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null&&hasSpBench?"72px":""),cursor:holdings.length>0?"pointer":"default"}} onClick={function(){if(holdings.length>0)setExpandedRow(isOpen?null:r.key)}}>
-                        <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-                          {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.5}}>ⓘ</span>}
-                          {r.qual&&<span style={{fontSize:8,color:K.acc,background:K.acc+"10",padding:"1px 4px",borderRadius:2,marginLeft:2,fontFamily:fm}}>qual</span>}
-                          {holdings.length>0&&<span style={{fontSize:8,color:K.dim,marginLeft:"auto",opacity:.4}}>{isOpen?"▲":"▼"}</span>}
-                        </div>
-                        <div style={{padding:"7px 0",textAlign:"center"}}>
-                          {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:r.qual?<button onClick={function(e){e.stopPropagation();setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"ledger"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(er){}return n})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"2px 7px",cursor:"pointer",fontFamily:fm}}>Rate →</button>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data" onClick={function(e){e.stopPropagation();filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,ii){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},ii*800)})}}>{"↺"}</span>}
-                        </div>
-                        {r.bv!=null&&hasSpBench&&<div style={{padding:"7px 0",textAlign:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span></div>}
-                      </div>
-                      {isOpen&&holdings.length>0&&<div style={{padding:"4px 12px 10px",borderTop:"1px solid "+K.bdr+"30"}}>
-                        {isEarny&&holdings.length<portfolio.length&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3,fontStyle:"italic"}}>Loss-making companies excluded</div>}
-                        <div style={{position:"relative",height:24,marginBottom:4}}>
-                          <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
-                          {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
-                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
-                        </div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
-                      </div>}
-                    </div>;})}
-                  {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
-                    {"\u201c"+preset.mungerNote+"\u201d"}
-                  </div>}
-                </div>
-              </div>
-            })()}
-        </div>}
-
-        {/* ── Done for today ── */}
-        {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
-        </div>}
-
-        {/* ── Owner's Intel feed ── */}
-        {(function(){
-          var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
-          var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
-          var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
-          var shown=(briefNews||[]).filter(function(n){
-            if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
-            return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
-          var visible=newsExpanded?shown:shown.slice(0,3);
-          if(!briefNewsLoading&&briefNews===null)return null; // never loaded yet
-          return<div style={{borderTop:"1px solid "+K.bdr}}>
-            <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
-                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:_isBm?0:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
-                </div>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="gear" size={10} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
-                  </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={12} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
-                </div>
-              </div>
-              {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
-                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
-                    {cat.label}
-                  </button>})}
-                </div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
-              </div>}
-              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
-              {shown.length>0&&<div>{visible.map(function(n,i){
-                var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
-                var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
-                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
-                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
-                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
-                  {co&&<div style={{flexShrink:0,marginTop:2}}><CoLogo domain={co.domain} ticker={co.ticker} size={16}/></div>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
-                      <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
-                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
-                    </div>
-                  </div>
-                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
-                </a>})}
-              </div>}
-              {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
-              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
-            </div>
           </div>;
         })()}
         {/* Guided Setup Flow */}
@@ -11244,7 +10935,315 @@ function WeeklyReview(){
             </div>
           </div>;
         })()}
-    </div>})()}
+
+        <div>
+          <div style={{padding:isMobile?"12px 16px":"14px 24px"}}>
+
+                        {/* Post-earnings review needed */}
+            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+              if(needReview.length===0)return null;
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
+                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
+                </div>})}
+              </div>})()}
+
+            {/* Upcoming earnings */}
+            {upcoming.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
+                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
+              </div>
+              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
+                </div>})}
+            </div>}
+
+            {/* Insider buying signals */}
+            {insiderSignals.length>0&&<div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+              </div>
+            </div>}
+
+          </div>
+
+          </div>
+          {/* OWNERSHIP HEALTH */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
+            {portfolio.map(function(c2){
+              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
+              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
+              // --- Progress meter: 0-100 across 5 dimensions ---
+              var _th=c2.thesisNote||"";
+              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
+              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
+              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
+              var _convScore=(c2.conviction||0)*10;
+              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
+              var _moatScore=_hasMoat?100:0;
+              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
+              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
+              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
+              // Weakest dimension label
+              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
+              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
+              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
+              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
+                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
+                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
+                  </div>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
+                </div>
+              </div>})}
+          </div>
+        </div>
+
+
+        {/* ── Portfolio Look-Through ── */}
+        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
+{/* ── Look-through portfolio table — preset switcher ── */}
+            {(function(){
+              // ── S&P 500 benchmarks ─────────────────────────────────────
+              var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
+                      roic:12,fcfMargin:11,netDebtEbitda:2.1,roe:18,
+                      revGrowth:5,epsGrowth:8,pe:22,peg:2.1,fcfYield:4.5,divYield:1.4};
+
+              // ── Preset definitions ─────────────────────────────────────
+              var PRESETS=[
+                {id:"terry",label:"Terry",tip:"Fundsmith-style: quality compounders",rows:[
+                  {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
+  // Primary: FCF margin / Op margin = what % of operating profit converts to cash
+  var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;
+  var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;
+  if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);
+  // Fallback 1: FCF margin as direct proxy
+  if(fcf!=null)return Math.max(0,fcf);
+  return null;}},
+                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
+  // Primary: direct interest coverage ratio
+  if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
+  // Fallback 1: net-cash company (netDebt negative) -> effectively very high coverage
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0)return 99;
+  // Fallback 2: near-zero leverage -> infer from ROIC
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0.5){
+    var rc=s.roce&&s.roce.numVal!=null?s.roce.numVal:(s.roic&&s.roic.numVal!=null?s.roic.numVal:null);
+    if(rc!=null&&rc>0)return Math.round(rc*2);}
+  // Fallback 3: very low debt/equity
+  if(s.debtEquity&&s.debtEquity.numVal!=null&&s.debtEquity.numVal<0.1)return 50;
+  return null;}},
+                ]},
+                {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
+                  {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"fcfm",     label:"FCF margin",       bv:SP.fcfMargin,   hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                ]},
+                {id:"garp",label:"GARP",tip:"Growth at a reasonable price",rows:[
+                  {key:"revgr",    label:"Rev growth",       bv:SP.revGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.revGrowth?s.revGrowth.numVal:null}},
+                  {key:"epsgr",    label:"EPS growth",       bv:SP.epsGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                ]},
+                {id:"value",label:"Value",tip:"Income and deep value lens",rows:[
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                  {key:"divy",     label:"Div yield",        bv:SP.divYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.divYield?s.divYield.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                ]},
+                {id:"munger",label:"Munger",tip:"Munger napkin: pre-tax returns, pricing power, owner earnings, fortress balance sheet",
+                 mungerNote:"The numbers confirm. They do not decide.",
+                 rows:[
+                  {key:"pretax_roe", label:"Pre-tax return on equity",bv:22,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var roe=s.roe&&s.roe.numVal!=null?s.roe.numVal:null;if(roe==null)return null;return Math.min(roe*1.35,150)},
+                   note:"ROE grossed up for ~25% tax — Munger wants 15%+ pretax on tangible equity"},
+                  {key:"gross",  label:"Gross margin (pricing power)", bv:SP.grossMargin,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){return s.grossMargin?s.grossMargin.numVal:null},
+                   note:"Does management apologise for raising prices, or do customers barely notice?"},
+                  {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return Math.min(fcf*5,150);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;var ey=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(fcfy&&fcfy>0&&ey&&ey>0)return Math.min(fcfy/(1/ey)*100,200);return null},
+                   note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
+                  {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"%"},
+                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return Math.min(1/pe*100,50);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy&&fcfy>0?fcfy:null;},
+                   note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
+                  {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
+                   fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
+                   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},
+                   note:"Munger hates leverage. Under 2x EBITDA, or ideally net cash."},
+                  {key:"circle", label:"Circle of competence",          bv:3.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"/5"},
+                   qual:true,
+                   getQ:function(c2){return c2.circleScore||null},
+                   note:"Do you truly understand these businesses? Munger: 'Invert, always invert'"},
+                  {key:"mgmt",   label:"Management quality",            bv:null,hb:true,
+                   fmt:function(v){return v===4?"A avg":v>=3?"B avg":v>=2?"C avg":"D avg"},
+                   qual:true,
+                   getQ:function(c2){return c2.managementGrade?({A:4,B:3,C:2,D:1}[c2.managementGrade]||null):null},
+                   note:"The most important quality is integrity — Munger"},
+                ]},
+              ];
+
+              // ── State: active preset ───────────────────────────────────
+              var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
+              var _exR=useState(null),expandedRow=_exR[0],setExpandedRow=_exR[1];
+              var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
+              var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+              function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
+              function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
+              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
+              var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
+              var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
+              var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
+              var napkinGrade=_gr===null?"?":_gr>=0.8?"A":_gr>=0.6?"B":_gr>=0.4?"C":"D";
+              var napkinColor=napkinGrade==="A"?K.grn:napkinGrade==="B"?K.acc:napkinGrade==="C"?K.amb:K.red;
+              var hasSpBench=preset.rows.some(function(r){return r.bv!=null&&!r.qual});
+              return<div style={{marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7}}>
+                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
+                    {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
+                  </div>
+                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
+                </div>
+                <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                    <div style={{padding:"5px 10px"}}/>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
+                    {hasSpBench&&<div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>}
+                  </div>
+                  {preset.rows.map(function(r,i){
+                    var isEarny=r.key==="earny";
+                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get,isEarny?function(v){return v>0}:null);
+                    var holdings=perHolding(r);
+                    var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
+                    var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
+                    var isOpen=expandedRow===r.key;
+                    var vArr=holdings.map(function(h){return h.v});
+                    var vMin=vArr.length?Math.min.apply(null,vArr):0;
+                    var vMax=vArr.length?Math.max.apply(null,vArr):1;
+                    var vSpan=Math.max(vMax-vMin,0.001);
+                    return<div key={r.key} style={{borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:isOpen?K.acc+"04":"transparent"}}>
+                      <div title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null&&hasSpBench?"72px":""),cursor:holdings.length>0?"pointer":"default"}} onClick={function(){if(holdings.length>0)setExpandedRow(isOpen?null:r.key)}}>
+                        <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+                          {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.5}}>ⓘ</span>}
+                          {r.qual&&<span style={{fontSize:8,color:K.acc,background:K.acc+"10",padding:"1px 4px",borderRadius:2,marginLeft:2,fontFamily:fm}}>qual</span>}
+                          {holdings.length>0&&<span style={{fontSize:8,color:K.dim,marginLeft:"auto",opacity:.4}}>{isOpen?"▲":"▼"}</span>}
+                        </div>
+                        <div style={{padding:"7px 0",textAlign:"center"}}>
+                          {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:r.qual?<button onClick={function(e){e.stopPropagation();setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"ledger"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(er){}return n})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"2px 7px",cursor:"pointer",fontFamily:fm}}>Rate →</button>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data" onClick={function(e){e.stopPropagation();filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,ii){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},ii*800)})}}>{"↺"}</span>}
+                        </div>
+                        {r.bv!=null&&hasSpBench&&<div style={{padding:"7px 0",textAlign:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span></div>}
+                      </div>
+                      {isOpen&&holdings.length>0&&<div style={{padding:"4px 12px 10px",borderTop:"1px solid "+K.bdr+"30"}}>
+                        {isEarny&&holdings.length<portfolio.length&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3,fontStyle:"italic"}}>Loss-making companies excluded</div>}
+                        <div style={{position:"relative",height:24,marginBottom:4}}>
+                          <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
+                          {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
+                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
+                      </div>}
+                    </div>;})}
+                  {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
+                    {"\u201c"+preset.mungerNote+"\u201d"}
+                  </div>}
+                </div>
+              </div>
+            })()}
+        </div>}
+
+        {/* ── Done for today ── */}
+        {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
+        </div>}
+
+        {/* ── Owner's Intel feed ── */}
+        {(function(){
+          var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
+          var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
+          var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
+          var shown=(briefNews||[]).filter(function(n){
+            if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
+            return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
+          var visible=newsExpanded?shown:shown.slice(0,3);
+          if(!briefNewsLoading&&briefNews===null)return null; // never loaded yet
+          return<div style={{borderTop:"1px solid "+K.bdr}}>
+            <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                  <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
+                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:_isBm?0:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="gear" size={10} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
+                  </button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={12} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
+                </div>
+              </div>
+              {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
+                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
+                    {cat.label}
+                  </button>})}
+                </div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
+              </div>}
+              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
+              {shown.length>0&&<div>{visible.map(function(n,i){
+                var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
+                var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
+                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
+                  {co&&<div style={{flexShrink:0,marginTop:2}}><CoLogo domain={co.domain} ticker={co.ticker} size={16}/></div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
+                      <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
+                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                    </div>
+                  </div>
+                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                </a>})}
+              </div>}
+              {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
+              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
+            </div>
+          </div>})()}
       </div>})()}
     {/* ── CONVICTION LEDGER VIEW ── */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="ledger"&&(function(){
