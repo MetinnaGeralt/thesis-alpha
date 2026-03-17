@@ -7787,7 +7787,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>
               </div>
               {/* Bell curve */}
-              <div style={{position:"relative",marginBottom:12}}>
+              <div style={{position:"relative",marginBottom:12,paddingTop:16}}>
                 <svg viewBox={"0 0 "+svgW+" "+svgH} style={{width:"100%",height:80,overflow:"visible"}}>
                   <defs>
                     <linearGradient id="bellGrad" x1="0" x2="0" y1="0" y2="1">
@@ -7803,18 +7803,22 @@ function calcMoatFromData(finData,businessModelType){
                   {tgtX!==expX&&<text x={tgtX.toFixed(0)} y="-4" fill={K.amb} fontSize="9" fontWeight="bold" textAnchor="middle">Target {goals.targetCAGR}%</text>}
                 </svg>
               </div>
-              {!onTarget&&<div style={{background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:8,padding:"10px 14px",fontSize:12,color:K.amb}}>
-                Your expected {portCAGR.toFixed(1)}% is below your {goals.targetCAGR}% target. Consider whether your target is realistic, or if higher-conviction positions could shift the outlook.
+              {!onTarget&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",fontSize:12,color:K.mid,lineHeight:1.7}}>
+                <div style={{fontWeight:600,color:K.txt,marginBottom:4,fontSize:12}}>{"This model uses historical financial data — not your thesis."}</div>
+                {"The "+portCAGR.toFixed(1)+"% projection reflects the reported growth rates and valuations of your holdings. If you own businesses you believe will compound at higher rates — and you have written down why — that conviction lives in your thesis, not here. Use this as a floor estimate, not a verdict."}
+                {(function(){var noThesis=portf.filter(function(c){return!c.thesisNote||c.thesisNote.trim().length<100});if(noThesis.length>0){return<div style={{marginTop:8,padding:"8px 10px",background:K.acc+"08",borderRadius:_isBm?0:6,fontSize:11,color:K.acc}}>{noThesis.length+" holding"+(noThesis.length!==1?"s":"")+" without a written thesis — write your case to record the conviction this model cannot see."}</div>}return null;})()}
               </div>}
-              {onTarget&&<div style={{background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:8,padding:"10px 14px",fontSize:12,color:K.grn}}>
-                Your portfolio is on track. Expected {portCAGR.toFixed(1)}% vs {goals.targetCAGR}% target — {prob}% probability of hitting it.
+              {onTarget&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",fontSize:12,color:K.mid,lineHeight:1.7}}>
+                <div style={{fontWeight:600,color:K.grn,marginBottom:4,fontSize:12}}>{"Historical data supports your target — your thesis may give you more."}</div>
+                {"Based on reported financials, your expected "+portCAGR.toFixed(1)+"% meets your "+goals.targetCAGR+"% target. This model uses historical growth rates and current valuations — it cannot see the compounding potential your research has identified. A written thesis is the record of what the numbers cannot capture yet."}
               </div>}
             </div>
 
             {/* Per-holding breakdown */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 22px"}}>
               <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:14}}>Expected Return by Holding</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:10}}>TSR = (1 + EPS Growth + Buyback) × (1 + Multiple Change) + Dividend Yield − 1. Growth adjusted by quality score (ROIC, margins). "Needed" = growth required to hit your target CAGR at current valuation.</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>TSR = (1 + EPS Growth + Buyback) × (1 + Multiple Change) + Dividend Yield − 1. Growth adjusted by quality score (ROIC, margins). "Needed" = growth required to hit your target CAGR at current valuation.</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:10,fontStyle:"italic"}}>{"Projections based on historical financials. Your thesis captures what history cannot."}</div>
               {holdingReturns.map(function(h){
                 var needed=goals.targetCAGR-h.dy-h.mc;var onTgt=h.expected>=goals.targetCAGR;
                 return<div key={h.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+K.bdr+"60"}}>
@@ -8321,7 +8325,7 @@ function WeeklyReview(){
     var _fx=useState({}),localFx=_fx[0],setLocalFx=_fx[1];
 
     var ATYPES=[
-      {id:"real_estate",label:"Real Estate",color:"#8b5cf6",icon:"moat"},
+      {id:"real_estate",label:"Real Estate",color:"#8b5cf6",icon:"moat",manual:true},
       {id:"etf",label:"ETFs & Funds",color:"#10b981",icon:"chart"},
       {id:"gold",label:"Gold & Precious Metals",color:"#f59e0b",icon:"shield"},
       {id:"crypto",label:"Crypto",color:"#f97316",icon:"dice"},
@@ -9131,13 +9135,13 @@ function WeeklyReview(){
               <IC name={atype.icon||"folder"} size={16} color={atype.color||K.acc}/>
               <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh}}>{modal==="edit"?"Edit Asset":atype.label}</div>
             </div>
-            <div style={{marginBottom:14}}><label style={secLabel}>Name</label><input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.isPortfolio2?"e.g. ISK Account":"Asset name"} style={inputStyle}/></div>
+            <div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Property Name / Address":"Name"}</label><input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.isPortfolio2?"e.g. ISK Account":atype.id==="real_estate"?"e.g. Main St apartment, vacation home":"Asset name"} style={inputStyle}/></div>
             {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Ticker</label><input value={form.ticker||""} onChange={function(e){setForm(Object.assign({},form,{ticker:e.target.value.toUpperCase()}))}} placeholder="e.g. VOO, BTC" style={inputStyle}/></div>}
             {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Quantity</label><input type="number" value={form.quantity||""} onChange={function(e){setForm(Object.assign({},form,{quantity:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
-            {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>Current Value ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
+            {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Current Market Value":"Current Value"} ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
             <div style={{marginBottom:14}}><label style={secLabel}>Total Cost Basis ({cSym})</label><input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/><div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid — used for gain/loss calculation</div></div>
             {(atype.manual||atype.id==="bonds"||atype.id==="etf"||atype.id==="royalties"||atype.id==="valuables")&&<div style={{marginBottom:14}}>
-              <label style={secLabel}>Annual Income ({cSym}) — optional</label>
+              <label style={secLabel}>{atype.id==="real_estate"?"Annual Rental Income":"Annual Income"} ({cSym}) — optional</label>
               <input type="number" value={form.annualIncome||""} onChange={function(e){setForm(Object.assign({},form,{annualIncome:e.target.value}))}} placeholder={atype.id==="royalties"?"e.g. book/music royalties":atype.id==="etf"?"ETF dividend income p.a.":atype.id==="valuables"?"e.g. watch rental income":"e.g. rental income, bond coupons"} style={inputStyle}/>
               {(atype.id==="etf"||atype.id==="bonds")&&form.annualIncome>0&&<div style={{marginTop:8}}>
                 <label style={Object.assign({},secLabel,{marginBottom:4})}>Payment Frequency</label>
