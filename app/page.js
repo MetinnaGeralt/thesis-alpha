@@ -11367,11 +11367,10 @@ function WeeklyReview(){
           </div>;
         })()}
 
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:0}}>
-          {/* LEFT — business events ── */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderRight:isMobile?"none":"1px solid "+K.bdr}}>
+        <div>
+          <div style={{padding:isMobile?"12px 16px":"14px 24px"}}>
 
-                        {/* Post-earnings review needed */}
+            {/* Post-earnings review needed */}
             {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
               if(needReview.length===0)return null;
               return<div style={{marginBottom:14}}>
@@ -11407,10 +11406,12 @@ function WeeklyReview(){
             </div>}
 
           </div>
+          </div>
 
-          {/* RIGHT — ownership health (no prices) ── */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:isMobile?"1px solid "+K.bdr:"none"}}>
+          {/* OWNERSHIP HEALTH */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
             {portfolio.map(function(c2){
               var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
               var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
