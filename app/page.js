@@ -1,14 +1,26 @@
 "use client";
+export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
+import {
+  DARK, LIGHT, FOREST, PURPLE, BLOOMBERG, PAYPAL, THESIS_DARK, THESIS_LIGHT, THEMES,
+  FOLDERS, SAMPLE, METRICS, METRIC_MAP,
+  INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
+  SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
+} from './components/constants';
+import {
+  ldS, svS, cacheGet, cacheSet, xJSON, stripCite, autoFormat,
+  calcOwnerScore, classifyPortfolio, calcMastery,
+  resolveMetricId, isCustomKpi,
+  toFinnhubSymbol, isIntlTicker, estimatePayMonths,
+  dU, fD, fT, nId, gH, bT, eS,
+} from './components/utils';
 
 // ═══ SUPABASE AUTH ═══
 var supabase = typeof window !== "undefined" && process.env.NEXT_PUBLIC_SUPABASE_URL
   ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) : null;
 
 // ═══ STORAGE (local + cloud) ═══
-function ldS(k){try{var r=localStorage.getItem(k);return Promise.resolve(r?JSON.parse(r):null)}catch(e){return Promise.resolve(null)}}
-function svS(k,d){try{localStorage.setItem(k,JSON.stringify(d))}catch(e){}return Promise.resolve()}
 // Cloud sync via Supabase
 async function cloudLoad(userId){if(!supabase||!userId)return null;
   try{var res=await supabase.from("portfolios").select("data").eq("user_id",userId).single();
@@ -20,9 +32,6 @@ async function authFetch(url,opts){var token=await getAuthToken();var headers=Ob
 
 // ═══ FMP (server proxy — profiles & prices) ═══
 // ═══ API CACHE (1hr TTL — saves ~80% of FMP quota) ═══
-var _cache={};var CACHE_TTL=3600000;
-function cacheGet(k){var e=_cache[k];if(!e)return null;if(Date.now()-e.t>CACHE_TTL){delete _cache[k];return null}return e.d}
-function cacheSet(k,d){_cache[k]={d:d,t:Date.now()};return d}
 
 async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.log("[FMP cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/fmp?endpoint="+encodeURIComponent(ep));console.log("[FMP client] "+ep+" → HTTP "+r.status);if(!r.ok){console.warn("[FMP client] HTTP error for "+ep+": "+r.status);return null}var d=await r.json();console.log("[FMP client] "+ep+" → "+(Array.isArray(d)?d.length+" items":d===null?"null":typeof d));if(d)cacheSet("fmp:"+ep,d);return d}catch(e){console.warn("FMP:",ep,e);return null}}
 
@@ -30,395 +39,15 @@ async function fmp(ep){var cached=cacheGet("fmp:"+ep);if(cached!==null){console.
 async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){console.log("[Finnhub cache] "+ep+" → HIT");return cached}try{var r=await fetch("/api/finnhub?endpoint="+encodeURIComponent(ep));if(!r.ok){console.warn("[Finnhub] HTTP "+r.status+" for "+ep);return null}var d=await r.json();if(d&&d.error){console.warn("[Finnhub] API error for "+ep+":",d.error);return null}if(d)cacheSet("fh:"+ep,d);return d}catch(e){console.warn("[Finnhub] fetch error:",ep,e);return null}}
 
 // ═══ AI (server proxy) ═══
-function xJSON(text){if(!text)throw new Error("empty");var c=text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();var d=0,s=-1;
-  for(var i=0;i<c.length;i++){if(c[i]==="{"){if(d===0)s=i;d++}else if(c[i]==="}"){d--;if(d===0&&s>=0)return JSON.parse(c.substring(s,i+1))}}throw new Error("No JSON")}
-function stripCite(s){if(!s)return s;return s.replace(/<\/?cite[^>]*>/gi,"").replace(/<\/?antml:cite[^>]*>/gi,"").trim()}
 // Auto-format text: capitalize sentences, fix spacing, clean up
-function autoFormat(text){if(!text)return text;
-  var s=text.trim();
-  // Fix multiple spaces
-  s=s.replace(/  +/g," ");
-  // Fix multiple newlines
-  s=s.replace(/\n{3,}/g,"\n\n");
-  // Capitalize after sentence endings
-  s=s.replace(/(^|[.!?]\s+)([a-z])/g,function(m,p,c){return p+c.toUpperCase()});
-  // Capitalize first character
-  s=s.charAt(0).toUpperCase()+s.slice(1);
-  // Fix standalone "i " -> "I "
-  s=s.replace(/(^|\s)i(\s|'|$)/g,function(m,b,a){return b+"I"+a});
-  // Add period at end if missing
-  s=s.replace(/([a-zA-Z0-9%])$/,"$1.");
-  // Fix spacing after commas
-  s=s.replace(/,([^\s])/g,", $1");
-  // Clean up dash spacing
-  s=s.replace(/\s*-\s*/g," — ");
-  // Format paragraphs nicely
-  var paras=s.split(/\n\n+/);
-  return paras.map(function(p){return p.trim()}).filter(function(p){return p}).join("\n\n")}
 // ═══ NO AI — all data from free APIs (Finnhub + FMP) ═══
 
 // ═══ DATA FUNCTIONS ═══
 // Predefined metrics — each maps to an exact Finnhub field
-var METRICS=[
-  // Revenue & Growth
-  {id:"revenue",label:"Revenue",unit:"$B",cat:"Revenue",fh:"revenue"},{id:"revGrowth",label:"Revenue Growth YoY",unit:"%",cat:"Revenue"},{id:"revPerShare",label:"Revenue Per Share",unit:"$",cat:"Revenue"},{id:"orgGrowth",label:"Organic Revenue Growth",unit:"%",cat:"Revenue"},{id:"arr",label:"Annual Recurring Revenue (ARR)",unit:"$M",cat:"Revenue"},{id:"nrr",label:"Net Revenue Retention",unit:"%",cat:"Revenue"},{id:"mrr",label:"Monthly Recurring Revenue (MRR)",unit:"$M",cat:"Revenue"},{id:"arpu",label:"ARPU",unit:"$",cat:"Revenue"},{id:"bookings",label:"Bookings / Backlog",unit:"$B",cat:"Revenue"},
-  // Earnings & Profitability
-  {id:"eps",label:"EPS",unit:"$",cat:"Earnings",fh:"earnings"},{id:"epsGrowth",label:"EPS Growth YoY",unit:"%",cat:"Earnings"},{id:"ebitda",label:"EBITDA",unit:"$B",cat:"Earnings"},{id:"ebitdaPerShare",label:"EBITDA / Share",unit:"$",cat:"Earnings"},{id:"ebitdaMargin",label:"EBITDA Margin",unit:"%",cat:"Earnings"},{id:"netIncome",label:"Net Income",unit:"$B",cat:"Earnings"},{id:"adjEPS",label:"Adjusted EPS",unit:"$",cat:"Earnings"},
-  // Margins
-  {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Margins"},{id:"opMargin",label:"Operating Margin",unit:"%",cat:"Margins"},{id:"netMargin",label:"Net Margin",unit:"%",cat:"Margins"},{id:"fcfMargin",label:"FCF Margin",unit:"%",cat:"Margins"},{id:"rndMargin",label:"R&D / Revenue",unit:"%",cat:"Margins"},{id:"sgaMargin",label:"SG&A / Revenue",unit:"%",cat:"Margins"},
-  // Cash Flow
-  {id:"fcf",label:"Free Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"fcfPerShare",label:"FCF / Share",unit:"$",cat:"Cash Flow"},{id:"ocf",label:"Operating Cash Flow",unit:"$B",cat:"Cash Flow"},{id:"capex",label:"Capital Expenditure",unit:"$B",cat:"Cash Flow"},{id:"fcfConversion",label:"FCF Conversion",unit:"%",cat:"Cash Flow"},{id:"cashFromOps",label:"Cash from Operations",unit:"$B",cat:"Cash Flow"},
-  // Returns
-  {id:"roe",label:"ROE",unit:"%",cat:"Returns"},{id:"roa",label:"ROA",unit:"%",cat:"Returns"},{id:"roic",label:"ROIC",unit:"%",cat:"Returns"},{id:"roce",label:"ROCE",unit:"%",cat:"Returns"},{id:"rotce",label:"ROTCE",unit:"%",cat:"Returns"},
-  // Valuation
-  {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation"},{id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation"},{id:"ps",label:"P/S Ratio",unit:"x",cat:"Valuation"},{id:"evEbitda",label:"EV/EBITDA",unit:"x",cat:"Valuation"},{id:"evRevenue",label:"EV/Revenue",unit:"x",cat:"Valuation"},{id:"evFcf",label:"EV/FCF",unit:"x",cat:"Valuation"},{id:"bvps",label:"Book Value / Share",unit:"$",cat:"Valuation"},{id:"peg",label:"PEG Ratio",unit:"x",cat:"Valuation"},
-  // Health & Balance Sheet
-  {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health"},{id:"debtEquity",label:"Debt / Equity",unit:"x",cat:"Health"},{id:"netDebtEbitda",label:"Net Debt / EBITDA",unit:"x",cat:"Health"},{id:"interestCoverage",label:"Interest Coverage",unit:"x",cat:"Health"},{id:"cashOnHand",label:"Cash on Hand",unit:"$B",cat:"Health"},{id:"totalDebt",label:"Total Debt",unit:"$B",cat:"Health"},{id:"quickRatio",label:"Quick Ratio",unit:"x",cat:"Health"},
-  // Income & Dividends
-  {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income"},{id:"divPerShare",label:"Dividend / Share",unit:"$",cat:"Income"},{id:"payoutRatio",label:"Payout Ratio",unit:"%",cat:"Income"},{id:"divGrowth",label:"Dividend Growth YoY",unit:"%",cat:"Income"},{id:"buybackYield",label:"Buyback Yield",unit:"%",cat:"Income"},{id:"shareholderYield",label:"Shareholder Yield",unit:"%",cat:"Income"},
-  // SaaS / Tech
-  {id:"grossRetention",label:"Gross Retention Rate",unit:"%",cat:"SaaS"},{id:"netRetention",label:"Net Dollar Retention",unit:"%",cat:"SaaS"},{id:"cac",label:"Customer Acquisition Cost",unit:"$",cat:"SaaS"},{id:"ltv",label:"Customer LTV",unit:"$",cat:"SaaS"},{id:"ltvCac",label:"LTV/CAC Ratio",unit:"x",cat:"SaaS"},{id:"churnRate",label:"Churn Rate",unit:"%",cat:"SaaS"},{id:"ruleOf40",label:"Rule of 40",unit:"%",cat:"SaaS"},{id:"magicNumber",label:"Magic Number",unit:"x",cat:"SaaS"},
-  // Users & Engagement
-  {id:"mau",label:"Monthly Active Users (MAU)",unit:"M",cat:"Users"},{id:"dau",label:"Daily Active Users (DAU)",unit:"M",cat:"Users"},{id:"subscribers",label:"Subscribers",unit:"M",cat:"Users"},{id:"customers",label:"Customers",unit:"k",cat:"Users"},{id:"gmv",label:"GMV (Gross Merch Value)",unit:"$B",cat:"Users"},{id:"takeRate",label:"Take Rate",unit:"%",cat:"Users"},
-  // Segment-specific
-  {id:"sameStoreSales",label:"Same-Store Sales Growth",unit:"%",cat:"Retail"},{id:"storeCount",label:"Store Count",unit:"#",cat:"Retail"},{id:"revPerSqFt",label:"Revenue / Sq Ft",unit:"$",cat:"Retail"},{id:"occupancy",label:"Occupancy Rate",unit:"%",cat:"REIT"},{id:"ffo",label:"FFO / Share",unit:"$",cat:"REIT"},{id:"nim",label:"Net Interest Margin",unit:"%",cat:"Banking"},{id:"cet1",label:"CET1 Ratio",unit:"%",cat:"Banking"},{id:"combinedRatio",label:"Combined Ratio",unit:"%",cat:"Insurance"},{id:"ber",label:"Break-Even Ratio",unit:"%",cat:"Insurance"}
-];
-var METRIC_MAP={};METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
 // ── Investment Style System ──
-var INVEST_STYLES=[
-  {id:"quality",label:"Quality Compounder",icon:"shield",color:"#22C55E",
-    desc:"Wide moat, durable earnings, compound forever. Think Visa, Costco, MSFT.",
-    kpis:["roic","grossMargin","opMargin","fcfPerShare","roe"],
-    thesisPrompt:"What makes this a durable competitive advantage? How does the moat compound over time?",
-    moatPrompt:"What protects this business from competition for the next 10+ years?",
-    riskPrompt:"What could erode the moat? Disruption, complacency, regulatory change?",
-    sellPrompt:"At what valuation does even a great compounder become a sell?"},
-  {id:"growth",label:"High Growth",icon:"trending",color:"#3B82F6",
-    desc:"Rapid revenue growth, path to profitability matters. Think early CrowdStrike, Shopify.",
-    kpis:["revGrowth","grossMargin","opMargin","revPerShare","epsGrowth"],
-    thesisPrompt:"What's the total addressable market? Why will this company win it?",
-    moatPrompt:"What creates winner-take-most dynamics? Network effects, switching costs, data moats?",
-    riskPrompt:"Can growth sustain? Competition, customer concentration, burn rate?",
-    sellPrompt:"What growth deceleration would signal the thesis is broken?"},
-  {id:"prerev",label:"Pre-Revenue / Speculative",icon:"flask",color:"#EC4899",
-    desc:"No financials yet — catalysts and optionality matter. Think biotech, early-stage tech.",
-    kpis:["currentRatio","debtEquity"],
-    thesisPrompt:"What's the specific catalyst? FDA approval, product launch, key partnership?",
-    moatPrompt:"What IP, regulatory, or first-mover advantage exists? What's the optionality?",
-    riskPrompt:"Cash runway? Binary risk events? Dilution risk? What kills this if it fails?",
-    sellPrompt:"What catalyst failure or timeline miss would make you exit?"},
-  {id:"dividend",label:"Dividend / Income",icon:"dollar",color:"#F59E0B",
-    desc:"Stable cash flows, growing dividends. Think JNJ, Realty Income, Coca-Cola.",
-    kpis:["divYield","fcfPerShare","debtEquity","roe","opMargin"],
-    thesisPrompt:"Why is this dividend safe and growing? What drives the underlying cash flow?",
-    moatPrompt:"What ensures pricing power and demand stability through economic cycles?",
-    riskPrompt:"Payout ratio sustainability? Interest rate sensitivity? Earnings cyclicality?",
-    sellPrompt:"What dividend cut, yield threshold, or growth stall would trigger a sell?"},
-  {id:"garp",label:"GARP",icon:"bar",color:"#8B5CF6",
-    desc:"Growth at a reasonable price. PEG matters. Think FICO, Danaher, Mastercard.",
-    kpis:["revGrowth","epsGrowth","pe","grossMargin","roic"],
-    thesisPrompt:"Is this growth fairly priced? What's the PEG ratio telling you?",
-    moatPrompt:"What competitive advantage sustains above-market growth without excessive risk?",
-    riskPrompt:"Multiple compression risk? Can growth justify the premium? Cyclical exposure?",
-    sellPrompt:"At what P/E or PEG does the risk/reward no longer favor holding?"},
-  {id:"value",label:"Deep Value",icon:"search",color:"#6366F1",
-    desc:"Trading below intrinsic value. Margin of safety is everything. Think Buffett's cigar butts.",
-    kpis:["pb","pe","currentRatio","debtEquity","bvps"],
-    thesisPrompt:"What's the intrinsic value? Why is the market mispricing this asset?",
-    moatPrompt:"Is there hidden asset value, franchise value, or earnings power the market ignores?",
-    riskPrompt:"Value trap risk? Is it cheap for a reason? Management quality? Balance sheet?",
-    sellPrompt:"What's your intrinsic value estimate? At what price do you sell?"},
-  {id:"turnaround",label:"Turnaround",icon:"gear",color:"#EF4444",
-    desc:"Broken but fixable. Catalyst for recovery needed. Think post-crisis plays.",
-    kpis:["debtEquity","opMargin","currentRatio","revGrowth","fcfPerShare"],
-    thesisPrompt:"What's broken and what's the specific fix? New management, restructuring, spinoff?",
-    moatPrompt:"What underlying franchise value survives the current problems?",
-    riskPrompt:"Can the company survive long enough? Liquidity risk? Execution risk on the turnaround plan?",
-    sellPrompt:"What timeline for recovery? What would prove the turnaround thesis is dead?"}
-];
-var STYLE_MAP={};INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
-var INVESTOR_PROFILES=[
-  {id:"terry",name:"Terry Smith",fund:"Fundsmith",
-   tagline:"Buy wonderful companies at fair prices. Never sell.",
-   focus:"Financial quality: ROIC, gross margin, FCF conversion. If the numbers aren't exceptional, the moat isn't real.",
-   color:"#22C55E",icon:"shield",
-   dashDefault:"fundamentals",
-   fundCols:["grossMargin","opMargin","roic","fcfYield","revGrowth"],
-   listCols:{conviction:true,kpis:true},
-   morningPriority:["kpi_streak","conv_size","above_iv"],
-   dossierFirst:"numbers",
-   quote:"We do not invest in businesses we do not understand or which we believe have poor prospects.",
-   newWidget:"quality_scorecard"},
-  {id:"sleep",name:"Nick Sleep",fund:"Nomad Investment Partnership",
-   tagline:"Scale economies shared. Find the businesses that get better for customers as they get bigger.",
-   focus:"Unit economics, reinvestment rate, customer obsession. The financial metrics are a lagging indicator — the flywheel is what matters.",
-   color:"#3B82F6",icon:"trending",
-   dashDefault:"list",
-   fundCols:["revGrowth","grossMargin","fcfYield","revPerShare"],
-   listCols:{conviction:true,kpis:false,mastery:true},
-   morningPriority:["stale_thesis","conv_size","anniversary"],
-   dossierFirst:"story",
-   quote:"The best investments I have made have been where I could see ten years ahead.",
-   newWidget:"reinvestment_widget"},
-  {id:"munger",name:"Charlie Munger",fund:"Berkshire Hathaway",
-   tagline:"All I want to know is where I am going to die, so I will never go there.",
-   focus:"Moat first. Business model classification. Circle of competence. Inversion. The financials confirm — they don't decide.",
-   color:"#F59E0B",icon:"castle",
-   dashDefault:"ledger",
-   fundCols:["grossMargin","roic","opMargin","netDebtEbitda"],
-   listCols:{conviction:true,mastery:true,kpis:true},
-   morningPriority:["conv_size","stale_thesis","above_iv"],
-   dossierFirst:"moat",
-   quote:"It is remarkable how much long-term advantage we have gotten by trying to be consistently not stupid.",
-   newWidget:"checklist_widget"},
-  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",
-   tagline:"Know what you own and know why you own it.",
-   focus:"Can you explain the business simply? Growth relative to price. Everyday observation. The best stock is one you understand deeply.",
-   color:"#8B5CF6",icon:"search",
-   dashDefault:"list",
-   fundCols:["revGrowth","epsGrowth","pe","grossMargin"],
-   listCols:{conviction:true,kpis:true},
-   morningPriority:["stale_thesis","conv_size","kpi_streak"],
-   dossierFirst:"story",
-   quote:"Behind every stock is a company. Find out what it is doing.",
-   newWidget:"lynch_widget"},
-  {id:"buffett",name:"Warren Buffett",fund:"Berkshire Hathaway",
-   tagline:"Price is what you pay. Value is what you get.",
-   focus:"Intrinsic value, margin of safety, economic moats, management quality. Only invest when the price makes sense relative to business value.",
-   color:"#EF4444",icon:"dollar",
-   dashDefault:"list",
-   fundCols:["grossMargin","roic","roe","pe","fcfYield"],
-   listCols:{conviction:true,kpis:true,mastery:true},
-   morningPriority:["above_iv","conv_size","kpi_streak"],
-   dossierFirst:"ledger",
-   quote:"Our favourite holding period is forever.",
-   newWidget:"iv_widget"},
-  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",
-   tagline:"Three legs: extraordinary business, exceptional management, reinvestment opportunity.",
-   focus:"Compounding machines. Return on equity, reinvestment rate, and management quality. Find businesses that can compound at high rates for decades and do nothing.",
-   color:"#F97316",icon:"trending",
-   dashDefault:"fundamentals",
-   fundCols:["roe","roic","revGrowth","fcfYield","grossMargin"],
-   listCols:{conviction:true,kpis:true,mastery:true},
-   morningPriority:["stale_thesis","kpi_streak","anniversary"],
-   dossierFirst:"story",
-   quote:"The compounding of money over long periods of time is not limited by markets, economies, or politics. It is limited only by the quality of the businesses in which we invest.",
-   newWidget:"akre_widget"},
-  {id:"custom",name:"Custom",fund:"",
-   tagline:"Your own framework.",
-   focus:"No preset. Configure the dashboard exactly as you like.",
-   color:"#6B7280",icon:"gear",
-   dashDefault:"fundamentals",
-   fundCols:["revGrowth","grossMargin","opMargin","roic","netDebtEbitda"],
-   listCols:{conviction:true,kpis:true},
-   morningPriority:[],
-   dossierFirst:"story",
-   quote:"",
-   newWidget:null}
-];
-var PROFILE_MAP={};INVESTOR_PROFILES.forEach(function(p){PROFILE_MAP[p.id]=p});
 
-var SUPERINVESTORS=[
-  {id:"berkshire",name:"Warren Buffett",fund:"Berkshire Hathaway",style:"Quality Value",desc:"Wonderful companies at fair prices. Concentrated, low turnover, moat-focused.",
-    holdings:["AAPL","BAC","AXP","KO","CVX","OXY","MCO","KHC","CB","DVA","ALLY","VRSN","NU","AMZN","LLY"],
-    traits:{quality:0.9,value:0.7,growth:0.2,income:0.5,concentration:0.8,turnover:0.1}},
-  {id:"klarman",name:"Seth Klarman",fund:"Baupost Group",style:"Deep Value",desc:"Margin of safety obsessed. Contrarian, patient, often holds cash.",
-    holdings:["LBTYA","LBTYK","QRTEA","FOXA","GOOGL","INTC","EBAY","WBD","PYPL","META","PARA","CRH","BEPC"],
-    traits:{quality:0.4,value:0.95,growth:0.2,income:0.2,concentration:0.5,turnover:0.3}},
-  {id:"ackman",name:"Bill Ackman",fund:"Pershing Square",style:"Activist Quality",desc:"Concentrated bets on high-quality businesses. Activist approach, pushes for value creation.",
-    holdings:["GOOG","CMG","HLT","QSR","HHH","CP","LOW","NKE","UBER"],
-    traits:{quality:0.8,value:0.5,growth:0.5,income:0.2,concentration:0.95,turnover:0.3}},
-  {id:"smith",name:"Terry Smith",fund:"Fundsmith",style:"Quality Compounder",desc:"Buy good companies, don't overpay, do nothing. Ultra-low turnover, high ROIC focus.",
-    holdings:["META","MSFT","NOVO-B","L'OREAL","IDEXX","VISA","ESTC","AMZN","MASI","WAT","POOL","FICO","PAYC","VEEV"],
-    traits:{quality:0.95,value:0.3,growth:0.5,income:0.3,concentration:0.4,turnover:0.05}},
-  {id:"hohn",name:"Chris Hohn",fund:"TCI Fund",style:"Activist FCF",desc:"Concentrated on free cash flow machines. Activist shareholder, pushes capital returns.",
-    holdings:["GE","V","MSFT","MCO","SPGI","MA","GOOG","CNI","CSGP"],
-    traits:{quality:0.85,value:0.4,growth:0.4,income:0.3,concentration:0.8,turnover:0.15}},
-  {id:"lynch",name:"Peter Lynch",fund:"Magellan Fund",style:"Growth at Reasonable Price",desc:"Know what you own. Everyday observation, PEG ratio, growth with margin of safety.",
-    holdings:["COST","HD","SBUX","NKE","TJX","WMT","MCD","PG","UNH","ABBV","JNJ","PEP","AMGN","TMO"],
-    traits:{quality:0.6,value:0.5,growth:0.7,income:0.4,concentration:0.2,turnover:0.4}},
-  {id:"greenblatt",name:"Joel Greenblatt",fund:"Gotham Asset Mgmt",style:"Magic Formula",desc:"High ROIC + high earnings yield. Systematic, quantitative approach to value.",
-    holdings:["GOOG","META","MSFT","AAPL","AMZN","BRK-B","UNH","JNJ","PG","V","MA","HD","COST"],
-    traits:{quality:0.6,value:0.8,growth:0.4,income:0.2,concentration:0.3,turnover:0.5}},
-  {id:"einhorn",name:"David Einhorn",fund:"Greenlight Capital",style:"Value + Shorts",desc:"Classic value investor who also shorts overvalued stocks. Contrarian, forensic accounting focus.",
-    holdings:["GPRE","TECK","GTN","ODP","CNX","GEN","JACK","CC","BHF","PRDO"],
-    traits:{quality:0.3,value:0.9,growth:0.2,income:0.3,concentration:0.6,turnover:0.4}},
-  {id:"marks",name:"Howard Marks",fund:"Oaktree Capital",style:"Distressed/Contrarian",desc:"Second-level thinker. Buys when others panic. Focused on risk control and cycles.",
-    holdings:["OC","TEL","WMB","BKNG","LYB","NRG","PVH","CZR","HCA","DAL"],
-    traits:{quality:0.4,value:0.85,growth:0.2,income:0.4,concentration:0.4,turnover:0.3}},
-  {id:"kantesaria",name:"Dev Kantesaria",fund:"Valley Forge Capital",style:"Quality Compounder",desc:"15%+ compounders with minimal risk of permanent loss. Ultra-concentrated, high conviction.",
-    holdings:["FICO","SPGI","MA","MCO","V","INTU","ROP","GOOG","MSFT"],
-    traits:{quality:0.95,value:0.3,growth:0.5,income:0.1,concentration:0.9,turnover:0.05}},
-  {id:"pabrai",name:"Mohnish Pabrai",fund:"Pabrai Investment Funds",style:"Cloner Value",desc:"Shamelessly clones the best ideas. Concentrated, high-conviction, Munger-inspired.",
-    holdings:["COAL","TRMD","AMPS","JSPR","BATT","SATS","EXPE","TROW"],
-    traits:{quality:0.5,value:0.8,growth:0.4,income:0.2,concentration:0.9,turnover:0.3}},
-  {id:"burry",name:"Michael Burry",fund:"Scion Asset Mgmt",style:"Deep Value Contrarian",desc:"The Big Short. Extreme contrarian, forensic research, often against consensus.",
-    holdings:["BABA","JD","GOOG","BKNG","ORLY","HCA","STLA","REAL"],
-    traits:{quality:0.3,value:0.9,growth:0.3,income:0.1,concentration:0.7,turnover:0.7}},
-  {id:"ainslie",name:"Lee Ainslie",fund:"Maverick Capital",style:"Long/Short Quality Growth",desc:"Growth-oriented with hedging. Deep fundamental research, sector-focused.",
-    holdings:["MSFT","AMZN","META","GOOG","NVDA","CRM","SNOW","UBER","DASH","ABNB","COIN","DDOG"],
-    traits:{quality:0.6,value:0.2,growth:0.9,income:0.0,concentration:0.4,turnover:0.5}},
-  {id:"gayner",name:"Tom Gayner",fund:"Markel",style:"Patient Quality",desc:"Insurance-funded long-term equity portfolio. Patient, quality-focused, Buffett-inspired.",
-    holdings:["BRK-B","GOOG","MSFT","DIS","BAM","AMZN","V","MA","HD","CME","WMT","KKR"],
-    traits:{quality:0.8,value:0.5,growth:0.4,income:0.3,concentration:0.3,turnover:0.1}},
-  {id:"akre",name:"Chuck Akre",fund:"Akre Capital Management",style:"Compounding Machines",desc:"Three-legged stool: extraordinary business, exceptional management, reinvestment opportunity. Buy and hold forever.",
-    holdings:["MA","BN","KKR","V","MCO","FICO","CPRT","ORLY","MSCI","SPGI","CSGP","CCCS"],
-    traits:{quality:0.95,value:0.4,growth:0.7,income:0.05,concentration:0.6,turnover:0.03}}
-];
-var MSTAR_RATINGS=["Wide","Narrow","None","Not Rated"];
-function calcOwnerScore(cos){
-  var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
-  if(portfolio.length===0)return{total:0,breakdown:{thesis:0,kpi:0,journal:0,conviction:0,moat:0,balance:0},max:100};
-  // 1. Thesis completeness (20 pts)
-  var thesisP=0;portfolio.forEach(function(c){var score=0;
-    if(c.thesisNote&&c.thesisNote.length>20)score+=1;
-    if(c.thesisNote&&(c.thesisNote.indexOf("## CORE")>=0||c.thesisNote.length>200))score+=1;
-    if(c.thesisNote&&(c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("moat")>=0))score+=1;
-    if(c.thesisNote&&(c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("risk")>=0))score+=1;
-    if(c.thesisNote&&(c.thesisNote.indexOf("## SELL")>=0||c.thesisNote.indexOf("sell")>=0))score+=1;
-    if(c.thesisVersions&&c.thesisVersions.length>1)score+=1;
-    // Conviction drift penalty: conviction not updated in 120+ days
-    if(c.conviction>0&&c.convictionHistory&&c.convictionHistory.length>0){var lastCH=c.convictionHistory[c.convictionHistory.length-1];var chAge=lastCH.date?Math.ceil((new Date()-new Date(lastCH.date))/864e5):999;if(chAge>120)score=Math.max(0,score-1)}
-    // Staleness penalty: decay 1pt per 90 days without update
-    if(c.thesisNote&&c.thesisUpdatedAt){var ageDays=Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5);if(ageDays>180)score=Math.max(0,score-2);else if(ageDays>90)score=Math.max(0,score-1)}
-    thesisP+=Math.min(score,6)});
-  thesisP=Math.round(thesisP/portfolio.length/6*20);
-  // 2. KPI discipline (20 pts)
-  var kpiP=0;portfolio.forEach(function(c){var score=0;
-    if(c.kpis&&c.kpis.length>=2)score+=2;if(c.kpis&&c.kpis.length>=4)score+=1;
-    var tracked=(c.kpis||[]).filter(function(k){return k.lastResult}).length;
-    if(tracked>0)score+=2;if(c.earningsHistory&&c.earningsHistory.length>=2)score+=1;
-    kpiP+=Math.min(score,5)});
-  kpiP=Math.round(kpiP/portfolio.length/5*20);
-  // 3. Journal consistency (20 pts)
-  var jrnP=0;portfolio.forEach(function(c){var score=0;
-    var decs=c.decisions||[];if(decs.length>=1)score+=2;if(decs.length>=3)score+=1;
-    var withReason=decs.filter(function(d){return d.reasoning&&d.reasoning.length>10}).length;if(withReason>=1)score+=1;
-    var withOutcome=decs.filter(function(d){return d.outcome}).length;if(withOutcome>=1)score+=1;
-    jrnP+=Math.min(score,5)});
-  jrnP=Math.round(jrnP/portfolio.length/5*20);
-  // 4. Conviction hygiene (15 pts)
-  var convP=0;portfolio.forEach(function(c){var score=0;
-    if(c.conviction>0)score+=2;if(c.convictionHistory&&c.convictionHistory.length>=2)score+=2;
-    var lastConv=c.convictionHistory&&c.convictionHistory.length?c.convictionHistory[c.convictionHistory.length-1]:null;
-    if(lastConv&&lastConv.biasFlags)score+=1;
-    convP+=Math.min(score,5)});
-  convP=Math.round(convP/portfolio.length/5*15);
-  // 5. Moat vigilance (10 pts)
-  var moatP=0;portfolio.forEach(function(c){var score=0;var mt=c.moatTypes||{};
-    var active=Object.keys(mt).filter(function(k){return mt[k]&&mt[k].active}).length;
-    if(active>=1)score+=2;if(active>=2)score+=1;
-    if(c.morningstarMoat)score+=1;if(c.moatTrend)score+=1;
-    moatP+=Math.min(score,5)});
-  moatP=Math.round(moatP/portfolio.length/5*10);
-  // 6. Portfolio balance (15 pts)
-  var balP=0;if(portfolio.length>=3)balP+=5;else if(portfolio.length>=2)balP+=3;
-  var sectors={};portfolio.forEach(function(c){var s=c.sector||"Other";sectors[s]=(sectors[s]||0)+1});
-  var maxConc=Math.max.apply(null,Object.values(sectors).length?Object.values(sectors):[1])/Math.max(portfolio.length,1);
-  if(maxConc<=0.4)balP+=5;else if(maxConc<=0.6)balP+=3;
-  var styles={};portfolio.forEach(function(c){if(c.investStyle)styles[c.investStyle]=1});
-  if(Object.keys(styles).length>=2)balP+=5;else if(Object.keys(styles).length>=1)balP+=3;
-  balP=Math.min(balP,15);
-  var totalP=thesisP+kpiP+jrnP+convP+moatP+balP;
-  return{total:totalP,breakdown:{thesis:thesisP,kpi:kpiP,journal:jrnP,conviction:convP,moat:moatP,balance:balP},max:100}}
-function classifyPortfolio(portfolio){
-  if(!portfolio||portfolio.length===0)return{summary:"",color:"#a0a0a0"};
-  // ── Per-company signal extraction (position-weighted) ─────────────────
-  var wGrowth=0,wYield=0,wROIC=0,wGrossMargin=0,wPE=0;
-  var growthN=0,yieldN=0,roicN=0,marginN=0,peN=0;
-  portfolio.forEach(function(c){
-    var pos=c.position||{};
-    var w=Math.max((pos.shares||0)*(pos.currentPrice||0),1);
-    var snap=c.financialSnapshot||{};
-    if(snap.revGrowth&&snap.revGrowth.numVal!=null){wGrowth+=snap.revGrowth.numVal*w;growthN+=w}
-    var dps=c.divPerShare||c.lastDiv||0;
-    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
-    var divYld=pos.currentPrice>0?(dps*mult/pos.currentPrice*100):0;
-    if(divYld>=1.5){wYield+=divYld*w;yieldN+=w}
-    if(snap.roic&&snap.roic.numVal!=null){wROIC+=snap.roic.numVal*w;roicN+=w}
-    if(snap.grossMargin&&snap.grossMargin.numVal!=null){wGrossMargin+=snap.grossMargin.numVal*w;marginN+=w}
-    if(snap.pe&&snap.pe.numVal!=null&&snap.pe.numVal>0&&snap.pe.numVal<100){wPE+=snap.pe.numVal*w;peN+=w}
-  });
-  var avgGrowth = growthN>0 ? wGrowth/growthN   : null;
-  var avgYield  = yieldN>0  ? wYield/yieldN      : 0;
-  var avgROIC   = roicN>0   ? wROIC/roicN        : null;
-  var avgMargin = marginN>0 ? wGrossMargin/marginN : null;
-  var avgPE     = peN>0     ? wPE/peN            : null;
-  var n=portfolio.length;
-  var divPayerCount=portfolio.filter(function(c){
-    var pos=c.position||{};var dps=c.divPerShare||c.lastDiv||0;
-    var mult=c.divFrequency==="monthly"?12:c.divFrequency==="semi"?2:c.divFrequency==="annual"?1:4;
-    return pos.currentPrice>0&&(dps*mult/pos.currentPrice*100)>=1.5}).length;
-  var divFraction=divPayerCount/n;
-  // ── Derive boolean signals ─────────────────────────────────────────────
-  var isConcentrated = n<=5;
-  var isHighGrowth   = avgGrowth!==null && avgGrowth>=18;
-  var isMidGrowth    = avgGrowth!==null && avgGrowth>=9 && avgGrowth<18;
-  var isLowGrowth    = avgGrowth!==null && avgGrowth<9;
-  var isQuality      = (avgROIC!==null&&avgROIC>=15)||(avgMargin!==null&&avgMargin>=40);
-  var isDeepIncome   = avgYield>=3.5 && divFraction>=0.5;
-  var isDivGrowth    = avgYield>=2.0 && divFraction>=0.4 && !isHighGrowth;
-  var isValue        = avgPE!==null && avgPE<15 && !isHighGrowth && !isMidGrowth;
-  var hasData        = growthN>0||roicN>0||marginN>0;
-  // investStyle tiebreaker (no financial data)
-  var styleCounts={};
-  portfolio.forEach(function(c){var s=c.investStyle||"";if(s)styleCounts[s]=(styleCounts[s]||0)+1});
-  var topStyle=Object.keys(styleCounts).sort(function(a,b){return styleCounts[b]-styleCounts[a]})[0]||"";
-  // ── Build sentence from stacked signals ────────────────────────────────
-  // Part 1: concentration prefix
-  var conc = isConcentrated ? "Concentrated, " : (n>=10 ? "Diversified, " : "");
-  // Part 2: core style (the most honest signal we have)
-  var core, color;
-  if(isQuality && isHighGrowth){core="high-growth quality compounder";color="#22C55E";}
-  else if(isQuality && isMidGrowth){core="quality compounder";color="#22C55E";}
-  else if(isQuality && isDeepIncome){core="quality income portfolio";color="#4ade80";}
-  else if(isQuality){core="quality-focused portfolio";color="#22C55E";}
-  else if(isHighGrowth){core="growth-oriented portfolio";color="#6ea8fe";}
-  else if(isDeepIncome && isLowGrowth){core="income-focused portfolio";color="#fbbf24";}
-  else if(isDivGrowth && isMidGrowth){core="dividend-growth portfolio";color="#4ade80";}
-  else if(isDivGrowth){core="income & growth portfolio";color="#a3e635";}
-  else if(isMidGrowth){core="balanced growth portfolio";color="#6ea8fe";}
-  else if(isValue){core="value-oriented portfolio";color:"#f87171";color="#f87171";}
-  else if(!hasData){
-    // fall back to style tags
-    var styleMap={"growth":"growth-oriented","aggressive":"high-growth","quality":"quality-focused","compounder":"quality compounder","value":"value-oriented","income":"income-focused","dividend":"dividend-income"};
-    core=(styleMap[topStyle]||"balanced")+" portfolio";color="#a0a0a0";}
-  else{core="balanced portfolio";color="#a0a0a0";}
-  // Part 3: optional modifier (avoids redundancy with core)
-  var mod="";
-  if(isDivGrowth&&!core.includes("dividend")&&!core.includes("income")){mod=", with growing dividends";}
-  else if(isDeepIncome&&!core.includes("income")&&avgYield>0){mod=", income-generating";}
-  else if(avgGrowth!==null&&avgGrowth>=25&&!core.includes("high-growth")){mod=", high-growth";}
-  // Capitalise first letter
-  var sentence=(conc+core+mod).trim();
-  sentence=sentence.charAt(0).toUpperCase()+sentence.slice(1);
-  return{summary:sentence,color:color,label:core}
-}
-function calcMastery(c){
-  var d={added:true,thesis:false,tracked:false,monitored:false,disciplined:false,mastered:false};
-  // Star 2: Thesis written (core + at least 1 section)
-  if(c.thesisNote&&c.thesisNote.trim().length>30){var hasSec=c.thesisNote.indexOf("## MOAT")>=0||c.thesisNote.indexOf("## RISKS")>=0||c.thesisNote.indexOf("## SELL")>=0;if(hasSec)d.thesis=true}
-  // Star 3: KPIs defined + conviction rated
-  if(c.kpis&&c.kpis.length>=2&&c.conviction>0)d.tracked=true;
-  // Star 4: Earnings checked + moat classified
-  var mt=c.moatTypes||{};var hasMoat=Object.keys(mt).some(function(k){return mt[k]&&mt[k].active});
-  if(c.earningsHistory&&c.earningsHistory.length>=1&&hasMoat)d.monitored=true;
-  // Star 5: Decision logged + thesis reviewed within 90 days
-  var fresh=c.thesisUpdatedAt&&Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5)<90;
-  if(c.decisions&&c.decisions.length>=1&&fresh)d.disciplined=true;
-  // Star 6: 3+ quarters earnings, 3+ conviction updates, fresh thesis
-  if(c.earningsHistory&&c.earningsHistory.length>=3&&c.convictionHistory&&c.convictionHistory.length>=3&&fresh)d.mastered=true;
-  var stars=1;if(d.thesis)stars=2;if(d.thesis&&d.tracked)stars=3;if(stars>=3&&d.monitored)stars=4;if(stars>=4&&d.disciplined)stars=5;if(stars>=5&&d.mastered)stars=6;
-  var lb=["Added","Thesis","Tracked","Monitored","Disciplined","Mastered"];
-  var cl=["#6B7280","#3B82F6","#F59E0B","#EC4899","#8B5CF6","#22C55E"];
-  return{stars:stars,max:6,label:lb[stars-1],color:cl[stars-1],pct:Math.round(stars/6*100),details:d}}
 
 // Legacy name → metricId mapping for existing user data
-var LEGACY_MAP={};METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
-var _la={"revenue growth":"revGrowth","eps growth":"epsGrowth","gross margin":"grossMargin","operating margin":"opMargin","net margin":"netMargin","fcf margin":"fcfMargin","free cash flow margin":"fcfMargin","r&d margin":"rndMargin","r&d to revenue":"rndMargin","sga margin":"sgaMargin","sga to revenue":"sgaMargin","return on equity":"roe","return on assets":"roa","return on invested capital":"roic","p/e":"pe","pe ratio":"pe","p/e ratio":"pe","p/b":"pb","price to book":"pb","p/s":"ps","price to sales":"ps","ev/ebitda":"evEbitda","ev/fcf":"evFcf","ev/revenue":"evRevenue","peg":"peg","peg ratio":"peg","current ratio":"currentRatio","quick ratio":"quickRatio","debt to equity":"debtEquity","debt/equity":"debtEquity","d/e ratio":"debtEquity","net debt/ebitda":"netDebtEbitda","interest coverage":"interestCoverage","dividend yield":"divYield","book value per share":"bvps","free cash flow":"fcfPerShare","fcf":"fcfPerShare","fcf yield":"fcfYield","fcf per share":"fcfPerShare","revenue per share":"revPerShare","ebitda":"ebitdaPerShare","ebitda margin":"ebitdaPerShare","rev/share":"revPerShare","revenue growth yoy":"revGrowth","eps growth yoy":"epsGrowth","shareholder yield":"shareholderYield","total shareholder yield":"shareholderYield","buyback yield":"buybackYield","graham number":"grahamNum","graham":"grahamNum","vs graham":"grahamDiscount"};
-Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
-function resolveMetricId(kpi){if(kpi.metricId)return kpi.metricId;var n=kpi.name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return LEGACY_MAP[n]||null}
-function isCustomKpi(name){if(METRIC_MAP[name])return false;var n=name.toLowerCase().replace(/[^a-z0-9 /()]/g,"").trim();return!LEGACY_MAP[n]}
 
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
@@ -469,20 +98,9 @@ async function fetchQuote(ticker){
     try{var fq=await fmp("quote/"+fmpTickers[_fi]);if(fq&&Array.isArray(fq)&&fq[0]&&fq[0].price>0){var _fq=fq[0];return{price:_fq.price,prevClose:_fq.previousClose||0,change:_fq.change||0,changePct:_fq.changesPercentage||0,source:"fmp"};}}catch(e){}}
   return null;}
 // Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
-var KNOWN_MONTHLY=["O","MAIN","STAG","AGNC","SLG","GOOD","LTC","SPHD","JEPI","JEPQ","QYLD","RYLD","DIVO","EPR","LAND","PSEC","GAIN"];
 // Convert exchange-suffixed ticker to Finnhub exchange format
 // e.g. RY.TO → RY:TSX, TOI.V → TOI:TSXV, VOD.L → VOD:LSE
-function toFinnhubSymbol(ticker){
-  var SUFFIX_MAP={".TO":":TSX",".V":":TSXV",".L":":LSE",".DE":":XETRA",".PA":":EPA",
-    ".AS":":ENXTAM",".HK":":HKEX",".AX":":ASX",".NS":":NSE",".BO":":BSE",
-    ".MI":":XMIL",".MC":":XMAD",".SW":":SWX",".ST":":STO",".OL":":OSLO",
-    ".CO":":CPH",".HE":":HEL",".BR":":ENXTBR",".LS":":ENXTLS",".AT":":XATH",
-    ".NZ":":NZX"};
-  var t=ticker.toUpperCase();
-  for(var sfx in SUFFIX_MAP){if(t.endsWith(sfx))return t.slice(0,t.length-sfx.length)+SUFFIX_MAP[sfx]}
-  return ticker}
 // Detect if a ticker is non-US (has exchange suffix)
-function isIntlTicker(ticker){return /\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i.test(ticker)}
 
 async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
   var met=await finnhub("stock/metric?symbol="+toFinnhubSymbol(ticker)+"&metric=all");
@@ -529,25 +147,6 @@ async function fetchDividendInfo(ticker){try{
   return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDivident||0,divCagr:divCagr}
 }catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
 // Shared: estimate which months a company pays dividends based on frequency + exDivDate
-function estimatePayMonths(c){
-  var freq=c.divFrequency||"quarterly";
-  if(freq==="monthly")return[0,1,2,3,4,5,6,7,8,9,10,11];
-  if(freq==="none")return[];
-  // Use actual ex-div date if available — most accurate
-  if(c.exDivDate&&c.exDivDate!=""){
-    var exM=new Date(c.exDivDate).getMonth();
-    // Advance to a future or recent ex-div (dates can be stale)
-    if(freq==="annual")return[exM];
-    if(freq==="semi")return[exM,(exM+6)%12];
-    // Quarterly: derive cycle from last known ex-div month
-    return[exM,(exM+3)%12,(exM+6)%12,(exM+9)%12]}
-  // No ex-div date: use ticker hash to spread companies across cycles
-  // so not every unknown payer lands in the same 3 months
-  if(freq==="annual")return[5]; // June default
-  if(freq==="semi")return[2,8]; // Mar/Sep default
-  // Quarterly: pick cycle based on ticker first char to spread load
-  var t=c.ticker||"A";var code=t.charCodeAt(0);var offset=code%3; // 0,1,2
-  return[offset,(offset+3)%12,(offset+6)%12,(offset+9)%12]}
 // FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
 var _fincache={};
 async function fetchFinancialStatements(ticker,period){
@@ -961,16 +560,7 @@ async function fetchFilings(ticker){try{var r=await finnhub("stock/filings?symbo
 async function fetchPriceTarget(ticker){try{var r=await finnhub("stock/price-target?symbol="+ticker);return r&&r.targetMean?r:null}catch(e){return null}}
 
 // ═══ THEME SYSTEM ═══
-var DARK={bg:"#1a1a1a",side:"#141414",card:"#242424",bdr:"#333333",bdr2:"#444444",txt:"#eeeeee",mid:"#b0b0b0",dim:"#777777",blue:"#6ea8fe",grn:"#4ade80",red:"#f87171",amb:"#fbbf24",acc:"#a0a0a0",prim:"#ffffff",primTxt:"#1a1a1a"};
-var LIGHT={bg:"#f7f7f7",side:"#ffffff",card:"#ffffff",bdr:"#e0e0e0",bdr2:"#d0d0d0",txt:"#1a1a1a",mid:"#4a4a4a",dim:"#888888",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#555555",prim:"#1a1a1a",primTxt:"#ffffff"};
-var FOREST={bg:"#f7f7f5",side:"#1a4a00",card:"#ffffff",bdr:"#e2e8df",bdr2:"#c8d6c0",txt:"#1f2f1a",mid:"#4a6040",dim:"#8aaa80",blue:"#1cb0f6",grn:"#58cc02",red:"#ff4b4b",amb:"#ffc800",acc:"#58cc02",prim:"#58cc02",primTxt:"#ffffff",purple:"#ce82ff"};
-var PURPLE={bg:"#0d0b14",side:"#090711",card:"#17132a",bdr:"rgba(167,139,250,0.12)",bdr2:"rgba(167,139,250,0.22)",txt:"#f0ecff",mid:"#b8aee0",dim:"#7065a0",blue:"#818cf8",grn:"#34d399",red:"#f87171",amb:"#fbbf24",acc:"#a78bfa",prim:"#a78bfa",primTxt:"#ffffff",glow:"rgba(167,139,250,0.15)"};
-var BLOOMBERG={bg:"#000000",side:"#000000",card:"#0d0d0d",bdr:"#222222",bdr2:"#333333",txt:"#ffffff",mid:"#cccccc",dim:"#777777",blue:"#00c8d4",grn:"#00cc44",red:"#ff3333",amb:"#F39F41",acc:"#F39F41",prim:"#F39F41",primTxt:"#000000",sel:"#ffff00",selTxt:"#000000"};
-var PAYPAL={bg:"#f0f4f8",side:"#0a2463",card:"#ffffff",bdr:"#cdd9e8",bdr2:"#aec0d4",txt:"#0d1b2a",mid:"#3d5a80",dim:"#7a94ae",blue:"#1a56db",grn:"#057a55",red:"#c81e1e",amb:"#d97706",acc:"#1a56db",prim:"#1a56db",primTxt:"#ffffff"};
 // ── Thesis Themes — landing page aesthetic: Outfit font, heavy rounding, purple accent ──
-var THESIS_DARK={bg:"#16161D",side:"#0F0F14",card:"#1C1C26",bdr:"rgba(255,255,255,0.07)",bdr2:"rgba(255,255,255,0.14)",txt:"#ffffff",mid:"rgba(255,255,255,0.82)",dim:"rgba(255,255,255,0.56)",blue:"#3B82F6",grn:"#4ADE80",red:"#F87171",amb:"#FACC15",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
-var THESIS_LIGHT={bg:"#F7F5F0",side:"#EFECE6",card:"#ffffff",bdr:"rgba(0,0,0,0.08)",bdr2:"rgba(0,0,0,0.14)",txt:"#16161D",mid:"rgba(22,22,29,0.75)",dim:"rgba(22,22,29,0.52)",blue:"#2563eb",grn:"#16a34a",red:"#dc2626",amb:"#d97706",acc:"#6B4CE6",prim:"#6B4CE6",primTxt:"#ffffff"};
-var THEMES={thesis_dark:THESIS_DARK,thesis_light:THESIS_LIGHT,dark:DARK,light:LIGHT,forest:FOREST,purple:PURPLE,paypal:PAYPAL,bloomberg:BLOOMBERG};
 var fm="'JetBrains Mono','SF Mono',monospace",fh="'Instrument Serif',Georgia,serif",fb="'DM Sans','Helvetica Neue',sans-serif";
 // Global thesis flag — updated inside TrackerApp before mkS calls
 var _isThesis=true;
@@ -980,15 +570,6 @@ var _isPurple=false;
 var _isOcean=false;
 function TLogo(p){var s=p.size||28;var r=Math.round(s*0.22);if(_isBm)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",border:"1px solid #F39F41",color:"#F39F41",fontFamily:"'Consolas','Courier New',monospace",fontSize:Math.round(s*0.38),fontWeight:700,letterSpacing:0,flexShrink:0,boxSizing:"border-box"}}>{"TA"}</div>;if(_isForest)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",background:"#58cc02",borderRadius:Math.round(s*0.28),color:"#ffffff",fontFamily:"'Nunito','DM Sans',sans-serif",fontSize:Math.round(s*0.36),fontWeight:800,letterSpacing:-0.5,flexShrink:0}}>{"TA"}</div>;if(_isOcean)return<div style={{width:s,height:s,display:"flex",alignItems:"center",justifyContent:"center",background:"#1a56db",borderRadius:Math.round(s*0.18),color:"#ffffff",fontFamily:"'Inter',sans-serif",fontSize:Math.round(s*0.36),fontWeight:700,letterSpacing:-0.5,flexShrink:0}}>{"TA"}</div>;return<img src="/logo.png" width={s} height={s} style={{borderRadius:_isThesis?r:6,objectFit:"contain"}} alt="T"/>;}
 // (sector suggestions removed — using predefined METRICS dropdown)
-var FOLDERS=[{id:"why-i-own",label:"Why I Own It",icon:"lightbulb"},{id:"my-writeups",label:"Investment Memos",icon:"edit"},{id:"deep-dives",label:"Research Clips",icon:"link"},{id:"reports",label:"IR Library",icon:"bar"},{id:"notes",label:"Quick Notes",icon:"file"}];
-var SAMPLE=[{id:1,ticker:"NVDA",name:"NVIDIA Corporation",sector:"Semiconductors",domain:"nvidia.com",irUrl:"https://investor.nvidia.com",earningsDate:"2026-02-26",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:"https://investor.nvidia.com",sourceLabel:"Q4 FY26",earningSummary:"Data Center revenue surged 93% YoY to $39.2B.",description:"NVIDIA designs and sells graphics processing units and system-on-chip units. The company's GPUs are the dominant platform for AI training and inference, powering data centers for hyperscalers, enterprises, and sovereign AI initiatives worldwide.",ceo:"Jensen Huang",employees:29600,country:"US",exchange:"NASDAQ",ipoDate:"1999-01-22",mktCap:3400000000000,thesisNote:"AI capex cycle still early innings.\n\n## MOAT\nNVIDIA owns the CUDA ecosystem — switching costs are massive. Every ML framework, every training pipeline, every inference stack is optimized for NVIDIA GPUs. This is a platform moat, not just a hardware moat.\n\n## RISKS\nCustom silicon (Google TPU, Amazon Trainium, AMD MI300) could erode share. Concentration in hyperscaler capex — if AI spending pauses, revenue craters.\n\n## SELL CRITERIA\nData Center growth below 30% YoY for 2 consecutive quarters. Gross margins below 65% sustained. Major customer (MSFT/GOOG/AMZN) publicly shifting >50% of AI training to non-NVIDIA silicon.",investStyle:"growth",position:{shares:50,avgCost:128.5},conviction:9,convictionHistory:[{date:"2025-06-01",rating:8,note:"Strong but expensive"},{date:"2025-11-20",rating:9,note:"Data center demand insatiable"},{date:"2026-01-15",rating:9,note:"AI capex still accelerating"}],status:"portfolio",docs:[{id:1,title:"Core Thesis: AI Infrastructure",folder:"why-i-own",content:"NVIDIA is the picks-and-shovels play on AI. Data center GPU demand is insatiable.",updatedAt:"2026-01-15T10:00:00Z"}],earningsHistory:[{quarter:"Q3 2025",summary:"Revenue $35.1B (+94% YoY). Data Center $30.8B. Gross margin 74.6%.",results:[{kpi_name:"Data Center Revenue",actual_value:30.8,status:"met",excerpt:"Data Center $30.8B"},{kpi_name:"Gross Margin",actual_value:74.6,status:"met",excerpt:"GAAP GM 74.6%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-11-20T18:00:00Z"},{quarter:"Q2 2025",summary:"Revenue $30.0B (+122% YoY). Data Center $26.3B. Gross margin 75.1%.",results:[{kpi_name:"Data Center Revenue",actual_value:26.3,status:"met",excerpt:"Data Center $26.3B"},{kpi_name:"Gross Margin",actual_value:75.1,status:"met",excerpt:"GAAP GM 75.1%"}],sourceUrl:"https://investor.nvidia.com",sourceLabel:"NVIDIA Press Release",checkedAt:"2025-08-28T18:00:00Z"}],kpis:[{id:1,name:"Data Center Revenue",target:"≥35B",rule:"gte",value:35,unit:"B",period:"Q4 FY26",notes:"",lastResult:{actual:39.2,status:"met",excerpt:"Data Center revenue was $39.2B."}},{id:2,name:"Gross Margin",target:"≥73%",rule:"gte",value:73,unit:"%",period:"Q4 FY26",notes:"GAAP",lastResult:{actual:73.5,status:"met",excerpt:"GAAP gross margin was 73.5%."}}]},{id:2,ticker:"CRWD",name:"CrowdStrike",sector:"Cybersecurity",domain:"crowdstrike.com",irUrl:"https://ir.crowdstrike.com",earningsDate:"2026-03-04",earningsTime:"AMC",lastChecked:null,notes:"",sourceUrl:null,sourceLabel:null,earningSummary:null,description:"CrowdStrike provides cloud-delivered endpoint and workload protection. Its Falcon platform uses AI to detect and prevent breaches in real time across endpoints, cloud workloads, identity, and data.",ceo:"George Kurtz",employees:8500,country:"US",exchange:"NASDAQ",ipoDate:"2019-06-12",mktCap:85000000000,thesisNote:"Post-outage recovery.\n\n## MOAT\nFalcon platform has deep endpoint integration — rip-and-replace is painful. Threat intelligence network effect: more endpoints = better detection.\n\n## RISKS\nBrand damage from July 2024 outage may linger. Competitive pressure from SentinelOne, Palo Alto. Government contracts at risk.\n\n## SELL CRITERIA\nGross retention dropping below 95%. Net new ARR below $200M for 2+ quarters. Another major incident.",investStyle:"growth",position:{shares:0,avgCost:0},conviction:6,convictionHistory:[{date:"2025-09-01",rating:5,note:"Outage fallout"},{date:"2026-01-10",rating:6,note:"Recovery underway"}],status:"watchlist",docs:[],earningsHistory:[],kpis:[{id:1,name:"Net New ARR",target:"≥220M",rule:"gte",value:220,unit:"M",period:"Q4 FY26",notes:"",lastResult:null},{id:2,name:"Gross Retention",target:"≥95%",rule:"gte",value:95,unit:"%",period:"Q4 FY26",notes:"",lastResult:null}]}];
-var dU=function(d){if(!d||d==="TBD")return 999;return Math.ceil((new Date(d)-new Date())/864e5)};
-var fD=function(d){try{return new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"})}catch(e){return d}};
-var fT=function(ts){if(!ts)return"";var d=new Date(ts);return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})};
-var nId=function(a){return a.length?Math.max.apply(null,a.map(function(x){return x.id}))+1:1};
-function gH(kpis){var ev=kpis.filter(function(k){return k.lastResult});if(!ev.length)return{l:"Pending",c:"#6B7280"};var m=ev.filter(function(k){return k.lastResult.status==="met"}).length;var p=Math.round(m/ev.length*100);return p>=80?{l:"Strong",c:"#22C55E"}:p>=50?{l:"Mixed",c:"#F59E0B"}:{l:"Weak",c:"#EF4444"}}
-var bT=function(r,v,u){return(r==="gte"?"≥":r==="lte"?"≤":"=")+" "+v+(u||"")};
-var eS=function(r,t,a){var n=parseFloat(a);if(isNaN(n))return"unclear";return r==="gte"?(n>=t?"met":"missed"):r==="lte"?(n<=t?"met":"missed"):(n===t?"met":"missed")};
 function CoLogo(p){var _s=useState(0),a=_s[0],sA=_s[1];var sz=p.size||24;
   if(p.domain&&a===0)return<img src={"https://www.google.com/s2/favicons?domain="+p.domain+"&sz=128"} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(1)}} loading="lazy" alt=""/>;
   if(p.domain&&a===1)return<img src={"https://logo.clearbit.com/"+p.domain} width={sz} height={sz} style={{borderRadius:_isBm?0:4,background:"transparent",objectFit:"contain",flexShrink:0}} onError={function(){sA(2)}} loading="lazy" alt=""/>;
@@ -1150,7 +731,7 @@ function TrackerApp(props){
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
-  var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var sideHoverTimer=useRef(null);var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
+  var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
   var _guidedSetup=useState(null),guidedSetup=_guidedSetup[0],setGuidedSetup=_guidedSetup[1];
   var _showQLetter=useState(null),showQLetter=_showQLetter[0],setShowQLetter=_showQLetter[1];
   var _qL=useState(function(){try{var s=localStorage.getItem("ta-qletters");return s?JSON.parse(s):{}}catch(e){return{}}}),qLetters=_qL[0],setQLetters=_qL[1];
@@ -1864,6 +1445,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
     var sid=sel.investStyle||"default";
+    var _profP=investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&PROFILE_MAP[investorProfile].thesisPrompt?PROFILE_MAP[investorProfile]:null;
     // ── Sharp thinking questions per section per style ──────────
     var Q={
       core:{
@@ -1907,7 +1489,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         d:"Define 2-3 specific, measurable conditions that would make you sell. Not \'if things get bad\' — exact numbers."
       }
     };
-    var getQ=function(sec){return Q[sec][sid]||Q[sec].d};
+    var _profQmap={core:"thesisPrompt",moat:"moatPrompt",risks:"riskPrompt",sell:"sellPrompt"};
+    var getQ=function(sec){return(_profP&&_profP[_profQmap[sec]])||Q[sec][sid]||Q[sec].d};
     // ── Auto-seed sell section from KPIs if blank ───────────────
     var kpiSeed=(function(){
       var kpis=sel.kpis||[];if(kpis.length===0)return null;
@@ -2598,23 +2181,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var note={id:Date.now(),text:noteText.trim(),ticker:noteTicker.trim()||null,date:new Date().toISOString()};
       var updated=readingList.map(function(r){
         if(r!==book)return r;
-        var existing=r.readingNotes||[];
-        return Object.assign({},r,{readingNotes:existing.concat([note])});
+        return Object.assign({},r,{readingNotes:(r.readingNotes||[]).concat([note])});
       });
-      saveRL(updated);
-      setModal(null);
+      saveRL(updated);setModal(null);
     }
-    return<Modal title={"Note from \u201c"+book.title+"\u201d"} onClose={function(){setModal(null)}} w={460} K={K}>
+    return<Modal title={"Note from “"+book.title+"”"} onClose={function(){setModal(null)}} w={460} K={K}>
       <div style={{marginBottom:12}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>What insight or idea does this spark?</div>
-        <textarea
-          autoFocus
-          value={noteText}
-          onChange={function(e){setNoteText(e.target.value)}}
-          placeholder={"Write down the thought while it's fresh..."}
-          rows={4}
-          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.6}}
-        />
+        <textarea autoFocus value={noteText} onChange={function(e){setNoteText(e.target.value)}}
+          placeholder={"Write down the thought while it's fresh..."} rows={4}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.6}}/>
       </div>
       {portfolio2.length>0&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Link to a holding? <span style={{opacity:.6}}>(optional)</span></div>
@@ -3669,13 +3245,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:_isBm?0:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
       </div>
     </div>}
-    <div style={{position:"relative"}} onMouseEnter={function(e){clearTimeout(sideHoverTimer.current);setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:bm?11:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){clearTimeout(sideHoverTimer.current);setSideHover("portfolio")}} onMouseLeave={function(){sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}}>
+    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){clearTimeout(sideHoverTimer.current);setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}}>
+    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="hub"?(_isForest?"rgba(255,255,255,0.18)":bm?"rgba(243,159,65,0.08)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){clearTimeout(sideHoverTimer.current);setSideHover("hub")}} onMouseLeave={function(){sideHoverTimer.current=setTimeout(function(){setSideHover(null)},150)}}>
+    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
       {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>Weekly Review{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
@@ -6941,31 +6517,24 @@ function calcMoatFromData(finData,businessModelType){
       }
     });
 
-    // ── LAYER 5: Decision post-mortems (decisions >90d with no outcome) ──
+
+
+    // ── LAYER 5: Upcoming earnings — KPI ready check ──────────────
     portfolio.forEach(function(c){
-      var decs = (c.decisions||[]).filter(function(d){
-        if(d.cardType!=="decision"&&(d.cardType||!d.reasoning))return false;
-        if(d.outcome)return false; // already reviewed
-        if(!d.date)return false;
-        var ageDays = Math.ceil((Date.now()-new Date(d.date))/864e5);
-        return ageDays >= 90;
+      if(!c.earningsDate||c.earningsDate==="TBD")return;
+      var days=dU(c.earningsDate);
+      if(days<0||days>7)return;
+      var kpis=c.kpis||[];
+      var hasKpis=kpis.length>0;
+      var kpiStr=hasKpis?kpis.slice(0,3).map(function(k){return k.label}).join(", "):"no KPIs set";
+      signals.push({
+        layer:"earnings_soon",priority:1,icon:"bar",color:K.acc,
+        title:c.ticker+" reports in "+(days===0?"today":days+"d"),
+        sub:hasKpis?"Tracking: "+kpiStr+" — know what to look for":"No KPIs set for this earnings — add them now",
+        action:hasKpis?"Pre-Earnings AI":"Add KPIs",
+        onAction:hasKpis?{type:"ai",aiType:"earnings",c:c}:{type:"go",c:c,modal:"kpi"},
+        secondary:"View thesis",onSecondary:{type:"go",c:c}
       });
-      if(decs.length > 0){
-        var oldest = decs[decs.length-1];
-        var ageDays = Math.ceil((Date.now()-new Date(oldest.date))/864e5);
-        signals.push({
-          layer:"postmortem",
-          priority:3,
-          icon:"clock",
-          color:K.blue||"#3B82F6",
-          title:c.ticker+": decision needs a post-mortem",
-          sub:(oldest.action||"Decision")+" logged "+ageDays+"d ago — was your reasoning right?",
-          action:"Post-Mortem",
-          onAction:{type:"postmortem", c:c, dec:oldest},
-          secondary:"View journal",
-          onSecondary:{type:"go", c:c}
-        });
-      }
     });
 
     // LAYER 6: Ownership anniversaries
@@ -10636,10 +10205,10 @@ function WeeklyReview(){
           var _pbe=useState(false),profBannerExp=_pbe[0],setProfBannerExp=_pbe[1];
           return<div style={{display:"flex",alignItems:"center",gap:8,padding:profBannerExp?"8px 14px":"4px 8px",background:profBannerExp?prof.color+"08":"none",border:profBannerExp?"1px solid "+prof.color+"20":"none",borderRadius:_isBm?0:8,marginTop:profBannerExp?8:4,marginBottom:0,cursor:"pointer",transition:"all .2s"}}
             onClick={function(){setProfBannerExp(function(v){return!v})}}>
-            <IC name={prof.icon} size={12} color={prof.color}/>
+            <IC name={prof.icon} size={profBannerExp?12:14} color={prof.color}/>
             {profBannerExp&&<span style={{fontSize:11,color:prof.color,fontWeight:700,fontFamily:fm}}>{prof.name} lens</span>}
             {profBannerExp&&<span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1}}>{prof.tagline}</span>}
-            {profBannerExp&&<span onClick={function(e){e.stopPropagation();setModal({type:"settings"})}} style={{fontSize:10,color:K.dim,fontFamily:fm}}>Change →</span>}
+            {profBannerExp&&<span onClick={function(e){e.stopPropagation();setModal({type:"settings"})}} style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Change →</span>}
           </div>;
         })()}
         {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:8,marginTop:16,marginBottom:4,flexWrap:"wrap"}}>
@@ -10665,562 +10234,113 @@ function WeeklyReview(){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm *{box-shadow:none!important}.ta-bm *{transition:none!important}.ta-bm{line-height:1.25;letter-spacing:0;font-size:12px}.ta-bm div,.ta-bm button,.ta-bm input,.ta-bm textarea,.ta-bm select,.ta-bm span,.ta-bm a,.ta-bm li{border-radius:0!important}.ta-bm img{border-radius:0!important}.ta-bm ::-webkit-scrollbar{width:4px;height:4px}.ta-bm ::-webkit-scrollbar-track{background:#000}.ta-bm ::-webkit-scrollbar-thumb{background:#F39F4170}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#333}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}.ta-bm button:hover{background:rgba(243,159,65,0.12)!important;color:#F39F41!important}.ta-forest{}.ta-forest .ta-active-item{box-shadow:0 2px 12px rgba(88,204,2,0.2)}.ta-forest button:active{transform:scale(0.96)!important;transition:transform .08s}.ta-forest ::-webkit-scrollbar{width:6px;height:6px}.ta-forest ::-webkit-scrollbar-track{background:#f7f7f5}.ta-forest ::-webkit-scrollbar-thumb{background:#58cc0260;border-radius:999px}.ta-forest ::-webkit-scrollbar-thumb:hover{background:#58cc02}.ta-purple{}.ta-purple ::-webkit-scrollbar{width:5px;height:5px}.ta-purple ::-webkit-scrollbar-track{background:#0d0b14}.ta-purple ::-webkit-scrollbar-thumb{background:#302a48;border-radius:999px}.ta-purple ::-webkit-scrollbar-thumb:hover{background:#a78bfa}.ta-purple input:focus,.ta-purple textarea:focus,.ta-purple select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,0.15)!important;outline:none!important}.ta-purple button:active{opacity:0.85}.ta-ocean{}.ta-ocean ::-webkit-scrollbar{width:5px;height:5px}.ta-ocean ::-webkit-scrollbar-track{background:#f0f4f8}.ta-ocean ::-webkit-scrollbar-thumb{background:#cdd9e8;border-radius:4px}.ta-ocean ::-webkit-scrollbar-thumb:hover{background:#1a56db}.ta-ocean input:focus,.ta-ocean textarea:focus{border-color:#1a56db!important;box-shadow:0 0 0 3px rgba(26,86,219,0.12)!important;outline:none!important}"}}/>
-        {/* ── Sample portfolio banner ── */}
-        {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",borderBottom:"1px solid "+K.amb+"30"}}>
-          <IC name="lightbulb" size={14} color={K.amb}/>
-          <div style={{flex:1}}>
-            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
-            <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
+    {/* ── READING & LIBRARY WIDGET ── */}
+    {sideTab==="portfolio"&&!isMobile&&(function(){
+      var rl=readingList||[];
+      var libItems=(library&&library.items)||[];
+      var currentlyReading=rl.filter(function(r){return r.status==="reading"});
+      var wantToRead=rl.filter(function(r){return r.status==="want"||!r.status});
+      var recentlyRead=rl.filter(function(r){return r.status==="read"}).slice(-3).reverse();
+      // Library items linked to portfolio companies
+      var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
+      var isEmpty=rl.length===0&&libItems.length===0;
+      return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
+            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
           </div>
-          <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
-                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
-        </div>}
-        {/* ── Header: greeting only, no portfolio value ── */}
-        <div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{fontSize:isMobile?13:12,color:K.dim,fontFamily:fm}}>{greeting+" \u00b7 "+now.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
+            <button onClick={function(){setPage("library")}} style={{fontSize:10,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Library →</button>
+          </div>
         </div>
-
-        {/* ── ONE FOCUS ── */}
-        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,border:"1px solid rgba(212,175,55,0.2)",borderRadius:_isBm?0:10,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
-          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
-          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
-            <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <IC name={focus.icon} size={14} color={focus.color}/>
-            </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:800,color:K.txt,marginBottom:2,fontFamily:fh}}>{focus.title}</div>
-              <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{focus.sub}</div>
-            </div>
-            <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
-          </div>
-        </div>}
-
-        {/* ── Today's Signals — cross-layer ── */}
-        {(function(){
-          var sigs=calcMorningSignals(portfolio,library);
-          // Re-sort by investor profile priority if set
-          if(investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]){
-            var profPrio=PROFILE_MAP[investorProfile].morningPriority||[];
-            if(profPrio.length>0){
-              sigs=sigs.slice().sort(function(a,b){
-                var ai=profPrio.indexOf(a.layer);var bi=profPrio.indexOf(b.layer);
-                if(ai>=0&&bi>=0)return ai-bi;
-                if(ai>=0)return-1;if(bi>=0)return 1;
-                return a.priority-b.priority;
-              });
-            }
-          }
-          var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
-          var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
-          if(sigs.length===0)return null;
-
-          function handleAction(act){
-            if(!act)return;
-            if(act.type==="ai"){
-              var FRAMING_BRIEF={
-                challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
-                sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
-                bear:{why:"Builds the strongest possible bear case using your own bull thesis as the target.",dataPoints:["Your bull thesis","Moat argument","Risks acknowledged","Conviction level"]},
-                earnings:{why:"Tailored entirely to your thesis and KPIs — not a generic earnings preview.",dataPoints:["Your thesis","Your KPIs","Your sell criteria","Earnings date"]},
-                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
-              };
-              var fr=FRAMING_BRIEF[act.aiType]||FRAMING_BRIEF["challenge"];
-              var title={challenge:"Challenge My Thesis",sell:"Sell Discipline Check",bear:"Bear Case Generator",earnings:"Pre-Earnings Briefing",annual:"Annual Review"}[act.aiType]||"AI Review";
-              setAiModal({title:title+" — "+(act.c?act.c.ticker:""),framing:fr,prompt:buildPrompt(act.aiType,act.c)});
-            }
-            else if(act.type==="go"){
-              setSelId(act.c.id);setDetailTab("dossier");
-              if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
-            }
-            else if(act.type==="library"){setSelId(null);setPage("library")}
-            else if(act.type==="postmortem"){setModal({type:"postmortem",c:act.c,dec:act.dec})}
-          }
-
-          var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
-          var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/_heldCos2.length/365):0;
-          return<div style={{borderBottom:"1px solid "+K.bdr}}>
-            <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div>
-                  <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{"Your Morning Brief"}</div>
-                  <div style={{fontSize:11,color:K.dim,marginTop:1}}>{now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase()+" MORNING"}</div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":currentlyReading.length>0?"2fr 1fr":"1fr 1fr",gap:10}}>
+          {/* Left: currently reading or queue */}
+          <div style={{background:K.card,border:"1px solid "+(currentlyReading.length>0?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px"}}>
+            {currentlyReading.length>0?(function(){
+              var book=currentlyReading[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.acc,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,animation:"pulse 2s infinite"}}/>
+                  Currently reading
+                  {currentlyReading.length>1&&<span style={{fontSize:9,color:K.dim,marginLeft:4}}>{"+"+( currentlyReading.length-1)+" more"}</span>}
                 </div>
-                {_avgYrs2>0&&investorProfile==="munger"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:K.grn+"10",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:6}}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm}}>{_avgYrs2.toFixed(1)+" yr avg hold"}</span>
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
+                {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
+                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
+                  <button onClick={function(){setModal({type:"readingNote",book:book})}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Note</button>
+                  {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
+                </div>
+                {book.readingNotes&&book.readingNotes.length>0&&<div style={{marginTop:8,borderTop:"1px solid "+K.bdr+"40",paddingTop:8}}>
+                  {book.readingNotes.slice(-2).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:3,display:"flex",gap:6}}>
+                    <span style={{color:K.acc,flexShrink:0,fontStyle:"normal"}}>—</span>
+                    <span>{n.text}{n.ticker&&<span style={{fontSize:9,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:3,marginLeft:6,fontStyle:"normal",fontFamily:fm,fontWeight:700}}>{n.ticker}</span>}</span>
+                  </div>})}
                 </div>}
-              </div>
-              <div style={{background:K.acc,color:"#fff",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:_isBm?0:999,fontFamily:fm,flexShrink:0}}>
-                {sigs.length+" signal"+(sigs.length!==1?"s":"")}
-              </div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8,padding:isMobile?"0 12px 14px":"0 20px 16px"}}>
-              {visibleSigs.map(function(sig,i){
-                return<div key={i} onClick={function(){handleAction(sig.onAction)}} style={{display:"flex",alignItems:"flex-start",gap:14,padding:isMobile?"12px 14px":"14px 16px",background:sig.color+"0a",border:"1px solid "+sig.color+"25",borderLeft:"3px solid "+sig.color,borderRadius:_isBm?0:10,cursor:"pointer",transition:"background .15s"}}
-                  onMouseEnter={function(e){e.currentTarget.style.background=sig.color+"15"}}
-                  onMouseLeave={function(e){e.currentTarget.style.background=sig.color+"0a"}}>
-                  <div style={{width:30,height:30,borderRadius:_isBm?0:8,background:sig.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-                    <IC name={sig.icon} size={14} color={sig.color}/>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,lineHeight:1.35,marginBottom:4}}>{sig.title}</div>
-                    <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{sig.sub}</div>
-                    {!isMobile&&sig.secondary&&sig.onSecondary&&<div style={{marginTop:8,display:"flex",gap:6}}>
-                      <button onClick={function(e){e.stopPropagation();handleAction(sig.onSecondary)}} style={{padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>{sig.secondary}</button>
-                    </div>}
-                  </div>
-                </div>;
-              })}
-              {sigs.length>3&&<button onClick={function(){setSigsExpanded(!sigsExpanded)}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"2px 0",textAlign:"left"}}>
-                {sigsExpanded?"Show less":"Show "+(sigs.length-3)+" more signal"+(sigs.length-3!==1?"s":"")+" →"}
-              </button>}
-            </div>
-          </div>;
-        })()}
-
-        <div>
-          <div style={{padding:isMobile?"12px 16px":"14px 24px"}}>
-
-            {/* Post-earnings review needed */}
-            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-              if(needReview.length===0)return null;
-              return<div style={{marginBottom:14}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
-                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
-                </div>})}
-              </div>})()}
-
-            {/* Upcoming earnings */}
-            {upcoming.length>0&&<div style={{marginBottom:14}}>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
-                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
-              </div>
-              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
-                </div>})}
-            </div>}
-
-            {/* Insider buying signals */}
-            {insiderSignals.length>0&&<div>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
-              </div>
-            </div>}
-
-          </div>
-          </div>
-
-          {/* OWNERSHIP HEALTH */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
-            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
-            {portfolio.map(function(c2){
-              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
-              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
-              // --- Progress meter: 0-100 across 5 dimensions ---
-              var _th=c2.thesisNote||"";
-              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
-              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
-              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
-              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
-              var _convScore=(c2.conviction||0)*10;
-              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
-              var _moatScore=_hasMoat?100:0;
-              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
-              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
-              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
-              // Weakest dimension label
-              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
-              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
-              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
-              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
-                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
-                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
-                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
-                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
-                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
+              </div>;
+            })()
+            :wantToRead.length>0?(function(){
+              var next=wantToRead[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Up next</div>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
+                {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
+                  {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
-                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
-                  </div>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
+              </div>;
+            })()
+            :<div style={{textAlign:"center",padding:"8px 0"}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
+              {investorProfile==="munger"
+                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Go to bed smarter than when you woke up. — Munger"}</div>
+                :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
+              <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
+            </div>}
+          </div>
+          {/* Right: recently read + library links */}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {/* Recently finished */}
+            {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
+              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
+                <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
+                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes.substring(0,60)+(book.notes.length>60?"...":"")}</div>}
                 </div>
               </div>})}
+            </div>}
+            {/* Library items linked to holdings */}
+            {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
+              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
+                <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
+                  {it.type&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{it.type}</div>}
+                </div>
+              </div>})}
+            </div>}
+            {/* Stats if queue is healthy */}
+            {recentlyRead.length===0&&linkedItems.length===0&&rl.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",display:"flex",gap:16,justifyContent:"space-around",alignItems:"center"}}>
+              {[{label:"Read",val:rl.filter(function(r){return r.status==="read"}).length,color:K.grn},
+                {label:"Reading",val:currentlyReading.length,color:K.acc},
+                {label:"Queue",val:wantToRead.length,color:K.dim}].map(function(s,i){return<div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:fm,lineHeight:1}}>{s.val}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</div>
+              </div>})}
+            </div>}
           </div>
-        </div>
-
-
-        {/* ── Portfolio Look-Through ── */}
-        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
-{/* ── Look-through portfolio table — preset switcher ── */}
-            {(function(){
-              // ── S&P 500 benchmarks ─────────────────────────────────────
-              var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
-                      roic:12,fcfMargin:11,netDebtEbitda:2.1,roe:18,
-                      revGrowth:5,epsGrowth:8,pe:22,peg:2.1,fcfYield:4.5,divYield:1.4};
-
-              // ── Preset definitions ─────────────────────────────────────
-              var PRESETS=[
-                {id:"terry",label:"Terry",tip:"Fundsmith-style: quality compounders",rows:[
-                  {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
-                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
-                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
-                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
-  // Primary: FCF margin / Op margin = what % of operating profit converts to cash
-  var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;
-  var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;
-  if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);
-  // Fallback 1: FCF margin as direct proxy
-  if(fcf!=null)return Math.max(0,fcf);
-  return null;}},
-                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
-  // Primary: direct interest coverage ratio
-  if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
-  // Fallback 1: net-cash company (netDebt negative) -> effectively very high coverage
-  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0)return 99;
-  // Fallback 2: near-zero leverage -> infer from ROIC
-  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0.5){
-    var rc=s.roce&&s.roce.numVal!=null?s.roce.numVal:(s.roic&&s.roic.numVal!=null?s.roic.numVal:null);
-    if(rc!=null&&rc>0)return Math.round(rc*2);}
-  // Fallback 3: very low debt/equity
-  if(s.debtEquity&&s.debtEquity.numVal!=null&&s.debtEquity.numVal<0.1)return 50;
-  return null;}},
-                ]},
-                {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
-                  {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
-                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
-                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
-                  {key:"fcfm",     label:"FCF margin",       bv:SP.fcfMargin,   hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null}},
-                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
-                ]},
-                {id:"garp",label:"GARP",tip:"Growth at a reasonable price",rows:[
-                  {key:"revgr",    label:"Rev growth",       bv:SP.revGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.revGrowth?s.revGrowth.numVal:null}},
-                  {key:"epsgr",    label:"EPS growth",       bv:SP.epsGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null}},
-                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
-                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
-                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
-                ]},
-                {id:"value",label:"Value",tip:"Income and deep value lens",rows:[
-                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
-                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
-                  {key:"divy",     label:"Div yield",        bv:SP.divYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.divYield?s.divYield.numVal:null}},
-                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
-                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
-                ]},
-                {id:"munger",label:"Munger",tip:"Munger napkin: pre-tax returns, pricing power, owner earnings, fortress balance sheet",
-                 mungerNote:"The numbers confirm. They do not decide.",
-                 rows:[
-                  {key:"pretax_roe", label:"Pre-tax return on equity",bv:22,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){var roe=s.roe&&s.roe.numVal!=null?s.roe.numVal:null;if(roe==null)return null;return Math.min(roe*1.35,150)},
-                   note:"ROE grossed up for ~25% tax — Munger wants 15%+ pretax on tangible equity"},
-                  {key:"gross",  label:"Gross margin (pricing power)", bv:SP.grossMargin,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){return s.grossMargin?s.grossMargin.numVal:null},
-                   note:"Does management apologise for raising prices, or do customers barely notice?"},
-                  {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
-                   fmt:function(v){return v.toFixed(0)+"%"},
-                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return Math.min(fcf*5,150);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;var ey=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(fcfy&&fcfy>0&&ey&&ey>0)return Math.min(fcfy/(1/ey)*100,200);return null},
-                   note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
-                  {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
-                   fmt:function(v){return v.toFixed(1)+"%"},
-                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return Math.min(1/pe*100,50);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy&&fcfy>0?fcfy:null;},
-                   note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
-                  {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
-                   fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
-                   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},
-                   note:"Munger hates leverage. Under 2x EBITDA, or ideally net cash."},
-                  {key:"circle", label:"Circle of competence",          bv:3.5,hb:true,
-                   fmt:function(v){return v.toFixed(1)+"/5"},
-                   qual:true,
-                   getQ:function(c2){return c2.circleScore||null},
-                   note:"Do you truly understand these businesses? Munger: 'Invert, always invert'"},
-                  {key:"mgmt",   label:"Management quality",            bv:null,hb:true,
-                   fmt:function(v){return v===4?"A avg":v>=3?"B avg":v>=2?"C avg":"D avg"},
-                   qual:true,
-                   getQ:function(c2){return c2.managementGrade?({A:4,B:3,C:2,D:1}[c2.managementGrade]||null):null},
-                   note:"The most important quality is integrity — Munger"},
-                ]},
-              ];
-
-              // ── State: active preset ───────────────────────────────────
-              var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
-              var _exR=useState(null),expandedRow=_exR[0],setExpandedRow=_exR[1];
-              var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
-              var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
-              function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
-              function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
-              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
-              var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
-              var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
-              var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
-              var napkinGrade=_gr===null?"?":_gr>=0.8?"A":_gr>=0.6?"B":_gr>=0.4?"C":"D";
-              var napkinColor=napkinGrade==="A"?K.grn:napkinGrade==="B"?K.acc:napkinGrade==="C"?K.amb:K.red;
-              var hasSpBench=preset.rows.some(function(r){return r.bv!=null&&!r.qual});
-              return<div style={{marginBottom:16}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7}}>
-                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
-                    {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
-                  </div>
-                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
-                </div>
-                <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
-                    <div style={{padding:"5px 10px"}}/>
-                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
-                    {hasSpBench&&<div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>}
-                  </div>
-                  {preset.rows.map(function(r,i){
-                    var isEarny=r.key==="earny";
-                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get,isEarny?function(v){return v>0}:null);
-                    var holdings=perHolding(r);
-                    var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
-                    var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
-                    var isOpen=expandedRow===r.key;
-                    var vArr=holdings.map(function(h){return h.v});
-                    var vMin=vArr.length?Math.min.apply(null,vArr):0;
-                    var vMax=vArr.length?Math.max.apply(null,vArr):1;
-                    var vSpan=Math.max(vMax-vMin,0.001);
-                    return<div key={r.key} style={{borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:isOpen?K.acc+"04":"transparent"}}>
-                      <div title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null&&hasSpBench?"72px":""),cursor:holdings.length>0?"pointer":"default"}} onClick={function(){if(holdings.length>0)setExpandedRow(isOpen?null:r.key)}}>
-                        <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-                          {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.5}}>ⓘ</span>}
-                          {r.qual&&<span style={{fontSize:8,color:K.acc,background:K.acc+"10",padding:"1px 4px",borderRadius:2,marginLeft:2,fontFamily:fm}}>qual</span>}
-                          {holdings.length>0&&<span style={{fontSize:8,color:K.dim,marginLeft:"auto",opacity:.4}}>{isOpen?"▲":"▼"}</span>}
-                        </div>
-                        <div style={{padding:"7px 0",textAlign:"center"}}>
-                          {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:r.qual?<button onClick={function(e){e.stopPropagation();setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"ledger"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(er){}return n})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"2px 7px",cursor:"pointer",fontFamily:fm}}>Rate →</button>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data" onClick={function(e){e.stopPropagation();filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,ii){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},ii*800)})}}>{"↺"}</span>}
-                        </div>
-                        {r.bv!=null&&hasSpBench&&<div style={{padding:"7px 0",textAlign:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span></div>}
-                      </div>
-                      {isOpen&&holdings.length>0&&<div style={{padding:"4px 12px 10px",borderTop:"1px solid "+K.bdr+"30"}}>
-                        {isEarny&&holdings.length<portfolio.length&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3,fontStyle:"italic"}}>Loss-making companies excluded</div>}
-                        <div style={{position:"relative",height:24,marginBottom:4}}>
-                          <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
-                          {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
-                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
-                        </div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
-                      </div>}
-                    </div>;})}
-                  {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
-                    {"\u201c"+preset.mungerNote+"\u201d"}
-                  </div>}
-                </div>
-              </div>
-            })()}
-        </div>}
-
-    {/* ── MR MARKET WIDGET ── */}
-    {sideTab==="portfolio"&&!isMobile&&(function(){
-      function MrMarketFace(props){
-        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
-        var moodMap={
-          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
-          fear:{label:"FEAR",sub:"cautious",bars:2},
-          neutral:{label:"CALM",sub:"neutral",bars:3},
-          greed:{label:"GREED",sub:"optimistic",bars:4},
-          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
-        };
-        var md=moodMap[mood]||moodMap.neutral;
-        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
-          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
-          <div style={{display:"flex",gap:3,marginBottom:5}}>
-            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
-          </div>
-          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
-        </div>;
-      }
-      return<div style={{marginBottom:20}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
-          <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
-          {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
-        </div>
-        <div style={{background:K.card,border:"1px solid "+(mrMarket?mrMarket.color+"30":K.bdr),borderRadius:_isBm?0:16,overflow:"hidden",transition:"border-color .3s"}}>
-          {mrMarketLoading&&!mrMarket&&<div style={{padding:"24px 20px",textAlign:"center",color:K.dim,fontSize:11,fontFamily:fm}}>{"Reading the market’s mood…"}</div>}
-          {!mrMarketLoading&&!mrMarket&&<div style={{padding:"20px",textAlign:"center"}}>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Market sentiment unavailable</div>
-            <button onClick={function(){setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>Check now</button>
-          </div>}
-          {mrMarket&&(function(){
-            var d=mrMarket;
-            return<div>
-              <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
-                <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
-                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
-                </div>
-                <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
-                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
-                    <div style={{fontSize:32,fontWeight:900,color:d.color,fontFamily:fm,lineHeight:1}}>{d.composite}</div>
-                    <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
-                  </div>
-                  <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
-                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F97316 20%, #6B7280 45%, #6B7280 55%, #10B981 80%, #8B5CF6 100%)",borderRadius:999}}/>
-                    <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
-                  </div>
-                  <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {d.details.map(function(det,i){return<div key={i} style={{background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
-                      <span style={{color:K.dim}}>{det.label+": "}</span>
-                      <span style={{fontWeight:700,color:K.acc}}>{det.value}</span>
-                    </div>;})}
-                  </div>
-                </div>
-              </div>
-              <div style={{padding:"7px 14px",borderTop:"1px solid "+d.color+"15",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Mr. Market is your servant, not your guide. — Buffett"}</span>
-                {d.fetched&&<span style={{fontSize:8,color:K.bdr,fontFamily:fm}}>{new Date(d.fetched).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
-              </div>
-            </div>;
-          })()}
         </div>
       </div>;
     })()}
 
-    {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
-    {sideTab==="portfolio"&&filtered.length>0&&(function(){
-      var portfolio=filtered;var now=new Date();var hour=now.getHours();
-      var dow=now.getDay();// 0=Sun,6=Sat
-      var isWeekend=dow===0||dow===6;
-      var isFriday=dow===5;var isMonday=dow===1;
-      var daySeed=now.getDate()%4;// rotates 0-3 per calendar day, stable within a day
-      var mktOpen=!isWeekend&&hour>=9&&(hour<16||(hour===9&&now.getMinutes()>=30));
-      var _n=username||"Investor";
-      var greeting=(function(){
-        if(hour>=23||hour<5){var late=[["Still here, "+_n+"?","The futures don't sleep"],["Night mode, "+_n,"Markets reopen in the morning"],["Late night, "+_n,"Even Buffett sleeps"],["Can't sleep, "+_n+"?","Check the Asia markets while you're up"]];return late[daySeed][0];}
-        if(hour<7){var early=[["Early bird, "+_n,"Markets open at 9:30"],["You're up early, "+_n,"Pre-market starts soon"],["Rise and grind, "+_n,"Bell rings at 9:30"],["Morning, "+_n+" ☕","Let's see what overnight brought"]];return early[daySeed][0];}
-        if(hour<9){return isMonday?"New week, "+_n:isFriday?"Friday's here, "+_n:"Good morning, "+_n;}
-        if(hour===9&&now.getMinutes()<30){return"Bell rings soon, "+_n;}
-        if(mktOpen){var open=[["Markets are live, "+_n],["Eyes on the tape, "+_n],["Market hours, "+_n],["In session, "+_n]];return open[daySeed][0];}
-        if(hour<17&&isWeekend){return dow===6?"Saturday, "+_n:"Sunday, "+_n+". Markets are closed.";}
-        if(hour<17){return isFriday?"TGIF, "+_n:"Good afternoon, "+_n;}
-        if(hour<20){var eve=[["After hours, "+_n],["Closing thoughts, "+_n],["Good evening, "+_n],["Wind down, "+_n]];return eve[daySeed][0];}
-        return"Bedtime soon, "+_n;
-      })();
-
-      // ── Conviction health ───────────────────────────────────────────────
-      var convReviewed=portfolio.filter(function(c2){
-        if(!c2.thesisUpdatedAt&&!c2.thesisNote)return false;
-        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
-        return age<=60;
-      }).length;
-      var convStale=portfolio.filter(function(c2){
-        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
-        return age>90;
-      }).length;
-      var convTotal=portfolio.length;
-      var convHealthPct=convTotal>0?Math.round(convReviewed/convTotal*100):0;
-      var convHealthColor=convHealthPct>=70?K.grn:convHealthPct>=40?K.amb:K.red;
-
-      // ── Upcoming earnings ───────────────────────────────────────────────
-      var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
-      var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
-
-      // ── ONE FOCUS — pick the single most urgent action ──────────────────
-      var focus=null;
-      // Priority 1: earnings TODAY with KPIs
-      var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0});
-      if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today",sub:"Check your "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
-      // Priority 2: unchecked earnings (released but not reviewed)
-      if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-        if(unchecked.length>0)focus={icon:"check",color:K.amb,title:"Review "+unchecked[0].ticker+" earnings",sub:unchecked.length+" holding"+(unchecked.length>1?"s have":"has")+" recent earnings with unchecked KPIs",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}}}
-      // Priority 3: stale thesis (>90 days)
-      if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
-        if(stale.length>0){var stalest=stale.sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)})[0];var daysAgo=Math.ceil((now-new Date(stalest.thesisUpdatedAt))/864e5);
-          focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"Last updated "+daysAgo+" days ago — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
-      // Priority 4: no thesis written
-      if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
-        if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Write a thesis for "+noThesis[0].ticker,sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
-      // Priority 5: no conviction set
-      if(!focus){var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
-        if(noConv.length>0)focus={icon:"dial",color:K.acc,title:"Set your conviction on "+noConv[0].ticker,sub:"Rate 1–10 how strongly you believe in this holding",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}}}
-      // Priority 6: weekly review
-      if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Weekly portfolio review"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
-      // Insider signals
-      var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length,id:c2.id})}});
-
-      // ── Holdings (price data — de-emphasised) ──────────────────────────
-      var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
-
-      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:_isBm?0:14,marginBottom:20,overflow:"hidden"}}>
-        {/* ── Done for today ── */}
-        {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
-        </div>}
-
-        {/* ── Owner's Intel feed ── */}
-        {(function(){
-          var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
-          var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
-          var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
-          var shown=(briefNews||[]).filter(function(n){
-            if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
-            return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
-          var visible=newsExpanded?shown:shown.slice(0,3);
-          if(!briefNewsLoading&&briefNews===null)return null; // never loaded yet
-          return<div style={{borderTop:"1px solid "+K.bdr}}>
-            <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
-                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                  <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
-                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:_isBm?0:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
-                </div>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
-                    <IC name="gear" size={10} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
-                  </button>
-                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={12} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
-                </div>
-              </div>
-              {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
-                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
-                    {cat.label}
-                  </button>})}
-                </div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
-              </div>}
-              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
-              {shown.length>0&&<div>{visible.map(function(n,i){
-                var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
-                var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
-                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
-                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
-                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
-                  {co&&<div style={{flexShrink:0,marginTop:2}}><CoLogo domain={co.domain} ticker={co.ticker} size={16}/></div>}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
-                      <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
-                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
-                    </div>
-                  </div>
-                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
-                </a>})}
-              </div>}
-              {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
-              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
-            </div>
-          </div>})()}
-      </div>})()}
     {/* ── PROFILE-SPECIFIC WIDGETS ── */}
     {sideTab==="portfolio"&&!isMobile&&investorProfile&&investorProfile!=="munger"&&investorProfile!=="custom"&&(function(){
       var portfolio=filtered;
@@ -11569,113 +10689,561 @@ function WeeklyReview(){
       return null;
     })()}
 
-    {/* ── READING & LIBRARY WIDGET ── */}
+    {/* ── MR MARKET WIDGET ── */}
     {sideTab==="portfolio"&&!isMobile&&(function(){
-      var rl=readingList||[];
-      var libItems=(library&&library.items)||[];
-      var currentlyReading=rl.filter(function(r){return r.status==="reading"});
-      var wantToRead=rl.filter(function(r){return r.status==="want"||!r.status});
-      var recentlyRead=rl.filter(function(r){return r.status==="read"}).slice(-3).reverse();
-      // Library items linked to portfolio companies
-      var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
-      var isEmpty=rl.length===0&&libItems.length===0;
-      return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
-            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
+      function MrMarketFace(props){
+        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
+        var moodMap={
+          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
+          fear:{label:"FEAR",sub:"cautious",bars:2},
+          neutral:{label:"CALM",sub:"neutral",bars:3},
+          greed:{label:"GREED",sub:"optimistic",bars:4},
+          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
+        };
+        var md=moodMap[mood]||moodMap.neutral;
+        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
+          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
+          <div style={{display:"flex",gap:3,marginBottom:5}}>
+            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
           </div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
-            <button onClick={function(){setPage("library")}} style={{fontSize:10,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Library →</button>
-          </div>
+          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
+        </div>;
+      }
+      return<div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
+          <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
+          {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":currentlyReading.length>0?"2fr 1fr":"1fr 1fr",gap:10}}>
-          {/* Left: currently reading or queue */}
-          <div style={{background:K.card,border:"1px solid "+(currentlyReading.length>0?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px"}}>
-            {currentlyReading.length>0?(function(){
-              var book=currentlyReading[0];
-              return<div>
-                <div style={{fontSize:9,fontWeight:700,color:K.acc,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
-                  <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,animation:"pulse 2s infinite"}}/>
-                  Currently reading
-                  {currentlyReading.length>1&&<span style={{fontSize:9,color:K.dim,marginLeft:4}}>{"+"+( currentlyReading.length-1)+" more"}</span>}
+        <div style={{background:K.card,border:"1px solid "+(mrMarket?mrMarket.color+"30":K.bdr),borderRadius:_isBm?0:16,overflow:"hidden",transition:"border-color .3s"}}>
+          {mrMarketLoading&&!mrMarket&&<div style={{padding:"24px 20px",textAlign:"center",color:K.dim,fontSize:11,fontFamily:fm}}>{"Reading the market’s mood…"}</div>}
+          {!mrMarketLoading&&!mrMarket&&<div style={{padding:"20px",textAlign:"center"}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Market sentiment unavailable</div>
+            <button onClick={function(){setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>Check now</button>
+          </div>}
+          {mrMarket&&(function(){
+            var d=mrMarket;
+            return<div>
+              <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
+                <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
+                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
                 </div>
-                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
-                {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
-                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap"}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
-                  <button onClick={function(){setModal({type:"readingNote",book:book})}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Note</button>
-                  {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
+                <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
+                    <div style={{fontSize:32,fontWeight:900,color:d.color,fontFamily:fm,lineHeight:1}}>{d.composite}</div>
+                    <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
+                  </div>
+                  <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F97316 20%, #6B7280 45%, #6B7280 55%, #10B981 80%, #8B5CF6 100%)",borderRadius:999}}/>
+                    <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
+                  </div>
+                  <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {d.details.map(function(det,i){return<div key={i} style={{background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
+                      <span style={{color:K.dim}}>{det.label+": "}</span>
+                      <span style={{fontWeight:700,color:K.acc}}>{det.value}</span>
+                    </div>;})}
+                  </div>
                 </div>
-                {book.readingNotes&&book.readingNotes.length>0&&<div style={{marginTop:8,borderTop:"1px solid "+K.bdr+"40",paddingTop:8}}>
-                  {book.readingNotes.slice(-2).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:3,display:"flex",gap:6}}>
-                    <span style={{color:K.acc,flexShrink:0,fontStyle:"normal"}}>—</span>
-                    <span>{n.text}{n.ticker&&<span style={{fontSize:9,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:3,marginLeft:6,fontStyle:"normal",fontFamily:fm,fontWeight:700}}>{n.ticker}</span>}</span>
-                  </div>})}
-                </div>}
-              </div>;
-            })()
-            :wantToRead.length>0?(function(){
-              var next=wantToRead[0];
-              return<div>
-                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Up next</div>
-                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
-                {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
-                  {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
-                </div>
-              </div>;
-            })()
-            :<div style={{textAlign:"center",padding:"8px 0"}}>
-              <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
-              {investorProfile==="munger"
-                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Go to bed smarter than when you woke up. — Munger"}</div>
-                :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
-              <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
-            </div>}
-          </div>
-          {/* Right: recently read + library links */}
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {/* Recently finished */}
-            {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
-              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
-              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
-                <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
-                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes.substring(0,60)+(book.notes.length>60?"...":"")}</div>}
-                </div>
-              </div>})}
-            </div>}
-            {/* Library items linked to holdings */}
-            {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
-              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
-              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
-                <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
-                  {it.type&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{it.type}</div>}
-                </div>
-              </div>})}
-            </div>}
-            {/* Stats if queue is healthy */}
-            {recentlyRead.length===0&&linkedItems.length===0&&rl.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",display:"flex",gap:16,justifyContent:"space-around",alignItems:"center"}}>
-              {[{label:"Read",val:rl.filter(function(r){return r.status==="read"}).length,color:K.grn},
-                {label:"Reading",val:currentlyReading.length,color:K.acc},
-                {label:"Queue",val:wantToRead.length,color:K.dim}].map(function(s,i){return<div key={i} style={{textAlign:"center"}}>
-                <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:fm,lineHeight:1}}>{s.val}</div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</div>
-              </div>})}
-            </div>}
-          </div>
+              </div>
+              <div style={{padding:"7px 14px",borderTop:"1px solid "+d.color+"15",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Mr. Market is your servant, not your guide. — Buffett"}</span>
+                {d.fetched&&<span style={{fontSize:8,color:K.bdr,fontFamily:fm}}>{new Date(d.fetched).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
+              </div>
+            </div>;
+          })()}
         </div>
       </div>;
     })()}
 
+    {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
+    {sideTab==="portfolio"&&filtered.length>0&&(function(){
+      var portfolio=filtered;var now=new Date();var hour=now.getHours();
+      var dow=now.getDay();// 0=Sun,6=Sat
+      var isWeekend=dow===0||dow===6;
+      var isFriday=dow===5;var isMonday=dow===1;
+      var daySeed=now.getDate()%4;// rotates 0-3 per calendar day, stable within a day
+      var mktOpen=!isWeekend&&hour>=9&&(hour<16||(hour===9&&now.getMinutes()>=30));
+      var _n=username||"Investor";
+      var greeting=(function(){
+        if(hour>=23||hour<5){var late=[["Still here, "+_n+"?","The futures don't sleep"],["Night mode, "+_n,"Markets reopen in the morning"],["Late night, "+_n,"Even Buffett sleeps"],["Can't sleep, "+_n+"?","Check the Asia markets while you're up"]];return late[daySeed][0];}
+        if(hour<7){var early=[["Early bird, "+_n,"Markets open at 9:30"],["You're up early, "+_n,"Pre-market starts soon"],["Rise and grind, "+_n,"Bell rings at 9:30"],["Morning, "+_n+" ☕","Let's see what overnight brought"]];return early[daySeed][0];}
+        if(hour<9){return isMonday?"New week, "+_n:isFriday?"Friday's here, "+_n:"Good morning, "+_n;}
+        if(hour===9&&now.getMinutes()<30){return"Bell rings soon, "+_n;}
+        if(mktOpen){var open=[["Markets are live, "+_n],["Eyes on the tape, "+_n],["Market hours, "+_n],["In session, "+_n]];return open[daySeed][0];}
+        if(hour<17&&isWeekend){return dow===6?"Saturday, "+_n:"Sunday, "+_n+". Markets are closed.";}
+        if(hour<17){return isFriday?"TGIF, "+_n:"Good afternoon, "+_n;}
+        if(hour<20){var eve=[["After hours, "+_n],["Closing thoughts, "+_n],["Good evening, "+_n],["Wind down, "+_n]];return eve[daySeed][0];}
+        return"Bedtime soon, "+_n;
+      })();
+
+      // ── Conviction health ───────────────────────────────────────────────
+      var convReviewed=portfolio.filter(function(c2){
+        if(!c2.thesisUpdatedAt&&!c2.thesisNote)return false;
+        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
+        return age<=60;
+      }).length;
+      var convStale=portfolio.filter(function(c2){
+        var age=c2.thesisUpdatedAt?Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5):999;
+        return age>90;
+      }).length;
+      var convTotal=portfolio.length;
+      var convHealthPct=convTotal>0?Math.round(convReviewed/convTotal*100):0;
+      var convHealthColor=convHealthPct>=70?K.grn:convHealthPct>=40?K.amb:K.red;
+
+      // ── Upcoming earnings ───────────────────────────────────────────────
+      var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
+      var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
+
+      // ── ONE FOCUS — pick the single most urgent action ──────────────────
+      var focus=null;
+      // Priority 1: earnings TODAY with KPIs
+      var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0});
+      if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today",sub:"Check your "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
+      // Priority 2: unchecked earnings (released but not reviewed)
+      if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+        if(unchecked.length>0)focus={icon:"check",color:K.amb,title:"Review "+unchecked[0].ticker+" earnings",sub:unchecked.length+" holding"+(unchecked.length>1?"s have":"has")+" recent earnings with unchecked KPIs",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}}}
+      // Priority 3: stale thesis (>90 days)
+      if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
+        if(stale.length>0){var stalest=stale.sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)})[0];var daysAgo=Math.ceil((now-new Date(stalest.thesisUpdatedAt))/864e5);
+          focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"Last updated "+daysAgo+" days ago — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
+      // Priority 4: no thesis written
+      if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
+        if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Write a thesis for "+noThesis[0].ticker,sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
+      // Priority 5: no conviction set
+      if(!focus){var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
+        if(noConv.length>0)focus={icon:"dial",color:K.acc,title:"Set your conviction on "+noConv[0].ticker,sub:"Rate 1–10 how strongly you believe in this holding",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}}}
+      // Priority 6: weekly review
+      if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Weekly portfolio review"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
+      // Insider signals
+      var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length,id:c2.id})}});
+
+      // ── Holdings (price data — de-emphasised) ──────────────────────────
+      var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
+
+      return<div className="ta-card" style={{background:K.card,border:"1px solid "+(isDark?K.bdr:K.bdr2),borderRadius:_isBm?0:14,marginBottom:20,overflow:"hidden"}}>
+        {/* ── Sample portfolio banner ── */}
+        {portfolio.some(function(c){return c._isSample})&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:K.amb+"0d",borderBottom:"1px solid "+K.amb+"30"}}>
+          <IC name="lightbulb" size={14} color={K.amb}/>
+          <div style={{flex:1}}>
+            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>You're exploring with example data.</span>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm,marginLeft:6}}>NVDA and CRWD are pre-filled so you can see what a complete dossier looks like.</span>
+          </div>
+          <button onClick={function(){setCos([]);try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1)}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"0d",color:K.red,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>Clear &amp; start fresh</button>
+                {props.user===OWNER_EMAIL&&<button onClick={function(){var keys=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.startsWith("ta-")&&k!=="ta-theme"&&k!=="ta-userid")keys.push(k)}keys.forEach(function(k){localStorage.removeItem(k)});setCos([]);setWeeklyReviews([]);setNotifs([]);setReadingList([]);setStreakData({current:0,best:0});setTrial(null);setMilestones({});setQLetters({});try{localStorage.removeItem("ta-onboarded")}catch(e){}setObStep(1);showToast("\u2705 Full reset complete","milestone",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #9333EA40",background:"#9333EA0d",color:"#9333EA",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{String.fromCodePoint(0x1F504)+" Full Reset (Owner)"}</button>}
+        </div>}
+        {/* ── Header: greeting only, no portfolio value ── */}
+        <div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:isMobile?13:12,color:K.dim,fontFamily:fm}}>{greeting+" \u00b7 "+now.toLocaleDateString("en-US",{month:"long",day:"numeric"})}</div>
+        </div>
+
+        {/* ── ONE FOCUS ── */}
+        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
+            <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <IC name={focus.icon} size={14} color={focus.color}/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:800,color:K.txt,marginBottom:2,fontFamily:fh}}>{focus.title}</div>
+              <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{focus.sub}</div>
+            </div>
+            <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
+          </div>
+        </div>}
+
+        {/* ── Today's Signals — cross-layer ── */}
+        {(function(){
+          var sigs=calcMorningSignals(portfolio,library);
+          // Re-sort by investor profile priority if set
+          if(investorProfile&&investorProfile!=="custom"&&PROFILE_MAP[investorProfile]){
+            var profPrio=PROFILE_MAP[investorProfile].morningPriority||[];
+            if(profPrio.length>0){
+              sigs=sigs.slice().sort(function(a,b){
+                var ai=profPrio.indexOf(a.layer);var bi=profPrio.indexOf(b.layer);
+                if(ai>=0&&bi>=0)return ai-bi;
+                if(ai>=0)return-1;if(bi>=0)return 1;
+                return a.priority-b.priority;
+              });
+            }
+          }
+          var _sigEx=useState(false),sigsExpanded=_sigEx[0],setSigsExpanded=_sigEx[1];
+          var visibleSigs=sigsExpanded?sigs:sigs.slice(0,3);
+          if(sigs.length===0)return null;
+
+          function handleAction(act){
+            if(!act)return;
+            if(act.type==="ai"){
+              var FRAMING_BRIEF={
+                challenge:{why:"This prompt feeds the AI your specific thesis arguments and asks it to attack them using your own words.",dataPoints:["Your thesis","Conviction history","KPIs","Decisions log"]},
+                sell:{why:"Takes your sell criteria — written when calm — and asks whether they have actually been triggered.",dataPoints:["Your sell criteria","Recent decisions","Journal entries","Conviction trajectory"]},
+                bear:{why:"Builds the strongest possible bear case using your own bull thesis as the target.",dataPoints:["Your bull thesis","Moat argument","Risks acknowledged","Conviction level"]},
+                earnings:{why:"Tailored entirely to your thesis and KPIs — not a generic earnings preview.",dataPoints:["Your thesis","Your KPIs","Your sell criteria","Earnings date"]},
+                annual:{why:"Uses your own conviction trajectory and decisions to ask if you should still own this.",dataPoints:["Conviction history","Decisions log","Journal entries","Original thesis"]},
+              };
+              var fr=FRAMING_BRIEF[act.aiType]||FRAMING_BRIEF["challenge"];
+              var title={challenge:"Challenge My Thesis",sell:"Sell Discipline Check",bear:"Bear Case Generator",earnings:"Pre-Earnings Briefing",annual:"Annual Review"}[act.aiType]||"AI Review";
+              setAiModal({title:title+" — "+(act.c?act.c.ticker:""),framing:fr,prompt:buildPrompt(act.aiType,act.c)});
+            }
+            else if(act.type==="go"){
+              setSelId(act.c.id);setDetailTab("dossier");
+              if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
+            }
+            else if(act.type==="library"){setSelId(null);setPage("library")}
+            }
+
+          var _heldCos2=portfolio.filter(function(cc){return cc.purchaseDate});
+          var _avgYrs2=_heldCos2.length?(_heldCos2.reduce(function(s,cc){var d=Math.ceil((Date.now()-new Date(cc.purchaseDate))/864e5);return s+(d>0&&d<18250?d:0)},0)/_heldCos2.length/365):0;
+          return<div style={{borderBottom:"1px solid "+K.bdr}}>
+            <div style={{padding:isMobile?"14px 16px 12px":"16px 24px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div>
+                  <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{"Your Morning Brief"}</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:1}}>{now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase()+" MORNING"}</div>
+                </div>
+                {_avgYrs2>0&&investorProfile==="munger"&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",background:K.grn+"10",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:6}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.grn} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm}}>{_avgYrs2.toFixed(1)+" yr avg hold"}</span>
+                </div>}
+              </div>
+              <div style={{background:K.acc,color:"#fff",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:_isBm?0:999,fontFamily:fm,flexShrink:0}}>
+                {sigs.length+" signal"+(sigs.length!==1?"s":"")}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,padding:isMobile?"0 12px 14px":"0 20px 16px"}}>
+              {visibleSigs.map(function(sig,i){
+                return<div key={i} onClick={function(){handleAction(sig.onAction)}} style={{display:"flex",alignItems:"flex-start",gap:14,padding:isMobile?"12px 14px":"14px 16px",background:sig.color+"0a",border:"1px solid "+sig.color+"25",borderLeft:"3px solid "+sig.color,borderRadius:_isBm?0:10,cursor:"pointer",transition:"background .15s"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=sig.color+"15"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background=sig.color+"0a"}}>
+                  <div style={{width:30,height:30,borderRadius:_isBm?0:8,background:sig.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                    <IC name={sig.icon} size={14} color={sig.color}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:isMobile?13:14,fontWeight:700,color:K.txt,lineHeight:1.35,marginBottom:4}}>{sig.title}</div>
+                    <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{sig.sub}</div>
+                    {!isMobile&&sig.secondary&&sig.onSecondary&&<div style={{marginTop:8,display:"flex",gap:6}}>
+                      <button onClick={function(e){e.stopPropagation();handleAction(sig.onSecondary)}} style={{padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>{sig.secondary}</button>
+                    </div>}
+                  </div>
+                </div>;
+              })}
+              {sigs.length>3&&<button onClick={function(){setSigsExpanded(!sigsExpanded)}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"2px 0",textAlign:"left"}}>
+                {sigsExpanded?"Show less":"Show "+(sigs.length-3)+" more signal"+(sigs.length-3!==1?"s":"")+" →"}
+              </button>}
+            </div>
+          </div>;
+        })()}
+
+        <div>
+          <div style={{padding:isMobile?"12px 16px":"14px 24px"}}>
+
+                        {/* Post-earnings review needed */}
+            {(function(){var needReview=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
+              if(needReview.length===0)return null;
+              return<div style={{marginBottom:14}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>Post-Earnings Review</div>
+                {needReview.slice(0,3).map(function(c2){return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:10,color:K.dim}}>Did the KPIs hold?</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:K.amb,fontFamily:fm}}>{c2.kpis.length} KPIs →</span>
+                </div>})}
+              </div>})()}
+
+            {/* Upcoming earnings */}
+            {upcoming.length>0&&<div style={{marginBottom:14}}>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:earningsToday>0?K.red:K.amb,fontFamily:fm,fontWeight:700,marginBottom:7}}>
+                {earningsToday>0?"Reporting Today":upcoming[0]&&dU(upcoming[0].earningsDate)===1?"Reporting Tomorrow":"Earnings This Week"}
+              </div>
+              {upcoming.slice(0,4).map(function(c2){var d2=dU(c2.earningsDate);var kpiC=c2.kpis.length;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:"1px solid "+K.bdr+"25",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                  <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
+                </div>})}
+            </div>}
+
+            {/* Insider buying signals */}
+            {insiderSignals.length>0&&<div>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>Insider Buying</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {insiderSignals.map(function(s){return<div key={s.ticker} style={{fontSize:11,color:K.grn,background:K.grn+"12",padding:"2px 8px",borderRadius:_isBm?0:6,fontFamily:fm,cursor:"pointer"}} onClick={function(){setSelId(s.id)}}>{s.ticker} ×{s.count}</div>})}
+              </div>
+            </div>}
+
+          </div>
+
+          </div>
+          {/* OWNERSHIP HEALTH */}
+          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
+            {portfolio.map(function(c2){
+              var convColor=c2.conviction>=7?K.grn:c2.conviction>=4?K.amb:c2.conviction>0?K.red:K.bdr;
+              var hasEarningsSoon=c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7;
+              // --- Progress meter: 0-100 across 5 dimensions ---
+              var _th=c2.thesisNote||"";
+              var _thSec=(_th.length>20?1:0)+(_th.indexOf("## MOAT")>=0?1:0)+(_th.indexOf("## RISKS")>=0?1:0)+(_th.indexOf("## SELL")>=0?1:0);
+              var _tScore=Math.min(100,_thSec*25); // 0/25/50/75/100
+              var _kDef=c2.kpis.length;var _kChk=c2.kpis.filter(function(k2){return k2.lastResult}).length;var _kMet=c2.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+              var _kScore=_kDef===0?0:Math.min(100,_kDef*15+_kChk*10+_kMet*15);
+              var _convScore=(c2.conviction||0)*10;
+              var _mt=c2.moatTypes||{};var _hasMoat=Object.keys(_mt).some(function(k2){return _mt[k2]&&_mt[k2].active});
+              var _moatScore=_hasMoat?100:0;
+              var _decScore=(c2.decisions&&c2.decisions.length>0)?Math.min(100,c2.decisions.length*20):0;
+              var _coverage=Math.round((_tScore+_kScore+_convScore+_moatScore+_decScore)/5);
+              var _covColor=_coverage>=70?K.grn:_coverage>=40?K.amb:K.red;
+              // Weakest dimension label
+              var _dims=[{l:"thesis",v:_tScore},{l:"KPIs",v:_kScore},{l:"conviction",v:_convScore},{l:"moat",v:_moatScore},{l:"journal",v:_decScore}];
+              var _weakest=_dims.reduce(function(a,b){return a.v<=b.v?a:b});
+              var _hint=_coverage>=80?"Well covered":"Work on "+_weakest.l;
+              return<div key={c2.id} style={{padding:"7px 0",borderBottom:"1px solid "+K.bdr+"20",cursor:"pointer"}} onClick={function(){setSelId(c2.id);setDetailTab("dossier")}}>
+                <div style={{display:"flex",alignItems:"center",gap:0,marginBottom:3}}>
+                  <div title={"Conviction: "+(c2.conviction||"unset")} style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:convColor,flexShrink:0,marginRight:8}}/>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
+                  <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:6,flex:1}}>{c2.ticker}</span>
+                  {hasEarningsSoon&&<span style={{fontSize:9,color:K.amb,background:K.amb+"15",padding:"1px 5px",borderRadius:_isBm?0:4,marginRight:4,flexShrink:0,fontFamily:fm}}>{dU(c2.earningsDate)===0?"today":dU(c2.earningsDate)+"d"}</span>}
+                  <span style={{fontSize:10,fontWeight:700,color:_covColor,fontFamily:fm}}>{_coverage}%</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,paddingLeft:14}}>
+                  <div style={{flex:1,height:3,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:_coverage+"%",borderRadius:_isBm?0:2,background:_covColor,transition:"width .3s"}}/>
+                  </div>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,whiteSpace:"nowrap"}}>{_hint}</span>
+                </div>
+              </div>})}
+          </div>
+        </div>
+
+
+        {/* ── Portfolio Look-Through ── */}
+        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
+{/* ── Look-through portfolio table — preset switcher ── */}
+            {(function(){
+              // ── S&P 500 benchmarks ─────────────────────────────────────
+              var SP={roce:13,grossMargin:45,opMargin:16,cashConv:85,interestCover:9,
+                      roic:12,fcfMargin:11,netDebtEbitda:2.1,roe:18,
+                      revGrowth:5,epsGrowth:8,pe:22,peg:2.1,fcfYield:4.5,divYield:1.4};
+
+              // ── Preset definitions ─────────────────────────────────────
+              var PRESETS=[
+                {id:"terry",label:"Terry",tip:"Fundsmith-style: quality compounders",rows:[
+                  {key:"roce",     label:"ROCE",             bv:SP.roce,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roce?s.roce.numVal:s.roic?s.roic.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"cashconv", label:"Cash conversion",  bv:SP.cashConv,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){
+  // Primary: FCF margin / Op margin = what % of operating profit converts to cash
+  var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;
+  var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;
+  if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);
+  // Fallback 1: FCF margin as direct proxy
+  if(fcf!=null)return Math.max(0,fcf);
+  return null;}},
+                  {key:"intcov",   label:"Interest cover",   bv:SP.interestCover,hb:true,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){
+  // Primary: direct interest coverage ratio
+  if(s.interestCoverage&&s.interestCoverage.numVal!=null)return s.interestCoverage.numVal;
+  // Fallback 1: net-cash company (netDebt negative) -> effectively very high coverage
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0)return 99;
+  // Fallback 2: near-zero leverage -> infer from ROIC
+  if(s.netDebtEbitda&&s.netDebtEbitda.numVal!=null&&s.netDebtEbitda.numVal<0.5){
+    var rc=s.roce&&s.roce.numVal!=null?s.roce.numVal:(s.roic&&s.roic.numVal!=null?s.roic.numVal:null);
+    if(rc!=null&&rc>0)return Math.round(rc*2);}
+  // Fallback 3: very low debt/equity
+  if(s.debtEquity&&s.debtEquity.numVal!=null&&s.debtEquity.numVal<0.1)return 50;
+  return null;}},
+                ]},
+                {id:"quality",label:"Quality",tip:"High-return, cash-generative businesses",rows:[
+                  {key:"roic",     label:"ROIC",             bv:SP.roic,        hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roic?s.roic.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                  {key:"gross",    label:"Gross margin",     bv:SP.grossMargin, hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.grossMargin?s.grossMargin.numVal:null}},
+                  {key:"fcfm",     label:"FCF margin",       bv:SP.fcfMargin,   hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.fcfMargin?s.fcfMargin.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                ]},
+                {id:"garp",label:"GARP",tip:"Growth at a reasonable price",rows:[
+                  {key:"revgr",    label:"Rev growth",       bv:SP.revGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.revGrowth?s.revGrowth.numVal:null}},
+                  {key:"epsgr",    label:"EPS growth",       bv:SP.epsGrowth,   hb:true, fmt:function(v){return(v>=0?"+":"")+v.toFixed(0)+"%"},get:function(s){return s.epsGrowth?s.epsGrowth.numVal:null}},
+                  {key:"op",       label:"Op margin",        bv:SP.opMargin,    hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.opMargin?s.opMargin.numVal:null}},
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                ]},
+                {id:"value",label:"Value",tip:"Income and deep value lens",rows:[
+                  {key:"pe",       label:"P/E",              bv:SP.pe,          hb:false,fmt:function(v){return v.toFixed(0)+"x"}, get:function(s){return s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null}},
+                  {key:"fcfy",     label:"FCF yield",        bv:SP.fcfYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.fcfYield?s.fcfYield.numVal:null}},
+                  {key:"divy",     label:"Div yield",        bv:SP.divYield,    hb:true, fmt:function(v){return v.toFixed(1)+"%"}, get:function(s){return s.divYield?s.divYield.numVal:null}},
+                  {key:"ndeb",     label:"Net debt / EBITDA",bv:SP.netDebtEbitda,hb:false,fmt:function(v){return v.toFixed(1)+"x"},get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null}},
+                  {key:"roe",      label:"ROE",              bv:SP.roe,         hb:true, fmt:function(v){return v.toFixed(0)+"%"}, get:function(s){return s.roe?s.roe.numVal:null}},
+                ]},
+                {id:"munger",label:"Munger",tip:"Munger napkin: pre-tax returns, pricing power, owner earnings, fortress balance sheet",
+                 mungerNote:"The numbers confirm. They do not decide.",
+                 rows:[
+                  {key:"pretax_roe", label:"Pre-tax return on equity",bv:22,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var roe=s.roe&&s.roe.numVal!=null?s.roe.numVal:null;if(roe==null)return null;return Math.min(roe*1.35,150)},
+                   note:"ROE grossed up for ~25% tax — Munger wants 15%+ pretax on tangible equity"},
+                  {key:"gross",  label:"Gross margin (pricing power)", bv:SP.grossMargin,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){return s.grossMargin?s.grossMargin.numVal:null},
+                   note:"Does management apologise for raising prices, or do customers barely notice?"},
+                  {key:"fcfconv",label:"Earnings quality (FCF conv.)",  bv:85,hb:true,
+                   fmt:function(v){return v.toFixed(0)+"%"},
+                   get:function(s){var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:null;var op=s.opMargin&&s.opMargin.numVal!=null?s.opMargin.numVal:null;if(fcf!=null&&op!=null&&op>0)return Math.min(fcf/op*100,200);if(fcf!=null&&fcf>0)return Math.min(fcf*5,150);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;var ey=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(fcfy&&fcfy>0&&ey&&ey>0)return Math.min(fcfy/(1/ey)*100,200);return null},
+                   note:"What % of operating earnings becomes real cash? Great businesses convert 80%+"},
+                  {key:"earny",  label:"Owner earnings yield",          bv:4.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"%"},
+                   get:function(s){var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;if(pe&&pe>0)return Math.min(1/pe*100,50);var fcfy=s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;return fcfy&&fcfy>0?fcfy:null;},
+                   note:"What you earn on every dollar invested. Munger: 'I can do the math in my head'"},
+                  {key:"ndeb",   label:"Debt (fortress check)",         bv:SP.netDebtEbitda,hb:false,
+                   fmt:function(v){return v<0?"Net cash":v.toFixed(1)+"x"},
+                   get:function(s){return s.netDebtEbitda?s.netDebtEbitda.numVal:null},
+                   note:"Munger hates leverage. Under 2x EBITDA, or ideally net cash."},
+                  {key:"circle", label:"Circle of competence",          bv:3.5,hb:true,
+                   fmt:function(v){return v.toFixed(1)+"/5"},
+                   qual:true,
+                   getQ:function(c2){return c2.circleScore||null},
+                   note:"Do you truly understand these businesses? Munger: 'Invert, always invert'"},
+                  {key:"mgmt",   label:"Management quality",            bv:null,hb:true,
+                   fmt:function(v){return v===4?"A avg":v>=3?"B avg":v>=2?"C avg":"D avg"},
+                   qual:true,
+                   getQ:function(c2){return c2.managementGrade?({A:4,B:3,C:2,D:1}[c2.managementGrade]||null):null},
+                   note:"The most important quality is integrity — Munger"},
+                ]},
+              ];
+
+              // ── State: active preset ───────────────────────────────────
+              var _ltp=useState(function(){return investorProfile==="munger"?"munger":"terry"}),activePreset=_ltp[0],setActivePreset=_ltp[1];
+              var _exR=useState(null),expandedRow=_exR[0],setExpandedRow=_exR[1];
+              var preset=PRESETS.find(function(p){return p.id===activePreset})||PRESETS[0];
+              var totalVal3=portfolio.reduce(function(s,c2){var p2=c2.position||{};return s+(p2.shares>0&&p2.currentPrice>0?p2.shares*p2.currentPrice:0)},0);
+              function wavg(fn,filterFn){var wSum=0,wN=0;portfolio.forEach(function(c2){var s=c2.financialSnapshot||{};var v=fn(s);if(filterFn&&!filterFn(v))return;var p2=c2.position||{};var w=totalVal3>0&&p2.shares>0&&p2.currentPrice>0?(p2.shares*p2.currentPrice/totalVal3):1/portfolio.length;if(v!=null){wSum+=v*w;wN+=w}});return wN>0?wSum/wN:null;}
+              function wavgQual(fn){var sum=0,n=0;portfolio.forEach(function(c2){var v=fn(c2);if(v!=null){sum+=v;n++}});return n>0?sum/n:null;}
+              function perHolding(r){return portfolio.map(function(c2){var v=r.qual?r.getQ(c2):r.get(c2.financialSnapshot||{});return{ticker:c2.ticker,v:v}}).filter(function(x){return x.v!=null&&(r.key!=="earny"||x.v>0)});}
+              var _gradedRows=preset.rows.filter(function(r){return r.bv!=null});
+              var _beaten=_gradedRows.filter(function(r){var pv=r.qual?wavgQual(r.getQ):wavg(r.get,r.key==="earny"?function(v){return v>0}:null);return pv!=null&&(r.hb?pv>r.bv:pv<r.bv)}).length;
+              var _gr=_gradedRows.length>0?_beaten/_gradedRows.length:null;
+              var napkinGrade=_gr===null?"?":_gr>=0.8?"A":_gr>=0.6?"B":_gr>=0.4?"C":"D";
+              var napkinColor=napkinGrade==="A"?K.grn:napkinGrade==="B"?K.acc:napkinGrade==="C"?K.amb:K.red;
+              var hasSpBench=preset.rows.some(function(r){return r.bv!=null&&!r.qual});
+              return<div style={{marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:9}}>
+                  <div style={{display:"flex",alignItems:"center",gap:7}}>
+                    <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Portfolio Look-Through</div>
+                    {napkinGrade!=="?"&&<div title={_beaten+"/"+_gradedRows.length+" metrics beat benchmark"} style={{width:18,height:18,borderRadius:"50%",background:napkinColor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"help"}}><span style={{fontSize:9,fontWeight:800,color:"#fff",fontFamily:fm}}>{napkinGrade}</span></div>}
+                  </div>
+                  <div style={{display:"flex",gap:3}}>{PRESETS.map(function(p){var on=p.id===activePreset;return<button key={p.id} title={p.tip} onClick={function(){setActivePreset(p.id);setExpandedRow(null)}} style={{padding:"3px 8px",borderRadius:_isBm?0:999,border:"1px solid "+(on?K.acc+"50":K.bdr),background:on?K.acc+"16":"transparent",color:on?K.acc:K.dim,fontSize:9,fontWeight:on?700:400,cursor:"pointer",fontFamily:fm,transition:"all .12s"}}>{p.label}</button>})}</div>
+                </div>
+                <div style={{borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px "+(hasSpBench?"72px":""),background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                    <div style={{padding:"5px 10px"}}/>
+                    <div style={{padding:"5px 0",fontSize:9,color:K.acc,fontFamily:fm,fontWeight:700,textAlign:"center"}}>Portfolio</div>
+                    {hasSpBench&&<div style={{padding:"5px 0",fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center"}}>S&P 500</div>}
+                  </div>
+                  {preset.rows.map(function(r,i){
+                    var isEarny=r.key==="earny";
+                    var pv=r.qual?wavgQual(r.getQ):wavg(r.get,isEarny?function(v){return v>0}:null);
+                    var holdings=perHolding(r);
+                    var beat=pv!=null&&r.bv!=null&&(r.hb?pv>r.bv:pv<r.bv);
+                    var pvColor=pv==null?K.dim:beat?K.grn:K.amb;
+                    var isOpen=expandedRow===r.key;
+                    var vArr=holdings.map(function(h){return h.v});
+                    var vMin=vArr.length?Math.min.apply(null,vArr):0;
+                    var vMax=vArr.length?Math.max.apply(null,vArr):1;
+                    var vSpan=Math.max(vMax-vMin,0.001);
+                    return<div key={r.key} style={{borderBottom:i<preset.rows.length-1?"1px solid "+K.bdr+"50":"none",background:isOpen?K.acc+"04":"transparent"}}>
+                      <div title={r.note||""} style={{display:"grid",gridTemplateColumns:"1fr 72px "+(r.bv!=null&&hasSpBench?"72px":""),cursor:holdings.length>0?"pointer":"default"}} onClick={function(){if(holdings.length>0)setExpandedRow(isOpen?null:r.key)}}>
+                        <div style={{padding:"7px 10px",fontSize:11,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+                          {r.label}{r.note&&<span style={{fontSize:9,color:K.dim,opacity:.5}}>ⓘ</span>}
+                          {r.qual&&<span style={{fontSize:8,color:K.acc,background:K.acc+"10",padding:"1px 4px",borderRadius:2,marginLeft:2,fontFamily:fm}}>qual</span>}
+                          {holdings.length>0&&<span style={{fontSize:8,color:K.dim,marginLeft:"auto",opacity:.4}}>{isOpen?"▲":"▼"}</span>}
+                        </div>
+                        <div style={{padding:"7px 0",textAlign:"center"}}>
+                          {pv!=null?<span style={{fontSize:12,fontWeight:700,color:pvColor,fontFamily:fm}}>{r.fmt(pv)}</span>:r.qual?<button onClick={function(e){e.stopPropagation();setDashSet(function(p){var n=Object.assign({},p,{portfolioView:"ledger"});try{localStorage.setItem("ta-dashSet",JSON.stringify(n))}catch(er){}return n})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:3,padding:"2px 7px",cursor:"pointer",fontFamily:fm}}>Rate →</button>:<span style={{fontSize:11,color:K.bdr,cursor:"pointer"}} title="Refresh financial data" onClick={function(e){e.stopPropagation();filtered.filter(function(c2){return c2.ticker}).forEach(function(c2,ii){setTimeout(function(){fetchEarnings(c2,c2.kpis).then(function(res){if(res&&res.snapshot)upd(c2.id,{financialSnapshot:Object.assign({},c2.financialSnapshot,res.snapshot),lastChecked:new Date().toISOString()})})},ii*800)})}}>{"↺"}</span>}
+                        </div>
+                        {r.bv!=null&&hasSpBench&&<div style={{padding:"7px 0",textAlign:"center"}}><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{r.fmt(r.bv)}</span></div>}
+                      </div>
+                      {isOpen&&holdings.length>0&&<div style={{padding:"4px 12px 10px",borderTop:"1px solid "+K.bdr+"30"}}>
+                        {isEarny&&holdings.length<portfolio.length&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3,fontStyle:"italic"}}>Loss-making companies excluded</div>}
+                        <div style={{position:"relative",height:24,marginBottom:4}}>
+                          <div style={{position:"absolute",top:11,left:4,right:4,height:1,background:K.bdr}}/>
+                          {r.bv!=null&&(function(){var bp=Math.max(2,Math.min(96,(r.bv-vMin)/vSpan*92+4));return<div style={{position:"absolute",top:5,left:bp+"%",transform:"translateX(-50%)",width:1,height:12,background:K.dim,opacity:.4}} title={"S&P: "+r.fmt(r.bv)}/>})()}
+                          {holdings.map(function(h){var pct=Math.max(2,Math.min(96,(h.v-vMin)/vSpan*92+4));var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<div key={h.ticker} title={h.ticker+": "+r.fmt(h.v)} style={{position:"absolute",top:5,left:pct+"%",transform:"translateX(-50%)",cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}><div style={{width:10,height:10,borderRadius:"50%",background:dc,border:"2px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></div>;})}
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:"2px 10px"}}>{holdings.slice().sort(function(a,b){return b.v-a.v}).map(function(h){var dc=r.bv!=null?((r.hb?h.v>r.bv:h.v<r.bv)?K.grn:K.amb):K.acc;return<span key={h.ticker} style={{fontSize:9,fontFamily:fm,color:dc,fontWeight:700,cursor:"pointer"}} onClick={function(e){e.stopPropagation();var f2=cos.find(function(co){return co.ticker===h.ticker});if(f2){setSelId(f2.id);setDetailTab("dossier")}}}>{h.ticker+" "+r.fmt(h.v)}</span>;})}</div>
+                      </div>}
+                    </div>;})}
+                  {preset.mungerNote&&<div style={{padding:"8px 10px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>
+                    {"\u201c"+preset.mungerNote+"\u201d"}
+                  </div>}
+                </div>
+              </div>
+            })()}
+        </div>}
+
+        {/* ── Done for today ── */}
+        {focus&&!isMobile&&<div style={{padding:"9px 24px",borderTop:"1px solid "+K.bdr+"40",background:K.bg+"60",display:"flex",alignItems:"center",gap:8}}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Do the one thing above. Then close the laptop — your portfolio doesn’t need you right now."}</span>
+        </div>}
+
+        {/* ── Owner's Intel feed ── */}
+        {(function(){
+          var _nfs=useState(false),showNewsFilter=_nfs[0],setShowNewsFilter=_nfs[1];
+          var _nex=useState(false),newsExpanded=_nex[0],setNewsExpanded=_nex[1];
+          var enabledCats=Object.keys(briefNewsPrefs).filter(function(k){return briefNewsPrefs[k]});
+          var shown=(briefNews||[]).filter(function(n){
+            if(!portfolio.some(function(c2){return c2.ticker===n.ticker}))return false;
+            return enabledCats.indexOf(n.cat)>=0}).slice(0,10);
+          var visible=newsExpanded?shown:shown.slice(0,3);
+          if(!briefNewsLoading&&briefNews===null)return null; // never loaded yet
+          return<div style={{borderTop:"1px solid "+K.bdr}}>
+            <div style={{padding:isMobile?"12px 16px 14px":"14px 24px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:showNewsFilter?10:8}}>
+                <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                  <IC name="news" size={12} color={isThesis?K.acc:K.mid}/><span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginLeft:2}}>Owner's Intel</span>
+                  {briefNews&&shown.length>0&&<span style={{fontSize:10,color:isThesis?K.acc:K.dim,background:(isThesis?K.acc:K.dim)+"18",padding:"1px 7px",borderRadius:_isBm?0:999,fontFamily:fm,fontWeight:700,letterSpacing:0}}>{shown.length}</span>}
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <button onClick={function(){setShowNewsFilter(!showNewsFilter)}} style={{background:showNewsFilter?K.acc+"15":"none",border:"1px solid "+(showNewsFilter?K.acc+"40":K.bdr),borderRadius:_isBm?0:999,color:showNewsFilter?K.acc:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"2px 9px",display:"flex",alignItems:"center",gap:4}}>
+                    <IC name="gear" size={10} color={showNewsFilter?K.acc:K.dim}/>{"Filter"}
+                  </button>
+                  <button onClick={function(){try{localStorage.removeItem("ta-brief-news")}catch(e){}setBriefNews([]);loadBriefNews(portfolio)}} style={{background:K.acc,border:"none",borderRadius:_isBm?0:999,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm,padding:"5px 14px",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 8px "+K.acc+"40"}} title="Refresh news"><IC name="refresh" size={12} color="#fff"/>{briefNewsLoading?"Loading...":"Refresh feed"}</button>
+                </div>
+              </div>
+              {showNewsFilter&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{fontSize:11,color:K.mid,fontFamily:fm,marginBottom:8,fontWeight:600}}>{"Show news about…"}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {NEWS_CATS.map(function(cat){var on=!!briefNewsPrefs[cat.id];return<button key={cat.id} onClick={function(){var next=Object.assign({},briefNewsPrefs);next[cat.id]=!on;saveBriefNewsPrefs(next)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(on?cat.color+"50":K.bdr),background:on?cat.color+"15":"transparent",color:on?cat.color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:on?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:4}} title={cat.desc}>
+                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:on?cat.color:K.bdr,flexShrink:0}}/>
+                    {cat.label}
+                  </button>})}
+                </div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8}}>{"Only stories where your company is the subject, not a footnote."}</div>
+              </div>}
+              {briefNewsLoading&&(!briefNews||briefNews.length===0)&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0"}}><div style={{width:7,height:7,borderRadius:"50%",background:K.acc,animation:"pulse 1.2s infinite"}}/><span style={{fontSize:12,color:K.dim}}>{"Scanning news for your holdings…"}</span></div>}
+              {shown.length>0&&<div>{visible.map(function(n,i){
+                var timeAgo=(function(){var diff=Math.floor(Date.now()/1000-n.datetime);if(diff<3600)return Math.floor(diff/60)+"m ago";if(diff<86400)return Math.floor(diff/3600)+"h ago";return Math.floor(diff/86400)+"d ago"})();
+                var co=portfolio.find(function(c2){return c2.ticker===n.ticker});
+                return<a key={i} href={n.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"flex-start",gap:9,padding:"8px 0",borderBottom:i<shown.length-1?"1px solid "+K.bdr+"20":"none",textDecoration:"none"}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06";e.currentTarget.style.borderRadius="6px";e.currentTarget.style.padding="8px 6px";e.currentTarget.style.margin="0 -6px"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.padding="8px 0";e.currentTarget.style.margin="0"}}>
+                  {co&&<div style={{flexShrink:0,marginTop:2}}><CoLogo domain={co.domain} ticker={co.ticker} size={16}/></div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:isMobile?13:12,color:K.mid,lineHeight:1.5,marginBottom:2}}>{n.headline}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{n.ticker}</span>
+                      <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{n.source}</span>
+                      <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{timeAgo}</span>
+                    </div>
+                  </div>
+                  <span style={{flexShrink:0,fontSize:10,fontWeight:700,color:n.color,background:n.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,whiteSpace:"nowrap",marginTop:2}}>{n.label}</span>
+                </a>})}
+              </div>}
+              {shown.length>3&&<button onClick={function(){setNewsExpanded(!newsExpanded)}} style={{marginTop:8,background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"4px 0",display:"flex",alignItems:"center",gap:4}}><IC name={newsExpanded?"alert":"plus"} size={10} color={K.acc}/>{newsExpanded?"Show less":"Show "+(shown.length-3)+" more stories"}</button>}
+              {briefNews!==null&&shown.length===0&&!briefNewsLoading&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",color:K.dim}}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style={{fontSize:12,fontFamily:fm}}>{"No curated news found for your holdings in the last 14 days. Try refreshing."}</span></div>}
+            </div>
+          </div>})()}
+      </div>})()}
     {/* ── CONVICTION LEDGER VIEW ── */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="ledger"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p=cc.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
@@ -13846,7 +13414,7 @@ function OnboardingFlow(p){
   // STEP 5 — Write thesis inline
   // ─────────────────────────────────────────────────────────
   if(obStep===5){
-    var sty3=oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null;
+    var _profSty=oStyle&&oStyle.startsWith("profile_")?oStyle.replace("profile_",""):null;var _profPrompts=_profSty&&PROFILE_MAP[_profSty]&&PROFILE_MAP[_profSty].thesisPrompt?PROFILE_MAP[_profSty]:null;var sty3=_profPrompts||(oStyle&&STYLE_MAP[oStyle]?STYLE_MAP[oStyle]:null);
     var taStyle={width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,minHeight:60};
     var hasAny=oTCore.trim()||oTMoat.trim()||oTRisk.trim()||oTSell.trim();
     return<div style={overlay}><div style={Object.assign({},card,{maxWidth:520})}>
