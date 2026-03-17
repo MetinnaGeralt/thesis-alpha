@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -41,17 +42,8 @@ async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){conso
 // Auto-format text: capitalize sentences, fix spacing, clean up
 // ═══ NO AI — all data from free APIs (Finnhub + FMP) ═══
 
-// ═══ DATA FUNCTIONS ═══
-// Predefined metrics — each maps to an exact Finnhub field
-METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
-// ── Investment Style System ──
-INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
-INVESTOR_PROFILES.forEach(function(p){PROFILE_MAP[p.id]=p});
 
 
-// Legacy name → metricId mapping for existing user data
-METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
-Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
 
 async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
   try{
