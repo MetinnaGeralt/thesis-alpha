@@ -39,6 +39,409 @@ async function finnhub(ep){var cached=cacheGet("fh:"+ep);if(cached!==null){conso
 
 // ═══ AI (server proxy) ═══
 // Auto-format text: capitalize sentences, fix spacing, clean up
+// ═══ NO AI — all data from free APIs (Finnhub + FMP) ═══
+
+// ═══ DATA FUNCTIONS ═══
+// Predefined metrics — each maps to an exact Finnhub field
+METRICS.forEach(function(m){METRIC_MAP[m.id]=m});
+// ── Investment Style System ──
+INVEST_STYLES.forEach(function(s){STYLE_MAP[s.id]=s});
+INVESTOR_PROFILES.forEach(function(p){PROFILE_MAP[p.id]=p});
+
+
+// Legacy name → metricId mapping for existing user data
+METRICS.forEach(function(m){LEGACY_MAP[m.label.toLowerCase()]=m.id});
+Object.keys(_la).forEach(function(k){LEGACY_MAP[k]=_la[k]});
+
+async function lookupTicker(ticker){var t=ticker.toUpperCase().trim();
+  try{
+    var p=await fmp("profile/"+t);
+    if(p&&p.length&&p[0].companyName){var pr=p[0],domain="",irUrl="";
+      if(pr.website){try{domain=new URL(pr.website).hostname.replace("www.","")}catch(e){domain=pr.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}
+        irUrl="https://www.google.com/search?q="+encodeURIComponent(t+" "+pr.companyName+" investor relations")+"&btnI=1"}
+      // Grab earnings date from Finnhub (free, $0) — include date range for better coverage
+      var ed="TBD",et="TBD";
+      try{var from2=new Date(Date.now()-30*86400000).toISOString().slice(0,10);var to2=new Date(Date.now()+120*86400000).toISOString().slice(0,10);
+        var ec=await finnhub("calendar/earnings?symbol="+toFinnhubSymbol(t)+"&from="+from2+"&to="+to2);
+        if(ec&&ec.earningsCalendar&&ec.earningsCalendar.length){
+          var now=new Date().toISOString().slice(0,10);
+          var upcoming=ec.earningsCalendar.filter(function(e){return e.date>=now}).sort(function(a,b){return a.date>b.date?1:-1});
+          if(upcoming.length){ed=upcoming[0].date;et=upcoming[0].hour===0?"BMO":upcoming[0].hour===1?"AMC":"TBD"}
+          else{var recent=ec.earningsCalendar.sort(function(a,b){return b.date>a.date?1:-1});
+            if(recent.length){ed=recent[0].date;et=recent[0].hour===0?"BMO":recent[0].hour===1?"AMC":"TBD"}}}}catch(e){}
+      // Dividend data from Finnhub (free, reliable)
+      var divData={lastDiv:0,divPerShare:0,divFrequency:"none",exDivDate:"",divYield:0};
+      try{var fhDiv=await fetchDivFromFinnhub(t,pr.lastDiv);
+        if(fhDiv&&fhDiv.payer){divData.divPerShare=fhDiv.divPerShare;divData.lastDiv=fhDiv.annualDiv||fhDiv.divPerShare;divData.divFrequency=fhDiv.divFrequency;divData.divYield=fhDiv.divYield}
+      }catch(e){}
+      // Fallback to FMP lastDiv if Finnhub missed it
+      if(divData.divPerShare===0&&pr.lastDiv>0){divData.divPerShare=pr.lastDiv;divData.lastDiv=pr.lastDiv;divData.divFrequency="quarterly";divData.divYield=pr.price>0?pr.lastDiv*4/pr.price*100:0}
+      return{name:pr.companyName,sector:pr.sector||pr.industry||"",industry:pr.industry||"",earningsDate:ed,earningsTime:et,domain:domain,irUrl:irUrl||"",price:pr.price||0,lastDiv:divData.lastDiv,divPerShare:divData.divPerShare,divFrequency:divData.divFrequency,exDivDate:divData.exDivDate,divYield:divData.divYield,mktCap:pr.mktCap||0,description:pr.description||"",ceo:pr.ceo||"",employees:pr.fullTimeEmployees||0,country:pr.country||"",exchange:pr.exchangeShortName||pr.exchange||"",ipoDate:pr.ipoDate||"",image:pr.image||""}}
+  }catch(e){console.warn("FMP lookup failed:",e)}
+  // Try common international suffixes if bare ticker failed
+  var SUFFIXES=[".TO",".V",".L",".DE",".PA",".AS",".MI",".MC",".HK",".AX",".BO",".NS"];
+  for(var si=0;si<SUFFIXES.length;si++){
+    try{
+      var pt=await fmp("profile/"+t+SUFFIXES[si]);
+      if(pt&&pt.length&&pt[0].companyName){
+        var pr2=pt[0];var domain2="",irUrl2="";
+        if(pr2.website){try{domain2=new URL(pr2.website).hostname.replace("www.","")}catch(e2){domain2=pr2.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]}}
+        return{name:pr2.companyName,sector:pr2.sector||pr2.industry||"",industry:pr2.industry||"",earningsDate:"TBD",earningsTime:"TBD",domain:domain2,irUrl:irUrl2,price:pr2.price||0,lastDiv:pr2.lastDiv||0,divPerShare:pr2.lastDiv||0,divFrequency:"quarterly",exDivDate:"",divYield:0,mktCap:pr2.mktCap||0,description:pr2.description||"",ceo:pr2.ceo||"",employees:pr2.fullTimeEmployees||0,country:pr2.country||"",exchange:pr2.exchangeShortName||pr2.exchange||"",ipoDate:pr2.ipoDate||"",image:pr2.image||"",_foundAs:t+SUFFIXES[si]}
+      }
+    }catch(e2){}
+  }
+  return{error:"Not found — enter details manually. For international stocks, try adding the exchange suffix (e.g. RY.TO for TSX, VOD.L for LSE)"}}
+async function fetchPrice(ticker){try{var p=await fmp("profile/"+ticker);if(p&&p.length&&p[0].price)return{price:p[0].price,lastDiv:p[0].lastDiv||0,changes:p[0].changes||0,changesPercentage:p[0].changesPercentage||0};return null}catch(e){return null}}
+async function fetchQuote(ticker){
+  // Try Finnhub first
+  try{var q=await finnhub("quote?symbol="+toFinnhubSymbol(ticker));if(q&&q.c>0)return{price:q.c,prevClose:q.pc||0,change:q.d||0,changePct:q.dp||0};}catch(e){}
+  // FMP fallback — try original ticker, then base ticker for intl
+  var fmpTickers=[ticker];
+  if(isIntlTicker(ticker)){var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");if(base!==ticker)fmpTickers.push(base);}
+  for(var _fi=0;_fi<fmpTickers.length;_fi++){
+    try{var fq=await fmp("quote/"+fmpTickers[_fi]);if(fq&&Array.isArray(fq)&&fq[0]&&fq[0].price>0){var _fq=fq[0];return{price:_fq.price,prevClose:_fq.previousClose||0,change:_fq.change||0,changePct:_fq.changesPercentage||0,source:"fmp"};}}catch(e){}}
+  return null;}
+// Fetch dividend data from Finnhub (FREE tier — stock/metric endpoint)
+// Convert exchange-suffixed ticker to Finnhub exchange format
+// e.g. RY.TO → RY:TSX, TOI.V → TOI:TSXV, VOD.L → VOD:LSE
+// Detect if a ticker is non-US (has exchange suffix)
+
+async function fetchDivFromFinnhub(ticker,fmpLastDiv){try{
+  var met=await finnhub("stock/metric?symbol="+toFinnhubSymbol(ticker)+"&metric=all");
+  if(!met||!met.metric)return null;var m=met.metric;
+  var annDiv=m["dividendPerShareAnnual"]||0;
+  var divYield=m["dividendYieldIndicatedAnnual"]||0;
+  if(annDiv<=0&&divYield<=0)return{payer:false,divPerShare:0,divYield:0,divFrequency:"none"};
+  var freq="quarterly";var perPayment=annDiv>0?annDiv/4:0;
+  if(KNOWN_MONTHLY.indexOf(ticker.toUpperCase())>=0){freq="monthly";perPayment=annDiv/12}
+  else if(fmpLastDiv&&fmpLastDiv>0&&annDiv>0){var ratio=Math.round(annDiv/fmpLastDiv);
+    if(ratio>=10&&ratio<=14){freq="monthly";perPayment=annDiv/12}
+    else if(ratio>=1.5&&ratio<=2.5){freq="semi";perPayment=annDiv/2}
+    else if(ratio<=1.2){freq="annual";perPayment=annDiv}}
+  return{payer:true,divPerShare:perPayment,annualDiv:annDiv,divYield:divYield,divFrequency:freq}
+}catch(e){return null}}
+// Fetch dividend details from FMP
+async function fetchDividendInfo(ticker){try{
+  var hist=await fmp("historical-price-full/stock_dividend/"+ticker);
+  if(!hist||!hist.historical||!hist.historical.length)return null;
+  var divs=hist.historical.slice(0,24); // last 24 dividends for better CAGR
+  var latest=divs[0];
+  // Determine frequency from gaps between payments
+  var freq="quarterly";
+  if(divs.length>=3){
+    var gaps=[];for(var i=1;i<Math.min(divs.length,6);i++){
+      var d1=new Date(divs[i-1].date);var d2=new Date(divs[i].date);
+      gaps.push(Math.round((d1-d2)/(1000*60*60*24)))}
+    var avgGap=gaps.reduce(function(s,v){return s+v},0)/gaps.length;
+    if(avgGap<45)freq="monthly";else if(avgGap<120)freq="quarterly";else if(avgGap<240)freq="semi";else freq="annual"}
+  // Compute annual dividend totals per calendar year for CAGR
+  var yearTotals={};
+  divs.forEach(function(d){
+    var yr=new Date(d.date).getFullYear();
+    yearTotals[yr]=(yearTotals[yr]||0)+(d.dividend||d.adjDividend||0)});
+  var years=Object.keys(yearTotals).map(Number).sort();
+  var divCagr=null;
+  if(years.length>=3){
+    // Use most recent full year vs 3 years ago (or earliest available)
+    var curYr=years[years.length-1];var baseYr=years[Math.max(0,years.length-4)];
+    var nYrs=curYr-baseYr;
+    if(nYrs>=1&&yearTotals[baseYr]>0&&yearTotals[curYr]>0){
+      divCagr=(Math.pow(yearTotals[curYr]/yearTotals[baseYr],1/nYrs)-1)*100;
+      if(Math.abs(divCagr)>50)divCagr=null}} // sanity cap
+  return{divPerShare:latest.dividend||latest.adjDividend||0,divFrequency:freq,exDivDate:latest.date||"",lastDiv:latest.dividend||latest.adjDivident||0,divCagr:divCagr}
+}catch(e){console.warn("[FMP] dividend fetch error:",e);return null}}
+// Shared: estimate which months a company pays dividends based on frequency + exDivDate
+// FMP Financial Statements (FREE tier — 250 req/day, 5 years annual)
+var _fincache={};
+async function fetchFinancialStatements(ticker,period){
+  var key=ticker+"-"+(period||"annual");if(_fincache[key])return _fincache[key];
+  try{
+    // Primary: FMP (Starter plan — 300 req/min, 5yr history)
+    var isQ=period==="quarter";var lim=isQ?20:5;
+    var qs="?period="+(isQ?"quarter":"annual")+"&limit="+lim;
+    console.log("[ThesisAlpha] Fetching financials via FMP for "+ticker+" ("+period+")");
+    var results=await Promise.all([fmp("income-statement/"+ticker+qs),fmp("balance-sheet-statement/"+ticker+qs),fmp("cash-flow-statement/"+ticker+qs)]);
+    var _is=results[0],_bs=results[1],_cf=results[2];
+    if(_is&&(_is._fmpError||!Array.isArray(_is)))_is=null;
+    if(_bs&&(_bs._fmpError||!Array.isArray(_bs)))_bs=null;
+    if(_cf&&(_cf._fmpError||!Array.isArray(_cf)))_cf=null;
+    if((_is&&_is.length>0)||(_bs&&_bs.length>0)||(_cf&&_cf.length>0)){
+      console.log("[ThesisAlpha] FMP success — income:"+(_is||[]).length+" balance:"+(_bs||[]).length+" cf:"+(_cf||[]).length);
+      var incRows=(_is||[]).reverse().map(function(row){
+        // Compute grossProfitRatio if missing but grossProfit and revenue exist
+        if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
+        // Compute operatingIncomeRatio if missing
+        if(row.operatingIncomeRatio==null&&row.operatingIncome!=null&&row.revenue!=null&&row.revenue!==0)row.operatingIncomeRatio=row.operatingIncome/row.revenue;
+        // Compute netIncomeRatio if missing
+        if(row.netIncomeRatio==null&&row.netIncome!=null&&row.revenue!=null&&row.revenue!==0)row.netIncomeRatio=row.netIncome/row.revenue;
+        return row});
+      var res={income:incRows,balance:(_bs||[]).reverse(),cashflow:(_cf||[]).reverse(),source:"fmp"};
+      _fincache[key]=res;return res}
+    console.log("[ThesisAlpha] FMP returned empty for "+ticker);
+    // For international tickers: try the base ticker (without suffix) with FMP
+    if(isIntlTicker(ticker)){
+      var baseTicker=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");
+      if(baseTicker!==ticker){
+        console.log("[ThesisAlpha] Trying base ticker "+baseTicker+" for FMP financials...");
+        var r2=await Promise.all([fmp("income-statement/"+baseTicker+qs),fmp("balance-sheet-statement/"+baseTicker+qs),fmp("cash-flow-statement/"+baseTicker+qs)]);
+        var _is2=r2[0],_bs2=r2[1],_cf2=r2[2];
+        if(_is2&&Array.isArray(_is2))_is2=_is2.filter(function(x){return x&&x.revenue!=null});
+        if(_bs2&&Array.isArray(_bs2))_bs2=_bs2.filter(function(x){return x&&x.totalAssets!=null});
+        if(_cf2&&Array.isArray(_cf2))_cf2=_cf2.filter(function(x){return x&&x.netIncome!=null});
+        if((_is2&&_is2.length>0)||(_bs2&&_bs2.length>0)||(_cf2&&_cf2.length>0)){
+          console.log("[ThesisAlpha] Base ticker fallback success for "+baseTicker);
+          var incRows2=(_is2||[]).reverse().map(function(row){
+            if(row.grossProfitRatio==null&&row.grossProfit!=null&&row.revenue!=null&&row.revenue!==0)row.grossProfitRatio=row.grossProfit/row.revenue;
+            if(row.operatingIncomeRatio==null&&row.operatingIncome!=null&&row.revenue!=null&&row.revenue!==0)row.operatingIncomeRatio=row.operatingIncome/row.revenue;
+            if(row.netIncomeRatio==null&&row.netIncome!=null&&row.revenue!=null&&row.revenue!==0)row.netIncomeRatio=row.netIncome/row.revenue;
+            return row});
+          var res2={income:incRows2,balance:(_bs2||[]).reverse(),cashflow:(_cf2||[]).reverse(),source:"fmp-base"};
+          _fincache[key]=res2;return res2;
+        }
+      }
+      // Last resort: synthesise minimal rows from Finnhub metrics (TTM data only)
+      console.log("[ThesisAlpha] Trying Finnhub metrics fallback for "+ticker);
+      try{
+        var fhSym=toFinnhubSymbol(ticker);
+        var fhMet=await finnhub("stock/metric?symbol="+fhSym+"&metric=all");
+        var fhEarn=await finnhub("stock/earnings?symbol="+fhSym);
+        if(fhMet&&fhMet.metric&&Object.keys(fhMet.metric).length>0){
+          var m=fhMet.metric;
+          var yr=new Date().getFullYear();
+          // Build a synthetic TTM income row from Finnhub metrics
+          var synthIncome={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            revenue:m.revenuePerShareTTM!=null?m.revenuePerShareTTM*1e6:null,
+            grossProfitRatio:m.grossMarginTTM!=null?m.grossMarginTTM/100:null,
+            operatingIncomeRatio:m.operatingMarginTTM!=null?m.operatingMarginTTM/100:null,
+            netIncomeRatio:m.netProfitMarginTTM!=null?m.netProfitMarginTTM/100:null,
+            eps:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            epsDiluted:fhEarn&&fhEarn.length?fhEarn[0].actual:null,
+            _isSynthetic:true};
+          var synthBalance={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            totalDebt:null,totalEquity:null,
+            debtToEquity:m["totalDebt/totalEquityQuarterly"]||null,
+            currentRatio:m.currentRatioQuarterly||null,_isSynthetic:true};
+          var synthCF={date:yr+"-12-31",calendarYear:String(yr),period:"TTM",
+            freeCashFlow:m.freeCashFlowPerShareTTM!=null?m.freeCashFlowPerShareTTM*1e6:null,
+            _isSynthetic:true};
+          var resFh={income:[synthIncome],balance:[synthBalance],cashflow:[synthCF],source:"finnhub-metrics"};
+          _fincache[key]=resFh;return resFh;
+        }
+      }catch(fhErr){console.warn("[ThesisAlpha] Finnhub metrics fallback failed:",fhErr)}
+      return{income:[],balance:[],cashflow:[]};
+    }
+    // US companies only — try SEC EDGAR
+    var r=await fetch("/api/sec?ticker="+encodeURIComponent(ticker)+"&period="+(period||"annual"));
+    if(r.ok){var d=await r.json();
+      if(d&&!d.error&&(d.income&&d.income.length>0||d.balance&&d.balance.length>0||d.cashflow&&d.cashflow.length>0)){
+        console.log("[ThesisAlpha] SEC EDGAR fallback success — income:"+d.income.length+" balance:"+d.balance.length+" cf:"+d.cashflow.length);
+        var res={income:d.income||[],balance:d.balance||[],cashflow:d.cashflow||[],source:"sec-edgar"};
+        _fincache[key]=res;return res}}
+    return{income:[],balance:[],cashflow:[]}}catch(e){console.warn("[ThesisAlpha] fetchFinancials error:",e);return{income:[],balance:[],cashflow:[]}}}
+
+// ═══ HISTORICAL PRICE DATA (FMP Starter) ═══
+var _pricecache={};
+async function fetchHistoricalPrice(ticker,range){
+  var key=ticker+"-"+(range||"1Y");if(_pricecache[key])return _pricecache[key];
+  try{
+    var days=range==="6M"?180:range==="2Y"?730:range==="5Y"?1825:365;
+    var from=new Date(Date.now()-days*86400000).toISOString().slice(0,10);
+    var to=new Date().toISOString().slice(0,10);
+    var r=await fmp("historical-price-full/"+ticker+"?from="+from+"&to="+to);
+    if(r&&r.historical&&r.historical.length>0){
+      var pts=r.historical.reverse();
+      _pricecache[key]=pts;return pts}
+    return[]}catch(e){console.warn("[ThesisAlpha] Price history error:",e);return[]}}
+
+// ═══ FMP KEY METRICS + RATIOS (Starter plan) ═══
+var _fmpmetricscache={};
+async function fetchFMPMetrics(ticker){
+  if(_fmpmetricscache[ticker])return _fmpmetricscache[ticker];
+  // Try with suffix first, then base ticker for international stocks
+  var tickersToTry=[ticker];
+  if(isIntlTicker(ticker)){
+    var base=ticker.replace(/\.(TO|V|L|DE|PA|AS|HK|AX|NS|BO|MI|MC|SW|ST|OL|CO|HE|BR|LS|AT|NZ)$/i,"");
+    if(base!==ticker)tickersToTry.push(base);
+    // FMP sometimes lists Canadian stocks with exchange prefix: TSX:RY, TSXV:TOI
+    var sfxUpper=ticker.match(/\.([A-Z]+)$/i);
+    if(sfxUpper){
+      var FMP_EXCHANGE_MAP={TO:"TSX",V:"TSXV",L:"LSE",DE:"XETRA",PA:"EPA",AS:"ENXTAM",
+        HK:"HKEX",AX:"ASX",NS:"NSE",BO:"BSE",MI:"XMIL",MC:"XMAD",OL:"OSL",SW:"SWX",ST:"STO"};
+      var exCode=FMP_EXCHANGE_MAP[sfxUpper[1].toUpperCase()];
+      if(exCode)tickersToTry.push(base+"."+exCode);
+    }
+  }
+  for(var _ti=0;_ti<tickersToTry.length;_ti++){
+    var _tk=tickersToTry[_ti];
+    try{
+      var results=await Promise.all([fmp("ratios-ttm/"+_tk),fmp("key-metrics-ttm/"+_tk)]);
+      var ratios=results[0]&&Array.isArray(results[0])&&results[0].length?results[0][0]:null;
+      var km=results[1]&&Array.isArray(results[1])&&results[1].length?results[1][0]:null;
+      if(!ratios&&!km)continue;
+      var out={ratios:ratios||{},km:km||{}};
+      _fmpmetricscache[ticker]=out;
+      console.log("[ThesisAlpha] FMP metrics for "+ticker+(ticker!==_tk?" (via base "+_tk+")":"")+": ratios="+Object.keys(out.ratios).length+" km="+Object.keys(out.km).length);
+      return out;
+    }catch(e){console.warn("[ThesisAlpha] FMP metrics error for "+_tk+":",e);}
+  }
+  return null;
+}
+
+// ── MR MARKET ─────────────────────────────────────────────────────────────────
+async function fetchMrMarketData(){
+  try{
+    var results=await Promise.all([fmp("quote/%5EVIX"),fmp("quote/%5EGSPC")]);
+    var vixQ=results[0]&&results[0][0]?results[0][0]:null;
+    var spyQ=results[1]&&results[1][0]?results[1][0]:null;
+    if(!vixQ&&!spyQ)return null;
+    var scores=[];var details=[];
+    if(vixQ&&vixQ.price!=null){
+      var vix=parseFloat(vixQ.price);
+      var vixScore=Math.max(0,Math.min(100,100-((vix-12)/(35-12))*100));
+      scores.push(vixScore);
+      details.push({label:"VIX",value:vix.toFixed(1),score:Math.round(vixScore)});
+    }
+    if(spyQ&&spyQ.changesPercentage!=null){
+      var spChg=parseFloat(spyQ.changesPercentage);
+      var spScore=Math.max(0,Math.min(100,((spChg+3)/6)*100));
+      scores.push(spScore);
+      details.push({label:"S&P 500 (1d)",value:(spChg>=0?"+":"")+spChg.toFixed(2)+"%",score:Math.round(spScore)});
+    }
+    if(spyQ&&spyQ.price!=null&&spyQ.yearHigh!=null){
+      var pct=(parseFloat(spyQ.price)/parseFloat(spyQ.yearHigh))*100;
+      var highScore=Math.max(0,Math.min(100,(pct-88)/(100-88)*100));
+      scores.push(highScore);
+      details.push({label:"vs 52w high",value:pct.toFixed(1)+"%",score:Math.round(highScore)});
+    }
+    if(!scores.length)return null;
+    var composite=Math.round(scores.reduce(function(s,v){return s+v},0)/scores.length);
+    var mood,label,offer,color;
+    if(composite<=20){mood="extreme_fear";label="Extreme Fear";color="#EF4444";
+      offer="Mr. Market is in panic. He is offering wonderful businesses at distressed prices. This is Buffett weather.";}
+    else if(composite<=38){mood="fear";label="Fear";color="#F97316";
+      offer="Mr. Market is nervous. He is pricing in more bad news than is likely to materialise.";}
+    else if(composite<=62){mood="neutral";label="Neutral";color="#6B7280";
+      offer="Mr. Market is unusually rational today. Prices reflect something close to fair value.";}
+    else if(composite<=80){mood="greed";label="Greed";color="#10B981";
+      offer="Mr. Market is feeling optimistic. He is asking full price for most businesses.";}
+    else{mood="extreme_greed";label="Extreme Greed";color="#8B5CF6";
+      offer="Mr. Market is euphoric. He is paying prices that future returns cannot justify. Step back.";}
+    return{composite:composite,mood:mood,label:label,offer:offer,color:color,details:details,
+      vix:vixQ?parseFloat(vixQ.price):null,spyChg:spyQ?parseFloat(spyQ.changesPercentage):null,
+      fetched:new Date().toISOString()};
+  }catch(e){console.warn("[MrMarket]",e);return null;}
+}
+
+async function fetchEarnings(co,kpis){
+  var results=[];var quarter="";var summary="";var srcUrl="";var srcLabel="";var snapshot={};
+  // Step 1: Finnhub basic financials (FREE, $0)
+  var fhMap={};
+  var _fhSym=toFinnhubSymbol(co.ticker);
+  try{var met=await finnhub("stock/metric?symbol="+_fhSym+"&metric=all");
+    var earn=await finnhub("stock/earnings?symbol="+_fhSym);
+    console.log("[ThesisAlpha] Finnhub metric for "+co.ticker+":",met?"keys: "+Object.keys(met.metric||{}).length:"null");
+    console.log("[ThesisAlpha] Finnhub earnings for "+co.ticker+":",earn?earn.length+" quarters":"null");
+    if(met&&met.metric){var m=met.metric;
+      // Build raw snapshot for display regardless of KPIs
+      if(earn&&earn.length&&earn[0].actual!=null)snapshot.eps={label:"EPS",numVal:earn[0].actual,value:"$"+earn[0].actual,beat:earn[0].estimate!=null?earn[0].actual>=earn[0].estimate:null,detail:earn[0].estimate!=null?"Est: $"+earn[0].estimate:""};
+      if(m["revenuePerShareTTM"])snapshot.revPerShare={label:"Revenue/Share",numVal:m["revenuePerShareTTM"],value:"$"+m["revenuePerShareTTM"].toFixed(2)};
+      if(m["grossMarginTTM"]!=null)snapshot.grossMargin={label:"Gross Margin",numVal:m["grossMarginTTM"],value:(m["grossMarginTTM"]).toFixed(1)+"%"};
+      if(m["operatingMarginTTM"]!=null)snapshot.opMargin={label:"Operating Margin",numVal:m["operatingMarginTTM"],value:(m["operatingMarginTTM"]).toFixed(1)+"%"};
+      if(m["netProfitMarginTTM"]!=null)snapshot.netMargin={label:"Net Margin",numVal:m["netProfitMarginTTM"],value:(m["netProfitMarginTTM"]).toFixed(1)+"%"};
+      if(m["roeTTM"]!=null)snapshot.roe={label:"ROE",numVal:m["roeTTM"],value:(m["roeTTM"]).toFixed(1)+"%"};
+      if(m["roicTTM"]!=null)snapshot.roic={label:"ROIC",numVal:m["roicTTM"],value:(m["roicTTM"]).toFixed(1)+"%"};
+      if(m["currentRatioQuarterly"])snapshot.currentRatio={label:"Current Ratio",numVal:m["currentRatioQuarterly"],value:m["currentRatioQuarterly"].toFixed(2)};
+      if(m["totalDebt/totalEquityQuarterly"])snapshot.debtEquity={label:"Debt/Equity",numVal:m["totalDebt/totalEquityQuarterly"],value:m["totalDebt/totalEquityQuarterly"].toFixed(2)};
+      if(m["peTTM"])snapshot.pe={label:"P/E",numVal:m["peTTM"],value:m["peTTM"].toFixed(1)};
+      if(m["pbQuarterly"])snapshot.pb={label:"P/B",numVal:m["pbQuarterly"],value:m["pbQuarterly"].toFixed(2)};
+      if(m["freeCashFlowPerShareTTM"])snapshot.fcf={label:"FCF/Share",numVal:m["freeCashFlowPerShareTTM"],value:"$"+m["freeCashFlowPerShareTTM"].toFixed(2)};
+      if(m["revenueGrowthTTMYoy"]!=null)snapshot.revGrowth={label:"Rev Growth YoY",numVal:m["revenueGrowthTTMYoy"],value:(m["revenueGrowthTTMYoy"]).toFixed(1)+"%",positive:m["revenueGrowthTTMYoy"]>=0};
+      if(m["epsGrowthTTMYoy"]!=null)snapshot.epsGrowth={label:"EPS Growth YoY",numVal:m["epsGrowthTTMYoy"],value:(m["epsGrowthTTMYoy"]).toFixed(1)+"%",positive:m["epsGrowthTTMYoy"]>=0};
+      if(m["52WeekHigh"])snapshot.hi52={label:"52w High",value:"$"+m["52WeekHigh"].toFixed(2)};
+      if(m["52WeekLow"])snapshot.lo52={label:"52w Low",value:"$"+m["52WeekLow"].toFixed(2)};
+      // 52w range position — where in the range is current price?
+      if(m["52WeekHigh"]&&m["52WeekLow"]&&co.position&&co.position.currentPrice>0){var _rng=m["52WeekHigh"]-m["52WeekLow"];if(_rng>0){var _pPos=((co.position.currentPrice-m["52WeekLow"])/_rng*100);snapshot.rangePos={label:"52w Position",numVal:_pPos,value:_pPos.toFixed(0)+"% of range",positive:_pPos<40}}}
+      // Map Finnhub data to predefined metric IDs
+      fhMap={
+        eps:{v:earn&&earn.length?earn[0].actual:null,label:earn&&earn.length?"$"+earn[0].actual:"N/A"},
+        grossMargin:{v:m["grossMarginTTM"]!=null?m["grossMarginTTM"]:null,label:m["grossMarginTTM"]!=null?m["grossMarginTTM"].toFixed(1)+"%":"N/A"},
+        opMargin:{v:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"]:null,label:m["operatingMarginTTM"]!=null?m["operatingMarginTTM"].toFixed(1)+"%":"N/A"},
+        netMargin:{v:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"]:null,label:m["netProfitMarginTTM"]!=null?m["netProfitMarginTTM"].toFixed(1)+"%":"N/A"},
+        roe:{v:m["roeTTM"]!=null?m["roeTTM"]:null,label:m["roeTTM"]!=null?m["roeTTM"].toFixed(1)+"%":"N/A"},
+        roa:{v:m["roaTTM"]!=null?m["roaTTM"]:null,label:m["roaTTM"]!=null?m["roaTTM"].toFixed(1)+"%":"N/A"},
+        roic:{v:m["roicTTM"]!=null?m["roicTTM"]:null,label:m["roicTTM"]!=null?m["roicTTM"].toFixed(1)+"%":"N/A"},
+        revGrowth:{v:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"]:null,label:m["revenueGrowthTTMYoy"]!=null?m["revenueGrowthTTMYoy"].toFixed(1)+"%":"N/A"},
+        epsGrowth:{v:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"]:null,label:m["epsGrowthTTMYoy"]!=null?m["epsGrowthTTMYoy"].toFixed(1)+"%":"N/A"},
+        revPerShare:{v:m["revenuePerShareTTM"],label:m["revenuePerShareTTM"]?"$"+m["revenuePerShareTTM"].toFixed(2):"N/A"},
+        fcfPerShare:{v:m["freeCashFlowPerShareTTM"],label:m["freeCashFlowPerShareTTM"]?"$"+m["freeCashFlowPerShareTTM"].toFixed(2):"N/A"},
+        pe:{v:m["peTTM"],label:m["peTTM"]?m["peTTM"].toFixed(1):"N/A"},
+        pb:{v:m["pbQuarterly"],label:m["pbQuarterly"]?m["pbQuarterly"].toFixed(2):"N/A"},
+        currentRatio:{v:m["currentRatioQuarterly"],label:m["currentRatioQuarterly"]?m["currentRatioQuarterly"].toFixed(2):"N/A"},
+        debtEquity:{v:m["totalDebt/totalEquityQuarterly"],label:m["totalDebt/totalEquityQuarterly"]?m["totalDebt/totalEquityQuarterly"].toFixed(2):"N/A"},
+        divYield:{v:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"]:null,label:m["dividendYieldIndicatedAnnual"]!=null?m["dividendYieldIndicatedAnnual"].toFixed(2)+"%":"N/A"},
+        bvps:{v:m["bookValuePerShareQuarterly"],label:m["bookValuePerShareQuarterly"]?"$"+m["bookValuePerShareQuarterly"].toFixed(2):"N/A"},
+        ebitdaPerShare:{v:m["ebitdPerShareTTM"],label:m["ebitdPerShareTTM"]?"$"+m["ebitdPerShareTTM"].toFixed(2):"N/A"},
+        rndMargin:{v:null,label:"N/A"},
+        sgaMargin:{v:null,label:"N/A"},
+        fcfMargin:{v:null,label:"N/A"},
+        cashOnHand:{v:null,label:"N/A"},
+        totalDebt:{v:null,label:"N/A"},
+        ps:{v:null,label:"N/A"},
+        evEbitda:{v:null,label:"N/A"},
+        evRevenue:{v:null,label:"N/A"},
+        interestCoverage:{v:null,label:"N/A"},
+        quickRatio:{v:null,label:"N/A"},
+        netDebtEbitda:{v:null,label:"N/A"},
+        peg:{v:null,label:"N/A"},
+        fcfYield:{v:null,label:"N/A"}};
+      // Get quarter from earnings data
+      if(earn&&earn.length){quarter="Q"+(earn[0].quarter||"?")+" "+(earn[0].year||"");
+        srcUrl="https://finnhub.io/";srcLabel="Finnhub"}
+      // Build summary from Finnhub data
+      var sumParts=[];
+      if(earn&&earn.length&&earn[0].actual!=null)sumParts.push("EPS: $"+earn[0].actual+(earn[0].estimate!=null?" (est: $"+earn[0].estimate+")":""));
+      if(m["revenuePerShareTTM"])sumParts.push("Rev/sh: $"+m["revenuePerShareTTM"].toFixed(2));
+      if(m["grossMarginTTM"]!=null)sumParts.push("Gross: "+(m["grossMarginTTM"]).toFixed(1)+"%");
+      if(m["roeTTM"]!=null)sumParts.push("ROE: "+(m["roeTTM"]).toFixed(1)+"%");
+      summary=(quarter||"Latest")+": "+sumParts.join(", ");
+    }}catch(e){console.warn("Finnhub metrics:",e)}
+
+  // Step 2: FMP key-metrics + ratios (Starter plan — fills Finnhub gaps)
+  try{var fmpM=await fetchFMPMetrics(co.ticker);
+    if(fmpM){var ra=fmpM.ratios;var km=fmpM.km;
+      // Build FMP metric map — only values that exist
+      var fmpMap={
+        grossMargin:{v:ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        opMargin:{v:ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        netMargin:{v:ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roe:{v:ra.returnOnEquityTTM!=null?ra.returnOnEquityTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roa:{v:ra.returnOnAssetsTTM!=null?ra.returnOnAssetsTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        roic:{v:km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:ra.returnOnCapitalEmployedTTM!=null?ra.returnOnCapitalEmployedTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        pe:{v:km.peRatioTTM!=null?km.peRatioTTM:null,fmt:function(v){return v.toFixed(1)}},
+        pb:{v:km.priceToBookRatioTTM!=null?km.priceToBookRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        currentRatio:{v:ra.currentRatioTTM!=null?ra.currentRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        debtEquity:{v:km.debtToEquityTTM!=null?km.debtToEquityTTM:null,fmt:function(v){return v.toFixed(2)}},
+        divYield:{v:km.dividendYieldTTM!=null?km.dividendYieldTTM*100:null,fmt:function(v){return v.toFixed(2)+"%"}},
+        revPerShare:{v:km.revenuePerShareTTM!=null?km.revenuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        fcfPerShare:{v:km.freeCashFlowPerShareTTM!=null?km.freeCashFlowPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        bvps:{v:km.bookValuePerShareTTM!=null?km.bookValuePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        ebitdaPerShare:{v:null,fmt:function(v){return"$"+v.toFixed(2)}}, // FMP TTM endpoints don't provide EBITDA/share; Finnhub ebitdPerShareTTM is used instead
+        revGrowth:{v:ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(km.revenueGrowthTTM!=null?km.revenueGrowthTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
+        epsGrowth:{v:km.earningsGrowthTTM!=null?km.earningsGrowthTTM*100:null,fmt:function(v){return v.toFixed(1)+"%"}},
+        eps:{v:km.netIncomePerShareTTM!=null?km.netIncomePerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        // Additional metrics missing from Finnhub — FMP fills these
+        ps:{v:km.priceToSalesRatioTTM!=null?km.priceToSalesRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        evEbitda:{v:km.enterpriseValueOverEBITDATTM!=null?km.enterpriseValueOverEBITDATTM:null,fmt:function(v){return v.toFixed(1)+"x"}},
+        evRevenue:{v:km.evToSalesTTM!=null?km.evToSalesTTM:null,fmt:function(v){return v.toFixed(2)+"x"}},
+        interestCoverage:{v:ra.interestCoverageTTM!=null?ra.interestCoverageTTM:null,fmt:function(v){return v.toFixed(1)+"x"}},
+        quickRatio:{v:ra.quickRatioTTM!=null?ra.quickRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        netDebtEbitda:{v:ra.netDebtToEBITDATTM!=null?ra.netDebtToEBITDATTM:null,fmt:function(v){return v.toFixed(2)+"x"}},
+        peg:{v:ra.priceEarningsToGrowthRatioTTM!=null?ra.priceEarningsToGrowthRatioTTM:null,fmt:function(v){return v.toFixed(2)}},
+        fcfMargin:{v:(km.freeCashFlowPerShareTTM!=null&&km.revenuePerShareTTM!=null&&km.revenuePerShareTTM>0)?km.freeCashFlowPerShareTTM/km.revenuePerShareTTM*100:(ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(ra.freeCashFlowToRevenueTTM!=null?ra.freeCashFlowToRevenueTTM*100:null)),fmt:function(v){return v.toFixed(1)+"%"}},
+        rndMargin:{v:ra.researchAndDevelopementToRevenueTTM!=null?ra.researchAndDevelopementToRevenueTTM*100:(ra.researchAndDevelopmentToRevenueTTM!=null?ra.researchAndDevelopmentToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
+        sgaMargin:{v:ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM!=null?ra.sellingGeneralAndAdministrativeExpensesToRevenueTTM*100:(ra.sgaToRevenueTTM!=null?ra.sgaToRevenueTTM*100:null),fmt:function(v){return v.toFixed(1)+"%"}},
+        cashOnHand:{v:km.cashPerShareTTM!=null?km.cashPerShareTTM:null,fmt:function(v){return"$"+v.toFixed(2)}},
+        totalDebt:{v:(km.debtToEquityTTM!=null&&km.bookValuePerShareTTM!=null&&km.bookValuePerShareTTM>0)?(km.debtToEquityTTM*km.bookValuePerShareTTM):null,fmt:function(v){return"$"+v.toFixed(2)}}};
       // Fill gaps: merge FMP into fhMap where Finnhub returned null
       var fmpFilled=0;
       Object.keys(fmpMap).forEach(function(key){
