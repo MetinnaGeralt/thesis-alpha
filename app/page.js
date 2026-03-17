@@ -10235,529 +10235,6 @@ function WeeklyReview(){
       <div style={{fontSize:28,fontWeight:800,color:K.grn,fontFamily:fm,textShadow:"0 2px 8px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:6}}>+{xpFloat.amount}
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm *{box-shadow:none!important}.ta-bm *{transition:none!important}.ta-bm{line-height:1.25;letter-spacing:0;font-size:12px}.ta-bm div,.ta-bm button,.ta-bm input,.ta-bm textarea,.ta-bm select,.ta-bm span,.ta-bm a,.ta-bm li{border-radius:0!important}.ta-bm img{border-radius:0!important}.ta-bm ::-webkit-scrollbar{width:4px;height:4px}.ta-bm ::-webkit-scrollbar-track{background:#000}.ta-bm ::-webkit-scrollbar-thumb{background:#F39F4170}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#333}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}.ta-bm button:hover{background:rgba(243,159,65,0.12)!important;color:#F39F41!important}.ta-forest{}.ta-forest .ta-active-item{box-shadow:0 2px 12px rgba(88,204,2,0.2)}.ta-forest button:active{transform:scale(0.96)!important;transition:transform .08s}.ta-forest ::-webkit-scrollbar{width:6px;height:6px}.ta-forest ::-webkit-scrollbar-track{background:#f7f7f5}.ta-forest ::-webkit-scrollbar-thumb{background:#58cc0260;border-radius:999px}.ta-forest ::-webkit-scrollbar-thumb:hover{background:#58cc02}.ta-purple{}.ta-purple ::-webkit-scrollbar{width:5px;height:5px}.ta-purple ::-webkit-scrollbar-track{background:#0d0b14}.ta-purple ::-webkit-scrollbar-thumb{background:#302a48;border-radius:999px}.ta-purple ::-webkit-scrollbar-thumb:hover{background:#a78bfa}.ta-purple input:focus,.ta-purple textarea:focus,.ta-purple select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,0.15)!important;outline:none!important}.ta-purple button:active{opacity:0.85}.ta-ocean{}.ta-ocean ::-webkit-scrollbar{width:5px;height:5px}.ta-ocean ::-webkit-scrollbar-track{background:#f0f4f8}.ta-ocean ::-webkit-scrollbar-thumb{background:#cdd9e8;border-radius:4px}.ta-ocean ::-webkit-scrollbar-thumb:hover{background:#1a56db}.ta-ocean input:focus,.ta-ocean textarea:focus{border-color:#1a56db!important;box-shadow:0 0 0 3px rgba(26,86,219,0.12)!important;outline:none!important}"}}/>
-    {/* ── READING & LIBRARY WIDGET ── */}
-    {sideTab==="portfolio"&&!isMobile&&(function(){
-      var rl=readingList||[];
-      var libItems=(library&&library.items)||[];
-      var currentlyReading=rl.filter(function(r){return r.status==="reading"});
-      var wantToRead=rl.filter(function(r){return r.status==="want"||!r.status});
-      var recentlyRead=rl.filter(function(r){return r.status==="read"}).slice(-3).reverse();
-      // Library items linked to portfolio companies
-      var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
-      var isEmpty=rl.length===0&&libItems.length===0;
-      return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
-            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
-          </div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
-            <button onClick={function(){setPage("library")}} style={{fontSize:10,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Library →</button>
-          </div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":currentlyReading.length>0?"2fr 1fr":"1fr 1fr",gap:10}}>
-          {/* Left: currently reading or queue */}
-          <div style={{background:K.card,border:"1px solid "+(currentlyReading.length>0?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px"}}>
-            {currentlyReading.length>0?(function(){
-              var book=currentlyReading[0];
-              return<div>
-                <div style={{fontSize:9,fontWeight:700,color:K.acc,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
-                  <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,animation:"pulse 2s infinite"}}/>
-                  Currently reading
-                  {currentlyReading.length>1&&<span style={{fontSize:9,color:K.dim,marginLeft:4}}>{"+"+( currentlyReading.length-1)+" more"}</span>}
-                </div>
-                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
-                {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
-                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap"}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
-                  <button onClick={function(){setModal({type:"readingNote",book:book})}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Note</button>
-                  {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
-                </div>
-                {book.readingNotes&&book.readingNotes.length>0&&<div style={{marginTop:8,borderTop:"1px solid "+K.bdr+"40",paddingTop:8}}>
-                  {book.readingNotes.slice(-2).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:3,display:"flex",gap:6}}>
-                    <span style={{color:K.acc,flexShrink:0,fontStyle:"normal"}}>—</span>
-                    <span>{n.text}{n.ticker&&<span style={{fontSize:9,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:3,marginLeft:6,fontStyle:"normal",fontFamily:fm,fontWeight:700}}>{n.ticker}</span>}</span>
-                  </div>})}
-                </div>}
-              </div>;
-            })()
-            :wantToRead.length>0?(function(){
-              var next=wantToRead[0];
-              return<div>
-                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Up next</div>
-                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
-                {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
-                  {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
-                </div>
-              </div>;
-            })()
-            :<div style={{textAlign:"center",padding:"8px 0"}}>
-              <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
-              {investorProfile==="munger"
-                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Go to bed smarter than when you woke up. — Munger"}</div>
-                :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
-              <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
-            </div>}
-          </div>
-          {/* Right: recently read + library links */}
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {/* Recently finished */}
-            {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
-              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
-              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
-                <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
-                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes.substring(0,60)+(book.notes.length>60?"...":"")}</div>}
-                </div>
-              </div>})}
-            </div>}
-            {/* Library items linked to holdings */}
-            {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
-              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
-              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
-                <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
-                  {it.type&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{it.type}</div>}
-                </div>
-              </div>})}
-            </div>}
-            {/* Stats if queue is healthy */}
-            {recentlyRead.length===0&&linkedItems.length===0&&rl.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",display:"flex",gap:16,justifyContent:"space-around",alignItems:"center"}}>
-              {[{label:"Read",val:rl.filter(function(r){return r.status==="read"}).length,color:K.grn},
-                {label:"Reading",val:currentlyReading.length,color:K.acc},
-                {label:"Queue",val:wantToRead.length,color:K.dim}].map(function(s,i){return<div key={i} style={{textAlign:"center"}}>
-                <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:fm,lineHeight:1}}>{s.val}</div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</div>
-              </div>})}
-            </div>}
-          </div>
-        </div>
-      </div>;
-    })()}
-
-    {/* ── PROFILE-SPECIFIC WIDGETS ── */}
-    {sideTab==="portfolio"&&!isMobile&&investorProfile&&investorProfile!=="munger"&&investorProfile!=="custom"&&(function(){
-      var portfolio=filtered;
-      // ── TERRY SMITH: The Three Tests ─────────────────────────────
-      if(investorProfile==="terry"){
-        var terryRows=portfolio.map(function(c){
-          var s=c.financialSnapshot||{};
-          var roic=s.roic&&s.roic.numVal!=null?s.roic.numVal:s.roce&&s.roce.numVal!=null?s.roce.numVal:null;
-          var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
-          var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;
-          var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
-          var rev=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
-          var t1=roic!=null&&gm!=null?(roic>=15&&gm>=40):roic!=null?roic>=15:null;
-          var t2=rev!=null&&fcf!=null?(rev>=5&&fcf>0):rev!=null?rev>=5:null;
-          var t3=pe!=null?(pe>0&&pe<30):(fcf!=null?fcf>3:null);
-          var passed=[t1,t2,t3].filter(function(t){return t===true}).length;
-          var judged=[t1,t2,t3].filter(function(t){return t!==null}).length;
-          return{c:c,t1:t1,t2:t2,t3:t3,passed:passed,judged:judged};
-        });
-        var allPass=terryRows.filter(function(r){return r.passed===3}).length;
-        var hasData=terryRows.some(function(r){return r.judged>0});
-        function dot(t){return t===true?<span style={{color:K.grn,fontSize:14}}>{"✓"}</span>:t===false?<span style={{color:K.red,fontSize:13}}>{"✗"}</span>:<span style={{color:K.bdr,fontSize:11}}>{"—"}</span>}
-        return<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <IC name="shield" size={12} color={K.grn}/>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>The Three Tests</div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Fundsmith framework</span>
-            </div>
-            {hasData&&<div style={{fontSize:10,color:allPass===portfolio.length?K.grn:K.amb,fontFamily:fm,fontWeight:700}}>{allPass+"/"+portfolio.length+" pass all three"}</div>}
-          </div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
-              {["High returns","Can reinvest","Fair price"].map(function(l,i){return<div key={i} style={{fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>})}
-            </div>
-            {terryRows.map(function(row){
-              var c=row.c;
-              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",padding:"8px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
-                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
-                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
-                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
-                    <div style={{fontSize:9,color:K.dim}}>{c.name.substring(0,24)+(c.name.length>24?"...":"")}</div>
-                  </div>
-                </div>
-                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t1)}</div>
-                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t2)}</div>
-                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t3)}</div>
-              </div>;
-            })}
-            {!hasData&&<div style={{padding:"14px",textAlign:"center",fontSize:12,color:K.dim}}>Refresh fundamentals to populate the three tests.</div>}
-            <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",gap:12}}>
-              {[{l:"1. High returns on capital",s:"ROIC > 15% + gross margin > 40%"},
-                {l:"2. Can reinvest those returns",s:"Rev growth > 5% + positive FCF"},
-                {l:"3. Reasonable valuation",s:"P/E < 30 or FCF yield > 3%"}].map(function(item,i){return<div key={i} style={{flex:1}}>
-                <div style={{fontSize:9,fontWeight:700,color:K.mid,fontFamily:fm,marginBottom:1}}>{item.l}</div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.s}</div>
-              </div>})}
-            </div>
-          </div>
-        </div>;
-      }
-      // ── NICK SLEEP: Flywheel Check ────────────────────────────────
-      if(investorProfile==="sleep"){
-        var totalVal2=portfolio.reduce(function(s,c){var p=c.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
-        var top3W=portfolio.slice().sort(function(a,b){var va=(a.position||{}).shares>0&&(a.position||{}).currentPrice>0?(a.position.shares*a.position.currentPrice):0;var vb=(b.position||{}).shares>0&&(b.position||{}).currentPrice>0?(b.position.shares*b.position.currentPrice):0;return vb-va}).slice(0,3).reduce(function(s,c){var p=c.position||{};return s+(totalVal2>0&&p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice/totalVal2*100:0)},0);
-        var avgConv=portfolio.length>0?Math.round(portfolio.reduce(function(s,c){return s+(c.conviction||0)},0)/portfolio.length*10)/10:0;
-        var concColor=portfolio.length<=4?K.grn:portfolio.length<=7?K.amb:K.red;
-        return<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",marginBottom:10,gap:7}}>
-            <IC name="trending" size={12} color={K.blue}/>
-            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Flywheel Check</div>
-            <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Nomad framework</span>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-              <div style={{padding:"7px 14px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
-                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Scale economies shared — does it get better for customers?</div>
-              </div>
-              {portfolio.map(function(c){
-                var s=c.financialSnapshot||{};
-                var revGr=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
-                var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
-                var sec=parseThesis(c.thesisNote||"");
-                var excerpt=c.flywheelNote||(sec.core?sec.core.substring(0,80)+(sec.core.length>80?"...":""):"");
-                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
-                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
-                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
-                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
-                    {excerpt?<div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{excerpt}</div>:
-                    <div style={{fontSize:10,color:K.dim,fontStyle:"italic"}}>Does this business share scale with customers? Add a flywheel note in the dossier.</div>}
-                  </div>
-                  <div style={{display:"flex",gap:8,flexShrink:0}}>
-                    {revGr!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:revGr>=10?K.grn:revGr>=5?K.amb:K.red,fontFamily:fm}}>{(revGr>=0?"+":"")+revGr.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Rev gr</div></div>}
-                    {gm!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:gm>=50?K.grn:gm>=30?K.amb:K.dim,fontFamily:fm}}>{gm.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Margin</div></div>}
-                  </div>
-                </div>;
-              })}
-              <div style={{padding:"7px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>
-                {"\u201cDestination companies make more economic sense over time.\u201d \u2014 Nick Sleep"}
-              </div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[{l:"Concentration",v:portfolio.length+" co.",sub:portfolio.length<=4?"Highly concentrated":portfolio.length<=7?"Moderate":"Too diversified?",col:concColor},
-                {l:"Top 3 weight",v:totalVal2>0?top3W.toFixed(0)+"%":"—",sub:"Sleep: top 3 often 60-80%",col:top3W>=60?K.grn:top3W>=40?K.amb:K.dim},
-                {l:"Avg conviction",v:avgConv>0?avgConv+"/10":"—",sub:"Own fewer, know more",col:avgConv>=7?K.grn:avgConv>=5?K.amb:K.red}].map(function(item,i){return<div key={i} style={{background:K.card,border:"1px solid "+item.col+"30",borderRadius:_isBm?0:10,padding:"10px 12px",flex:1}}>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{item.l}</div>
-                <div style={{fontSize:18,fontWeight:800,color:item.col,fontFamily:fm,lineHeight:1,marginBottom:2}}>{item.v}</div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.sub}</div>
-              </div>})}
-            </div>
-          </div>
-        </div>;
-      }
-      // ── CHUCK AKRE: Three-Legged Stool ──────────────────────────
-      if(investorProfile==="akre"){
-        var orange="#F97316";
-        // Leg 1: Extraordinary Business — ROE + gross margin + FCF
-        // Leg 2: Exceptional Management — conviction history trend + decision quality
-        // Leg 3: Reinvestment Opportunity — revenue growth + retained earnings proxy
-        var akreRows=portfolio.map(function(c){
-          var s=c.financialSnapshot||{};
-          function pv(k2){if(!s[k2])return null;if(s[k2].numVal!=null)return s[k2].numVal;var v2=s[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||null:null}
-          // Leg 1: Extraordinary Business
-          var roe=pv("roe");var gm=pv("grossMargin");var fcf=pv("fcfYield")||pv("fcf");
-          var leg1Score=0;var leg1Pts=0;
-          if(roe!=null){leg1Pts++;if(roe>=20)leg1Score+=2;else if(roe>=15)leg1Score+=1;}
-          if(gm!=null){leg1Pts++;if(gm>=50)leg1Score+=2;else if(gm>=35)leg1Score+=1;}
-          if(fcf!=null){leg1Pts++;if(fcf>0)leg1Score+=2;}
-          var leg1=leg1Pts>0?Math.round(leg1Score/leg1Pts*50):null;
-          // Leg 2: Exceptional Management — conviction consistency + decisions logged
-          var convH=c.convictionHistory||[];var recentConv=convH.slice(-4);
-          var convStable=recentConv.length>=2&&recentConv.every(function(ch){return ch.rating>=6});
-          var decCount=(c.decisions||[]).length;
-          var leg2=convH.length===0?null:Math.min(100,convStable?70:40)+(decCount>=3?30:decCount>=1?15:0);
-          leg2=leg2!==null?Math.min(100,leg2):null;
-          // Leg 3: Reinvestment Opportunity — rev growth + roic
-          var revGr=pv("revGrowth");var roic=pv("roic")||pv("roe");
-          var leg3Score=0;var leg3Pts=0;
-          if(revGr!=null){leg3Pts++;if(revGr>=15)leg3Score+=2;else if(revGr>=8)leg3Score+=1;}
-          if(roic!=null){leg3Pts++;if(roic>=20)leg3Score+=2;else if(roic>=12)leg3Score+=1;}
-          var leg3=leg3Pts>0?Math.round(leg3Score/leg3Pts*50):null;
-          var allLegs=[leg1,leg2,leg3];
-          var avgLeg=allLegs.filter(function(l){return l!=null}).length>0?Math.round(allLegs.filter(function(l){return l!=null}).reduce(function(a,b){return a+b},0)/allLegs.filter(function(l){return l!=null}).length):null;
-          return{c:c,leg1:leg1,leg2:leg2,leg3:leg3,avg:avgLeg};
-        });
-        var allStrong=akreRows.filter(function(r){return r.avg!=null&&r.avg>=70}).length;
-        return<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <IC name="star" size={12} color={orange}/>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Three-Legged Stool</div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Akre framework</span>
-            </div>
-            {akreRows.some(function(r){return r.avg!=null})&&<div style={{fontSize:10,color:allStrong===portfolio.length?orange:K.mid,fontFamily:fm,fontWeight:700}}>{allStrong+"/"+portfolio.length+" all-leg pass"}</div>}
-          </div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            {/* Header row */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
-              {[["Leg 1","Biz quality"],["Leg 2","Management"],["Leg 3","Reinvest"]].map(function(l,i){return<div key={i} style={{textAlign:"center"}}>
-                <div style={{fontSize:9,color:orange,fontFamily:fm,fontWeight:700,letterSpacing:.5}}>{l[0]}</div>
-                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{l[1]}</div>
-              </div>})}
-              <div style={{textAlign:"center",fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg</div>
-            </div>
-            {/* Rows */}
-            {akreRows.map(function(row){
-              var c=row.c;
-              function leg(val){
-                if(val===null)return<div style={{textAlign:"center",color:K.bdr,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>{"—"}</div>;
-                var col=val>=70?K.grn:val>=45?orange:K.red;
-                return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                  <div style={{fontSize:10,fontWeight:700,color:col,fontFamily:fm}}>{val}</div>
-                  <div style={{width:36,height:3,background:K.bdr+"50",borderRadius:2,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:val+"%",background:col,borderRadius:2}}/>
-                  </div>
-                </div>;
-              }
-              var avgCol=row.avg!=null?(row.avg>=70?K.grn:row.avg>=45?orange:K.red):K.bdr;
-              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",alignItems:"center"}}
-                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
-                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
-                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
-                    <div style={{fontSize:9,color:K.dim}}>{(c.name||"").substring(0,20)+(c.name&&c.name.length>20?"...":"")}</div>
-                  </div>
-                </div>
-                {leg(row.leg1)}{leg(row.leg2)}{leg(row.leg3)}
-                <div style={{textAlign:"center"}}>
-                  {row.avg!=null?<div style={{width:32,height:32,borderRadius:"50%",background:avgCol+"18",border:"2px solid "+avgCol,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
-                    <span style={{fontSize:10,fontWeight:800,color:avgCol,fontFamily:fm}}>{row.avg}</span>
-                  </div>:<span style={{color:K.bdr}}>{"—"}</span>}
-                </div>
-              </div>;
-            })}
-            {/* Legend */}
-            <div style={{padding:"10px 14px",borderTop:"1px solid "+K.bdr+"40",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-              {[
-                {l:"Leg 1 — Extraordinary Business",s:"ROE >15%, gross margin >35%, positive FCF"},
-                {l:"Leg 2 — Exceptional Management",s:"Conviction stability + decision journal"},
-                {l:"Leg 3 — Reinvestment Opportunity",s:"Revenue growth >8%, ROIC >12%"}
-              ].map(function(item,i){return<div key={i}>
-                <div style={{fontSize:9,fontWeight:700,color:orange,fontFamily:fm,marginBottom:1}}>{item.l}</div>
-                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{item.s}</div>
-              </div>})}
-            </div>
-            <div style={{padding:"7px 14px",borderTop:"1px solid "+K.bdr+"40",fontSize:9,color:K.dim,fontStyle:"italic"}}>
-              {"“A business that can reinvest its earnings at high rates of return for a long period of time is an extraordinary compounder.” — Chuck Akre"}
-            </div>
-          </div>
-        </div>;
-      }
-      // ── PETER LYNCH: Category Classifier ─────────────────────────
-      if(investorProfile==="lynch"){
-        var LCATS=[{id:"fast_grower",label:"Fast Grower",sym:"F",color:"#22C55E",tip:"20-25%+ annual growth. Sell when growth slows."},
-          {id:"stalwart",label:"Stalwart",sym:"S",color:"#3B82F6",tip:"Large, solid, 10-12% growth. Sell at 30-50% gain."},
-          {id:"slow_grower",label:"Slow Grower",sym:"SG",color:"#6B7280",tip:"GDP growth. Own for dividends only."},
-          {id:"cyclical",label:"Cyclical",sym:"C",color:"#F59E0B",tip:"Buy at high P/E (trough), sell at low P/E (peak)."},
-          {id:"turnaround",label:"Turnaround",sym:"T",color:"#EF4444",tip:"Broken but fixable. Define the thesis clearly."},
-          {id:"asset_play",label:"Asset Play",sym:"A",color:"#8B5CF6",tip:"Hidden assets not in price. Market will recognise."}];
-        var catCounts={};LCATS.forEach(function(cat){catCounts[cat.id]=0});
-        portfolio.forEach(function(c){if(c.lynchCategory)catCounts[c.lynchCategory]=(catCounts[c.lynchCategory]||0)+1});
-        var unclassified=portfolio.filter(function(c){return!c.lynchCategory}).length;
-        var pegVals=[];portfolio.forEach(function(c){var s=c.financialSnapshot||{};var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;var eg=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;if(pe&&pe>0&&eg&&eg>0)pegVals.push(pe/eg)});
-        var avgPeg=pegVals.length>0?(pegVals.reduce(function(s,v){return s+v},0)/pegVals.length):null;
-        return<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <IC name="search" size={12} color="#8B5CF6"/>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Lynch Categories</div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Know what you own</span>
-            </div>
-            {avgPeg!=null&&<div style={{fontSize:10,fontFamily:fm,color:avgPeg<1?K.grn:avgPeg<2?K.acc:K.red,fontWeight:700}}>{"Avg PEG: "+avgPeg.toFixed(2)}</div>}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-              {portfolio.map(function(c){
-                var cat=c.lynchCategory?LCATS.find(function(x){return x.id===c.lynchCategory}):null;
-                var s=c.financialSnapshot||{};
-                var pe2=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
-                var eg2=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
-                var peg2=pe2&&pe2>0&&eg2&&eg2>0?(pe2/eg2):null;
-                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
-                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
-                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
-                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
-                    {peg2!=null&&<div style={{fontSize:9,color:peg2<1?K.grn:peg2<2?K.acc:K.red,fontFamily:fm,fontWeight:600}}>{"PEG "+peg2.toFixed(2)}</div>}
-                  </div>
-                  {cat
-                    ?<button onClick={function(e){e.stopPropagation();var v=window.prompt("Lynch category for "+c.ticker+"\n1.Fast Grower 2.Stalwart 3.Slow Grower 4.Cyclical 5.Turnaround 6.Asset Play\nEnter number:",String(LCATS.indexOf(cat)+1));if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,fontWeight:700,color:cat.color,background:cat.color+"12",border:"1px solid "+cat.color+"30",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>{cat.sym+" "+cat.label}</button>
-                    :<button onClick={function(e){e.stopPropagation();var v=window.prompt("Classify "+c.ticker+":\n1.Fast Grower\n2.Stalwart\n3.Slow Grower\n4.Cyclical\n5.Turnaround\n6.Asset Play\nEnter number:");if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Classify</button>}
-                </div>;
-              })}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
-                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Portfolio mix</div>
-                {LCATS.filter(function(cat){return catCounts[cat.id]>0}).map(function(cat){return<div key={cat.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-                  <div style={{width:7,height:7,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
-                  <span style={{fontSize:11,color:K.mid,flex:1,fontFamily:fm}}>{cat.label}</span>
-                  <span style={{fontSize:11,fontWeight:700,color:cat.color,fontFamily:fm}}>{catCounts[cat.id]}</span>
-                </div>})}
-                {unclassified>0&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,fontStyle:"italic"}}>{unclassified+" unclassified"}</div>}
-              </div>
-              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",flex:1}}>
-                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Sell rules by type</div>
-                {LCATS.map(function(cat){return<div key={cat.id} style={{marginBottom:5,display:"flex",alignItems:"flex-start",gap:4}}>
-                  <span style={{fontSize:9,fontWeight:700,color:cat.color,fontFamily:fm,flexShrink:0,minWidth:16}}>{cat.sym}</span>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,lineHeight:1.4}}>{cat.tip}</span>
-                </div>})}
-              </div>
-            </div>
-          </div>
-        </div>;
-      }
-      // ── WARREN BUFFETT: IV Scorecard ──────────────────────────────
-      if(investorProfile==="buffett"){
-        var ivCos=portfolio.filter(function(c){return c.ivEstimate>0});
-        var inZoneN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<=c.ivEstimate*(1-(c.mosPct||30)/100)}).length;
-        var belowIVN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<c.ivEstimate}).length;
-        var noIV2=portfolio.filter(function(c){return!c.ivEstimate||c.ivEstimate<=0}).length;
-        return<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:7}}>
-              <IC name="dollar" size={12} color="#EF4444"/>
-              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Intrinsic Value Scorecard</div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Price is what you pay, value is what you get</span>
-            </div>
-            {ivCos.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{inZoneN+" in buy zone \u00b7 "+belowIVN+"/"+ivCos.length+" below IV"}</span>}
-          </div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            {portfolio.map(function(c){
-              var pos=c.position||{};var cp=pos.currentPrice||0;
-              var iv=c.ivEstimate||0;var mos=c.mosPct||30;
-              var buyBelow=iv*(1-mos/100);
-              var mosNow=iv>0&&cp>0?((iv-cp)/iv*100):null;
-              var inZone=iv>0&&cp>0&&cp<=buyBelow;
-              var aboveIV=iv>0&&cp>0&&cp>iv;
-              var sCol=!iv?K.bdr:inZone?K.grn:aboveIV?K.red:K.amb;
-              var sLbl=!iv?"No IV set":inZone?"In buy zone":aboveIV?"Above IV":"Below IV, above buy zone";
-              return<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
-                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
-                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
-                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-                <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
-                  <div style={{fontSize:10,color:sCol,fontFamily:fm,fontWeight:600}}>{sLbl}</div>
-                </div>
-                {iv>0?(function(){
-                  return<div style={{display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
-                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>IV est.</div><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+iv.toFixed(0)}</div></div>
-                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Buy below</div><div style={{fontSize:12,fontWeight:700,color:K.grn,fontFamily:fm}}>{cSym+buyBelow.toFixed(0)}</div></div>
-                    {mosNow!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>MoS</div><div style={{fontSize:12,fontWeight:700,color:sCol,fontFamily:fm}}>{mosNow.toFixed(0)+"%"}</div></div>}
-                    {cp>0&&<div style={{width:64}}>
-                      <div style={{position:"relative",height:4,background:K.bdr,borderRadius:2,marginBottom:2}}>
-                        <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(cp/Math.max(iv*1.5,cp)*100,100)+"%",background:sCol,borderRadius:2,transition:"width .3s"}}/>
-                        <div style={{position:"absolute",left:Math.min(iv/Math.max(iv*1.5,cp)*100,100)+"%",top:-3,width:1,height:10,background:K.grn,opacity:.6}}/>
-                      </div>
-                      <div style={{fontSize:8,color:K.dim,fontFamily:fm,textAlign:"right"}}>{cSym+cp.toFixed(0)}</div>
-                    </div>}
-                  </div>;
-                })()
-                :<button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"position"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 10px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Set IV \u2192</button>}
-              </div>;
-            })}
-            {noIV2>0&&<div style={{padding:"8px 16px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>{noIV2+" holding"+(noIV2>1?"s":"")+" without IV estimate \u2014 open Position to set your intrinsic value."}</div>}
-            <div style={{padding:"8px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>{"\u201cPrice is what you pay. Value is what you get.\u201d \u2014 Warren Buffett"}</div>
-          </div>
-        </div>;
-      }
-      return null;
-    })()}
-
-    {/* ── MR MARKET WIDGET ── */}
-    {sideTab==="portfolio"&&!isMobile&&(function(){
-      function MrMarketFace(props){
-        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
-        var moodMap={
-          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
-          fear:{label:"FEAR",sub:"cautious",bars:2},
-          neutral:{label:"CALM",sub:"neutral",bars:3},
-          greed:{label:"GREED",sub:"optimistic",bars:4},
-          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
-        };
-        var md=moodMap[mood]||moodMap.neutral;
-        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
-          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
-          <div style={{display:"flex",gap:3,marginBottom:5}}>
-            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
-          </div>
-          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
-        </div>;
-      }
-      return<div style={{marginBottom:20}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
-          <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
-          {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
-        </div>
-        <div style={{background:K.card,border:"1px solid "+(mrMarket?mrMarket.color+"30":K.bdr),borderRadius:_isBm?0:16,overflow:"hidden",transition:"border-color .3s"}}>
-          {mrMarketLoading&&!mrMarket&&<div style={{padding:"24px 20px",textAlign:"center",color:K.dim,fontSize:11,fontFamily:fm}}>{"Reading the market’s mood…"}</div>}
-          {!mrMarketLoading&&!mrMarket&&<div style={{padding:"20px",textAlign:"center"}}>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Market sentiment unavailable</div>
-            <button onClick={function(){setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>Check now</button>
-          </div>}
-          {mrMarket&&(function(){
-            var d=mrMarket;
-            return<div>
-              <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
-                <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
-                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
-                </div>
-                <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
-                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
-                    <div style={{fontSize:32,fontWeight:900,color:d.color,fontFamily:fm,lineHeight:1}}>{d.composite}</div>
-                    <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
-                  </div>
-                  <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
-                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F97316 20%, #6B7280 45%, #6B7280 55%, #10B981 80%, #8B5CF6 100%)",borderRadius:999}}/>
-                    <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
-                  </div>
-                  <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {d.details.map(function(det,i){return<div key={i} style={{background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
-                      <span style={{color:K.dim}}>{det.label+": "}</span>
-                      <span style={{fontWeight:700,color:K.acc}}>{det.value}</span>
-                    </div>;})}
-                  </div>
-                </div>
-              </div>
-              <div style={{padding:"7px 14px",borderTop:"1px solid "+d.color+"15",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Mr. Market is your servant, not your guide. — Buffett"}</span>
-                {d.fetched&&<span style={{fontSize:8,color:K.bdr,fontFamily:fm}}>{new Date(d.fetched).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
-              </div>
-            </div>;
-          })()}
-        </div>
-      </div>;
-    })()}
-
     {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
     {sideTab==="portfolio"&&filtered.length>0&&(function(){
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
@@ -11245,6 +10722,529 @@ function WeeklyReview(){
             </div>
           </div>})()}
       </div>})()}
+    {/* ── MR MARKET WIDGET ── */}
+    {sideTab==="portfolio"&&!isMobile&&(function(){
+      function MrMarketFace(props){
+        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
+        var moodMap={
+          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
+          fear:{label:"FEAR",sub:"cautious",bars:2},
+          neutral:{label:"CALM",sub:"neutral",bars:3},
+          greed:{label:"GREED",sub:"optimistic",bars:4},
+          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
+        };
+        var md=moodMap[mood]||moodMap.neutral;
+        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
+          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
+          <div style={{display:"flex",gap:3,marginBottom:5}}>
+            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
+          </div>
+          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
+        </div>;
+      }
+      return<div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,fontWeight:700}}>Mr. Market</div>
+          <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.6}}>B. Graham, 1949</span>
+          {mrMarket&&<button onClick={function(){setMrMarket(null);setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{marginLeft:"auto",background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,padding:0}} title="Refresh">{"↺"}</button>}
+        </div>
+        <div style={{background:K.card,border:"1px solid "+(mrMarket?mrMarket.color+"30":K.bdr),borderRadius:_isBm?0:16,overflow:"hidden",transition:"border-color .3s"}}>
+          {mrMarketLoading&&!mrMarket&&<div style={{padding:"24px 20px",textAlign:"center",color:K.dim,fontSize:11,fontFamily:fm}}>{"Reading the market’s mood…"}</div>}
+          {!mrMarketLoading&&!mrMarket&&<div style={{padding:"20px",textAlign:"center"}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:8}}>Market sentiment unavailable</div>
+            <button onClick={function(){setMrMarketLoading(true);fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false)})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>Check now</button>
+          </div>}
+          {mrMarket&&(function(){
+            var d=mrMarket;
+            return<div>
+              <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
+                <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
+                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
+                </div>
+                <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
+                    <div style={{fontSize:32,fontWeight:900,color:d.color,fontFamily:fm,lineHeight:1}}>{d.composite}</div>
+                    <div style={{fontSize:11,fontWeight:700,color:d.color,fontFamily:fm}}>{d.label}</div>
+                  </div>
+                  <div style={{height:5,background:K.bdr,borderRadius:999,marginBottom:10,overflow:"hidden",position:"relative"}}>
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:d.composite+"%",background:"linear-gradient(90deg, #EF4444 0%, #F97316 20%, #6B7280 45%, #6B7280 55%, #10B981 80%, #8B5CF6 100%)",borderRadius:999}}/>
+                    <div style={{position:"absolute",left:"calc("+d.composite+"% - 1px)",top:-2,width:2,height:9,background:d.color,borderRadius:1}}/>
+                  </div>
+                  <p style={{fontSize:10,color:K.mid,fontFamily:fm,lineHeight:1.5,fontStyle:"italic",marginBottom:10}}>{"“"+d.offer+"”"}</p>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {d.details.map(function(det,i){return<div key={i} style={{background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:6,padding:"2px 8px",fontSize:9,fontFamily:fm}}>
+                      <span style={{color:K.dim}}>{det.label+": "}</span>
+                      <span style={{fontWeight:700,color:K.acc}}>{det.value}</span>
+                    </div>;})}
+                  </div>
+                </div>
+              </div>
+              <div style={{padding:"7px 14px",borderTop:"1px solid "+d.color+"15",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Mr. Market is your servant, not your guide. — Buffett"}</span>
+                {d.fetched&&<span style={{fontSize:8,color:K.bdr,fontFamily:fm}}>{new Date(d.fetched).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>}
+              </div>
+            </div>;
+          })()}
+        </div>
+      </div>;
+    })()}
+
+    {/* ── PROFILE-SPECIFIC WIDGETS ── */}
+    {sideTab==="portfolio"&&!isMobile&&investorProfile&&investorProfile!=="munger"&&investorProfile!=="custom"&&(function(){
+      var portfolio=filtered;
+      // ── TERRY SMITH: The Three Tests ─────────────────────────────
+      if(investorProfile==="terry"){
+        var terryRows=portfolio.map(function(c){
+          var s=c.financialSnapshot||{};
+          var roic=s.roic&&s.roic.numVal!=null?s.roic.numVal:s.roce&&s.roce.numVal!=null?s.roce.numVal:null;
+          var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
+          var fcf=s.fcfMargin&&s.fcfMargin.numVal!=null?s.fcfMargin.numVal:s.fcfYield&&s.fcfYield.numVal!=null?s.fcfYield.numVal:null;
+          var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
+          var rev=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+          var t1=roic!=null&&gm!=null?(roic>=15&&gm>=40):roic!=null?roic>=15:null;
+          var t2=rev!=null&&fcf!=null?(rev>=5&&fcf>0):rev!=null?rev>=5:null;
+          var t3=pe!=null?(pe>0&&pe<30):(fcf!=null?fcf>3:null);
+          var passed=[t1,t2,t3].filter(function(t){return t===true}).length;
+          var judged=[t1,t2,t3].filter(function(t){return t!==null}).length;
+          return{c:c,t1:t1,t2:t2,t3:t3,passed:passed,judged:judged};
+        });
+        var allPass=terryRows.filter(function(r){return r.passed===3}).length;
+        var hasData=terryRows.some(function(r){return r.judged>0});
+        function dot(t){return t===true?<span style={{color:K.grn,fontSize:14}}>{"✓"}</span>:t===false?<span style={{color:K.red,fontSize:13}}>{"✗"}</span>:<span style={{color:K.bdr,fontSize:11}}>{"—"}</span>}
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="shield" size={12} color={K.grn}/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>The Three Tests</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Fundsmith framework</span>
+            </div>
+            {hasData&&<div style={{fontSize:10,color:allPass===portfolio.length?K.grn:K.amb,fontFamily:fm,fontWeight:700}}>{allPass+"/"+portfolio.length+" pass all three"}</div>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+              {["High returns","Can reinvest","Fair price"].map(function(l,i){return<div key={i} style={{fontSize:9,color:K.dim,fontFamily:fm,textAlign:"center",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>})}
+            </div>
+            {terryRows.map(function(row){
+              var c=row.c;
+              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 90px 90px 90px",padding:"8px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    <div style={{fontSize:9,color:K.dim}}>{c.name.substring(0,24)+(c.name.length>24?"...":"")}</div>
+                  </div>
+                </div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t1)}</div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t2)}</div>
+                <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"}}>{dot(row.t3)}</div>
+              </div>;
+            })}
+            {!hasData&&<div style={{padding:"14px",textAlign:"center",fontSize:12,color:K.dim}}>Refresh fundamentals to populate the three tests.</div>}
+            <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",gap:12}}>
+              {[{l:"1. High returns on capital",s:"ROIC > 15% + gross margin > 40%"},
+                {l:"2. Can reinvest those returns",s:"Rev growth > 5% + positive FCF"},
+                {l:"3. Reasonable valuation",s:"P/E < 30 or FCF yield > 3%"}].map(function(item,i){return<div key={i} style={{flex:1}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.mid,fontFamily:fm,marginBottom:1}}>{item.l}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.s}</div>
+              </div>})}
+            </div>
+          </div>
+        </div>;
+      }
+      // ── NICK SLEEP: Flywheel Check ────────────────────────────────
+      if(investorProfile==="sleep"){
+        var totalVal2=portfolio.reduce(function(s,c){var p=c.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
+        var top3W=portfolio.slice().sort(function(a,b){var va=(a.position||{}).shares>0&&(a.position||{}).currentPrice>0?(a.position.shares*a.position.currentPrice):0;var vb=(b.position||{}).shares>0&&(b.position||{}).currentPrice>0?(b.position.shares*b.position.currentPrice):0;return vb-va}).slice(0,3).reduce(function(s,c){var p=c.position||{};return s+(totalVal2>0&&p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice/totalVal2*100:0)},0);
+        var avgConv=portfolio.length>0?Math.round(portfolio.reduce(function(s,c){return s+(c.conviction||0)},0)/portfolio.length*10)/10:0;
+        var concColor=portfolio.length<=4?K.grn:portfolio.length<=7?K.amb:K.red;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",marginBottom:10,gap:7}}>
+            <IC name="trending" size={12} color={K.blue}/>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Flywheel Check</div>
+            <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Nomad framework</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:10}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              <div style={{padding:"7px 14px",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Scale economies shared — does it get better for customers?</div>
+              </div>
+              {portfolio.map(function(c){
+                var s=c.financialSnapshot||{};
+                var revGr=s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+                var gm=s.grossMargin&&s.grossMargin.numVal!=null?s.grossMargin.numVal:null;
+                var sec=parseThesis(c.thesisNote||"");
+                var excerpt=c.flywheelNote||(sec.core?sec.core.substring(0,80)+(sec.core.length>80?"...":""):"");
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    {excerpt?<div style={{fontSize:10,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{excerpt}</div>:
+                    <div style={{fontSize:10,color:K.dim,fontStyle:"italic"}}>Does this business share scale with customers? Add a flywheel note in the dossier.</div>}
+                  </div>
+                  <div style={{display:"flex",gap:8,flexShrink:0}}>
+                    {revGr!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:revGr>=10?K.grn:revGr>=5?K.amb:K.red,fontFamily:fm}}>{(revGr>=0?"+":"")+revGr.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Rev gr</div></div>}
+                    {gm!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:700,color:gm>=50?K.grn:gm>=30?K.amb:K.dim,fontFamily:fm}}>{gm.toFixed(0)+"%"}</div><div style={{fontSize:8,color:K.dim}}>Margin</div></div>}
+                  </div>
+                </div>;
+              })}
+              <div style={{padding:"7px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>
+                {"\u201cDestination companies make more economic sense over time.\u201d \u2014 Nick Sleep"}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {[{l:"Concentration",v:portfolio.length+" co.",sub:portfolio.length<=4?"Highly concentrated":portfolio.length<=7?"Moderate":"Too diversified?",col:concColor},
+                {l:"Top 3 weight",v:totalVal2>0?top3W.toFixed(0)+"%":"—",sub:"Sleep: top 3 often 60-80%",col:top3W>=60?K.grn:top3W>=40?K.amb:K.dim},
+                {l:"Avg conviction",v:avgConv>0?avgConv+"/10":"—",sub:"Own fewer, know more",col:avgConv>=7?K.grn:avgConv>=5?K.amb:K.red}].map(function(item,i){return<div key={i} style={{background:K.card,border:"1px solid "+item.col+"30",borderRadius:_isBm?0:10,padding:"10px 12px",flex:1}}>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{item.l}</div>
+                <div style={{fontSize:18,fontWeight:800,color:item.col,fontFamily:fm,lineHeight:1,marginBottom:2}}>{item.v}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{item.sub}</div>
+              </div>})}
+            </div>
+          </div>
+        </div>;
+      }
+      // ── CHUCK AKRE: Three-Legged Stool ──────────────────────────
+      if(investorProfile==="akre"){
+        var orange="#F97316";
+        // Leg 1: Extraordinary Business — ROE + gross margin + FCF
+        // Leg 2: Exceptional Management — conviction history trend + decision quality
+        // Leg 3: Reinvestment Opportunity — revenue growth + retained earnings proxy
+        var akreRows=portfolio.map(function(c){
+          var s=c.financialSnapshot||{};
+          function pv(k2){if(!s[k2])return null;if(s[k2].numVal!=null)return s[k2].numVal;var v2=s[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||null:null}
+          // Leg 1: Extraordinary Business
+          var roe=pv("roe");var gm=pv("grossMargin");var fcf=pv("fcfYield")||pv("fcf");
+          var leg1Score=0;var leg1Pts=0;
+          if(roe!=null){leg1Pts++;if(roe>=20)leg1Score+=2;else if(roe>=15)leg1Score+=1;}
+          if(gm!=null){leg1Pts++;if(gm>=50)leg1Score+=2;else if(gm>=35)leg1Score+=1;}
+          if(fcf!=null){leg1Pts++;if(fcf>0)leg1Score+=2;}
+          var leg1=leg1Pts>0?Math.round(leg1Score/leg1Pts*50):null;
+          // Leg 2: Exceptional Management — conviction consistency + decisions logged
+          var convH=c.convictionHistory||[];var recentConv=convH.slice(-4);
+          var convStable=recentConv.length>=2&&recentConv.every(function(ch){return ch.rating>=6});
+          var decCount=(c.decisions||[]).length;
+          var leg2=convH.length===0?null:Math.min(100,convStable?70:40)+(decCount>=3?30:decCount>=1?15:0);
+          leg2=leg2!==null?Math.min(100,leg2):null;
+          // Leg 3: Reinvestment Opportunity — rev growth + roic
+          var revGr=pv("revGrowth");var roic=pv("roic")||pv("roe");
+          var leg3Score=0;var leg3Pts=0;
+          if(revGr!=null){leg3Pts++;if(revGr>=15)leg3Score+=2;else if(revGr>=8)leg3Score+=1;}
+          if(roic!=null){leg3Pts++;if(roic>=20)leg3Score+=2;else if(roic>=12)leg3Score+=1;}
+          var leg3=leg3Pts>0?Math.round(leg3Score/leg3Pts*50):null;
+          var allLegs=[leg1,leg2,leg3];
+          var avgLeg=allLegs.filter(function(l){return l!=null}).length>0?Math.round(allLegs.filter(function(l){return l!=null}).reduce(function(a,b){return a+b},0)/allLegs.filter(function(l){return l!=null}).length):null;
+          return{c:c,leg1:leg1,leg2:leg2,leg3:leg3,avg:avgLeg};
+        });
+        var allStrong=akreRows.filter(function(r){return r.avg!=null&&r.avg>=70}).length;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="star" size={12} color={orange}/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Three-Legged Stool</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Akre framework</span>
+            </div>
+            {akreRows.some(function(r){return r.avg!=null})&&<div style={{fontSize:10,color:allStrong===portfolio.length?orange:K.mid,fontFamily:fm,fontWeight:700}}>{allStrong+"/"+portfolio.length+" all-leg pass"}</div>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            {/* Header row */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",background:K.bg,borderBottom:"1px solid "+K.bdr,padding:"6px 14px",gap:0}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+              {[["Leg 1","Biz quality"],["Leg 2","Management"],["Leg 3","Reinvest"]].map(function(l,i){return<div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:9,color:orange,fontFamily:fm,fontWeight:700,letterSpacing:.5}}>{l[0]}</div>
+                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{l[1]}</div>
+              </div>})}
+              <div style={{textAlign:"center",fontSize:9,color:K.dim,fontFamily:fm,fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Avg</div>
+            </div>
+            {/* Rows */}
+            {akreRows.map(function(row){
+              var c=row.c;
+              function leg(val){
+                if(val===null)return<div style={{textAlign:"center",color:K.bdr,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center"}}>{"—"}</div>;
+                var col=val>=70?K.grn:val>=45?orange:K.red;
+                return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                  <div style={{fontSize:10,fontWeight:700,color:col,fontFamily:fm}}>{val}</div>
+                  <div style={{width:36,height:3,background:K.bdr+"50",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:val+"%",background:col,borderRadius:2}}/>
+                  </div>
+                </div>;
+              }
+              var avgCol=row.avg!=null?(row.avg>=70?K.grn:row.avg>=45?orange:K.red):K.bdr;
+              return<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 80px 80px 80px 64px",padding:"10px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer",alignItems:"center"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={20}/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    <div style={{fontSize:9,color:K.dim}}>{(c.name||"").substring(0,20)+(c.name&&c.name.length>20?"...":"")}</div>
+                  </div>
+                </div>
+                {leg(row.leg1)}{leg(row.leg2)}{leg(row.leg3)}
+                <div style={{textAlign:"center"}}>
+                  {row.avg!=null?<div style={{width:32,height:32,borderRadius:"50%",background:avgCol+"18",border:"2px solid "+avgCol,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
+                    <span style={{fontSize:10,fontWeight:800,color:avgCol,fontFamily:fm}}>{row.avg}</span>
+                  </div>:<span style={{color:K.bdr}}>{"—"}</span>}
+                </div>
+              </div>;
+            })}
+            {/* Legend */}
+            <div style={{padding:"10px 14px",borderTop:"1px solid "+K.bdr+"40",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+              {[
+                {l:"Leg 1 — Extraordinary Business",s:"ROE >15%, gross margin >35%, positive FCF"},
+                {l:"Leg 2 — Exceptional Management",s:"Conviction stability + decision journal"},
+                {l:"Leg 3 — Reinvestment Opportunity",s:"Revenue growth >8%, ROIC >12%"}
+              ].map(function(item,i){return<div key={i}>
+                <div style={{fontSize:9,fontWeight:700,color:orange,fontFamily:fm,marginBottom:1}}>{item.l}</div>
+                <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>{item.s}</div>
+              </div>})}
+            </div>
+            <div style={{padding:"7px 14px",borderTop:"1px solid "+K.bdr+"40",fontSize:9,color:K.dim,fontStyle:"italic"}}>
+              {"“A business that can reinvest its earnings at high rates of return for a long period of time is an extraordinary compounder.” — Chuck Akre"}
+            </div>
+          </div>
+        </div>;
+      }
+      // ── PETER LYNCH: Category Classifier ─────────────────────────
+      if(investorProfile==="lynch"){
+        var LCATS=[{id:"fast_grower",label:"Fast Grower",sym:"F",color:"#22C55E",tip:"20-25%+ annual growth. Sell when growth slows."},
+          {id:"stalwart",label:"Stalwart",sym:"S",color:"#3B82F6",tip:"Large, solid, 10-12% growth. Sell at 30-50% gain."},
+          {id:"slow_grower",label:"Slow Grower",sym:"SG",color:"#6B7280",tip:"GDP growth. Own for dividends only."},
+          {id:"cyclical",label:"Cyclical",sym:"C",color:"#F59E0B",tip:"Buy at high P/E (trough), sell at low P/E (peak)."},
+          {id:"turnaround",label:"Turnaround",sym:"T",color:"#EF4444",tip:"Broken but fixable. Define the thesis clearly."},
+          {id:"asset_play",label:"Asset Play",sym:"A",color:"#8B5CF6",tip:"Hidden assets not in price. Market will recognise."}];
+        var catCounts={};LCATS.forEach(function(cat){catCounts[cat.id]=0});
+        portfolio.forEach(function(c){if(c.lynchCategory)catCounts[c.lynchCategory]=(catCounts[c.lynchCategory]||0)+1});
+        var unclassified=portfolio.filter(function(c){return!c.lynchCategory}).length;
+        var pegVals=[];portfolio.forEach(function(c){var s=c.financialSnapshot||{};var pe=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;var eg=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;if(pe&&pe>0&&eg&&eg>0)pegVals.push(pe/eg)});
+        var avgPeg=pegVals.length>0?(pegVals.reduce(function(s,v){return s+v},0)/pegVals.length):null;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="search" size={12} color="#8B5CF6"/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Lynch Categories</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Know what you own</span>
+            </div>
+            {avgPeg!=null&&<div style={{fontSize:10,fontFamily:fm,color:avgPeg<1?K.grn:avgPeg<2?K.acc:K.red,fontWeight:700}}>{"Avg PEG: "+avgPeg.toFixed(2)}</div>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              {portfolio.map(function(c){
+                var cat=c.lynchCategory?LCATS.find(function(x){return x.id===c.lynchCategory}):null;
+                var s=c.financialSnapshot||{};
+                var pe2=s.pe?parseFloat(String(s.pe.value||"").replace(/[^0-9.\-]/g,"")):null;
+                var eg2=s.epsGrowth&&s.epsGrowth.numVal!=null?s.epsGrowth.numVal:s.revGrowth&&s.revGrowth.numVal!=null?s.revGrowth.numVal:null;
+                var peg2=pe2&&pe2>0&&eg2&&eg2>0?(pe2/eg2):null;
+                return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                  onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                  <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                    {peg2!=null&&<div style={{fontSize:9,color:peg2<1?K.grn:peg2<2?K.acc:K.red,fontFamily:fm,fontWeight:600}}>{"PEG "+peg2.toFixed(2)}</div>}
+                  </div>
+                  {cat
+                    ?<button onClick={function(e){e.stopPropagation();var v=window.prompt("Lynch category for "+c.ticker+"\n1.Fast Grower 2.Stalwart 3.Slow Grower 4.Cyclical 5.Turnaround 6.Asset Play\nEnter number:",String(LCATS.indexOf(cat)+1));if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,fontWeight:700,color:cat.color,background:cat.color+"12",border:"1px solid "+cat.color+"30",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>{cat.sym+" "+cat.label}</button>
+                    :<button onClick={function(e){e.stopPropagation();var v=window.prompt("Classify "+c.ticker+":\n1.Fast Grower\n2.Stalwart\n3.Slow Grower\n4.Cyclical\n5.Turnaround\n6.Asset Play\nEnter number:");if(!v)return;var i2=parseInt(v)-1;if(i2>=0&&i2<LCATS.length)upd(c.id,{lynchCategory:LCATS[i2].id})}} style={{fontSize:9,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:4,padding:"3px 8px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Classify</button>}
+                </div>;
+              })}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Portfolio mix</div>
+                {LCATS.filter(function(cat){return catCounts[cat.id]>0}).map(function(cat){return<div key={cat.id} style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
+                  <div style={{width:7,height:7,borderRadius:"50%",background:cat.color,flexShrink:0}}/>
+                  <span style={{fontSize:11,color:K.mid,flex:1,fontFamily:fm}}>{cat.label}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:cat.color,fontFamily:fm}}>{catCounts[cat.id]}</span>
+                </div>})}
+                {unclassified>0&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,fontStyle:"italic"}}>{unclassified+" unclassified"}</div>}
+              </div>
+              <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",flex:1}}>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Sell rules by type</div>
+                {LCATS.map(function(cat){return<div key={cat.id} style={{marginBottom:5,display:"flex",alignItems:"flex-start",gap:4}}>
+                  <span style={{fontSize:9,fontWeight:700,color:cat.color,fontFamily:fm,flexShrink:0,minWidth:16}}>{cat.sym}</span>
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,lineHeight:1.4}}>{cat.tip}</span>
+                </div>})}
+              </div>
+            </div>
+          </div>
+        </div>;
+      }
+      // ── WARREN BUFFETT: IV Scorecard ──────────────────────────────
+      if(investorProfile==="buffett"){
+        var ivCos=portfolio.filter(function(c){return c.ivEstimate>0});
+        var inZoneN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<=c.ivEstimate*(1-(c.mosPct||30)/100)}).length;
+        var belowIVN=ivCos.filter(function(c){var cp=(c.position||{}).currentPrice||0;return cp>0&&cp<c.ivEstimate}).length;
+        var noIV2=portfolio.filter(function(c){return!c.ivEstimate||c.ivEstimate<=0}).length;
+        return<div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:7}}>
+              <IC name="dollar" size={12} color="#EF4444"/>
+              <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Intrinsic Value Scorecard</div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic",opacity:.7}}>Price is what you pay, value is what you get</span>
+            </div>
+            {ivCos.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{inZoneN+" in buy zone \u00b7 "+belowIVN+"/"+ivCos.length+" below IV"}</span>}
+          </div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            {portfolio.map(function(c){
+              var pos=c.position||{};var cp=pos.currentPrice||0;
+              var iv=c.ivEstimate||0;var mos=c.mosPct||30;
+              var buyBelow=iv*(1-mos/100);
+              var mosNow=iv>0&&cp>0?((iv-cp)/iv*100):null;
+              var inZone=iv>0&&cp>0&&cp<=buyBelow;
+              var aboveIV=iv>0&&cp>0&&cp>iv;
+              var sCol=!iv?K.bdr:inZone?K.grn:aboveIV?K.red:K.amb;
+              var sLbl=!iv?"No IV set":inZone?"In buy zone":aboveIV?"Above IV":"Below IV, above buy zone";
+              return<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier")}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"06"}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{c.ticker}</div>
+                  <div style={{fontSize:10,color:sCol,fontFamily:fm,fontWeight:600}}>{sLbl}</div>
+                </div>
+                {iv>0?(function(){
+                  return<div style={{display:"flex",alignItems:"center",gap:14,flexShrink:0}}>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>IV est.</div><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+iv.toFixed(0)}</div></div>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>Buy below</div><div style={{fontSize:12,fontWeight:700,color:K.grn,fontFamily:fm}}>{cSym+buyBelow.toFixed(0)}</div></div>
+                    {mosNow!=null&&<div style={{textAlign:"right"}}><div style={{fontSize:9,color:K.dim,fontFamily:fm}}>MoS</div><div style={{fontSize:12,fontWeight:700,color:sCol,fontFamily:fm}}>{mosNow.toFixed(0)+"%"}</div></div>}
+                    {cp>0&&<div style={{width:64}}>
+                      <div style={{position:"relative",height:4,background:K.bdr,borderRadius:2,marginBottom:2}}>
+                        <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.min(cp/Math.max(iv*1.5,cp)*100,100)+"%",background:sCol,borderRadius:2,transition:"width .3s"}}/>
+                        <div style={{position:"absolute",left:Math.min(iv/Math.max(iv*1.5,cp)*100,100)+"%",top:-3,width:1,height:10,background:K.grn,opacity:.6}}/>
+                      </div>
+                      <div style={{fontSize:8,color:K.dim,fontFamily:fm,textAlign:"right"}}>{cSym+cp.toFixed(0)}</div>
+                    </div>}
+                  </div>;
+                })()
+                :<button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"position"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px dashed "+K.acc+"50",borderRadius:_isBm?0:5,padding:"4px 10px",cursor:"pointer",fontFamily:fm,flexShrink:0}}>Set IV \u2192</button>}
+              </div>;
+            })}
+            {noIV2>0&&<div style={{padding:"8px 16px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>{noIV2+" holding"+(noIV2>1?"s":"")+" without IV estimate \u2014 open Position to set your intrinsic value."}</div>}
+            <div style={{padding:"8px 14px",fontSize:9,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40",lineHeight:1.6}}>{"\u201cPrice is what you pay. Value is what you get.\u201d \u2014 Warren Buffett"}</div>
+          </div>
+        </div>;
+      }
+      return null;
+    })()}
+
+    {/* ── READING & LIBRARY WIDGET ── */}
+    {sideTab==="portfolio"&&!isMobile&&(function(){
+      var rl=readingList||[];
+      var libItems=(library&&library.items)||[];
+      var currentlyReading=rl.filter(function(r){return r.status==="reading"});
+      var wantToRead=rl.filter(function(r){return r.status==="want"||!r.status});
+      var recentlyRead=rl.filter(function(r){return r.status==="read"}).slice(-3).reverse();
+      // Library items linked to portfolio companies
+      var linkedItems=libItems.filter(function(it){return it.ticker&&filtered.some(function(c){return c.ticker===it.ticker})}).slice(0,3);
+      var isEmpty=rl.length===0&&libItems.length===0;
+      return<div style={{marginBottom:20,marginTop:8,paddingTop:20,borderTop:"1px solid "+K.bdr+"60"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700}}>Reading & Research</div>
+            {investorProfile==="munger"&&<span style={{fontSize:9,color:K.amb,fontFamily:fm,fontStyle:"italic",opacity:.7}}>{"\u201cIn my whole life, I have known no wise people who didn’t read all the time\u201d"}</span>}
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:10,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Add</button>
+            <button onClick={function(){setPage("library")}} style={{fontSize:10,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Library →</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":currentlyReading.length>0?"2fr 1fr":"1fr 1fr",gap:10}}>
+          {/* Left: currently reading or queue */}
+          <div style={{background:K.card,border:"1px solid "+(currentlyReading.length>0?K.acc+"30":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px"}}>
+            {currentlyReading.length>0?(function(){
+              var book=currentlyReading[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.acc,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,animation:"pulse 2s infinite"}}/>
+                  Currently reading
+                  {currentlyReading.length>1&&<span style={{fontSize:9,color:K.dim,marginLeft:4}}>{"+"+( currentlyReading.length-1)+" more"}</span>}
+                </div>
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2,lineHeight:1.3}}>{book.title}</div>
+                {book.author&&<div style={{fontSize:11,color:K.dim,marginBottom:book.notes?6:0}}>{book.author}</div>}
+                {book.notes&&<div style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:6}}>{book.notes.substring(0,100)+(book.notes.length>100?"...":"")}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===book?Object.assign({},r,{status:"read"}):r});saveRL(updated)}} style={{fontSize:10,color:K.grn,background:K.grn+"10",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Mark read</button>
+                  <button onClick={function(){setModal({type:"readingNote",book:book})}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>+ Note</button>
+                  {wantToRead.length>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{wantToRead.length+" in queue"}</span>}
+                </div>
+                {book.readingNotes&&book.readingNotes.length>0&&<div style={{marginTop:8,borderTop:"1px solid "+K.bdr+"40",paddingTop:8}}>
+                  {book.readingNotes.slice(-2).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,fontStyle:"italic",lineHeight:1.5,marginBottom:3,display:"flex",gap:6}}>
+                    <span style={{color:K.acc,flexShrink:0,fontStyle:"normal"}}>—</span>
+                    <span>{n.text}{n.ticker&&<span style={{fontSize:9,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:3,marginLeft:6,fontStyle:"normal",fontFamily:fm,fontWeight:700}}>{n.ticker}</span>}</span>
+                  </div>})}
+                </div>}
+              </div>;
+            })()
+            :wantToRead.length>0?(function(){
+              var next=wantToRead[0];
+              return<div>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Up next</div>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:2}}>{next.title}</div>
+                {next.author&&<div style={{fontSize:11,color:K.dim,marginBottom:8}}>{next.author}</div>}
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <button onClick={function(){var updated=readingList.map(function(r){return r===next?Object.assign({},r,{status:"reading"}):r});saveRL(updated)}} style={{fontSize:10,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:5,padding:"3px 10px",cursor:"pointer",fontFamily:fm}}>Start reading</button>
+                  {wantToRead.length>1&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(wantToRead.length-1)+" more in queue"}</span>}
+                </div>
+              </div>;
+            })()
+            :<div style={{textAlign:"center",padding:"8px 0"}}>
+              <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:4}}>{"Reading list is empty"}</div>
+              {investorProfile==="munger"
+                ?<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10,fontStyle:"italic"}}>{"Go to bed smarter than when you woke up. — Munger"}</div>
+                :<div style={{fontSize:11,color:K.dim,marginBottom:10}}>Add books, articles, or research to track your reading.</div>}
+              <button onClick={function(){setModal({type:"addReading"})}} style={{fontSize:11,color:K.acc,background:K.acc+"10",border:"1px solid "+K.acc+"30",borderRadius:_isBm?0:6,padding:"5px 14px",cursor:"pointer",fontFamily:fm}}>+ Add first book</button>
+            </div>}
+          </div>
+          {/* Right: recently read + library links */}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {/* Recently finished */}
+            {recentlyRead.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",flex:1}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Recently finished</div>
+              {recentlyRead.map(function(book,i){return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none"}}>
+                <span style={{fontSize:10,color:K.grn,marginTop:1}}>✓</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,fontWeight:600,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
+                  {book.notes&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes.substring(0,60)+(book.notes.length>60?"...":"")}</div>}
+                </div>
+              </div>})}
+            </div>}
+            {/* Library items linked to holdings */}
+            {linkedItems.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:1.5,textTransform:"uppercase",fontFamily:fm,marginBottom:8}}>Research linked to holdings</div>
+              {linkedItems.map(function(it,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:i>0?"5px 0 0":"0",borderTop:i>0?"1px solid "+K.bdr+"30":"none",cursor:"pointer"}} onClick={function(){setSelId(filtered.find(function(c){return c.ticker===it.ticker})&&filtered.find(function(c){return c.ticker===it.ticker}).id);setDetailTab("dossier")}}>
+                <span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"10",padding:"1px 5px",borderRadius:2,fontFamily:fm,flexShrink:0}}>{it.ticker}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:11,color:K.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
+                  {it.type&&<div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{it.type}</div>}
+                </div>
+              </div>})}
+            </div>}
+            {/* Stats if queue is healthy */}
+            {recentlyRead.length===0&&linkedItems.length===0&&rl.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"12px 16px",display:"flex",gap:16,justifyContent:"space-around",alignItems:"center"}}>
+              {[{label:"Read",val:rl.filter(function(r){return r.status==="read"}).length,color:K.grn},
+                {label:"Reading",val:currentlyReading.length,color:K.acc},
+                {label:"Queue",val:wantToRead.length,color:K.dim}].map(function(s,i){return<div key={i} style={{textAlign:"center"}}>
+                <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:fm,lineHeight:1}}>{s.val}</div>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2,textTransform:"uppercase",letterSpacing:.5}}>{s.label}</div>
+              </div>})}
+            </div>}
+          </div>
+        </div>
+      </div>;
+    })()}
+
     {/* ── CONVICTION LEDGER VIEW ── */}
     {filtered.length>0&&sideTab!=="toohard"&&dashSet.portfolioView==="ledger"&&(function(){
       var totalVal=filtered.reduce(function(s,cc){var p=cc.position||{};return s+(p.shares>0&&p.currentPrice>0?p.shares*p.currentPrice:0)},0);
