@@ -8638,10 +8638,10 @@ function ProWelcomeGift(){
           <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:16}}>{"What your first letter will include"}</div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {[
-              {label:"Conviction arc",desc:"How your confidence in each holding evolved — and what that pattern reveals about you as an investor."},
-              {label:"Process check",desc:"One thing you did well. One thing worth examining. Written honestly, not to flatter."},
-              {label:"The question",desc:"A single question to carry into next month — the one your portfolio thinks you should sit with."},
-              {label:"Signed \u2014 Your Portfolio",desc:"Written in first person from the businesses you own. Direct, specific, occasionally warm."},
+              {label:"What changed and why",desc:"Not just that conviction moved \u2014 but what that movement means when you look at it honestly."},
+              {label:"What you got right",desc:"Something specific you did well this month. Not the return. The behaviour."},
+              {label:"What\u2019s worth a second look",desc:"A stale thesis. A holding you haven\u2019t thought about. Something quiet that deserves attention."},
+              {label:"One question",desc:"The kind you can\u2019t answer quickly. Something to carry into next month and actually sit with."},
             ].map(function(item,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
               <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,flexShrink:0,marginTop:6}}/>
               <div>
