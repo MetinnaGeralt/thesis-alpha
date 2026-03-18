@@ -3649,6 +3649,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{marginBottom:10}}>
             <label style={{display:"block",fontSize:11,color:K.txt,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>Why? *</label>
             <textarea value={f.reasoning} onChange={function(e){set("reasoning",e.target.value)}} rows={2} placeholder={"What do I believe that the market doesn't?"} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
+          {isPro&&f.reasoning.trim().length>10&&<button onClick={function(){setCleaningReasoning(true);(async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,messages:[{role:"user",content:"Rewrite this rough investment reasoning into 1-2 clear, direct sentences. Keep their voice and meaning. No fluff.\nRaw: "+f.reasoning.substring(0,400)}],callType:"digest"})});})().then(function(r){return r.json();}).then(function(d){var t=(d.content&&d.content[0]&&d.content[0].text)||"";if(t)set("reasoning",t);setCleaningReasoning(false);}).catch(function(){setCleaningReasoning(false);});}} disabled={cleaningReasoning} style={{marginTop:5,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:10,color:K.acc,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>{cleaningReasoning?"\u23f3 Cleaning...":"\u2728 Clean up"}</button>}
           </div>
           <div style={{marginBottom:12}}>
             <label style={{display:"block",fontSize:11,color:K.red,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
@@ -3665,19 +3666,6 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <button onClick={function(){setSellGateOpen(false);setTimeout(addDecision,50)}} style={{flex:2,padding:"8px",borderRadius:_isBm?0:8,border:"none",background:K.red,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Confirm "+f.action}</button>
             </div>
           </div>
-          {isPro&&f.reasoning.trim().length>10&&<button onClick={function(){
-            setCleaningReasoning(true);
-            (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",
-            headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
-            body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,
-            messages:[{role:"user",content:"Clean up this rough investment decision note into one clear, well-written sentence or two. Keep the person's voice. Be direct. No fluff.\n\nRaw: "+f.reasoning.substring(0,400)}],
-            callType:"digest"})});})().then(function(r){return r.json();})
-            .then(function(d){var t=(d.content&&d.content[0]&&d.content[0].text)||"";if(t){var set2=function(k,v){setF(function(p){return Object.assign({},p,{[k]:v})});};set2("reasoning",t);}setCleaningReasoning(false);})
-            .catch(function(){setCleaningReasoning(false);});
-          }} disabled={cleaningReasoning} style={{marginTop:4,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:10,color:K.acc,cursor:"pointer",display:"flex",alignItems:"center",gap:5,opacity:cleaningReasoning?0.5:1}}>
-            {cleaningReasoning?<><div style={{width:9,height:9,borderRadius:"50%",border:"1.5px solid "+K.acc+"40",borderTop:"1.5px solid "+K.acc,animation:"spin 1s linear infinite"}}/>{"Cleaning..."}</>:"\u2728 Clean up"}
-          </button>}
-          </div>}
           {!sellGateOpen&&<div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
             <button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button>
             <button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.4})} onClick={addDecision}>Save</button>
