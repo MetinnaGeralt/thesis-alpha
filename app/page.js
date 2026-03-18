@@ -5027,11 +5027,13 @@ function calcMoatFromData(finData,businessModelType){
         {/* ── 1. THE STORY ── */}
         <div id="ds-story" style={{marginBottom:48}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>1</span>
+              </div>
               <div>
-                <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Thesis</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Your investment case</div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Thesis</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Your investment case</div>
               </div>
               {(sel.thesisVersions||[]).length>0&&<span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm,letterSpacing:0.5}}>{"v"+(sel.thesisVersions.length+1)}</span>}
               {_thesisAgeDays!=null&&_thesisAgeDays>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{_thesisAgeDays>365?Math.floor(_thesisAgeDays/365)+"y ago":_thesisAgeDays>30?Math.floor(_thesisAgeDays/30)+"mo ago":_thesisAgeDays+"d ago"}</span>}
@@ -5455,11 +5457,13 @@ function calcMoatFromData(finData,businessModelType){
         })()}
         {/* ── 2. THE EVIDENCE ── */}
         <div id="ds-evidence" style={{marginBottom:48}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
-            <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.grn,flexShrink:0}}/>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.grn+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:12,fontWeight:800,color:K.grn,fontFamily:fm}}>2</span>
+            </div>
             <div>
-              <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Evidence</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>KPIs, earnings, stress tests</div>
+              <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Evidence</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>KPIs, earnings, stress tests</div>
             </div>
           </div>
           {/* KPI Scorecard */}
@@ -5471,36 +5475,38 @@ function calcMoatFromData(finData,businessModelType){
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
-            {/* KPI Tile Grid */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:4}}>
-            {c.kpis.map(function(k){
-              var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results.find(function(r){return r.kpi_name===mid||r.kpi_name===k.name||(k.metricId&&r.kpi_name===k.metricId)});if(match)hist.push({q:e.quarter,v:match.actual_value,s:match.status})}})}
+            {/* KPI Row List */}
+            <div style={{display:"flex",flexDirection:"column",gap:0,marginBottom:4}}>
+            {c.kpis.map(function(k,ki){
+              var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results[mid]||e.results[k.name];if(match!=null)hist.push({q:e.quarter||e.date,v:match,s:k.lastResult&&e.quarter===c.earningsHistory[c.earningsHistory.length-1]?.quarter?k.lastResult.status:"unknown"});}});}
               hist.sort(function(a,b){return a.q>b.q?1:-1});
-              var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.bdr;
+              var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.dim;
               var statusLabel=k.lastResult?k.lastResult.status==="met"?"Met":k.lastResult.status==="unclear"?"N/A":"Missed":"—";
-              var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";if(typeof v!=="number")return v+(u||"");var abs=Math.abs(v);var s=abs>=1000?v.toFixed(0):abs>=10?v.toFixed(1):v.toFixed(2);return s+(u||"")})():null;
-              return<div key={k.id} style={{background:K.bg,borderRadius:_isBm?0:10,padding:"10px 12px",cursor:"pointer",border:"1px solid "+K.bdr+"60",position:"relative",overflow:"hidden"}} onClick={function(){setModal({type:"kpi",data:k.id})}}>
-                {/* Status color strip */}
-                <div style={{position:"absolute",left:0,top:0,bottom:0,width:3,borderRadius:_isBm?"0":"10px 0 0 10px",background:statusColor}}/>
-                <div style={{paddingLeft:6}}>
-                  <div style={{fontSize:11,fontWeight:600,color:K.txt,marginBottom:4,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{k.name}</div>
-                  <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:4}}>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:800,color:statusColor,fontFamily:fm,lineHeight:1}}>{lastVal||"—"}</div>
-                      <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:1}}>{k.target||"no target"}</div>
-                    </div>
-                    {/* Sparkline bars */}
-                    {hist.length>0&&<div style={{display:"flex",alignItems:"flex-end",gap:2,height:22}}>
-                      {hist.slice(-5).map(function(hh,hi){return<div key={hi} title={hh.q} style={{width:5,borderRadius:_isBm?0:1,height:hh.s==="met"?18:hh.s==="unclear"?10:6,background:hh.s==="met"?K.grn:hh.s==="unclear"?K.dim:K.red,opacity:.8}}/>})}
-                    </div>}
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    <div style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:statusColor,flexShrink:0}}/>
-                    <span style={{fontSize:9,color:statusColor,fontFamily:fm,fontWeight:600}}>{statusLabel}</span>
-                    {(function(){var streak=0;for(var si=hist.length-1;si>=0;si--){if(hist[si].s==="met")streak++;else break};return streak>=2?<span style={{fontSize:9,color:K.grn,fontFamily:fm,marginLeft:2}}>{streak}Q↑</span>:null})()}
-                  </div>
+              var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]||{};return(typeof v==="number"?v.toFixed(1):v)+(u.unit||"");})():null;
+              var isLast=ki===c.kpis.length-1;
+              return<div key={k.id} onClick={function(){setModal({type:"kpi",data:k.id})}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:isLast?"none":"1px solid "+K.bdr,cursor:"pointer"}}>
+                {/* Pass/fail icon */}
+                <div style={{width:20,height:20,borderRadius:_isBm?0:"50%",background:statusColor+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {k.lastResult?(
+                    k.lastResult.status==="met"
+                    ?<svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke={K.grn} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                    :k.lastResult.status==="unclear"
+                    ?<span style={{fontSize:9,color:K.dim,fontWeight:700}}>—</span>
+                    :<svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke={K.red} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                  ):<span style={{fontSize:9,color:K.dim}}>?</span>}
                 </div>
-              </div>})}
+                {/* KPI name */}
+                <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k.name}</span>
+                {/* Sparkline */}
+                {hist.length>1&&<div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:18,flexShrink:0}}>
+                  {hist.slice(-6).map(function(hh,hi){var barH=Math.max(2,Math.min(16,8));return<div key={hi} style={{width:3,height:barH,borderRadius:1,background:hi===hist.slice(-6).length-1?statusColor:K.bdr2}}/>})}
+                </div>}
+                {/* Target */}
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0,textAlign:"right"}}>{k.target||"—"}</span>
+                {/* Last result */}
+                <span style={{fontSize:12,fontWeight:700,color:statusColor,fontFamily:fm,flexShrink:0,minWidth:42,textAlign:"right"}}>{lastVal||"—"}</span>
+              </div>;
+            })}
             </div>
             <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
           </div>
@@ -5528,7 +5534,15 @@ function calcMoatFromData(finData,businessModelType){
         {/* ── 3. THE LEDGER ── */}
         <div id="ds-ledger" style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE LEDGER</div>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.amb+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.amb,fontFamily:fm}}>3</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>The Ledger</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Conviction, position, decisions</div>
+              </div>
+            </div>
             <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
@@ -5607,9 +5621,18 @@ function calcMoatFromData(finData,businessModelType){
           var totalJudged=passCount+failCount;var verdict=totalJudged===0?null:passCount>=totalJudged*0.75?"Attractive":passCount>=totalJudged*0.5?"Fair":"Expensive";
           var verdictColor=verdict==="Attractive"?K.grn:verdict==="Fair"?K.amb:verdict==="Expensive"?K.red:K.dim;
           return<div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>VALUATION</div>
-            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit framework":"Set up"}</button></div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.red+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.red,fontFamily:fm}}>5</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Valuation</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Your price discipline</div>
+              </div>
+            </div>
+            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit":"Set up"}</button>
+          </div>
           {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
             {verdict&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -5680,6 +5703,29 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
           if(!hasSnap)return null;
+          // ── Hero stat grid: 4 key numbers at a glance ──
+          var heroStats=(function(){
+            var rg=snap.revGrowth&&snap.revGrowth.numVal!=null?snap.revGrowth.numVal:null;
+            var gm=snap.grossMargin&&snap.grossMargin.numVal!=null?snap.grossMargin.numVal:null;
+            var roic=snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:(snap.roe&&snap.roe.numVal!=null?snap.roe.numVal:null);
+            var roicLabel=snap.roic&&snap.roic.numVal!=null?"ROIC":"ROE";
+            var de=snap.debtEquity&&snap.debtEquity.numVal!=null?snap.debtEquity.numVal:null;
+            var stats=[];
+            if(rg!=null)stats.push({label:"Rev growth",value:rg.toFixed(1)+"%",good:rg>10,neutral:rg>=0&&rg<=10,bad:rg<0});
+            if(gm!=null)stats.push({label:"Gross margin",value:gm.toFixed(1)+"%",good:gm>50,neutral:gm>=30&&gm<=50,bad:gm<30});
+            if(roic!=null)stats.push({label:roicLabel,value:roic.toFixed(1)+"%",good:roic>15,neutral:roic>=8&&roic<=15,bad:roic<8});
+            if(de!=null)stats.push({label:"Debt / equity",value:de.toFixed(2)+"x",good:de<0.5,neutral:de>=0.5&&de<=1.5,bad:de>1.5});
+            if(stats.length===0)return null;
+            return<div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(stats.length,4)+", 1fr)",gap:8,marginBottom:16}}>
+              {stats.map(function(s,si){
+                var valColor=s.good?K.grn:s.bad?K.red:K.mid;
+                return<div key={si} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",border:"1px solid "+K.bdr}}>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{s.label}</div>
+                  <div style={{fontSize:18,fontWeight:800,color:valColor,fontFamily:fm,lineHeight:1}}>{s.value}</div>
+                </div>;
+              })}
+            </div>;
+          })();
           // Group metrics
           var valuation=[];var returns=[];var divInfo=[];var health=[];
           if(snap.pe)valuation.push({l:"P/E",v:snap.pe.value,tip:"Price to earnings"});
@@ -5846,7 +5892,16 @@ function calcMoatFromData(finData,businessModelType){
                 <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{_bmtCtx.guidance}</div>
               </div>
             </div>}
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,marginBottom:12}}>OWNER'S NUMBERS</div>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:"#3B82F615",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:"#3B82F6",fontFamily:fm}}>4</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>The Numbers</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Financials, ratios, health</div>
+              </div>
+            </div>
+            {heroStats}
             {bsSection&&<div style={{marginBottom:16}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                 <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:"#EF4444",flexShrink:0}}/>
