@@ -810,6 +810,7 @@ function TrackerApp(props){
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var _proWelcome=useState(false),showProWelcome=_proWelcome[0],setShowProWelcome=_proWelcome[1];
   var _ownersLetters=useState(function(){try{var s=localStorage.getItem("ta-owners-letters");return s?JSON.parse(s):[];}catch(e){return [];}}),ownersLetters=_ownersLetters[0],setOwnersLetters=_ownersLetters[1];
+  var _journalEntries=useState(function(){try{var s=localStorage.getItem("ta-journal");return s?JSON.parse(s):[];}catch(e){return [];}}),journalEntries=_journalEntries[0],setJournalEntries=_journalEntries[1];
   var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
   var _letterError=useState(null),letterError=_letterError[0],setLetterError=_letterError[1];
   var xpFloat=null;
@@ -3334,7 +3335,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
-    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="ai"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="journal"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="journal"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("journal")})}><span style={{fontSize:isThesis?13:12,color:page==="journal"?K.acc:sideMid,fontWeight:page==="journal"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="edit" size={14} color={page==="journal"?K.acc:sideMid}/>{(function(){var unread=journalEntries.filter(function(e){return!e.generated&&e.reviewData;}).length;return<>{"Journal"}{unread>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block"}}/>}</>;})()}</span></div>
+        <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="ai"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
     {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:bm?"6px 12px":"10px 20px"}}>
@@ -8058,6 +8060,15 @@ function ProWelcomeGift(){
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
       if(!isFree){generateAiDigest(entries,sw+1);}
+      // Auto-generate journal entry from this review
+      (function(){
+        var changes=entries.filter(function(e){return e.prev!==e.new||e.note;});
+        var weekLabel=new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+        var entry={weekId:weekId,date:new Date().toISOString(),weekLabel:weekLabel,
+          reviewData:{changes:changes,reflection:reflection.trim(),avgConv:rev.summary.avgConv,total:rev.summary.total},
+          generated:null,userNote:"",generating:false};
+        saveJournalEntry(entry);
+      })();
       entries.forEach(function(e2){if(Math.abs(e2.new-e2.prev)>=2){
         logJournalEntry(e2.id,{cardType:"conviction_shift",ticker:e2.ticker,prevConviction:e2.prev,newConviction:e2.new,delta:e2.new-e2.prev,note:e2.note||"",action:e2.action||"hold",weekId:weekId})}});
       // Check for milestone unlock (new streak = sw+1)
@@ -8079,7 +8090,7 @@ function ProWelcomeGift(){
       var prevAvg=weeklyReviews.length>0?((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||avgNew):avgNew;
       var refl=reflection.trim();
       var prompt="You are a concise investment coach reviewing a weekly conviction check-in. Respond in exactly 2-3 sentences. No bullet points. No headers. Speak directly to the investor in second person.\n\nWeek "+weekNum+" of their review streak.\nConviction changes: "+changed_str+"\nStable holdings: "+held_str+"\nPortfolio avg conviction: "+avgNew.toFixed(1)+"/10 (was "+prevAvg.toFixed(1)+" last week)"+(refl?"\nInvestor note: "+refl.substring(0,200):"")+"\n\nObserve a pattern, name a tension, or ask the one question they should sit with this week. If they raised conviction, affirm the reasoning. If they lowered it, note what that signals. Do not be generic.";
-      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,messages:[{role:"user",content:prompt}]})})
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,messages:[{role:"user",content:prompt}],callType:"digest"})});})()
         .then(function(r){return r.json();})
         .then(function(d){var txt=(d.content&&d.content[0]&&d.content[0].text)||"";setAiDigest(txt);setAiLoading(false);})
         .catch(function(){setAiLoading(false);});
@@ -8112,6 +8123,18 @@ function ProWelcomeGift(){
         return{ticker:c2.ticker,start:first.new,end:latest.new,delta:latest.new-first.new};
       }).filter(Boolean).sort(function(a,b){return Math.abs(b.delta)-Math.abs(a.delta);});
       return{weeks:weeklyReviews.length,convChanges:convChanges.slice(0,5),avgStart:firstWeek.summary&&firstWeek.summary.avgConv,avgEnd:latestWeek.summary&&latestWeek.summary.avgConv};
+    }
+
+    function saveJournalEntry(entry){
+      setJournalEntries(function(prev){
+        var existing=prev.findIndex(function(e){return e.weekId===entry.weekId;});
+        var next=prev.slice();
+        if(existing>=0)next[existing]=Object.assign({},next[existing],entry);
+        else next=[entry].concat(next);
+        next=next.slice(0,104);// 2 years of weekly entries
+        try{localStorage.setItem("ta-journal",JSON.stringify(next));}catch(e){}
+        return next;
+      });
     }
 
     function saveOwnersLetter(letter){
@@ -8148,11 +8171,11 @@ function ProWelcomeGift(){
       var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
       var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
       var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+"Now write the letter.";
-      fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}]})
-      }).then(function(r){return r.json();})
+      (async function(){
+        var tok=await getAuthToken();
+        return fetch("/api/ai",{method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"letter"})});})().then(function(r){return r.json();})
         .then(function(d){
           var text=(d.content&&d.content[0]&&d.content[0].text)||"";
           if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
@@ -8574,6 +8597,154 @@ function ProWelcomeGift(){
         </div>}
       </div>}
     </div>
+  }
+
+  // ── Investor Journal ──────────────────────────────────────────
+  function JournalPage(){
+    var _sel=useState(journalEntries[0]||null),sel=_sel[0],setSel=_sel[1];
+    var _ramble=useState(""),ramble=_ramble[0],setRamble=_ramble[1];
+    var _cleaning=useState(false),cleaning=_cleaning[0],setCleaning=_cleaning[1];
+    var _genId=useState(null),genId=_genId[0],setGenId=_genId[1];
+    var _userNote=useState(""),userNote=_userNote[0],setUserNote=_userNote[1];
+
+    // Sync userNote when selected entry changes
+    var _prevSelId=useState(null),prevSelId=_prevSelId[0],setPrevSelId=_prevSelId[1];
+    if(sel&&sel.weekId!==prevSelId){setPrevSelId(sel?sel.weekId:null);setUserNote(sel?sel.userNote||"":"");}
+
+    function generateNarrative(entry){
+      if(!entry||entry.generating)return;
+      setGenId(entry.weekId);
+      saveJournalEntry({weekId:entry.weekId,generating:true});
+      var changes=entry.reviewData&&entry.reviewData.changes||[];
+      var refl=entry.reviewData&&entry.reviewData.reflection||"";
+      var avgConv=entry.reviewData&&entry.reviewData.avgConv||"?";
+      var changeStr=changes.length>0?changes.map(function(e){return e.ticker+(e.prev!==e.new?" (conviction "+e.prev+"\u2192"+e.new+")"+(e.note?" \u2014 '"+e.note.substring(0,60)+"'":""):" (held at "+e.new+")";}).join(", "):"No conviction changes this week.";
+      var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){if(d.date){var dd=new Date(d.date);var we=new Date(entry.date);var diff=Math.abs(we-dd)/864e5;if(diff<8)recentDecs.push(c.ticker+" \u2014 "+d.action+(d.reasoning?" ("+d.reasoning.substring(0,80)+")":""));}});});
+      var prompt="Write a brief investor journal entry in first person for the week of "+entry.weekLabel+". Warm, honest, reflective tone \u2014 like a private notebook. 3-4 sentences only. Specific to the data. No generic advice.\n\nConviction review:\n"+changeStr+"\nPortfolio avg conviction: "+avgConv+"/10\n"+(recentDecs.length>0?"Decisions this week:\n"+recentDecs.join("\n")+"\n":"")+(refl?"Investor's own note: '"+refl+"'\n":"")+"\nWrite the journal entry. First person. Past tense. Short.";
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}],callType:"journal"})});})()
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var text=(d.content&&d.content[0]&&d.content[0].text)||"";
+          saveJournalEntry({weekId:entry.weekId,generated:text,generating:false});
+          setGenId(null);
+          setSel(function(prev){return prev&&prev.weekId===entry.weekId?Object.assign({},prev,{generated:text,generating:false}):prev;});
+        })
+        .catch(function(){saveJournalEntry({weekId:entry.weekId,generating:false});setGenId(null);});
+    }
+
+    function cleanRamble(){
+      if(!ramble.trim()||cleaning)return;
+      setCleaning(true);
+      var prompt="Clean up this rough investor note into one clear, well-written paragraph. Keep the person's voice and meaning. Remove filler. No more than 100 words.\n\nRaw note:\n"+ramble.substring(0,800);
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}],callType:"ramble"})});})()
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var text=(d.content&&d.content[0]&&d.content[0].text)||ramble;
+          var newNote=(userNote?userNote+"\n\n":"")+text;
+          setUserNote(newNote);
+          setRamble("");
+          if(sel)saveJournalEntry({weekId:sel.weekId,userNote:newNote});
+          setCleaning(false);
+        })
+        .catch(function(){setCleaning(false);});
+    }
+
+    function saveNote(){
+      if(sel)saveJournalEntry({weekId:sel.weekId,userNote:userNote});
+    }
+
+    // Get latest entry for current week (unreviewed = no review data yet)
+    var weekId=getWeekId();
+    var hasThisWeek=journalEntries.some(function(e){return e.weekId===weekId;});
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Investor Journal"}</h1>
+          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"Your week in investing \u2014 generated from what you did, with space to add what you thought."}</p>
+        </div>
+        {!hasThisWeek&&<button onClick={function(){
+          var entry={weekId:weekId,date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
+          saveJournalEntry(entry);setSel(entry);
+        }} style={Object.assign({},S.btn,{padding:"9px 18px",fontSize:13})}>{"+ New entry"}</button>}
+      </div>
+
+      {/* Empty state */}
+      {journalEntries.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:16}}>{"📓"}</div>
+        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your journal starts after your first weekly review"}</div>
+        <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"Complete a weekly review and a journal entry will be waiting here \u2014 generated from your conviction changes, decisions, and notes."}</div>
+        <button onClick={function(){setPage("review");}} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Go to weekly review"}</button>
+      </div>}
+
+      {/* Two-column layout */}
+      {journalEntries.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"200px 1fr",gap:16,alignItems:"start"}}>
+
+        {/* Sidebar: entry list */}
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:4,paddingLeft:4}}>Entries</div>
+          {journalEntries.map(function(entry,i){
+            var isActive=sel&&sel.weekId===entry.weekId;
+            var hasContent=entry.generated||entry.userNote;
+            return<button key={entry.weekId} onClick={function(){setSel(entry);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+(isActive?K.acc+"50":K.bdr),background:isActive?K.acc+"08":"transparent",cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{fontSize:12,fontWeight:700,color:isActive?K.acc:K.txt,fontFamily:fm}}>{entry.weekLabel||entry.weekId}</span>
+                {!hasContent&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block",flexShrink:0}}/>}
+              </div>
+              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>
+                {entry.generated?entry.generated.substring(0,50)+"...":entry.userNote?entry.userNote.substring(0,50)+"...":"Tap to open"}
+              </span>
+            </button>;
+          })}
+        </div>
+
+        {/* Main pane */}
+        {sel&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+          {/* Generated narrative */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
+            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:12}}>{"Week of "+( sel.weekLabel||sel.weekId)}</div>
+            {sel.generating&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"20px 0"}}>
+              <div style={{width:16,height:16,borderRadius:"50%",border:"2px solid "+K.acc+"30",borderTop:"2px solid "+K.acc,animation:"spin 1s linear infinite",flexShrink:0}}/>
+              <span style={{fontSize:13,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Writing this week\u2019s entry..."}</span>
+            </div>}
+            {sel.generated&&!sel.generating&&<div style={{fontSize:14,color:K.txt,lineHeight:1.9,fontFamily:fb,marginBottom:16,whiteSpace:"pre-wrap"}}>{sel.generated}</div>}
+            {!sel.generated&&!sel.generating&&<div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"flex-start"}}>
+              <div style={{fontSize:13,color:K.dim,fontStyle:"italic"}}>
+                {sel.reviewData?"Entry ready to generate from your review data.":"No review data yet for this week \u2014 complete a review to auto-generate, or write your own below."}
+              </div>
+              {sel.reviewData&&<button onClick={function(){generateNarrative(sel);}} style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px"})}>{"Generate this week\u2019s entry"}</button>}
+            </div>}
+          </div>
+
+          {/* User note */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
+            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:12}}>{"Your thoughts"}</div>
+            <textarea value={userNote} onChange={function(e){setUserNote(e.target.value);}}
+              onBlur={saveNote}
+              rows={4} placeholder={"Add anything on your mind this week\u2026"}
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.75,resize:"vertical",outline:"none"}}/>
+          </div>
+
+          {/* Ramble box */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
+            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>{"Quick capture"}</div>
+            <div style={{fontSize:12,color:K.dim,marginBottom:10}}>{"Write whatever\u2019s on your mind \u2014 rough, unfiltered. Hit \u2018Clean this up\u2019 and it\u2019ll turn into a proper note."}</div>
+            <textarea value={ramble} onChange={function(e){setRamble(e.target.value);}}
+              rows={3} placeholder={"e.g. fico earnings were fine but i didn\u2019t love the tone on pricing, feels like they\u2019re being defensive about something..."}
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fm,lineHeight:1.7,resize:"vertical",outline:"none",marginBottom:8}}/>
+            <button onClick={cleanRamble} disabled={!ramble.trim()||cleaning}
+              style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px",opacity:(!ramble.trim()||cleaning)?0.5:1,display:"flex",alignItems:"center",gap:7})}>
+              {cleaning
+                ?<><div style={{width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"Cleaning..."}</>
+                :"\u2728  Clean this up"}
+            </button>
+          </div>
+
+        </div>}
+      </div>}
+    </div>;
   }
 
   // ── Owner's Letter ─────────────────────────────────────────
@@ -13382,7 +13553,7 @@ function ProWelcomeGift(){
 
       // Page-level crumb
       var pageLabels={analytics:"Analytics",calendar:"Earnings Calendar",dividends:"Dividends",
-        timeline:"Timeline",assets:"All Assets",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
+        timeline:"Timeline",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
         ai:"Research Prompts",hub:"Owner's Hub"};
       if(page!=="dashboard"&&!selId){
         crumbs.push(sep);
@@ -13492,7 +13663,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
       var mItems=[
@@ -13630,6 +13801,7 @@ function ProWelcomeGift(){
         {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
         {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"journal",label:"Journal",icon:"edit",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("journal")}},
         {id:"review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
         {id:"add",label:"Add Holding",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setModal({type:"add"})}},
         {id:"calendar",label:"Earnings Calendar",icon:"calendar",color:K.red,action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
