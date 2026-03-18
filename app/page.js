@@ -5160,6 +5160,41 @@ function calcMoatFromData(finData,businessModelType){
 
 
         {/* ── OWNERSHIP SNOWFLAKE ── */}
+        {/* ── YOUR WORK (Library items tagged to this holding) ── */}
+        {(function(){
+          var tagged=(library.items||[]).filter(function(it){return it.ticker===c.ticker;});
+          if(tagged.length===0)return null;
+          var myWorkItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
+          var refItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
+          return<div style={{marginTop:16,marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your library</div>
+              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm}}>{"View all →"}</button>
+            </div>
+            {myWorkItems.length>0&&<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+              {myWorkItems.map(function(it){
+                var tc2=({Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"})[it.type]||"#10B981";
+                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:K.bg,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,borderLeft:"2px solid "+tc2}}>
+                  <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":"edit"} size={11} color={tc2}/>
+                  <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</span>
+                  <span style={{fontSize:9,fontWeight:700,color:tc2,background:tc2+"15",padding:"1px 5px",borderRadius:3,fontFamily:fm}}>{it.type}</span>
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",padding:0,fontFamily:fm}}>{"Open ↗"}</button>}
+                </div>;
+              })}
+            </div>}
+            {refItems.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {refItems.map(function(it){
+                var tc2=({Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim})[it.type]||K.dim;
+                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
+                  <span style={{fontSize:10,fontWeight:700,color:tc2}}>{it.type}</span>
+                  <span style={{fontSize:11,color:K.txt,fontFamily:fm}}>{it.title}</span>
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",padding:0}}>{"↗"}</button>}
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })()}
+
         <div id="ds-score"/>
         {(function(){
           var mm=calcMastery(c);var fs=c.financialSnapshot||{};
@@ -10535,7 +10570,11 @@ function ProWelcomeGift(){
     var _ltype=useState("all"),libTypeFilter=_ltype[0],setLibTypeFilter=_ltype[1];
     var _lplaying=useState(null),libPlaying=_lplaying[0],setLibPlaying=_lplaying[1];
     var FOLDER_COLORS=[K.acc,K.grn,K.amb,K.red,"#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
-    var ITEM_TYPES=["Video","Article","Book","Podcast","Course","Other"];
+    var ITEM_TYPES=["Article","Video","Book","Podcast","Course","Other"];
+    var MY_WORK_TYPES=["Analysis","Model","Research Doc","Notes"];
+    var ALL_TYPES=ITEM_TYPES.concat(MY_WORK_TYPES);
+    var isMyWork=function(tp){return MY_WORK_TYPES.indexOf(tp)>=0;};
+    var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim,Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"};
     function getYTId(url){if(!url)return null;var m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/))([^&?#\s]{11})/);return m?m[1]:null}
     function getVimeoId(url){if(!url)return null;var m=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null}
     function getEmbedUrl(url){var yt=getYTId(url);if(yt)return"https://www.youtube.com/embed/"+yt+"?autoplay=1";var vi=getVimeoId(url);if(vi)return"https://player.vimeo.com/video/"+vi+"?autoplay=1";return null}
@@ -10556,7 +10595,24 @@ function ProWelcomeGift(){
       var def=libModal.item||{};
       var _t=useState(def.title||""),title=_t[0],setTitle=_t[1];
       var _u=useState(def.url||""),url=_u[0],setUrl=_u[1];
-      var _tp=useState(def.type||"Video"),type=_tp[0],setType=_tp[1];
+      var _ftching=useState(false),fetchingTitle=_ftching[0],setFetchingTitle=_ftching[1];
+      function handleUrlChange(v){
+        setUrl(v);
+        // Auto-detect type from URL
+        if(v.includes("docs.google.com/spreadsheets")||v.includes("sheets.new"))setType("Model");
+        else if(v.includes("docs.google.com/document")||v.includes("notion.so")||v.includes("notion.com"))setType("Research Doc");
+        else if(v.includes("youtube.com")||v.includes("youtu.be"))setType("Video");
+        else if(v.includes("open.spotify.com")||v.includes("podcasts.apple"))setType("Podcast");
+        // Auto-fetch title if empty and URL looks complete
+        if(!title.trim()&&v.length>12&&v.startsWith("http")&&!fetchingTitle){
+          setFetchingTitle(true);
+          fetch("/api/fetch-title?url="+encodeURIComponent(v))
+            .then(function(r){return r.json();})
+            .then(function(d){if(d.title)setTitle(d.title);setFetchingTitle(false);})
+            .catch(function(){setFetchingTitle(false);});
+        }
+      }
+      var _tp=useState(def.type||"Article"),type=_tp[0],setType=_tp[1];
       var _fo=useState(def.folder||""),folder=_fo[0],setFolder=_fo[1];
       var _no=useState(def.notes||""),notes=_no[0],setNotes=_no[1];
       var _ltk=useState(def.ticker||""),libTicker=_ltk[0],setLibTicker=_ltk[1];
@@ -10578,10 +10634,10 @@ function ProWelcomeGift(){
       return<Modal K={K} title={isNew?"Add Resource":"Edit Resource"} onClose={function(){setLibModal(null)}} w={520}>
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Type</label>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div>
+          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Reference material</div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5,marginTop:6,textTransform:"uppercase"}}>My work</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{MY_WORK_TYPES.map(function(tp){var tc2=typeColors[tp]||K.grn;return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?tc2+"60":K.bdr),background:type===tp?tc2+"15":"transparent",color:type===tp?tc2:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div></div>
         </div>
         <Inp K={K} label="Title" value={title} onChange={setTitle} placeholder="e.g. Howard Marks on Risk"/>
-        <Inp K={K} label="URL (YouTube, Vimeo, article, etc.)" value={url} onChange={setUrl} placeholder="https://..."/>
+        <Inp K={K} label="URL" value={url} onChange={handleUrlChange} placeholder="https://..." suffix={fetchingTitle?"Fetching title...":null}/>
         {thumb&&<div style={{borderRadius:_isBm?0:8,overflow:"hidden",marginBottom:16,height:120,background:K.bg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/></div>}
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Folder</label>
@@ -10645,7 +10701,9 @@ function ProWelcomeGift(){
       var isPlaying=libPlaying===it.id;
       var embedUrl=getEmbedUrl(it.url);
       var fol=folders.find(function(f){return f.id===it.folder});
-      var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim};
+      var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim,Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"};
+      var isWorkItem=MY_WORK_TYPES.indexOf(it.type)>=0;
+      var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}}()):"";
       var tc=typeColors[it.type]||K.dim;
       return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?16:10,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         {/* Thumbnail / player area */}
@@ -10669,6 +10727,8 @@ function ProWelcomeGift(){
               <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                 <span style={{fontSize:10,fontWeight:700,color:tc,background:tc+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,letterSpacing:.5}}>{it.type}</span>
                 {fol&&<span style={{fontSize:10,color:fol.color,background:fol.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm}}>{fol.name}</span>}
+                {isWorkItem&&<span style={{fontSize:9,fontWeight:700,color:"#10B981",background:"#10B98115",padding:"1px 6px",borderRadius:3,fontFamily:fm,letterSpacing:0.5}}>MY WORK</span>}
+                {!isWorkItem&&domain&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,marginLeft:2}}>{domain}</span>}
               </div>
             </div>
             <div style={{display:"flex",gap:4,flexShrink:0}}>
@@ -10688,7 +10748,7 @@ function ProWelcomeGift(){
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
           <h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:_isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:_isThesis?"-0.5px":"normal"}}>Library</h1>
-          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>Videos, articles, and resources that shape your thinking</p>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>"Your research docs, models, articles, and resources — indexed by holding, always one click away."</p>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={14} color={K.mid}/>New Folder</button>
@@ -10702,7 +10762,7 @@ function ProWelcomeGift(){
           <input value={libSearch} onChange={function(e){setLibSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?12:8,color:K.txt,padding:"9px 12px 9px 34px",fontSize:13,fontFamily:fm,outline:"none"}}/>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["all"].concat(ITEM_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
+          {["all"].concat(ALL_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
         </div>
       </div>
       {/* Folders row */}
@@ -10721,13 +10781,54 @@ function ProWelcomeGift(){
             </button>}
           </div>})}
       </div>}
-      {/* Items grid */}
-      {filtered.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":_isThesis?"repeat(auto-fill, minmax(280px,1fr))":"repeat(auto-fill, minmax(260px,1fr))",gap:_isThesis?20:16}}>
-        {filtered.map(function(it){return<ItemCard key={it.id} item={it}/>})}
-      </div>}
+      {/* Items grid — My Work first, then reference */}
+      {filtered.length>0&&(function(){
+        var myWork=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
+        var reference=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
+        return<div>
+          {myWork.length>0&&<div style={{marginBottom:28}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#10B981",fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>My Work</div>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{myWork.length} item{myWork.length!==1?"s":""}</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {myWork.map(function(it){
+                var tc2=typeColors[it.type]||"#10B981";
+                var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}})():"";
+                var fol=folders.find(function(f){return f.id===it.folder;});
+                return<div key={it.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,borderLeft:"3px solid "+tc2,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:tc2+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":it.type==="Notes"?"edit":"file"} size={14} color={tc2}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <span style={{fontSize:10,fontWeight:700,color:tc2,background:tc2+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm}}>{it.type}</span>
+                      {fol&&<span style={{fontSize:10,color:fol.color,fontFamily:fm}}>{fol.name}</span>}
+                      {domain&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{domain}</span>}
+                      {it.ticker&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{it.ticker}</span>}
+                    </div>
+                    {it.notes&&<div style={{fontSize:11,color:K.dim,marginTop:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.notes}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    {it.url&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:tc2+"15",border:"1px solid "+tc2+"40",borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:11,color:tc2,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{"Open ↗"}</button>}
+                    <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"5px 10px",fontSize:11,color:K.dim,cursor:"pointer"}}>{"Edit"}</button>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {reference.length>0&&<div>
+            {myWork.length>0&&<div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>Reference</div>}
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":_isThesis?"repeat(auto-fill, minmax(280px,1fr))":"repeat(auto-fill, minmax(260px,1fr))",gap:16}}>
+              {reference.map(function(it){return<ItemCard key={it.id} item={it}/>;})}
+            </div>
+          </div>}
+        </div>;
+      })()}
       {/* Empty state */}
       {items.length===0&&<div style={{textAlign:"center",padding:"80px 0",color:K.dim}}>
-        <IC name="video" size={40} color={K.bdr} style={{display:"block",margin:"0 auto 16px"}}/>
+        <IC name="overview" size={40} color={K.bdr} style={{display:"block",margin:"0 auto 16px"}}/>
         <div style={{fontSize:16,fontWeight:600,color:K.mid,marginBottom:8}}>Your library is empty</div>
         <div style={{fontSize:14,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>Save videos, articles, books, and podcasts that shape your investment thinking. Organize them in folders like "Mental Models", "Valuation", or "Sector Research".</div>
         <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"11px 28px"})}>Add Your First Resource</button>
