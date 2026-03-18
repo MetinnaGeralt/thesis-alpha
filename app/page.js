@@ -8665,13 +8665,8 @@ function ProWelcomeGift(){
           <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
             <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{selectedLetter.holdings+" holding"+(selectedLetter.holdings!==1?"s":"")+" · "+new Date(selectedLetter.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
             <button onClick={function(){
-              var prefill=selectedLetter.month+" Reflection
-
-"+selectedLetter.text.substring(0,400)+"...
-
-My response:
-";
-              setModal({type:"doc",prefill:{docType:"annual_review",title:"Reflection — "+selectedLetter.month,content:prefill}});
+              var prefill=selectedLetter.month+" Reflection\n\n"+selectedLetter.text.substring(0,400)+"...\n\nMy response:\n";
+              setModal({type:"doc",prefill:{docType:"annual_review",title:"Reflection \u2014 "+selectedLetter.month,content:prefill}});
             }} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 14px"})}>{"Save to Research Trail"}</button>
           </div>
         </div>}
