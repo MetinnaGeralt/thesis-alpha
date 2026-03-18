@@ -3665,7 +3665,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <button onClick={function(){setSellGateOpen(false);setSellQ("")}} style={{flex:1,padding:"8px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>Go back</button>
               <button onClick={function(){setSellGateOpen(false);setTimeout(addDecision,50)}} style={{flex:2,padding:"8px",borderRadius:_isBm?0:8,border:"none",background:K.red,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Confirm "+f.action}</button>
             </div>
-          </div>
+          </div>}
           {!sellGateOpen&&<div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
             <button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button>
             <button style={Object.assign({},S.btnP,{opacity:f.reasoning.trim()?1:.4})} onClick={addDecision}>Save</button>
