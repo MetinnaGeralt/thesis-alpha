@@ -8162,33 +8162,10 @@ function ProWelcomeGift(){
         var ch=c.convictionHistory||[];
         var convTrend=ch.length>=2?(ch[ch.length-1].rating>ch[0].rating?" conviction rising":" conviction steady"):"";
         return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10"+convTrend+", "+ret+". "+kpiStr+". Thesis: "+thesis;
-      }).join("
-");
+      }).join("\n");
       var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
-      var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("
-");
-      var prompt="You are writing a private monthly Owner’s Letter to a long-term investor. This is a letter *from their portfolio* — as if the businesses they own are speaking to them directly. It should feel like a thoughtful letter from an honest partner who has been watching carefully.
-
-Write in second person. Be direct, specific, and occasionally warm. 4-6 short paragraphs. No bullet points. No headers. No financial disclaimers.
-
-Structure loosely as: (1) What your portfolio did this month — the honest version. (2) Where your conviction was tested. (3) One thing you did well in your process. (4) One thing worth examining. (5) A single question to carry into next month.
-
-Month: "+month+"
-
-Holdings:
-"+holdingLines+"
-
-Recent decisions:
-"+(recentDecs.length>0?recentDecs.join("
-"):"None logged.")+"
-
-Weekly review streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"unknown")+"/10":"")+"
-
-"+(letterHistory?"Previous letter themes:
-"+letterHistory+"
-
-":"")+"Write the letter. Sign it: ‘— Your Portfolio’";
-
+      var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
+      var prompt="You are writing a private monthly Owner\u2019s Letter to a long-term investor. This is a letter *from their portfolio* \u2014 as if the businesses they own are speaking to them directly. It should feel like a thoughtful letter from an honest partner who has been watching carefully.\n\nWrite in second person. Be direct, specific, and occasionally warm. 4-6 short paragraphs. No bullet points. No headers. No financial disclaimers.\n\nStructure loosely as: (1) What your portfolio did this month \u2014 the honest version. (2) Where your conviction was tested. (3) One thing you did well in your process. (4) One thing worth examining. (5) A single question to carry into next month.\n\nMonth: "+month+"\n\nHoldings:\n"+holdingLines+"\n\nRecent decisions:\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged.")+"\n\nWeekly review streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"unknown")+"/10":"")+"\n\n"+(letterHistory?"Previous letter themes:\n"+letterHistory+"\n\n":"")+"Write the letter. Sign it: \u2018\u2014 Your Portfolio\u2019";
       fetch("https://api.anthropic.com/v1/messages",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
