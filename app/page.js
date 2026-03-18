@@ -8230,7 +8230,7 @@ function ProWelcomeGift(){
       var tok=await getAuthToken();
       return fetch("/api/ai",{method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"letter"})});})().then(function(r){return r.json();})
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"import"})});})().then(function(r){return r.json();})
       .then(function(d){
         var text=(d.content&&d.content[0]&&d.content[0].text)||"";
         if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
