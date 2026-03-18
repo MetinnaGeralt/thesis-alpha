@@ -4624,7 +4624,7 @@ function calcMoatFromData(finData,businessModelType){
     },[c.ticker,isPro]);
     var _thesisAgeDays=c.thesisUpdatedAt?Math.ceil((new Date()-new Date(c.thesisUpdatedAt))/864e5):null;
     var _thesisStale=_thesisAgeDays!=null&&_thesisAgeDays>90;
-    var _thesisStaleBadge=_thesisAgeDays==null?"No thesis yet":_thesisAgeDays===0?"Updated today":_thesisAgeDays===1?"Updated yesterday":_thesisAgeDays<30?_thesisAgeDays+"d ago":_thesisAgeDays<365?Math.floor(_thesisAgeDays/30)+"mo ago":Math.floor(_thesisAgeDays/365)+"yr ago";
+    var _thesisStaleBadge=_thesisAgeDays==null?"Thesis not written yet":_thesisAgeDays===0?"Updated today":_thesisAgeDays===1?"Updated yesterday":_thesisAgeDays<30?_thesisAgeDays+"d ago":_thesisAgeDays<365?Math.floor(_thesisAgeDays/30)+"mo ago":Math.floor(_thesisAgeDays/365)+"yr ago";
     var _convDriftDays=c.convictionHistory&&c.convictionHistory.length?(Math.ceil((new Date()-new Date(c.convictionHistory[c.convictionHistory.length-1].date))/864e5)):null;
     var _convDrift=_convDriftDays!=null&&_convDriftDays>120;
     // Per-company thesis completeness (0-100)
@@ -4732,7 +4732,7 @@ function calcMoatFromData(finData,businessModelType){
           var hasKpis=c.kpis.length>=2;
           var hasConviction=c.conviction>0;
           var steps=[
-            {id:"thesis",label:"Write your thesis",desc:"Why do you own "+c.ticker+"? What's the core investment case?",done:hasThesis,icon:"lightbulb",action:function(){setModal({type:"thesis"})}},
+            {id:"thesis",label:"Start your thesis",desc:"Why do you own "+c.ticker+"? What's the core investment case?",done:hasThesis,icon:"lightbulb",action:function(){setModal({type:"thesis"})}},
             {id:"kpis",label:"Define 2-3 KPIs",desc:"What metrics will prove or disprove your thesis?",done:hasKpis,icon:"target",action:function(){setModal({type:"kpi"})}},
             {id:"conviction",label:"Rate your conviction",desc:"How confident are you on a scale of 1-10?",done:hasConviction,icon:"trending",action:function(){setModal({type:"conviction"})}}
           ];
@@ -4934,7 +4934,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{width:44,height:44,borderRadius:_isBm?0:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.6" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </div>
-            <div style={{fontSize:15,color:K.txt,fontWeight:700,marginBottom:6,fontFamily:fh}}>{"Write your thesis for "+c.ticker}</div>
+            <div style={{fontSize:15,color:K.txt,fontWeight:700,marginBottom:6,fontFamily:fh}}>{"Start your thesis for "+c.ticker}</div>
             <div style={{fontSize:13,color:K.dim,lineHeight:1.65,maxWidth:320,margin:"0 auto"}}>{"Why do you own it? What’s the moat? What would make you sell? This is the most important thing you can do as an owner."}</div>
             <div style={{marginTop:20,display:"inline-flex",alignItems:"center",gap:6,background:K.acc,color:"#fff",padding:"9px 20px",borderRadius:_isBm?0:8,fontSize:13,fontWeight:600}}>{"Start writing →"}</div>
           </div>}
@@ -6392,7 +6392,7 @@ function calcMoatFromData(finData,businessModelType){
       {open&&<div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:10}}>
         {/* High severity first */}
         {high.length>0&&<div>
-          <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Needs attention</div>
+          <div style={{fontSize:10,fontWeight:700,color:K.red,fontFamily:fb,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Worth a look</div>
           {high.map(function(item,i){
             return<div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",background:K.red+"08",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"25",marginBottom:8}}>
               <IC name="alert" size={14} color={K.red} style={{flexShrink:0,marginTop:1}}/>
@@ -6508,7 +6508,7 @@ function calcMoatFromData(finData,businessModelType){
         icon:"file",
         color:K.blue||"#3B82F6",
         title:c.ticker+" thesis hasn\u2019t been reviewed since "+Math.round(days/30)+" months ago",
-        sub:"Thesis health \u00b7 Last updated: "+days+"d ago",
+        sub:"Last looked at "+days+" days ago — still how you see it?",
         action:"Re-read thesis",
         onAction:{type:"go",c:c},
         secondary:"Challenge AI",
@@ -6606,11 +6606,11 @@ function calcMoatFromData(finData,businessModelType){
       if(days<0||days>7)return;
       var kpis=c.kpis||[];
       var hasKpis=kpis.length>0;
-      var kpiStr=hasKpis?kpis.slice(0,3).map(function(k){return k.label}).join(", "):"no KPIs set";
+      var kpiStr=hasKpis?kpis.slice(0,3).map(function(k){return k.label}).join(", "):"no KPIs tracked yet";
       signals.push({
         layer:"earnings_soon",priority:1,icon:"bar",color:K.acc,
         title:c.ticker+" reports in "+(days===0?"today":days+"d"),
-        sub:hasKpis?"Tracking: "+kpiStr+" — know what to look for":"No KPIs set for this earnings — add them now",
+        sub:hasKpis?"Tracking: "+kpiStr+" — know what to look for":"No KPIs tracked for this one yet — knowing what to look for changes how you read the report",
         action:hasKpis?"Pre-Earnings AI":"Add KPIs",
         onAction:hasKpis?{type:"ai",aiType:"earnings",c:c}:{type:"go",c:c,modal:"kpi"},
         secondary:"View thesis",onSecondary:{type:"go",c:c}
@@ -6631,8 +6631,8 @@ function calcMoatFromData(finData,businessModelType){
       if(hasEarningsNote)return;
       signals.push({
         layer:"earnings_note_missing",priority:2,icon:"edit",color:K.grn,
-        title:c.ticker+" reported "+daysSince+"d ago — no earnings note yet",
-        sub:"Capture what happened while it is fresh. Did the thesis hold up?",
+        title:c.ticker+" reported "+daysSince+"d ago — worth capturing what you noticed",
+        sub:"Fresh observations matter most. What did you actually think when you read the results?",
         action:"Write earnings note",
         onAction:{type:"earnings_note",c:c},
         secondary:"View holding",
@@ -6697,14 +6697,14 @@ function calcMoatFromData(finData,businessModelType){
     var ticker=c.ticker||"this company";
     var name=c.name||ticker;
     var _parsedThesis=parseThesis(c.thesisNote);
-    var thesis=c.thesisNote||"No thesis written yet.";
+    var thesis=c.thesisNote||"No thesis written yet for this holding.";
     var thesisMoat=_parsedThesis.moat||"";
     var thesisRisk=_parsedThesis.risks||"";
     var thesisSell=_parsedThesis.sell||"";
     var conviction=c.conviction||0;
     var sector=c.sector||"Unknown sector";
     var style=(c.investStyle||"").replace(/_/g," ");
-    var kpis=(c.kpis||[]).map(function(k){return"- "+k.label+(k.target?" (target: "+k.target+(k.unit||"")+")":"")+(k.results&&k.results.length>0?" — last result: "+k.results[k.results.length-1].value:"")}).join("\n")||"No KPIs defined yet.";
+    var kpis=(c.kpis||[]).map(function(k){return"- "+k.label+(k.target?" (target: "+k.target+(k.unit||"")+")":"")+(k.results&&k.results.length>0?" — last result: "+k.results[k.results.length-1].value:"")}).join("\n")||"No KPIs tracked yet for this holding.";
     var decisions=(c.decisions||[]).slice(-8).map(function(d){return"["+d.date+"] "+d.action.toUpperCase()+": "+(d.reasoning||"No reasoning logged")}).join("\n")||"No decisions logged.";
     var journal=(c.journalEntries||[]).slice(-5).map(function(e){return"["+((e.date||e.createdAt)||"").slice(0,10)+"] "+(e.title?e.title+": ":"")+((e.content||"").slice(0,300))}).join("\n")||"No journal entries yet.";
     var convHistory=(c.convictionHistory||[]).slice(-6).map(function(h){return h.date.slice(0,10)+" → "+(h.rating||h.score||0)+"/10"+(h.note?" ("+h.note+")":"")}).join("\n")||("Current: "+conviction+"/10");
@@ -6752,7 +6752,7 @@ function calcMoatFromData(finData,businessModelType){
     var totalVal=holdings.reduce(function(s,h){return s+h.val},0);
     var holdingLines=holdings.map(function(h){
       var pct=totalVal>0?(h.val/totalVal*100).toFixed(1):0;
-      return"- "+h.c.ticker+" ("+pct+"% of portfolio, conviction "+h.c.conviction+"/10"+(h.ret!==null?", return "+(h.ret>=0?"+":"")+h.ret.toFixed(1)+"%":"")+", thesis: "+(h.hasThesis?"written":"MISSING")+", sell criteria: "+(h.hasSell?"written":"MISSING")+")";
+      return"- "+h.c.ticker+" ("+pct+"% of portfolio, conviction "+h.c.conviction+"/10"+(h.ret!==null?", return "+(h.ret>=0?"+":"")+h.ret.toFixed(1)+"%":"")+", thesis: "+(h.hasThesis?"written":"—")+", sell criteria: "+(h.hasSell?"written":"MISSING")+")";
     }).join("\n");
     var style=portCos.length>0?(portCos[0].investStyle||"not specified"):"not specified";
 
@@ -7058,7 +7058,7 @@ function calcMoatFromData(finData,businessModelType){
     if(noThesis.length>0)actions.push({icon:"lightbulb",color:K.grn,title:noThesis.length+" holding"+(noThesis.length>1?"s":"")+" without a thesis",desc:"Every position needs a written reason to own it",action:"Write thesis",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}});
     if(staleTheses.length>0)actions.push({icon:"clock",color:K.amb,title:staleTheses.length+" thesis"+(staleTheses.length>1?" reviews":"")+" overdue",desc:"Quarterly review keeps your thinking sharp",action:"Review",onClick:function(){setSelId(staleTheses[0].id);setModal({type:"thesis"})}});
     var noKpi=portfolio.filter(function(c){return c.kpis.length===0});
-    if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,title:"Weekly review due",desc:"Confirm conviction across "+portfolio.length+" holdings — takes 3 minutes",action:"Start Review",onClick:function(){setPage("review")}});
+    if(!currentWeekReviewed)actions.push({icon:"shield",color:K.grn,title:"Time for your weekly review",desc:"A few minutes on each holding — has anything changed in how you think about them? "+portfolio.length+" holdings — takes 3 minutes",action:"Start Review",onClick:function(){setPage("review")}});
     if(noKpi.length>0)actions.push({icon:"bar",color:K.blue,title:noKpi.length+" holding"+(noKpi.length>1?"s":"")+" with no KPIs",desc:"Define the metrics that prove or disprove your thesis",action:"Add KPIs",onClick:function(){setSelId(noKpi[0].id);setDetailTab("dossier");setPage("dashboard")}});
     var noConv=portfolio.filter(function(c){return!c.conviction||c.conviction===0});
     if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1–10 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
@@ -7143,7 +7143,7 @@ function calcMoatFromData(finData,businessModelType){
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div style={{flex:1,minWidth:0}}>
             <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isMobile?"-0.5px":"normal"}}>Owner's Hub</h1>
-            <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Needs attention"}</span></div>
+            <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Worth a look"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
               <div style={{width:isMobile?120:140,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:_isBm?0:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={12} color={K.dim}/>{currentLevel.name}</span>
@@ -7198,7 +7198,7 @@ function calcMoatFromData(finData,businessModelType){
           if(noConv.length>0)quests.push({id:"conv",text:"Rate conviction for "+tks(noConv),icon:"trending",color:K.amb,done:false,onClick:function(){setSelId(noConv[0].id);setPage("dashboard");setModal({type:"conviction"})}});
           if(staleT.length>0)quests.push({id:"stale",text:"Review stale thesis for "+tks(staleT),icon:"clock",color:K.red,done:false,onClick:function(){setSelId(staleT[0].id);setDetailTab("dossier");setPage("dashboard");setModal({type:"thesis"})}});
           if(noMoat.length>0&&quests.length<4)quests.push({id:"moat",text:"Classify moat for "+tks(noMoat),icon:"castle",color:"#9333EA",done:false,onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
-          if(!currentWeekReviewed)quests.push({id:"review",text:"Complete your Weekly Review",icon:"shield",color:K.grn,done:false,onClick:function(){setPage("review")}});
+          if(!currentWeekReviewed)quests.push({id:"review",text:"Weekly review",icon:"shield",color:K.grn,done:false,onClick:function(){setPage("review")}});
           // Rotating challenges based on week seed
           var weekNum=parseInt(wk.replace(/\D/g,""))||0;
           var rotating=[
@@ -7283,7 +7283,7 @@ function calcMoatFromData(finData,businessModelType){
           var unchecked=portfolio.filter(function(c2){return!c2.lastChecked&&c2.kpis.length>0});
           if(stale.length===0&&unchecked.length===0)return null;
           return<div style={{background:K.amb+"06",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:12,padding:"12px 16px",marginBottom:16}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,fontFamily:fm,marginBottom:8}}>Needs Attention</div>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,fontFamily:fm,marginBottom:8}}>Worth a look</div>
             {stale.length>0&&<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:stale.length>0&&unchecked.length>0?6:0}}>
               <IC name="clock" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>Thesis refresh: <strong style={{color:K.txt}}>{stale.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
             {unchecked.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -7851,7 +7851,7 @@ function calcMoatFromData(finData,businessModelType){
               {!onTarget&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",fontSize:12,color:K.mid,lineHeight:1.7}}>
                 <div style={{fontWeight:600,color:K.txt,marginBottom:4,fontSize:12}}>{"This model uses historical financial data — not your thesis."}</div>
                 {"The "+portCAGR.toFixed(1)+"% projection reflects the reported growth rates and valuations of your holdings. If you own businesses you believe will compound at higher rates — and you have written down why — that conviction lives in your thesis, not here. Use this as a floor estimate, not a verdict."}
-                {(function(){var noThesis=portf.filter(function(c){return!c.thesisNote||c.thesisNote.trim().length<100});if(noThesis.length>0){return<div style={{marginTop:8,padding:"8px 10px",background:K.acc+"08",borderRadius:_isBm?0:6,fontSize:11,color:K.acc}}>{noThesis.length+" holding"+(noThesis.length!==1?"s":"")+" without a written thesis — write your case to record the conviction this model cannot see."}</div>}return null;})()}
+                {(function(){var noThesis=portf.filter(function(c){return!c.thesisNote||c.thesisNote.trim().length<100});if(noThesis.length>0){return<div style={{marginTop:8,padding:"8px 10px",background:K.acc+"08",borderRadius:_isBm?0:6,fontSize:11,color:K.acc}}>{noThesis.length+" holding"+(noThesis.length!==1?"s":"")+" without a written thesis — the conviction this model uses is based on reported numbers, not your thinking. Worth noting the difference."}</div>}return null;})()}
               </div>}
               {onTarget&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",fontSize:12,color:K.mid,lineHeight:1.7}}>
                 <div style={{fontWeight:600,color:K.grn,marginBottom:4,fontSize:12}}>{"Historical data supports your target — your thesis may give you more."}</div>
@@ -8233,7 +8233,7 @@ function ProWelcomeGift(){
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:10,display:"inline-block",animation:"glowPulse 2.5s ease-in-out infinite"}}>{String.fromCodePoint(0x1F4DC)}</div>
             <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Weekly Insight awaits</div>
-            <div style={{fontSize:13,color:K.mid,lineHeight:1.6,maxWidth:340,margin:"0 auto 16px"}}>{isFree?"Complete your review to earn investor wisdom and claim your streak reward.":"Complete your review to receive curated wisdom and your portfolio health report."}</div>
+            <div style={{fontSize:13,color:K.mid,lineHeight:1.6,maxWidth:340,margin:"0 auto 16px"}}>{isFree?"Finish your review to claim this week's insight and keep your streak alive.":"Complete your review to receive curated wisdom and your portfolio health report."}</div>
             {currentWeekReviewed
               ?<div><div style={{fontSize:14,fontWeight:600,color:K.grn,marginBottom:4}}>{"✓"} Done for this week</div><div style={{fontSize:12,color:K.dim}}>Come back next week</div></div>
               :<div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"center"}}>
@@ -9749,7 +9749,7 @@ function ProWelcomeGift(){
 
       {/* ── Red Flags: Munger "avoid losers" ── */}
       {redFlags.length>0&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"20",borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:24}}>
-        <div style={secStyle}><IC name="alert" size={14} color={K.red}/>Needs Attention</div>
+        <div style={secStyle}><IC name="alert" size={14} color={K.red}/>Worth checking</div>
         <div style={{fontSize:13,color:K.mid,marginBottom:14,lineHeight:1.6,fontFamily:fb}}>These holdings have weak capital efficiency or fragile balance sheets. Munger would ask: why do I own this?</div>
         {redFlags.map(function(x){var issues=[];
           var bmt=x.company.businessModelType||"";var leverageExempt=bmt==="monopoly"||bmt==="oligopoly";
@@ -11613,7 +11613,7 @@ function ProWelcomeGift(){
               </div>;
             })}
             {noIV>0&&<div style={{padding:"8px 16px",fontSize:10,color:K.dim,fontStyle:"italic",borderTop:"1px solid "+K.bdr+"40"}}>
-              {noIV+" holding"+(noIV>1?"s":"")+" without IV — open Position to set your intrinsic value estimate."}
+              {noIV+" holding"+(noIV>1?"s":"")+" without an intrinsic value estimate — worth putting a number to your thinking."}
             </div>}
             <div style={{padding:"8px 14px",borderTop:"1px solid "+K.bdr+"40",display:"flex",justifyContent:"flex-end"}}>
               <span style={{fontSize:9,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"\u201cPrice is what you pay. Value is what you get.\u201d \u2014 Warren Buffett"}</span>
@@ -11802,7 +11802,7 @@ function ProWelcomeGift(){
                   </div>
                   :coreLine
                     ?<div style={{fontSize:13,color:K.mid,lineHeight:1.75,marginBottom:10,maxWidth:640}}>{coreLine}</div>
-                    :<div style={{fontSize:12,color:K.bdr,fontStyle:"italic",marginBottom:10,fontFamily:fm}}>No thesis written — what do you own this for?</div>}
+                    :<div style={{fontSize:12,color:K.dim,fontStyle:"italic",marginBottom:10,fontFamily:fm}}>No thesis written yet — what drew you to this business?</div>}
 
                 {/* Stats line — quiet, single row */}
                 <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
@@ -12590,7 +12590,7 @@ function ProWelcomeGift(){
           if(!hasThesis&&daysOwned>7)
             actions.push({id:c.id,ticker:c.ticker,domain:c.domain,
               icon:"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z",
-              color:K.acc,label:"Write your thesis for "+c.ticker,
+              color:K.acc,label:"Start a thesis for "+c.ticker,
               sub:"You've owned it "+daysOwned+" days — why do you own it?",
               tab:"dossier"});
 
