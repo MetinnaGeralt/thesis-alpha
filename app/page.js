@@ -8522,21 +8522,8 @@ function ProWelcomeGift(){
                 {" That's a year of thinking. Put it into words."}
               </div>
               <button onClick={function(){
-                var topChanges=seed.convChanges.map(function(c2){return c2.ticker+(c2.delta>0?" conviction grew +"+c2.delta:" conviction dropped "+c2.delta)+" points over "+seed.weeks+" weeks";}).join("
-");
-                var prefill="Annual Investment Letter — "+new Date().getFullYear()+"
-
-"+seed.weeks+" weeks of weekly reviews complete. Portfolio conviction: "+seed.avgStart+"/10 → "+seed.avgEnd+"/10.
-
-Conviction arc:
-"+topChanges+"
-
-What I got right:
-
-What I got wrong:
-
-What I will carry into next year:
-";
+                var topChanges=seed.convChanges.map(function(c2){return c2.ticker+(c2.delta>0?" conviction grew +"+c2.delta:" conviction dropped "+c2.delta)+" points over "+seed.weeks+" weeks";}).join("\n");
+                var prefill="Annual Investment Letter \u2014 "+new Date().getFullYear()+"\n\n"+seed.weeks+" weeks of weekly reviews complete. Portfolio conviction: "+seed.avgStart+"/10 \u2192 "+seed.avgEnd+"/10.\n\nConviction arc:\n"+topChanges+"\n\nWhat I got right:\n\nWhat I got wrong:\n\nWhat I will carry into next year:\n";
                 setPage("hub");setHt("docs");
                 setTimeout(function(){setModal({type:"doc",prefill:{docType:"annual_review",title:"Annual Investment Letter "+new Date().getFullYear(),content:prefill}});},80);
               }} style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px",background:K.amb,borderColor:K.amb})}>
