@@ -1443,6 +1443,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function ThesisModal(){if(!sel)return null;var parsed=parseThesis(sel.thesisNote);
     var _f=useState(parsed),f=_f[0],setF=_f[1];
     var _aiSec=useState(null),aiDraftSec=_aiSec[0],setAiDraftSec=_aiSec[1];
+    var _imp=useState(false),showImport=_imp[0],setShowImport=_imp[1];
+    var _impTxt=useState(""),importText=_impTxt[0],setImportText=_impTxt[1];
+    var _impRes=useState(null),importResult=_impRes[0],setImportResult=_impRes[1];
+    var _impLoading=useState(false),importLoading=_impLoading[0],setImportLoading=_impLoading[1];
+    var _impTab=useState("paste"),importTab=_impTab[0],setImportTab=_impTab[1];
     // Guided mode: fires when thesis is empty for the first time
     var isFirstTime=!sel.thesisNote||sel.thesisNote.trim().length<20;
     var _gd=useState(isFirstTime),guided=_gd[0],setGuided=_gd[1];
@@ -1527,6 +1532,133 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var isChanged=(joinThesis(f)!==sel.thesisNote);
 
     // ── GUIDED MODE ─────────────────────────────────────────
+    // ── IMPORT ANALYSIS MODAL ────────────────────────────────
+    function runImport(){
+      if(!importText.trim()||importLoading)return;
+      setImportLoading(true);setImportResult(null);
+      var prompt="You are extracting structured investment thesis data from a stock analysis document.\n\nCompany: "+sel.name+" ("+sel.ticker+")\nInvestor style: "+(sel.investStyle||"quality")+"\n\nAnalysis document:\n"+importText.substring(0,6000)+"\n\nExtract and return ONLY valid JSON in this exact format:\n{\n  \"core\": \"2-4 sentence explanation of why this business is worth owning. First person, direct.\",\n  \"moat\": \"2-3 sentences on the competitive advantage. What protects the economics?\",\n  \"risks\": \"2-3 sentences on the key risks. Honest, not boilerplate.\",\n  \"sell\": \"2-3 specific, measurable conditions that would break the thesis.\",\n  \"conviction\": 7,\n  \"convictionReason\": \"One sentence explaining the score.\",\n  \"kpis\": [\n    {\"name\": \"Gross Retention\", \"target\": \"95\", \"unit\": \"%\", \"why\": \"Core moat signal\"},\n    {\"name\": \"Revenue Growth\", \"target\": \"20\", \"unit\": \"%\", \"why\": \"Validates TAM penetration\"}\n  ],\n  \"librarySummary\": \"One sentence summary of the analysis for the Library entry.\"\n}\n\nReturn only the JSON object. No markdown, no explanation.";
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:800,messages:[{role:"user",content:prompt}],callType:"letter"})});})()
+        .then(function(r){return r.json();})
+        .then(function(d){
+          var txt=(d.content&&d.content[0]&&d.content[0].text)||"";
+          var clean=txt.replace(/```json|```/g,"").trim();
+          try{
+            var parsed=JSON.parse(clean);
+            setImportResult(parsed);setImportLoading(false);
+          }catch(e){setImportLoading(false);showToast("Could not parse the analysis — try again","info",3000);}
+        })
+        .catch(function(){setImportLoading(false);showToast("Import failed — please try again","info",3000);});
+    }
+    function acceptImport(){
+      if(!importResult)return;
+      // Apply thesis sections
+      var newF=Object.assign({},f,{
+        core:importResult.core||f.core,
+        moat:importResult.moat||f.moat,
+        risks:importResult.risks||f.risks,
+        sell:importResult.sell||f.sell
+      });
+      setF(newF);
+      // Apply conviction
+      if(importResult.conviction)upd(sel.id,{conviction:importResult.conviction});
+      // Apply KPIs
+      if(importResult.kpis&&importResult.kpis.length>0){
+        var existingIds=sel.kpis.map(function(k){return k.metricId||k.name;});
+        var newKpis=importResult.kpis.filter(function(k){return !existingIds.includes(k.name);}).map(function(k){
+          return{id:"ki"+Date.now()+Math.random().toString(36).slice(2),
+            metricId:"custom_"+k.name.toLowerCase().replace(/[^a-z0-9]/g,"_"),
+            name:k.name,rule:"gte",value:parseFloat(k.target)||0,unit:k.unit||"%",
+            period:"",target:k.target+" "+(k.unit||"%"),notes:k.why||""};
+        });
+        if(newKpis.length>0)upd(sel.id,function(c){return Object.assign({},c,{kpis:c.kpis.concat(newKpis)});});
+      }
+      // Save analysis to Library
+      var libItem={id:"li"+Date.now(),title:"Analysis \u2014 "+sel.name+" "+new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),
+        url:"",type:"Analysis",folder:"",notes:importResult.librarySummary||"",ticker:sel.ticker,addedAt:new Date().toISOString()};
+      saveLibrary(Object.assign({},library,{items:[libItem].concat(library.items||[])}));
+      setShowImport(false);setImportText("");setImportResult(null);
+      showToast("\u2713 Analysis imported — thesis, KPIs and Library updated","info",4000);
+    }
+    if(showImport){
+      return<Modal title={"Import analysis \u2014 "+sel.ticker} onClose={function(){setShowImport(false);setImportResult(null);setImportText("");}} w={620} K={K}>
+        {!importResult&&<div>
+          {/* Tab bar */}
+          <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:"1px solid "+K.bdr}}>
+            {["paste","upload"].map(function(t){return<button key={t} onClick={function(){setImportTab(t);}} style={{padding:"8px 20px",background:"none",border:"none",borderBottom:"2px solid "+(importTab===t?K.acc:"transparent"),color:importTab===t?K.acc:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:importTab===t?700:400}}>{t==="paste"?"Paste text":"Upload file"}</button>;})}
+          </div>
+          {importTab==="paste"&&<div>
+            <div style={{fontSize:12,color:K.dim,marginBottom:8,lineHeight:1.6}}>{"Paste your GPT, Gem, or Claude analysis output. The whole thing \u2014 headers, narrative, numbers, all of it."}</div>
+            <textarea value={importText} onChange={function(e){setImportText(e.target.value);}} rows={12}
+              placeholder={"Paste analysis here...\n\nWorks with any format \u2014 structured or free-flowing."}
+              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",fontSize:13,color:K.txt,fontFamily:fm,lineHeight:1.7,resize:"vertical",outline:"none"}}/>
+            <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>{importText.length>0?importText.split(/\s+/).filter(Boolean).length+" words":""}</div>
+          </div>}
+          {importTab==="upload"&&<div>
+            <div style={{fontSize:12,color:K.dim,marginBottom:12,lineHeight:1.6}}>{"Upload a PDF, Word doc, or text file. The text will be extracted and analysed."}</div>
+            <div style={{border:"2px dashed "+K.bdr,borderRadius:_isBm?0:10,padding:"32px",textAlign:"center"}}>
+              <IC name="file" size={24} color={K.dim} style={{display:"block",margin:"0 auto 12px"}}/>
+              <div style={{fontSize:13,color:K.dim,marginBottom:12}}>{"Drop a file here or click to browse"}</div>
+              <input type="file" accept=".pdf,.txt,.doc,.docx" onChange={function(e){
+                var file=e.target.files&&e.target.files[0];if(!file)return;
+                if(file.type==="text/plain"){
+                  var r=new FileReader();r.onload=function(ev){setImportText(ev.target.result||"");setImportTab("paste");};r.readAsText(file);
+                } else {
+                  // For PDF/Word — read as text as best effort
+                  var r2=new FileReader();r2.onload=function(ev){
+                    var arr=new Uint8Array(ev.target.result);
+                    var text="";for(var i=0;i<Math.min(arr.length,50000);i++){var c=arr[i];if(c>31&&c<127)text+=String.fromCharCode(c);}
+                    // Clean up binary garbage
+                    text=text.replace(/[^\x20-\x7E\n\r\t]/g," ").replace(/\s{3,}/g," ").trim();
+                    setImportText(text);setImportTab("paste");
+                  };r2.readAsArrayBuffer(file);}
+              }} style={{display:"none"}} id="analysis-upload"/>
+              <label htmlFor="analysis-upload" style={Object.assign({},S.btn,{cursor:"pointer",display:"inline-block",padding:"8px 20px",fontSize:12})}>{"Browse files"}</label>
+            </div>
+            {importText&&<div style={{marginTop:12,fontSize:12,color:K.grn,fontFamily:fm}}>{"✓ "+importText.split(/\s+/).filter(Boolean).length+" words loaded — switch to Paste tab to review"}</div>}
+          </div>}
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:16}}>
+            <button onClick={function(){setShowImport(false);setImportText("");}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+            <button onClick={runImport} disabled={!importText.trim()||importLoading}
+              style={Object.assign({},S.btnP,{padding:"9px 24px",opacity:(!importText.trim()||importLoading)?0.5:1,display:"flex",alignItems:"center",gap:8})}>
+              {importLoading?<><div style={{width:14,height:14,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"\u26a1 Extracting..."}</>:"\u26a1 Extract thesis"}
+            </button>
+          </div>
+        </div>}
+        {importResult&&<div>
+          <div style={{fontSize:12,color:K.grn,fontFamily:fm,marginBottom:16,display:"flex",alignItems:"center",gap:6}}>
+            <IC name="check" size={13} color={K.grn}/>{"\u2713 Extraction complete \u2014 review before saving"}
+          </div>
+          {/* Thesis preview */}
+          <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+            {[{key:"core",label:"Why I Own It",color:K.acc},{key:"moat",label:"Moat",color:K.grn},{key:"risks",label:"Risks",color:K.amb},{key:"sell",label:"Sell criteria",color:K.red}].map(function(sec){
+              return<div key={sec.key} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:sec.color,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:5}}>{sec.label}</div>
+                <div style={{fontSize:12,color:K.txt,lineHeight:1.7,fontFamily:fb}}>{importResult[sec.key]||"\u2014"}</div>
+              </div>;
+            })}
+          </div>
+          {/* KPIs + conviction */}
+          <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",flex:1,minWidth:180}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Suggested conviction</div>
+              <div style={{fontSize:24,fontWeight:800,color:K.acc,fontFamily:fm}}>{importResult.conviction||"?"}<span style={{fontSize:12,color:K.dim}}>/10</span></div>
+              <div style={{fontSize:11,color:K.dim,marginTop:4,lineHeight:1.5}}>{importResult.convictionReason||""}</div>
+            </div>
+            {importResult.kpis&&importResult.kpis.length>0&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",flex:2,minWidth:220}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Suggested KPIs ({importResult.kpis.length})</div>
+              {importResult.kpis.map(function(k,i){return<div key={i} style={{fontSize:12,color:K.txt,marginBottom:3,fontFamily:fm}}>
+                <span style={{fontWeight:600}}>{k.name}</span>{" \u2265 "+k.target+(k.unit?" "+k.unit:"")}
+                {k.why&&<span style={{color:K.dim}}>{" \u2014 "+k.why}</span>}
+              </div>;})}
+            </div>}
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button onClick={function(){setImportResult(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>{"Back"}</button>
+            <button onClick={acceptImport} style={Object.assign({},S.btnP,{padding:"9px 28px",background:K.grn,borderColor:K.grn})}>{"Save everything \u2192"}</button>
+          </div>
+        </div>}
+      </Modal>;
+    }
     if(guided){
       var q=GUIDED_QS[gStep];
       var progress=gStep/4;
@@ -1575,9 +1707,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     return<Modal title={sel.ticker+" — Investment Thesis"} onClose={function(){setModal(null)}} w={580} K={K}>
       {/* Switch back to guided if first time */}
-      {isFirstTime&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"8px 12px",background:K.acc+"0a",borderRadius:_isBm?0:8,border:"1px solid "+K.acc+"20"}}>
-        <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>Advanced editor — you can also use the</span>
-        <button onClick={function(){setGStep(0);setGuided(true)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"3px 10px"}}>Guided questions →</button>
+      {isFirstTime&&<div style={{marginBottom:12,padding:"10px 14px",background:K.acc+"0a",borderRadius:_isBm?0:8,border:"1px solid "+K.acc+"20"}}>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:8}}>{"Starting from scratch? Two faster ways to begin:"}</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button onClick={function(){setGStep(0);setGuided(true)}} style={{background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"5px 12px"}}>{"❓ Guided questions"}</button>
+          <button onClick={function(){setShowImport(true)}} style={{background:K.acc+"15",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:5,color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:"5px 12px",fontWeight:600}}>{"⚡ Import from analysis"}</button>
+        </div>
       </div>}
       {/* Quality meter */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8}}>
