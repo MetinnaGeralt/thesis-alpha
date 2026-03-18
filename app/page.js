@@ -779,6 +779,15 @@ function TrackerApp(props){
     }
     load();
   },[]);
+  // ── Pro welcome gift ─────────────────────────────────────────────────────
+  useEffect(function(){
+    if(!isPro)return;
+    try{
+      var welcomed=localStorage.getItem("ta-pro-welcomed");
+      if(!welcomed){setShowProWelcome(true);}
+    }catch(e){}
+  },[isPro]);
+
   // ── Browser back/forward button support ────────────────────────────────
   useEffect(function(){
     history.replaceState({page:"dashboard",selId:null},"");
@@ -799,6 +808,10 @@ function TrackerApp(props){
   function saveUsername(){var v=nameInput.trim().slice(0,20);setUsername(v);try{localStorage.setItem("ta-username",v)}catch(e){}setEditingName(false);}
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
+  var _proWelcome=useState(false),showProWelcome=_proWelcome[0],setShowProWelcome=_proWelcome[1];
+  var _ownersLetters=useState(function(){try{var s=localStorage.getItem("ta-owners-letters");return s?JSON.parse(s):[];}catch(e){return [];}}),ownersLetters=_ownersLetters[0],setOwnersLetters=_ownersLetters[1];
+  var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
+  var _letterError=useState(null),letterError=_letterError[0],setLetterError=_letterError[1];
   var xpFloat=null;
   var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
@@ -7938,7 +7951,81 @@ function openChest(){
   setChestOverlay(reward);
 }
 
-function WeeklyReview(){
+function ProWelcomeGift(){
+    var _phase=useState("sealed"),phase=_phase[0],setPhase=_phase[1];
+    var _letter=useState(null),letter=_letter[0],setLetter=_letter[1];
+
+    function dismiss(){
+      try{localStorage.setItem("ta-pro-welcomed","1");}catch(e){}
+      setShowProWelcome(false);
+    }
+
+    function openEnvelope(){
+      setPhase("opening");
+      setTimeout(function(){
+        setPhase("generating");
+        generateOwnersLetter(function(l){
+          if(l){setLetter(l);setPhase("reveal");}
+          else{setPhase("error");}
+        });
+      },1200);
+    }
+
+    var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
+
+    return<div style={{position:"fixed",inset:0,zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)"}}>
+      <div style={{background:K.card,borderRadius:_isBm?0:24,padding:isMobile?"28px 20px":"44px 52px",maxWidth:560,width:"90vw",maxHeight:"85vh",overflowY:"auto",position:"relative",textAlign:"center"}}>
+        {/* Close */}
+        <button onClick={dismiss} style={{position:"absolute",top:16,right:18,background:"none",border:"none",fontSize:20,color:K.dim,cursor:"pointer",lineHeight:1}}>{"×"}</button>
+
+        {/* SEALED phase */}
+        {phase==="sealed"&&<div>
+          <div style={{fontSize:56,marginBottom:16,animation:"glowPulse 2s ease-in-out infinite",display:"inline-block"}}>{"📬"}</div>
+          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Welcome to Pro</div>
+          <div style={{fontSize:isMobile?22:26,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.3}}>Your portfolio has been watching.<br/>Here is what it would say.</div>
+          <div style={{fontSize:14,color:K.dim,lineHeight:1.7,marginBottom:28,maxWidth:380,margin:"0 auto 28px"}}>{"Your first Owner\u2019s Letter — a private monthly letter written from your portfolio\u2019s perspective, based on your theses, KPIs, conviction history, and decisions."}</div>
+          <button onClick={openEnvelope} style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 40px",borderRadius:_isBm?0:12,width:"100%"})}>{"Open your letter \u2192"}</button>
+          <div style={{marginTop:12,fontSize:11,color:K.dim,fontFamily:fm}}>{"Yours to keep. A new letter every month."}</div>
+        </div>}
+
+        {/* OPENING animation */}
+        {phase==="opening"&&<div style={{padding:"40px 0"}}>
+          <div style={{fontSize:64,animation:"glowPulse 0.6s ease-in-out infinite",display:"inline-block",marginBottom:16}}>{"✉️"}</div>
+          <div style={{fontSize:16,color:K.dim,fontFamily:fm}}>Opening...</div>
+        </div>}
+
+        {/* GENERATING phase */}
+        {phase==="generating"&&<div style={{padding:"40px 0"}}>
+          <div style={{width:32,height:32,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
+          <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:8}}>Reading your portfolio...</div>
+          <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{"Reviewing your theses, conviction history, KPIs, and decisions."}</div>
+        </div>}
+
+        {/* ERROR phase */}
+        {phase==="error"&&<div style={{padding:"20px 0"}}>
+          <div style={{fontSize:40,marginBottom:12}}>{"⚠️"}</div>
+          <div style={{fontSize:14,color:K.dim,marginBottom:20}}>{"Couldn\u2019t generate your letter right now. Try again from the Owner\u2019s Letter page."}</div>
+          <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"10px 28px"})}>{"Go to dashboard"}</button>
+        </div>}
+
+        {/* REVEAL phase */}
+        {phase==="reveal"&&letter&&<div>
+          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>{letter.month}</div>
+          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:20,lineHeight:1.3}}>{"Your Owner\u2019s Letter"}</div>
+          <div style={{textAlign:"left",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20,maxHeight:320,overflowY:"auto"}}>
+            <div style={{fontSize:13,color:K.txt,lineHeight:2,fontFamily:fb,whiteSpace:"pre-wrap"}}>{letter.text}</div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={dismiss} style={Object.assign({},S.btn,{flex:1,padding:"10px 0"})}>{"Go to dashboard"}</button>
+            <button onClick={function(){dismiss();setPage("review");}} style={Object.assign({},S.btnP,{flex:2,padding:"10px 0"})}>{"Go to Owner\u2019s Letter \u2192"}</button>
+          </div>
+          <div style={{marginTop:12,fontSize:11,color:K.dim,fontFamily:fm}}>{"A new letter generates on the 1st of every month."}</div>
+        </div>}
+      </div>
+    </div>;
+  }
+
+  function WeeklyReview(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
     var today=new Date().getDay();
@@ -7950,6 +8037,8 @@ function WeeklyReview(){
     var _actions=useState({}),actions=_actions[0],setActions=_actions[1];
     var _refl=useState(""),reflection=_refl[0],setReflection=_refl[1];
     var _milestone=useState(null),milestone=_milestone[0],setMilestone=_milestone[1];
+    var _aiDigest=useState(null),aiDigest=_aiDigest[0],setAiDigest=_aiDigest[1];
+    var _aiLoading=useState(false),aiLoading=_aiLoading[0],setAiLoading=_aiLoading[1];
     var c=portfolio[idx];
     var sw=streakData.current||0;
     var isFree=effectivePlan!=="pro"&&!trialActive; // trial = full pro experience
@@ -7993,6 +8082,7 @@ function WeeklyReview(){
         var hist=(cos.find(function(x){return x.id===e.id})||{}).convictionHistory||[];
         hist=hist.slice();hist.push({date:new Date().toISOString().split("T")[0],rating:e.new,note:"Weekly review"+(e.note?" — "+e.note:"")});
         upd(e.id,{conviction:e.new,convictionHistory:hist.slice(-20)})}});
+      if(!isFree){generateAiDigest(entries,sw+1);}
       entries.forEach(function(e2){if(Math.abs(e2.new-e2.prev)>=2){
         logJournalEntry(e2.id,{cardType:"conviction_shift",ticker:e2.ticker,prevConviction:e2.prev,newConviction:e2.new,delta:e2.new-e2.prev,note:e2.note||"",action:e2.action||"hold",weekId:weekId})}});
       // Check for milestone unlock (new streak = sw+1)
@@ -8001,6 +8091,120 @@ function WeeklyReview(){
       if(hit&&isFree){setMilestone(hit);setStep("milestone")}else{
         showToast("✓ Weekly review logged — "+rev.summary.changed+" conviction change"+(rev.summary.changed!==1?"s":""),"info",4000);
         setTimeout(function(){openChest()},1500);setStep("done")}
+    }
+
+    function generateAiDigest(entries,weekNum){
+      if(isFree)return;
+      setAiLoading(true);setAiDigest(null);
+      var changes=entries.filter(function(e){return e.prev!==e.new||e.note;});
+      var held=entries.filter(function(e){return e.prev===e.new&&!e.note;});
+      var changed_str=changes.map(function(e){return e.ticker+" ("+e.prev+"→"+e.new+"/10"+(e.note?", '"+e.note.substring(0,60)+"'":"")+")";}).join(", ")||"none";
+      var held_str=held.slice(0,5).map(function(e){return e.ticker+" "+e.new+"/10";}).join(", ");
+      var avgNew=Math.round(entries.reduce(function(s,e){return s+e.new;},0)/Math.max(entries.length,1)*10)/10;
+      var prevAvg=weeklyReviews.length>0?((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||avgNew):avgNew;
+      var refl=reflection.trim();
+      var prompt="You are a concise investment coach reviewing a weekly conviction check-in. Respond in exactly 2-3 sentences. No bullet points. No headers. Speak directly to the investor in second person.\n\nWeek "+weekNum+" of their review streak.\nConviction changes: "+changed_str+"\nStable holdings: "+held_str+"\nPortfolio avg conviction: "+avgNew.toFixed(1)+"/10 (was "+prevAvg.toFixed(1)+" last week)"+(refl?"\nInvestor note: "+refl.substring(0,200):"")+"\n\nObserve a pattern, name a tension, or ask the one question they should sit with this week. If they raised conviction, affirm the reasoning. If they lowered it, note what that signals. Do not be generic.";
+      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,messages:[{role:"user",content:prompt}]})})
+        .then(function(r){return r.json();})
+        .then(function(d){var txt=(d.content&&d.content[0]&&d.content[0].text)||"";setAiDigest(txt);setAiLoading(false);})
+        .catch(function(){setAiLoading(false);});
+    }
+
+    function getConvictionPatterns(){
+      if(weeklyReviews.length<4)return [];
+      var patterns=[];
+      portfolio.forEach(function(c2){
+        var hist=weeklyReviews.slice(0,8).map(function(r){var e=r.entries&&r.entries.find(function(x){return x.ticker===c2.ticker;});return e?e.new:null;}).filter(function(v){return v!=null;});
+        if(hist.length<4)return;
+        var allHigh=hist.every(function(v){return v>=7;});
+        var declining=hist.slice(0,3).every(function(v,i){return i===0||v<hist[i-1];})&&hist[0]<hist[hist.length-1];
+        var rising=hist.slice(0,3).every(function(v,i){return i===0||v>hist[i-1];})&&hist[0]>hist[hist.length-1];
+        if(allHigh&&hist.length>=6)patterns.push({type:"anchor",ticker:c2.ticker,msg:c2.ticker+" has been your highest-conviction holding for "+hist.length+" consecutive weeks.",color:"#22C55E"});
+        if(declining&&Math.abs(hist[0]-hist[hist.length-1])>=2)patterns.push({type:"drift",ticker:c2.ticker,msg:c2.ticker+" conviction has declined "+Math.abs(hist[0]-hist[hist.length-1])+" points over "+hist.length+" weeks — worth a deeper look.",color:"#F59E0B"});
+        if(rising&&Math.abs(hist[0]-hist[hist.length-1])>=2)patterns.push({type:"build",ticker:c2.ticker,msg:c2.ticker+" conviction has grown "+Math.abs(hist[0]-hist[hist.length-1])+" points over "+hist.length+" weeks — your research is working.",color:"#3B82F6"});
+      });
+      return patterns.slice(0,3);
+    }
+
+    function getAnnualLetterSeed(){
+      if(weeklyReviews.length<12)return null;
+      var firstWeek=weeklyReviews[weeklyReviews.length-1];
+      var latestWeek=weeklyReviews[0];
+      var convChanges=portfolio.map(function(c2){
+        var first=firstWeek.entries&&firstWeek.entries.find(function(e){return e.ticker===c2.ticker;});
+        var latest=latestWeek.entries&&latestWeek.entries.find(function(e){return e.ticker===c2.ticker;});
+        if(!first||!latest)return null;
+        return{ticker:c2.ticker,start:first.new,end:latest.new,delta:latest.new-first.new};
+      }).filter(Boolean).sort(function(a,b){return Math.abs(b.delta)-Math.abs(a.delta);});
+      return{weeks:weeklyReviews.length,convChanges:convChanges.slice(0,5),avgStart:firstWeek.summary&&firstWeek.summary.avgConv,avgEnd:latestWeek.summary&&latestWeek.summary.avgConv};
+    }
+
+    function saveOwnersLetter(letter){
+      setOwnersLetters(function(prev){
+        var next=[letter].concat(prev).slice(0,24);// keep 2 years
+        try{localStorage.setItem("ta-owners-letters",JSON.stringify(next));}catch(e){}
+        return next;
+      });
+    }
+
+    function generateOwnersLetter(onDone){
+      var portf2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
+      if(portf2.length===0){if(onDone)onDone(null);return;}
+      setLetterLoading(true);setLetterError(null);
+      var month=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
+      // Build rich context from all available data
+      var holdingLines=portf2.map(function(c){
+        var pos=c.position||{};
+        var ret=pos.avgCost&&pos.currentPrice?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"unknown return";
+        var thesis=c.thesisNote?c.thesisNote.substring(0,200):"no thesis written";
+        var kpiStr=(c.kpis||[]).length>0?"KPIs tracked: "+(c.kpis||[]).slice(0,3).map(function(k){return k.label+(k.lastResult!=null?" (last: "+k.lastResult+")":"");}).join(", "):"no KPIs set";
+        var conv=c.conviction||5;
+        var ch=c.convictionHistory||[];
+        var convTrend=ch.length>=2?(ch[ch.length-1].rating>ch[0].rating?" conviction rising":" conviction steady"):"";
+        return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10"+convTrend+", "+ret+". "+kpiStr+". Thesis: "+thesis;
+      }).join("
+");
+      var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
+      var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("
+");
+      var prompt="You are writing a private monthly Owner’s Letter to a long-term investor. This is a letter *from their portfolio* — as if the businesses they own are speaking to them directly. It should feel like a thoughtful letter from an honest partner who has been watching carefully.
+
+Write in second person. Be direct, specific, and occasionally warm. 4-6 short paragraphs. No bullet points. No headers. No financial disclaimers.
+
+Structure loosely as: (1) What your portfolio did this month — the honest version. (2) Where your conviction was tested. (3) One thing you did well in your process. (4) One thing worth examining. (5) A single question to carry into next month.
+
+Month: "+month+"
+
+Holdings:
+"+holdingLines+"
+
+Recent decisions:
+"+(recentDecs.length>0?recentDecs.join("
+"):"None logged.")+"
+
+Weekly review streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"unknown")+"/10":"")+"
+
+"+(letterHistory?"Previous letter themes:
+"+letterHistory+"
+
+":"")+"Write the letter. Sign it: ‘— Your Portfolio’";
+
+      fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}]})
+      }).then(function(r){return r.json();})
+        .then(function(d){
+          var text=(d.content&&d.content[0]&&d.content[0].text)||"";
+          if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
+          // Extract summary (first sentence)
+          var summary=text.split(".")[0].substring(0,120);
+          var letter={id:Date.now(),date:new Date().toISOString(),month:month,text:text,summary:summary,holdings:portf2.length};
+          saveOwnersLetter(letter);
+          setLetterLoading(false);
+          if(onDone)onDone(letter);
+        })
+        .catch(function(e){setLetterError("Generation failed — please try again.");setLetterLoading(false);});
     }
 
     function dismissMilestone(){
@@ -8292,6 +8496,78 @@ function WeeklyReview(){
                   </div>})}
               </div>
             </div>})()}
+          {/* ── AI CONVICTION DIGEST (Pro) ── */}
+          {!isFree&&<div style={{marginBottom:16}}>
+            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.acc,fontFamily:fm,marginBottom:8,fontWeight:700}}>Your conviction digest</div>
+            {aiLoading&&<div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 16px",display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:16,height:16,borderRadius:"50%",border:"2px solid "+K.acc+"40",borderTop:"2px solid "+K.acc,animation:"spin 1s linear infinite",flexShrink:0}}/>
+              <span style={{fontSize:12,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>Analysing your conviction changes...</span>
+            </div>}
+            {aiDigest&&!aiLoading&&<div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{fontSize:13,color:K.txt,lineHeight:1.8,fontFamily:fb,fontStyle:"italic"}}>{aiDigest}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:8,textAlign:"right"}}>Generated from this week's changes</div>
+            </div>}
+            {!aiDigest&&!aiLoading&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",fontSize:12,color:K.dim}}>
+              Complete a review to generate your weekly digest.
+            </div>}
+          </div>}
+
+          {/* ── CONVICTION PATTERNS (Pro, 4+ reviews) ── */}
+          {!isFree&&weeklyReviews.length>=4&&(function(){
+            var pats=getConvictionPatterns();
+            if(pats.length===0)return null;
+            return<div style={{marginBottom:16}}>
+              <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.blue||"#3B82F6",fontFamily:fm,marginBottom:8,fontWeight:700}}>Conviction patterns</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {pats.map(function(p,pi){return<div key={pi} style={{background:p.color+"08",border:"1px solid "+p.color+"25",borderRadius:_isBm?0:8,padding:"10px 14px",display:"flex",alignItems:"flex-start",gap:8}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:p.color,flexShrink:0,marginTop:5}}/>
+                  <span style={{fontSize:12,color:K.txt,lineHeight:1.6}}>{p.msg}</span>
+                </div>;})}
+              </div>
+            </div>;
+          })()}
+
+          {/* ── ANNUAL LETTER SEED (Pro, 12+ reviews) ── */}
+          {!isFree&&(function(){
+            var seed=getAnnualLetterSeed();
+            if(!seed)return null;
+            var topGain=seed.convChanges.filter(function(c2){return c2.delta>0;}).slice(0,2);
+            var topDrop=seed.convChanges.filter(function(c2){return c2.delta<0;}).slice(0,2);
+            return<div style={{marginBottom:16,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <IC name="edit" size={13} color={K.amb}/>
+                <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.amb,fontFamily:fm,fontWeight:700}}>{seed.weeks}+ weeks of reviews — write your annual letter</div>
+              </div>
+              <div style={{fontSize:12,color:K.dim,lineHeight:1.6,marginBottom:10}}>
+                {"You have "+seed.weeks+" weeks of conviction data. Biggest conviction shifts: "}
+                {topGain.map(function(c2){return c2.ticker+" +"+c2.delta;}).join(", ")}
+                {topDrop.length>0&&("; dropped: "+topDrop.map(function(c2){return c2.ticker+" "+c2.delta;}).join(", "))}.
+                {" That's a year of thinking. Put it into words."}
+              </div>
+              <button onClick={function(){
+                var topChanges=seed.convChanges.map(function(c2){return c2.ticker+(c2.delta>0?" conviction grew +"+c2.delta:" conviction dropped "+c2.delta)+" points over "+seed.weeks+" weeks";}).join("
+");
+                var prefill="Annual Investment Letter — "+new Date().getFullYear()+"
+
+"+seed.weeks+" weeks of weekly reviews complete. Portfolio conviction: "+seed.avgStart+"/10 → "+seed.avgEnd+"/10.
+
+Conviction arc:
+"+topChanges+"
+
+What I got right:
+
+What I got wrong:
+
+What I will carry into next year:
+";
+                setPage("hub");setHt("docs");
+                setTimeout(function(){setModal({type:"doc",prefill:{docType:"annual_review",title:"Annual Investment Letter "+new Date().getFullYear(),content:prefill}});},80);
+              }} style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px",background:K.amb,borderColor:K.amb})}>
+                Write my annual letter →
+              </button>
+            </div>;
+          })()}
+
           {/* Pro post-review health report */}
           {(!isFree||trialActive)&&(function(){
             var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=14});
@@ -8354,7 +8630,92 @@ function WeeklyReview(){
     </div>
   }
 
-  // ── All Assets / Net Worth Hub ────────────────────────────
+  // ── Owner's Letter ─────────────────────────────────────────
+  function OwnersLetterPage(){
+    var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
+    var thisMonth=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
+    var currentLetter=ownersLetters.length>0&&ownersLetters[0].month===thisMonth?ownersLetters[0]:null;
+    var _selected=useState(currentLetter||ownersLetters[0]||null),selectedLetter=_selected[0],setSelectedLetter=_selected[1];
+
+    function handleGenerate(){
+      generateOwnersLetter(function(l){
+        if(l)setSelectedLetter(l);
+      });
+    }
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Owner’s Letter"}</h1>
+          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"A private monthly letter from your portfolio — based on your theses, conviction history, and decisions."}</p>
+        </div>
+        <button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13,opacity:letterLoading?0.5:1,display:"flex",alignItems:"center",gap:7})}>
+          {letterLoading
+            ?<><div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"Generating..."}</>
+            :<>{"✉️  "}{currentLetter?"Regenerate this month":"Generate "+thisMonth}</>}
+        </button>
+      </div>
+
+      {letterError&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:K.red}}>{letterError}</div>}
+
+      {/* Empty state */}
+      {ownersLetters.length===0&&!letterLoading&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:16}}>{"📬"}</div>
+        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your first letter is ready to write"}</div>
+        <div style={{fontSize:14,color:K.dim,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
+          {portfolio2.length>0
+            ?"Generate your first Owner’s Letter. It reads your portfolio, then speaks back. One letter per month, compounding in value as your history grows."
+            :"Add at least one holding to your portfolio to generate your first letter."}
+        </div>
+        {portfolio2.length>0&&<button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>{"Generate my first letter"}</button>}
+      </div>}
+
+      {letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"48px 40px",textAlign:"center"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
+        <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>Reading your portfolio...</div>
+        <div style={{fontSize:13,color:K.dim}}>{"Reviewing your theses, KPIs, conviction history, and decisions."}</div>
+      </div>}
+
+      {/* Main layout: sidebar + reader */}
+      {ownersLetters.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"220px 1fr",gap:16,alignItems:"start"}}>
+        {/* Sidebar: letter archive */}
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:4,paddingLeft:4}}>Archive</div>
+          {ownersLetters.map(function(l,i){var isActive=selectedLetter&&selectedLetter.id===l.id;var isThisMonth=l.month===thisMonth;
+            return<button key={l.id} onClick={function(){setSelectedLetter(l);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+(isActive?K.acc+"50":K.bdr),background:isActive?K.acc+"08":"transparent",cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{fontSize:12,fontWeight:700,color:isActive?K.acc:K.txt,fontFamily:fm}}>{l.month}</span>
+                {isThisMonth&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm,fontWeight:700}}>This month</span>}
+              </div>
+              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{l.summary||"Owner’s Letter"}</span>
+            </button>;
+          })}
+        </div>
+
+        {/* Letter reader */}
+        {selectedLetter&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"20px 18px":"32px 40px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>{selectedLetter.month}</div>
+          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:24,lineHeight:1.3}}>{"Owner’s Letter"}</div>
+          <div style={{fontSize:14,color:K.txt,lineHeight:2.0,fontFamily:fb,whiteSpace:"pre-wrap",maxWidth:580}}>{selectedLetter.text}</div>
+          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{selectedLetter.holdings+" holding"+(selectedLetter.holdings!==1?"s":"")+" · "+new Date(selectedLetter.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
+            <button onClick={function(){
+              var prefill=selectedLetter.month+" Reflection
+
+"+selectedLetter.text.substring(0,400)+"...
+
+My response:
+";
+              setModal({type:"doc",prefill:{docType:"annual_review",title:"Reflection — "+selectedLetter.month,content:prefill}});
+            }} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 14px"})}>{"Save to Research Trail"}</button>
+          </div>
+        </div>}
+      </div>}
+    </div>;
+  }
+
+  // ── All Assets / Net Worth Hub ────────────────────────────────────────────
   function AllAssets(){
     var _modal=useState(null),modal=_modal[0],setModal=_modal[1];
     var _lmodal=useState(null),lmodal=_lmodal[0],setLmodal=_lmodal[1];
@@ -13148,7 +13509,7 @@ function WeeklyReview(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?<WeeklyReview/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}(){showProWelcome&&<ProWelcomeGift/>}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="review"?(isPro?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
       var mItems=[
