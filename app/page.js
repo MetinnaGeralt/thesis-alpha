@@ -7869,16 +7869,9 @@ function calcMoatFromData(finData,businessModelType){
                         <div style={{fontSize:16,fontWeight:700,color:onTgt?K.grn:K.amb,fontFamily:fm}}>{h.expected>=0?"+":""}{h.expected.toFixed(1)+"%"}</div>
                         {!onTgt&&<div style={{fontSize:9,color:K.red}}>{"Needs "+needed.toFixed(1)+"%"}</div>}
                       </div>
-                      <button title={h.isConviction?"Edit your growth estimate":"Set your own growth estimate"} onClick={function(e){e.stopPropagation();var prompt1=h.isConviction?"Your growth estimate for "+h.ticker+": "+h.eg.toFixed(1)+"%
-(Model baseline: "+h.modelEg.toFixed(1)+"%)
-
-Update % or leave blank to reset to model:":"Set your conviction growth estimate for "+h.ticker+" (%)
-
-Model estimate: "+h.modelEg.toFixed(1)+"%
-
-If you believe this business will compound differently than its history suggests, enter your estimate:";var v=window.prompt(prompt1);if(v===null)return;var n=parseFloat(v.trim());if(v.trim()===""||isNaN(n)){upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:null});});return;}var note=window.prompt("Why? (optional — one sentence, press Enter to skip):")||"";upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:{value:n,note:note.trim(),date:new Date().toISOString()}});});}}
+                      <button title={h.isConviction?"Edit your growth estimate":"Set your own growth estimate"} onClick={function(e){e.stopPropagation();var prompt1=h.isConviction?"Your growth estimate for "+h.ticker+": "+h.eg.toFixed(1)+"%\n(Model baseline: "+h.modelEg.toFixed(1)+"%)\n\nUpdate % or leave blank to reset to model:":"Set your conviction growth estimate for "+h.ticker+" (%)\n\nModel estimate: "+h.modelEg.toFixed(1)+"%\n\nIf you believe this business will compound differently than its history suggests, enter your estimate:";var v=window.prompt(prompt1);if(v===null)return;var n=parseFloat(v.trim());if(v.trim()===""||isNaN(n)){upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:null});});return;}var note=window.prompt("Why? (optional \u2014 one sentence, press Enter to skip):")||"";upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:{value:n,note:note.trim(),date:new Date().toISOString()}});});}}
                         style={{fontSize:10,color:h.isConviction?K.acc:K.dim,background:h.isConviction?K.acc+"12":"none",border:"1px solid "+(h.isConviction?K.acc+"30":K.bdr),borderRadius:_isBm?0:5,padding:"4px 9px",cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
-                        {h.isConviction?"✎ Mine":"✎ Set mine"}
+                        {h.isConviction?"\u270e Mine":"\u270e Set mine"}
                       </button>
                     </div>
                   </div>
