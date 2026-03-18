@@ -7953,7 +7953,6 @@ function openChest(){
 
 function ProWelcomeGift(){
     var _phase=useState("sealed"),phase=_phase[0],setPhase=_phase[1];
-    var _letter=useState(null),letter=_letter[0],setLetter=_letter[1];
 
     function dismiss(){
       try{localStorage.setItem("ta-pro-welcomed","1");}catch(e){}
@@ -7962,64 +7961,40 @@ function ProWelcomeGift(){
 
     function openEnvelope(){
       setPhase("opening");
-      setTimeout(function(){
-        setPhase("generating");
-        generateOwnersLetter(function(l){
-          if(l){setLetter(l);setPhase("reveal");}
-          else{setPhase("error");}
-        });
-      },1200);
+      setTimeout(function(){setPhase("ready");},1400);
     }
 
-    var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
-
     return<div style={{position:"fixed",inset:0,zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)"}}>
-      <div style={{background:K.card,borderRadius:_isBm?0:24,padding:isMobile?"28px 20px":"44px 52px",maxWidth:560,width:"90vw",maxHeight:"85vh",overflowY:"auto",position:"relative",textAlign:"center"}}>
-        {/* Close */}
-        <button onClick={dismiss} style={{position:"absolute",top:16,right:18,background:"none",border:"none",fontSize:20,color:K.dim,cursor:"pointer",lineHeight:1}}>{"×"}</button>
+      <div style={{background:K.card,borderRadius:_isBm?0:24,padding:isMobile?"28px 20px":"44px 52px",maxWidth:520,width:"90vw",position:"relative",textAlign:"center"}}>
+        <button onClick={dismiss} style={{position:"absolute",top:16,right:18,background:"none",border:"none",fontSize:20,color:K.dim,cursor:"pointer",lineHeight:1}}>{"\u00d7"}</button>
 
-        {/* SEALED phase */}
         {phase==="sealed"&&<div>
-          <div style={{fontSize:56,marginBottom:16,animation:"glowPulse 2s ease-in-out infinite",display:"inline-block"}}>{"📬"}</div>
+          <div style={{fontSize:56,marginBottom:16,animation:"glowPulse 2s ease-in-out infinite",display:"inline-block"}}>{"\ud83d\udcec"}</div>
           <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Welcome to Pro</div>
-          <div style={{fontSize:isMobile?22:26,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.3}}>Your portfolio has been watching.<br/>Here is what it would say.</div>
-          <div style={{fontSize:14,color:K.dim,lineHeight:1.7,marginBottom:28,maxWidth:380,margin:"0 auto 28px"}}>{"Your first Owner\u2019s Letter — a private monthly letter written from your portfolio\u2019s perspective, based on your theses, KPIs, conviction history, and decisions."}</div>
-          <button onClick={openEnvelope} style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 40px",borderRadius:_isBm?0:12,width:"100%"})}>{"Open your letter \u2192"}</button>
-          <div style={{marginTop:12,fontSize:11,color:K.dim,fontFamily:fm}}>{"Yours to keep. A new letter every month."}</div>
+          <div style={{fontSize:isMobile?22:26,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:14,lineHeight:1.3}}>{"Your portfolio is about to start writing to you."}</div>
+          <div style={{fontSize:14,color:K.dim,lineHeight:1.75,marginBottom:28,maxWidth:380,margin:"0 auto 28px"}}>{"Once a month, you\u2019ll receive a private letter written from your portfolio\u2019s perspective \u2014 based on your theses, KPIs, conviction history, and decisions. It gets richer every month."}</div>
+          <button onClick={openEnvelope} style={Object.assign({},S.btnP,{fontSize:15,padding:"14px 40px",borderRadius:_isBm?0:12,width:"100%"})}>{"See what\u2019s coming \u2192"}</button>
         </div>}
 
-        {/* OPENING animation */}
-        {phase==="opening"&&<div style={{padding:"40px 0"}}>
-          <div style={{fontSize:64,animation:"glowPulse 0.6s ease-in-out infinite",display:"inline-block",marginBottom:16}}>{"✉️"}</div>
-          <div style={{fontSize:16,color:K.dim,fontFamily:fm}}>Opening...</div>
+        {phase==="opening"&&<div style={{padding:"48px 0"}}>
+          <div style={{fontSize:64,display:"inline-block",marginBottom:20,animation:"glowPulse 0.8s ease-in-out infinite"}}>{"\u2709\ufe0f"}</div>
+          <div style={{fontSize:16,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Preparing your letter room..."}</div>
         </div>}
 
-        {/* GENERATING phase */}
-        {phase==="generating"&&<div style={{padding:"40px 0"}}>
-          <div style={{width:32,height:32,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
-          <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:8}}>Reading your portfolio...</div>
-          <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{"Reviewing your theses, conviction history, KPIs, and decisions."}</div>
-        </div>}
-
-        {/* ERROR phase */}
-        {phase==="error"&&<div style={{padding:"20px 0"}}>
-          <div style={{fontSize:40,marginBottom:12}}>{"⚠️"}</div>
-          <div style={{fontSize:14,color:K.dim,marginBottom:20}}>{"Couldn\u2019t generate your letter right now. Try again from the Owner\u2019s Letter page."}</div>
-          <button onClick={dismiss} style={Object.assign({},S.btnP,{padding:"10px 28px"})}>{"Go to dashboard"}</button>
-        </div>}
-
-        {/* REVEAL phase */}
-        {phase==="reveal"&&letter&&<div>
-          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>{letter.month}</div>
-          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:20,lineHeight:1.3}}>{"Your Owner\u2019s Letter"}</div>
-          <div style={{textAlign:"left",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20,maxHeight:320,overflowY:"auto"}}>
-            <div style={{fontSize:13,color:K.txt,lineHeight:2,fontFamily:fb,whiteSpace:"pre-wrap"}}>{letter.text}</div>
+        {phase==="ready"&&<div>
+          <div style={{fontSize:48,marginBottom:16,display:"inline-block"}}>{"\u2709\ufe0f"}</div>
+          <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Unlocked"}</div>
+          <div style={{fontSize:isMobile?20:24,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:14,lineHeight:1.3}}>{"Owner\u2019s Letter"}</div>
+          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:24,textAlign:"left"}}>
+            {[{t:"Written from your portfolio\u2019s perspective"},{t:"Arrives the first of every month"},{t:"Gets richer as your history grows"},{t:"Private \u2014 never shared, never generic"}].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<3?"1px solid "+K.bdr+"40":"none"}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,flexShrink:0}}/>
+              <span style={{fontSize:13,color:K.txt,fontFamily:fm}}>{item.t}</span>
+            </div>;})}
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={dismiss} style={Object.assign({},S.btn,{flex:1,padding:"10px 0"})}>{"Go to dashboard"}</button>
-            <button onClick={function(){dismiss();setPage("review");}} style={Object.assign({},S.btnP,{flex:2,padding:"10px 0"})}>{"Go to Owner\u2019s Letter \u2192"}</button>
+            <button onClick={dismiss} style={Object.assign({},S.btn,{flex:1,padding:"11px 0"})}>{"Go to dashboard"}</button>
+            <button onClick={function(){dismiss();setPage("review");}} style={Object.assign({},S.btnP,{flex:2,padding:"11px 0"})}>{"Owner\u2019s Letter \u2192"}</button>
           </div>
-          <div style={{marginTop:12,fontSize:11,color:K.dim,fontFamily:fm}}>{"A new letter generates on the 1st of every month."}</div>
         </div>}
       </div>
     </div>;
@@ -8601,69 +8576,111 @@ function ProWelcomeGift(){
     var currentLetter=ownersLetters.length>0&&ownersLetters[0].month===thisMonth?ownersLetters[0]:null;
     var _selected=useState(currentLetter||ownersLetters[0]||null),selectedLetter=_selected[0],setSelectedLetter=_selected[1];
 
+    // Determine registration age from trial start or earliest data
+    var regDate=null;
+    try{var td=localStorage.getItem("ta-trial");if(td){var tp=JSON.parse(td);if(tp.start)regDate=new Date(tp.start);}}catch(e){}
+    if(!regDate&&weeklyReviews.length>0){var last=weeklyReviews[weeklyReviews.length-1];if(last.date)regDate=new Date(last.date);}
+    var ageInDays=regDate?Math.floor((Date.now()-regDate.getTime())/864e5):0;
+    var daysUntilFirst=Math.max(0,30-ageInDays);
+    var hasEarned=ownersLetters.length>0||ageInDays>=30;
+
     function handleGenerate(){
-      generateOwnersLetter(function(l){
-        if(l)setSelectedLetter(l);
-      });
+      generateOwnersLetter(function(l){if(l)setSelectedLetter(l);});
     }
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
       {/* Header */}
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Owner’s Letter"}</h1>
-          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"A private monthly letter from your portfolio — based on your theses, conviction history, and decisions."}</p>
+          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Owner\u2019s Letter"}</h1>
+          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"A private monthly letter from your portfolio \u2014 written from the businesses\u2019 perspective."}</p>
         </div>
-        <button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13,opacity:letterLoading?0.5:1,display:"flex",alignItems:"center",gap:7})}>
+        {hasEarned&&<button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13,opacity:letterLoading?0.5:1,display:"flex",alignItems:"center",gap:7})}>
           {letterLoading
             ?<><div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"Generating..."}</>
-            :<>{"✉️  "}{currentLetter?"Regenerate this month":"Generate "+thisMonth}</>}
-        </button>
+            :<>{currentLetter?"Regenerate this month":"Generate "+thisMonth}</>}
+        </button>}
       </div>
 
       {letterError&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:K.red}}>{letterError}</div>}
 
-      {/* Empty state */}
-      {ownersLetters.length===0&&!letterLoading&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{"📬"}</div>
-        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your first letter is ready to write"}</div>
-        <div style={{fontSize:14,color:K.dim,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>
-          {portfolio2.length>0
-            ?"Generate your first Owner’s Letter. It reads your portfolio, then speaks back. One letter per month, compounding in value as your history grows."
-            :"Add at least one holding to your portfolio to generate your first letter."}
+      {/* NOT YET EARNED — anticipation screen */}
+      {!hasEarned&&<div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"40px",textAlign:"center",marginBottom:16}}>
+          <div style={{fontSize:48,marginBottom:16}}>{"✉️"}</div>
+          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Coming soon"}</div>
+          <div style={{fontSize:isMobile?18:22,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.3}}>
+            {"Your first Owner\u2019s Letter arrives in "+(daysUntilFirst===0?"less than a day":daysUntilFirst===1?"1 day":daysUntilFirst+" days")+"."}
+          </div>
+          <div style={{fontSize:14,color:K.dim,maxWidth:440,margin:"0 auto 28px",lineHeight:1.75}}>
+            {"The letter needs time to know you. After 30 days, it\u2019ll have seen your conviction changes, your KPI results, and the decisions you\u2019ve made. That\u2019s when it has something real to say."}
+          </div>
+          {/* Progress bar */}
+          <div style={{maxWidth:320,margin:"0 auto 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>
+              <span>{"Day "+ageInDays}</span><span>{"Day 30"}</span>
+            </div>
+            <div style={{height:6,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:"100%",width:Math.min(ageInDays/30*100,100)+"%",background:"linear-gradient(90deg,"+K.acc+","+K.grn+")",borderRadius:3,transition:"width 1s"}}/>
+            </div>
+          </div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use ThesisAlpha as you normally would. Write your thesis. Track KPIs. Log decisions. The letter is being built from everything you do."}</div>
         </div>
-        {portfolio2.length>0&&<button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>{"Generate my first letter"}</button>}
+        {/* What to expect */}
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
+          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:16}}>{"What your first letter will include"}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {[
+              {label:"Conviction arc",desc:"How your confidence in each holding evolved — and what that pattern reveals about you as an investor."},
+              {label:"Process check",desc:"One thing you did well. One thing worth examining. Written honestly, not to flatter."},
+              {label:"The question",desc:"A single question to carry into next month — the one your portfolio thinks you should sit with."},
+              {label:"Signed \u2014 Your Portfolio",desc:"Written in first person from the businesses you own. Direct, specific, occasionally warm."},
+            ].map(function(item,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,flexShrink:0,marginTop:6}}/>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{item.label}</div>
+                <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>{item.desc}</div>
+              </div>
+            </div>;})}
+          </div>
+        </div>
       </div>}
 
-      {letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"48px 40px",textAlign:"center"}}>
+      {/* LOADING — generating first letter */}
+      {hasEarned&&letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"48px 40px",textAlign:"center"}}>
         <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
         <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>Reading your portfolio...</div>
-        <div style={{fontSize:13,color:K.dim}}>{"Reviewing your theses, KPIs, conviction history, and decisions."}</div>
+        <div style={{fontSize:13,color:K.dim}}>{"This takes about 20 seconds."}</div>
       </div>}
 
-      {/* Main layout: sidebar + reader */}
+      {/* EMPTY — earned but not yet generated */}
+      {hasEarned&&!letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:16}}>{"📬"}</div>
+        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your letter is ready to generate"}</div>
+        <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"30 days of data collected. Generate your first Owner\u2019s Letter whenever you\u2019re ready."}</div>
+        <button onClick={handleGenerate} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>{"Generate my first letter"}</button>
+      </div>}
+
+      {/* ARCHIVE + READER */}
       {ownersLetters.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"220px 1fr",gap:16,alignItems:"start"}}>
-        {/* Sidebar: letter archive */}
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
           <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:4,paddingLeft:4}}>Archive</div>
-          {ownersLetters.map(function(l,i){var isActive=selectedLetter&&selectedLetter.id===l.id;var isThisMonth=l.month===thisMonth;
+          {ownersLetters.map(function(l,i){var isActive=selectedLetter&&selectedLetter.id===l.id;var isThis=l.month===thisMonth;
             return<button key={l.id} onClick={function(){setSelectedLetter(l);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+(isActive?K.acc+"50":K.bdr),background:isActive?K.acc+"08":"transparent",cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <span style={{fontSize:12,fontWeight:700,color:isActive?K.acc:K.txt,fontFamily:fm}}>{l.month}</span>
-                {isThisMonth&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm,fontWeight:700}}>This month</span>}
+                {isThis&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm,fontWeight:700}}>This month</span>}
               </div>
-              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{l.summary||"Owner’s Letter"}</span>
+              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{l.summary||"Owner\u2019s Letter"}</span>
             </button>;
           })}
         </div>
-
-        {/* Letter reader */}
         {selectedLetter&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"20px 18px":"32px 40px"}}>
           <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>{selectedLetter.month}</div>
-          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:24,lineHeight:1.3}}>{"Owner’s Letter"}</div>
+          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:24,lineHeight:1.3}}>{"Owner\u2019s Letter"}</div>
           <div style={{fontSize:14,color:K.txt,lineHeight:2.0,fontFamily:fb,whiteSpace:"pre-wrap",maxWidth:580}}>{selectedLetter.text}</div>
           <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{selectedLetter.holdings+" holding"+(selectedLetter.holdings!==1?"s":"")+" · "+new Date(selectedLetter.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{selectedLetter.holdings+" holding"+(selectedLetter.holdings!==1?"s":"")+" \u00b7 "+new Date(selectedLetter.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
             <button onClick={function(){
               var prefill=selectedLetter.month+" Reflection\n\n"+selectedLetter.text.substring(0,400)+"...\n\nMy response:\n";
               setModal({type:"doc",prefill:{docType:"annual_review",title:"Reflection \u2014 "+selectedLetter.month,content:prefill}});
