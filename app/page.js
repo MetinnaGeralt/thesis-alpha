@@ -8664,18 +8664,30 @@ function ProWelcomeGift(){
           <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Investor Journal"}</h1>
           <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"Your week in investing \u2014 generated from what you did, with space to add what you thought."}</p>
         </div>
-        {!hasThisWeek&&<button onClick={function(){
-          var entry={weekId:weekId,date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
+        <button onClick={function(){
+          var newId=weekId+(effectivePlan==="pro"?"-"+Date.now():"");
+          var entry={weekId:newId,date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
           saveJournalEntry(entry);setSel(entry);
-        }} style={Object.assign({},S.btn,{padding:"9px 18px",fontSize:13})}>{"+ New entry"}</button>}
+        }} style={Object.assign({},S.btn,{padding:"9px 18px",fontSize:13})}>{"+ New entry"}</button>
       </div>
 
       {/* Empty state */}
       {journalEntries.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:16}}>{"📓"}</div>
-        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your journal starts after your first weekly review"}</div>
-        <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"Complete a weekly review and a journal entry will be waiting here \u2014 generated from your conviction changes, decisions, and notes."}</div>
-        <button onClick={function(){setPage("review");}} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Go to weekly review"}</button>
+        <div style={{fontSize:40,marginBottom:16}}>{"\ud83d\udcd3"}</div>
+        {effectivePlan==="pro"
+          ?<div>
+            <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Start your investor journal"}</div>
+            <div style={{fontSize:14,color:K.dim,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>{"Create a new entry any time. Write freely, then hit \u2018Clean this up\u2019 to turn rough thoughts into a proper note."}</div>
+            <button onClick={function(){
+              var entry={weekId:weekId+"-"+Date.now(),date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
+              saveJournalEntry(entry);setSel(entry);
+            }} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Write your first entry"}</button>
+          </div>
+          :<div>
+            <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your journal starts after your first weekly review"}</div>
+            <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"Finish a weekly review and a journal entry will be waiting \u2014 generated from your conviction changes, decisions, and notes."}</div>
+            <button onClick={function(){setPage("review");}} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Go to weekly review"}</button>
+          </div>}
       </div>}
 
       {/* Two-column layout */}
