@@ -22,6 +22,7 @@ const COST_PER_CALL = {
   letter:  0.015,  // Owner's Letter — ~700 out tokens
   journal: 0.004,  // Journal narrative — ~200 out tokens
   ramble:  0.003,  // Clean up ramble — ~150 out tokens
+  import:  0.025,  // Analysis import — large input + structured JSON output
   default: 0.010,
 };
 
@@ -31,6 +32,7 @@ const DAILY_LIMIT_PER_USER = {
   letter:  3,   // monthly letter + 2 regenerations
   journal: 14,  // once per review + a few manual
   ramble:  20,  // most frequent — cleanup calls
+  import:  5,   // 5 analysis imports per day is plenty
   default: 10,
 };
 
