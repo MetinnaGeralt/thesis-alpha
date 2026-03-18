@@ -2361,7 +2361,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{display:"flex",justifyContent:"flex-end",gap:8}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={saveIR}>Save</button></div></Modal>}
     function PositionModal(){if(!sel)return null;var pos=sel.position||{shares:0,avgCost:0};
-    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||""),purchaseDate:sel.purchaseDate||"",ivEstimate:String(sel.ivEstimate||""),mosPct:String(sel.mosPct||"30")}),f=_f[0],setF=_f[1];
+    var _f=useState({shares:String(pos.shares||""),avgCost:String(pos.avgCost||""),currentPrice:String(pos.currentPrice||""),convGrowthEst:sel.convGrowthEst?String(sel.convGrowthEst.value||""):"",convGrowthNote:sel.convGrowthEst?String(sel.convGrowthEst.note||""):"",divPerShare:String(sel.divPerShare||sel.lastDiv||""),divFrequency:sel.divFrequency||"quarterly",exDivDate:sel.exDivDate||"",targetPrice:String(sel.targetPrice||""),purchaseDate:sel.purchaseDate||"",ivEstimate:String(sel.ivEstimate||""),mosPct:String(sel.mosPct||"30")}),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var mult=f.divFrequency==="monthly"?12:f.divFrequency==="quarterly"?4:f.divFrequency==="semi"?2:1;
     var annDiv=parseFloat(f.divPerShare||0)*mult;
@@ -2399,6 +2399,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
           <div style={{fontSize:12,color:col,fontWeight:600,textAlign:"center"}}>{inZone?"\u2713 In buy zone \u2014 price below margin of safety threshold":mosNow!=null&&mosNow>0?"Within IV but above buy zone \u2014 "+(((buyBelow/cp-1)*100).toFixed(1))+"% drop needed":"Above IV \u2014 trading at "+((cp-iv)/iv*100).toFixed(1)+"% premium to your estimate"}</div>
         </div>})()}
+      {/* My Growth Estimate */}
+      <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:4}}>
+        <div style={{fontSize:12,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:4}}>My Growth Estimate</div>
+        <div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginBottom:10}}>{"Your conviction CAGR — based on your research, not historical data. Used in Goals & Performance instead of the model estimate."}</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px",marginBottom:f.convGrowthEst?0:8}}>
+        <Inp label={"Expected Annual Growth (%)"} value={f.convGrowthEst||""} onChange={function(v){set("convGrowthEst",v)}} type="number" placeholder="e.g. 15" K={K}/>
+        <Inp label={"Why (optional)"} value={f.convGrowthNote||""} onChange={function(v){set("convGrowthNote",v)}} placeholder="Reinvestment flywheel intact" K={K}/>
+      </div>
+      {parseFloat(f.convGrowthEst)>0&&<div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,padding:"8px 12px",marginBottom:12,fontSize:11,color:K.dim,lineHeight:1.5}}>
+        {"This estimate will override the model in Goals & Performance. The model’s baseline remains visible for comparison."}
+      </div>}
       {/* Price alert / Buy zone */}
       <div style={{borderTop:"1px solid "+K.bdr,paddingTop:16,marginTop:8,marginBottom:8}}><div style={{fontSize:12,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:12}}>Price Alert</div></div>
       <Inp label="Buy Below / Target Price" value={f.targetPrice} onChange={function(v){set("targetPrice",v)}} type="number" placeholder="Set a buy target" K={K}/>
@@ -2415,7 +2427,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ANNUAL DIV</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${annDiv.toFixed(2)}</div></div>
           <div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>YIELD</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>{yld.toFixed(2)}%</div></div>
           {f.shares&&<div><div style={{fontSize:11,color:K.dim,fontFamily:fm}}>ANNUAL INCOME</div><div style={{fontSize:14,fontWeight:600,color:K.grn,fontFamily:fm}}>${(parseFloat(f.shares)*annDiv).toFixed(0)}</div></div>}</div></div>}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0,purchaseDate:f.purchaseDate||"",ivEstimate:parseFloat(f.ivEstimate)||0,mosPct:parseFloat(f.mosPct)||30});setModal(null)}}>Save</button></div></Modal>}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:12}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnP} onClick={function(){upd(selId,{position:{shares:parseFloat(f.shares)||0,avgCost:parseFloat(f.avgCost)||0,currentPrice:parseFloat(f.currentPrice)||0},divPerShare:parseFloat(f.divPerShare)||0,divFrequency:f.divFrequency,exDivDate:f.exDivDate,targetPrice:parseFloat(f.targetPrice)||0,purchaseDate:f.purchaseDate||"",ivEstimate:parseFloat(f.ivEstimate)||0,mosPct:parseFloat(f.mosPct)||30,convGrowthEst:parseFloat(f.convGrowthEst)>0?{value:parseFloat(f.convGrowthEst),note:f.convGrowthNote||"",date:f.convGrowthEst!==String((sel.convGrowthEst||{}).value||"")?new Date().toISOString():(sel.convGrowthEst||{}).date||""}:null});setModal(null)}}>Save</button></div></Modal>}
   var BIAS_CHECKS=[
     {id:"confirmation",label:"Confirmation Bias",q:"Am I only seeking information that confirms my existing belief?",icon:"search"},
     {id:"anchoring",label:"Anchoring",q:"Am I anchored to a specific price, target, or past event?",icon:"target"},
@@ -4845,6 +4857,7 @@ function calcMoatFromData(finData,businessModelType){
             {label:"KPIs",value:h.m>0?h.ok+"/"+h.m:"None",sub:h.m>0?(h.ok===h.m?"All met":h.ok>0?"Partial":"Missed"):"Add KPIs",color:h.m>0?(h.ok===h.m?K.grn:h.ok>0?K.amb:K.red):K.dim,onClick:function(){setDetailTab("dossier")}},
             {label:"Held",value:(function(){if(!c.purchaseDate)return"—";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);if(d<=0||d>18250)return"—";return d<30?d+"d":d<365?Math.floor(d/30)+"mo":Math.floor(d/365)+"yr"+(Math.floor((d%365)/30)>0?" "+Math.floor((d%365)/30)+"mo":"")})(),sub:(function(){if(!c.purchaseDate)return"Set date";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<90?"Short term":d<730?"Medium term":"Long term"})(),color:K.mid,onClick:function(){setModal({type:"position"})}},
             {label:"Return",value:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"—";return((p2.currentPrice-p2.avgCost)/p2.avgCost*100).toFixed(1)+"%"})(),sub:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"No position";var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=20?"Performing":r>=0?"Positive":r>=-10?"Small loss":"Deep loss"})(),color:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return K.dim;var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=0?K.grn:K.red})(),onClick:function(){setModal({type:"position"})}},
+            {label:"My CAGR",value:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return"—";return"+"+(c.convGrowthEst.value).toFixed(1)+"%";})(),sub:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return"Not set";if(c.convGrowthEst.note)return c.convGrowthEst.note.substring(0,22)+(c.convGrowthEst.note.length>22?"...":"");var d=c.convGrowthEst.date?Math.ceil((Date.now()-new Date(c.convGrowthEst.date))/864e5):null;return d?d+"d ago":"Set";})(),color:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return K.dim;var v=c.convGrowthEst.value;return v>=15?K.grn:v>=8?K.acc:K.dim;})(),onClick:function(){setModal({type:"position",id:c.id})}},
             {label:"Thesis age",value:_thesisStaleBadge,sub:_thesisStale?"Needs review":_thesisAgeDays!=null&&_thesisAgeDays<30?"Fresh":"OK",color:_thesisStale?K.amb:K.grn,onClick:function(){setModal({type:"thesis"})}},
           ].map(function(item,i){return<div key={i} onClick={item.onClick} style={{flex:"1 1 0",minWidth:80,padding:"6px 12px",cursor:"pointer",borderLeft:i>0?"1px solid "+K.bdr:"none",textAlign:"center"}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.bg}}
@@ -5939,6 +5952,7 @@ function calcMoatFromData(finData,businessModelType){
           var bw=mcap>500e9?0.55:mcap>100e9?0.4:mcap>50e9?0.3:mcap>10e9?0.2:0.1;
           eg=eg*(1-bw)+baseR*bw;
           if(eg>baseR){var dcay=mcap>500e9?0.08:mcap>100e9?0.06:0.04;eg=baseR+(eg-baseR)*Math.pow(1-dcay,Math.max(goals.horizon,5)/2)}
+          var modelEg=eg;if(convEst!=null){eg=convEst;}
           var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
@@ -6610,6 +6624,21 @@ function calcMoatFromData(finData,businessModelType){
         onAction:{type:"earnings_note",c:c},
         secondary:"View holding",
         onSecondary:{type:"go",c:c}
+      });
+    });
+
+    // ── LAYER 5c: Stale conviction growth estimate (>18 months) ──────────
+    portfolio.forEach(function(c){
+      if(!c.convGrowthEst||!c.convGrowthEst.value||!c.convGrowthEst.date)return;
+      var ageDays=Math.ceil((Date.now()-new Date(c.convGrowthEst.date))/864e5);
+      if(ageDays<540)return; // 18 months
+      signals.push({
+        layer:"stale_growth_est",priority:3,icon:"clock",color:K.dim,
+        title:c.ticker+": growth estimate is "+Math.round(ageDays/365*10)/10+"yr old",
+        sub:"You set "+c.convGrowthEst.value.toFixed(1)+"% on "+new Date(c.convGrowthEst.date).toLocaleDateString("en-US",{month:"short",year:"numeric"})+". Still holds?",
+        action:"Review estimate",
+        onAction:{type:"position_modal",c:c},
+        secondary:"View dossier",onSecondary:{type:"go",c:c}
       });
     });
 
@@ -7714,6 +7743,8 @@ function calcMoatFromData(finData,businessModelType){
         var holdingReturns=portf.map(function(c){
           var fs=c.financialSnapshot||{};
           function dpv(field){if(!fs[field])return 0;var v=fs[field].value;if(typeof v==="number")return v;if(typeof v==="string")return parseFloat(v.replace(/[^\d.\-]/g,""))||0;return 0}
+          // Use conviction growth estimate if the user has set one
+          var convEst=c.convGrowthEst&&c.convGrowthEst.value>0?c.convGrowthEst.value:null;
           var eg=0;var snapG=dpv("revGrowth")||dpv("epsGrowth");
           if(snapG){eg=snapG}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
           var mcap=c.mktCap||0;
@@ -7723,6 +7754,7 @@ function calcMoatFromData(finData,businessModelType){
           var bw=mcap>500e9?0.55:mcap>100e9?0.4:mcap>50e9?0.3:mcap>10e9?0.2:0.1;
           eg=eg*(1-bw)+baseR*bw;
           if(eg>baseR){var dcay=mcap>500e9?0.08:mcap>100e9?0.06:0.04;eg=baseR+(eg-baseR)*Math.pow(1-dcay,Math.max(goals.horizon,5)/2)}
+          var modelEg=eg;if(convEst!=null){eg=convEst;}
           var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
@@ -7732,7 +7764,7 @@ function calcMoatFromData(finData,businessModelType){
           if(c.thesis&&c.thesis.length>100)pred+=8;if((c.kpis||[]).length>=3)pred+=8;pred=Math.min(100,pred);
           // Weight by conviction, fallback equal
           var w=(c.conviction||5)/10;
-          return{id:c.id,ticker:c.ticker,name:c.name,expected:expected,eg:eg,dy:dy,mc:mc,weight:w,predictability:pred}
+          return{id:c.id,ticker:c.ticker,name:c.name,expected:expected,eg:eg,modelEg:modelEg,dy:dy,mc:mc,weight:w,predictability:pred,isConviction:convEst!=null,convNote:c.convGrowthEst&&c.convGrowthEst.note,convDate:c.convGrowthEst&&c.convGrowthEst.date}
         });
         var totalW=holdingReturns.reduce(function(s,h){return s+h.weight},0)||1;
         holdingReturns=holdingReturns.map(function(h){return Object.assign({},h,{weight:h.weight/totalW*100})});
@@ -7821,16 +7853,36 @@ function calcMoatFromData(finData,businessModelType){
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:10,fontStyle:"italic"}}>{"Projections based on historical financials. Your thesis captures what history cannot."}</div>
               {holdingReturns.map(function(h){
                 var needed=goals.targetCAGR-h.dy-h.mc;var onTgt=h.expected>=goals.targetCAGR;
-                return<div key={h.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid "+K.bdr+"60"}}>
-                  <CoLogo ticker={h.ticker} size={22}/>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h.ticker}</div>
-                    <div style={{fontSize:10,color:K.dim}}>Earnings {h.eg>=0?"+":""}{h.eg.toFixed(1)}% / Yield {h.dy.toFixed(1)}% / Multiple {h.mc>=0?"+":""}{h.mc.toFixed(1)}%</div>
+                return<div key={h.id} style={{padding:"10px 0",borderBottom:"1px solid "+K.bdr+"60"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <CoLogo ticker={h.ticker} size={22}/>
+                    <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={function(){setSelId(h.id);setDetailTab("dossier");}}>
+                      <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{h.ticker}</div>
+                      <div style={{fontSize:10,color:K.dim}}>
+                        {h.isConviction&&<span style={{color:K.acc,fontWeight:600,marginRight:3}}>{"Your estimate ·"}</span>}
+                        {"Earnings "+(h.eg>=0?"+":"")+h.eg.toFixed(1)+"% · Yield "+h.dy.toFixed(1)+"% · Multiple "+(h.mc>=0?"+":"")+h.mc.toFixed(1)+"%"}
+                      </div>
+                      {h.isConviction&&h.modelEg!=null&&<div style={{fontSize:10,color:K.bdr,fontStyle:"italic"}}>{"Model: "+(h.modelEg>=0?"+":"")+h.modelEg.toFixed(1)+"%"}</div>}
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                      <div style={{textAlign:"right",minWidth:48}}>
+                        <div style={{fontSize:16,fontWeight:700,color:onTgt?K.grn:K.amb,fontFamily:fm}}>{h.expected>=0?"+":""}{h.expected.toFixed(1)+"%"}</div>
+                        {!onTgt&&<div style={{fontSize:9,color:K.red}}>{"Needs "+needed.toFixed(1)+"%"}</div>}
+                      </div>
+                      <button title={h.isConviction?"Edit your growth estimate":"Set your own growth estimate"} onClick={function(e){e.stopPropagation();var prompt1=h.isConviction?"Your growth estimate for "+h.ticker+": "+h.eg.toFixed(1)+"%
+(Model baseline: "+h.modelEg.toFixed(1)+"%)
+
+Update % or leave blank to reset to model:":"Set your conviction growth estimate for "+h.ticker+" (%)
+
+Model estimate: "+h.modelEg.toFixed(1)+"%
+
+If you believe this business will compound differently than its history suggests, enter your estimate:";var v=window.prompt(prompt1);if(v===null)return;var n=parseFloat(v.trim());if(v.trim()===""||isNaN(n)){upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:null});});return;}var note=window.prompt("Why? (optional — one sentence, press Enter to skip):")||"";upd(h.id,function(c){return Object.assign({},c,{convGrowthEst:{value:n,note:note.trim(),date:new Date().toISOString()}});});}}
+                        style={{fontSize:10,color:h.isConviction?K.acc:K.dim,background:h.isConviction?K.acc+"12":"none",border:"1px solid "+(h.isConviction?K.acc+"30":K.bdr),borderRadius:_isBm?0:5,padding:"4px 9px",cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>
+                        {h.isConviction?"✎ Mine":"✎ Set mine"}
+                      </button>
+                    </div>
                   </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:16,fontWeight:700,color:onTgt?K.grn:K.amb,fontFamily:fm}}>{h.expected>=0?"+":""}{h.expected.toFixed(1)}%</div>
-                    {!onTgt&&<div style={{fontSize:9,color:K.red}}>Needs {needed.toFixed(1)}% growth</div>}
-                  </div>
+                  {h.isConviction&&h.convNote&&<div style={{fontSize:10,color:K.dim,fontStyle:"italic",marginTop:3,paddingLeft:34}}>{"“"+h.convNote+"”"}</div>}
                 </div>
               })}
             </div>
@@ -10483,6 +10535,7 @@ function WeeklyReview(){
               if(act.modal)setTimeout(function(){setModal({type:act.modal})},80);
             }
             else if(act.type==="library"){setSelId(null);setPage("library")}
+            else if(act.type==="position_modal"){setSelId(act.c.id);setModal({type:"position",id:act.c.id});}
             else if(act.type==="earnings_note"){setSelId(act.c.id);setPage("dashboard");setTimeout(function(){setModal({type:"doc",prefill:{docType:"earnings",title:act.c.ticker+" Earnings Note — "+new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"})}})},80);}
             }
 
