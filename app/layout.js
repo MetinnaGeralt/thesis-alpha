@@ -1,19 +1,18 @@
-import "./globals.css";
+// app/layout.js
+// Route segment config — prevents static prerendering of the app.
+// Must live in a Server Component (no "use client").
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "ThesisAlpha",
-  icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon.png",
-    apple: "/logo.png", // also shows on iOS home screen
-  },
+  description: "The private dashboard for long-term investors.",
 };
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head>
-        <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-        <script dangerouslySetInnerHTML={{ __html: `window.__TA_STRIPE_MONTHLY="${process.env.NEXT_PUBLIC_STRIPE_MONTHLY}";window.__TA_STRIPE_ANNUAL="${process.env.NEXT_PUBLIC_STRIPE_ANNUAL}";` }} />
-      </head>
       <body>{children}</body>
     </html>
   );
