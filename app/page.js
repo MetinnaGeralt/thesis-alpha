@@ -1442,6 +1442,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function joinThesis(s){var parts=[];if(s.core)parts.push(s.core);if(s.moat)parts.push("## MOAT\n"+s.moat);if(s.risks)parts.push("## RISKS\n"+s.risks);if(s.sell)parts.push("## SELL CRITERIA\n"+s.sell);return parts.join("\n\n")}
   function ThesisModal(){if(!sel)return null;var parsed=parseThesis(sel.thesisNote);
     var _f=useState(parsed),f=_f[0],setF=_f[1];
+    var _aiSec=useState(null),aiDraftSec=_aiSec[0],setAiDraftSec=_aiSec[1];
     // Guided mode: fires when thesis is empty for the first time
     var isFirstTime=!sel.thesisNote||sel.thesisNote.trim().length<20;
     var _gd=useState(isFirstTime),guided=_gd[0],setGuided=_gd[1];
@@ -1604,7 +1605,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <pre style={{fontSize:12,color:K.mid,fontFamily:fb,margin:0,whiteSpace:"pre-wrap",lineHeight:1.6}}>{kpiSeed}</pre>
           <button onClick={function(){set("sell",kpiSeed)}} style={{marginTop:8,background:"none",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:4,padding:"3px 10px",fontSize:11,color:K.red,cursor:"pointer",fontFamily:fm}}>Paste into section</button>
         </div>}
-        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/></div>})}
+        <textarea value={f[sec.key]} onChange={function(e){set(sec.key,e.target.value)}} placeholder={"Write here..."} rows={sec.key==="core"?4:3} style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(done?sec.color+"30":K.bdr),borderRadius:_isBm?0:6,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.6,transition:"border-color .2s"}}/>
+        {!f[sec.key]&&isPro&&<button onClick={function(){var secLabel={core:"Why I Own It",moat:"Competitive Moat",risks:"Key Risks",sell:"What Would Make Me Sell"}[sec.key];setAiDraftSec(sec.key);(async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,messages:[{role:"user",content:"Write a short, honest, first-person starting point (2-4 sentences) for the \""+secLabel+"\" section of an investor thesis for "+sel.name+" ("+sel.ticker+"). Investor style: "+(sel.investStyle||"quality")+". Leave space for their own thinking. No bullet points. No generic advice. Direct and specific."}],callType:"digest"})});})().then(function(r){return r.json();}).then(function(d){var t=(d.content&&d.content[0]&&d.content[0].text)||"";if(t)set(sec.key,t);setAiDraftSec(null);}).catch(function(){setAiDraftSec(null);});}} disabled={aiDraftSec===sec.key} style={{marginTop:6,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:11,color:K.acc,cursor:"pointer",display:"flex",alignItems:"center",gap:6,opacity:aiDraftSec===sec.key?0.5:1}}>{aiDraftSec===sec.key?<><div style={{width:10,height:10,borderRadius:"50%",border:"1.5px solid "+K.acc+"40",borderTop:"1.5px solid "+K.acc,animation:"spin 1s linear infinite"}}/>{"Writing..."}</>:"\u2728 Help me start"}</button>}</div>})}
       {sel.thesisVersions&&sel.thesisVersions.length>0&&(function(){
         var _vopen=useState(false),vOpen=_vopen[0],setVOpen=_vopen[1];
         var versions=sel.thesisVersions.slice().reverse();
@@ -1960,6 +1962,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _f=useState({metricId:ex?ex.metricId||"":"",rule:ex?ex.rule:"gte",value:ex?String(ex.value):"",period:ex?ex.period:""}),f=_f[0],setF=_f[1];
     var _kpiS=useState(""),kpiSearch=_kpiS[0],setKpiSearch=_kpiS[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var _added=useState([]),added=_added[0],setAdded=_added[1];
+    var _kpiExp=useState(null),kpiExplain=_kpiExp[0],setKpiExplain=_kpiExp[1];
+    var _kpiExpLoading=useState(false),kpiExpLoading=_kpiExpLoading[0],setKpiExpLoading=_kpiExpLoading[1];
     // Filter out already-tracked metrics AND just-added ones
     var used=sel.kpis.map(function(k){return k.metricId}).concat(added.map(function(a){return a.metricId}));
     var avail=METRICS.filter(function(m){return(!used.includes(m.id)||m.id===(ex&&ex.metricId))&&(!kpiSearch||m.label.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.cat.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0||m.id.toLowerCase().indexOf(kpiSearch.toLowerCase())>=0)});
@@ -2007,6 +2011,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <Inp label={"Target"+(selMet?" ("+selMet.unit+")":"")} value={f.value} onChange={function(v){set("value",v)}} type="number" placeholder={selMet&&selMet.unit==="%"?"e.g. 20":"e.g. 5"} K={K}/>
           <Inp label="Period (optional)" value={f.period} onChange={function(v){set("period",v)}} placeholder="Q4 2025" K={K}/></div>
         <div style={{fontSize:12,color:K.dim,marginTop:4,marginBottom:12}}>Auto-fetched from Finnhub when you click Check Earnings</div></div>}
+        {selMet&&isPro&&<div style={{marginTop:6,marginBottom:8}}>{kpiExplain&&kpiExplain.id===f.metricId?<div style={{fontSize:12,color:K.dim,lineHeight:1.6,fontStyle:"italic",padding:"8px 12px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>{kpiExplain.text}</div>:<button onClick={function(){if(kpiExpLoading)return;setKpiExpLoading(true);setKpiExplain(null);(async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:80,messages:[{role:"user",content:"Explain what \""+selMet.label+"\" means as a KPI for a quality investor tracking "+(sel.name||sel.ticker)+". Two plain sentences. No jargon. What does a good number look like?"}],callType:"digest"})});})().then(function(r){return r.json();}).then(function(d){var t=(d.content&&d.content[0]&&d.content[0].text)||"";setKpiExplain({id:f.metricId,text:t});setKpiExpLoading(false);}).catch(function(){setKpiExpLoading(false);});}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",padding:"2px 0",fontFamily:fm}}>{kpiExpLoading?"⏳ Loading...":"? What does this measure?"}</button>}</div>}
       {/* Queued KPIs */}
       {!ex&&added.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:12}}>
         <div style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600,marginBottom:6}}>{added.length} KPI{added.length>1?"s":""} queued</div>
@@ -3592,6 +3597,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var set=function(k,v){setF(function(p2){var n=Object.assign({},p2);n[k]=v;return n})};
     var _sg=useState(false),sellGateOpen=_sg[0],setSellGateOpen=_sg[1];
     var _sq=useState(""),sellQ=_sq[0],setSellQ=_sq[1];
+    var _crd=useState(false),cleaningReasoning=_crd[0],setCleaningReasoning=_crd[1];
     function addDecision(){if(!f.reasoning.trim())return;
       if((f.action==="SELL"||f.action==="TRIM")&&!sellGateOpen){setSellGateOpen(true);return;}
       setSellGateOpen(false);setSellQ("");
@@ -3658,6 +3664,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               <button onClick={function(){setSellGateOpen(false);setSellQ("")}} style={{flex:1,padding:"8px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>Go back</button>
               <button onClick={function(){setSellGateOpen(false);setTimeout(addDecision,50)}} style={{flex:2,padding:"8px",borderRadius:_isBm?0:8,border:"none",background:K.red,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Confirm "+f.action}</button>
             </div>
+          </div>
+          {isPro&&f.reasoning.trim().length>10&&<button onClick={function(){
+            setCleaningReasoning(true);
+            (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",
+            headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
+            body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:150,
+            messages:[{role:"user",content:"Clean up this rough investment decision note into one clear, well-written sentence or two. Keep the person's voice. Be direct. No fluff.\n\nRaw: "+f.reasoning.substring(0,400)}],
+            callType:"digest"})});})().then(function(r){return r.json();})
+            .then(function(d){var t=(d.content&&d.content[0]&&d.content[0].text)||"";if(t){var set2=function(k,v){setF(function(p){return Object.assign({},p,{[k]:v})});};set2("reasoning",t);}setCleaningReasoning(false);})
+            .catch(function(){setCleaningReasoning(false);});
+          }} disabled={cleaningReasoning} style={{marginTop:4,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:10,color:K.acc,cursor:"pointer",display:"flex",alignItems:"center",gap:5,opacity:cleaningReasoning?0.5:1}}>
+            {cleaningReasoning?<><div style={{width:9,height:9,borderRadius:"50%",border:"1.5px solid "+K.acc+"40",borderTop:"1.5px solid "+K.acc,animation:"spin 1s linear infinite"}}/>{"Cleaning..."}</>:"\u2728 Clean up"}
+          </button>}
           </div>}
           {!sellGateOpen&&<div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
             <button style={S.btn} onClick={function(){setAdding(false)}}>Cancel</button>
