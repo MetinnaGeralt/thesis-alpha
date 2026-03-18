@@ -6144,7 +6144,7 @@ function calcMoatFromData(finData,businessModelType){
           var bw=mcap>500e9?0.55:mcap>100e9?0.4:mcap>50e9?0.3:mcap>10e9?0.2:0.1;
           eg=eg*(1-bw)+baseR*bw;
           if(eg>baseR){var dcay=mcap>500e9?0.08:mcap>100e9?0.06:0.04;eg=baseR+(eg-baseR)*Math.pow(1-dcay,Math.max(goals.horizon,5)/2)}
-          var modelEg=eg;if(convEst!=null){eg=convEst;}
+          var convEst=c.convGrowthEst&&c.convGrowthEst.value>0?c.convGrowthEst.value:null;var modelEg=eg;if(convEst!=null){eg=convEst;}
           var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
           var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
           var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
