@@ -8009,6 +8009,71 @@ function ProWelcomeGift(){
     </div>;
   }
 
+
+  function saveJournalEntry(entry){
+    setJournalEntries(function(prev){
+      var existing=prev.findIndex(function(e){return e.weekId===entry.weekId;});
+      var next=prev.slice();
+      if(existing>=0)next[existing]=Object.assign({},next[existing],entry);
+      else next=[entry].concat(next);
+      next=next.slice(0,104);// 2 years of weekly entries
+      try{localStorage.setItem("ta-journal",JSON.stringify(next));}catch(e){}
+      return next;
+    });
+  }
+
+  function saveOwnersLetter(letter){
+    setOwnersLetters(function(prev){
+      var next=[letter].concat(prev).slice(0,24);// keep 2 years
+      try{localStorage.setItem("ta-owners-letters",JSON.stringify(next));}catch(e){}
+      return next;
+    });
+  }
+
+  function generateOwnersLetter(onDone){
+    var portf2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
+    if(portf2.length===0){if(onDone)onDone(null);return;}
+    setLetterLoading(true);setLetterError(null);
+    var month=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
+    // Build rich context from all available data
+    var holdingLines=portf2.map(function(c){
+      var pos=c.position||{};
+      var ret=pos.avgCost&&pos.currentPrice?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"unknown return";
+      var thesis=c.thesisNote?c.thesisNote.substring(0,200):"no thesis written";
+      var kpiStr=(c.kpis||[]).length>0?"KPIs tracked: "+(c.kpis||[]).slice(0,3).map(function(k){return k.label+(k.lastResult!=null?" (last: "+k.lastResult+")":"");}).join(", "):"no KPIs set";
+      var conv=c.conviction||5;
+      var ch=(c.convictionHistory||[]).slice(-8);
+      var convDir="";
+      if(ch.length>=4){var first=ch[0].rating;var last=ch[ch.length-1].rating;var delta=last-first;
+        if(delta>=2)convDir=" [conviction has been BUILDING +"+delta+" pts over "+ch.length+" weeks]";
+        else if(delta<=-2)convDir=" [conviction has been DRIFTING "+delta+" pts over "+ch.length+" weeks]";
+        else convDir=" [conviction has held steady around "+last+"]";}
+      var thesisDays=c.thesisUpdatedAt?Math.floor((Date.now()-new Date(c.thesisUpdatedAt).getTime())/864e5):null;
+      var thesisAge=thesisDays!==null?" (thesis last updated "+thesisDays+" days ago)":"";
+      var decCount=(c.decisions||[]).filter(function(d){return d.date&&new Date(d.date)>new Date(Date.now()-30*864e5);}).length;
+      return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10"+convDir+", return "+ret+". "+kpiStr+". Thesis: "+thesis+thesisAge+(decCount>0?". "+decCount+" decision(s) logged this month":".");
+    }).join("\n");
+    var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
+    var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
+    var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+"Now write the letter.";
+    (async function(){
+      var tok=await getAuthToken();
+      return fetch("/api/ai",{method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"letter"})});})().then(function(r){return r.json();})
+      .then(function(d){
+        var text=(d.content&&d.content[0]&&d.content[0].text)||"";
+        if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
+        // Extract summary (first sentence)
+        var summary=text.split(".")[0].substring(0,120);
+        var letter={id:Date.now(),date:new Date().toISOString(),month:month,text:text,summary:summary,holdings:portf2.length};
+        saveOwnersLetter(letter);
+        setLetterLoading(false);
+        if(onDone)onDone(letter);
+      })
+      .catch(function(e){setLetterError("Generation failed — please try again.");setLetterLoading(false);});
+  }
+
   function WeeklyReview(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var weekId=getWeekId();var alreadyDone=weeklyReviews.length>0&&weeklyReviews[0].weekId===weekId;
@@ -8132,69 +8197,7 @@ function ProWelcomeGift(){
       return{weeks:weeklyReviews.length,convChanges:convChanges.slice(0,5),avgStart:firstWeek.summary&&firstWeek.summary.avgConv,avgEnd:latestWeek.summary&&latestWeek.summary.avgConv};
     }
 
-    function saveJournalEntry(entry){
-      setJournalEntries(function(prev){
-        var existing=prev.findIndex(function(e){return e.weekId===entry.weekId;});
-        var next=prev.slice();
-        if(existing>=0)next[existing]=Object.assign({},next[existing],entry);
-        else next=[entry].concat(next);
-        next=next.slice(0,104);// 2 years of weekly entries
-        try{localStorage.setItem("ta-journal",JSON.stringify(next));}catch(e){}
-        return next;
-      });
-    }
 
-    function saveOwnersLetter(letter){
-      setOwnersLetters(function(prev){
-        var next=[letter].concat(prev).slice(0,24);// keep 2 years
-        try{localStorage.setItem("ta-owners-letters",JSON.stringify(next));}catch(e){}
-        return next;
-      });
-    }
-
-    function generateOwnersLetter(onDone){
-      var portf2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
-      if(portf2.length===0){if(onDone)onDone(null);return;}
-      setLetterLoading(true);setLetterError(null);
-      var month=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
-      // Build rich context from all available data
-      var holdingLines=portf2.map(function(c){
-        var pos=c.position||{};
-        var ret=pos.avgCost&&pos.currentPrice?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"unknown return";
-        var thesis=c.thesisNote?c.thesisNote.substring(0,200):"no thesis written";
-        var kpiStr=(c.kpis||[]).length>0?"KPIs tracked: "+(c.kpis||[]).slice(0,3).map(function(k){return k.label+(k.lastResult!=null?" (last: "+k.lastResult+")":"");}).join(", "):"no KPIs set";
-        var conv=c.conviction||5;
-        var ch=(c.convictionHistory||[]).slice(-8);
-        var convDir="";
-        if(ch.length>=4){var first=ch[0].rating;var last=ch[ch.length-1].rating;var delta=last-first;
-          if(delta>=2)convDir=" [conviction has been BUILDING +"+delta+" pts over "+ch.length+" weeks]";
-          else if(delta<=-2)convDir=" [conviction has been DRIFTING "+delta+" pts over "+ch.length+" weeks]";
-          else convDir=" [conviction has held steady around "+last+"]";}
-        var thesisDays=c.thesisUpdatedAt?Math.floor((Date.now()-new Date(c.thesisUpdatedAt).getTime())/864e5):null;
-        var thesisAge=thesisDays!==null?" (thesis last updated "+thesisDays+" days ago)":"";
-        var decCount=(c.decisions||[]).filter(function(d){return d.date&&new Date(d.date)>new Date(Date.now()-30*864e5);}).length;
-        return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10"+convDir+", return "+ret+". "+kpiStr+". Thesis: "+thesis+thesisAge+(decCount>0?". "+decCount+" decision(s) logged this month":".");
-      }).join("\n");
-      var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
-      var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
-      var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+"Now write the letter.";
-      (async function(){
-        var tok=await getAuthToken();
-        return fetch("/api/ai",{method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"letter"})});})().then(function(r){return r.json();})
-        .then(function(d){
-          var text=(d.content&&d.content[0]&&d.content[0].text)||"";
-          if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
-          // Extract summary (first sentence)
-          var summary=text.split(".")[0].substring(0,120);
-          var letter={id:Date.now(),date:new Date().toISOString(),month:month,text:text,summary:summary,holdings:portf2.length};
-          saveOwnersLetter(letter);
-          setLetterLoading(false);
-          if(onDone)onDone(letter);
-        })
-        .catch(function(e){setLetterError("Generation failed — please try again.");setLetterLoading(false);});
-    }
 
     function dismissMilestone(){
       showToast("✓ Week "+(sw+1)+" complete — "+milestone.label+" unlocked!","info",5000);
