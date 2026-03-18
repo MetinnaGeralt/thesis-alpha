@@ -8608,8 +8608,7 @@ function ProWelcomeGift(){
     var _userNote=useState(""),userNote=_userNote[0],setUserNote=_userNote[1];
 
     // Sync userNote when selected entry changes
-    var _prevSelId=useState(null),prevSelId=_prevSelId[0],setPrevSelId=_prevSelId[1];
-    if(sel&&sel.weekId!==prevSelId){setPrevSelId(sel?sel.weekId:null);setUserNote(sel?sel.userNote||"":"");}
+    useEffect(function(){if(sel){setUserNote(sel.userNote||"");}else{setUserNote("");}},[sel&&sel.weekId]);
 
     function generateNarrative(entry){
       if(!entry||entry.generating)return;
@@ -8691,7 +8690,7 @@ function ProWelcomeGift(){
       </div>}
 
       {/* Two-column layout */}
-      {journalEntries.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"200px 1fr",gap:16,alignItems:"start"}}>
+      {(journalEntries.length>0||sel)&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"200px 1fr",gap:16,alignItems:"start"}}>
 
         {/* Sidebar: entry list */}
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
