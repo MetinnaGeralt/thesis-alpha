@@ -8065,8 +8065,8 @@ function calcMoatFromData(finData,businessModelType){
                 </div>
               </div>
               {/* Bell curve */}
-              <div style={{position:"relative",marginBottom:12,paddingTop:16}}>
-                <svg viewBox={"0 0 "+svgW+" "+svgH} style={{width:"100%",height:80,overflow:"visible"}}>
+              <div style={{position:"relative",marginBottom:12,paddingTop:4}}>
+                <svg viewBox={"-8 -20 "+(svgW+16)+" "+(svgH+24)} style={{width:"100%",height:100,overflow:"visible"}}>
                   <defs>
                     <linearGradient id="bellGrad" x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor={K.acc} stopOpacity="0.3"/>
@@ -10265,6 +10265,86 @@ function ProWelcomeGift(){
               <div style={{fontSize:12,color:K.amb,fontWeight:600}}>Unclassified: {unclass.map(function(c2){return c2.ticker}).join(", ")}</div>
               <div style={{fontSize:11,color:K.dim,marginTop:2}}>Visit the Moat Tracker for each company to classify their competitive advantages.</div></div>}
         </div>}()}
+
+      {/* ── CAGR Projection ── */}
+      {portCos.length>0&&(function(){
+        var portf2=portCos;
+        var hr2=portf2.map(function(c){
+          var fs2=c.financialSnapshot||{};
+          function dv(f){if(!fs2[f])return 0;var v=fs2[f].value;return typeof v==="number"?v:parseFloat(String(v).replace(/[^0-9.\-]/g,""))||0}
+          var convEst2=c.convGrowthEst&&c.convGrowthEst.value>0?c.convGrowthEst.value:null;
+          var eg2=0;var sg=dv("revGrowth")||dv("epsGrowth");
+          if(sg){eg2=sg}else{var se2={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:22};eg2=se2[c.investStyle||"quality"]||12;}
+          var mcap2=c.mktCap||0;
+          var baseR2=mcap2>500e9?9:mcap2>100e9?11:mcap2>50e9?13:mcap2>10e9?15:mcap2>1e9?17:20;
+          var capG2=mcap2>500e9?15:mcap2>100e9?20:mcap2>50e9?25:mcap2>10e9?35:mcap2>1e9?45:60;
+          eg2=Math.min(eg2,capG2);
+          var bw2=mcap2>500e9?0.55:mcap2>100e9?0.4:mcap2>50e9?0.3:mcap2>10e9?0.2:0.1;
+          eg2=eg2*(1-bw2)+baseR2*bw2;
+          if(eg2>baseR2){var dc2=mcap2>500e9?0.08:mcap2>100e9?0.06:0.04;eg2=baseR2+(eg2-baseR2)*Math.pow(1-dc2,10);}
+          if(convEst2!=null){eg2=convEst2;}
+          var dy2=dv("divYield")||(c.divYield||0);
+          var pe2=dv("pe");var fairPE2=eg2>30?40:eg2>20?30:eg2>12?25:eg2>5?18:14;
+          var mc2=0;if(pe2>0&&pe2<200){mc2=(Math.pow(fairPE2/pe2,1/10)-1)*100;mc2=Math.max(-12,Math.min(12,mc2));}
+          var exp2=eg2+dy2+mc2;
+          var pred2=50;if(c._moatCache&&c._moatCache.composite)pred2+=c._moatCache.composite*3;
+          if(c.kpis&&c.kpis.length>=3)pred2+=8;pred2=Math.min(100,pred2);
+          var w2=(c.conviction||5)/10;
+          return{expected:exp2,predictability:pred2,weight:w2};
+        });
+        var tw2=hr2.reduce(function(s,h){return s+h.weight},0)||1;
+        var pCAGR=hr2.reduce(function(s,h){return s+h.weight/tw2*h.expected},0);
+        var pPred=hr2.reduce(function(s,h){return s+h.weight/tw2*h.predictability},0);
+        var unc2=(100-pPred)/100;
+        var sprd=Math.max(pCAGR*0.4,6)*unc2+4;
+        var lo2=pCAGR-sprd*1.4;var hi2=pCAGR+sprd*0.7;
+        var sigma2=sprd*0.9||1;
+        var tgt2=goals.targetCAGR;
+        var diff2=pCAGR-tgt2;var t22=diff2/sigma2;
+        var prob2;if(t22>=0){prob2=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t22-0.25*t22*t22))))}else{prob2=Math.round(Math.max(15,50-40*(1-Math.exp(0.5*t22+0.25*t22*t22))))}
+        var onTgt2=pCAGR>=tgt2;
+        var sw=400;var sh=100;
+        var bPts=[];for(var bi2=0;bi2<=100;bi2++){var x3=lo2+(hi2-lo2)*bi2/100;var z2=(x3-pCAGR)/sigma2;var y3=Math.max(0,sh*(1-Math.min(1,Math.exp(-0.5*z2*z2)*1.4)));bPts.push([x3/(hi2-lo2)*sw-lo2/(hi2-lo2)*sw,y3]);}
+        var bPath="M "+bPts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1)}).join(" L ");
+        var tX2=Math.max(0,Math.min(1,(tgt2-lo2)/(hi2-lo2)))*sw;
+        var eX2=Math.max(0,Math.min(1,(pCAGR-lo2)/(hi2-lo2)))*sw;
+        return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",marginBottom:24}}>
+          <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:16,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:140}}>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Expected Portfolio CAGR</div>
+              <div style={{fontSize:38,fontWeight:800,color:onTgt2?K.grn:K.amb,fontFamily:fm,lineHeight:1}}>{(pCAGR>=0?"+":"")+pCAGR.toFixed(1)+"%"}</div>
+              <div style={{fontSize:12,color:K.dim,marginTop:4}}>Range: {lo2.toFixed(1)}% to {hi2.toFixed(1)}%</div>
+              <div style={{fontSize:11,color:K.dim,marginTop:2}}>{pPred>=70?"Predictable Compounder Portfolio":pPred>=50?"Balanced Growth Portfolio":pPred>=30?"Emerging Growth Portfolio":"Early-Stage Portfolio"}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>{"Probability of "+tgt2+"%+"}</div>
+              <div style={{width:64,height:64,borderRadius:"50%",border:"4px solid "+(onTgt2?K.grn+"30":K.red+"30"),position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+                <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"4px solid "+(onTgt2?K.grn:K.red),clipPath:"inset(0 "+(100-prob2)+"%  0 0)"}}/>
+                <span style={{fontSize:16,fontWeight:800,color:onTgt2?K.grn:K.red,fontFamily:fm}}>{prob2+"%"}</span>
+              </div>
+            </div>
+          </div>
+          <div style={{position:"relative",marginBottom:4,paddingTop:4}}>
+            <svg viewBox={"-8 -20 "+(sw+16)+" "+(sh+24)} style={{width:"100%",height:100,overflow:"visible"}}>
+              <defs><linearGradient id="bellGrad2" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={K.acc} stopOpacity="0.3"/>
+                <stop offset="100%" stopColor={K.acc} stopOpacity="0.03"/>
+              </linearGradient></defs>
+              <path d={bPath+" L "+sw+","+sh+" L 0,"+sh+" Z"} fill="url(#bellGrad2)"/>
+              <path d={bPath} fill="none" stroke={K.acc} strokeWidth="2.5"/>
+              <line x1={eX2.toFixed(0)} y1="0" x2={eX2.toFixed(0)} y2={sh} stroke={K.grn} strokeWidth="2"/>
+              <text x={eX2.toFixed(0)} y="-4" fill={K.grn} fontSize="9" fontWeight="bold" textAnchor="middle">{pCAGR.toFixed(1)+"%"}</text>
+              {tX2!==eX2&&<line x1={tX2.toFixed(0)} y1="4" x2={tX2.toFixed(0)} y2={sh} stroke={K.amb} strokeWidth="1.5" strokeDasharray="4,3"/>}
+              {tX2!==eX2&&<text x={tX2.toFixed(0)} y="-4" fill={K.amb} fontSize="9" fontWeight="bold" textAnchor="middle">{"Target "+tgt2+"%"}</text>}
+            </svg>
+          </div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:8,lineHeight:1.5}}>
+            {onTgt2
+              ?<span style={{color:K.grn,fontWeight:600}}>Historical data supports your target — your thesis may give you more.</span>
+              :<span style={{color:K.amb,fontWeight:600}}>{"Portfolio is projected below your "+tgt2+"% target — review conviction estimates."}</span>}
+          </div>
+        </div>;
+      })()}
 
       {/* ── Munger Quote ── */}
       {withMoat.length>0&&<div style={{padding:"20px 24px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12}}>
