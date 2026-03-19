@@ -1452,15 +1452,26 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var isFirstTime=!sel.thesisNote||sel.thesisNote.trim().length<20;
     var _gd=useState(isFirstTime),guided=_gd[0],setGuided=_gd[1];
     var _gstep=useState(0),gStep=_gstep[0],setGStep=_gstep[1];
-    var _gans=useState(["","","",""]),gAns=_gans[0],setGAns=_gans[1];
+    var _gans=useState(["","","","",""]),gAns=_gans[0],setGAns=_gans[1];
     var GUIDED_QS=[
-      {label:"Why do you own it?",hint:"One or two sentences is fine. What's the core reason this company is in your portfolio?",placeholder:"e.g. They have the most efficient GPU platform for AI training, and switching costs are enormous.",section:"core"},
-      {label:"What's the moat?",hint:"Why can't a well-funded competitor just copy this business in 3 years?",placeholder:"e.g. The CUDA developer ecosystem took 15 years to build. Every ML framework is optimised for it.",section:"moat"},
-      {label:"What's your biggest worry?",hint:"Be honest — what's the thing that could make you wrong about this?",placeholder:"e.g. Custom silicon from hyperscalers could eventually replace NVIDIA in certain workloads.",section:"risks"},
-      {label:"What would make you sell?",hint:"Specific and measurable. Not 'if things look bad' — what exact condition ends the thesis?",placeholder:"e.g. Data Center revenue growth drops below 20% YoY for two consecutive quarters.",section:"sell"}
+      {label:"How does this business make money?",
+       hint:"One sentence, plain language. Imagine explaining it to a 10-year-old.",
+       placeholder:"e.g. Topicus acquires niche vertical software businesses and compounds their recurring revenue over time..."},
+      {label:"Why is it hard to compete with?",
+       hint:"Buffett's test: can this business raise prices without losing customers? What makes the moat durable?",
+       placeholder:"e.g. High switching costs — once a municipality runs on their software, migrating is a multi-year project..."},
+      {label:"What would make you seriously reconsider?",
+       hint:"Munger: invert, always invert. What would have to be true for this thesis to be wrong?",
+       placeholder:"e.g. If gross retention falls below 90% for two consecutive quarters, the moat is eroding..."},
+      {label:"What would make you sell?",
+       hint:"Specific and honest. Not 'if things look bad' — what exact condition triggers a full exit?",
+       placeholder:"e.g. Management begins making large dilutive acquisitions outside their circle of competence..."},
+      {label:"What does management have to do to keep your trust?",
+       hint:"Buffett looks for integrity, intelligence, energy — in that order. What's your specific watch for this team?",
+       placeholder:"e.g. Continue buying back shares below intrinsic value and avoid large debt-funded acquisitions..."}
     ];
     function buildFromGuided(){
-      var built={core:gAns[0].trim(),moat:gAns[1].trim(),risks:gAns[2].trim(),sell:gAns[3].trim()};
+      var built={core:gAns[0].trim()+(gAns[4].trim()?"\n\n## MANAGEMENT\n"+gAns[4].trim():""),moat:gAns[1].trim(),risks:gAns[2].trim(),sell:gAns[3].trim()};
       setF(built);setGuided(false);}
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var sty=STYLE_MAP[sel.investStyle];
@@ -1661,9 +1672,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }
     if(guided){
       var q=GUIDED_QS[gStep];
-      var progress=gStep/4;
+      var progress=gStep/5;
       var filled_so_far=gAns.filter(function(a){return a.trim().length>5}).length;
-      return<Modal title={sel.ticker+" — Let's write your thesis"} onClose={function(){setModal(null)}} w={560} K={K}>
+      return<Modal title={"Why do you own "+sel.ticker+"?"} onClose={function(){setModal(null)}} w={560} K={K}>
         {/* Progress bar */}
         <div style={{height:3,borderRadius:_isBm?0:2,background:K.bdr,marginBottom:24,overflow:"hidden"}}>
           <div style={{height:"100%",width:((gStep)/4*100)+"%",background:K.acc,borderRadius:_isBm?0:2,transition:"width .3s"}}/>
@@ -1672,7 +1683,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           {GUIDED_QS.map(function(qs,i){var done=gAns[i].trim().length>5;return<div key={i} style={{flex:1,height:4,borderRadius:_isBm?0:2,background:i<gStep?(done?K.grn:K.acc):i===gStep?K.acc+"50":K.bdr,transition:"background .3s"}}/>})}
         </div>
-        <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:6}}>Question {gStep+1} of 4</div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:6}}>Question {gStep+1} of 5</div>
         <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8,lineHeight:1.35}}>{q.label}</div>
         <div style={{fontSize:13,color:K.dim,lineHeight:1.6,marginBottom:16}}>{q.hint}</div>
         <textarea
@@ -1692,11 +1703,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <button onClick={function(){setGuided(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fb}}>Skip to advanced editor</button>
           </div>
           <div style={{display:"flex",gap:8}}>
-            {gStep<3&&<button
+            {gStep<4&&<button
               onClick={function(){setGStep(gStep+1)}}
               style={Object.assign({},S.btnP,{opacity:1})}
             >{gAns[gStep].trim().length>5?"Next →":"Skip for now →"}</button>}
-            {gStep===3&&<button
+            {gStep===4&&<button
               onClick={buildFromGuided}
               style={Object.assign({},S.btnP,{background:K.grn})}
             >Build my thesis →</button>}
@@ -10926,7 +10937,7 @@ function ProWelcomeGift(){
             <button onClick={function(){setNewFolderMode(false)}} style={{fontSize:12,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>← Back to existing</button>
           </div>}
         </div>
-        <Inp K={K} label="Notes (optional)" value={notes} onChange={setNotes} ta={true} placeholder="Key takeaways, why you saved this..."/>
+        <Inp K={K} label="What did I take from this?" value={notes} onChange={setNotes} ta={true} placeholder="One insight — the thing that changed how you think about this business or investing... you saved this..."/>
         <div style={{marginBottom:16}}>
           <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Link to holding (optional)</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -11022,7 +11033,7 @@ function ProWelcomeGift(){
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
           <h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:_isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:_isThesis?"-0.5px":"normal"}}>Library</h1>
-          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>"Your research docs, models, articles, and resources — indexed by holding, always one click away."</p>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>"Your work and what you read — indexed by holding, compounding over time."</p>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={14} color={K.mid}/>New Folder</button>
@@ -11390,6 +11401,13 @@ function ProWelcomeGift(){
           title:fatPitch[0].ticker+" is near your fat pitch price",
           sub:"You said "+fatPitch[0].ticker+" at $"+fatPitch[0].fatPitchPrice+" was the obvious opportunity. It's there.",
           onClick:function(){setSelId(fatPitch[0].id);setDetailTab("dossier");setPage("dashboard");}}}
+      // Priority 6b: concentration signal (>6 holdings)
+      if(!focus){var portCount=portfolio.length;
+        if(portCount>6&&!dashSet.concentrationDismissed){
+          focus={icon:"lightbulb",color:K.dim,
+            title:"You own "+portCount+" businesses",
+            sub:"Munger rarely owned more than 6 he understood deeply. Which of yours do you understand best?",
+            onClick:function(){setSelId(null);setPage("dashboard");setHubTab("holdings");}}}}
       // Priority 6: weekly review
       if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Still how you see it?"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
       // Insider signals
