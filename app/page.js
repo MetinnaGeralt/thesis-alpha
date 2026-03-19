@@ -9175,7 +9175,6 @@ function ProWelcomeGift(){
               <span style={{fontSize:13,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
             </div>;})}
           </div>
-          </div>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use ThesisAlpha as you normally would. Write your thesis. Track KPIs. Log decisions. The letter is being built from everything you do."}</div>
         </div>
         {/* What to expect */}
