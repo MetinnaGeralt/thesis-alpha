@@ -10326,6 +10326,7 @@ function ProWelcomeGift(){
               <div style={{fontSize:11,fontWeight:700,color:onTgt2?K.grn:K.amb,fontFamily:fm,background:(onTgt2?K.grn:K.amb)+"12",border:"1px solid "+(onTgt2?K.grn:K.amb)+"30",borderRadius:_isBm?0:6,padding:"6px 14px"}}>{onTgt2?"Within expectation":"Below expectation"}</div>
               <div style={{fontSize:10,color:K.dim,marginTop:6,fontFamily:fm}}>{"Target: "+tgt2+"%"}</div>
             </div>
+          </div>
           <div style={{position:"relative",marginBottom:4,paddingTop:4}}>
             <svg viewBox={"-8 -20 "+(sw+16)+" "+(sh+24)} style={{width:"100%",height:100,overflow:"visible"}}>
               <defs><linearGradient id="bellGrad2" x1="0" x2="0" y1="0" y2="1">
