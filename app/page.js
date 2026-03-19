@@ -772,6 +772,7 @@ function TrackerApp(props){
           if(d.profile.weeklyReviews)setWeeklyReviews(d.profile.weeklyReviews);
           if(d.profile.dashSettings)setDashSet(Object.assign({},DEFAULT_DASH,d.profile.dashSettings));
           if(d.profile.theme){var t=d.profile.theme;setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}
+          if(d.profile.myStrategy)setMyStrategy(d.profile.myStrategy);
         }
       }
       setLoaded(true);
@@ -808,6 +809,7 @@ function TrackerApp(props){
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var _proWelcome=useState(false),showProWelcome=_proWelcome[0],setShowProWelcome=_proWelcome[1];
+  var _myStrategy=useState(function(){try{var s=localStorage.getItem("ta-my-strategy");return s?JSON.parse(s):{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""}}catch(e){return{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""}}}),myStrategy=_myStrategy[0],setMyStrategy=_myStrategy[1];
   var _ownersLetters=useState(function(){try{var s=localStorage.getItem("ta-owners-letters");return s?JSON.parse(s):[];}catch(e){return [];}}),ownersLetters=_ownersLetters[0],setOwnersLetters=_ownersLetters[1];
   var _journalEntries=useState(function(){try{var s=localStorage.getItem("ta-journal");return s?JSON.parse(s):[];}catch(e){return [];}}),journalEntries=_journalEntries[0],setJournalEntries=_journalEntries[1];
   var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
@@ -816,6 +818,7 @@ function TrackerApp(props){
   var _hubTab=useState("holdings"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
+  function saveMyStrategy(next){setMyStrategy(next);try{localStorage.setItem("ta-my-strategy",JSON.stringify(next))}catch(e){}}
   var _oa=useState([]),otherAssets=_oa[0],setOtherAssets=_oa[1];
   var _nwh=useState([]),netWorthHistory=_nwh[0],setNetWorthHistory=_nwh[1];
   var _atgt=useState({}),assetTargets=_atgt[0],setAssetTargets=_atgt[1];
@@ -1097,7 +1100,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false);});
   },[loaded,sideTab]);
 
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
@@ -3478,7 +3481,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":((!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");setHubTab("holdings");})}><span style={{fontSize:bm?11:isThesis?13:12,color:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid,fontWeight:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid}/>Portfolio</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
-    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
+        <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:page==="strategy"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="strategy"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("strategy")})}><span style={{fontSize:isThesis?13:12,color:page==="strategy"?K.grn:sideMid,fontWeight:page==="strategy"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="strategy"?K.grn:sideMid}/>My Strategy</span></div>
+<div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="journal"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="journal"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("journal")})}><span style={{fontSize:isThesis?13:12,color:page==="journal"?K.acc:sideMid,fontWeight:page==="journal"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="edit" size={14} color={page==="journal"?K.acc:sideMid}/>{(function(){var unread=journalEntries.filter(function(e){return!e.generated&&e.reviewData;}).length;return<>{"Journal"}{unread>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block"}}/>}</>;})()}</span></div>
         {/* Plan badge */}
     <div style={{padding:bm?"6px 12px":"10px 20px"}}>
@@ -8295,7 +8299,7 @@ function ProWelcomeGift(){
     }).join("\n");
     var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
     var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
-    var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+"Now write the letter.";
+    var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+(myStrategy&&(myStrategy.whatIInvestIn||myStrategy.howIBehave||myStrategy.whatIAvoid)?"\\n\\nInvestor stated strategy (hold them accountable if recent behavior conflicts):\\n"+(myStrategy.whatIInvestIn?"What they invest in: "+myStrategy.whatIInvestIn.substring(0,250)+"\\n":"")+(myStrategy.howIBehave?"How they behave: "+myStrategy.howIBehave.substring(0,250)+"\\n":"")+(myStrategy.whatIAvoid?"What to avoid: "+myStrategy.whatIAvoid.substring(0,250)+"\\n":""):"")+"Now write the letter.";
     (async function(){
       var tok=await getAuthToken();
       return fetch("/api/ai",{method:"POST",
@@ -9008,6 +9012,107 @@ function ProWelcomeGift(){
     </div>;
   }
 
+
+  // ── My Strategy ─────────────────────────────────────────────────────────
+  function MyStrategyPage(){
+    var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""},myStrategy)),draft=_draft[0],setDraft=_draft[1];
+    var _saved=React.useState(false),justSaved=_saved[0],setJustSaved=_saved[1];
+    var hasContent=draft.whatIInvestIn.trim().length>0||draft.whatIPay.trim().length>0||draft.howIBehave.trim().length>0||draft.whatIAvoid.trim().length>0;
+    var wordCount=Object.values(draft).reduce(function(s,v){return s+(v.trim()?v.trim().split(/\s+/).length:0)},0);
+
+    function save(){
+      saveMyStrategy(draft);
+      setJustSaved(true);
+      setTimeout(function(){setJustSaved(false)},2000);
+    }
+
+    var SECTIONS=[
+      {key:"whatIInvestIn",
+       label:"What I invest in",
+       num:"1",
+       color:K.acc,
+       prompt:"What kind of business qualifies? What immediately disqualifies? Where is your circle of competence?",
+       placeholder:"e.g. I invest only in businesses I can explain in one sentence. The business must earn high returns on capital without requiring constant reinvestment. I need to understand how it makes money, why customers keep coming back, and why a well-funded competitor couldn\'t just copy it in three years. I don\'t invest in banks, mining, biotech pre-revenue, or anything where the outcome depends on a commodity price I can\'t predict..."},
+      {key:"whatIPay",
+       label:"What I pay",
+       num:"2",
+       color:K.grn,
+       prompt:"Not a formula. Your honest thinking about price — what makes it obviously attractive, what makes it obviously dangerous.",
+       placeholder:"e.g. I don\'t use a DCF. I think about what the business will earn in 10 years and whether I\'m paying a sensible price for that. A business compounding at 20% that I buy at 30x earnings needs a lot to go right. The same business at 18x is a much easier decision. I\'m willing to pay up for certainty..."},
+      {key:"howIBehave",
+       label:"How I behave",
+       num:"3",
+       color:K.amb,
+       prompt:"Your rules about concentration, holding period, position sizing, when you add, when you trim. Written in advance so you can\'t rationalize around them.",
+       placeholder:"e.g. I hold between 5 and 8 businesses. I don\'t trim winners just because they\'ve grown large — if the thesis is intact and the business is compounding, size is not a reason to sell. I don\'t trade on earnings results alone. I review every thesis twice a year whether or not anything has happened..."},
+      {key:"whatIAvoid",
+       label:"What I\'m trying to avoid",
+       num:"4",
+       color:K.red,
+       prompt:"Munger\'s inversion applied to yourself. Your known failure modes. The mistakes you\'ve made that you\'re trying not to repeat.",
+       placeholder:"e.g. I\'m trying to avoid buying businesses I don\'t understand because the narrative sounds compelling. I\'ve done this twice and been wrong both times. I\'m also trying to avoid selling too early when a business dips — my instinct is to protect gains but the data says my best returns come from holding through short-term pain..."},
+    ];
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.1}}>{"My Strategy"}</h1>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:520}}>{"Your private investment philosophy. The rules you commit to in advance, so you can\'t rationalize around them in the moment. ThesisAlpha uses this to hold you accountable."}</p>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {wordCount>0&&<span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{wordCount+" words"}</span>}
+          <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px",fontSize:13,opacity:hasContent?1:0.5,background:justSaved?K.grn:K.acc,borderColor:justSaved?K.grn:K.acc,transition:"all .3s"})}>
+            {justSaved?"Saved ✓":"Save strategy"}
+          </button>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {!hasContent&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"40px 36px",marginBottom:28}}>
+        <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{"\"Most investors don\'t have a strategy. They have a collection of opinions.\""}  </div>
+        <div style={{fontSize:13,color:K.dim,lineHeight:1.8,maxWidth:500}}>{"Write yours down. What you invest in, what you pay, how you behave, and what you\'re trying to avoid. Once it exists, ThesisAlpha can hold you to it."}</div>
+      </div>}
+
+      {/* Four sections */}
+      {SECTIONS.map(function(sec){
+        var val=draft[sec.key]||"";
+        var wc=val.trim()?val.trim().split(/\s+/).length:0;
+        return<div key={sec.key} style={{marginBottom:28}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:sec.color+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:12,fontWeight:800,color:sec.color,fontFamily:fm}}>{sec.num}</span>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>{sec.label}</div>
+              <div style={{fontSize:12,color:K.dim,marginTop:2,fontStyle:"italic"}}>{sec.prompt}</div>
+            </div>
+            {wc>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{wc+" words"}</span>}
+          </div>
+          <textarea
+            value={val}
+            onChange={function(e){var next=Object.assign({},draft);next[sec.key]=e.target.value;setDraft(next)}}
+            placeholder={sec.placeholder}
+            rows={isMobile?4:5}
+            style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+(val.trim().length>30?sec.color+"40":K.bdr),
+              borderRadius:_isBm?0:10,padding:"14px 16px",fontSize:14,color:K.txt,fontFamily:fb,lineHeight:1.8,
+              resize:"vertical",outline:"none",transition:"border-color .2s",fontStyle:val.trim()?"normal":"italic"}}
+            onFocus={function(e){e.target.style.borderColor=sec.color+"70"}}
+            onBlur={function(e){e.target.style.borderColor=val.trim().length>30?sec.color+"40":K.bdr}}
+          />
+        </div>;
+      })}
+
+      {/* Save button bottom */}
+      {hasContent&&<div style={{display:"flex",justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
+        <button onClick={save} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14,background:justSaved?K.grn:K.acc,borderColor:justSaved?K.grn:K.acc,transition:"all .3s"})}>
+          {justSaved?"Saved ✓":"Save strategy"}
+        </button>
+      </div>}
+
+    </div>;
+  }
+
   // ── Owner's Letter ─────────────────────────────────────────
   function OwnersLetterPage(){
     var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
@@ -9020,8 +9125,11 @@ function ProWelcomeGift(){
     try{var td=localStorage.getItem("ta-trial");if(td){var tp=JSON.parse(td);if(tp.start)regDate=new Date(tp.start);}}catch(e){}
     if(!regDate&&weeklyReviews.length>0){var last=weeklyReviews[weeklyReviews.length-1];if(last.date)regDate=new Date(last.date);}
     var ageInDays=regDate?Math.floor((Date.now()-regDate.getTime())/864e5):0;
-    var daysUntilFirst=Math.max(0,30-ageInDays);
-    var hasEarned=ownersLetters.length>0||ageInDays>=30;
+    // Depth gate: enough data for the letter to say something real
+    var thesesWritten=cos.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>50;}).length;
+    var decisionsLogged=cos.reduce(function(s,c){return s+(c.decisions||[]).length;},0);
+    var hasDepth=thesesWritten>=2&&(decisionsLogged>=1||weeklyReviews.length>=1);
+    var hasEarned=ownersLetters.length>0||hasDepth;
 
     function handleGenerate(){
       generateOwnersLetter(function(l){if(l)setSelectedLetter(l);});
@@ -9049,19 +9157,24 @@ function ProWelcomeGift(){
           <div style={{fontSize:48,marginBottom:16}}>{"✉️"}</div>
           <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Coming soon"}</div>
           <div style={{fontSize:isMobile?18:22,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.3}}>
-            {"Your first Owner\u2019s Letter arrives in "+(daysUntilFirst===0?"less than a day":daysUntilFirst===1?"1 day":daysUntilFirst+" days")+"."}
+            {"The letter unlocks when it has something real to say."}
           </div>
           <div style={{fontSize:14,color:K.dim,maxWidth:440,margin:"0 auto 28px",lineHeight:1.75}}>
-            {"The letter needs time to know you. After 30 days, it\u2019ll have seen your conviction changes, your KPI results, and the decisions you\u2019ve made. That\u2019s when it has something real to say."}
+            {"Write a thesis for two holdings, log one decision, and complete one weekly review. That gives the letter enough to say something specific about you."}
           </div>
-          {/* Progress bar */}
-          <div style={{maxWidth:320,margin:"0 auto 20px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>
-              <span>{"Day "+ageInDays}</span><span>{"Day 30"}</span>
-            </div>
-            <div style={{height:6,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
-              <div style={{height:"100%",width:Math.min(ageInDays/30*100,100)+"%",background:"linear-gradient(90deg,"+K.acc+","+K.grn+")",borderRadius:3,transition:"width 1s"}}/>
-            </div>
+          {/* Depth checklist */}
+          <div style={{maxWidth:360,margin:"0 auto 20px",textAlign:"left"}}>
+            {[
+              {label:"Thesis written for 2+ holdings",done:thesesWritten>=2},
+              {label:"At least one decision logged",done:decisionsLogged>=1},
+              {label:"At least one weekly review done",done:weeklyReviews.length>=1},
+            ].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr}}>
+              <div style={{width:18,height:18,borderRadius:"50%",background:item.done?K.grn+"20":K.bdr,border:"2px solid "+(item.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {item.done&&<span style={{fontSize:10,color:K.grn}}>✓</span>}
+              </div>
+              <span style={{fontSize:13,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
+            </div>;})}
+          </div>
           </div>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use ThesisAlpha as you normally would. Write your thesis. Track KPIs. Log decisions. The letter is being built from everything you do."}</div>
         </div>
@@ -13994,7 +14107,7 @@ function ProWelcomeGift(){
       crumbs.push(<button key="root" onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim:K.acc,fontSize:11,fontWeight:selId||page!=="dashboard"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0.1,whiteSpace:"nowrap"}}>{rootLabel}</button>);
 
       // Page-level crumb
-      var pageLabels={analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
+      var pageLabels={strategy:"My Strategy",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
         timeline:"Portfolio",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
         ai:"Research Prompts",hub:"Portfolio"};
       if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
@@ -14105,7 +14218,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
       var mItems=[
