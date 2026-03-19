@@ -1403,6 +1403,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {f.status==="portfolio"&&<div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Shares" value={f._shares||""} onChange={function(v){set("_shares",v)}} type="number" placeholder="0" K={K}/><Inp label="Avg Cost per Share" value={f._avgCost||""} onChange={function(v){set("_avgCost",v)}} type="number" placeholder="0.00" K={K}/></div>}
       {f.status==="watchlist"&&<div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Target Price" value={f._targetPrice||""} onChange={function(v){set("_targetPrice",v)}} type="number" placeholder="0.00" K={K}/><div style={{fontSize:11,color:K.dim,marginTop:24,lineHeight:1.5}}>Get notified when the stock reaches your target buy price.</div></div>}
       {f.status==="watchlist"&&<Inp label="Why are you watching?" value={f._watchNote||""} onChange={function(v){set("_watchNote",v)}} ta placeholder="What are you waiting for? Earnings, valuation, catalyst..." K={K}/>}
+{f.status==="watchlist"&&<Inp label="Fat pitch price — the price where this becomes obvious" value={f.fatPitchPrice||""} onChange={function(v){set("fatPitchPrice",v)}} K={K} placeholder="e.g. 180 (optional)"/>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
@@ -3382,7 +3383,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var tick=co?co.ticker:"your company";
     var TOUR=[
       {step:1,sectionId:"ds-ledger",color:"#F59E0B",icon:"trending",
-       title:"Rate your conviction",
+       title:"How strongly do you believe in this business, 1–10?",
        body:"How confident are you in this investment, 1–10? Conviction tracking is the habit that separates great investors from reactive ones. Update it every quarter and after every earnings report.",
        action:"Rate Conviction",onAction:function(){setModal({type:"conviction"})}},
       {step:2,sectionId:"ds-evidence",color:"#3B82F6",icon:"target",
@@ -5067,13 +5068,11 @@ function calcMoatFromData(finData,businessModelType){
                 <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Sell criteria — When I’d exit"}</div>
                 <div style={{fontSize:13,color:K.mid,lineHeight:1.7}}>{sec.sell}</div></div>}
             </div>})()
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:14,padding:"40px 32px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"thesis"})}}>
-            <div style={{width:44,height:44,borderRadius:_isBm?0:12,background:K.acc+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.6" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            </div>
-            <div style={{fontSize:15,color:K.txt,fontWeight:700,marginBottom:6,fontFamily:fh}}>{"Start your thesis for "+c.ticker}</div>
-            <div style={{fontSize:13,color:K.dim,lineHeight:1.65,maxWidth:320,margin:"0 auto"}}>{"Why do you own it? What’s the moat? What would make you sell? This is the most important thing you can do as an owner."}</div>
-            <div style={{marginTop:20,display:"inline-flex",alignItems:"center",gap:6,background:K.acc,color:"#fff",padding:"9px 20px",borderRadius:_isBm?0:8,fontSize:13,fontWeight:600}}>{"Start writing →"}</div>
+          :<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"52px 40px",textAlign:"center"}}>
+            <div style={{fontSize:isMobile?20:24,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:14,letterSpacing:"-0.5px",lineHeight:1.3}}>{"Why do you own "+c.ticker+"?"}</div>
+            <div style={{fontSize:14,color:K.dim,lineHeight:1.85,maxWidth:380,margin:"0 auto 28px",fontFamily:fm}}>{"Not the price. Not the chart. The business — how it makes money, why it's hard to compete with, and what would make you change your mind."}</div>
+            <button onClick={function(){setModal({type:"thesis"})}} style={{background:K.acc,color:"#fff",border:"none",borderRadius:_isBm?0:8,padding:"12px 30px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:fm,letterSpacing:"-0.2px"}}>{"Write my thesis"}</button>
+            <div style={{marginTop:14,fontSize:11,color:K.dim,fontFamily:fm,opacity:0.7}}>{"Takes 10 minutes. The most important thing you can do as an owner."}</div>
           </div>}
           {/* ── THESIS HISTORY + DRIFT ── */}
           {(function(){
@@ -5429,6 +5428,11 @@ function calcMoatFromData(finData,businessModelType){
                 grade=grade.trim().toUpperCase();
                 if(!"ABCD".includes(grade)||grade.length!==1)return;
                 var note=window.prompt("One line: what makes you rate management "+grade+"?",c.managementNote||"");
+                if(note&&note.trim()){
+                  var mnotes=(c.managementNotes||[]).slice();
+                  mnotes.unshift({date:new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),note:note.trim(),kept:grade==="A"||grade==="B"});
+                  upd(c.id,{managementGrade:grade,managementNote:note.trim(),managementNotes:mnotes.slice(0,20)});
+                }else{
                 upd(c.id,{managementGrade:grade,managementNote:note&&note.trim()?note.trim():c.managementNote||""});
               }}>
               <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
@@ -5439,10 +5443,19 @@ function calcMoatFromData(finData,businessModelType){
                     <span style={{fontSize:11,color:K.dim}}>{c.ceo||"CEO"}</span>
                   </div>
                   {c.managementNote&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{c.managementNote}</div>}
+                  {/* Management notes log */}
+                  {(c.managementNotes||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid "+K.bdr,paddingTop:8}}>
+                    <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{"Said vs. did"}</div>
+                    {(c.managementNotes||[]).slice(0,4).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,lineHeight:1.6,marginBottom:4,paddingBottom:4,borderBottom:ni<Math.min((c.managementNotes||[]).length,4)-1?"1px solid "+K.bdr:"none"}}>
+                      <span style={{color:n.kept?K.grn:K.red,fontWeight:600}}>{n.kept?"✓ ":"✗ "}</span>
+                      <span style={{color:K.dim,marginRight:4}}>{n.date}</span>
+                      {n.note}
+                    </div>;})}
+                  </div>}
                 </div>
                 :<div>
-                  <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>Not graded yet</div>
-                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"\"The most important quality is integrity.\" — Munger"}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>{"Did management do what they said they would?"}</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div> Munger"}</div>
                 </div>}
             </div>
           </div>;
@@ -5454,7 +5467,7 @@ function calcMoatFromData(finData,businessModelType){
               <span style={{fontSize:12,fontWeight:800,color:K.grn,fontFamily:fm}}>2</span>
             </div>
             <div>
-              <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Evidence</div>
+              <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Does the evidence support the thesis?</div>
               <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>KPIs, earnings, stress tests</div>
             </div>
           </div>
@@ -5531,7 +5544,7 @@ function calcMoatFromData(finData,businessModelType){
                 <span style={{fontSize:12,fontWeight:800,color:K.amb,fontFamily:fm}}>3</span>
               </div>
               <div>
-                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>The Ledger</div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>What have you done, and why?</div>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Conviction, position, decisions</div>
               </div>
             </div>
@@ -8043,7 +8056,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",marginBottom:16}}>
               <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:140}}>
-                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Expected Portfolio CAGR</div>
+                  <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:6}}>Portfolio Return Range</div>
                   <div style={{fontSize:38,fontWeight:800,color:onTarget?K.grn:K.amb,fontFamily:fm,lineHeight:1}}>{portCAGR>=0?"+":""}{portCAGR.toFixed(1)}%</div>
                   <div style={{fontSize:12,color:K.dim,marginTop:4}}>Range: {lowCAGR.toFixed(1)}% to {highCAGR.toFixed(1)}%</div>
                   <div style={{fontSize:11,color:K.dim,marginTop:2}}>{character}</div>
@@ -8443,7 +8456,7 @@ function ProWelcomeGift(){
           {nextUnlock&&<div style={{fontSize:10,color:K.acc,marginTop:4,fontFamily:fm}}>{sw>0?"Next: ":"Start to unlock: "}{nextUnlock.label} at week {nextUnlock.w}</div>}
         </div>
         <div style={{marginLeft:"auto",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-          {!isReviewDay&&countdownStr&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,textAlign:"right"}}>Next review<br/><span style={{fontWeight:600,color:K.txt}}>{countdownStr}</span></div>}
+          
           {isReviewDay&&<div style={{fontSize:11,fontWeight:600,color:K.grn,fontFamily:fm}}>Today is review day</div>}
         </div>
       </div>
@@ -10258,7 +10271,7 @@ function ProWelcomeGift(){
               <div style={{fontSize:11,color:K.dim,marginTop:2}}>Visit the Moat Tracker for each company to classify their competitive advantages.</div></div>}
         </div>}()}
 
-      {/* ── CAGR Projection ── */}
+      {/* ── Portfolio Construction Check ── */}
       {portCos.length>0&&(function(){
         var portf2=portCos;
         var hr2=portf2.map(function(c){
@@ -10308,14 +10321,10 @@ function ProWelcomeGift(){
               <div style={{fontSize:12,color:K.dim,marginTop:4}}>Range: {lo2.toFixed(1)}% to {hi2.toFixed(1)}%</div>
               <div style={{fontSize:11,color:K.dim,marginTop:2}}>{pPred>=70?"Predictable Compounder Portfolio":pPred>=50?"Balanced Growth Portfolio":pPred>=30?"Emerging Growth Portfolio":"Early-Stage Portfolio"}</div>
             </div>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:8}}>{"Probability of "+tgt2+"%+"}</div>
-              <div style={{width:64,height:64,borderRadius:"50%",border:"4px solid "+(onTgt2?K.grn+"30":K.red+"30"),position:"relative",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-                <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"4px solid "+(onTgt2?K.grn:K.red),clipPath:"inset(0 "+(100-prob2)+"%  0 0)"}}/>
-                <span style={{fontSize:16,fontWeight:800,color:onTgt2?K.grn:K.red,fontFamily:fm}}>{prob2+"%"}</span>
-              </div>
+            <div style={{textAlign:"center",alignSelf:"flex-start",paddingTop:4}}>
+              <div style={{fontSize:11,fontWeight:700,color:onTgt2?K.grn:K.amb,fontFamily:fm,background:(onTgt2?K.grn:K.amb)+"12",border:"1px solid "+(onTgt2?K.grn:K.amb)+"30",borderRadius:_isBm?0:6,padding:"6px 14px"}}>{onTgt2?"Within expectation":"Below expectation"}</div>
+              <div style={{fontSize:10,color:K.dim,marginTop:6,fontFamily:fm}}>{"Target: "+tgt2+"%"}</div>
             </div>
-          </div>
           <div style={{position:"relative",marginBottom:4,paddingTop:4}}>
             <svg viewBox={"-8 -20 "+(sw+16)+" "+(sh+24)} style={{width:"100%",height:100,overflow:"visible"}}>
               <defs><linearGradient id="bellGrad2" x1="0" x2="0" y1="0" y2="1">
@@ -11351,22 +11360,37 @@ function ProWelcomeGift(){
       var focus=null;
       // Priority 1: earnings TODAY with KPIs
       var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0});
-      if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today",sub:"Check your "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
+      if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today — before you read the numbers",sub:"What result would make you reconsider this position? "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
+      // Priority 1b: earnings approaching (within 14 days)
+      if(!focus){var approaching=portfolio.filter(function(c2){var d=dU(c2.earningsDate);return c2.earningsDate&&c2.earningsDate!=="TBD"&&d>0&&d<=14;});
+        if(approaching.length>0){var apDays=dU(approaching[0].earningsDate);
+          focus={icon:"target",color:K.amb,
+            title:approaching[0].ticker+" reports in "+apDays+" day"+(apDays!==1?"s":""),
+            sub:"Before you read the numbers — what result would make you seriously reconsider?",
+            onClick:function(){setSelId(approaching[0].id);setDetailTab("dossier");setPage("dashboard");}}}}
       // Priority 2: unchecked earnings (released but not reviewed)
       if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
         if(unchecked.length>0)focus={icon:"check",color:K.amb,title:"Review "+unchecked[0].ticker+" earnings",sub:unchecked.length+" holding"+(unchecked.length>1?"s have":"has")+" recent earnings with unchecked KPIs",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}}}
       // Priority 3: stale thesis (>90 days)
       if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
         if(stale.length>0){var stalest=stale.sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)})[0];var daysAgo=Math.ceil((now-new Date(stalest.thesisUpdatedAt))/864e5);
-          focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"Last updated "+daysAgo+" days ago — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
+          focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"You haven't looked at this in "+daysAgo+" days — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
       // Priority 4: no thesis written
       if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
-        if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Write a thesis for "+noThesis[0].ticker,sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
+        if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Why do you own "+noThesis[0].ticker+"?",sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
       // Priority 5: no conviction set
       if(!focus){var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
         if(noConv.length>0)focus={icon:"dial",color:K.acc,title:"Set your conviction on "+noConv[0].ticker,sub:"Rate 1–10 how strongly you believe in this holding",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}}}
+      // Priority 5b: fat pitch alert (watchlist price reached)
+      if(!focus){var fatPitch=cos.filter(function(c2){
+        return c2.status==="watchlist"&&c2.fatPitchPrice&&c2.position&&c2.position.currentPrice>0
+          &&c2.position.currentPrice<=parseFloat(c2.fatPitchPrice)*1.05;});
+        if(fatPitch.length>0)focus={icon:"target",color:K.grn,
+          title:fatPitch[0].ticker+" is near your fat pitch price",
+          sub:"You said "+fatPitch[0].ticker+" at $"+fatPitch[0].fatPitchPrice+" was the obvious opportunity. It's there.",
+          onClick:function(){setSelId(fatPitch[0].id);setDetailTab("dossier");setPage("dashboard");}}}
       // Priority 6: weekly review
-      if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Weekly portfolio review"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
+      if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Still how you see it?"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
       // Insider signals
       var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length,id:c2.id})}});
 
@@ -11390,15 +11414,15 @@ function ProWelcomeGift(){
         </div>
 
         {/* ── ONE FOCUS ── */}
-        {focus&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderBottom:"1px solid "+K.bdr,background:focus.color+"09",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
+        {focus&&<div style={{padding:isMobile?"16px 16px":"24px 28px",borderBottom:"1px solid "+K.bdr,background:focus.color+"08",border:"1px solid "+focus.color+"25",borderRadius:_isBm?0:12}}>
           <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:focus.color,fontFamily:fm,fontWeight:700,marginBottom:6}}>One company. Right now.</div>
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={focus.onClick}>
             <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:focus.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
               <IC name={focus.icon} size={14} color={focus.color}/>
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:800,color:K.txt,marginBottom:2,fontFamily:fh}}>{focus.title}</div>
-              <div style={{fontSize:11,color:K.dim,lineHeight:1.4}}>{focus.sub}</div>
+              <div style={{fontSize:isMobile?15:17,fontWeight:800,color:K.txt,marginBottom:4,fontFamily:fh,letterSpacing:"-0.3px"}}>{focus.title}</div>
+              <div style={{fontSize:13,color:K.dim,lineHeight:1.6,marginTop:2}}>{focus.sub}</div>
             </div>
             <span style={{fontSize:13,color:focus.color,flexShrink:0}}>{"→"}</span>
           </div>
@@ -11514,7 +11538,7 @@ function ProWelcomeGift(){
                   <CoLogo domain={c2.domain} ticker={c2.ticker} size={16}/>
                   <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
                   <span style={{fontSize:11,color:d2===0?K.red:d2===1?K.amb:K.dim,fontWeight:600,fontFamily:fm}}>{d2===0?"Today":d2===1?"Tomorrow":d2+"d"}</span>
-                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"No KPIs yet"}</span>
+                  <span style={{marginLeft:"auto",fontSize:9,color:kpiC>0?K.blue:K.dim,fontFamily:fm}}>{kpiC>0?kpiC+" KPIs":"What 2-3 numbers will prove this thesis right or wrong?"}</span>
                 </div>})}
             </div>}
 
