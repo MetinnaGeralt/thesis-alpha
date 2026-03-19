@@ -5456,7 +5456,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>
                 :<div>
                   <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>{"Did management do what they said they would?"}</div>
-                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div> Munger"}</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div>
                 </div>}
             </div>
           </div>;
