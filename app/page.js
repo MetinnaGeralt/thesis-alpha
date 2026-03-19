@@ -3385,7 +3385,77 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+
+  function MgmtModal(){
+    if(!modal||modal.type!=="mgmt")return null;
+    var _g=React.useState(modal.grade||""),grade=_g[0],setGrade=_g[1];
+    var _n=React.useState(modal.note||""),note=_n[0],setNote=_n[1];
+    var GRADES=[
+      {v:"A",label:"Exceptional",desc:"Owner-operator mindset. Capital allocation is outstanding. Does what they say.",color:K.grn},
+      {v:"B",label:"Good",desc:"Competent and honest. Minor gaps but fundamentally trustworthy.",color:K.acc},
+      {v:"C",label:"Adequate",desc:"Gets the job done. Some concerns about candour or capital decisions.",color:K.amb},
+      {v:"D",label:"Weak",desc:"Integrity or capital allocation concerns. Watch closely.",color:K.red},
+    ];
+    var selected=GRADES.find(function(g){return g.v===grade});
+    function save(){
+      if(!grade)return;
+      var mnotes=(modal.notes||[]).slice();
+      if(note.trim()){
+        mnotes.unshift({date:new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),note:note.trim(),kept:grade==="A"||grade==="B"});
+        mnotes=mnotes.slice(0,20);
+      }
+      upd(modal.id,{managementGrade:grade,managementNote:note.trim()||modal.note,managementNotes:mnotes});
+      setModal(null);
+    }
+    return<Modal title={"Management — "+modal.ticker} onClose={function(){setModal(null)}} K={K} w={480}>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:10}}>{"Buffett: integrity first, then intelligence, then energy. Without integrity the other two kill you."}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {GRADES.map(function(g){var act=grade===g.v;return<button key={g.v}
+            onClick={function(){setGrade(g.v)}}
+            style={{padding:"12px 14px",borderRadius:_isBm?0:10,border:"2px solid "+(act?g.color:K.bdr),
+              background:act?g.color+"12":"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s"}}
+            onMouseEnter={function(e){if(!act)e.currentTarget.style.borderColor=g.color+"60"}}
+            onMouseLeave={function(e){if(!act)e.currentTarget.style.borderColor=K.bdr}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+              <span style={{fontSize:20,fontWeight:900,color:act?g.color:K.dim,fontFamily:fm}}>{g.v}</span>
+              <span style={{fontSize:13,fontWeight:600,color:act?g.color:K.txt,fontFamily:fm}}>{g.label}</span>
+            </div>
+            <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{g.desc}</div>
+          </button>;})}
+        </div>
+      </div>
+      {grade&&<div style={{marginBottom:20}}>
+        <label style={{display:"block",fontSize:12,color:K.dim,fontFamily:fm,marginBottom:6,letterSpacing:.5,textTransform:"uppercase"}}>
+          {"Did management do what they said they would? (one line)"}
+        </label>
+        <textarea value={note} onChange={function(e){setNote(e.target.value)}}
+          placeholder={"e.g. Guided for 20% revenue growth, delivered 18%. Buyback commitment honoured."}
+          rows={2}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,
+            padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6}}
+          onFocus={function(e){e.target.style.borderColor=selected?selected.color+"70":K.acc}}
+          onBlur={function(e){e.target.style.borderColor=K.bdr}}
+        />
+      </div>}
+      {(modal.notes||[]).length>0&&<div style={{marginBottom:20,background:K.bg,borderRadius:_isBm?0:8,padding:"10px 14px"}}>
+        <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>{"Said vs. did — history"}</div>
+        {(modal.notes||[]).slice(0,4).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,lineHeight:1.6,marginBottom:4,paddingBottom:4,borderBottom:ni<Math.min((modal.notes||[]).length,4)-1?"1px solid "+K.bdr+"60":"none"}}>
+          <span style={{color:n.kept?K.grn:K.red,fontWeight:600,marginRight:4}}>{n.kept?"✓":"✗"}</span>
+          <span style={{color:K.dim,marginRight:6}}>{n.date}</span>{n.note}
+        </div>;})}
+      </div>}
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button onClick={function(){setModal(null)}} style={S.btn}>Cancel</button>
+        <button onClick={save} disabled={!grade}
+          style={Object.assign({},S.btnP,{opacity:grade?1:0.4,background:selected?selected.color:K.acc,borderColor:selected?selected.color:K.acc})}>
+          {grade?"Save — "+grade+" ("+GRADES.find(function(g){return g.v===grade}).label+")":"Select a grade"}
+        </button>
+      </div>
+    </Modal>;
+  }
+
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -5135,14 +5205,23 @@ function calcMoatFromData(finData,businessModelType){
             }
 
             return<div style={{marginTop:16}}>
-              {/* Pre-earnings nudge */}
-              {preEarningsAlert&&<div style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,marginBottom:12}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.amb} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0,marginTop:2}}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>{"Earnings in "+earnDays+"d \u2014 thesis is "+thesisAge+" days old"}</div>
-                  <div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{"Worth a quick re-read before results drop. Is your thesis still intact?"}</div>
-                </div>
-                <button onClick={function(){setModal({type:"thesis"})}} style={{flexShrink:0,padding:"5px 12px",background:K.amb+"15",border:"1px solid "+K.amb+"40",borderRadius:_isBm?0:6,color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}>{"Review \u2192"}</button>
+              {/* Pre-earnings inversion card */}
+              {preEarningsAlert&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:6}}>{"Earnings in "+earnDays+" day"+(earnDays!==1?"s":""+" — before you read the numbers")}</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:10}}>{"What result would make you seriously reconsider this position?"}</div>
+                {(function(){
+                  var stored=sel.preEarningsNote||"";
+                  if(stored){return<div style={{background:K.card,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,marginBottom:8,fontStyle:"italic"}}>{"\u201c"+stored+"\u201d"}</div>;}
+                  return null;
+                })()}
+                <textarea
+                  defaultValue={sel.preEarningsNote||""}
+                  onBlur={function(e){if(e.target.value.trim()!==sel.preEarningsNote)upd(sel.id,{preEarningsNote:e.target.value.trim(),preEarningsDate:sel.earningsDate});}}
+                  placeholder={"e.g. If gross retention falls below 90%, or management guides for margin compression without clear explanation..."}
+                  rows={2}
+                  style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6}}
+                />
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:6}}>{"Write it now. The letter will show it back after results."}</div>
               </div>}
 
               {/* Drift signals */}
@@ -5436,20 +5515,8 @@ function calcMoatFromData(finData,businessModelType){
             </div>
             {/* 3. Management Quality */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
-              onClick={function(){
-                var grade=window.prompt("Management grade for "+c.ticker+"\n\nA — Exceptional. Capital allocation, integrity, owner-operator mentality.\nB — Competent. Does the job well.\nC — Average. Some concerns.\nD — Poor. Material concerns about honesty or ability.\n\nEnter A/B/C/D:",c.managementGrade||"");
-                if(!grade)return;
-                grade=grade.trim().toUpperCase();
-                if(!"ABCD".includes(grade)||grade.length!==1)return;
-                var note=window.prompt("One line: what makes you rate management "+grade+"?",c.managementNote||"");
-                if(note&&note.trim()){
-                  var mnotes=(c.managementNotes||[]).slice();
-                  mnotes.unshift({date:new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),note:note.trim(),kept:grade==="A"||grade==="B"});
-                  upd(c.id,{managementGrade:grade,managementNote:note.trim(),managementNotes:mnotes.slice(0,20)});
-                }else{
-                  upd(c.id,{managementGrade:grade,managementNote:note&&note.trim()?note.trim():c.managementNote||""});
-                }
-              }}>
+                            onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}
+              style={{cursor:"pointer"}}
               <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
               {c.managementGrade
                 ?<div>
@@ -5546,6 +5613,30 @@ function calcMoatFromData(finData,businessModelType){
             <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:12,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
             {c.earningsHistory&&c.earningsHistory.length>0&&<button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"earningsReport",data:0})}}>Read Report</button>}
             <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
+          {/* Post-earnings loop close */}
+          {(function(){
+            var earningsJustPassed=c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-14;
+            var hasInversionNote=c.preEarningsNote&&c.preEarningsNote.trim().length>0;
+            var hasInversionAnswer=c.postEarningsAnswer&&c.postEarningsAnswer.trim().length>0;
+            if(!earningsJustPassed||!hasInversionNote||hasInversionAnswer)return null;
+            return<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,marginBottom:8}}>{"Close the loop — you wrote this before earnings:"}</div>
+              <div style={{fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,fontStyle:"italic",marginBottom:10,padding:"8px 12px",background:K.card,borderRadius:_isBm?0:6}}>{"\u201c"+c.preEarningsNote+"\u201d"}</div>
+              <div style={{fontSize:12,color:K.mid,marginBottom:8}}>{"Did it hold? What actually happened?"}</div>
+              <textarea
+                placeholder={"e.g. Gross retention came in at 96% — thesis held. Management was more cautious on guidance than expected..."}
+                rows={2}
+                style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6,marginBottom:8}}
+                onBlur={function(e){
+                  if(!e.target.value.trim())return;
+                  upd(c.id,{postEarningsAnswer:e.target.value.trim()});
+                  logJournalEntry(c.id,{cardType:"earnings_inversion",ticker:c.ticker,
+                    preNote:c.preEarningsNote,postNote:e.target.value.trim(),
+                    date:new Date().toISOString()});
+                }}
+              />
+            </div>;
+          })()}
           {/* Latest earnings card from journal */}
           {(function(){var latestEarnings=(c.decisions||[]).find(function(d2){return d2.cardType==="earnings_review"});
             if(latestEarnings)return<JournalCard entry={latestEarnings}/>;return null})()}
@@ -8482,31 +8573,7 @@ function ProWelcomeGift(){
         return<div>
           {/* Journey track */}
           {trialExpired&&<div style={{background:K.amb+"0d",border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}><div style={{fontSize:22}}>{"\u23F3"}</div><div><div style={{fontSize:13,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:2}}>Your Pro trial has ended</div><div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>{"Build your streak to unlock themes, lenses and investor wisdom. Each week unlocks something new."}</div><button onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}} style={{marginTop:8,padding:"5px 14px",fontSize:11,fontWeight:700,background:K.acc,border:"none",color:"#fff",borderRadius:_isBm?0:6,cursor:"pointer",fontFamily:fm}}>Upgrade to keep Pro</button></div></div>}
-          {isFree&&!trialExpired&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
-            <div style={{fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:14,display:"flex",alignItems:"center",gap:6}}><IC name="trending" size={12} color={K.dim}/>Your Unlock Journey</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {JOURNEY.map(function(j){var done=sw>=j.w;var isNext=!done&&j.w===nextUnlock?.w;
-                return<div key={j.w} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:_isBm?0:8,background:done?K.grn+"08":isNext?K.acc+"08":"transparent",border:"1px solid "+(done?K.grn+"30":isNext?K.acc+"30":K.bdr+"50"),opacity:done||isNext?1:0.55}}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:done?K.grn+"20":isNext?K.acc+"20":K.bdr,border:"1px solid "+(done?K.grn+"60":isNext?K.acc+"60":K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    {done?<IC name="check" size={12} color={K.grn}/>:<span style={{fontSize:11,fontWeight:700,color:isNext?K.acc:K.dim,fontFamily:fm}}>{j.w}</span>}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:done?K.grn:isNext?K.acc:K.txt,fontFamily:fm}}>{j.label}</div>
-                    <div style={{fontSize:11,color:K.dim}}>{j.desc}</div>
-                  </div>
-                  <div style={{fontSize:10,color:done?K.grn:isNext?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>{done?"Unlocked":isNext?"Up next":"Week "+j.w}</div>
-                </div>})}
-            </div>
-            <div style={{marginTop:14,padding:"10px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,display:"flex",alignItems:"center",gap:10}}>
-              <IC name="lightbulb" size={14} color={K.acc}/>
-              <div style={{fontSize:12,color:K.mid,lineHeight:1.5}}>Pro users get all themes and lenses immediately. <span style={{color:K.acc,cursor:"pointer",textDecoration:"underline",textDecorationStyle:"dotted"}} onClick={function(){setShowUpgrade(true);setUpgradeCtx("review")}}>See what's included →</span></div>
-            </div>
-          </div>}
-          {!isFree&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"20",borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:20,display:"flex",alignItems:"center",gap:12}}>
-            <IC name="shield" size={16} color={K.grn}/>
-            <div style={{fontSize:13,color:K.mid}}>Pro member — all themes and investor lenses are unlocked. Your review generates a full portfolio health report.</div>
-          </div>}
-          {/* Insight preview chest */}
+                              {/* Insight preview chest */}
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:10,display:"inline-block",animation:"glowPulse 2.5s ease-in-out infinite"}}>{String.fromCodePoint(0x1F4DC)}</div>
             <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:6}}>Weekly Insight awaits</div>
@@ -13441,13 +13508,19 @@ function ProWelcomeGift(){
       </div>}
 
       {/* ── Empty state ── */}
-      {portfolio.length===0&&<div style={{margin:"40px 24px",textAlign:"center"}}>
-        <div style={{width:56,height:56,borderRadius:_isBm?0:16,background:K.acc+"10",border:"1px solid "+K.acc+"20",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.6" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      {portfolio.length===0&&<div style={{margin:"0",padding:isMobile?"32px 24px":"60px 40px",textAlign:"center",maxWidth:560,marginLeft:"auto",marginRight:"auto"}}>
+        <div style={{fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.2,marginBottom:14}}>
+          {"Which business do you understand well enough to own?"}
         </div>
-        <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Add your first holding</div>
-        <div style={{fontSize:14,color:K.dim,lineHeight:1.6,marginBottom:20}}>Track your investments and build the discipline to think like an owner.</div>
-        <button onClick={function(){setModal({type:"add"})}} style={{padding:"12px 28px",borderRadius:_isBm?0:12,background:K.acc,border:"none",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:fm}}>Add holding</button>
+        <div style={{fontSize:14,color:K.dim,lineHeight:1.85,marginBottom:28,maxWidth:420,marginLeft:"auto",marginRight:"auto"}}>
+          {"Not a stock. A business. One where you understand how it makes money, why customers keep coming back, and why a competitor couldn't just copy it."}
+        </div>
+        <button onClick={function(){setModal({type:"add"})}} style={Object.assign({},S.btnP,{padding:"13px 36px",fontSize:15,borderRadius:_isBm?0:10})}>
+          {"Add my first holding"}
+        </button>
+        <div style={{marginTop:16,fontSize:12,color:K.dim,fontFamily:fm,opacity:0.7}}>
+          {"Start with one. Buffett says if you can't write one paragraph about why you own it, you don't own it yet."}
+        </div>
       </div>}
     </div>;
   }
@@ -13570,8 +13643,8 @@ function ProWelcomeGift(){
               </div>
             </div>
             <div style={{marginBottom:20}}>
-              <label style={{display:"block",fontSize:11,fontWeight:600,color:K.dim,fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Why</label>
-              <textarea value={decReason} onChange={function(e){setDecReason(e.target.value)}} rows={4} placeholder={"What is driving this decision? What would change your mind?"} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
+              <label style={{display:"block",fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8,letterSpacing:"-0.2px"}}>{"Why are you doing this?"}</label>
+              <textarea value={decReason} onChange={function(e){setDecReason(e.target.value)}} rows={5} placeholder={"One honest sentence. Not what you're doing — why. What do you know or believe that makes this the right call right now?"} style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:15,fontFamily:fb,outline:"none",resize:"none",lineHeight:1.6}}/>
             </div>
             <button onClick={saveDecision} disabled={!decReason.trim()} style={{width:"100%",padding:"14px",borderRadius:_isBm?0:12,background:decReason.trim()?(saved?K.grn:K.acc):"rgba(255,255,255,0.08)",border:"none",color:decReason.trim()?"#fff":K.dim,fontSize:15,fontWeight:700,cursor:decReason.trim()?"pointer":"default",fontFamily:fm,transition:"background .2s"}}>
               {saved?"Logged ✓":"Log Decision"}
@@ -14259,6 +14332,7 @@ function ProWelcomeGift(){
       var PAGES=[
         {id:"pg-dash",label:"Portfolio",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setHubTab("holdings");setPage("dashboard")}},
         {id:"pg-hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
+        {id:"pg-strategy",label:"My Strategy",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("strategy");}},
         {id:"pg-trail",label:"Research",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
