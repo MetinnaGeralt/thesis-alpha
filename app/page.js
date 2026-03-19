@@ -813,7 +813,7 @@ function TrackerApp(props){
   var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
   var _letterError=useState(null),letterError=_letterError[0],setLetterError=_letterError[1];
   var xpFloat=null;
-  var _hubTab=useState("command"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
+  var _hubTab=useState("holdings"),hubTab=_hubTab[0],setHubTab=_hubTab[1];
   var _cur=useState(function(){try{return localStorage.getItem("ta-currency")||"USD"}catch(e){return"USD"}}),currency=_cur[0],setCurrency=_cur[1];
   function saveCurrency(v){setCurrency(v);try{localStorage.setItem("ta-currency",v)}catch(e){}}
   var _oa=useState([]),otherAssets=_oa[0],setOtherAssets=_oa[1];
@@ -3463,20 +3463,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <span style={{fontSize:10,color:sideDim2,fontFamily:fm,background:sideDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.08)",borderRadius:_isBm?0:4,padding:"1px 5px",letterSpacing:.3}}>⌘K</span>
       </div>
     </div>}
-    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("portfolio");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:!selId&&page==="dashboard"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(!selId&&page==="dashboard"?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard")})}><span style={{fontSize:bm?11:isThesis?13:12,color:!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid,fontWeight:!selId&&page==="dashboard"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={!selId&&page==="dashboard"?(isThesis?K.acc:K.blue):sideMid}/>Portfolio Overview</span></div>
-    {sideHover==="portfolio"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("portfolio")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Portfolio",pg:"dashboard",icon:"overview"},{l:"Analytics",pg:"analytics",icon:"bar"},{l:"Earnings Calendar",pg:"calendar",icon:"target"},{l:"Dividends",pg:"dividends",icon:"dollar"},{l:"Timeline",pg:"timeline",icon:"trending"}].map(function(sub){return<div key={sub.pg} onClick={navClick(function(){setSelId(null);setPage(sub.pg);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{position:"relative"}} onMouseEnter={function(e){setSideHover("hub");setFlyY(e.currentTarget.getBoundingClientRect().top)}} onMouseLeave={function(){setSideHover(null)}}>
-    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="hub"?(_isForest?"rgba(255,255,255,0.18)":bm?"rgba(243,159,65,0.08)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="hub"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("hub")})}><span style={{fontSize:isThesis?13:12,color:page==="hub"?K.acc:sideMid,fontWeight:page==="hub"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={page==="hub"?K.acc:sideMid}/>Owner's Hub</span></div>
-    {sideHover==="hub"&&!isMobile&&<div style={{position:"fixed",left:(isThesis?272:244),top:flyY,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 0",boxShadow:"0 4px 16px rgba(0,0,0,.2)",zIndex:9999,minWidth:160}} onMouseEnter={function(){setSideHover("hub")}} onMouseLeave={function(){setSideHover(null)}}>
-      {[{l:"Command Center",t:"command",icon:"trending"},{l:"Investor Lenses",t:"lenses",icon:"search"},{l:"Research Trail",t:"docs",icon:"file"},{l:"Reading List",t:"reading",icon:"book"},{l:"Performance & Goals",t:"goals",icon:"trending"},{l:"How It Works",t:"guide",icon:"lightbulb"}].map(function(sub){return<div key={sub.l} onClick={navClick(function(){setSelId(null);setPage("hub");setHubTab(sub.t);setSideHover(null)})} style={{padding:"8px 16px",cursor:"pointer",fontSize:12,color:K.mid,fontFamily:fm,display:"flex",alignItems:"center",gap:8}} onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"10"}} onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}><IC name={sub.icon} size={12} color={K.dim}/>{sub.l}</div>})}</div>}</div>
-    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
+    <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":((!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");setHubTab("holdings");})}><span style={{fontSize:bm?11:isThesis?13:12,color:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid,fontWeight:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid}/>Portfolio</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="journal"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="journal"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("journal")})}><span style={{fontSize:isThesis?13:12,color:page==="journal"?K.acc:sideMid,fontWeight:page==="journal"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="edit" size={14} color={page==="journal"?K.acc:sideMid}/>{(function(){var unread=journalEntries.filter(function(e){return!e.generated&&e.reviewData;}).length;return<>{"Journal"}{unread>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block"}}/>}</>;})()}</span></div>
         <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="ai"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
-    {/* More pages accessible via links, not sidebar */}
     {/* Plan badge */}
     <div style={{padding:bm?"6px 12px":"10px 20px"}}>
       {effectivePlan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
@@ -7375,8 +7367,8 @@ function calcMoatFromData(finData,businessModelType){
               <div style={{fontSize:isMobile?20:24,fontWeight:700,color:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:os.total>=25?K.blue:K.red,fontFamily:fm,lineHeight:1}}>{os.total}</div>
               <div style={{fontSize:8,color:K.dim,fontFamily:fm}}>/ 100</div></div></div>
           <div style={{flex:1,minWidth:0}}>
-            <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isMobile?"-0.5px":"normal"}}>Owner's Hub</h1>
-            <div style={{fontSize:14,color:K.mid,marginTop:2}}>Process Health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Worth a look"}</span></div>
+            <h1 style={{margin:0,fontSize:isMobile?26:26,fontWeight:isMobile?900:400,color:K.txt,fontFamily:fh,letterSpacing:isMobile?"-0.5px":"normal"}}>Portfolio</h1>
+            <div style={{fontSize:14,color:K.mid,marginTop:2}}>Portfolio health <span style={{color:K.dim}}>·</span> <span style={{fontSize:12,color:os.total>=80?K.grn:os.total>=50?K.amb:K.red}}>{os.total>=80?"Strong":os.total>=50?"Improving":"Worth a look"}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8,flexWrap:"wrap"}}>
               <div style={{width:isMobile?120:140,height:4,borderRadius:_isBm?0:2,background:K.bdr,overflow:"hidden"}}><div style={{height:"100%",width:pctToNext+"%",borderRadius:_isBm?0:2,background:os.total>=85?"#FFD700":os.total>=70?K.grn:os.total>=50?K.amb:K.blue,transition:"width .3s"}}/></div>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name={currentLevel.icon} size={12} color={K.dim}/>{currentLevel.name}</span>
@@ -7395,7 +7387,7 @@ function calcMoatFromData(finData,businessModelType){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Command Center",icon:"trending"},{id:"lenses",l:"Investor Lenses",icon:"search"},{id:"docs",l:"Research Trail",icon:"file"},{id:"reading",l:"Reading List",icon:"book"},{id:"goals",l:"Performance & Goals",icon:"target"}];
+        var tabs=[{id:"command",l:"Focus",icon:"trending"},{id:"lenses",l:"Lenses",icon:"search"},{id:"docs",l:"Research",icon:"file"},{id:"goals",l:"Goals",icon:"target"}];
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -11280,22 +11272,35 @@ function ProWelcomeGift(){
             {profBannerExp&&<span onClick={function(e){e.stopPropagation();setModal({type:"settings"})}} style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>Change →</span>}
           </div>;
         })()}
-        {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:8,marginTop:16,marginBottom:4,flexWrap:"wrap"}}>
+        {!isMobile&&sideTab==="portfolio"&&<div style={{display:"flex",gap:0,marginTop:0,marginBottom:0,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
           {[
-            {label:"Earnings Calendar",icon:"calendar",page:"calendar",color:K.amb,desc:(function(){var n=filtered.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30}).length;return n>0?n+" upcoming":"No upcoming"})()},
-            {label:"Dividends",icon:"dollar",page:"dividends",color:K.grn,desc:totalAnnualDiv>0?"$"+Math.round(totalAnnualDiv/12)+"/mo":"No income"},
-            {label:"Analytics",icon:"bar",page:"analytics",color:K.blue,desc:"Portfolio breakdown"},
-            {label:"Timeline",icon:"trending",page:"timeline",color:K.acc,desc:"Decision history"},
-            {label:"All Assets",icon:"castle",page:"assets",color:"#9333EA",desc:"Net worth view"},
+            {id:"holdings",l:"Holdings",icon:"overview",color:K.blue,tab:null},
+            {id:"command",l:"Focus",icon:"trending",color:K.acc,tab:"command"},
+            {id:"earnings",l:"Earnings",icon:"target",color:K.amb,tab:"calendar"},
+            {id:"dividends",l:"Dividends",icon:"dollar",color:K.grn,tab:"dividends"},
+            {id:"goals",l:"Goals",icon:"trending",color:"#8B5CF6",tab:"goals"},
+            {id:"lenses",l:"Lenses",icon:"search",color:"#3B82F6",tab:"lenses"},
+            {id:"research",l:"Research",icon:"file",color:"#9333EA",tab:"docs"},
           ].map(function(item){
-            return<button key={item.page} onClick={function(){setPage(item.page)}} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,cursor:"pointer",transition:"all .15s",flexShrink:0}}
-              onMouseEnter={function(e){e.currentTarget.style.background=item.color+"10";e.currentTarget.style.borderColor=item.color+"40"}}
-              onMouseLeave={function(e){e.currentTarget.style.background=K.card;e.currentTarget.style.borderColor=K.bdr}}>
-              <IC name={item.icon} size={14} color={item.color}/>
-              <div style={{textAlign:"left"}}>
-                <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,lineHeight:1.2}}>{item.label}</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>{item.desc}</div>
-              </div>
+            var isActive=item.id==="holdings"?(page==="dashboard"&&hubTab==="holdings"):
+              item.id==="earnings"?(page==="calendar"):
+              item.id==="dividends"?(page==="dividends"):
+              (page==="hub"&&hubTab===item.tab);
+            return<button key={item.id} onClick={function(){
+              setSelId(null);
+              if(item.id==="holdings"){setPage("dashboard");setHubTab("holdings");}
+              else if(item.id==="earnings"){setPage("calendar");}
+              else if(item.id==="dividends"){setPage("dividends");}
+              else{setPage("hub");setHubTab(item.tab);}
+            }} style={{display:"flex",alignItems:"center",gap:6,padding:"11px 18px",background:"none",border:"none",
+              borderBottom:"2px solid "+(isActive?item.color:"transparent"),
+              color:isActive?item.color:K.dim,cursor:"pointer",fontSize:12,fontFamily:fm,fontWeight:isActive?700:400,
+              whiteSpace:"nowrap",flexShrink:0,transition:"all .15s"}}
+              onMouseEnter={function(e){e.currentTarget.style.color=item.color;e.currentTarget.style.background=item.color+"08"}}
+              onMouseLeave={function(e){e.currentTarget.style.color=isActive?item.color:K.dim;e.currentTarget.style.background="none"}}
+            >
+              <IC name={item.icon} size={12} color={isActive?item.color:K.dim}/>
+              {item.l}
             </button>;
           })}
         </div>}
@@ -13946,10 +13951,10 @@ function ProWelcomeGift(){
       crumbs.push(<button key="root" onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim:K.acc,fontSize:11,fontWeight:selId||page!=="dashboard"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0.1,whiteSpace:"nowrap"}}>{rootLabel}</button>);
 
       // Page-level crumb
-      var pageLabels={analytics:"Analytics",calendar:"Earnings Calendar",dividends:"Dividends",
-        timeline:"Timeline",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
-        ai:"Research Prompts",hub:"Owner's Hub"};
-      if(page!=="dashboard"&&!selId){
+      var pageLabels={analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
+        timeline:"Portfolio",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
+        ai:"Research Prompts",hub:"Portfolio"};
+      if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
         crumbs.push(sep);
         var hubTabLabels={docs:"Research Trail",lenses:"Investor Lenses",goals:"Goals",feed:"Feed",reading:"Reading",guide:"How It Works",command:"Command Center"};
         var pageLabel=page==="hub"?"Owner's Hub":(pageLabels[page]||page);
@@ -14097,9 +14102,9 @@ function ProWelcomeGift(){
       })})}
       // 2. Pages
       var PAGES=[
-        {id:"pg-dash",label:"Portfolio Overview",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("dashboard")}},
-        {id:"pg-hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
-        {id:"pg-trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"pg-dash",label:"Portfolio",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setHubTab("holdings");setPage("dashboard")}},
+        {id:"pg-hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
+        {id:"pg-trail",label:"Research",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
         {id:"pg-calendar",label:"Earnings Calendar",icon:"target",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("calendar")}},
@@ -14192,7 +14197,7 @@ function ProWelcomeGift(){
       var fabTgt=sel||(fabPortfolio[0]||null);
       function goCompany(fn){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(fn,80)}else{showToast("Add a holding first","info",3000)}}
       var FAB_ALL=[
-        {id:"hub",label:"Owner's Hub",icon:"castle",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub")}},
+        {id:"hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("command")}},
         {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"journal",label:"Journal",icon:"edit",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("journal")}},
