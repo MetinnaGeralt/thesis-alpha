@@ -8018,7 +8018,7 @@ function calcMoatFromData(finData,businessModelType){
         var portPred=holdingReturns.reduce(function(s,h){return s+h.weight/100*h.predictability},0);
         var uncertainty=(100-portPred)/100;
         var spread=Math.max(portCAGR*0.4,6)*uncertainty+4;
-        var lowCAGR=portCAGR-spread*1.4;var highCAGR=portCAGR+spread*0.7;
+        var lowCAGR=portCAGR-spread*2.2;var highCAGR=portCAGR+spread*2.2;
         var diff=portCAGR-goals.targetCAGR;var sigma=spread*0.9||1;
         var t2=diff/sigma;
         var prob;if(t2>=0){prob=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t2-0.25*t2*t2))))}else{prob=Math.round(Math.max(3,50-45*(1-Math.exp(0.5*t2-0.25*t2*t2))))}
@@ -10297,14 +10297,14 @@ function ProWelcomeGift(){
         var pPred=hr2.reduce(function(s,h){return s+h.weight/tw2*h.predictability},0);
         var unc2=(100-pPred)/100;
         var sprd=Math.max(pCAGR*0.4,6)*unc2+4;
-        var lo2=pCAGR-sprd*1.4;var hi2=pCAGR+sprd*0.7;
+        var lo2=pCAGR-sprd*2.2;var hi2=pCAGR+sprd*2.2;
         var sigma2=sprd*0.9||1;
         var tgt2=goals.targetCAGR;
         var diff2=pCAGR-tgt2;var t22=diff2/sigma2;
         var prob2;if(t22>=0){prob2=Math.round(Math.min(85,50+40*(1-Math.exp(-0.5*t22-0.25*t22*t22))))}else{prob2=Math.round(Math.max(15,50-40*(1-Math.exp(0.5*t22+0.25*t22*t22))))}
         var onTgt2=pCAGR>=tgt2;
         var sw=400;var sh=100;
-        var bPts=[];for(var bi2=0;bi2<=100;bi2++){var x3=lo2+(hi2-lo2)*bi2/100;var z2=(x3-pCAGR)/sigma2;var y3=Math.max(0,sh*(1-Math.min(1,Math.exp(-0.5*z2*z2)*1.4)));bPts.push([x3/(hi2-lo2)*sw-lo2/(hi2-lo2)*sw,y3]);}
+        var bPts=[];for(var bi2=0;bi2<=100;bi2++){var x3=lo2+(hi2-lo2)*bi2/100;var z2=(x3-pCAGR)/sigma2;var y3=sh-Math.exp(-0.5*z2*z2)*sh*0.85;bPts.push([bi2/100*sw,y3]);}
         var bPath="M "+bPts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1)}).join(" L ");
         var tX2=Math.max(0,Math.min(1,(tgt2-lo2)/(hi2-lo2)))*sw;
         var eX2=Math.max(0,Math.min(1,(pCAGR-lo2)/(hi2-lo2)))*sw;
@@ -10338,10 +10338,13 @@ function ProWelcomeGift(){
               {tX2!==eX2&&<text x={tX2.toFixed(0)} y="-4" fill={K.amb} fontSize="9" fontWeight="bold" textAnchor="middle">{"Target "+tgt2+"%"}</text>}
             </svg>
           </div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:8,lineHeight:1.5}}>
-            {onTgt2
-              ?<span style={{color:K.grn,fontWeight:600}}>Historical data supports your target — your thesis may give you more.</span>
-              :<span style={{color:K.amb,fontWeight:600}}>{"Portfolio is projected below your "+tgt2+"% target — review conviction estimates."}</span>}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8,gap:12}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.5,flex:1}}>
+              {onTgt2
+                ?<span style={{color:K.grn,fontWeight:600}}>Historical data supports your target — your thesis may give you more.</span>
+                :<span style={{color:K.amb,fontWeight:600}}>{"Portfolio is projected below your "+tgt2+"% target — review conviction estimates."}</span>}
+            </div>
+            <button onClick={function(){setPage("hub");setHubTab("goals");}} style={{flexShrink:0,fontSize:11,color:K.acc,background:"none",border:"1px solid "+K.acc+"40",borderRadius:_isBm?0:6,padding:"5px 12px",cursor:"pointer",fontFamily:fm}}>{"Edit goals →"}</button>
           </div>
         </div>;
       })()}
