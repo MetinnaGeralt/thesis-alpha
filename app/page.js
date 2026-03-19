@@ -5433,7 +5433,8 @@ function calcMoatFromData(finData,businessModelType){
                   mnotes.unshift({date:new Date().toLocaleDateString("en-US",{month:"short",year:"numeric"}),note:note.trim(),kept:grade==="A"||grade==="B"});
                   upd(c.id,{managementGrade:grade,managementNote:note.trim(),managementNotes:mnotes.slice(0,20)});
                 }else{
-                upd(c.id,{managementGrade:grade,managementNote:note&&note.trim()?note.trim():c.managementNote||""});
+                  upd(c.id,{managementGrade:grade,managementNote:note&&note.trim()?note.trim():c.managementNote||""});
+                }
               }}>
               <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
               {c.managementGrade
