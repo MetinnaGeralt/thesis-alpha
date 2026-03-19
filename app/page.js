@@ -864,7 +864,7 @@ function TrackerApp(props){
   var canAdd=true; // Unlimited free companies — Pro gates data features, not company count
   function requirePro(ctx){if(isPro)return true;setUpgradeCtx(ctx||"");setShowUpgrade(true);return false}
   function openManage(){if(!stripeCustomerId){setShowUpgrade(true);setUpgradeCtx("manage");return}authFetch("/api/stripe/portal",{method:"POST",body:JSON.stringify({customerId:stripeCustomerId})}).then(function(r){return r.json()}).then(function(d){if(d.url)window.location.href=d.url}).catch(function(e){console.warn("Portal error:",e);setShowUpgrade(true);setUpgradeCtx("manage")})}
-  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:false,showBuyZone:false,showPriceChart:true,businessMode:false};
+  var DEFAULT_DASH={portfolioView:"fundamentals",showSummary:false,showPrices:false,showPositions:false,showHeatmap:false,showSectors:false,showDividends:false,showBuyZone:false,showPriceChart:true,businessMode:false,showOwnershipHealth:false,showLookThrough:false,showGoalsTab:false,showLensesTab:false};
   var _ds=useState(function(){try{var s=localStorage.getItem("ta-dashsettings");if(!s)return DEFAULT_DASH;var saved=Object.assign({},DEFAULT_DASH,JSON.parse(s));// Migrate: if user has never seen fundamentals view, switch them to it
 if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamentals";if(saved.showHeatmap===undefined)saved.showHeatmap=false;return saved}catch(e){return DEFAULT_DASH}}),dashSet=_ds[0],setDashSet=_ds[1];
   
@@ -2977,7 +2977,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-research-"+today+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
     var _st=useState("profile"),sTab=_st[0],setSTab=_st[1];
-    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"}];
+    var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"},{k:"showOwnershipHealth",l:"Ownership Health",d:"Shows thesis completeness and KPI health bars per holding"},{k:"showLookThrough",l:"Portfolio Look-Through",d:"Aggregate portfolio metrics vs S&P 500 across investor lenses"},{k:"showGoalsTab",l:"Goals Tab",d:"CAGR projection and portfolio construction check"},{k:"showLensesTab",l:"Lenses Tab",d:"Investor lenses and portfolio analytics"}];
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Playful green. Pill buttons.",color:"#f7f7f5",accent:"#58cc02",unlock:1},{id:"purple",name:"Midnight",desc:"Deep purple. Hedge-fund dark.",color:"#0d0b14",accent:"#a78bfa",unlock:1},{id:"paypal",name:"Ocean",desc:"Clean professional blue",color:"#f0f4f8",accent:"#1a56db",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"White on black. Amber labels. Terminal density.",color:"#000000",accent:"#F39F41",unlock:10}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
@@ -3469,8 +3469,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="journal"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="journal"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("journal")})}><span style={{fontSize:isThesis?13:12,color:page==="journal"?K.acc:sideMid,fontWeight:page==="journal"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="edit" size={14} color={page==="journal"?K.acc:sideMid}/>{(function(){var unread=journalEntries.filter(function(e){return!e.generated&&e.reviewData;}).length;return<>{"Journal"}{unread>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block"}}/>}</>;})()}</span></div>
-        <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="ai"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="ai"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("ai")})}><span style={{fontSize:isThesis?13:12,color:page==="ai"?K.acc:sideMid,fontWeight:page==="ai"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={page==="ai"?K.acc:sideMid}/>Research Prompts</span></div>
-    {/* Plan badge */}
+        {/* Plan badge */}
     <div style={{padding:bm?"6px 12px":"10px 20px"}}>
       {effectivePlan==="pro"?<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:K.grn+"10",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,cursor:"pointer"}} onClick={openManage}>
         <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1}}>PRO</span>
@@ -7401,7 +7400,7 @@ function calcMoatFromData(finData,businessModelType){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Focus",icon:"trending"},{id:"lenses",l:"Lenses",icon:"search"},{id:"docs",l:"Research",icon:"file"},{id:"goals",l:"Goals",icon:"target"}];
+        var tabs=[{id:"command",l:"Focus",icon:"trending"}]  .concat(dashSet.showLensesTab?[{id:"lenses",l:"Lenses",icon:"search"}]:[])  .concat([{id:"docs",l:"Research",icon:"file"}])  .concat(dashSet.showGoalsTab?[{id:"goals",l:"Goals",icon:"target"}]:[]);
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -11289,8 +11288,8 @@ function ProWelcomeGift(){
             {id:"command",l:"Focus",icon:"trending",color:K.acc,tab:"command"},
             {id:"earnings",l:"Earnings",icon:"target",color:K.amb,tab:"calendar"},
             {id:"dividends",l:"Dividends",icon:"dollar",color:K.grn,tab:"dividends"},
-            {id:"goals",l:"Goals",icon:"trending",color:"#8B5CF6",tab:"goals"},
-            {id:"lenses",l:"Lenses",icon:"search",color:"#3B82F6",tab:"lenses"},
+            ...(dashSet.showGoalsTab?[{id:"goals",l:"Goals",icon:"trending",color:"#8B5CF6",tab:"goals"}]:[]),
+            ...(dashSet.showLensesTab?[{id:"lenses",l:"Lenses",icon:"search",color:"#3B82F6",tab:"lenses"}]:[]),
             {id:"research",l:"Research",icon:"file",color:"#9333EA",tab:"docs"},
           ].map(function(item){
             var isActive=item.id==="holdings"?(page==="dashboard"&&hubTab==="holdings"):
@@ -11556,7 +11555,7 @@ function ProWelcomeGift(){
 
           </div>
           {/* OWNERSHIP HEALTH */}
-          <div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
+          {dashSet.showOwnershipHealth&&<div style={{padding:isMobile?"12px 16px":"14px 24px",borderTop:"1px solid "+K.bdr}}>
             <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:10}}>Ownership Health</div>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 16px"}}>
             {portfolio.map(function(c2){
@@ -11594,11 +11593,11 @@ function ProWelcomeGift(){
                 </div>
               </div>})}
           </div>
-        </div>
+        </div>}
 
 
         {/* ── Portfolio Look-Through ── */}
-        {!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
+        {dashSet.showLookThrough&&!isMobile&&sideTab==="portfolio"&&portfolio.length>0&&<div style={{borderTop:"1px solid "+K.bdr,padding:"14px 24px 4px"}}>
 {/* ── Look-through portfolio table — preset switcher ── */}
             {(function(){
               // ── S&P 500 benchmarks ─────────────────────────────────────
