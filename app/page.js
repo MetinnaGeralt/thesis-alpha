@@ -5514,9 +5514,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>}
             </div>
             {/* 3. Management Quality */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
-                            onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}
-              style={{cursor:"pointer"}}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}} onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}>
               <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
               {c.managementGrade
                 ?<div>
