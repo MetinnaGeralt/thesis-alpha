@@ -2200,6 +2200,330 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <Inp label="Evidence" value={ex} onChange={setEx} ta placeholder="Source..." K={K}/>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{kpi.lastResult&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:null}):k})})});setModal(null)}}>Clear</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:a?1:.4})} onClick={function(){if(!a)return;upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:{actual:parseFloat(a),status:eS(kpi.rule,kpi.value,a),excerpt:ex.trim()}}):k})})});setModal(null)}}>Save</button></div></Modal>}
   function DelModal(){if(!sel)return null;return<Modal title="Delete Company" onClose={function(){setModal(null)}} w={380} K={K}><p style={{fontSize:14,color:K.mid,marginTop:0}}>Delete <strong style={{color:K.txt}}>{sel.ticker}</strong> and all data?</p><div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnD} onClick={function(){delCo(selId)}}>Delete</button></div></Modal>}
+  // ── Deep Dive Prompt Modal ──────────────────────────────────────────────────
+  function DeepDivePromptModal(){
+    var ticker=(modal&&modal.ticker)||"your company";
+    var PURPLE="#8B5CF6";
+    var _copied=React.useState(false),copied=_copied[0],setCopied=_copied[1];
+
+    var PROMPT=
+"You are a structured investment analyst working within the ThesisAlpha framework. "+
+"Produce deep dive analyses in EXACTLY the format below — ThesisAlpha parses it automatically.\n\n"+
+"OUTPUT FORMAT:\n\n"+
+"## TITLE\n[Company Name] — Deep Dive\n\n"+
+"## METRICS\n[Label] | [Value] | [pass/warn/fail]\n(repeat for each metric)\n\n"+
+"## FILTER 1: Circle of Competence\n"+
+"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n"+
+"✓ [check text — one paragraph per check]\n"+
+"⚠ [warn check]\n"+
+"— [note]\n\n"+
+"## FILTER 2: Economic Moat\nVERDICT: [verdict] | [type]\n✓ ...\n\n"+
+"## FILTER 3: Management Quality\nVERDICT: [verdict] | [type]\n✓ ...\n\n"+
+"## FILTER 4: Financial Strength\nVERDICT: [verdict] | [type]\n✓ ...\n\n"+
+"## FILTER 5: Price & Margin of Safety\nVERDICT: [verdict] | [type]\n⚠ ...\n\n"+
+"## DCF\n"+
+"Bear | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail\n"+
+"Base | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | warn\n"+
+"Bull | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | pass\n"+
+"SUMMARY: [one paragraph — weighted IRR, fat pitch entry, hold vs add decision]\n\n"+
+"## INVERSION\nMECHANISM: [what would break the thesis]\nARK: [probability and signal to watch]\n\nMECHANISM: ...\nARK: ...\n\n"+
+"## VERDICT\n[2–3 sentences. What does the business deserve? Position sizing?]\n"+
+"WEIGHT: [e.g. 10%]\nFAT PITCH: [e.g. €70]\nPENDING: [one specific thing to monitor]\n\n"+
+"STATUS SYMBOLS: ✓ pass  ⚠ warn  ✗ fail  — note\n\n"+
+"FIVE FILTERS:\n"+
+"F1 Circle of Competence — explain in one sentence, 10yr visibility, circle test\n"+
+"F2 Economic Moat — Grizzly Bear Test, Patterson Sentence, moat type, widening/narrowing?\n"+
+"F3 Management Quality — owner-operator, capital allocation, integrity, skin in the game\n"+
+"F4 Financial Strength — gross/op/net margins, FCF conversion, ROIC, balance sheet, NRR\n"+
+"F5 Price & MOS — owner earnings DCF, 12% hurdle, terminal multiple by ROIC tier:\n"+
+"   <15% ROIC → 12×  |  15–25% → 16×  |  25–50% → 20×  |  >50% → 24×\n\n"+
+"RULES:\n"+
+"1. Never skip sections. Use ⚠ or — if data is limited.\n"+
+"2. Be specific — use actual numbers from financial statements.\n"+
+"3. Inversion = specific mechanism by which thesis is permanently wrong + signal that confirms it.\n"+
+"4. Verdict is a decision: own it, watch it, or pass. Always give a fat pitch price.\n"+
+"5. Output the format exactly — do not add extra headers or change section names.\n"+
+"6. When given a ticker, start analysing immediately. Do not ask clarifying questions first.";
+
+    function copyPrompt(){
+      try{navigator.clipboard.writeText(PROMPT);}catch(e){}
+      setCopied(true);setTimeout(function(){setCopied(false);},2500);
+    }
+
+    var STEPS=[
+      {n:"1",text:"Go to claude.ai and create a new Project"},
+      {n:"2",text:"Paste this as the Project system prompt"},
+      {n:"3",text:'In the project, ask Claude: "Analyse '+ticker+'"'},
+      {n:"4",text:"Copy the full output, come back, click \"I already have output\""},
+    ];
+
+    return<Modal title={"Deep Dive — Claude Project Setup"} onClose={function(){setModal(null);}} w={620}>
+      {/* Steps */}
+      <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
+        {STEPS.map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<STEPS.length-1?10:0}}>
+          <div style={{width:22,height:22,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,
+            fontSize:11,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+            {s.n}
+          </div>
+          <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
+        </div>;})}
+        <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:10,alignItems:"center"}}>
+          <button onClick={function(){window.open("https://claude.ai","_blank");}}
+            style={{padding:"8px 18px",borderRadius:_isBm?0:8,border:"none",background:PURPLE,color:"#fff",
+              fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            {"Open Claude.ai"}
+          </button>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Create your Project there, then come back."}</div>
+        </div>
+      </div>
+
+      {/* Prompt text box */}
+      <div style={{marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>System prompt — paste into your Claude Project</div>
+          <button onClick={copyPrompt}
+            style={{display:"flex",alignItems:"center",gap:6,padding:"6px 16px",borderRadius:_isBm?0:7,
+              border:"none",background:copied?K.grn:PURPLE,color:"#fff",
+              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,transition:"background .3s"}}>
+            {copied
+              ?<><IC name="check" size={12} color="#fff"/>{"Copied!"}</>
+              :<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
+          </button>
+        </div>
+        <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",
+          fontFamily:fb,fontSize:11,color:K.dim,lineHeight:1.7,maxHeight:200,overflowY:"auto",
+          whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+          {PROMPT.substring(0,600)+"..."}
+        </div>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>{"Full prompt copied to clipboard when you click Copy."}</div>
+      </div>
+
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Already ran the analysis?"}</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
+          <button onClick={function(){setModal({type:"importDeepDive"});}}
+            style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>
+            {"Paste output →"}
+          </button>
+        </div>
+      </div>
+    </Modal>;}
+
+  // ── Import Deep Dive Modal ──────────────────────────────────────────────────
+  function ImportDeepDiveModal(){
+    if(!sel)return null;
+    var _txt=React.useState(""),rawText=_txt[0],setRawText=_txt[1];
+    var _parsed=React.useState(null),parsed=_parsed[0],setParsed=_parsed[1];
+    var _err=React.useState(""),parseErr=_err[0],setParseErr=_err[1];
+    var _titleVal=React.useState(""),titleVal=_titleVal[0],setTitleVal=_titleVal[1];
+    var PURPLE="#8B5CF6";
+
+    function parseDeepDive(text){
+      // Normalise line endings
+      var lines=text.replace(/\r\n/g,"\n").split("\n");
+      var dd={metrics:[],filters:[],dcf:{scenarios:[],summary:""},inversion:[],verdict:{text:"",weight:"",fatPitch:"",pending:""}};
+      var title="Deep Dive — "+sel.ticker;
+      var section="";
+      var currentFilter=null;
+      var currentInversion=null;
+      var verdictLines=[];
+
+      for(var i=0;i<lines.length;i++){
+        var line=lines[i];
+        var trimmed=line.trim();
+        if(!trimmed)continue;
+
+        // Section headers
+        if(/^##\s+TITLE/i.test(trimmed)){section="title";continue;}
+        if(/^##\s+METRICS/i.test(trimmed)){section="metrics";continue;}
+        if(/^##\s+FILTER\s*\d/i.test(trimmed)){
+          var fn=trimmed.match(/##\s+FILTER\s*(\d)/i);
+          var ftitle=trimmed.replace(/^##\s+FILTER\s*\d+\s*[:—-]?\s*/i,"").trim();
+          currentFilter={id:fn?parseInt(fn[1]):dd.filters.length+1,title:ftitle||"Filter "+(dd.filters.length+1),verdict:"",verdictType:"pass",checks:[]};
+          dd.filters.push(currentFilter);section="filter";continue;
+        }
+        if(/^##\s+DCF/i.test(trimmed)){section="dcf";continue;}
+        if(/^##\s+INVERSION/i.test(trimmed)){section="inversion";currentInversion=null;continue;}
+        if(/^##\s+VERDICT/i.test(trimmed)){section="verdict";continue;}
+
+        // Title
+        if(section==="title"){title=trimmed;continue;}
+
+        // Metrics: Label | Value | status
+        if(section==="metrics"){
+          var mp=trimmed.split("|").map(function(s){return s.trim();});
+          if(mp.length>=2){
+            var st="pass";
+            if(mp.length>=3){var sl=mp[2].toLowerCase();st=sl.indexOf("warn")>=0?"warn":sl.indexOf("fail")>=0?"fail":sl.indexOf("note")>=0?"note":"pass";}
+            dd.metrics.push({label:mp[0],value:mp[1],status:st});
+          }
+          continue;
+        }
+
+        // Filter checks
+        if(section==="filter"&&currentFilter){
+          if(/^VERDICT\s*[:]/i.test(trimmed)){
+            var vparts=trimmed.replace(/^VERDICT\s*[:]?\s*/i,"").split("|");
+            currentFilter.verdict=vparts[0].trim();
+            if(vparts.length>1){var vt=vparts[1].trim().toLowerCase();currentFilter.verdictType=vt.indexOf("warn")>=0||vt.indexOf("border")>=0?"warn":vt.indexOf("fail")>=0?"fail":"pass";}
+            else{var vl=currentFilter.verdict.toLowerCase();currentFilter.verdictType=vl.indexOf("warn")>=0||vl.indexOf("border")>=0?"warn":vl.indexOf("fail")>=0?"fail":vl.indexOf("pass")>=0?"pass":"note";}
+            continue;
+          }
+          // Check lines: ✓/⚠/✗/— or pass/warn/fail/note prefix
+          var cst="note";var ctext=trimmed;
+          if(trimmed.startsWith("✓")||/^\[pass\]/i.test(trimmed)||trimmed.startsWith("PASS:")){cst="pass";ctext=trimmed.replace(/^✓\s*|\[pass\]\s*|PASS:\s*/i,"").trim();}
+          else if(trimmed.startsWith("⚠")||/^\[warn\]/i.test(trimmed)||trimmed.startsWith("WARN:")){cst="warn";ctext=trimmed.replace(/^⚠\s*|\[warn\]\s*|WARN:\s*/i,"").trim();}
+          else if(trimmed.startsWith("✗")||/^\[fail\]/i.test(trimmed)||trimmed.startsWith("FAIL:")){cst="fail";ctext=trimmed.replace(/^✗\s*|\[fail\]\s*|FAIL:\s*/i,"").trim();}
+          else if(trimmed.startsWith("—")||trimmed.startsWith("-")||/^\[note\]/i.test(trimmed)){cst="note";ctext=trimmed.replace(/^—\s*|-\s*|\[note\]\s*/i,"").trim();}
+          if(ctext.length>3)currentFilter.checks.push({status:cst,text:ctext});
+          continue;
+        }
+
+        // DCF scenarios: Bear|5.0%|28%|18×|20%|9.8%|€57|−29%|fail
+        if(section==="dcf"){
+          if(/^(BEAR|BASE|BULL)/i.test(trimmed)){
+            var dp=trimmed.split("|").map(function(s){return s.trim();});
+            var lab=dp[0].toUpperCase();
+            var it=lab==="BEAR"?"fail":lab==="BASE"?"warn":"pass";
+            if(dp.length>=3){
+              var userIt=dp.length>=9?(dp[8]||"").toLowerCase():"";
+              if(userIt)it=userIt.indexOf("pass")>=0?"pass":userIt.indexOf("fail")>=0?"fail":"warn";
+              dd.dcf.scenarios.push({label:lab,cagr:dp[1]||"",oeMargin:dp[2]||"",terminal:dp[3]||"",weight:dp[4]||"",irr:dp[5]||"",intrinsic:dp[6]||"",mos:dp[7]||"",irrType:it});
+            }
+          } else if(/^SUMMARY\s*[:]/i.test(trimmed)){
+            dd.dcf.summary=trimmed.replace(/^SUMMARY\s*[:]?\s*/i,"").trim();
+          } else if(trimmed.length>20&&!dd.dcf.summary){
+            dd.dcf.summary=(dd.dcf.summary?dd.dcf.summary+" ":"")+trimmed;
+          }
+          continue;
+        }
+
+        // Inversion
+        if(section==="inversion"){
+          if(/^MECHANISM\s*[:]/i.test(trimmed)){
+            currentInversion={mechanism:trimmed.replace(/^MECHANISM\s*[:]?\s*/i,"").trim(),ark:""};
+            dd.inversion.push(currentInversion);
+          } else if(/^ARK\s*[:]/i.test(trimmed)&&currentInversion){
+            currentInversion.ark=trimmed.replace(/^ARK\s*[:]?\s*/i,"").trim();
+          } else if(currentInversion&&!currentInversion.ark&&trimmed.length>10){
+            currentInversion.ark=trimmed;
+          } else if(!currentInversion&&trimmed.length>10){
+            // Auto-create if no explicit MECHANISM: prefix
+            currentInversion={mechanism:trimmed,ark:""};
+            dd.inversion.push(currentInversion);
+          }
+          continue;
+        }
+
+        // Verdict
+        if(section==="verdict"){
+          if(/^WEIGHT\s*[:]/i.test(trimmed)){dd.verdict.weight=trimmed.replace(/^WEIGHT\s*[:]?\s*/i,"").trim();}
+          else if(/^FAT.?PITCH\s*[:]/i.test(trimmed)){dd.verdict.fatPitch=trimmed.replace(/^FAT.?PITCH\s*[:]?\s*/i,"").trim();}
+          else if(/^PENDING\s*[:]/i.test(trimmed)){dd.verdict.pending=trimmed.replace(/^PENDING\s*[:]?\s*/i,"").trim();}
+          else{verdictLines.push(trimmed);}
+          continue;
+        }
+      }
+
+      dd.verdict.text=verdictLines.join(" ");
+      if(dd.metrics.length===0&&dd.filters.every(function(f){return f.checks.length===0;})&&dd.dcf.scenarios.length===0){
+        return null;
+      }
+      return{title:title,dd:dd};
+    }
+
+    function handleParse(){
+      var result=parseDeepDive(rawText);
+      if(!result){setParseErr("Could not parse the text. Make sure it follows the ThesisAlpha Deep Dive format from your Claude Project.");setParsed(null);return;}
+      setParseErr("");
+      setParsed(result);
+      setTitleVal(result.title);
+    }
+
+    function handleSave(){
+      if(!parsed)return;
+      var doc={id:nId(sel.docs),title:titleVal.trim()||parsed.title,
+        content:parsed.dd.verdict.text||("Deep Dive — "+sel.ticker),
+        docType:"deep_dive",folder:"deep-dives",deepDive:parsed.dd,
+        updatedAt:new Date().toISOString()};
+      upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([doc])});});
+      setModal(null);
+      showToast("Deep Dive imported for "+sel.ticker,"info",3000);
+    }
+
+    return<Modal title={"Import Deep Dive — "+sel.ticker} onClose={function(){setModal(null);}} w={680}>
+      {/* Instructions */}
+      <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16}}>
+        <div style={{fontSize:12,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:6}}>How it works</div>
+        <div style={{fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.7}}>
+          {"1. Open Claude.ai and use the ThesisAlpha Deep Dive Project. Ask it to analyze "+sel.ticker+"."}
+          <br/>{"2. Copy the full output."}
+          <br/>{"3. Paste it below and click Parse."}
+        </div>
+        <a href="https://claude.ai" target="_blank" rel="noopener noreferrer"
+          style={{display:"inline-block",marginTop:8,fontSize:11,color:PURPLE,fontFamily:fm,fontWeight:600}}>
+          {"Open Claude.ai →"}
+        </a>
+      </div>
+
+      {/* Paste area */}
+      {!parsed&&<div>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:6}}>Paste Claude output here</div>
+        <textarea value={rawText} onChange={function(e){setRawText(e.target.value);setParsed(null);setParseErr("");}}
+          rows={12} placeholder={"## TITLE\nATOSS Software SE — Deep Dive\n\n## METRICS\nGross margin | 77.1% | pass\n...\n\n## FILTER 1: Circle of Competence\nVERDICT: Pass\n✓ Business is clear...\n\n## DCF\nBear | 5.0% | 28% | 18× | 20% | 9.8% | €57 | -29% | fail\n...\n\n## VERDICT\nATOSS is a statutory monopoly...\nWeight: 10%\nFat pitch: €70\nPending: Confirm FY2026 OCF"}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,
+            borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:12,color:K.txt,fontFamily:fb,
+            lineHeight:1.6,resize:"vertical",outline:"none"}}
+          onFocus={function(e){e.target.style.borderColor=K.acc;}}
+          onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+        {parseErr&&<div style={{fontSize:12,color:K.red,fontFamily:fm,marginTop:6}}>{parseErr}</div>}
+      </div>}
+
+      {/* Preview */}
+      {parsed&&<div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+          <div style={{fontSize:12,color:K.grn,fontFamily:fm,fontWeight:600}}>{"✓ Parsed successfully"}</div>
+          <button onClick={function(){setParsed(null);setParseErr("");}}
+            style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:12,fontFamily:fm}}>{"← Back"}</button>
+        </div>
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:4}}>Document title</div>
+          <input value={titleVal} onChange={function(e){setTitleVal(e.target.value);}}
+            style={{width:"100%",boxSizing:"border-box",padding:"8px 12px",borderRadius:_isBm?0:7,
+              border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=K.acc;}}
+            onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+        </div>
+        {/* Summary stats */}
+        <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8}}>
+          {[
+            {l:"Metrics",v:parsed.dd.metrics.filter(function(m){return m.label;}).length},
+            {l:"Filters",v:parsed.dd.filters.filter(function(f){return f.checks.length>0;}).length},
+            {l:"DCF scenarios",v:parsed.dd.dcf.scenarios.length},
+            {l:"Inversion items",v:parsed.dd.inversion.filter(function(r){return r.mechanism;}).length},
+          ].map(function(item){return<div key={item.l}>
+            <span style={{fontSize:18,fontWeight:800,color:item.v>0?PURPLE:K.dim,fontFamily:fm}}>{item.v}</span>
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:4}}>{item.l}</span>
+          </div>;})}
+        </div>
+        <DeepDiveView doc={{deepDive:parsed.dd}} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>
+      </div>}
+
+      <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:16}}>
+        <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+        {!parsed&&<button onClick={handleParse} disabled={!rawText.trim()}
+          style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE,opacity:rawText.trim()?1:0.4})}>
+          Parse output
+        </button>}
+        {parsed&&<button onClick={handleSave}
+          style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>
+          Save Deep Dive
+        </button>}
+      </div>
+    </Modal>;}
+
   // ── Deep Dive Form & View ────────────────────────────────────────────────────
   function DeepDiveForm({f,set,K,_isBm,fm,fb,fh}){
     var dd=f.deepDive;
@@ -3785,7 +4109,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </Modal>;
   }
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,importDeepDive:ImportDeepDiveModal,deepDivePrompt:DeepDivePromptModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -4302,7 +4626,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"memo"})}}>+ Memo</button>
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"clip"})}}>+ Clip</button>
           <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"irentry"})}}>+ IR Link</button>
-          <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button></div></div>
+          <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11,display:"flex",alignItems:"center",gap:3})} onClick={function(){setModal({type:"importDeepDive"});}}>{"↓ Deep Dive"}</button>          <button style={Object.assign({},S.btn,{padding:"5px 10px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button></div></div>
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         <button onClick={function(){setAf("all")}} style={{background:af==="all"?K.acc+"20":"transparent",border:"1px solid "+(af==="all"?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af==="all"?K.acc:K.dim,cursor:"pointer",fontFamily:fm}}>All ({docs.length})</button>
         {FOLDERS.map(function(fo){return<button key={fo.id} onClick={function(){setAf(fo.id)}} style={{background:af===fo.id?K.acc+"20":"transparent",border:"1px solid "+(af===fo.id?K.acc+"50":K.bdr),borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:12,color:af===fo.id?K.acc:K.dim,cursor:"pointer",fontFamily:fm,display:"inline-flex",alignItems:"center",gap:5}}><IC name={fo.icon} size={12} color={af===fo.id?K.acc:K.dim}/>{fo.label} {folderCounts[fo.id]>0?"("+folderCounts[fo.id]+")":""}</button>})}</div>
@@ -5870,6 +6194,63 @@ function calcMoatFromData(finData,businessModelType){
                   <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div>
                 </div>}
             </div>
+          </div>;
+        })()}
+        {/* ── DEEP DIVE ── */}
+        {(function(){
+          var PURPLE="#8B5CF6";
+          var existingDives=(c.docs||[]).filter(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+          var latestDive=existingDives.length>0?existingDives[existingDives.length-1]:null;
+          return<div style={{marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:PURPLE+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name="search" size={14} color={PURPLE}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:700}}>Deep Dive</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>{"Five-filter analysis · Owner earnings DCF · Inversion"}</div>
+              </div>
+              {existingDives.length>0&&<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{existingDives.length+" dive"+(existingDives.length>1?"s":"")}</span>
+                <button onClick={function(){setModal({type:"importDeepDive"});}}
+                  style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"50",background:PURPLE+"08",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+                  {"+ Import new"}
+                </button>
+              </div>}
+            </div>
+
+            {!latestDive&&<div style={{background:PURPLE+"06",border:"1px dashed "+PURPLE+"40",borderRadius:_isBm?0:12,padding:"20px 24px"}}>
+              <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
+                {"Run a deep dive on "+c.ticker+" with Claude"}
+              </div>
+              <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.7,marginBottom:16,maxWidth:480}}>
+                {"Use the ThesisAlpha Deep Dive prompt in Claude.ai — five filters, owner earnings DCF, inversion checklist. Paste the output here and it renders instantly."}
+              </div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:_isBm?0:8,border:"none",
+                    background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                  <IC name="search" size={13} color="#fff"/>
+                  {"Copy Claude prompt"}
+                </button>
+                <button onClick={function(){setModal({type:"importDeepDive"});}}
+                  style={{padding:"10px 20px",borderRadius:_isBm?0:8,border:"1px solid "+PURPLE+"50",background:"transparent",
+                    color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                  {"I already have output →"}
+                </button>
+              </div>
+            </div>}
+
+            {latestDive&&<div>
+              {existingDives.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+                {existingDives.map(function(d,di){return<button key={d.id}
+                  style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+PURPLE+"40",background:di===existingDives.length-1?PURPLE+"12":"transparent",
+                    color:di===existingDives.length-1?PURPLE:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:di===existingDives.length-1?600:400}}>
+                  {d.title||(new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",year:"numeric"}))}
+                </button>;})}
+              </div>}
+              <DeepDiveView doc={latestDive} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>
+            </div>}
           </div>;
         })()}
         {/* ── 2. THE EVIDENCE ── */}
