@@ -715,8 +715,8 @@ function TrackerApp(props){
   else{fm="'JetBrains Mono','SF Mono',monospace";fh="'Instrument Serif',Georgia,serif";fb="'DM Sans','Helvetica Neue',sans-serif";}
   var S=mkS(K);
   var isDark=theme==="dark"||theme==="purple"||theme==="bloomberg"||theme==="thesis_dark";
-  var sideDark=isDark||theme==="forest"||theme==="paypal";
-  var sideText=bm?"#F39F41":sideDark?"#ffffff":K.txt;var sideMid=bm?"#b87820":sideDark?"#ffffffcc":K.mid;var sideDim2=bm?"#6b4510":sideDark?"#ffffff66":K.dim;
+  var sideDark=isDark||theme==="forest"||theme==="paypal"||theme==="thesis_light"||theme==="light";
+  var sideText=bm?"#F39F41":K.sideTxt||(sideDark?"#ffffff":K.txt);var sideMid=bm?"#b87820":K.sideMid||(sideDark?"#ffffffcc":K.mid);var sideDim2=bm?"#6b4510":sideDark?"#ffffff66":K.dim;
   function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var all=["thesis_dark","thesis_light","dark","light","forest","purple","paypal","bloomberg"];var available=trialActive||isPro?all:(function(){var a=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){a.push("forest");a.push("purple")}if(streakWeeks>=3){a.push("paypal")}if(streakWeeks>=10){a.push("bloomberg")}return a})();var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
@@ -1062,8 +1062,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){
     function onKey(e){
       if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0);}return!o;});}
-      if((e.metaKey||e.ctrlKey)&&e.key==="w"){e.preventDefault();setSelId(null);setPage("dashboard");setHubTab("holdings");
-        setTimeout(function(){var el=document.getElementById("watchlist-section");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},100);}
+      if((e.metaKey||e.ctrlKey)&&e.key==="w"){e.preventDefault();setSelId(null);setPage("watchlist");}
       if(e.key==="Escape"&&cmdOpen){e.preventDefault();setCmdOpen(false);}
     }
     window.addEventListener("keydown",onKey);
@@ -3551,7 +3550,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
     <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.blue+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":((!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?"2px solid "+K.blue:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");setHubTab("holdings");})}><span style={{fontSize:bm?11:isThesis?13:12,color:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid,fontWeight:(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="analytics"||page==="dividends"||page==="timeline"))?(isThesis?K.acc:K.blue):sideMid}/>Portfolio</span></div>
-    <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
+        <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:page==="watchlist"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="watchlist"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("watchlist")})}><span style={{fontSize:isThesis?13:12,color:page==="watchlist"?K.acc:sideMid,fontWeight:page==="watchlist"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={page==="watchlist"?K.acc:sideMid}/>{(function(){var wCount=cos.filter(function(c){return c.status==="watchlist";}).length;var alerts=cos.filter(function(c){var p=c.position||{};var fp=parseFloat(c.fatPitchPrice)||0;return c.status==="watchlist"&&fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;}).length;return<>{"Watchlist"}{wCount>0&&<span style={{fontSize:10,color:page==="watchlist"?K.acc:K.dim,fontFamily:fm,fontWeight:400,marginLeft:2}}>{"("+wCount+")"}</span>}{alerts>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block",marginLeft:4}}/>}</>;})()}</span></div>
+<div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="assets"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.amb+"18":K.amb+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="assets"?"2px solid "+K.amb:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("assets")})}><span style={{fontSize:isThesis?13:12,color:page==="assets"?K.amb:sideMid,fontWeight:page==="assets"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={page==="assets"?K.amb:sideMid}/>All Assets</span></div>
     <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="review"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="review"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("review")})}><span style={{fontSize:isThesis?13:12,color:page==="review"?K.grn:sideMid,fontWeight:page==="review"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="review"?K.grn:sideMid}/>{effectivePlan==="pro"?"Owner's Letter":"Weekly Review"}{!currentWeekReviewed&&<span style={{width:6,height:6,borderRadius:_isBm?1:"50%",background:K.grn,display:"inline-block"}}/>}</span></div>
         <div style={{padding:bm?"7px 12px":_isForest?"10px 16px":"12px 20px",cursor:"pointer",background:page==="strategy"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.grn+"18":K.grn+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="strategy"?"2px solid "+K.grn:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("strategy")})}><span style={{fontSize:isThesis?13:12,color:page==="strategy"?K.grn:sideMid,fontWeight:page==="strategy"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="shield" size={14} color={page==="strategy"?K.grn:sideMid}/>My Strategy</span></div>
 <div style={{padding:bm?"7px 12px":"12px 20px",cursor:"pointer",background:page==="library"?(_isForest?"rgba(255,255,255,0.18)":isThesis?K.acc+"18":K.acc+"10"):"transparent",borderLeft:_isForest?"none":isThesis?"none":(page==="library"?"2px solid "+K.acc:"2px solid transparent"),borderRadius:_isForest?999:"0",margin:_isForest?"4px 10px":isThesis?"0 10px 0 0":"0"}} onClick={navClick(function(){setSelId(null);setPage("library")})}><span style={{fontSize:isThesis?13:12,color:page==="library"?K.acc:sideMid,fontWeight:page==="library"?700:400,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="video" size={14} color={page==="library"?K.acc:sideMid}/>Library</span></div>
@@ -11306,6 +11306,174 @@ function ProWelcomeGift(){
       {libModal&&libModal.type==="folder"&&<FolderModal/>}
     </div>}
 
+
+  // ── Watchlist Page ──────────────────────────────────────────────────────
+  function WatchlistPage(){
+    var watching=cos.filter(function(c){return c.status==="watchlist";});
+    var tooHard=cos.filter(function(c){return c.status==="toohard";});
+    var _tab=React.useState("watching"),wTab=_tab[0],setWTab=_tab[1];
+    var list=wTab==="watching"?watching:tooHard;
+    var fatPitchAlerts=watching.filter(function(c){
+      var pos=c.position||{};var price=pos.currentPrice||0;var fp=parseFloat(c.fatPitchPrice)||0;
+      return fp>0&&price>0&&price<=fp*1.05;
+    });
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.1}}>{"Watchlist"}</h1>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim,lineHeight:1.6}}>{"Businesses you understand. Waiting for the right price."}</p>
+        </div>
+        <button onClick={function(){setModal({type:"add",defaults:{status:"watchlist"}});}}
+          style={Object.assign({},S.btnP,{padding:"9px 22px",fontSize:13})}>
+          {"+ Add to watchlist"}
+        </button>
+      </div>
+
+      {/* Fat pitch alerts */}
+      {fatPitchAlerts.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:24,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:K.grn,flexShrink:0}}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:700,color:K.grn,fontFamily:fm,marginBottom:2}}>
+            {fatPitchAlerts.length===1?fatPitchAlerts[0].ticker+" is at your fat pitch price":""+fatPitchAlerts.length+" holdings are at your fat pitch price"}
+          </div>
+          <div style={{fontSize:12,color:K.dim}}>{fatPitchAlerts.map(function(c){return c.ticker}).join(", ")+" — you said this was the obvious opportunity."}</div>
+        </div>
+      </div>}
+
+      {/* Tab: Watching / Too Hard */}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {[{id:"watching",l:"Watching ("+watching.length+")"},{id:"toohard",l:"Too Hard ("+tooHard.length+")"}].map(function(t){
+          var act=wTab===t.id;
+          return<button key={t.id} onClick={function(){setWTab(t.id);}}
+            style={{padding:"10px 16px",background:"none",border:"none",borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,fontWeight:act?700:400,transition:"all .15s"}}>
+            {t.l}
+          </button>;
+        })}
+      </div>
+
+      {/* Empty state */}
+      {list.length===0&&<div style={{textAlign:"center",padding:"60px 24px"}}>
+        <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>
+          {wTab==="watching"?"No businesses on your watchlist yet":"Too-Hard pile is empty"}
+        </div>
+        <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto 24px"}}>
+          {wTab==="watching"
+            ?"Add businesses you understand and want to own — but only at the right price."
+            :""It\'s not supposed to be easy. Anyone who finds it easy is stupid." — Munger"}
+        </div>
+        {wTab==="watching"&&<button onClick={function(){setModal({type:"add",defaults:{status:"watchlist"}});}}
+          style={Object.assign({},S.btnP,{padding:"11px 30px",fontSize:14})}>
+          {"Add first holding"}
+        </button>}
+      </div>}
+
+      {/* Watchlist cards */}
+      {list.length>0&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {list.map(function(c){
+          var pos=c.position||{};
+          var price=pos.currentPrice||0;
+          var fatPitch=parseFloat(c.fatPitchPrice)||0;
+          var nearFatPitch=fatPitch>0&&price>0&&price<=fatPitch*1.05;
+          var atFatPitch=fatPitch>0&&price>0&&price<=fatPitch;
+          var pctAway=fatPitch>0&&price>0?((price-fatPitch)/fatPitch*100):null;
+          var progress=fatPitch>0&&price>0?Math.max(0,Math.min(100,(1-Math.max(0,price-fatPitch)/(price*0.6))*100)):0;
+          var convColor=c.conviction>=7?K.grn:c.conviction>=4?K.amb:c.conviction>0?K.red:K.dim;
+          var hasThesis=c.thesisNote&&c.thesisNote.trim().length>20;
+          return<div key={c.id}
+            style={{background:K.card,border:"1px solid "+(nearFatPitch?K.grn+"60":K.bdr),
+              borderRadius:_isBm?0:14,overflow:"hidden",transition:"border-color .2s, box-shadow .2s",
+              boxShadow:nearFatPitch?"0 0 0 3px "+K.grn+"15":"none"}}
+            onMouseEnter={function(e){e.currentTarget.style.borderColor=nearFatPitch?K.grn:K.acc+"40";}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=nearFatPitch?K.grn+"60":K.bdr;}}>
+            {/* Fat pitch top strip */}
+            {nearFatPitch&&<div style={{height:3,background:"linear-gradient(90deg,"+K.grn+","+K.grn+"50)"}}/>}
+            <div style={{padding:"18px 20px",cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}>
+              {/* Top row */}
+              <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:c._watchNote?10:14}}>
+                <CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:17,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{c.ticker}</span>
+                    <span style={{fontSize:12,color:K.dim,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+                    {nearFatPitch&&<span style={{fontSize:10,fontWeight:700,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 8px",fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>{"Fat pitch ✓"}</span>}
+                  </div>
+                  {c.sector&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>{c.sector}</div>}
+                </div>
+                {/* Quick actions */}
+                <div style={{display:"flex",gap:6,flexShrink:0}} onClick={function(e){e.stopPropagation();}}>
+                  <button onClick={function(){upd(c.id,{status:"portfolio"});}}
+                    style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}
+                    onMouseEnter={function(e){e.currentTarget.style.color=K.grn;e.currentTarget.style.borderColor=K.grn+"60";}}
+                    onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.borderColor=K.bdr;}}>
+                    {"→ Portfolio"}
+                  </button>
+                  <button onClick={function(){setSelId(c.id);setModal({type:"edit"});}}
+                    style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}
+                    onMouseEnter={function(e){e.currentTarget.style.color=K.acc;e.currentTarget.style.borderColor=K.acc+"60";}}
+                    onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.borderColor=K.bdr;}}>
+                    {"Edit"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Why watching */}
+              {c._watchNote&&<div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:14,fontStyle:"italic",paddingLeft:50}}>
+                {"\u201c"+c._watchNote+"\u201d"}
+              </div>}
+
+              {/* Price / Fat Pitch section */}
+              {fatPitch>0&&price>0&&<div style={{paddingLeft:50}}>
+                <div style={{display:"flex",alignItems:"center",gap:20,marginBottom:8,flexWrap:"wrap"}}>
+                  <div>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{"Current"}</div>
+                    <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>
+                  </div>
+                  <div style={{color:K.dim,fontSize:16}}>{"/"}</div>
+                  <div>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{"Fat pitch"}</div>
+                    <div style={{fontSize:18,fontWeight:700,color:atFatPitch?K.grn:K.acc,fontFamily:fm}}>{cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))}</div>
+                  </div>
+                  <div style={{flex:1,minWidth:100}}>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>
+                      {atFatPitch?"At your price":pctAway!==null?pctAway.toFixed(0)+"% away":""}
+                    </div>
+                    <div style={{height:5,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:Math.min(progress,100)+"%",
+                        background:atFatPitch?"linear-gradient(90deg,"+K.grn+","+K.grn+"80)":"linear-gradient(90deg,"+K.acc+","+K.acc+"60)",
+                        borderRadius:3,transition:"width .6s ease"}}/>
+                    </div>
+                  </div>
+                </div>
+              </div>}
+
+              {/* No fat pitch set */}
+              {fatPitch===0&&<div style={{paddingLeft:50}}>
+                <button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"edit"});}}
+                  style={{background:"none",border:"1px dashed "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:K.dim,cursor:"pointer",fontFamily:fm}}
+                  onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+                  {"+ Set fat pitch price"}
+                </button>
+              </div>}
+
+              {/* Bottom row */}
+              <div style={{display:"flex",alignItems:"center",gap:12,marginTop:12,paddingTop:10,borderTop:"1px solid "+K.bdr+"60",paddingLeft:50}}>
+                {c.conviction>0&&<span style={{fontSize:11,color:convColor,fontFamily:fm,fontWeight:600}}>{c.conviction+"/10"}</span>}
+                {hasThesis&&<span style={{fontSize:11,color:K.grn,fontFamily:fm}}>{"✓ Thesis written"}</span>}
+                {!hasThesis&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"No thesis yet"}</span>}
+                {c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=30&&
+                  <span style={{fontSize:11,color:K.amb,fontFamily:fm}}>{"Earnings in "+dU(c.earningsDate)+"d"}</span>}
+              </div>
+            </div>
+          </div>;
+        })}
+      </div>}
+    </div>;
+  }
+
   // ── Earnings Calendar ──────────────────────────────────────
   function EarningsCalendar(){
     var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});
@@ -14282,7 +14450,7 @@ function ProWelcomeGift(){
       crumbs.push(<button key="root" onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim:K.acc,fontSize:11,fontWeight:selId||page!=="dashboard"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0.1,whiteSpace:"nowrap"}}>{rootLabel}</button>);
 
       // Page-level crumb
-      var pageLabels={strategy:"My Strategy",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
+      var pageLabels={strategy:"My Strategy",watchlist:"Watchlist",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
         timeline:"Portfolio",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
         ai:"Research Prompts",hub:"Portfolio"};
       if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
@@ -14393,7 +14561,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
       var mItems=[
@@ -14404,14 +14572,11 @@ function ProWelcomeGift(){
         {id:"review", label:"Review",    svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>},
       ];
       return mItems.map(function(item){
-        var active=(item.id==="home"?page==="home":
-          item.id==="watchlist"?(page==="dashboard"&&typeof document!=="undefined"&&document.getElementById("watchlist-section")):
-          page===item.id)&&!selId;
+        var active=(item.id==="home"?page==="home":page===item.id)&&!selId;
         var isAdd=item.id==="add";
         return<button key={item.id} onClick={function(){
           if(isAdd){setModal({type:"add"});}
-          else if(item.id==="watchlist"){setSelId(null);setPage("dashboard");setHubTab("holdings");
-            setTimeout(function(){var el=document.getElementById("watchlist-section");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},150);}
+          else if(item.id==="watchlist"){setSelId(null);setPage("watchlist");}
           else{setSelId(null);setPage(item.id);}}}
         style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"6px 0"}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
           {isAdd
@@ -14442,6 +14607,7 @@ function ProWelcomeGift(){
       var PAGES=[
         {id:"pg-dash",label:"Portfolio",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setHubTab("holdings");setPage("dashboard")}},
         {id:"pg-hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
+        {id:"pg-watchlist",label:"Watchlist",icon:"search",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("watchlist");}},
         {id:"pg-strategy",label:"My Strategy",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("strategy");}},
         {id:"pg-trail",label:"Research",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
