@@ -11618,6 +11618,29 @@ function ProWelcomeGift(){
   function WatchlistPage(){
     var watching=cos.filter(function(c){return c.status==="watchlist";});
     var tooHard=cos.filter(function(c){return c.status==="toohard";});
+    // Auto-fetch price + 52w for watchlist items missing data
+    React.useEffect(function(){
+      var needsData=watching.filter(function(c){return !c.position||!c.position.currentPrice;});
+      needsData.forEach(function(c,i){
+        setTimeout(function(){
+          fetchQuote(c.ticker).then(function(q){
+            if(q&&q.price>0){upd(c.id,function(prev){
+              return Object.assign({},prev,{position:Object.assign({},prev.position||{},{currentPrice:q.price,dayChange:q.changePct||0})});
+            });}
+          });
+          if(!c._hi52){
+            fetchEarnings(c,c.kpis||[]).then(function(res){
+              if(res&&res.snapshot){upd(c.id,function(prev){
+                var u={financialSnapshot:res.snapshot};
+                if(res.snapshot.hi52)u._hi52=parseFloat((res.snapshot.hi52.value||"").replace(/[^0-9.]/g,""))||0;
+                if(res.snapshot.lo52)u._lo52=parseFloat((res.snapshot.lo52.value||"").replace(/[^0-9.]/g,""))||0;
+                return Object.assign({},prev,u);
+              });}
+            });
+          }
+        },i*600);
+      });
+    },[watching.length]);
     var _tab=React.useState("watching"),wTab=_tab[0],setWTab=_tab[1];
     var list=wTab==="watching"?watching:tooHard;
 
@@ -12557,22 +12580,39 @@ function ProWelcomeGift(){
     {/* ── MR MARKET WIDGET ── */}
     {sideTab==="portfolio"&&!isMobile&&(function(){
       function MrMarketFace(props){
-        var mood=props.mood;var color=props.color;var tint=props.tint||color;var size=props.size||90;
-        var moodMap={
-          extreme_fear:{label:"PANIC",sub:"extreme fear",bars:1},
-          fear:{label:"FEAR",sub:"cautious",bars:2},
-          neutral:{label:"CALM",sub:"neutral",bars:3},
-          greed:{label:"GREED",sub:"optimistic",bars:4},
-          extreme_greed:{label:"EUPHORIA",sub:"extreme greed",bars:5}
-        };
-        var md=moodMap[mood]||moodMap.neutral;
-        return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",width:size,height:size*1.1}}>
-          <div style={{fontSize:size*0.18,fontWeight:900,color:tint,fontFamily:fm,letterSpacing:-0.5,lineHeight:1,marginBottom:4}}>{md.label}</div>
-          <div style={{display:"flex",gap:3,marginBottom:5}}>
-            {[1,2,3,4,5].map(function(b){return<div key={b} style={{width:size*0.06,height:size*0.25,borderRadius:_isBm?0:2,background:b<=md.bars?tint:tint+"20"}}/>})}
-          </div>
-          <div style={{fontSize:size*0.1,color:tint,opacity:0.6,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{md.sub}</div>
-        </div>;
+        var mood=props.mood;var tint=props.tint||K.acc;var size=props.size||90;
+        var eyeY=mood==="extreme_fear"?34:mood==="fear"?35:mood==="extreme_greed"?33:34;
+        var mouthD=mood==="extreme_fear"?"M28,58 Q45,48 62,58":
+                   mood==="fear"?"M30,56 Q45,50 60,56":
+                   mood==="neutral"?"M32,55 Q45,55 58,55":
+                   mood==="greed"?"M30,53 Q45,60 60,53":
+                   "M26,52 Q45,64 64,52";
+        var ebL=mood==="extreme_fear"?"M26,26 Q32,20 38,24":mood==="fear"?"M27,25 Q32,21 38,24":"M27,26 Q32,23 38,26";
+        var ebR=mood==="extreme_fear"?"M52,24 Q58,20 64,26":mood==="fear"?"M52,24 Q58,21 63,25":"M52,26 Q58,23 63,26";
+        var cheekO=mood==="extreme_greed"?0.3:mood==="greed"?0.15:0;
+        var sweat=mood==="extreme_fear"||mood==="extreme_greed";
+        return<svg width={size} height={size} viewBox="0 0 90 90" style={{overflow:"visible"}}>
+          <ellipse cx="45" cy="87" rx="20" ry="3.5" fill={tint} opacity="0.07"/>
+          <rect x="30" y="68" width="30" height="18" rx="4" fill={tint} opacity="0.1"/>
+          <rect x="39" y="66" width="12" height="8" rx="2" fill={tint} opacity="0.15"/>
+          <polygon points="45,68 42,75 45,81 48,75" fill={tint} opacity="0.35"/>
+          <circle cx="45" cy="42" r="24" fill={tint} opacity="0.06"/>
+          <circle cx="45" cy="42" r="24" fill="none" stroke={tint} strokeWidth="1.5" opacity="0.5"/>
+          <rect x="30" y="20" width="30" height="3" rx="1.5" fill={tint} opacity="0.65"/>
+          <rect x="35" y="9" width="20" height="12" rx="2" fill={tint} opacity="0.5"/>
+          <rect x="35" y="17.5" width="20" height="2.5" rx="1" fill={tint} opacity="0.85"/>
+          <path d={ebL} stroke={tint} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.75"/>
+          <path d={ebR} stroke={tint} strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.75"/>
+          <circle cx="33" cy={eyeY} r="3.5" fill={tint} opacity="0.65"/>
+          <circle cx="57" cy={eyeY} r="3.5" fill={tint} opacity="0.65"/>
+          <circle cx="34" cy={eyeY-1} r="1.2" fill="white" opacity="0.85"/>
+          <circle cx="58" cy={eyeY-1} r="1.2" fill="white" opacity="0.85"/>
+          <circle cx="28" cy="46" r="7" fill={tint} opacity={cheekO}/>
+          <circle cx="62" cy="46" r="7" fill={tint} opacity={cheekO}/>
+          <path d={mouthD} stroke={tint} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.75"/>
+          {sweat&&<ellipse cx="22" cy="34" rx="1.8" ry="3.5" fill={tint} opacity="0.35"/>}
+          {sweat&&<ellipse cx="68" cy="34" rx="1.8" ry="3.5" fill={tint} opacity="0.35"/>}
+        </svg>;
       }
       return<div style={{marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
@@ -12592,7 +12632,7 @@ function ProWelcomeGift(){
             return<div>
               <div style={{display:"flex",alignItems:"flex-start",background:"linear-gradient(135deg, "+d.color+"08 0%, transparent 60%)"}}>
                 <div style={{padding:"16px 4px 8px 16px",flexShrink:0}}>
-                  <MrMarketFace mood={d.mood} color={K.acc} tint={d.color} size={90}/>
+                  <MrMarketFace mood={d.mood} tint={d.color} size={100}/>
                 </div>
                 <div style={{flex:1,padding:"18px 16px 14px 8px"}}>
                   <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
