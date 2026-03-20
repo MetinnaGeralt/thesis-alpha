@@ -13247,7 +13247,7 @@ function ProWelcomeGift(){
         <span style={{fontSize:13,fontWeight:400,color:K.mid}}>{xpFloat.label}</span></div></div>}
     <style dangerouslySetInnerHTML={{__html:"@keyframes xpfloat{0%{opacity:1;transform:translate(-50%,-50%) scale(0.8)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-120%) scale(0.9)}} .ta-month-col .ta-month-tooltip{opacity:0;transition:opacity .15s} .ta-month-col:hover .ta-month-tooltip{opacity:1}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}} @keyframes spin{to{transform:rotate(360deg)}} .ta-bm *{border-radius:0!important}.ta-bm input,.ta-bm textarea,.ta-bm select{border-radius:0!important;font-family:Consolas,Monaco,monospace!important}.ta-bm *{box-shadow:none!important}.ta-bm *{transition:none!important}.ta-bm{line-height:1.25;letter-spacing:0;font-size:12px}.ta-bm div,.ta-bm button,.ta-bm input,.ta-bm textarea,.ta-bm select,.ta-bm span,.ta-bm a,.ta-bm li{border-radius:0!important}.ta-bm img{border-radius:0!important}.ta-bm ::-webkit-scrollbar{width:4px;height:4px}.ta-bm ::-webkit-scrollbar-track{background:#000}.ta-bm ::-webkit-scrollbar-thumb{background:#F39F4170}.ta-bm ::-webkit-scrollbar-thumb:hover{background:#F39F41}@keyframes bm-blink{0%,49%{border-color:#F39F41}50%,100%{border-color:#333}}.ta-bm input:focus,.ta-bm textarea:focus{animation:bm-blink 1s step-end infinite;outline:none!important}.ta-bm button:hover{background:rgba(243,159,65,0.12)!important;color:#F39F41!important}.ta-forest{}.ta-forest .ta-active-item{box-shadow:0 2px 12px rgba(88,204,2,0.2)}.ta-forest button:active{transform:scale(0.96)!important;transition:transform .08s}.ta-forest ::-webkit-scrollbar{width:6px;height:6px}.ta-forest ::-webkit-scrollbar-track{background:#f7f7f5}.ta-forest ::-webkit-scrollbar-thumb{background:#58cc0260;border-radius:999px}.ta-forest ::-webkit-scrollbar-thumb:hover{background:#58cc02}.ta-purple{}.ta-purple ::-webkit-scrollbar{width:5px;height:5px}.ta-purple ::-webkit-scrollbar-track{background:#0d0b14}.ta-purple ::-webkit-scrollbar-thumb{background:#302a48;border-radius:999px}.ta-purple ::-webkit-scrollbar-thumb:hover{background:#a78bfa}.ta-purple input:focus,.ta-purple textarea:focus,.ta-purple select:focus{border-color:#a78bfa!important;box-shadow:0 0 0 3px rgba(167,139,250,0.15)!important;outline:none!important}.ta-purple button:active{opacity:0.85}.ta-ocean{}.ta-ocean ::-webkit-scrollbar{width:5px;height:5px}.ta-ocean ::-webkit-scrollbar-track{background:#f0f4f8}.ta-ocean ::-webkit-scrollbar-thumb{background:#cdd9e8;border-radius:4px}.ta-ocean ::-webkit-scrollbar-thumb:hover{background:#1a56db}.ta-ocean input:focus,.ta-ocean textarea:focus{border-color:#1a56db!important;box-shadow:0 0 0 3px rgba(26,86,219,0.12)!important;outline:none!important}"}}/>
     {/* \u2500\u2500 MORNING BRIEFING \u2500\u2500 */}
-    {sideTab==="portfolio"&&filtered.length>0&&(function(){
+    // ── Morning brief computations ──────────────────────────────────────────
       var portfolio=filtered;var now=new Date();var hour=now.getHours();
       var dow=now.getDay();// 0=Sun,6=Sat
       var isWeekend=dow===0||dow===6;
@@ -13536,7 +13536,7 @@ function ProWelcomeGift(){
         </div>}
 
       </div>;
-    })()}
+
   }
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
 
