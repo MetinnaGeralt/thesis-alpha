@@ -11961,15 +11961,21 @@ function ProWelcomeGift(){
               {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
             </div>
-            {hi52>lo52&&price>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
-              <div style={{flex:1,height:3,background:K.bdr,borderRadius:2,position:"relative",maxWidth:120}}>
-                <div style={{position:"absolute",top:-2,width:7,height:7,borderRadius:"50%",background:nearFP?K.grn:K.acc,
-                  left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 3px)"}}/>
+            {hi52>lo52&&price>0&&<div style={{marginTop:2}}>
+              {/* Labels row */}
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(2))}</span>
+                {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400}}>{
+                  nearFP?"▲ At fat pitch":pctAway.toFixed(0)+"% above target"}</span>}
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"52w H: "+cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(2))}</span>
               </div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28,textAlign:"right"}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
-              {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400,flexShrink:0,marginLeft:4}}>
-                {nearFP?"At target":pctAway.toFixed(0)+"% to target"}</span>}
+              {/* Bar */}
+              <div style={{position:"relative",height:4,background:K.bdr,borderRadius:2}}>
+                <div style={{position:"absolute",top:-3,width:10,height:10,borderRadius:"50%",
+                  background:nearFP?K.grn:K.acc,border:"2px solid "+K.card,
+                  boxShadow:"0 1px 3px rgba(0,0,0,0.2)",
+                  left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)"}}/>
+              </div>
             </div>}
           </div>
           <div style={{textAlign:"right",flexShrink:0}}>
