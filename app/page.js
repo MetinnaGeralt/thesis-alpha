@@ -11943,7 +11943,7 @@ function ProWelcomeGift(){
               </div>
             </div>
             :<div>
-              <div style={{fontSize:12,color:K.dim,marginBottom:8}}>{"Set the price where this becomes an obvious buy."}</div></div></div>
+              <div style={{fontSize:12,color:K.dim,marginBottom:8}}>{"Set the price where this becomes an obvious buy."}</div>
               <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
                 placeholder={"e.g. 180"}
                 style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
