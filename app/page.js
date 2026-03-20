@@ -11782,11 +11782,10 @@ function ProWelcomeGift(){
 
       {/* Footer */}
       <div style={{padding:"14px 20px",borderTop:"1px solid "+K.bdr,flexShrink:0,display:"flex",gap:8}}>
-        <button onClick={function(){upd(c.id,{status:"portfolio"});onClose();showToast(c.ticker+" moved to portfolio","info",2000);}}
-          style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"none",fontFamily:fm,
-            background:atFatPitch?K.grn:K.acc,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",
-            boxShadow:atFatPitch?"0 0 16px "+K.grn+"50":"none",transition:"all .3s"}}>
-          {atFatPitch?"This is the moment — add to portfolio":"Move to portfolio"}
+        <button onClick={onClose}
+          style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
+            background:K.card,color:K.txt,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+          {"Done"}
         </button>
         <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
           style={{padding:"11px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
