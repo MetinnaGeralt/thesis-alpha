@@ -1062,6 +1062,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   useEffect(function(){
     function onKey(e){
       if((e.metaKey||e.ctrlKey)&&e.key==="k"){e.preventDefault();setCmdOpen(function(o){if(!o){setCmdQuery("");setCmdIdx(0);}return!o;});}
+      if((e.metaKey||e.ctrlKey)&&e.key==="w"){e.preventDefault();setSelId(null);setPage("dashboard");setHubTab("holdings");
+        setTimeout(function(){var el=document.getElementById("watchlist-section");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},100);}
       if(e.key==="Escape"&&cmdOpen){e.preventDefault();setCmdOpen(false);}
     }
     window.addEventListener("keydown",onKey);
@@ -13294,7 +13296,7 @@ function ProWelcomeGift(){
       {sideTab==="portfolio"&&(function(){
         var watching=cos.filter(function(c){return c.status==="watchlist";});
         if(watching.length===0)return null;
-        return<div style={{marginTop:40}}>
+        return<div id="watchlist-section" style={{marginTop:40}}>
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
             <div>
@@ -14398,13 +14400,20 @@ function ProWelcomeGift(){
         {id:"home",   label:"Brief",     svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>},
         {id:"dashboard",label:"Holdings",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>},
         {id:"add",    label:"Add",       svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>},
-        {id:"read",   label:"Read",      svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>},
+        {id:"watchlist", label:"Watch",    svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>},
         {id:"review", label:"Review",    svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>},
       ];
       return mItems.map(function(item){
-        var active=(item.id==="home"?page==="home":item.id==="read"?page==="read":page===item.id)&&!selId;
+        var active=(item.id==="home"?page==="home":
+          item.id==="watchlist"?(page==="dashboard"&&typeof document!=="undefined"&&document.getElementById("watchlist-section")):
+          page===item.id)&&!selId;
         var isAdd=item.id==="add";
-        return<button key={item.id} onClick={function(){if(isAdd){setModal({type:"add"})}else{setSelId(null);setPage(item.id)}}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
+        return<button key={item.id} onClick={function(){
+          if(isAdd){setModal({type:"add"});}
+          else if(item.id==="watchlist"){setSelId(null);setPage("dashboard");setHubTab("holdings");
+            setTimeout(function(){var el=document.getElementById("watchlist-section");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},150);}
+          else{setSelId(null);setPage(item.id);}}}
+        style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"6px 0"}} style={{flex:1,background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,padding:0,color:active?K.acc:K.dim,position:"relative"}}>
           {isAdd
             ?<div style={{width:42,height:42,borderRadius:_isBm?0:21,background:K.acc,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 14px "+K.acc+"70",marginTop:-20,color:"#fff"}}>{item.svg}</div>
             :<div style={{color:active?K.acc:K.dim,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
