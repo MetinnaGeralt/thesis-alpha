@@ -13417,7 +13417,18 @@ function ProWelcomeGift(){
 
         {/* ── Holdings ── */}
         {portfolio.length>0&&<div style={{marginBottom:20}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Your businesses</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your businesses</div>
+            <button onClick={function(){if(requirePro("earnings"))checkAll();}}
+              style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,
+                padding:"3px 10px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm,
+                display:"flex",alignItems:"center",gap:4}}
+              onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+              onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+              <IC name="target" size={11} color="currentColor"/>
+              {"Check all"}
+            </button>
+          </div>
           <div style={{display:"flex",flexDirection:"column",gap:2}}>
             {portfolio.map(function(c2){
               var pos=c2.position||{};
@@ -13428,6 +13439,13 @@ function ProWelcomeGift(){
               var earnDays=c2.earningsDate&&c2.earningsDate!=="TBD"?dU(c2.earningsDate):null;
               var earnSoon=earnDays!==null&&earnDays>=0&&earnDays<=14;
               var hasThesis=!!(c2.thesisNote&&c2.thesisNote.trim().length>20);
+              var kpis=c2.kpis||[];
+              var checkedKpis=kpis.filter(function(k){return k.lastResult&&k.lastResult.status;});
+              var metKpis=checkedKpis.filter(function(k){return k.lastResult.status==="met";});
+              var missedKpis=checkedKpis.filter(function(k){return k.lastResult.status==="missed";});
+              var kpiColor=missedKpis.length>0?K.red:checkedKpis.length>0?K.grn:K.dim;
+              var kpiLabel=checkedKpis.length>0?(metKpis.length+"/"+checkedKpis.length+" KPI"+(checkedKpis.length!==1?"s":"")):kpis.length>0?"Unchecked":null;
+              var isChecking=checkSt[c2.id]&&checkSt[c2.id].checking;
               return<div key={c2.id}
                 style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:_isBm?0:8,
                   cursor:"pointer",transition:"background .12s"}}
@@ -13450,6 +13468,7 @@ function ProWelcomeGift(){
                       {earnDays===0?"Reports today":"Earns in "+earnDays+"d"}
                     </span>}
                     {!hasThesis&&<span style={{fontSize:9,color:K.dim,background:K.bdr+"30",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>No thesis</span>}
+                    {kpiLabel&&<span style={{fontSize:9,fontWeight:600,color:kpiColor,background:kpiColor+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{isChecking?"Checking...":kpiLabel}</span>}
                   </div>
                 </div>
                 {/* Price */}
