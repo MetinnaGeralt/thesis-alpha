@@ -9749,6 +9749,19 @@ function ProWelcomeGift(){
     var hasThisWeek=journalEntries.some(function(e){return e.weekId===weekId;});
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {["library","journal","strategy"].map(function(pg){
+          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy"};
+          var act=page===pg;
+          return<button key={pg} onClick={function(){setPage(pg);}}
+            style={{padding:"9px 16px",background:"none",border:"none",
+              borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,transition:"all .15s"}}>
+            {labels[pg]}
+          </button>;
+        })}
+      </div>
       {/* Header */}
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
@@ -9909,6 +9922,19 @@ function ProWelcomeGift(){
       {/* Empty state */}
       {!hasContent&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"40px 36px",marginBottom:28}}>
         <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{"\"Most investors don\'t have a strategy. They have a collection of opinions.\""}  </div>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {["library","journal","strategy"].map(function(pg){
+          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy"};
+          var act=page===pg;
+          return<button key={pg} onClick={function(){setPage(pg);}}
+            style={{padding:"9px 16px",background:"none",border:"none",
+              borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,transition:"all .15s"}}>
+            {labels[pg]}
+          </button>;
+        })}
+      </div>
         <div style={{fontSize:13,color:K.dim,lineHeight:1.8,maxWidth:500}}>{"Write yours down. What you invest in, what you pay, how you behave, and what you\'re trying to avoid. Once it exists, ThesisAlpha can hold you to it."}</div>
       </div>}
 
@@ -12126,6 +12152,24 @@ function ProWelcomeGift(){
         </div>
       </div>
 
+      {/* ── Research sub-nav ── */}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {[
+          {id:"library",l:"Library",pg:"library"},
+          {id:"journal",l:"Journal",pg:"journal"},
+          {id:"strategy",l:"My Strategy",pg:"strategy"},
+        ].map(function(t){
+          var act=page===t.pg;
+          return<button key={t.id} onClick={function(){setPage(t.pg);}}
+            style={{padding:"9px 16px",background:"none",border:"none",
+              borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,transition:"all .15s"}}>
+            {t.l}
+          </button>;
+        })}
+      </div>
+
       {/* Company filter pills */}
       {taggedTickers.length>0&&<div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
         <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginRight:4}}>{"Filter:"}</span>
@@ -13284,6 +13328,25 @@ function ProWelcomeGift(){
             style={{padding:"9px 20px",borderRadius:_isBm?0:8,border:"none",background:K.acc,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,flexShrink:0}}>
             {"+ Add"}
           </button>
+        </div>
+
+        {/* ── Portfolio sub-nav ── */}
+        <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
+          {[
+            {id:"holdings",l:"Holdings",pg:"dashboard"},
+            {id:"calendar",l:"Earnings",pg:"calendar"},
+            {id:"dividends",l:"Dividends",pg:"dividends"},
+            {id:"letter",l:"Owner's Letter",pg:"review"},
+          ].map(function(t){
+            var act=t.pg==="dashboard"?(page==="dashboard"&&!selId):page===t.pg;
+            return<button key={t.id} onClick={function(){setSelId(null);setPage(t.pg);}}
+              style={{padding:"9px 16px",background:"none",border:"none",
+                borderBottom:"2px solid "+(act?K.acc:"transparent"),
+                color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+                fontWeight:act?700:400,whiteSpace:"nowrap",flexShrink:0,transition:"all .15s"}}>
+              {t.l}
+            </button>;
+          })}
         </div>
 
         {/* ── ONE FOCUS ── */}
@@ -14496,7 +14559,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?(effectivePlan==="pro"?<OwnersLetterPage/>:<WeeklyReview/>):page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
        var mItems=[
