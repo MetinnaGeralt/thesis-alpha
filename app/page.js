@@ -3706,52 +3706,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var csv=lines.join("\n");
     var blob=new Blob([csv],{type:"text/csv"});var url=URL.createObjectURL(blob);var a=document.createElement("a");a.href=url;a.download="thesisalpha-research-"+today+".csv";a.click();URL.revokeObjectURL(url)}
   function SettingsModal(){
-    var _st=useState("profile"),sTab=_st[0],setSTab=_st[1];
+    var _st=useState("display"),sTab=_st[0],setSTab=_st[1];
     var items=[{k:"showSummary",l:"Portfolio Summary Cards",d:"Total return, today's change, best/worst performer — price-focused, off by default"},{k:"showPriceChart",l:"Price Chart (Dossier)",d:"Historical price with your entry points in the dossier"},{k:"showDividends",l:"Dividend Tracker",d:"Dividend income, yield on cost, payout ratio"},{k:"showSectors",l:"Sector Concentration",d:"Sector breakdown chart"},{k:"showHeatmap",l:"Portfolio Heatmap",d:"Color-coded performance map — price-focused, off by default"},{k:"showBuyZone",l:"Buy Zone Badge",d:"Shows BUY ZONE tag when price is below your target"},{k:"showPrices",l:"Prices on Cards",d:"Show current price on portfolio cards"},{k:"showPositions",l:"Position Details on Cards",d:"Show shares held and return % on cards"},{k:"showOwnershipHealth",l:"Ownership Health",d:"Shows thesis completeness and KPI health bars per holding"},{k:"showLookThrough",l:"Portfolio Look-Through",d:"Aggregate portfolio metrics vs S&P 500 across investor lenses"},{k:"showGoalsTab",l:"Goals Tab",d:"CAGR projection and portfolio construction check"},{k:"showLensesTab",l:"Lenses Tab",d:"Investor lenses and portfolio analytics"}];
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Playful green. Pill buttons.",color:"#f7f7f5",accent:"#58cc02",unlock:1},{id:"purple",name:"Midnight",desc:"Deep purple. Hedge-fund dark.",color:"#0d0b14",accent:"#a78bfa",unlock:1},{id:"paypal",name:"Ocean",desc:"Clean professional blue",color:"#f0f4f8",accent:"#1a56db",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"White on black. Amber labels. Terminal density.",color:"#000000",accent:"#F39F41",unlock:10}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"profile",l:"Investor"},{id:"widgets",l:"Widgets"},{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
-      {/* ── Investor Profile Tab ── */}
-      {sTab==="profile"&&<div>
-        <div style={{fontSize:13,color:K.dim,marginBottom:20,lineHeight:1.7}}>{"Your investor profile shapes what the dashboard prioritises — which metrics lead, what the morning brief surfaces, and how your dossier is organised. You can always override per-holding."}</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          {INVESTOR_PROFILES.map(function(prof){
-            var active=investorProfile===prof.id;
-            return<div key={prof.id} onClick={function(){saveInvestorProfile(prof.id)}}
-              style={{display:"flex",alignItems:"flex-start",gap:14,padding:"14px 16px",
-                borderRadius:_isBm?0:12,border:"2px solid "+(active?prof.color:K.bdr),
-                background:active?prof.color+"10":K.card,cursor:"pointer",transition:"all .15s"}}
-              onMouseEnter={function(e){if(!active)e.currentTarget.style.borderColor=prof.color+"40"}}
-              onMouseLeave={function(e){if(!active)e.currentTarget.style.borderColor=K.bdr}}>
-              <div style={{width:36,height:36,borderRadius:_isBm?0:10,background:active?prof.color:prof.color+"20",
-                display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-                <IC name={prof.icon} size={16} color={active?"#fff":prof.color}/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                  <span style={{fontSize:14,fontWeight:700,color:active?prof.color:K.txt,fontFamily:fm}}>{prof.name}</span>
-                  {prof.fund&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{prof.fund}</span>}
-                  {active&&<span style={{fontSize:9,fontWeight:700,color:prof.color,background:prof.color+"20",padding:"1px 7px",borderRadius:_isBm?0:3,fontFamily:fm,marginLeft:"auto"}}>ACTIVE</span>}
-                </div>
-                <div style={{fontSize:12,color:K.mid,lineHeight:1.5,marginBottom:active&&prof.quote?6:0}}>{prof.focus}</div>
-                {active&&prof.quote&&<div style={{fontSize:11,color:K.dim,fontStyle:"italic",borderLeft:"2px solid "+prof.color+"40",paddingLeft:8,lineHeight:1.5}}>{"\u201c"+prof.quote+"\u201d"}</div>}
-              </div>
-              {active&&<div style={{width:16,height:16,borderRadius:"50%",background:prof.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>}
-            </div>;
-          })}
-        </div>
-        {investorProfile!=="custom"&&PROFILE_MAP[investorProfile]&&<div style={{padding:"12px 14px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,fontSize:11,color:K.mid,lineHeight:1.6}}>
-          {"\u2139\uFE0F Dashboard defaults updated — portfolio view set to \""}
-          <strong style={{color:K.txt}}>{PROFILE_MAP[investorProfile].dashDefault==="fundamentals"?"Fundamentals":"Holdings"}</strong>
-          {"\" with "+(PROFILE_MAP[investorProfile].fund||"curated")+" columns. Change anytime in the dashboard."}
-        </div>}
-        <div style={{display:"flex",justifyContent:"flex-end",marginTop:20}}>
-          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button>
-        </div>
-      </div>}
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"display",l:"Display"},{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {/* ── Display Tab ── */}
       {sTab==="display"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Choose how values are displayed across the app. Note: this changes the currency symbol only — no FX conversion is applied. Stock prices from market data remain in their original currency.</div>
