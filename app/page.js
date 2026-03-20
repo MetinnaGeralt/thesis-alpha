@@ -4181,7 +4181,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>}
     {(function(){var portCount=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";}).length;var isActive=(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="timeline"||page==="analytics"||page==="dividends"||page==="review"))||!!selId;return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={navColor(isActive,K.acc)}/>{"Portfolio"}</span>{portCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{portCount}</span>}</span></div>;})()}
     {(function(){var wCount=cos.filter(function(c){return c.status==="watchlist";}).length;var wAlerts=cos.filter(function(c){var p=c.position||{};var fp=parseFloat(c.fatPitchPrice)||0;return c.status==="watchlist"&&fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;}).length;var isActive=page==="watchlist";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("watchlist");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,K.acc)}/>{"Watchlist"}</span><span style={{display:"flex",alignItems:"center",gap:4}}>{wAlerts>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}{wCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{wCount}</span>}</span></span></div>;})()}
-    <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="library"||page==="journal"||page==="strategy",K.acc),borderLeft:navBorder(page==="library"||page==="journal"||page==="strategy",K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("library");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="library"||page==="journal"||page==="strategy",K.acc),fontWeight:(page==="library"||page==="journal"||page==="strategy")?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={navColor(page==="library"||page==="journal"||page==="strategy",K.acc)}/>{"Research"}</span></div>
+    <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderLeft:navBorder(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("library");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),fontWeight:(page==="library"||page==="journal"||page==="strategy"||page==="ai")?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc)}/>{"Research"}</span></div>
     <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="assets",K.amb),borderLeft:navBorder(page==="assets",K.amb),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("assets");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="assets",K.amb),fontWeight:page==="assets"?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={navColor(page==="assets",K.amb)}/>{"Net Worth"}</span></div>
         {isThesis&&<div style={{height:1,background:"rgba(255,255,255,0.06)",margin:"8px 16px"}}/>}
     {/* Plan badge */}
@@ -7942,6 +7942,19 @@ function calcMoatFromData(finData,businessModelType){
     function getLastRun(key){var h=aiHistory[key];return h&&h.length>0?h[0]:null;}
 
     return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:900}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {["library","journal","strategy","ai"].map(function(pg){
+          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy","ai":"AI Prompts"};
+          var act=page===pg;
+          return<button key={pg} onClick={function(){setPage(pg);}}
+            style={{padding:"9px 16px",background:"none",border:"none",
+              borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,transition:"all .15s"}}>
+            {labels[pg]}
+          </button>;
+        })}
+      </div>
       <AIPromptModal/>
 
       {/* Header */}
@@ -9665,8 +9678,8 @@ function ProWelcomeGift(){
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {["library","journal","strategy"].map(function(pg){
-          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy"};
+        {["library","journal","strategy","ai"].map(function(pg){
+          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy","ai":"AI Prompts"};
           var act=page===pg;
           return<button key={pg} onClick={function(){setPage(pg);}}
             style={{padding:"9px 16px",background:"none",border:"none",
@@ -9838,8 +9851,8 @@ function ProWelcomeGift(){
       {!hasContent&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"40px 36px",marginBottom:28}}>
         <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{"\"Most investors don\'t have a strategy. They have a collection of opinions.\""}  </div>
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {["library","journal","strategy"].map(function(pg){
-          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy"};
+        {["library","journal","strategy","ai"].map(function(pg){
+          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy","ai":"AI Prompts"};
           var act=page===pg;
           return<button key={pg} onClick={function(){setPage(pg);}}
             style={{padding:"9px 16px",background:"none",border:"none",
@@ -11036,6 +11049,24 @@ function ProWelcomeGift(){
     var secStyle={fontSize:12,letterSpacing:1,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:14,fontWeight:600,fontFamily:fb,display:"flex",alignItems:"center",gap:8};
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr,overflowX:"auto"}}>
+        {[
+          {id:"holdings",l:"Holdings",pg:"dashboard"},
+          {id:"calendar",l:"Earnings",pg:"calendar"},
+          {id:"dividends",l:"Dividends",pg:"dividends"},
+          {id:"analytics",l:"Analytics",pg:"analytics"},
+          {id:"letter",l:"Owner's Letter",pg:"review"},
+        ].map(function(t){
+          var act=t.pg==="dashboard"?(page==="dashboard"&&!selId):page===t.pg;
+          return<button key={t.id} onClick={function(){setSelId(null);setPage(t.pg);}}
+            style={{padding:"9px 16px",background:"none",border:"none",
+              borderBottom:"2px solid "+(act?K.acc:"transparent"),
+              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,whiteSpace:"nowrap",flexShrink:0,transition:"all .15s"}}>
+            {t.l}
+          </button>;
+        })}
+      </div>
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Portfolio Analytics</h1>
         <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{portCos.length} portfolio companies{ldM?" • Analyzing ("+prog+"/"+portCos.length+")":withMoat.length>0?" • "+withMoat.length+" analyzed":""}</p></div>
 
@@ -12073,6 +12104,7 @@ function ProWelcomeGift(){
           {id:"library",l:"Library",pg:"library"},
           {id:"journal",l:"Journal",pg:"journal"},
           {id:"strategy",l:"My Strategy",pg:"strategy"},
+          {id:"ai",l:"AI Prompts",pg:"ai"},
         ].map(function(t){
           var act=page===t.pg;
           return<button key={t.id} onClick={function(){setPage(t.pg);}}
@@ -13311,6 +13343,7 @@ function ProWelcomeGift(){
             {id:"holdings",l:"Holdings",pg:"dashboard"},
             {id:"calendar",l:"Earnings",pg:"calendar"},
             {id:"dividends",l:"Dividends",pg:"dividends"},
+            {id:"analytics",l:"Analytics",pg:"analytics"},
             {id:"letter",l:"Owner's Letter",pg:"review"},
           ].map(function(t){
             var act=t.pg==="dashboard"?(page==="dashboard"&&!selId):page===t.pg;
