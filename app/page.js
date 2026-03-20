@@ -13417,17 +13417,21 @@ function ProWelcomeGift(){
 
         {/* ── Holdings ── */}
         {portfolio.length>0&&<div style={{marginBottom:20}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your businesses</div>
-            <button onClick={function(){if(requirePro("earnings"))checkAll();}}
-              style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,
-                padding:"3px 10px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm,
-                display:"flex",alignItems:"center",gap:4}}
-              onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
-              onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
-              <IC name="target" size={11} color="currentColor"/>
-              {"Check all"}
-            </button>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {autoNotify&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:3,padding:"2px 6px",fontFamily:fm,fontWeight:600}}>Auto ON</span>}
+              <button onClick={function(){if(requirePro("earnings"))checkAll();}}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",
+                  borderRadius:_isBm?0:7,border:"none",
+                  background:K.acc+"15",color:K.acc,
+                  fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}
+                onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"25";}}
+                onMouseLeave={function(e){e.currentTarget.style.background=K.acc+"15";}}>
+                <IC name="target" size={12} color={K.acc}/>
+                {"Check KPIs"}
+              </button>
+            </div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:2}}>
             {portfolio.map(function(c2){
@@ -13443,9 +13447,12 @@ function ProWelcomeGift(){
               var checkedKpis=kpis.filter(function(k){return k.lastResult&&k.lastResult.status;});
               var metKpis=checkedKpis.filter(function(k){return k.lastResult.status==="met";});
               var missedKpis=checkedKpis.filter(function(k){return k.lastResult.status==="missed";});
-              var kpiColor=missedKpis.length>0?K.red:checkedKpis.length>0?K.grn:K.dim;
-              var kpiLabel=checkedKpis.length>0?(metKpis.length+"/"+checkedKpis.length+" KPI"+(checkedKpis.length!==1?"s":"")):kpis.length>0?"Unchecked":null;
-              var isChecking=checkSt[c2.id]&&checkSt[c2.id].checking;
+              var cs2=checkSt[c2.id];
+              var isChecking=cs2&&cs2.checking;
+              var kpiLabel=isChecking?"Checking...":
+                checkedKpis.length>0?(metKpis.length+"/"+checkedKpis.length+" KPI"+(checkedKpis.length!==1?"s":"")):
+                kpis.length>0?"Unchecked":null;
+              var kpiColor=isChecking?K.acc:missedKpis.length>0?K.red:checkedKpis.length>0?K.grn:K.amb;
               return<div key={c2.id}
                 style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:_isBm?0:8,
                   cursor:"pointer",transition:"background .12s"}}
