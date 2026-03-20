@@ -11378,7 +11378,7 @@ function ProWelcomeGift(){
         <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto 24px"}}>
           {wTab==="watching"
             ?"Add businesses you understand and want to own — but only at the right price."
-            :""It\'s not supposed to be easy. Anyone who finds it easy is stupid." — Munger"}
+            :"It's not supposed to be easy. Anyone who finds it easy is stupid. — Munger"}
         </div>
         {wTab==="watching"&&<button onClick={function(){setModal({type:"add",defaults:{status:"watchlist"}});}}
           style={Object.assign({},S.btnP,{padding:"11px 30px",fontSize:14})}>
