@@ -13267,10 +13267,10 @@ function ProWelcomeGift(){
     // ── Holdings (price data — de-emphasised) ──────────────────────────
     var held=portfolio.filter(function(c2){var p2=c2.position||{};return p2.shares>0&&p2.currentPrice>0});
 
-        var fp=parseFloat(c2.fatPitchPrice)||0;
-        return c2.status==="watchlist"&&fp>0&&price>0&&price<=fp*1.05;
-      });
-      return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 60px":"0 32px 60px",maxWidth:860}}>
+    var PURPLE="#8B5CF6";
+    var watchAlerts=cos.filter(function(c2){var pos=c2.position||{};var price=pos.currentPrice||0;
+      var fp=parseFloat(c2.fatPitchPrice)||0;return c2.status==="watchlist"&&fp>0&&price>0&&price<=fp*1.05;});
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 60px":"0 32px 60px",maxWidth:860}}>
 
         {/* ── Header ── */}
         <div style={{padding:isMobile?"20px 0 16px":"32px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12}}>
@@ -13458,7 +13458,7 @@ function ProWelcomeGift(){
           </div>
         </div>}
 
-      </div>;
+    </div>;
 
   }
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
