@@ -3711,7 +3711,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var allThemes=[{id:"thesis_dark",name:"Main Theme — Dark",desc:"Default. Outfit font, rounded, purple",color:"#16161D",accent:"#6B4CE6",unlock:0},{id:"thesis_light",name:"Main Theme — Light",desc:"Clean cream with purple accent",color:"#F7F5F0",accent:"#6B4CE6",unlock:0},{id:"dark",name:"Dark",desc:"Easy on the eyes",color:"#1a1a1a",accent:"#ffffff",unlock:0},{id:"light",name:"Light",desc:"Clean and bright",color:"#f7f7f7",accent:"#1a1a1a",unlock:0},{id:"forest",name:"Forest",desc:"Playful green. Pill buttons.",color:"#f7f7f5",accent:"#58cc02",unlock:1},{id:"purple",name:"Midnight",desc:"Deep purple. Hedge-fund dark.",color:"#0d0b14",accent:"#a78bfa",unlock:1},{id:"paypal",name:"Ocean",desc:"Clean professional blue",color:"#f0f4f8",accent:"#1a56db",unlock:3},{id:"bloomberg",name:"Bloomberg Terminal",desc:"White on black. Amber labels. Terminal density.",color:"#000000",accent:"#F39F41",unlock:10}];
     return<Modal title="Settings" onClose={function(){setModal(null)}} K={K} w={500}>
       {/* Tab bar */}
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"display",l:"Display"},{id:"widgets",l:"Widgets"},{id:"themes",l:"Themes"},{id:"rewards",l:"Rewards"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
+      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>{[{id:"display",l:"Display"},{id:"themes",l:"Themes"},{id:"account",l:"Account"}].map(function(t){return<button key={t.id} onClick={function(){setSTab(t.id)}} style={{padding:"8px 16px",fontSize:13,fontFamily:fm,fontWeight:sTab===t.id?600:400,color:sTab===t.id?K.acc:K.dim,background:"transparent",border:"none",borderBottom:sTab===t.id?"2px solid "+K.acc:"2px solid transparent",cursor:"pointer",marginBottom:-1}}>{t.l}</button>})}</div>
       {/* ── Display Tab ── */}
       {sTab==="display"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:20}}>Choose how values are displayed across the app. Note: this changes the currency symbol only — no FX conversion is applied. Stock prices from market data remain in their original currency.</div>
@@ -3730,65 +3730,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         <div style={{display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
-      {/* ── Widgets Tab ── */}
-      {sTab==="widgets"&&<div>
-        <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Toggle dashboard widgets on or off.</div>
-        {items.map(function(it){return<div key={it.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid "+K.bdr}}>
-          <div><div style={{fontSize:14,color:K.txt,fontWeight:500}}>{it.l}</div><div style={{fontSize:12,color:K.dim,marginTop:2}}>{it.d}</div></div>
-          <button onClick={function(){toggleDash(it.k)}} style={{width:44,height:24,borderRadius:_isBm?0:12,border:"none",cursor:"pointer",background:dashSet[it.k]?K.acc:K.bdr2,position:"relative",transition:"background .2s",flexShrink:0}}>
-            <div style={{width:18,height:18,borderRadius:_isBm?2:"50%",background:_isBm?K.acc:"#fff",position:"absolute",top:3,left:dashSet[it.k]?23:3,transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/></button></div>})}
-        <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"flex-end"}}>
-          <button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
-      </div>}
       {/* ── Themes Tab ── */}
       {sTab==="themes"&&<div>
         <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Unlock new themes by building your weekly streak.</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {allThemes.map(function(t){var unlocked=trialActive||isPro||(streakData.current||0)>=t.unlock;var active=theme===t.id;
+          {allThemes.map(function(t){var unlocked=trialActive||isPro;var active=theme===t.id;
             return<div key={t.id} style={{borderRadius:_isBm?0:10,border:"2px solid "+(active?K.acc:unlocked?K.bdr:"transparent"),background:unlocked?K.card:K.bg,padding:"14px 16px",cursor:unlocked?"pointer":"default",opacity:unlocked?1:.5,position:"relative"}} onClick={function(){if(unlocked){setTheme(t.id);try{localStorage.setItem("ta-theme",t.id)}catch(e){}}}}>
               {!unlocked&&<div style={{position:"absolute",top:8,right:8,fontSize:13}}>{String.fromCodePoint(0x1F512)}</div>}
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
                 <div style={{width:28,height:28,borderRadius:_isBm?0:6,background:t.color,border:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:10,height:10,borderRadius:_isBm?0:2,background:t.accent}}/></div>
                 <div><div style={{fontSize:13,fontWeight:600,color:unlocked?K.txt:K.dim}}>{t.name}</div>
                   <div style={{fontSize:10,color:K.dim}}>{t.desc}</div></div></div>
-              {!unlocked&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Week {t.unlock} streak</div>}
+              
               {active&&<div style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>Active</div>}
             </div>})}</div>
-      </div>}
-      {/* ── Rewards Tab ── */}
-      {sTab==="rewards"&&<div>
-        <div style={{fontSize:13,color:K.dim,marginBottom:16}}>Complete your Weekly Review every week to build a streak. Each milestone unlocks new features and investor lenses.</div>
-        <div style={{display:"grid",gap:6}}>
-          {[
-            {w:1,icon:"🌿",type:"theme",label:"Forest",desc:"Playful green. Rounded and bright."},
-            {w:2,icon:"🔍",type:"lens",label:"Munger Lens",desc:"Quality at scale — Munger's mental models"},
-            {w:3,icon:"🌊",type:"theme",label:"Ocean",desc:"Clean professional blue"},
-            {w:4,icon:"🏰",type:"lens",label:"Buffett Lens",desc:"Owner earnings framework"},
-            {w:6,icon:"🌙",type:"theme",label:"Midnight",desc:"Deep purple. Hedge-fund dark."},
-            {w:8,icon:"✨",type:"lens",label:"Magic Formula Lens",desc:"Greenblatt's earnings yield + ROIC"},
-            {w:10,icon:"📟",type:"theme",label:"Bloomberg Terminal",desc:"Authentic amber-on-black terminal"},
-            {w:12,icon:"📚",type:"lens",label:"Lynch · Akre · Pabrai Lenses",desc:"Three more investor frameworks"},
-          ].map(function(r){
-            var unlocked=trialActive||isPro||(streakData.current||0)>=r.w;
-            var typeColor=r.type==="theme"?K.acc:K.grn;
-            return<div key={r.w+r.label} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:unlocked?K.grn+"06":"transparent",border:"1px solid "+(unlocked?K.grn+"20":K.bdr),borderRadius:_isBm?0:10,opacity:unlocked?1:.7}}>
-              <span style={{fontSize:18,flexShrink:0,lineHeight:1}}>{r.icon}</span>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                  <div style={{fontSize:13,fontWeight:unlocked?600:400,color:unlocked?K.txt:K.mid}}>{r.label}</div>
-                  <span style={{fontSize:9,fontFamily:fm,fontWeight:600,color:typeColor,background:typeColor+"15",borderRadius:_isBm?0:3,padding:"1px 6px"}}>{r.type==="theme"?"THEME":"LENS"}</span>
-                </div>
-                <div style={{fontSize:11,color:K.dim}}>{r.desc}</div>
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                {unlocked
-                  ?<span style={{fontSize:12,color:K.grn,fontWeight:700}}>{"✓"}</span>
-                  :<span style={{fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>Wk {r.w}</span>}
-              </div>
-            </div>;
-          })}</div>
-        <div style={{fontSize:11,color:K.dim,marginTop:10,fontStyle:"italic"}}>Current streak: {streakData.current||0} week{(streakData.current||0)!==1?"s":""}. {streakData.freezes>0?streakData.freezes+" freeze"+(streakData.freezes>1?"s":"")+" available. ":""}Earn a freeze every 4 consecutive weeks.</div>
-        <div style={{marginTop:16,display:"flex",justifyContent:"flex-end"}}><button onClick={function(){setModal(null)}} style={S.btnP}>Done</button></div>
       </div>}
       {/* ── Account Tab ── */}
       {sTab==="account"&&<div>
