@@ -2554,8 +2554,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </button>
       </div>}
       {isDeepDive&&!ddEditing&&ex&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
-      {(!isDeepDive||ddEditing)&&<Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
-            {f.docType!=="deep_dive"&&<div style={{marginBottom:16}}>
+      {(!isDeepDive||ddEditing)&&<div>
+      <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
+      {!isDeepDive&&<div style={{marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <label style={{fontSize:12,color:K.dim,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
@@ -2567,18 +2568,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           rows={12} placeholder={activeType.prompt||"Write your research note..."}
           style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"vertical",outline:"none"}}/>
       </div>}
-      {f.docType==="deep_dive"&&<DeepDiveForm f={f} set={set} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
-        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}}
-          rows={12} placeholder={activeType.prompt||"Write your research note..."}
-          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.8}}/>
-      </div>
-      }}
+      {isDeepDive&&ddEditing&&<DeepDiveForm f={f} set={set} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
+      </div>}
       {(!isDeepDive||ddEditing)&&<div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
-        {ex&&<button style={S.btnD} onClick={function(){if(!window.confirm("Delete this note?"))return;upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null);}}>Delete</button>}
+        {ex&&<button style={S.btnD} onClick={function(){if(!window.confirm("Delete this note?"))return;upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}
         <div style={{flex:1}}/>
         <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.title.trim()?1:.4})} onClick={doSave}>{ex?"Save changes":"Save note"}</button>
-      </div></Modal>}
+      </div>}</Modal>}
     // ── Investment Memo Builder ──
   function SellCheckModal(){
     var c=sellCheckTgt;if(!c)return null;
