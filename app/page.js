@@ -2200,6 +2200,286 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <Inp label="Evidence" value={ex} onChange={setEx} ta placeholder="Source..." K={K}/>
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}>{kpi.lastResult&&<button style={S.btnD} onClick={function(){upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:null}):k})})});setModal(null)}}>Clear</button>}<div style={{flex:1}}/><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={Object.assign({},S.btnP,{opacity:a?1:.4})} onClick={function(){if(!a)return;upd(selId,function(c){return Object.assign({},c,{kpis:c.kpis.map(function(k){return k.id===modal.data?Object.assign({},k,{lastResult:{actual:parseFloat(a),status:eS(kpi.rule,kpi.value,a),excerpt:ex.trim()}}):k})})});setModal(null)}}>Save</button></div></Modal>}
   function DelModal(){if(!sel)return null;return<Modal title="Delete Company" onClose={function(){setModal(null)}} w={380} K={K}><p style={{fontSize:14,color:K.mid,marginTop:0}}>Delete <strong style={{color:K.txt}}>{sel.ticker}</strong> and all data?</p><div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:16}}><button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button><button style={S.btnD} onClick={function(){delCo(selId)}}>Delete</button></div></Modal>}
+  // ── Deep Dive Form & View ────────────────────────────────────────────────────
+  function DeepDiveForm({f,set,K,_isBm,fm,fb,fh}){
+    var dd=f.deepDive;
+    var STATUS_OPTS=[{v:"pass",l:"✓ Pass",c:"#10B981"},{v:"warn",l:"⚠ Warn",c:"#F59E0B"},{v:"fail",l:"✗ Fail",c:"#EF4444"},{v:"note",l:"— Note",c:"#6B7280"}];
+    var VERDICT_OPTS=[{v:"pass",l:"Pass",c:"#10B981"},{v:"warn",l:"Borderline",c:"#F59E0B"},{v:"fail",l:"Fail",c:"#EF4444"}];
+    var IRR_OPTS=[{v:"pass",l:"Pass",c:"#10B981"},{v:"warn",l:"Borderline",c:"#F59E0B"},{v:"fail",l:"Fail",c:"#EF4444"}];
+    var PURPLE="#8B5CF6";
+
+    function updDd(path,val){
+      var next=JSON.parse(JSON.stringify(dd));
+      var parts=path.split(".");
+      var obj=next;
+      for(var i=0;i<parts.length-1;i++){
+        if(parts[i].match(/^\d+$/))obj=obj[parseInt(parts[i])];
+        else obj=obj[parts[i]];
+      }
+      var last=parts[parts.length-1];
+      if(last.match(/^\d+$/))obj[parseInt(last)]=val;
+      else obj[last]=val;
+      set("deepDive",next);
+    }
+
+    function addMetric(){var n=JSON.parse(JSON.stringify(dd));n.metrics.push({label:"",value:"",status:"pass"});set("deepDive",n);}
+    function removeMetric(i){var n=JSON.parse(JSON.stringify(dd));n.metrics.splice(i,1);set("deepDive",n);}
+    function addCheck(fi){var n=JSON.parse(JSON.stringify(dd));n.filters[fi].checks.push({status:"pass",text:""});set("deepDive",n);}
+    function removeCheck(fi,ci){var n=JSON.parse(JSON.stringify(dd));n.filters[fi].checks.splice(ci,1);set("deepDive",n);}
+    function addInversion(){var n=JSON.parse(JSON.stringify(dd));n.inversion.push({mechanism:"",ark:""});set("deepDive",n);}
+    function removeInversion(i){var n=JSON.parse(JSON.stringify(dd));n.inversion.splice(i,1);set("deepDive",n);}
+
+    var inp={boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,
+      borderRadius:_isBm?0:6,padding:"7px 10px",fontSize:12,color:K.txt,fontFamily:fm,outline:"none",width:"100%"};
+    var ta=Object.assign({},inp,{fontFamily:fb,lineHeight:1.6,resize:"vertical"});
+
+    return<div style={{maxHeight:"60vh",overflowY:"auto",paddingRight:4}}>
+
+      {/* ── Metrics ── */}
+      <div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Key Metrics</div>
+          <button onClick={addMetric} style={{background:"none",border:"none",color:PURPLE,cursor:"pointer",fontSize:12,fontFamily:fm}}>{"+ Add"}</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto auto",gap:6,alignItems:"center"}}>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,textTransform:"uppercase"}}>Label</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,textTransform:"uppercase"}}>Value</div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,textTransform:"uppercase"}}>Status</div>
+          <div/>
+          {dd.metrics.map(function(m,i){return<React.Fragment key={i}>
+            <input value={m.label} placeholder="Gross margin"
+              onChange={function(e){updDd("metrics."+i+".label",e.target.value);}}
+              style={inp}/>
+            <input value={m.value} placeholder="77.1%"
+              onChange={function(e){updDd("metrics."+i+".value",e.target.value);}}
+              style={inp}/>
+            <select value={m.status} onChange={function(e){updDd("metrics."+i+".status",e.target.value);}}
+              style={Object.assign({},inp,{width:80,color:m.status==="pass"?"#10B981":m.status==="warn"?"#F59E0B":"#EF4444"})}>
+              {STATUS_OPTS.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>;})}
+            </select>
+            <button onClick={function(){removeMetric(i);}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:16,padding:"0 4px"}}>{"×"}</button>
+          </React.Fragment>;})}
+        </div>
+      </div>
+
+      {/* ── Five Filters ── */}
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Five-Filter Analysis</div>
+        {dd.filters.map(function(fil,fi){return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:8,overflow:"hidden"}}>
+          {/* Filter header */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,padding:"10px 12px",background:K.bg,alignItems:"center"}}>
+            <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{"F"+fil.id+" — "+fil.title}</div>
+            <input value={fil.verdict} placeholder="Pass / Borderline / Fail — one line"
+              onChange={function(e){updDd("filters."+fi+".verdict",e.target.value);}}
+              style={Object.assign({},inp,{width:200,fontSize:11})}/>
+            <select value={fil.verdictType} onChange={function(e){updDd("filters."+fi+".verdictType",e.target.value);}}
+              style={Object.assign({},inp,{width:90,color:fil.verdictType==="pass"?"#10B981":fil.verdictType==="warn"?"#F59E0B":"#EF4444"})}>
+              {VERDICT_OPTS.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>;})}
+            </select>
+          </div>
+          {/* Checks */}
+          <div style={{padding:"8px 12px 12px"}}>
+            {fil.checks.map(function(ch,ci){return<div key={ci} style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+              <select value={ch.status} onChange={function(e){updDd("filters."+fi+".checks."+ci+".status",e.target.value);}}
+                style={Object.assign({},inp,{width:70,color:ch.status==="pass"?"#10B981":ch.status==="warn"?"#F59E0B":ch.status==="fail"?"#EF4444":"#6B7280",marginTop:1})}>
+                {STATUS_OPTS.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>;})}
+              </select>
+              <textarea value={ch.text} rows={2} placeholder="Write the check..."
+                onChange={function(e){updDd("filters."+fi+".checks."+ci+".text",e.target.value);}}
+                style={ta}/>
+              <button onClick={function(){removeCheck(fi,ci);}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:16,padding:"0 4px",marginTop:1}}>{"×"}</button>
+            </div>;})}
+            <button onClick={function(){addCheck(fi);}}
+              style={{background:"none",border:"none",color:PURPLE,cursor:"pointer",fontSize:11,fontFamily:fm,padding:"4px 0"}}>
+              {"+ Add check"}
+            </button>
+          </div>
+        </div>;})}
+      </div>
+
+      {/* ── DCF ── */}
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Owner Earnings DCF · 3 Scenarios</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+          {dd.dcf.scenarios.map(function(s,si){return<div key={si} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px"}}>
+            <div style={{fontSize:10,fontWeight:700,color:si===0?"#EF4444":si===1?"#F59E0B":"#10B981",fontFamily:fm,textTransform:"uppercase",marginBottom:8}}>{s.label}</div>
+            {[
+              {k:"cagr",l:"Rev CAGR",ph:"7.5%"},
+              {k:"oeMargin",l:"OE Margin",ph:"30%"},
+              {k:"terminal",l:"Terminal",ph:"20×"},
+              {k:"weight",l:"Weight",ph:"50%"},
+              {k:"irr",l:"IRR",ph:"16.9%"},
+              {k:"intrinsic",l:"Intrinsic",ph:"€93"},
+              {k:"mos",l:"MOS",ph:"+16%"},
+            ].map(function(field){return<div key={field.k} style={{marginBottom:5}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>{field.l}</div>
+              <input value={s[field.k]} placeholder={field.ph}
+                onChange={function(e){updDd("dcf.scenarios."+si+"."+field.k,e.target.value);}}
+                style={Object.assign({},inp,{fontSize:11})}/>
+            </div>;})}
+            <div style={{marginTop:6}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>IRR verdict</div>
+              <select value={s.irrType} onChange={function(e){updDd("dcf.scenarios."+si+".irrType",e.target.value);}}
+                style={Object.assign({},inp,{color:s.irrType==="pass"?"#10B981":s.irrType==="warn"?"#F59E0B":"#EF4444"})}>
+                {IRR_OPTS.map(function(o){return<option key={o.v} value={o.v}>{o.l}</option>;})}
+              </select>
+            </div>
+          </div>;})}
+        </div>
+        <textarea value={dd.dcf.summary} rows={2} placeholder={"DCF summary — weighted IRR, fat pitch entry, hold vs add decision..."}
+          onChange={function(e){updDd("dcf.summary",e.target.value);}}
+          style={Object.assign({},ta,{width:"100%",boxSizing:"border-box"})}/>
+      </div>
+
+      {/* ── Inversion ── */}
+      <div style={{marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Inversion Checklist</div>
+          <button onClick={addInversion} style={{background:"none",border:"none",color:PURPLE,cursor:"pointer",fontSize:12,fontFamily:fm}}>{"+ Add"}</button>
+        </div>
+        {dd.inversion.map(function(inv,i){return<div key={i} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",marginBottom:8}}>
+          <div style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>Mechanism — what would break the thesis?</div>
+              <input value={inv.mechanism} placeholder="Works council law reform"
+                onChange={function(e){updDd("inversion."+i+".mechanism",e.target.value);}}
+                style={inp}/>
+            </div>
+            <button onClick={function(){removeInversion(i);}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:16,padding:"4px"}}>{"×"}</button>
+          </div>
+          <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>The ark — what would have to be true & how you'd know</div>
+          <textarea value={inv.ark} rows={2} placeholder="Probability: low. Signal to watch: ..."
+            onChange={function(e){updDd("inversion."+i+".ark",e.target.value);}}
+            style={Object.assign({},ta,{width:"100%",boxSizing:"border-box"})}/>
+        </div>;})}
+      </div>
+
+      {/* ── Verdict ── */}
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Verdict</div>
+        <textarea value={dd.verdict.text} rows={3} placeholder={"Overall conclusion. What does the business deserve? Why? What are you doing with the position?"}
+          onChange={function(e){updDd("verdict.text",e.target.value);}}
+          style={Object.assign({},ta,{width:"100%",boxSizing:"border-box",marginBottom:8})}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[{k:"weight",l:"Portfolio weight",ph:"10%"},{k:"fatPitch",l:"Fat pitch price",ph:"€70"},{k:"pending",l:"Pending action",ph:"Confirm FY2026 OCF ≥ €55M"}]
+            .map(function(field){return<div key={field.k}>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>{field.l}</div>
+              <input value={dd.verdict[field.k]} placeholder={field.ph}
+                onChange={function(e){updDd("verdict."+field.k,e.target.value);}}
+                style={inp}/>
+            </div>;})}
+        </div>
+      </div>
+    </div>;
+  }
+
+  function DeepDiveView({doc,K,_isBm,fm,fb,fh,cSym}){
+    var dd=doc.deepDive;if(!dd)return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No deep dive data.</div>;
+    var _open=React.useState({}),openFilters=_open[0],setOpenFilters=_open[1];
+    var PURPLE="#8B5CF6";
+    function statusColor(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#6B7280";}
+    function statusIcon(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"—";}
+    function verdictBg(v){return v==="pass"?"#10B98112":v==="warn"?"#F59E0B12":"#EF444412";}
+
+    return<div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:4}}>
+
+      {/* Metrics grid */}
+      {dd.metrics&&dd.metrics.filter(function(m){return m.label&&m.value;}).length>0&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Metrics</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:6}}>
+          {dd.metrics.filter(function(m){return m.label&&m.value;}).map(function(m,i){
+            var c=statusColor(m.status);
+            return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"8px 10px",border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:14,fontWeight:700,color:c,fontFamily:fm,lineHeight:1}}>{m.value}</div>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3,textTransform:"uppercase",letterSpacing:0.5}}>{m.label}</div>
+            </div>;
+          })}
+        </div>
+      </div>}
+
+      {/* Five filters */}
+      {dd.filters&&dd.filters.filter(function(f){return f.checks&&f.checks.some(function(c){return c.text;});}).length>0&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Five-Filter Analysis</div>
+        {dd.filters.map(function(fil,fi){
+          var hasContent=fil.checks&&fil.checks.some(function(c){return c.text;});
+          if(!hasContent)return null;
+          var isOpen=openFilters[fi]!==false;
+          var vc=statusColor(fil.verdictType);
+          return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:6,overflow:"hidden"}}>
+            <button onClick={function(){setOpenFilters(function(p){var n=Object.assign({},p);n[fi]=!isOpen;return n;});}}
+              style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",
+                background:K.bg,border:"none",cursor:"pointer",textAlign:"left"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:9,color:K.dim,fontFamily:fm,width:16,flexShrink:0}}>{"F"+fil.id}</span>
+                <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fil.title}</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {fil.verdict&&<span style={{fontSize:10,fontWeight:700,color:vc,background:verdictBg(fil.verdictType),
+                  border:"1px solid "+vc+"30",borderRadius:4,padding:"2px 8px",fontFamily:fm}}>{fil.verdict}</span>}
+                <span style={{fontSize:10,color:K.dim}}>{isOpen?"▲":"▼"}</span>
+              </div>
+            </button>
+            {isOpen&&<div style={{borderTop:"1px solid "+K.bdr,padding:"10px 14px 14px"}}>
+              {fil.checks.filter(function(c){return c.text;}).map(function(ch,ci){return<div key={ci} style={{display:"flex",gap:10,marginBottom:8}}>
+                <span style={{fontSize:12,fontWeight:700,color:statusColor(ch.status),width:14,flexShrink:0,marginTop:1}}>{statusIcon(ch.status)}</span>
+                <p style={{margin:0,fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{ch.text}</p>
+              </div>;})}
+            </div>}
+          </div>;
+        })}
+      </div>}
+
+      {/* DCF */}
+      {dd.dcf&&dd.dcf.scenarios&&dd.dcf.scenarios.some(function(s){return s.irr;})&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Owner Earnings DCF</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:dd.dcf.summary?8:0}}>
+          {dd.dcf.scenarios.map(function(s,si){
+            var ic=statusColor(s.irrType);
+            return<div key={si} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
+              <div style={{fontSize:9,fontWeight:700,color:ic,fontFamily:fm,textTransform:"uppercase",marginBottom:6}}>
+                {s.label+(s.weight?" · "+s.weight:"")}
+              </div>
+              {s.irr&&<div style={{fontSize:22,fontWeight:800,color:ic,fontFamily:fm,lineHeight:1,marginBottom:8}}>{s.irr}</div>}
+              {[["CAGR",s.cagr],["OE margin",s.oeMargin],["Terminal",s.terminal],["Intrinsic",s.intrinsic],["MOS",s.mos]]
+                .filter(function(row){return row[1];})
+                .map(function(row){return<div key={row[0]} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:K.dim,marginBottom:2}}>
+                  <span>{row[0]}</span><span style={{fontFamily:fm,fontWeight:500,color:K.mid}}>{row[1]}</span>
+                </div>;})}
+            </div>;
+          })}
+        </div>
+        {dd.dcf.summary&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px"}}>
+          <p style={{margin:0,fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{dd.dcf.summary}</p>
+        </div>}
+      </div>}
+
+      {/* Inversion */}
+      {dd.inversion&&dd.inversion.filter(function(r){return r.mechanism;}).length>0&&<div style={{marginBottom:20}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Inversion — Bear Case Mechanisms</div>
+        <div style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,overflow:"hidden"}}>
+          {dd.inversion.filter(function(r){return r.mechanism;}).map(function(r,i){return<div key={i}
+            style={{padding:"10px 14px",borderBottom:i<dd.inversion.filter(function(x){return x.mechanism;}).length-1?"1px solid "+K.bdr:"none"}}>
+            <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{r.mechanism}</div>
+            <p style={{margin:0,fontSize:12,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{r.ark}</p>
+          </div>;})}
+        </div>
+      </div>}
+
+      {/* Verdict */}
+      {dd.verdict&&(dd.verdict.text||dd.verdict.fatPitch)&&<div>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Verdict</div>
+        <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"14px 16px"}}>
+          {dd.verdict.text&&<p style={{margin:"0 0 12px",fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.7}}>{dd.verdict.text}</p>}
+          <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+            {dd.verdict.weight&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Portfolio weight: </span><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{dd.verdict.weight}</span></div>}
+            {dd.verdict.fatPitch&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Fat pitch: </span><span style={{fontSize:11,fontWeight:700,color:"#10B981",fontFamily:fm}}>{dd.verdict.fatPitch}</span></div>}
+            {dd.verdict.pending&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Pending: </span><span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{dd.verdict.pending}</span></div>}
+          </div>
+        </div>
+      </div>}
+    </div>;
+  }
+
   function DocModal(){if(!sel)return null;
     var did=modal&&modal.data;var ex=did?sel.docs.find(function(d){return d.id===did}):null;
     var prefill=(modal&&modal.prefill)||{};
@@ -2215,6 +2495,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {id:"initial_thesis",label:"Initial Thesis",icon:"lightbulb",color:"#8B5CF6",
        prompt:"Why I am buying this business.\n\nThe core insight:\n\nWhat makes this a durable compounder:\n\nWhat would make me sell:\n\nRisk I am accepting:\n"},
       {id:"note",label:"Research Note",icon:"file",color:K.dim,prompt:""},
+      {id:"deep_dive",label:"Deep Dive",icon:"search",color:"#8B5CF6",prompt:""},
     ];
     var initType=prefill.docType||(ex&&ex.docType)||"note";
     var _f=useState({
@@ -2223,6 +2504,23 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       docType:initType,
       sourceLibId:ex?ex.sourceLibId:(prefill.sourceLibId||null),
       sourceLibTitle:ex?ex.sourceLibTitle:(prefill.sourceLibTitle||null),
+      deepDive:ex&&ex.deepDive?ex.deepDive:{
+        metrics:[{label:"",value:"",status:"pass"}],
+        filters:[
+          {id:1,title:"Circle of competence",verdict:"",verdictType:"pass",checks:[{status:"pass",text:""}]},
+          {id:2,title:"Economic moat",verdict:"",verdictType:"pass",checks:[{status:"pass",text:""}]},
+          {id:3,title:"Management quality",verdict:"",verdictType:"pass",checks:[{status:"pass",text:""}]},
+          {id:4,title:"Financial strength",verdict:"",verdictType:"pass",checks:[{status:"pass",text:""}]},
+          {id:5,title:"Price & margin of safety",verdict:"",verdictType:"warn",checks:[{status:"warn",text:""}]},
+        ],
+        dcf:{scenarios:[
+          {label:"Bear",cagr:"",oeMargin:"",terminal:"",weight:"20%",irr:"",intrinsic:"",mos:"",irrType:"fail"},
+          {label:"Base",cagr:"",oeMargin:"",terminal:"",weight:"50%",irr:"",intrinsic:"",mos:"",irrType:"warn"},
+          {label:"Bull",cagr:"",oeMargin:"",terminal:"",weight:"30%",irr:"",intrinsic:"",mos:"",irrType:"pass"},
+        ],summary:""},
+        inversion:[{mechanism:"",ark:""}],
+        verdict:{text:"",weight:"",fatPitch:"",pending:""},
+      },
     }),f=_f[0],setF=_f[1];
     var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
     var activeType=DOC_TYPES.find(function(t){return t.id===f.docType})||DOC_TYPES[5];
@@ -2230,11 +2528,14 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(!f.title.trim())return;
       var doc={title:f.title.trim(),content:f.content,docType:f.docType,folder:"notes",
                sourceLibId:f.sourceLibId||null,sourceLibTitle:f.sourceLibTitle||null,
+               deepDive:f.docType==="deep_dive"?f.deepDive:undefined,
                updatedAt:new Date().toISOString()};
       if(ex){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.map(function(d){return d.id===did?Object.assign({},d,doc):d})})});}
       else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})});}
       setModal(null);}
-    return<Modal title={ex?"Edit note":("New note — "+sel.ticker)} onClose={function(){setModal(null)}} w={600} K={K}>
+    var isDeepDive=f.docType==="deep_dive";
+    var _ddEdit=React.useState(!ex||!ex.deepDive),ddEditing=_ddEdit[0],setDdEditing=_ddEdit[1];
+    return<Modal title={ex&&isDeepDive?"Deep Dive — "+sel.ticker:ex?"Edit note":"New note — "+sel.ticker} onClose={function(){setModal(null)}} w={isDeepDive?760:600} K={K}>
       <div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:8}}>Note type</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
@@ -2246,20 +2547,33 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <span style={{fontSize:11,color:K.acc,fontFamily:fm,flex:1}}>From: {f.sourceLibTitle}</span>
         <button onClick={function(){set("sourceLibId",null);set("sourceLibTitle",null)}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:12,lineHeight:1}}>x</button>
       </div>}
-      <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
-      <div style={{marginBottom:16}}>
+      {isDeepDive&&ex&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+        <button onClick={function(){setDdEditing(!ddEditing);}}
+          style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}>
+          {ddEditing?"← View":"Edit"}
+        </button>
+      </div>}
+      {isDeepDive&&!ddEditing&&ex&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
+      {(!isDeepDive||ddEditing)&&<Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
+            {f.docType!=="deep_dive"&&<div style={{marginBottom:16}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
           <label style={{fontSize:12,color:K.dim,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Content</label>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
-            {activeType.prompt&&!f.content.trim()&&<button onClick={function(){set("content",activeType.prompt)}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Use template</button>}
-            {f.content.trim()&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{f.content.trim().split(" ").filter(function(w){return w.length>0}).length} words</span>}
+            {activeType.prompt&&!f.content.trim()&&<button onClick={function(){set("content",activeType.prompt)}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:11,fontFamily:fm}}>Use template</button>}
+            {f.content.trim()&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{f.content.trim().split(/\s+/).filter(Boolean).length} words</span>}
           </div>
         </div>
         <textarea value={f.content} onChange={function(e){set("content",e.target.value)}}
           rows={12} placeholder={activeType.prompt||"Write your research note..."}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"vertical",outline:"none"}}/>
+      </div>}
+      {f.docType==="deep_dive"&&<DeepDiveForm f={f} set={set} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
+        <textarea value={f.content} onChange={function(e){set("content",e.target.value)}}
+          rows={12} placeholder={activeType.prompt||"Write your research note..."}
           style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"12px 16px",fontSize:13,fontFamily:fb,resize:"vertical",lineHeight:1.8}}/>
       </div>
-      <div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
+      }}
+      {(!isDeepDive||ddEditing)&&<div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
         {ex&&<button style={S.btnD} onClick={function(){if(!window.confirm("Delete this note?"))return;upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null);}}>Delete</button>}
         <div style={{flex:1}}/>
         <button style={S.btn} onClick={function(){setModal(null)}}>Cancel</button>
@@ -8020,6 +8334,7 @@ function calcMoatFromData(finData,businessModelType){
           annual_review:{label:"Annual Review",icon:"clock",color:K.amb},
           initial_thesis:{label:"Initial Thesis",icon:"lightbulb",color:"#8B5CF6"},
           note:{label:"Research Note",icon:"file",color:K.dim},
+          deep_dive:{label:"Deep Dive",icon:"search",color:"#8B5CF6"},
         };
         var _trailFilter=useState("all"),trailFilter=_trailFilter[0],setTrailFilter=_trailFilter[1];
         var _trailSearch=useState(""),trailSearch=_trailSearch[0],setTrailSearch=_trailSearch[1];
@@ -11600,7 +11915,7 @@ function ProWelcomeGift(){
         {/* Valuation Gauge */}
         <div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"16px"}}>
           <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Valuation gauge — fat pitch price"}</div>
-          {fatPitch>0&&price>0
+          {c.fatPitchPrice&&parseFloat(c.fatPitchPrice)>0&&price>0
             ?<div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
                 <div>
@@ -11631,24 +11946,16 @@ function ProWelcomeGift(){
               </div>
             </div>
             :<div>
-              <div style={{fontSize:12,color:K.dim,marginBottom:8}}>{"Set the price where this becomes an obvious buy."}</div>
+              <div style={{fontSize:12,color:K.dim,marginBottom:8}}>{"Set the price where this becomes an obvious buy."}</div></div></div>
               <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
-                onBlur={function(){var v=fpVal.trim();upd(c.id,{fatPitchPrice:v||null});}}
                 placeholder={"e.g. 180"}
                 style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
                   background:K.card,color:K.txt,fontSize:14,fontFamily:fm,outline:"none"}}
                 onFocus={function(e){e.target.style.borderColor=K.acc;}}
+                onBlur={function(e){e.target.style.borderColor=K.bdr;var v=fpVal.trim();if(v)upd(c.id,{fatPitchPrice:v});}}
               />
             </div>}
-          {fatPitch>0&&<div style={{marginTop:10}}>
-            <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
-              onBlur={function(){var v=fpVal.trim();upd(c.id,{fatPitchPrice:v||null});}}
-              placeholder={"Fat pitch price"} style={{width:"100%",boxSizing:"border-box",padding:"7px 10px",
-                borderRadius:_isBm?0:6,border:"1px solid "+K.bdr+"80",background:K.bg,color:K.txt,fontSize:12,fontFamily:fm,outline:"none"}}
-              onFocus={function(e){e.target.style.borderColor=K.acc;}}
-              onBlur={function(e){e.target.style.borderColor=K.bdr+"80";var v=fpVal.trim();upd(c.id,{fatPitchPrice:v||null});}}
-            />
-          </div>}
+
         </div>
 
         {/* Price Alert */}
