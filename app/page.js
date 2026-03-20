@@ -7522,7 +7522,7 @@ function calcMoatFromData(finData,businessModelType){
 
       {/* Tab bar — dropdown on mobile, full bar on desktop */}
       {(function(){
-        var tabs=[{id:"command",l:"Focus",icon:"trending"}]  .concat(dashSet.showLensesTab?[{id:"lenses",l:"Lenses",icon:"search"}]:[])  .concat([{id:"docs",l:"Research",icon:"file"}])  .concat(dashSet.showGoalsTab?[{id:"goals",l:"Goals",icon:"target"}]:[]);
+        var tabs=[{id:"command",l:"Focus",icon:"trending"}]  .concat(dashSet.showLensesTab?[{id:"lenses",l:"Lenses",icon:"search"}]:[])  .concat([{id:"docs",l:"Library",icon:"book"}])  .concat(dashSet.showGoalsTab?[{id:"goals",l:"Goals",icon:"target"}]:[]);
         var active=tabs.find(function(t){return t.id===ht})||tabs[0];
         if(isMobile){return<div style={{marginBottom:20}}>
           <div style={{position:"relative"}}>
@@ -8866,7 +8866,7 @@ function ProWelcomeGift(){
               <button onClick={function(){
                 var topChanges=seed.convChanges.map(function(c2){return c2.ticker+(c2.delta>0?" conviction grew +"+c2.delta:" conviction dropped "+c2.delta)+" points over "+seed.weeks+" weeks";}).join("\n");
                 var prefill="Annual Investment Letter \u2014 "+new Date().getFullYear()+"\n\n"+seed.weeks+" weeks of weekly reviews complete. Portfolio conviction: "+seed.avgStart+"/10 \u2192 "+seed.avgEnd+"/10.\n\nConviction arc:\n"+topChanges+"\n\nWhat I got right:\n\nWhat I got wrong:\n\nWhat I will carry into next year:\n";
-                setPage("hub");setHt("docs");
+                setPage("library");
                 setTimeout(function(){setModal({type:"doc",prefill:{docType:"annual_review",title:"Annual Investment Letter "+new Date().getFullYear(),content:prefill}});},80);
               }} style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px",background:K.amb,borderColor:K.amb})}>
                 Write my annual letter →
@@ -11048,28 +11048,61 @@ function ProWelcomeGift(){
     var _lm=useState(null),libModal=_lm[0],setLibModal=_lm[1];
     var _lsrch=useState(""),libSearch=_lsrch[0],setLibSearch=_lsrch[1];
     var _ltype=useState("all"),libTypeFilter=_ltype[0],setLibTypeFilter=_ltype[1];
-    var _lplaying=useState(null),libPlaying=_lplaying[0],setLibPlaying=_lplaying[1];
+    var _lticker=useState(""),libTickerFilter=_lticker[0],setLibTickerFilter=_lticker[1];
+    var _reader=useState(null),readerItem=_reader[0],setReaderItem=_reader[1];
+    var _readerNotes=useState(""),readerNotes=_readerNotes[0],setReaderNotes=_readerNotes[1];
+    var _iframeErr=useState(false),iframeErr=_iframeErr[0],setIframeErr=_iframeErr[1];
+    var _tab=useState("resources"),libTab=_tab[0],setLibTab=_tab[1];
+
     var FOLDER_COLORS=[K.acc,K.grn,K.amb,K.red,"#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
     var ITEM_TYPES=["Article","Video","Book","Podcast","Course","Other"];
     var MY_WORK_TYPES=["Analysis","Model","Research Doc","Notes"];
     var ALL_TYPES=ITEM_TYPES.concat(MY_WORK_TYPES);
     var isMyWork=function(tp){return MY_WORK_TYPES.indexOf(tp)>=0;};
-    var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim,Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"};
-    function getYTId(url){if(!url)return null;var m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/))([^&?#\s]{11})/);return m?m[1]:null}
+    var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim,
+      Analysis:"#EC4899",Model:K.acc,"Research Doc":"#8B5CF6",Notes:K.grn};
+    function getYTId(url){if(!url)return null;var m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/))([\w-]+)/);return m?m[1]:null}
     function getVimeoId(url){if(!url)return null;var m=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);return m?m[1]:null}
-    function getEmbedUrl(url){var yt=getYTId(url);if(yt)return"https://www.youtube.com/embed/"+yt+"?autoplay=1";var vi=getVimeoId(url);if(vi)return"https://player.vimeo.com/video/"+vi+"?autoplay=1";return null}
+    function getEmbedUrl(url){var yt=getYTId(url);if(yt)return"https://www.youtube.com/embed/"+yt+"?autoplay=1";var vi=getVimeoId(url);if(vi)return"https://player.vimeo.com/video/"+vi+"?autoplay=1";return url;}
     function getThumb(url){var yt=getYTId(url);if(yt)return"https://img.youtube.com/vi/"+yt+"/hqdefault.jpg";return null}
-    function isEmbeddable(url){return!!(getYTId(url)||getVimeoId(url))}
+    function isVideoEmbed(url){return!!(getYTId(url)||getVimeoId(url))}
+    function canIframe(url){if(!url)return false;if(isVideoEmbed(url))return true;
+      // These commonly block iframes
+      var blocked=["twitter.com","x.com","bloomberg.com","wsj.com","ft.com","nytimes.com","seekingalpha.com"];
+      try{var host=new URL(url).hostname.replace("www.","");return!blocked.some(function(b){return host.indexOf(b)>=0;});}catch(e){return false;}}
+
     var folders=lib.folders||[];
     var items=lib.items||[];
+
+    // Portfolio companies for ticker filter
+    var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"||c.status==="watchlist";});
+    var taggedTickers=[...new Set(items.map(function(it){return it.ticker;}).filter(Boolean))];
+
     var filtered=items.filter(function(it){
       var matchFolder=!libFolder||it.folder===libFolder;
       var matchType=libTypeFilter==="all"||it.type===libTypeFilter;
+      var matchTicker=!libTickerFilter||it.ticker===libTickerFilter;
       var q=libSearch.toLowerCase();
       var matchSearch=!q||(it.title||"").toLowerCase().indexOf(q)>=0||(it.notes||"").toLowerCase().indexOf(q)>=0;
-      return matchFolder&&matchType&&matchSearch});
+      return matchFolder&&matchType&&matchTicker&&matchSearch;
+    });
     var totalByFolder={};items.forEach(function(it){totalByFolder[it.folder||""]=(totalByFolder[it.folder||""]||0)+1});
-    // Edit modal form state
+    var myWork=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
+    var reference=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
+
+    function openReader(it){
+      setReaderItem(it);
+      setReaderNotes(it.notes||"");
+      setIframeErr(false);
+    }
+
+    function saveReaderNotes(){
+      if(!readerItem)return;
+      var nextItems=items.map(function(it){return it.id===readerItem.id?Object.assign({},it,{notes:readerNotes}):it;});
+      saveLibrary(Object.assign({},lib,{items:nextItems}));
+      setReaderItem(function(prev){return prev?Object.assign({},prev,{notes:readerNotes}):prev;});
+    }
+
     function AddEditModal(){
       var isNew=!libModal.item;
       var def=libModal.item||{};
@@ -11078,12 +11111,10 @@ function ProWelcomeGift(){
       var _ftching=useState(false),fetchingTitle=_ftching[0],setFetchingTitle=_ftching[1];
       function handleUrlChange(v){
         setUrl(v);
-        // Auto-detect type from URL
         if(v.includes("docs.google.com/spreadsheets")||v.includes("sheets.new"))setType("Model");
         else if(v.includes("docs.google.com/document")||v.includes("notion.so")||v.includes("notion.com"))setType("Research Doc");
         else if(v.includes("youtube.com")||v.includes("youtu.be"))setType("Video");
         else if(v.includes("open.spotify.com")||v.includes("podcasts.apple"))setType("Podcast");
-        // Auto-fetch title if empty and URL looks complete
         if(!title.trim()&&v.length>12&&v.startsWith("http")&&!fetchingTitle){
           setFetchingTitle(true);
           fetch("/api/fetch-title?url="+encodeURIComponent(v))
@@ -11095,7 +11126,7 @@ function ProWelcomeGift(){
       var _tp=useState(def.type||"Article"),type=_tp[0],setType=_tp[1];
       var _fo=useState(def.folder||""),folder=_fo[0],setFolder=_fo[1];
       var _no=useState(def.notes||""),notes=_no[0],setNotes=_no[1];
-      var _ltk=useState(def.ticker||""),libTicker=_ltk[0],setLibTicker=_ltk[1];
+      var _ltk=useState(def.ticker||libTickerFilter||""),libTicker=_ltk[0],setLibTicker=_ltk[1];
       var _fn=useState(""),folderName=_fn[0],setFolderName=_fn[1];
       var _fc=useState(FOLDER_COLORS[folders.length%FOLDER_COLORS.length]),folderColor=_fc[0],setFolderColor=_fc[1];
       var _nf=useState(false),newFolderMode=_nf[0],setNewFolderMode=_nf[1];
@@ -11103,224 +11134,373 @@ function ProWelcomeGift(){
         if(!title.trim())return showToast("Title is required","info",2000);
         var nextFolders=folders.slice();
         var useFolder=folder;
-        if(newFolderMode&&folderName.trim()){
-          var nf={id:"f"+Date.now(),name:folderName.trim(),color:folderColor};
-          nextFolders.push(nf);useFolder=nf.id}
+        if(newFolderMode&&folderName.trim()){var nf={id:"f"+Date.now(),name:folderName.trim(),color:folderColor};nextFolders.push(nf);useFolder=nf.id}
         var nextItems=items.slice();
-        if(isNew){nextItems.unshift({id:"li"+Date.now(),title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker.trim().toUpperCase()||undefined,addedAt:new Date().toISOString()})}
-        else{nextItems=nextItems.map(function(it){return it.id===def.id?Object.assign({},it,{title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker.trim().toUpperCase()||undefined}):it})}
-        saveLibrary({folders:nextFolders,items:nextItems});setLibModal(null);showToast(isNew?"Resource added":"Resource updated","info",2000)}
+        if(isNew){nextItems.unshift({id:"li"+Date.now(),title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker,addedAt:new Date().toISOString()});}
+        else{nextItems=nextItems.map(function(it){return it.id===def.id?Object.assign({},it,{title:title.trim(),url:url.trim(),type:type,folder:useFolder,notes:notes.trim(),ticker:libTicker}):it;});}
+        saveLibrary({folders:nextFolders,items:nextItems});setLibModal(null);showToast(isNew?"Resource added":"Resource updated","info",2000);
+      }
       var thumb=getThumb(url);
       return<Modal K={K} title={isNew?"Add Resource":"Edit Resource"} onClose={function(){setLibModal(null)}} w={520}>
         <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Type</label>
-          <div><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5,textTransform:"uppercase"}}>Reference material</div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{ITEM_TYPES.map(function(tp){return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?K.acc:K.bdr),background:type===tp?K.acc+"18":"transparent",color:type===tp?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div><div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:1,marginBottom:5,marginTop:6,textTransform:"uppercase"}}>My work</div><div style={{display:"flex",gap:5,flexWrap:"wrap"}}>{MY_WORK_TYPES.map(function(tp){var tc2=typeColors[tp]||K.grn;return<button key={tp} onClick={function(){setType(tp)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(type===tp?tc2+"60":K.bdr),background:type===tp?tc2+"15":"transparent",color:type===tp?tc2:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:type===tp?700:400}}>{tp}</button>})}</div></div>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:6,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>URL</label>
+          <input value={url} onChange={function(e){handleUrlChange(e.target.value);}} placeholder="https://..."
+            style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:14,fontFamily:fm,outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=K.acc;}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+          {fetchingTitle&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:4}}>Fetching title...</div>}
         </div>
-        <Inp K={K} label="Title" value={title} onChange={setTitle} placeholder="e.g. Howard Marks on Risk"/>
-        <Inp K={K} label="URL" value={url} onChange={handleUrlChange} placeholder="https://..." suffix={fetchingTitle?"Fetching title...":null}/>
-        {thumb&&<div style={{borderRadius:_isBm?0:8,overflow:"hidden",marginBottom:16,height:120,background:K.bg}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover",opacity:.85}}/></div>}
-        <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Folder</label>
-          {!newFolderMode&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:6}}>
-            <button onClick={function(){setFolder("")}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(folder===""?K.acc:K.bdr),background:folder===""?K.acc+"18":"transparent",color:folder===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
-            {folders.map(function(f){return<button key={f.id} onClick={function(){setFolder(f.id)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(folder===f.id?f.color:K.bdr),background:folder===f.id?f.color+"20":"transparent",color:folder===f.id?f.color:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:folder===f.id?700:400}}>{f.name}</button>})}
-            <button onClick={function(){setNewFolderMode(true)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px dashed "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>+ New folder</button>
-          </div>}
-          {newFolderMode&&<div>
-            <input value={folderName} onChange={function(e){setFolderName(e.target.value)}} placeholder="Folder name" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,color:K.txt,padding:"10px 14px",fontSize:14,fontFamily:fm,outline:"none",marginBottom:8}}/>
-            <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c)}} style={{width:22,height:22,borderRadius:"50%",background:c,cursor:"pointer",border:folderColor===c?"2px solid "+K.txt:"2px solid transparent"}}/>})}</div>
-            <button onClick={function(){setNewFolderMode(false)}} style={{fontSize:12,color:K.dim,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>← Back to existing</button>
-          </div>}
-        </div>
-        <Inp K={K} label="What did I take from this?" value={notes} onChange={setNotes} ta={true} placeholder="One insight — the thing that changed how you think about this business or investing... you saved this..."/>
-        <div style={{marginBottom:16}}>
-          <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:6,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Link to holding (optional)</label>
+        {thumb&&<div style={{borderRadius:_isBm?0:8,overflow:"hidden",marginBottom:14,height:110,background:K.bdr}}><img src={thumb} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>}
+        <Inp K={K} label="Title" value={title} onChange={setTitle} placeholder="e.g. Topicus 2023 Annual Report"/>
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Type</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            <button onClick={function(){setLibTicker("")}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===""?K.acc:K.bdr),background:libTicker===""?K.acc+"18":"transparent",color:libTicker===""?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm}}>None</button>
-            {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).map(function(c){return<button key={c.id} onClick={function(){setLibTicker(libTicker===c.ticker?"":c.ticker)}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===c.ticker?K.acc:K.bdr),background:libTicker===c.ticker?K.acc+"18":"transparent",color:libTicker===c.ticker?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTicker===c.ticker?700:400}}>{c.ticker}</button>})}
+            {ALL_TYPES.map(function(tp){var act=type===tp;var c2=typeColors[tp]||K.dim;
+              return<button key={tp} onClick={function(){setType(tp);}}
+                style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(act?c2:K.bdr),
+                  background:act?c2+"15":"transparent",color:act?c2:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>
+                {tp}
+              </button>;})
+            }
           </div>
-          <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>Tagged items appear in your Morning Brief before earnings on that company.</div>
         </div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
-          <button onClick={function(){setLibModal(null)}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+        <div style={{marginBottom:14}}>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Tag to company</label>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button onClick={function(){setLibTicker("");}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===""?K.acc:K.bdr),
+              background:libTicker===""?K.acc+"15":"transparent",color:libTicker===""?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>None</button>
+            {portCos.map(function(c){return<button key={c.id} onClick={function(){setLibTicker(c.ticker);}}
+              style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTicker===c.ticker?K.acc:K.bdr),
+                background:libTicker===c.ticker?K.acc+"15":"transparent",color:libTicker===c.ticker?K.acc:K.dim,
+                fontSize:11,cursor:"pointer",fontFamily:fm}}>
+              {c.ticker}
+            </button>;})}
+          </div>
+          <div style={{fontSize:11,color:K.dim,marginTop:6,fontFamily:fm}}>Tagged items appear in the company dossier and morning brief.</div>
+        </div>
+        <Inp K={K} label="What did I take from this?" value={notes} onChange={setNotes} ta={true} placeholder="Key insight, mental model, or decision this influenced..."/>
+        <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
+          <button onClick={function(){setLibModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
           <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px"})}>{isNew?"Add":"Save"}</button>
         </div>
       </Modal>}
+
     function FolderModal(){
-      var isNew=!libModal.folder;
-      var def=libModal.folder||{};
+      var isNew=!libModal.folder;var def=libModal.folder||{};
       var _fn=useState(def.name||""),folderName=_fn[0],setFolderName=_fn[1];
       var _fc=useState(def.color||FOLDER_COLORS[folders.length%FOLDER_COLORS.length]),folderColor=_fc[0],setFolderColor=_fc[1];
       function save(){if(!folderName.trim())return;
         var nextFolders;
         if(isNew){nextFolders=folders.concat([{id:"f"+Date.now(),name:folderName.trim(),color:folderColor}])}
-        else{nextFolders=folders.map(function(f){return f.id===def.id?Object.assign({},f,{name:folderName.trim(),color:folderColor}):f})}
-        saveLibrary(Object.assign({},lib,{folders:nextFolders}));setLibModal(null);showToast(isNew?"Folder created":"Folder updated","info",1500)}
+        else{nextFolders=folders.map(function(f){return f.id===def.id?Object.assign({},f,{name:folderName.trim(),color:folderColor}):f;})}
+        saveLibrary(Object.assign({},lib,{folders:nextFolders}));setLibModal(null);showToast(isNew?"Folder created":"Folder updated","info",2000);}
       function del(){if(!window.confirm("Delete this folder? Items in it will become unorganized."))return;
-        var nextFolders=folders.filter(function(f){return f.id!==def.id});
-        var nextItems=items.map(function(it){return it.folder===def.id?Object.assign({},it,{folder:""}):it});
-        saveLibrary({folders:nextFolders,items:nextItems});setLibFolder(null);setLibModal(null)}
-      return<Modal K={K} title={isNew?"New Folder":"Edit Folder"} onClose={function(){setLibModal(null)}} w={400}>
-        <Inp K={K} label="Folder Name" value={folderName} onChange={setFolderName} placeholder="e.g. Mental Models"/>
+        var nextFolders=folders.filter(function(f){return f.id!==def.id;});
+        var nextItems=items.map(function(it){return it.folder===def.id?Object.assign({},it,{folder:""}):it;});
+        saveLibrary({folders:nextFolders,items:nextItems});setLibFolder(null);setLibModal(null);}
+      return<Modal K={K} title={isNew?"New Folder":"Edit Folder"} onClose={function(){setLibModal(null);}} w={400}>
+        <Inp K={K} label="Folder Name" value={folderName} onChange={setFolderName} placeholder="e.g. Annual Reports"/>
         <div style={{marginBottom:20}}>
-          <label style={{display:"block",fontSize:12,color:K.dim,marginBottom:8,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm}}>Color</label>
-          <div style={{display:"flex",gap:8}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c)}} style={{width:28,height:28,borderRadius:"50%",background:c,cursor:"pointer",border:folderColor===c?"3px solid "+K.txt:"3px solid transparent",transition:"border .15s"}}/>})}</div>
+          <label style={{display:"block",fontSize:11,color:K.dim,marginBottom:8,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>Color</label>
+          <div style={{display:"flex",gap:8}}>{FOLDER_COLORS.map(function(c){return<div key={c} onClick={function(){setFolderColor(c);}}
+            style={{width:20,height:20,borderRadius:"50%",background:c,cursor:"pointer",outline:folderColor===c?"3px solid "+c:"none",outlineOffset:2}}/>;})}</div>
         </div>
         <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:8}}>
           {!isNew&&<button onClick={del} style={Object.assign({},S.btnD,{padding:"9px 16px",marginRight:"auto"})}>Delete</button>}
-          <button onClick={function(){setLibModal(null)}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+          <button onClick={function(){setLibModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
           <button onClick={save} style={Object.assign({},S.btnP,{padding:"9px 24px"})}>{isNew?"Create":"Save"}</button>
         </div>
       </Modal>}
+
     function deleteItem(id){if(!window.confirm("Remove this resource?"))return;
-      saveLibrary(Object.assign({},lib,{items:items.filter(function(it){return it.id!==id})}));
-      if(libPlaying===id)setLibPlaying(null)}
-    function ItemCard(p){var it=p.item;
-      var thumb=getThumb(it.url);
-      var canEmbed=isEmbeddable(it.url);
-      var isPlaying=libPlaying===it.id;
-      var embedUrl=getEmbedUrl(it.url);
-      var fol=folders.find(function(f){return f.id===it.folder});
-      var typeColors={Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim,Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"};
-      var isWorkItem=MY_WORK_TYPES.indexOf(it.type)>=0;
-      var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}}()):"";
+      saveLibrary(Object.assign({},lib,{items:items.filter(function(it){return it.id!==id;})}));
+      if(readerItem&&readerItem.id===id)setReaderItem(null);}
+
+    // ── Reader panel ──────────────────────────────────────────────────────
+    function ReaderPanel(){
+      if(!readerItem)return null;
+      var it=readerItem;
+      var isVideo=isVideoEmbed(it.url);
+      var embedUrl=isVideo?getEmbedUrl(it.url):it.url;
       var tc=typeColors[it.type]||K.dim;
-      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?16:10,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-        {/* Thumbnail / player area */}
-        {canEmbed&&<div style={{position:"relative",width:"100%",paddingTop:"56.25%",background:K.bg,cursor:isPlaying?"default":"pointer"}} onClick={function(){if(!isPlaying)setLibPlaying(it.id)}}>
-          {isPlaying&&embedUrl?<iframe src={embedUrl} style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none"}} allowFullScreen allow="autoplay; encrypted-media"/>
-          :<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:K.bg}}>
-            {thumb&&<img src={thumb} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",opacity:.6}}/>}
-            <div style={{position:"relative",width:44,height:44,borderRadius:"50%",background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+      var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}})():"";
+      var coMatch=it.ticker?cos.find(function(c){return c.ticker===it.ticker;}):null;
+      return<div style={{position:"fixed",top:0,right:0,bottom:0,width:isMobile?"100%":560,
+        background:K.card,borderLeft:"1px solid "+K.bdr,zIndex:200,display:"flex",flexDirection:"column",
+        boxShadow:"-8px 0 40px rgba(0,0,0,0.18)"}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 18px",borderBottom:"1px solid "+K.bdr,flexShrink:0}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3,flexWrap:"wrap"}}>
+              <span style={{fontSize:10,fontWeight:700,color:tc,background:tc+"15",borderRadius:4,padding:"2px 8px",fontFamily:fm}}>{it.type}</span>
+              {coMatch&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{coMatch.ticker}</span>}
+              {domain&&!isVideo&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{domain}</span>}
+            </div>
+            <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
+          </div>
+          <div style={{display:"flex",gap:6,flexShrink:0,alignItems:"center"}}>
+            {it.url&&<button onClick={function(){window.open(it.url,"_blank");}}
+              style={{padding:"6px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",
+                color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open
+            </button>}
+            <button onClick={function(){saveReaderNotes();setReaderItem(null);}}
+              style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:22,lineHeight:1,padding:"4px 8px",borderRadius:4}}
+              onMouseEnter={function(e){e.currentTarget.style.background=K.bdr;}}
+              onMouseLeave={function(e){e.currentTarget.style.background="none";}}>
+              {"×"}
+            </button>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+          {/* iframe / content viewer */}
+          {it.url&&!iframeErr&&<div style={{flex:"0 0 58%",position:"relative",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
+            {isVideo
+              ?<iframe src={embedUrl} style={{width:"100%",height:"100%",border:"none"}} allow="autoplay; fullscreen"/>
+              :<iframe
+                src={embedUrl}
+                style={{width:"100%",height:"100%",border:"none"}}
+                onError={function(){setIframeErr(true);}}
+                title={it.title}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />}
+          </div>}
+          {/* Iframe blocked fallback */}
+          {it.url&&iframeErr&&<div style={{flex:"0 0 58%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            gap:16,background:K.bg,borderBottom:"1px solid "+K.bdr,padding:32,textAlign:"center"}}>
+            <div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:4}}>{it.title}</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{"This site doesn't allow embedding. Open it directly to read."}</div>
+            <button onClick={function(){window.open(it.url,"_blank");}}
+              style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>{"Open in new tab →"}</button>
+            {domain&&<div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{domain}</div>}
+          </div>}
+          {!it.url&&<div style={{flex:"0 0 58%",display:"flex",alignItems:"center",justifyContent:"center",background:K.bg,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{textAlign:"center",color:K.dim}}>
+              <div style={{fontSize:32,marginBottom:8}}>{"📖"}</div>
+              <div style={{fontSize:13,fontFamily:fm}}>No URL — add one to enable the reader</div>
+              <button onClick={function(){setLibModal({type:"item",item:it});}} style={{marginTop:12,background:"none",border:"none",color:K.acc,fontSize:13,cursor:"pointer",fontFamily:fm}}>Edit resource →</button>
             </div>
           </div>}
-        </div>}
-        {!canEmbed&&it.url&&<div style={{height:80,background:tc+"10",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}} onClick={function(){window.open(it.url,"_blank")}}>
-          <IC name={it.type==="Video"?"video":it.type==="Article"||it.type==="Book"?"file":it.type==="Podcast"?"news":"link"} size={28} color={tc}/>
-        </div>}
-        {/* Card body */}
-        <div style={{padding:"12px 14px",flex:1,display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1.4,marginBottom:4}}>{it.title}</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                <span style={{fontSize:10,fontWeight:700,color:tc,background:tc+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm,letterSpacing:.5}}>{it.type}</span>
-                {fol&&<span style={{fontSize:10,color:fol.color,background:fol.color+"15",padding:"2px 8px",borderRadius:_isBm?0:999,fontFamily:fm}}>{fol.name}</span>}
-                {isWorkItem&&<span style={{fontSize:9,fontWeight:700,color:"#10B981",background:"#10B98115",padding:"1px 6px",borderRadius:3,fontFamily:fm,letterSpacing:0.5}}>MY WORK</span>}
-                {!isWorkItem&&domain&&<span style={{fontSize:9,color:K.dim,fontFamily:fm,marginLeft:2}}>{domain}</span>}
-              </div>
-            </div>
-            <div style={{display:"flex",gap:4,flexShrink:0}}>
-              {it.url&&!canEmbed&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Open link"><IC name="link" size={14} color={K.dim}/></button>}
-              {it.ticker&&cos.find(function(c){return c.ticker===it.ticker&&(c.status||"portfolio")==="portfolio"})&&<button onClick={function(){var co=cos.find(function(c){return c.ticker===it.ticker});if(co){setSelId(co.id);setModal({type:"doc",prefill:{docType:"note",title:it.title,sourceLibId:it.id,sourceLibTitle:it.title}});}}} style={{display:"flex",alignItems:"center",gap:4,background:K.acc+"10",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:5,cursor:"pointer",padding:"3px 8px",color:K.acc,fontSize:10,fontFamily:fm,fontWeight:600}} title="Write a research note from this"><IC name="edit" size={10} color={K.acc}/>Note</button>}
-              <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Edit"><IC name="edit" size={14} color={K.dim}/></button>
-              <button onClick={function(){deleteItem(it.id)}} style={{background:"none",border:"none",cursor:"pointer",padding:4,color:K.dim}} title="Remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
-            </div>
+
+          {/* Notes area */}
+          <div style={{flex:1,padding:"16px 18px",overflow:"auto",display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{"What did I take from this?"}</div>
+            <textarea
+              value={readerNotes}
+              onChange={function(e){setReaderNotes(e.target.value);}}
+              onBlur={saveReaderNotes}
+              onClick={function(e){e.stopPropagation();}}
+              placeholder={"Key insight, mental model, or decision this influenced..."}
+              style={{flex:1,minHeight:80,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,
+                padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"none",outline:"none"}}
+              onFocus={function(e){e.target.style.borderColor=K.acc+"60";}}
+            />
+            {it.addedAt&&<div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Added "+fD(it.addedAt)}</div>}
           </div>
-          {it.notes&&<p style={{margin:0,fontSize:12,color:K.dim,lineHeight:1.5,fontFamily:fm}}>{it.notes}</p>}
-          {it.addedAt&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:"auto",paddingTop:4}}>{fD(it.addedAt.split("T")[0])}</div>}
         </div>
-      </div>}
-    var allCount=items.length;
-    return<div style={{padding:isMobile?"0 16px 80px":_isThesis?"0 40px 80px":"0 32px 60px",maxWidth:1100}}>
+      </div>;}
+
+    // ── Compact item row ──────────────────────────────────────────────────
+    function ItemRow({it}){
+      var tc=typeColors[it.type]||K.dim;
+      var isWork=MY_WORK_TYPES.indexOf(it.type)>=0;
+      var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}})():"";
+      var fol=folders.find(function(f){return f.id===it.folder;});
+      var isOpen=readerItem&&readerItem.id===it.id;
+      var co=it.ticker?cos.find(function(c){return c.ticker===it.ticker;}):null;
+      return<div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",
+          background:isOpen?K.acc+"06":"transparent",borderRadius:_isBm?0:8,cursor:"pointer",
+          border:"1px solid "+(isOpen?K.acc+"25":"transparent"),transition:"all .15s"}}
+        onClick={function(){if(isOpen){saveReaderNotes();setReaderItem(null);}else{openReader(it);}}}
+        onMouseEnter={function(e){if(!isOpen)e.currentTarget.style.background=K.bg;}}
+        onMouseLeave={function(e){if(!isOpen)e.currentTarget.style.background="transparent";}}>
+        {/* Type icon */}
+        <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:tc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <IC name={it.type==="Video"?"video":it.type==="Article"||it.type==="Book"?"file":it.type==="Podcast"?"headphones":it.type==="Model"?"bar":it.type==="Analysis"?"trending":"edit"} size={14} color={tc}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2}}>{it.title}</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+            <span style={{fontSize:10,fontWeight:600,color:tc,background:tc+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{it.type}</span>
+            {isWork&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>YOUR WORK</span>}
+            {co&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{co.ticker}</span>}
+            {fol&&<span style={{fontSize:10,color:fol.color,fontFamily:fm}}>{fol.name}</span>}
+            {domain&&!getYTId(it.url)&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{domain}</span>}
+          </div>
+          {it.notes&&<div style={{fontSize:11,color:K.dim,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontStyle:"italic"}}>{it.notes}</div>}
+        </div>
+        <div style={{display:"flex",gap:4,flexShrink:0}}>
+          {it.url&&<button onClick={function(e){e.stopPropagation();openReader(it);}}
+            style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",
+              fontSize:11,color:isOpen?K.acc:K.dim,cursor:"pointer",fontFamily:fm,fontWeight:isOpen?700:400}}
+            onMouseEnter={function(e){e.stopPropagation();e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=isOpen?K.acc:K.dim;}}>
+            {isOpen?"Reading":"Read"}
+          </button>}
+          <button onClick={function(e){e.stopPropagation();setLibModal({type:"item",item:it});}}
+            style={{padding:"5px 8px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",fontSize:11,color:K.dim,cursor:"pointer"}}
+            onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+            <IC name="edit" size={11} color="currentColor"/>
+          </button>
+          <button onClick={function(e){e.stopPropagation();deleteItem(it.id);}}
+            style={{padding:"5px 8px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",fontSize:11,color:K.dim,cursor:"pointer"}}
+            onMouseEnter={function(e){e.currentTarget.style.borderColor=K.red;e.currentTarget.style.color=K.red;}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+            {"×"}
+          </button>
+        </div>
+      </div>;}
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:readerItem?1200:900}}>
+      {/* Reader overlay */}
+      {readerItem&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.2)"}} onClick={function(){saveReaderNotes();setReaderItem(null);}}/>}
+      {readerItem&&<ReaderPanel/>}
+
       {/* Header */}
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 18px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:_isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:_isThesis?"-0.5px":"normal"}}>Library</h1>
-          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>"Your work and what you read — indexed by holding, compounding over time."</p>
+          <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{"Library"}</h1>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>{"Your work and what you read — indexed by holding, compounding over time."}</p>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setLibModal({type:"folder"})}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="folder" size={14} color={K.mid}/>New Folder</button>
-          <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"9px 18px",fontSize:13,display:"flex",alignItems:"center",gap:6})}><IC name="plus" size={14} color={K.primTxt}/>Add Resource</button>
+          <button onClick={function(){setLibModal({type:"folder"});}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"+ Folder"}</button>
+          <button onClick={function(){setLibModal({type:"item"});}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13})}>{"+ Add"}</button>
         </div>
       </div>
+
+      {/* Company filter pills */}
+      {taggedTickers.length>0&&<div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginRight:4}}>{"Filter:"}</span>
+        <button onClick={function(){setLibTickerFilter("");}}
+          style={{padding:"4px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(libTickerFilter===""?K.acc:K.bdr),
+            background:libTickerFilter===""?K.acc+"12":"transparent",color:libTickerFilter===""?K.acc:K.dim,
+            fontSize:11,cursor:"pointer",fontFamily:fm}}>
+          {"All"}
+        </button>
+        {taggedTickers.map(function(tk){var co=cos.find(function(c){return c.ticker===tk;});
+          return<button key={tk} onClick={function(){setLibTickerFilter(libTickerFilter===tk?"":tk);}}
+            style={{display:"flex",alignItems:"center",gap:5,padding:"4px 12px",borderRadius:_isBm?0:999,
+              border:"1px solid "+(libTickerFilter===tk?K.acc:K.bdr),
+              background:libTickerFilter===tk?K.acc+"12":"transparent",
+              color:libTickerFilter===tk?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>
+            {co&&<CoLogo domain={co.domain} ticker={co.ticker} size={14}/>}
+            {tk}
+          </button>;})}
+      </div>}
+
       {/* Search + type filter */}
-      <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-        <div style={{position:"relative",flex:1,minWidth:180,maxWidth:300}}>
-          <IC name="search" size={14} color={K.dim} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none",flexShrink:0}}/>
-          <input value={libSearch} onChange={function(e){setLibSearch(e.target.value)}} placeholder="Search..." style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isThesis?12:8,color:K.txt,padding:"9px 12px 9px 34px",fontSize:13,fontFamily:fm,outline:"none"}}/>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{position:"relative",flex:1,minWidth:180,maxWidth:280}}>
+          <IC name="search" size={13} color={K.dim} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}/>
+          <input value={libSearch} onChange={function(e){setLibSearch(e.target.value);}} placeholder="Search..."
+            style={{width:"100%",boxSizing:"border-box",padding:"8px 12px 8px 34px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=K.acc;}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
         </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {["all"].concat(ALL_TYPES).map(function(tp){return<button key={tp} onClick={function(){setLibTypeFilter(tp)}} style={{padding:"6px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(libTypeFilter===tp?K.acc:K.bdr),background:libTypeFilter===tp?K.acc+"18":"transparent",color:libTypeFilter===tp?K.acc:K.mid,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:libTypeFilter===tp?700:400}}>{tp==="all"?"All Types":tp}</button>})}
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+          {["all"].concat(ALL_TYPES).map(function(tp){var act=libTypeFilter===tp;var tc2=typeColors[tp]||K.dim;
+            return<button key={tp} onClick={function(){setLibTypeFilter(tp);}}
+              style={{padding:"5px 10px",borderRadius:_isBm?0:999,border:"1px solid "+(act?tc2:K.bdr),
+                background:act?tc2+"12":"transparent",color:act?tc2:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>
+              {tp==="all"?"All":tp}
+            </button>;})}
         </div>
       </div>
-      {/* Folders row */}
-      {folders.length>0&&<div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-        <button onClick={function(){setLibFolder(null)}} style={{padding:"7px 16px",borderRadius:_isBm?0:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),background:libFolder===null?K.acc+"18":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:libFolder===null?700:400,display:"flex",alignItems:"center",gap:6}}>
-          <IC name="overview" size={12} color={libFolder===null?K.acc:K.mid}/>All <span style={{fontSize:11,opacity:.7}}>({allCount})</span>
+
+      {/* Folders */}
+      {folders.length>0&&<div style={{display:"flex",gap:6,marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
+        <button onClick={function(){setLibFolder(null);}}
+          style={{padding:"5px 14px",borderRadius:_isBm?0:999,border:"1px solid "+(libFolder===null?K.acc:K.bdr),
+            background:libFolder===null?K.acc+"12":"transparent",color:libFolder===null?K.acc:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
+          <IC name="overview" size={11} color={libFolder===null?K.acc:K.mid}/>All <span style={{fontSize:10,opacity:.7}}>({items.length})</span>
         </button>
         {folders.map(function(f){var cnt=totalByFolder[f.id]||0;var isActiveFol=libFolder===f.id;
           return<div key={f.id} style={{position:"relative",display:"inline-flex",alignItems:"center"}}>
-            <button onClick={function(){setLibFolder(isActiveFol?null:f.id)}} style={{padding:"7px "+(isActiveFol?"30px":"16px")+" 7px 16px",borderRadius:_isBm?0:999,border:"1px solid "+(isActiveFol?f.color:K.bdr),background:isActiveFol?f.color+"18":"transparent",color:isActiveFol?f.color:K.mid,fontSize:13,cursor:"pointer",fontFamily:fm,fontWeight:isActiveFol?700:400,display:"flex",alignItems:"center",gap:6,transition:"padding .1s"}}>
-              <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:f.color,flexShrink:0}}/>
-              {f.name} <span style={{fontSize:11,opacity:.7}}>({cnt})</span>
+            <button onClick={function(){setLibFolder(isActiveFol?null:f.id);}}
+              style={{padding:"5px "+(isActiveFol?"10px":"14px"),borderRadius:_isBm?0:999,border:"1px solid "+(isActiveFol?f.color:K.bdr),
+                background:isActiveFol?f.color+"12":"transparent",color:isActiveFol?f.color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+              <div style={{width:7,height:7,borderRadius:"50%",background:f.color,flexShrink:0}}/>
+              {f.name} <span style={{fontSize:10,opacity:.7}}>({cnt})</span>
             </button>
-            {isActiveFol&&<button onClick={function(e){e.stopPropagation();setLibModal({type:"folder",folder:f})}} style={{position:"absolute",right:8,background:"none",border:"none",cursor:"pointer",padding:2,color:f.color,opacity:.75,display:"flex",alignItems:"center"}} title="Edit or delete folder">
+            {isActiveFol&&<button onClick={function(e){e.stopPropagation();setLibModal({type:"folder",folder:f});}}
+              style={{padding:"3px 6px",background:"none",border:"none",cursor:"pointer",color:f.color,marginLeft:2}}>
               <IC name="edit" size={10} color={f.color}/>
             </button>}
-          </div>})}
+          </div>;})}
       </div>}
-      {/* Items grid — My Work first, then reference */}
-      {filtered.length>0&&(function(){
-        var myWork=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
-        var reference=filtered.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
-        return<div>
-          {myWork.length>0&&<div style={{marginBottom:28}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#10B981",fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>My Work</div>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{myWork.length} item{myWork.length!==1?"s":""}</span>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {myWork.map(function(it){
-                var tc2=typeColors[it.type]||"#10B981";
-                var domain=it.url?(function(){try{return new URL(it.url).hostname.replace("www.","");}catch(e){return"";}})():"";
-                var fol=folders.find(function(f){return f.id===it.folder;});
-                return<div key={it.id} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,borderLeft:"3px solid "+tc2,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
-                  <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:tc2+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":it.type==="Notes"?"edit":"file"} size={14} color={tc2}/>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
-                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <span style={{fontSize:10,fontWeight:700,color:tc2,background:tc2+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm}}>{it.type}</span>
-                      {fol&&<span style={{fontSize:10,color:fol.color,fontFamily:fm}}>{fol.name}</span>}
-                      {domain&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{domain}</span>}
-                      {it.ticker&&<span style={{fontSize:10,color:K.acc,fontFamily:fm,fontWeight:600}}>{it.ticker}</span>}
-                    </div>
-                    {it.notes&&<div style={{fontSize:11,color:K.dim,marginTop:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.notes}</div>}
-                  </div>
-                  <div style={{display:"flex",gap:6,flexShrink:0}}>
-                    {it.url&&<button onClick={function(){window.open(it.url,"_blank")}} style={{background:tc2+"15",border:"1px solid "+tc2+"40",borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:11,color:tc2,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{"Open ↗"}</button>}
-                    <button onClick={function(){setLibModal({type:"item",item:it})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"5px 10px",fontSize:11,color:K.dim,cursor:"pointer"}}>{"Edit"}</button>
-                  </div>
-                </div>;
-              })}
-            </div>
-          </div>}
-          {reference.length>0&&<div>
-            {myWork.length>0&&<div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>Reference</div>}
-            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":_isThesis?"repeat(auto-fill, minmax(280px,1fr))":"repeat(auto-fill, minmax(260px,1fr))",gap:16}}>
-              {reference.map(function(it){return<ItemCard key={it.id} item={it}/>;})}
-            </div>
-          </div>}
-        </div>;
-      })()}
+
+      {/* Items */}
+      {filtered.length>0&&<div>
+        {myWork.length>0&&<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,paddingBottom:8,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>YOUR WORK</div>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{myWork.length} item{myWork.length!==1?"s":""}</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {myWork.map(function(it){return<ItemRow key={it.id} it={it}/>;})}</div>
+        </div>}
+        {reference.length>0&&<div>
+          {myWork.length>0&&<div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,paddingBottom:8,borderBottom:"1px solid "+K.bdr}}>WHAT YOU READ</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {reference.map(function(it){return<ItemRow key={it.id} it={it}/>;})}</div>
+        </div>}
+      </div>}
+
+      {/* Reading list */}
+      {readingList&&readingList.length>0&&<div style={{marginTop:32}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
+          <div style={{fontSize:10,fontWeight:700,color:K.amb,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>READING LIST</div>
+          <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{readingList.length} item{readingList.length!==1?"s":""}</span>
+          <div style={{marginLeft:"auto"}}>
+            <button onClick={function(){setModal({type:"addReading"});}}
+              style={{fontSize:11,color:K.acc,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 12px",cursor:"pointer",fontFamily:fm}}>
+              {"+ Add"}
+            </button>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {readingList.map(function(book,i){
+            var statusColor=book.status==="reading"?K.acc:book.status==="read"?K.grn:K.dim;
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",
+              background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:6,background:K.amb+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <IC name="book" size={13} color={K.amb}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.title}</div>
+                {book.author&&<div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{book.author}</div>}
+                {book.notes&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{book.notes}</div>}
+              </div>
+              <select value={book.status||"want"} onChange={function(e){var updated=readingList.map(function(r,j){return j===i?Object.assign({},r,{status:e.target.value}):r;});saveRL(updated);}}
+                style={{background:"transparent",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:statusColor,fontSize:11,padding:"3px 8px",fontFamily:fm,cursor:"pointer"}}>
+                <option value="want">Want to read</option>
+                <option value="reading">Reading</option>
+                <option value="read">Read</option>
+              </select>
+              <button onClick={function(){saveRL(readingList.filter(function(_,j){return j!==i;}));}}
+                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 4px"}}
+                onMouseEnter={function(e){e.target.style.color=K.red;}}
+                onMouseLeave={function(e){e.target.style.color=K.dim;}}>{"×"}</button>
+            </div>;})}
+        </div>
+      </div>}
+
       {/* Empty state */}
-      {items.length===0&&<div style={{textAlign:"center",padding:"80px 0",color:K.dim}}>
-        <IC name="overview" size={40} color={K.bdr} style={{display:"block",margin:"0 auto 16px"}}/>
-        <div style={{fontSize:16,fontWeight:600,color:K.mid,marginBottom:8}}>Your library is empty</div>
-        <div style={{fontSize:14,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>Save videos, articles, books, and podcasts that shape your investment thinking. Organize them in folders like "Mental Models", "Valuation", or "Sector Research".</div>
-        <button onClick={function(){setLibModal({type:"item"})}} style={Object.assign({},S.btnP,{padding:"11px 28px"})}>Add Your First Resource</button>
+      {items.length===0&&readingList.length===0&&<div style={{textAlign:"center",padding:"80px 0",color:K.dim}}>
+        <div style={{fontSize:28,marginBottom:16}}>{"📚"}</div>
+        <div style={{fontSize:16,fontWeight:700,color:K.mid,fontFamily:fh,marginBottom:8}}>{"Your library is empty"}</div>
+        <div style={{fontSize:14,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7,color:K.dim}}>{"Save articles, annual reports, and your own research — tagged to the companies you follow."}</div>
+        <button onClick={function(){setLibModal({type:"item"});}} style={Object.assign({},S.btnP,{padding:"11px 28px",fontSize:14})}>{"Add first resource"}</button>
       </div>}
       {filtered.length===0&&items.length>0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
         <div style={{fontSize:14,marginBottom:8}}>No resources match your filters</div>
-        <button onClick={function(){setLibSearch("");setLibFolder(null);setLibTypeFilter("all")}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:14,fontFamily:fm}}>Clear filters</button>
+        <button onClick={function(){setLibSearch("");setLibFolder(null);setLibTypeFilter("all");setLibTickerFilter("");}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:13,fontFamily:fm}}>Clear filters</button>
       </div>}
-      {/* Modals */}
       {libModal&&libModal.type==="item"&&<AddEditModal/>}
       {libModal&&libModal.type==="folder"&&<FolderModal/>}
-    </div>}
+    </div>;}
 
 
   // ── Watchlist Detail Panel (standalone — avoids re-mount on upd) ──────────
@@ -12031,7 +12211,7 @@ function ProWelcomeGift(){
             {id:"dividends",l:"Dividends",icon:"dollar",color:K.grn,tab:"dividends"},
             ...(dashSet.showGoalsTab?[{id:"goals",l:"Goals",icon:"trending",color:"#8B5CF6",tab:"goals"}]:[]),
             ...(dashSet.showLensesTab?[{id:"lenses",l:"Lenses",icon:"search",color:"#3B82F6",tab:"lenses"}]:[]),
-            {id:"research",l:"Research",icon:"file",color:"#9333EA",tab:"docs"},
+            {id:"research",l:"Library",icon:"book",color:"#9333EA",tab:"docs"},
           ].map(function(item){
             var isActive=item.id==="holdings"?(page==="dashboard"&&hubTab==="holdings"):
               item.id==="earnings"?(page==="calendar"):
@@ -12042,7 +12222,7 @@ function ProWelcomeGift(){
               if(item.id==="holdings"){setPage("dashboard");setHubTab("holdings");}
               else if(item.id==="earnings"){setPage("calendar");}
               else if(item.id==="dividends"){setPage("dividends");}
-              else{setPage("hub");setHubTab(item.tab);}
+              else if(item.id==="research"){setSelId(null);setPage("library");}else{setPage("hub");setHubTab(item.tab);}
             }} style={{display:"flex",alignItems:"center",gap:6,padding:"11px 18px",background:"none",border:"none",
               borderBottom:"2px solid "+(isActive?item.color:"transparent"),
               color:isActive?item.color:K.dim,cursor:"pointer",fontSize:12,fontFamily:fm,fontWeight:isActive?700:400,
@@ -15016,7 +15196,7 @@ function ProWelcomeGift(){
         {id:"pg-hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("hub")}},
         {id:"pg-watchlist",label:"Watchlist",icon:"search",color:K.acc,action:function(){setCmdOpen(false);setSelId(null);setPage("watchlist");}},
         {id:"pg-strategy",label:"My Strategy",icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("strategy");}},
-        {id:"pg-trail",label:"Research",icon:"file",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"pg-trail",label:"Library",icon:"book",color:"#9333EA",action:function(){setCmdOpen(false);setSelId(null);setPage("library");}},
         {id:"pg-journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"pg-review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setCmdOpen(false);setSelId(null);setPage("review")}},
         {id:"pg-calendar",label:"Earnings Calendar",icon:"target",color:K.amb,action:function(){setCmdOpen(false);setSelId(null);setPage("calendar")}},
@@ -15110,7 +15290,7 @@ function ProWelcomeGift(){
       function goCompany(fn){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(fn,80)}else{showToast("Add a holding first","info",3000)}}
       var FAB_ALL=[
         {id:"hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("command")}},
-        {id:"trail",label:"Research Trail",icon:"file",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
+        {id:"trail",label:"Library",icon:"book",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("library");}},
         {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
         {id:"journal",label:"Journal",icon:"edit",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("journal")}},
         {id:"review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
