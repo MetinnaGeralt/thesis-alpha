@@ -1406,7 +1406,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {f.status==="portfolio"&&<div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Shares" value={f._shares||""} onChange={function(v){set("_shares",v)}} type="number" placeholder="0" K={K}/><Inp label="Avg Cost per Share" value={f._avgCost||""} onChange={function(v){set("_avgCost",v)}} type="number" placeholder="0.00" K={K}/></div>}
       {f.status==="watchlist"&&<div className="ta-form-row" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}><Inp label="Target Price" value={f._targetPrice||""} onChange={function(v){set("_targetPrice",v)}} type="number" placeholder="0.00" K={K}/><div style={{fontSize:11,color:K.dim,marginTop:24,lineHeight:1.5}}>Get notified when the stock reaches your target buy price.</div></div>}
       {f.status==="watchlist"&&<Inp label="Why are you watching?" value={f._watchNote||""} onChange={function(v){set("_watchNote",v)}} ta placeholder="What are you waiting for? Earnings, valuation, catalyst..." K={K}/>}
-{f.status==="watchlist"&&<Inp label="Fat pitch price — the price where this becomes obvious" value={f.fatPitchPrice||""} onChange={function(v){set("fatPitchPrice",v)}} K={K} placeholder="e.g. 180 (optional)"/>}
+{f.status==="watchlist"&&<Inp label="Fat pitch price — when does this become the obvious bet?" value={f.fatPitchPrice||""} onChange={function(v){set("fatPitchPrice",v)}} K={K} placeholder="e.g. 180 (optional)"/>}
       <div style={{display:"flex",justifyContent:"flex-end",gap:12,marginTop:8}}><button style={S.btn} onClick={function(){if(tmr.current)clearTimeout(tmr.current);setModal(null)}}>Cancel</button>
         <button style={Object.assign({},S.btnP,{opacity:f.ticker.trim()&&f.name.trim()&&(f.status!=="portfolio"||f.purchaseDate)?1:.4})} onClick={submit} disabled={!f.ticker.trim()||!f.name.trim()||(f.status==="portfolio"&&!f.purchaseDate)}>{f.status==="watchlist"?"Add to Watchlist":f.status==="toohard"?"Add to Too Hard":"Add Company"}</button></div></Modal>}
   function EditModal(){if(!sel)return null;var _f=useState({ticker:sel.ticker,name:sel.name,sector:sel.sector,earningsDate:sel.earningsDate==="TBD"?"":sel.earningsDate,earningsTime:sel.earningsTime,domain:sel.domain||"",irUrl:sel.irUrl||"",investStyle:sel.investStyle||""}),f=_f[0],setF=_f[1];var set=function(k,v){setF(function(p){var n=Object.assign({},p);n[k]=v;return n})};
@@ -13289,6 +13289,109 @@ function ProWelcomeGift(){
             <div style={{fontSize:10,color:K.dim,lineHeight:1.5,padding:"6px 0"}}>YOC = Yield on Cost (annual dividend / your purchase price). Higher YOC than current yield means the dividend has grown since you bought. Payout ratio under 60% is generally considered safe.</div>
           </div>})()}
       </div>}</div></div>}
+
+      {/* ── Watchlist Section ── */}
+      {sideTab==="portfolio"&&(function(){
+        var watching=cos.filter(function(c){return c.status==="watchlist";});
+        if(watching.length===0)return null;
+        return<div style={{marginTop:40}}>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
+            <div>
+              <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.2px"}}>{"Watchlist"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>{"Businesses you understand. Waiting for the right price."}</div>
+            </div>
+            <button onClick={function(){setModal({type:"add",defaults:{status:"watchlist"}});}}
+              style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"6px 14px",fontSize:12,color:K.dim,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}
+              onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+              onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+              {"+ Add"}
+            </button>
+          </div>
+          {/* Cards */}
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {watching.map(function(c){
+              var pos=c.position||{};
+              var price=pos.currentPrice||0;
+              var fatPitch=parseFloat(c.fatPitchPrice)||0;
+              var nearFatPitch=fatPitch>0&&price>0&&price<=fatPitch*1.05;
+              var pctAway=fatPitch>0&&price>0?((price-fatPitch)/fatPitch*100):null;
+              var progress=fatPitch>0&&price>0?Math.min(100,Math.max(0,(1-(price-fatPitch)/(price*0.5))*100)):0;
+              var atFatPitch=fatPitch>0&&price>0&&price<=fatPitch;
+              var convColor=c.conviction>=7?K.grn:c.conviction>=4?K.amb:c.conviction>0?K.red:K.dim;
+              return<div key={c.id}
+                style={{background:K.card,border:"1px solid "+(nearFatPitch?K.grn+"50":K.bdr),borderRadius:_isBm?0:12,
+                  padding:"16px 20px",cursor:"pointer",transition:"border-color .2s",position:"relative",overflow:"hidden"}}
+                onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+                onMouseEnter={function(e){e.currentTarget.style.borderColor=nearFatPitch?K.grn:K.acc+"50";}}
+                onMouseLeave={function(e){e.currentTarget.style.borderColor=nearFatPitch?K.grn+"50":K.bdr;}}>
+                {/* Fat pitch alert strip */}
+                {nearFatPitch&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg,"+K.grn+","+K.grn+"60)"}}/>}
+                <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
+                  {/* Logo + name */}
+                  <div style={{flexShrink:0,marginTop:2}}>
+                    <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    {/* Top row */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                      <span style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{c.ticker}</span>
+                      <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+                      {nearFatPitch&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",border:"1px solid "+K.grn+"30",borderRadius:3,padding:"2px 7px",fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",flexShrink:0}}>{"Fat pitch"}</span>}
+                    </div>
+                    {/* Why watching */}
+                    {c._watchNote&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6,marginBottom:10,fontStyle:"italic"}}>{"\u201c"+c._watchNote+"\u201d"}</div>}
+                    {/* Price row */}
+                    {fatPitch>0&&price>0&&<div style={{marginBottom:10}}>
+                      <div style={{display:"flex",alignItems:"baseline",gap:16,marginBottom:6,flexWrap:"wrap"}}>
+                        <div>
+                          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>{"Current"}</div>
+                          <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+(price.toFixed(price<10?2:0))}</div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>{"Fat pitch"}</div>
+                          <div style={{fontSize:16,fontWeight:700,color:atFatPitch?K.grn:K.acc,fontFamily:fm}}>{cSym+(fatPitch.toFixed(fatPitch<10?2:0))}</div>
+                        </div>
+                        {pctAway!==null&&<div>
+                          <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>{"Distance"}</div>
+                          <div style={{fontSize:14,fontWeight:700,color:atFatPitch?K.grn:K.dim,fontFamily:fm}}>
+                            {atFatPitch?"At price":pctAway.toFixed(0)+"% away"}
+                          </div>
+                        </div>}
+                      </div>
+                      {/* Progress bar */}
+                      <div style={{height:4,background:K.bdr,borderRadius:2,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:Math.min(progress,100)+"%",background:atFatPitch?K.grn:K.acc,borderRadius:2,transition:"width .6s ease"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+                        <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"Current"}</span>
+                        <span style={{fontSize:9,color:atFatPitch?K.grn:K.acc,fontFamily:fm,fontWeight:atFatPitch?700:400}}>{"Fat pitch"}</span>
+                      </div>
+                    </div>}
+                    {/* No fat pitch yet */}
+                    {fatPitch===0&&price>0&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:10}}>
+                      {cSym+price.toFixed(price<10?2:0)+" current — "}<button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"edit"});}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>{"Set fat pitch price →"}</button>
+                    </div>}
+                    {fatPitch===0&&price===0&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:10}}>
+                      <button onClick={function(e){e.stopPropagation();setSelId(c.id);setModal({type:"edit"});}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm}}>{"Set fat pitch price →"}</button>
+                    </div>}
+                    {/* Bottom: conviction + promote */}
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {c.conviction>0&&<span style={{fontSize:10,color:convColor,fontFamily:fm,fontWeight:600}}>{c.conviction+"/10 conviction"}</span>}
+                      {c.conviction>0&&<span style={{color:K.dim,fontSize:10}}>·</span>}
+                      <button onClick={function(e){e.stopPropagation();upd(c.id,{status:"portfolio"});}} style={{background:"none",border:"none",color:K.dim,fontSize:10,cursor:"pointer",padding:0,fontFamily:fm}}
+                        onMouseEnter={function(e){e.target.style.color=K.grn;}} onMouseLeave={function(e){e.target.style.color=K.dim;}}>
+                        {"Add to portfolio →"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>;
+      })()}
+
     </div>}
   var contentKey=(page||"dash")+"-"+(selId||"none")+"-"+(subPage||"main");
 
