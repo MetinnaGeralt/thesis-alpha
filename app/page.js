@@ -13253,55 +13253,115 @@ function ProWelcomeGift(){
     var upcoming=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)>=0&&dU(c2.earningsDate)<=7}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate)});
     var earningsToday=upcoming.filter(function(c2){return dU(c2.earningsDate)===0}).length;
 
-    // ── ONE FOCUS — pick the single most urgent action ──────────────────
+    // ── ONE FOCUS — covers all 4 areas ──────────────────────────────────
     var focus=null;
-    // Priority 1: earnings TODAY with KPIs
-    var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0});
-    if(todayEarnings.length>0)focus={icon:"target",color:K.red,title:todayEarnings[0].ticker+" reports today — before you read the numbers",sub:"What result would make you reconsider this position? "+todayEarnings[0].kpis.length+" KPIs before the call",onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier")}};
-    // Priority 1b: earnings approaching (within 14 days)
-    if(!focus){var approaching=portfolio.filter(function(c2){var d=dU(c2.earningsDate);return c2.earningsDate&&c2.earningsDate!=="TBD"&&d>0&&d<=14;});
+    var watching=cos.filter(function(c2){return c2.status==="watchlist";});
+    var hasOtherAssets=(otherAssets&&otherAssets.length>0)||(netWorthHistory&&netWorthHistory.length>0);
+
+    // ── PORTFOLIO AREA ──────────────────────────────────────────────────
+    // P1: earnings TODAY
+    var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0;});
+    if(!focus&&todayEarnings.length>0)focus={icon:"target",color:K.red,area:"Portfolio",
+      title:todayEarnings[0].ticker+" reports today",
+      sub:"What result would make you seriously reconsider? Write it before you read the numbers.",
+      onClick:function(){setSelId(todayEarnings[0].id);setDetailTab("dossier");setPage("dashboard");}};
+    // P2: earnings approaching within 7 days
+    if(!focus){var approaching=portfolio.filter(function(c2){var d=dU(c2.earningsDate);return c2.earningsDate&&c2.earningsDate!=="TBD"&&d>=1&&d<=7;}).sort(function(a,b){return dU(a.earningsDate)-dU(b.earningsDate);});
       if(approaching.length>0){var apDays=dU(approaching[0].earningsDate);
-        focus={icon:"target",color:K.amb,
+        focus={icon:"target",color:K.amb,area:"Portfolio",
           title:approaching[0].ticker+" reports in "+apDays+" day"+(apDays!==1?"s":""),
           sub:"Before you read the numbers — what result would make you seriously reconsider?",
-          onClick:function(){setSelId(approaching[0].id);setDetailTab("dossier");setPage("dashboard");}}}}
-    // Priority 2: unchecked earnings (released but not reviewed)
-    if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-14&&c2.kpis.length>0&&!c2.lastChecked});
-      if(unchecked.length>0)focus={icon:"check",color:K.amb,title:"Review "+unchecked[0].ticker+" earnings",sub:unchecked.length+" holding"+(unchecked.length>1?"s have":"has")+" recent earnings with unchecked KPIs",onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier")}}}
-    // Priority 3: stale thesis (>90 days)
-    if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((now-new Date(c2.thesisUpdatedAt))/864e5)>90});
-      if(stale.length>0){var stalest=stale.sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt)})[0];var daysAgo=Math.ceil((now-new Date(stalest.thesisUpdatedAt))/864e5);
-        focus={icon:"clock",color:K.amb,title:"Re-read your "+stalest.ticker+" thesis",sub:"You haven't looked at this in "+daysAgo+" days — do you still believe it?",onClick:function(){setSelId(stalest.id);setDetailTab("dossier")}}}}
-    // Priority 4: no thesis written
-    if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20});
-      if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,title:"Why do you own "+noThesis[0].ticker+"?",sub:"Why do you own it? What would make you sell?",onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"})}}}
-    // Priority 5: no conviction set
-    if(!focus){var noConv=portfolio.filter(function(c2){return!c2.conviction||c2.conviction===0});
-      if(noConv.length>0)focus={icon:"dial",color:K.acc,title:"Set your conviction on "+noConv[0].ticker,sub:"Rate 1–10 how strongly you believe in this holding",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}}}
-    // Priority 5b: fat pitch + price alert
-    if(!focus){var fatPitch=cos.filter(function(c2){
-      return c2.status==="watchlist"&&c2.fatPitchPrice&&c2.position&&c2.position.currentPrice>0
-        &&c2.position.currentPrice<=parseFloat(c2.fatPitchPrice)*1.05;});
-      if(fatPitch.length>0)focus={icon:"target",color:K.grn,
-        title:fatPitch[0].ticker+" is at your fat pitch price",
-        sub:"You said this was the obvious opportunity. It's here.",
-        onClick:function(){setSelId(null);setPage("watchlist");}}}
-    if(!focus){var alertHit=cos.filter(function(c2){
-      return c2.status==="watchlist"&&c2.alertEnabled&&c2.alertPrice&&c2.position&&c2.position.currentPrice>0
-        &&c2.position.currentPrice<=parseFloat(c2.alertPrice)*1.02;});
-      if(alertHit.length>0)focus={icon:"target",color:K.amb,
+          onClick:function(){setSelId(approaching[0].id);setDetailTab("dossier");setPage("dashboard");}};}}
+    // P3: KPI missed last check
+    if(!focus){var kpiMiss=portfolio.find(function(c2){return(c2.kpis||[]).some(function(k){return k.lastResult&&k.lastResult.status==="missed";});});
+      if(kpiMiss)focus={icon:"alert",color:K.red,area:"Portfolio",
+        title:kpiMiss.ticker+" missed a KPI last check",
+        sub:"Is this noise or a signal? Re-read your thesis and decide.",
+        onClick:function(){setSelId(kpiMiss.id);setDetailTab("dossier");setPage("dashboard");}};};
+    // P4: holdings with no thesis
+    if(!focus){var noThesis=portfolio.filter(function(c2){return!c2.thesisNote||c2.thesisNote.trim().length<20;});
+      if(noThesis.length>0)focus={icon:"lightbulb",color:K.acc,area:"Portfolio",
+        title:"Why do you own "+noThesis[0].ticker+"?",
+        sub:"You haven't written your thesis yet. If you can't explain it, you don't own it — the market does.",
+        onClick:function(){setSelId(noThesis[0].id);setModal({type:"thesis"});setPage("dashboard");}};};
+    // P5: conviction drift — held >90 days without conviction update
+    if(!focus){var convDrift=portfolio.filter(function(c2){return c2.purchaseDate&&Math.ceil((Date.now()-new Date(c2.purchaseDate))/864e5)>90&&(!c2.conviction||c2.conviction===0);});
+      if(convDrift.length>0)focus={icon:"dial",color:K.acc,area:"Portfolio",
+        title:"Rate your conviction on "+convDrift[0].ticker,
+        sub:"You've held this for over 90 days. Where does your confidence actually sit — 1 to 10?",
+        onClick:function(){setSelId(convDrift[0].id);setModal({type:"conviction"});setPage("dashboard");}};};
+    // P6: stale thesis >90 days
+    if(!focus){var stale=portfolio.filter(function(c2){return c2.thesisUpdatedAt&&Math.ceil((Date.now()-new Date(c2.thesisUpdatedAt))/864e5)>90;}).sort(function(a,b){return new Date(a.thesisUpdatedAt)-new Date(b.thesisUpdatedAt);});
+      if(stale.length>0){var staleDays=Math.ceil((Date.now()-new Date(stale[0].thesisUpdatedAt))/864e5);
+        focus={icon:"clock",color:K.amb,area:"Portfolio",
+          title:"Re-read your "+stale[0].ticker+" thesis",
+          sub:"Last updated "+staleDays+" days ago. Still how you see it? One honest sentence.",
+          onClick:function(){setSelId(stale[0].id);setDetailTab("dossier");setPage("dashboard");}};}}
+    // P7: unchecked earnings
+    if(!focus){var unchecked=portfolio.filter(function(c2){return c2.earningsDate&&c2.earningsDate!=="TBD"&&dU(c2.earningsDate)<0&&dU(c2.earningsDate)>=-30&&(!c2.kpis||!c2.kpis.some(function(k){return k.lastResult;}));});
+      if(unchecked.length>0)focus={icon:"check",color:K.amb,area:"Portfolio",
+        title:"Check "+unchecked[0].ticker+" earnings results",
+        sub:"Results are in. Run the KPI check to see how the thesis is holding up.",
+        onClick:function(){setSelId(unchecked[0].id);setDetailTab("dossier");setPage("dashboard");}};};
+
+    // ── WATCHLIST AREA ──────────────────────────────────────────────────
+    // W1: fat pitch hit
+    if(!focus){var fpHit=watching.filter(function(c2){var p=c2.position||{};var fp=parseFloat(c2.fatPitchPrice)||0;return fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;});
+      if(fpHit.length>0)focus={icon:"target",color:K.grn,area:"Watchlist",
+        title:fpHit[0].ticker+" is at your fat pitch price",
+        sub:"You said this was the obvious opportunity. It's here. Does the thesis still hold?",
+        onClick:function(){setSelId(null);setPage("watchlist");}};};
+    // W2: price alert hit
+    if(!focus){var alertHit=watching.filter(function(c2){return c2.alertEnabled&&c2.alertPrice&&c2.position&&c2.position.currentPrice>0&&c2.position.currentPrice<=parseFloat(c2.alertPrice)*1.02;});
+      if(alertHit.length>0)focus={icon:"target",color:K.amb,area:"Watchlist",
         title:alertHit[0].ticker+" hit your price alert",
-        sub:"You set an alert at "+cSym+alertHit[0].alertPrice+". It's there.",
-        onClick:function(){setSelId(null);setPage("watchlist");}}}
-    // Priority 6b: concentration signal (>6 holdings)
-    if(!focus){var portCount=portfolio.length;
-      if(portCount>6&&!dashSet.concentrationDismissed){
-        focus={icon:"lightbulb",color:K.dim,
-          title:"You own "+portCount+" businesses",
-          sub:"Munger rarely owned more than 6 he understood deeply. Which of yours do you understand best?",
-          onClick:function(){setSelId(null);setPage("dashboard");setHubTab("holdings");}}}}
-    // Priority 6: weekly review
-    if(!focus&&!currentWeekReviewed)focus={icon:"shield",color:K.grn,title:"Still how you see it?"+(streakData.current>0?" — "+streakData.current+"wk streak":""),sub:"Reflect on the week before the market opens",onClick:function(){setPage("review")}};
+        sub:"You set an alert at "+cSym+alertHit[0].alertPrice+". Time to look again.",
+        onClick:function(){setSelId(null);setPage("watchlist");}};};
+    // W3: watchlist companies with no fat pitch set
+    if(!focus){var noFP=watching.filter(function(c2){return!c2.fatPitchPrice;});
+      if(noFP.length>0)focus={icon:"search",color:K.acc,area:"Watchlist",
+        title:"Set a fat pitch price for "+noFP[0].ticker,
+        sub:"At what price does this become an obvious buy? No price set means no signal when it matters.",
+        onClick:function(){setSelId(null);setPage("watchlist");}};};
+    // W4: watchlist with no conviction set
+    if(!focus&&watching.length>0){var noWatchConv=watching.filter(function(c2){return!c2.conviction||c2.conviction===0;});
+      if(noWatchConv.length>0)focus={icon:"search",color:K.dim,area:"Watchlist",
+        title:"Rate your conviction on "+noWatchConv[0].ticker,
+        sub:"You're watching it — but how convinced are you? 1-10 helps you know when to act.",
+        onClick:function(){setSelId(null);setPage("watchlist");}};};
+
+    // ── RESEARCH AREA ──────────────────────────────────────────────────
+    // R1: library items with no notes (unread)
+    if(!focus){var unread=(library&&library.items||[]).filter(function(it){return it.url&&(!it.notes||it.notes.trim().length<10);});
+      if(unread.length>0)focus={icon:"book",color:"#8B5CF6",area:"Research",
+        title:"Finish reading: "+unread[0].title,
+        sub:"You saved this but haven't written what you took from it. What's the one idea worth keeping?",
+        onClick:function(){setSelId(null);setPage("library");}};};
+    // R2: portfolio company with no deep dive
+    if(!focus){var noDive=portfolio.find(function(c2){return!(c2.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});});
+      if(noDive)focus={icon:"search",color:"#8B5CF6",area:"Research",
+        title:"Run a deep dive on "+noDive.ticker,
+        sub:"You own this but haven't done the full five-filter analysis. Use the Claude Project to start.",
+        onClick:function(){setSelId(noDive.id);setDetailTab("dossier");setPage("dashboard");}};};
+    // R3: no strategy written
+    if(!focus){var hasStrategy=myStrategy&&(myStrategy.whatIInvestIn||myStrategy.howIBehave||myStrategy.whatIAvoid);
+      if(!hasStrategy)focus={icon:"shield",color:"#8B5CF6",area:"Research",
+        title:"Write your investment strategy",
+        sub:"What do you invest in? What rules do you follow? Writing it down makes you accountable to it.",
+        onClick:function(){setSelId(null);setPage("strategy");}};};
+
+    // ── NET WORTH AREA ──────────────────────────────────────────────────
+    // N1: no net worth tracked yet
+    if(!focus&&portfolio.length>=2&&!hasOtherAssets)focus={icon:"dollar",color:K.amb,area:"Net Worth",
+      title:"Track your full net worth",
+      sub:"You have holdings — but what about cash, real estate, other assets? The full picture matters.",
+      onClick:function(){setSelId(null);setPage("assets");}};
+
+    // ── FALLBACK: concentration check ──────────────────────────────────
+    if(!focus&&portfolio.length>6)focus={icon:"lightbulb",color:K.dim,area:"Portfolio",
+      title:"You own "+portfolio.length+" businesses",
+      sub:"Munger rarely owned more than 6 he understood deeply. Which of yours deserves the most attention today?",
+      onClick:function(){setSelId(null);setPage("dashboard");}};
     // Insider signals
     var insiderSignals=[];portfolio.forEach(function(c2){if(c2._insiderCache){var buys=c2._insiderCache.filter(function(t){return t.transactionType==="P"});if(buys.length>0)insiderSignals.push({ticker:c2.ticker,count:buys.length,id:c2.id})}});
 
@@ -13357,7 +13417,7 @@ function ProWelcomeGift(){
             <IC name={focus.icon} size={16} color={focus.color}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:focus.color,fontFamily:fm,marginBottom:4}}>Focus</div>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1.2,textTransform:"uppercase",color:focus.color,fontFamily:fm,marginBottom:4}}>{focus.area?"Focus · "+focus.area:"Focus"}</div>
             <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:3,letterSpacing:"-0.2px"}}>{focus.title}</div>
             {focus.sub&&<div style={{fontSize:12,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{focus.sub}</div>}
           </div>
