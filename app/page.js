@@ -11962,23 +11962,19 @@ function ProWelcomeGift(){
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
             </div>
             {hi52>lo52&&price>0&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
               <div style={{position:"relative",height:3,background:K.bdr,borderRadius:2,width:80,flexShrink:0}}>
-                {/* Filled portion up to current price */}
                 <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos2||0))+"%",
                   background:nearFP?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+K.acc+")",
                   borderRadius:2,opacity:0.6}}/>
-                {/* Fat pitch marker */}
                 {fp>0&&fp>=lo52&&fp<=hi52&&<div style={{position:"absolute",top:-2,width:1,height:7,
-                  background:K.grn+"90",
-                  left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/> }
-                {/* Current price dot */}
+                  background:K.grn+"90",left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/> }
                 <div style={{position:"absolute",top:-4,width:11,height:11,borderRadius:"50%",
                   background:nearFP?K.grn:K.acc,border:"1.5px solid "+K.card,
                   boxShadow:"0 1px 4px rgba(0,0,0,0.25)",
                   left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)",transition:"left .4s ease"}}/>
               </div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w H: "+cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
               {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400,flexShrink:0,whiteSpace:"nowrap",marginLeft:2}}>{"·  "+(nearFP?"at target":pctAway.toFixed(0)+"% to target")}</span>}
             </div>}
           </div>
