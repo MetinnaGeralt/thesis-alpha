@@ -774,6 +774,7 @@ function TrackerApp(props){
         if(d.notifs)setNotifs(d.notifs);
         if(d.trial)setTrial(d.trial);
         if(d.readingList)setReadingList(d.readingList);
+        if(d.shortlists)setShortlists(d.shortlists);
         if(d.otherAssets)setOtherAssets(d.otherAssets);
         if(d.netWorthHistory)setNetWorthHistory(d.netWorthHistory);
         if(d.aiHistory)setAiHistory(d.aiHistory);
@@ -843,6 +844,8 @@ function TrackerApp(props){
   var _aiHist=useState({}),aiHistory=_aiHist[0],setAiHistory=_aiHist[1];
   var CURRENCIES=[{code:"USD",sym:"$",label:"US Dollar"},{code:"EUR",sym:"€",label:"Euro"},{code:"GBP",sym:"£",label:"British Pound"},{code:"NOK",sym:"kr ",label:"Norwegian Krone"},{code:"SEK",sym:"kr ",label:"Swedish Krona"},{code:"DKK",sym:"kr ",label:"Danish Krone"},{code:"CHF",sym:"CHF ",label:"Swiss Franc"},{code:"JPY",sym:"¥",label:"Japanese Yen"},{code:"AUD",sym:"A$",label:"Australian Dollar"},{code:"CAD",sym:"C$",label:"Canadian Dollar"},{code:"SGD",sym:"S$",label:"Singapore Dollar"},{code:"HKD",sym:"HK$",label:"Hong Kong Dollar"}];
   var cSym=(CURRENCIES.find(function(c){return c.code===currency})||CURRENCIES[0]).sym;
+  var _sl=useState(function(){try{var s=localStorage.getItem("ta-shortlists");return s?JSON.parse(s):[]}catch(e){return[]}}),shortlists=_sl[0],setShortlists=_sl[1];
+  function saveShortlists(next){setShortlists(next);try{localStorage.setItem("ta-shortlists",JSON.stringify(next))}catch(e){}}
   var _rl=useState(function(){try{var s=localStorage.getItem("ta-readinglist");return s?JSON.parse(s):[]}catch(e){return[]}}),readingList=_rl[0],setReadingList=_rl[1];
   function saveRL(next){setReadingList(next);try{localStorage.setItem("ta-readinglist",JSON.stringify(next))}catch(e){}}
   var _an=useState(function(){try{return localStorage.getItem("ta-autonotify")==="true"}catch(e){return false}}),autoNotify=_an[0],setAutoNotify=_an[1];
@@ -1116,12 +1119,12 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false);});
   },[loaded,sideTab]);
 
-  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};
+  useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,shortlists:shortlists,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
     cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,dashSet,theme,readingList,otherAssets,netWorthHistory,assetTargets,liabilities,aiHistory]);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,shortlists,dashSet,theme,readingList,otherAssets,netWorthHistory,assetTargets,liabilities,aiHistory]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -11798,33 +11801,23 @@ function ProWelcomeGift(){
   function WatchlistPage(){
     var watching=cos.filter(function(c){return c.status==="watchlist";});
     var tooHard=cos.filter(function(c){return c.status==="toohard";});
-    // Auto-fetch price + 52w for watchlist items missing data
-    React.useEffect(function(){
-      var needsData=watching.filter(function(c){return !c.position||!c.position.currentPrice;});
-      needsData.forEach(function(c,i){
-        setTimeout(function(){
-          fetchQuote(c.ticker).then(function(q){
-            if(q&&q.price>0){upd(c.id,function(prev){
-              return Object.assign({},prev,{position:Object.assign({},prev.position||{},{currentPrice:q.price,dayChange:q.changePct||0})});
-            });}
-          });
-          if(!c._hi52){
-            fetchEarnings(c,c.kpis||[]).then(function(res){
-              if(res&&res.snapshot){upd(c.id,function(prev){
-                var u={financialSnapshot:res.snapshot};
-                if(res.snapshot.hi52)u._hi52=parseFloat((res.snapshot.hi52.value||"").replace(/[^0-9.]/g,""))||0;
-                if(res.snapshot.lo52)u._lo52=parseFloat((res.snapshot.lo52.value||"").replace(/[^0-9.]/g,""))||0;
-                return Object.assign({},prev,u);
-              });}
-            });
-          }
-        },i*600);
-      });
-    },[watching.length]);
-    var _tab=React.useState("watching"),wTab=_tab[0],setWTab=_tab[1];
-    var list=wTab==="watching"?watching:tooHard;
 
-    // Instant add state
+    // Active list: "watching" | "toohard" | shortlist id
+    var _active=React.useState("watching"),activeList=_active[0],setActiveList=_active[1];
+
+    // Inline create/rename state
+    var _editing=React.useState(null),editingSlId=_editing[0],setEditingSlId=_editing[1];
+    var _editName=React.useState(""),editName=_editName[0],setEditName=_editName[1];
+    var _creating=React.useState(false),creatingNew=_creating[0],setCreatingNew=_creating[1];
+    var _newName=React.useState(""),newName=_newName[0],setNewName=_newName[1];
+    var _newColor=React.useState(K.acc),newColor=_newColor[0],setNewColor=_newColor[1];
+    var newNameRef=React.useRef(null);
+
+    // Add-to-list search
+    var _slSearch=React.useState(""),slSearch=_slSearch[0],setSlSearch=_slSearch[1];
+    var _slFocused=React.useState(false),slFocused=_slFocused[0],setSlFocused=_slFocused[1];
+
+    // Instant add state (watching list)
     var _q=React.useState(""),addQ=_q[0],setAddQ=_q[1];
     var _res=React.useState([]),addResults=_res[0],setAddResults=_res[1];
     var _addLoading=React.useState(false),addLoading=_addLoading[0],setAddLoading=_addLoading[1];
@@ -11835,11 +11828,77 @@ function ProWelcomeGift(){
     var _sel=React.useState(null),panelId=_sel[0],setPanelId=_sel[1];
     var panelCo=cos.find(function(c){return c.id===panelId;})||null;
 
-    // Fat pitch alerts
+    // Auto-fetch price + 52w for watchlist items missing data
+    React.useEffect(function(){
+      var needsData=watching.filter(function(c){return !c.position||!c.position.currentPrice;});
+      needsData.forEach(function(c,i){
+        setTimeout(function(){
+          fetchQuote(c.ticker).then(function(q){
+            if(q&&q.price>0)upd(c.id,function(prev){
+              return Object.assign({},prev,{position:Object.assign({},prev.position||{},{currentPrice:q.price,dayChange:q.changePct||0})});
+            });
+          });
+          if(!c._hi52){
+            fetchEarnings(c,c.kpis||[]).then(function(res){
+              if(res&&res.snapshot)upd(c.id,function(prev){
+                var u={financialSnapshot:res.snapshot};
+                if(res.snapshot.hi52)u._hi52=parseFloat((res.snapshot.hi52.value||"").replace(/[^0-9.]/g,""))||0;
+                if(res.snapshot.lo52)u._lo52=parseFloat((res.snapshot.lo52.value||"").replace(/[^0-9.]/g,""))||0;
+                return Object.assign({},prev,u);
+              });
+            });
+          }
+        },i*600);
+      });
+    },[watching.length]);
+
     var fatPitchAlerts=watching.filter(function(c){
       var pos=c.position||{};var price=pos.currentPrice||0;var fp=parseFloat(c.fatPitchPrice)||0;
       return fp>0&&price>0&&price<=fp*1.05;
     });
+
+    var SL_COLORS=[K.acc,"#10B981","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
+
+    // Derived: active shortlist object
+    var activeShortlist=shortlists.find(function(sl){return sl.id===activeList;})||null;
+    var activeSlCompanies=activeShortlist
+      ?(activeShortlist.tickers||[]).map(function(tk){return cos.find(function(c){return c.ticker===tk;});}).filter(Boolean)
+      :[];
+    var allForShortlist=cos.filter(function(c){var s=c.status||"portfolio";return s==="portfolio"||s==="watchlist";});
+
+    // Shortlist helpers
+    function createList(){
+      if(!newName.trim())return;
+      var ns={id:"sl_"+Date.now(),name:newName.trim(),color:newColor,tickers:[],createdAt:new Date().toISOString()};
+      saveShortlists(shortlists.concat([ns]));
+      setActiveList(ns.id);setCreatingNew(false);setNewName("");setNewColor(K.acc);
+      showToast(ns.name+" created","info",2000);
+    }
+    function renameList(id){
+      if(!editName.trim())return;
+      saveShortlists(shortlists.map(function(sl){return sl.id===id?Object.assign({},sl,{name:editName.trim()}):sl;}));
+      setEditingSlId(null);setEditName("");
+    }
+    function deleteList(id){
+      if(!window.confirm("Delete this list?"))return;
+      saveShortlists(shortlists.filter(function(sl){return sl.id!==id;}));
+      if(activeList===id)setActiveList("watching");
+    }
+    function toggleInList(slId,ticker){
+      saveShortlists(shortlists.map(function(sl){
+        if(sl.id!==slId)return sl;
+        var tks=sl.tickers||[];var has=tks.indexOf(ticker)>=0;
+        return Object.assign({},sl,{tickers:has?tks.filter(function(t){return t!==ticker;}):tks.concat([ticker])});
+      }));
+    }
+
+    // Search
+    var slSearchLower=slSearch.toLowerCase();
+    var slSearchResults=slSearch.trim()
+      ?allForShortlist.filter(function(c){
+          return c.ticker.toLowerCase().indexOf(slSearchLower)>=0||c.name.toLowerCase().indexOf(slSearchLower)>=0;
+        }).slice(0,8)
+      :[];
 
     function doSearch(q){
       if(!q){setAddResults([]);return;}
@@ -11848,193 +11907,389 @@ function ProWelcomeGift(){
         if(r&&!r.error&&r.name){
           setAddResults([{ticker:q.toUpperCase().trim().replace(/\s+/g,""),name:r.name,sector:r.sector||"",
             domain:r.domain||"",mktCap:r.mktCap||0,price:r.price||0,_raw:r}]);
-        } else {setAddResults([]);}
+        }else{setAddResults([]);}
         setAddLoading(false);
       }).catch(function(){setAddLoading(false);setAddResults([]);});
     }
-
     function onAddInput(e){
       var v=e.target.value;setAddQ(v);
       if(addTimer.current)clearTimeout(addTimer.current);
-      if(v.trim().length>=1){
-        addTimer.current=setTimeout(function(){doSearch(v.trim());},400);
-      } else {setAddResults([]);}
+      if(v.trim().length>=1){addTimer.current=setTimeout(function(){doSearch(v.trim());},400);}
+      else{setAddResults([]);}
     }
-
     function addToWatchlist(r){
       var exists=cos.find(function(c){return c.ticker===r.ticker;});
       if(exists){setPanelId(exists.id);setAddQ("");setAddResults([]);return;}
       var raw=r._raw||{};
-      // Store price and 52w data from lookup
       var nc={id:nId(cos),ticker:r.ticker,name:r.name,sector:r.sector,domain:r.domain,
         status:"watchlist",kpis:[],decisions:[],docs:[],scenarios:[],
         position:{currentPrice:r.price||0},conviction:0,
         earningsDate:raw.earningsDate||"TBD",earningsTime:raw.earningsTime||"TBD",
         mktCap:r.mktCap,_watchNote:""};
       setCos(function(p){return p.concat([nc]);});
-      // Fetch full data (price + 52w + financials) asynchronously
       setTimeout(function(){
-        fetchEarnings(nc,nc.kpis).then(function(res){
-          if(res){upd(nc.id,function(prev){
-            var updates={financialSnapshot:res.snapshot||{}};
-            if(res.snapshot&&res.snapshot.hi52){updates._hi52=parseFloat((res.snapshot.hi52.value||"").replace(/[^0-9.]/g,""))||0;}
-            if(res.snapshot&&res.snapshot.lo52){updates._lo52=parseFloat((res.snapshot.lo52.value||"").replace(/[^0-9.]/g,""))||0;}
-            return Object.assign({},prev,updates);
-          });}
-        });
-        fetchQuote(nc.ticker).then(function(q){
-          if(q&&q.price>0){upd(nc.id,function(prev){
-            return Object.assign({},prev,{position:Object.assign({},prev.position,
-              {currentPrice:q.price,dayChange:q.changePct||0})});
-          });}
-        });
+        fetchQuote(nc.ticker).then(function(q){if(q&&q.price>0)upd(nc.id,function(prev){return Object.assign({},prev,{position:Object.assign({},prev.position||{},{currentPrice:q.price,dayChange:q.changePct||0})});});});
+        fetchEarnings(nc,nc.kpis||[]).then(function(res){if(res&&res.snapshot)upd(nc.id,function(prev){var u={financialSnapshot:res.snapshot};if(res.snapshot.hi52)u._hi52=parseFloat((res.snapshot.hi52.value||"").replace(/[^0-9.]/g,""))||0;if(res.snapshot.lo52)u._lo52=parseFloat((res.snapshot.lo52.value||"").replace(/[^0-9.]/g,""))||0;return Object.assign({},prev,u);});});
       },300);
-      setPanelId(nc.id);
-      setAddQ("");setAddResults([]);
-      showToast(r.ticker+" added — fetching data...","info",2000);
+      setPanelId(nc.id);setAddQ("");setAddResults([]);
+      showToast(r.ticker+" added to Watching","info",2000);
     }
 
-    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
-      {/* Overlay + Panel */}
-      {panelId&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.25)"}}
-        onClick={function(){setPanelId(null);}}/>}
-      {panelCo&&<WatchlistDetailPanel
-        c={panelCo} onClose={function(){setPanelId(null);}}
-        upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm}
-        fh={fh} fm={fm} fb={fb} setSelId={setSelId} setDetailTab={setDetailTab}
-        setPage={setPage} showToast={showToast}/>}
-
-      {/* Header */}
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}>
-        <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{"Watchlist"}</h1>
-        <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>{"Businesses you understand. Waiting for the right price."}</p>
-      </div>
-
-      {/* Instant add bar */}
-      <div style={{marginBottom:24,position:"relative"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
-          background:K.card,border:"1px solid "+(searchFocused?K.acc+"60":K.bdr),
-          borderRadius:_isBm?0:10,transition:"border-color .2s",boxShadow:searchFocused?"0 0 0 3px "+K.acc+"10":"none"}}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input value={addQ} onChange={onAddInput}
-            onFocus={function(){setSearchFocused(true);}}
-            onBlur={function(){setTimeout(function(){setSearchFocused(false);setAddResults([]);},180);}}
-            placeholder={"Type a ticker or name — AAPL, Topicus, KSI.TO..."}
-            style={{flex:1,background:"none",border:"none",outline:"none",fontSize:14,color:K.txt,fontFamily:fm,caretColor:K.acc}}/>
-          {addLoading&&<div style={{width:14,height:14,borderRadius:"50%",border:"2px solid "+K.bdr,borderTop:"2px solid "+K.acc,animation:"spin 1s linear infinite",flexShrink:0}}/>}
-          {addQ&&!addLoading&&<button onClick={function(){setAddQ("");setAddResults([]);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:20,padding:0,lineHeight:1}}>{"×"}</button>}
-        </div>
-        {addResults.length>0&&<div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:K.card,
-          border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,boxShadow:"0 8px 32px rgba(0,0,0,.15)",zIndex:100,overflow:"hidden"}}>
-          {addResults.map(function(r){
-            var exists=cos.find(function(c){return c.ticker===r.ticker;});
-            return<div key={r.ticker} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer",transition:"background .1s"}}
-              onMouseDown={function(e){e.preventDefault();addToWatchlist(r);}}
-              onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08";}}
-              onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
-              <CoLogo domain={r.domain} ticker={r.ticker} size={28}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{r.ticker}</div>
-                <div style={{fontSize:12,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+    // ── WatchRow ──────────────────────────────────────────────────────────
+    function WatchRow({c,showRemove,onRemove}){
+      var pos=c.position||{};var price=pos.currentPrice||0;
+      var fp=parseFloat(c.fatPitchPrice)||0;
+      var hi52=c._hi52||0;var lo52=c._lo52||0;
+      var nearFP=fp>0&&price>0&&price<=fp*1.05;
+      var atAlert=c.alertEnabled&&c.alertPrice&&price>0&&price<=parseFloat(c.alertPrice)*1.02;
+      var pctAway=fp>0&&price>0?((price-fp)/fp*100):null;
+      var rangePos2=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
+      var isOpen=panelId===c.id;
+      return<div style={{padding:"11px 14px",background:isOpen?K.acc+"08":nearFP?K.grn+"06":"transparent",
+          borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",
+          border:"1px solid "+(isOpen?K.acc+"30":nearFP?K.grn+"30":"transparent")}}
+        onClick={function(){setPanelId(isOpen?null:c.id);}}
+        onMouseEnter={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background=K.bg;}}
+        onMouseLeave={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background="transparent";}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:hi52>0||fp>0?3:0}}>
+              <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}}>{c.ticker}</span>
+              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{c.name}</span>
+              {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>FAT PITCH</span>}
+              {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
+              {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
+            </div>
+            {hi52>lo52&&price>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
+              <div style={{flex:1,height:3,background:K.bdr,borderRadius:2,position:"relative",maxWidth:120}}>
+                <div style={{position:"absolute",top:-2,width:7,height:7,borderRadius:"50%",background:nearFP?K.grn:K.acc,
+                  left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 3px)"}}/>
               </div>
-              {r.price>0&&<div style={{fontSize:13,color:K.mid,fontFamily:fm,flexShrink:0}}>{cSym+r.price.toFixed(2)}</div>}
-              {exists
-                ?<span style={{fontSize:10,color:K.grn,background:K.grn+"12",borderRadius:4,padding:"2px 8px",fontFamily:fm,fontWeight:600,flexShrink:0}}>{"Watching"}</span>
-                :<span style={{fontSize:12,color:"#fff",background:K.acc,borderRadius:4,padding:"3px 10px",fontFamily:fm,fontWeight:600,flexShrink:0}}>{"+ Add"}</span>}
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28,textAlign:"right"}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
+              {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400,flexShrink:0,marginLeft:4}}>
+                {nearFP?"At target":pctAway.toFixed(0)+"% to target"}</span>}
+            </div>}
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
+            {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
+          </div>
+          {showRemove
+            ?<button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
+                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4}}
+                onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.background=K.red+"10";}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>{"×"}</button>
+            :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
+                style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>}
+        </div>
+      </div>;}
+
+    // ── List info ──────────────────────────────────────────────────────────
+    var activeCount=activeList==="watching"?watching.length:activeList==="toohard"?tooHard.length:(activeShortlist?(activeShortlist.tickers||[]).length:0);
+    var activeName=activeList==="watching"?"Watching":activeList==="toohard"?"Too Hard":(activeShortlist?activeShortlist.name:"");
+    var activeColor=activeList==="watching"?K.acc:activeList==="toohard"?K.red:(activeShortlist?activeShortlist.color:K.acc);
+
+    // ── Search bar (for adding to named lists) ─────────────────────────────
+    function ListSearchBar({slId}){
+      return<div style={{position:"relative",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",background:K.card,
+          border:"1px solid "+(slFocused?activeColor+"60":K.bdr),borderRadius:_isBm?0:9,
+          boxShadow:slFocused?"0 0 0 3px "+activeColor+"10":"none",transition:"all .2s"}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input value={slSearch} onChange={function(e){setSlSearch(e.target.value);}}
+            onFocus={function(){setSlFocused(true);}}
+            onBlur={function(){setTimeout(function(){setSlFocused(false);setSlSearch("");},180);}}
+            placeholder={"Search your portfolio and watchlist to add..."}
+            style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,color:K.txt,fontFamily:fm}}/>
+          {slSearch&&<button onClick={function(){setSlSearch("");}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:18,padding:0,lineHeight:1}}>{"×"}</button>}
+        </div>
+        {slSearchResults.length>0&&<div style={{position:"absolute",top:"calc(100%+4px)",left:0,right:0,background:K.card,
+          border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:100,overflow:"hidden"}}>
+          {slSearchResults.map(function(c){
+            var inList=activeShortlist&&(activeShortlist.tickers||[]).indexOf(c.ticker)>=0;
+            var pos=c.position||{};var price=pos.currentPrice||0;
+            return<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",cursor:"pointer",transition:"background .1s"}}
+              onMouseEnter={function(e){e.currentTarget.style.background=K.bg;}}
+              onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+              <CoLogo domain={c.domain} ticker={c.ticker} size={24}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh}}>{c.ticker}</div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+              </div>
+              {price>0&&<span style={{fontSize:12,color:K.mid,fontFamily:fm,flexShrink:0}}>{cSym+price.toFixed(2)}</span>}
+              <button onMouseDown={function(e){e.preventDefault();toggleInList(slId,c.ticker);}}
+                style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+(inList?K.red+"60":activeColor+"60"),
+                  background:inList?K.red+"10":activeColor+"10",color:inList?K.red:activeColor,
+                  fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0,transition:"all .15s"}}>
+                {inList?"Remove":"+ Add"}
+              </button>
             </div>;
           })}
         </div>}
-      </div>
+      </div>;}
 
-      {/* Fat pitch banner */}
-      {fatPitchAlerts.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,
-        padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}
-        onClick={function(){setPanelId(fatPitchAlerts[0].id);}}>
-        <div style={{width:8,height:8,borderRadius:"50%",background:K.grn,flexShrink:0}}/>
-        <div style={{flex:1,fontSize:13,fontWeight:700,color:K.grn,fontFamily:fm}}>
-          {fatPitchAlerts.map(function(c){return c.ticker;}).join(", ")}{fatPitchAlerts.length===1?" is":" are"}{" at your fat pitch price — tap to review"}
+    return<div style={{display:"flex",height:"100%",padding:0}}>
+      {/* ── Left sidebar: list navigation ── */}
+      {!isMobile&&<div style={{width:220,minWidth:220,borderRight:"1px solid "+K.bdr,
+        display:"flex",flexDirection:"column",height:"100%",paddingTop:28,paddingBottom:20,overflowY:"auto"}}>
+
+        <div style={{padding:"0 16px 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Watchlists</div>
         </div>
-      </div>}
 
-      {/* Tabs */}
-      <div style={{display:"flex",marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {[{id:"watching",l:"Watching ("+watching.length+")"},{id:"toohard",l:"Too Hard ("+tooHard.length+")"}].map(function(t){
-          var act=wTab===t.id;
-          return<button key={t.id} onClick={function(){setWTab(t.id);}}
-            style={{padding:"10px 16px",background:"none",border:"none",borderBottom:"2px solid "+(act?K.acc:"transparent"),
-              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,fontWeight:act?700:400,transition:"all .15s"}}>
-            {t.l}
-          </button>;
-        })}
-      </div>
-
-      {/* Empty */}
-      {list.length===0&&<div style={{textAlign:"center",padding:"60px 24px"}}>
-        <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>
-          {wTab==="watching"?"Start your watchlist above":"Too-Hard pile is empty"}
-        </div>
-        <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>
-          {wTab==="watching"?"Search for a business, set your fat pitch price, wait patiently."
-            :"It's not supposed to be easy. Anyone who finds it easy is stupid. — Munger"}
-        </div>
-      </div>}
-
-      {/* Compact rows */}
-      {list.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
-        {list.map(function(c){
-          var pos=c.position||{};
-          var price=pos.currentPrice||0;
-          var fp=parseFloat(c.fatPitchPrice)||0;
-          var hi52=c._hi52||0;var lo52=c._lo52||0;
-          var nearFP=fp>0&&price>0&&price<=fp*1.05;
-          var atAlert=c.alertEnabled&&c.alertPrice&&price>0&&price<=parseFloat(c.alertPrice)*1.02;
-          var pctAway=fp>0&&price>0?((price-fp)/fp*100):null;
-          var rangePos2=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
-          var isOpen=panelId===c.id;
-          return<div key={c.id}
-            style={{padding:"12px 14px",background:isOpen?K.acc+"08":nearFP?K.grn+"06":"transparent",
-              borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",
-              border:"1px solid "+(isOpen?K.acc+"30":nearFP?K.grn+"30":"transparent")}}
-            onClick={function(){setPanelId(isOpen?null:c.id);}}
-            onMouseEnter={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background=K.bg;}}
-            onMouseLeave={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background="transparent";}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:hi52>0||fp>0?3:0}}>
-                  <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}}>{c.ticker}</span>
-                  <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{c.name}</span>
-                  {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>{"FAT PITCH"}</span>}
-                  {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>{"ALERT"}</span>}
-                </div>
-                {/* 52w bar */}
-                {hi52>lo52&&price>0&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
-                  <div style={{flex:1,height:3,background:K.bdr,borderRadius:2,position:"relative",maxWidth:120}}>
-                    <div style={{position:"absolute",top:-2,width:7,height:7,borderRadius:"50%",background:nearFP?K.grn:K.acc,
-                      left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 3px)"}}/>
-                  </div>
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,minWidth:28,textAlign:"right"}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
-                  {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400,flexShrink:0,marginLeft:4}}>
-                    {nearFP?"At fat pitch":pctAway.toFixed(0)+"% to target"}
-                  </span>}
-                </div>}
-              </div>
-              <div style={{textAlign:"right",flexShrink:0}}>
-                {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
-                {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
-                {!price&&!fp&&<div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"—"}</div>}
-              </div>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
-                style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
+        {/* Built-in lists */}
+        {[
+          {id:"watching",label:"Watching",count:watching.length,color:K.acc,
+            alerts:fatPitchAlerts.length},
+          {id:"toohard",label:"Too Hard",count:tooHard.length,color:K.red,alerts:0},
+        ].map(function(item){
+          var act=activeList===item.id;
+          return<div key={item.id} onClick={function(){setActiveList(item.id);setPanelId(null);setSlSearch("");}}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 16px",cursor:"pointer",
+              background:act?item.color+"10":"transparent",
+              borderLeft:act?"2px solid "+item.color:"2px solid transparent",
+              transition:"all .12s"}}
+            onMouseEnter={function(e){if(!act)e.currentTarget.style.background=K.bg;}}
+            onMouseLeave={function(e){if(!act)e.currentTarget.style.background="transparent";}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:act?item.color:K.bdr,flexShrink:0,transition:"background .15s"}}/>
+            <span style={{flex:1,fontSize:13,color:act?item.color:K.mid,fontWeight:act?700:400,fontFamily:fm}}>{item.label}</span>
+            {item.alerts>0&&<div style={{width:7,height:7,borderRadius:"50%",background:K.grn}}/>}
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,borderRadius:10,padding:"1px 7px"}}>{item.count}</span>
           </div>;
         })}
+
+        {/* Divider */}
+        {shortlists.length>0&&<div style={{height:1,background:K.bdr,margin:"8px 16px"}}/>}
+
+        {/* User-created lists */}
+        {shortlists.map(function(sl){
+          var act=activeList===sl.id;
+          var slAlerts=(sl.tickers||[]).filter(function(tk){
+            var c=cos.find(function(x){return x.ticker===tk;});
+            if(!c)return false;var pos=c.position||{};var price=pos.currentPrice||0;
+            var fp=parseFloat(c.fatPitchPrice)||0;return fp>0&&price>0&&price<=fp*1.05;
+          }).length;
+          var isRenaming=editingSlId===sl.id;
+          return<div key={sl.id}
+            style={{display:"flex",alignItems:"center",gap:6,padding:"7px 10px 7px 16px",cursor:"pointer",
+              background:act?sl.color+"10":"transparent",
+              borderLeft:act?"2px solid "+sl.color:"2px solid transparent",
+              transition:"background .12s",position:"relative"}}
+            onClick={function(){if(!isRenaming){setActiveList(sl.id);setPanelId(null);setSlSearch("");}}}
+            onMouseEnter={function(e){if(!act&&!isRenaming)e.currentTarget.style.background=K.bg;}}
+            onMouseLeave={function(e){if(!act&&!isRenaming)e.currentTarget.style.background=act?sl.color+"10":"transparent";}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:sl.color,flexShrink:0}}/>
+            {isRenaming
+              ?<input value={editName} onChange={function(e){setEditName(e.target.value);}}
+                  autoFocus
+                  onKeyDown={function(e){if(e.key==="Enter")renameList(sl.id);if(e.key==="Escape"){setEditingSlId(null);setEditName("");}}}
+                  onBlur={function(){renameList(sl.id);}}
+                  onClick={function(e){e.stopPropagation();}}
+                  style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,color:sl.color,fontWeight:700,fontFamily:fm,padding:0,minWidth:0}}/>
+              :<span style={{flex:1,fontSize:13,color:act?sl.color:K.mid,fontWeight:act?700:400,fontFamily:fm,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sl.name}</span>}
+            {slAlerts>0&&<div style={{width:7,height:7,borderRadius:"50%",background:K.grn,flexShrink:0}}/>}
+            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{(sl.tickers||[]).length}</span>
+            {/* Edit/delete on hover */}
+            {act&&!isRenaming&&<div style={{display:"flex",gap:2,flexShrink:0}} onClick={function(e){e.stopPropagation();}}>
+              <button onClick={function(){setEditingSlId(sl.id);setEditName(sl.name);}}
+                style={{background:"none",border:"none",cursor:"pointer",color:K.dim,padding:"2px 3px",fontSize:11,borderRadius:3}}
+                onMouseEnter={function(e){e.currentTarget.style.color=K.acc;e.currentTarget.style.background=K.acc+"10";}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>
+                <IC name="edit" size={10} color="currentColor"/>
+              </button>
+              <button onClick={function(){deleteList(sl.id);}}
+                style={{background:"none",border:"none",cursor:"pointer",color:K.dim,padding:"2px 3px",fontSize:12,borderRadius:3}}
+                onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.background=K.red+"10";}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>{"×"}</button>
+            </div>}
+          </div>;
+        })}
+
+        {/* Create new list */}
+        {creatingNew
+          ?<div style={{padding:"8px 16px"}}>
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              {SL_COLORS.map(function(c2){return<div key={c2} onClick={function(){setNewColor(c2);}}
+                style={{width:16,height:16,borderRadius:"50%",background:c2,cursor:"pointer",flexShrink:0,
+                  outline:newColor===c2?"2px solid "+c2:"2px solid transparent",outlineOffset:2}}/>;})}</div>
+            <input ref={newNameRef} value={newName} onChange={function(e){setNewName(e.target.value);}}
+              autoFocus placeholder={"List name..."}
+              onKeyDown={function(e){if(e.key==="Enter"&&newName.trim())createList();if(e.key==="Escape"){setCreatingNew(false);setNewName("");}}}
+              style={{width:"100%",boxSizing:"border-box",padding:"7px 10px",borderRadius:_isBm?0:7,
+                border:"1px solid "+newColor+"60",background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none",marginBottom:6}}
+              onFocus={function(e){e.target.style.borderColor=newColor;}}
+              onBlur={function(e){e.target.style.borderColor=newColor+"60";}}/>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={createList} disabled={!newName.trim()}
+                style={{flex:1,padding:"6px",borderRadius:_isBm?0:6,border:"none",
+                  background:newName.trim()?newColor:"transparent",color:newName.trim()?"#fff":K.dim,
+                  fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,opacity:newName.trim()?1:0.5}}>
+                Create
+              </button>
+              <button onClick={function(){setCreatingNew(false);setNewName("");}}
+                style={{padding:"6px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"none",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+          :<button onClick={function(){setCreatingNew(true);}}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"8px 16px",background:"none",border:"none",
+              cursor:"pointer",color:K.dim,fontSize:12,fontFamily:fm,width:"100%",textAlign:"left",marginTop:4}}
+            onMouseEnter={function(e){e.currentTarget.style.color=K.acc;}}
+            onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            {"New list"}
+          </button>}
+
+        {/* Spacer */}
+        <div style={{flex:1}}/>
       </div>}
-    </div>;
-  }
+
+      {/* ── Main content ── */}
+      <div style={{flex:1,minWidth:0,padding:isMobile?"0 16px 80px":isThesis?"28px 40px 80px":"28px 32px 60px",maxWidth:820,overflowY:"auto"}}>
+
+        {/* Overlay + panel */}
+        {panelId&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
+        {panelCo&&<WatchlistDetailPanel c={panelCo} onClose={function(){setPanelId(null);}}
+          upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
+          setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast}/>}
+
+        {/* Mobile list selector */}
+        {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+          {[{id:"watching",label:"Watching",color:K.acc},{id:"toohard",label:"Too Hard",color:K.red}]
+            .concat(shortlists.map(function(sl){return{id:sl.id,label:sl.name,color:sl.color};}))
+            .map(function(item){var act=activeList===item.id;
+              return<button key={item.id} onClick={function(){setActiveList(item.id);setPanelId(null);setSlSearch("");}}
+                style={{padding:"6px 14px",borderRadius:999,border:"1px solid "+(act?item.color:K.bdr),
+                  background:act?item.color+"15":"transparent",color:act?item.color:K.dim,
+                  fontSize:12,fontFamily:fm,fontWeight:act?700:400,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+                {item.label}
+              </button>;})}
+          <button onClick={function(){setCreatingNew(true);}}
+            style={{padding:"6px 14px",borderRadius:999,border:"1px dashed "+K.bdr,background:"none",
+              color:K.dim,fontSize:12,fontFamily:fm,cursor:"pointer",flexShrink:0}}>{"+ New"}</button>
+        </div>}
+
+        {/* Active list header */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+            {activeList!=="watching"&&activeList!=="toohard"&&<div style={{width:10,height:10,borderRadius:"50%",background:activeColor}}/>}
+            <h2 style={{margin:0,fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{activeName}</h2>
+            {activeCount>0&&<span style={{fontSize:12,color:K.dim,fontFamily:fm,background:K.bg,borderRadius:10,padding:"2px 9px",border:"1px solid "+K.bdr}}>{activeCount}</span>}
+          </div>
+          {activeList==="watching"&&<button onClick={function(){setAddQ("");setSearchFocused(true);}}
+            style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:K.acc,borderColor:K.acc})}>{"+ Add"}</button>}
+          {activeList!=="watching"&&activeList!=="toohard"&&<button onClick={function(){setSlSearch("");setSlFocused(true);}}
+            style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:activeColor,borderColor:activeColor})}>{"+ Add"}</button>}
+        </div>
+
+        {/* ── WATCHING ── */}
+        {activeList==="watching"&&<div>
+          {/* Instant add bar */}
+          <div style={{marginBottom:fatPitchAlerts.length>0?16:20,position:"relative"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.card,
+              border:"1px solid "+(searchFocused?K.acc+"60":K.bdr),borderRadius:_isBm?0:10,
+              boxShadow:searchFocused?"0 0 0 3px "+K.acc+"10":"none",transition:"all .2s"}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input value={addQ} onChange={onAddInput}
+                onFocus={function(){setSearchFocused(true);}}
+                onBlur={function(){setTimeout(function(){setSearchFocused(false);setAddResults([]);},180);}}
+                placeholder={"Type a ticker or name — AAPL, Topicus, KSI.TO..."}
+                style={{flex:1,background:"none",border:"none",outline:"none",fontSize:14,color:K.txt,fontFamily:fm,caretColor:K.acc}}/>
+              {addLoading&&<div style={{width:14,height:14,borderRadius:"50%",border:"2px solid "+K.bdr,borderTop:"2px solid "+K.acc,animation:"spin 1s linear infinite"}}/>}
+              {addQ&&!addLoading&&<button onClick={function(){setAddQ("");setAddResults([]);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:20,padding:0,lineHeight:1}}>{"×"}</button>}
+            </div>
+            {addResults.length>0&&<div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:K.card,
+              border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,boxShadow:"0 8px 32px rgba(0,0,0,.15)",zIndex:100,overflow:"hidden"}}>
+              {addResults.map(function(r){
+                var exists=cos.find(function(c){return c.ticker===r.ticker;});
+                return<div key={r.ticker} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",cursor:"pointer"}}
+                  onMouseDown={function(e){e.preventDefault();addToWatchlist(r);}}
+                  onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"08";}}
+                  onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+                  <CoLogo domain={r.domain} ticker={r.ticker} size={28}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{r.ticker}</div>
+                    <div style={{fontSize:12,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+                  </div>
+                  {r.price>0&&<span style={{fontSize:13,color:K.mid,fontFamily:fm}}>{cSym+r.price.toFixed(2)}</span>}
+                  {exists
+                    ?<span style={{fontSize:10,color:K.grn,background:K.grn+"12",borderRadius:4,padding:"2px 8px",fontFamily:fm,fontWeight:600}}>Watching</span>
+                    :<span style={{fontSize:12,color:"#fff",background:K.acc,borderRadius:4,padding:"3px 10px",fontFamily:fm,fontWeight:600}}>+ Add</span>}
+                </div>;
+              })}
+            </div>}
+          </div>
+          {/* Fat pitch banner */}
+          {fatPitchAlerts.length>0&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,
+            padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}
+            onClick={function(){setPanelId(fatPitchAlerts[0].id);}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:K.grn}}/>
+            <div style={{flex:1,fontSize:13,fontWeight:700,color:K.grn,fontFamily:fm}}>
+              {fatPitchAlerts.map(function(c){return c.ticker;}).join(", ")}{fatPitchAlerts.length===1?" is":" are"}{" at your fat pitch price"}
+            </div>
+          </div>}
+          {watching.length===0&&<div style={{textAlign:"center",padding:"60px 24px"}}>
+            <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Start your watchlist above</div>
+            <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>Search for a business, set your fat pitch price, wait patiently.</div>
+          </div>}
+          {watching.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {watching.map(function(c){return<WatchRow key={c.id} c={c}/>;})}</div>}
+        </div>}
+
+        {/* ── TOO HARD ── */}
+        {activeList==="toohard"&&<div>
+          {tooHard.length===0&&<div style={{textAlign:"center",padding:"60px 24px"}}>
+            <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Too-Hard pile is empty</div>
+            <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>
+              It's not supposed to be easy. Anyone who finds it easy is stupid. — Munger
+            </div>
+          </div>}
+          {tooHard.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {tooHard.map(function(c){return<WatchRow key={c.id} c={c}/>;})}</div>}
+        </div>}
+
+        {/* ── NAMED LIST ── */}
+        {activeShortlist&&<div>
+          {activeShortlist.description&&<div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.6,marginBottom:16,fontStyle:"italic"}}>{activeShortlist.description}</div>}
+          <ListSearchBar slId={activeShortlist.id}/>
+          {activeSlCompanies.length===0&&<div style={{textAlign:"center",padding:"48px 0"}}>
+            <div style={{fontSize:14,color:K.dim,fontFamily:fm,marginBottom:6}}>This list is empty</div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fm,opacity:.7}}>Search above to add companies from your portfolio or watchlist.</div>
+          </div>}
+          {activeSlCompanies.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+            {activeSlCompanies.map(function(c){
+              return<WatchRow key={c.id} c={c} showRemove={true}
+                onRemove={function(){toggleInList(activeShortlist.id,c.ticker);}}/>;
+            })}
+          </div>}
+        </div>}
+
+        {/* Mobile: create new list inline */}
+        {isMobile&&creatingNew&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:300,display:"flex",alignItems:"flex-end"}}>
+          <div style={{background:K.card,width:"100%",padding:"24px 20px 40px",borderRadius:"16px 16px 0 0"}}>
+            <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:16}}>New list</div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {SL_COLORS.map(function(c2){return<div key={c2} onClick={function(){setNewColor(c2);}}
+                style={{width:24,height:24,borderRadius:"50%",background:c2,cursor:"pointer",
+                  outline:newColor===c2?"3px solid "+c2:"none",outlineOffset:2}}/>;})}</div>
+            <input value={newName} onChange={function(e){setNewName(e.target.value);}}
+              placeholder={"e.g. Quality compounders, Pre-earnings..."}
+              style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:10,border:"1px solid "+K.bdr,
+                background:K.bg,color:K.txt,fontSize:15,fontFamily:fm,outline:"none",marginBottom:12}}/>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={function(){setCreatingNew(false);setNewName("");}} style={Object.assign({},S.btn,{flex:1,padding:"12px"})}>Cancel</button>
+              <button onClick={createList} disabled={!newName.trim()} style={Object.assign({},S.btnP,{flex:2,padding:"12px",opacity:newName.trim()?1:0.5})}>Create</button>
+            </div>
+          </div>
+        </div>}
+      </div>
+    </div>;}
 
 
   // ── Earnings Calendar ──────────────────────────────────────
