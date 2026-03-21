@@ -5754,7 +5754,11 @@ function calcMoatFromData(finData,businessModelType){
         {/* ══════════════════════════════════════════════════════
             TAB 1: THESIS & MONITORING
             ══════════════════════════════════════════════════════ */}
-        {dossierTab==="monitoring"&&<div>
+        {dossierTab==="monitoring"&&<div style={{display:"flex",gap:0,alignItems:"flex-start"}}>
+        {/* ── Scroll Sidebar (hidden) ── */}
+        {!isMobile&&<div style={{width:0,overflow:"hidden",flexShrink:0}}/>}
+        {/* ── Main content ── */}
+        <div style={{flex:1,minWidth:0}}>
         <div id="ds-cover"/>
         {/* ── COVER ── */}
         <div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
@@ -6961,9 +6965,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
         })()}
-        </div>
-        </div>
-        </div>
+        </div>}
         </div>
         </div>}
 
