@@ -2362,7 +2362,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Custom framework prompt view */}
       {promptTab==="custom"&&<div>
         <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 1 — Copy your "+(fw.name||"custom")+" prompt"}</div>
+          <div style={{fontSize:10,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,opacity:.6}}>{"Step 1 — Copy your "+(fw.name||"custom")+" prompt"}</div>
           <button onClick={function(){try{navigator.clipboard.writeText(customPrompt);}catch(e){}setCopied(true);setTimeout(function(){setCopied(false);},2500);}}
             style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,
               padding:"16px 24px",borderRadius:_isBm?0:10,border:"none",
@@ -2375,7 +2375,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </button>
         </div>
         <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 2 — Open your AI and paste"}</div>
+          <div style={{fontSize:10,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,opacity:.6}}>{"Step 2 — Open your AI and paste"}</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
               {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
@@ -2384,9 +2384,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               onClick={function(){window.open(ai.url,"_blank");}}
               style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:8,
                 border:"2px solid "+(copied?"transparent":K.bdr),
-                background:copied?ai.bg:K.bg,color:copied?ai.clr:K.dim,
+                background:copied?ai.bg:K.card,color:copied?ai.clr:K.mid,
                 fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,
-                transition:"all .25s",opacity:copied?1:0.45}}>
+                transition:"all .25s",opacity:copied?1:0.5}}>
               {ai.label}
             </button>;})}
           </div>
@@ -2407,7 +2407,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {promptTab==="standard"&&<div>
         {/* ── Step 1: Copy ── */}
         <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 1 — Copy the prompt"}</div>
+          <div style={{fontSize:10,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,opacity:.6}}>{"Step 1 — Copy the prompt"}</div>
           <button onClick={copyPrompt}
             style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,
               padding:"16px 24px",borderRadius:_isBm?0:10,border:"none",
@@ -2421,7 +2421,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         {/* ── Step 2: Open AI ── */}
         <div style={{marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 2 — Open your AI and paste"}</div>
+          <div style={{fontSize:10,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,opacity:.6}}>{"Step 2 — Open your AI and paste"}</div>
           <div style={{display:"flex",gap:8,marginBottom:10}}>
             {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
               {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
@@ -2430,9 +2430,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               onClick={function(){window.open(ai.url,"_blank");}}
               style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:8,
                 border:"2px solid "+(copied?"transparent":K.bdr),
-                background:copied?ai.bg:K.bg,color:copied?ai.clr:K.dim,
+                background:copied?ai.bg:K.card,color:copied?ai.clr:K.mid,
                 fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,
-                transition:"all .25s",opacity:copied?1:0.45}}>
+                transition:"all .25s",opacity:copied?1:0.5}}>
               {ai.label}
             </button>;})}
           </div>
@@ -2444,7 +2444,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         {/* ── IR tip — collapsed ── */}
         {sel&&(sel.irUrl||true)&&<div style={{marginBottom:16}}>
           <details style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,overflow:"hidden"}}>
-            <summary style={{padding:"10px 14px",fontSize:12,color:K.dim,fontFamily:fm,cursor:"pointer",listStyle:"none",display:"flex",alignItems:"center",gap:8}}>
+            <summary style={{padding:"10px 14px",fontSize:12,color:K.dim,fontFamily:fm,cursor:"pointer",listStyle:"none",display:"flex",alignItems:"center",gap:8,background:K.bg,outline:"none"}}>
               <IC name="book" size={12} color={K.dim}/>
               {"Tip: attach company documents for better results"}
             </summary>
