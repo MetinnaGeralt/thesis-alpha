@@ -6976,11 +6976,14 @@ function calcMoatFromData(finData,businessModelType){
             {[
               {id:"analysis",l:"Analysis"},
               {id:"moat",l:"Moat"},
-              {id:"financials",l:"Financials"},
+              {id:"financials",l:"Financials ↗"},
               {id:"peers",l:"Peers"},
             ].map(function(t){
               var act=deepDiveTab===t.id;
-              return<button key={t.id} onClick={function(){setDeepDiveTab(t.id);}}
+              return<button key={t.id} onClick={function(){
+                if(t.id==="financials"){setSubPage("financials");return;}
+                setDeepDiveTab(t.id);
+              }}
                 style={{padding:"8px 16px",background:"none",border:"none",
                   borderBottom:"2px solid "+(act?"#8B5CF6":"transparent"),
                   color:act?"#8B5CF6":K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
