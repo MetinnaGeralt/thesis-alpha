@@ -10159,6 +10159,21 @@ function ProWelcomeGift(){
 
     function runImport(){
       if(!importText.trim()||importLoading)return;
+      // Rate gate: max 3 per 24h stored in localStorage
+      var GATE_KEY="ta-fw-import-uses";var GATE_LIMIT=3;var GATE_WINDOW=864e5;// 24h
+      try{
+        var raw=localStorage.getItem(GATE_KEY);
+        var uses=raw?JSON.parse(raw):[];
+        var now=Date.now();
+        uses=uses.filter(function(t){return now-t<GATE_WINDOW;});// keep last 24h
+        if(uses.length>=GATE_LIMIT){
+          var oldest=uses[0];var wait=Math.ceil((oldest+GATE_WINDOW-now)/36e5);
+          setImportErr("You've used this "+GATE_LIMIT+" times in the last 24 hours. Try again in ~"+wait+"h.");
+          return;
+        }
+        uses.push(now);
+        localStorage.setItem(GATE_KEY,JSON.stringify(uses));
+      }catch(e){}
       setImportLoading(true);setImportErr("");
       var prompt="You are helping set up an investment analysis framework in ThesisAlpha.\n"+
         "Read the following investment instructions or framework document and extract 3-7 named evaluation filters.\n\n"+
@@ -10358,12 +10373,15 @@ function ProWelcomeGift(){
         {/* Editable view — two column: list left, editor right */}
         {fw.useCustom&&<div>
           {/* Import from existing instructions */}
-          {!showImport&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px dashed "+K.bdr}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{"Have a custom GPT, framework doc, or checklist?"}</div>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste it and we'll extract your filters automatically."}</div>
+          {!showImport&&<div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 16px",borderRadius:_isBm?0:10,background:"#8B5CF6"+"12",border:"1px solid #8B5CF635"}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:"#8B5CF6"+"20",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
-            <button onClick={function(){setShowImport(true);}} style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"1px solid #8B5CF640",background:"#8B5CF6"+"0d",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"Import →"}</button>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#8B5CF6",fontFamily:fm,marginBottom:2}}>{"Import from your existing framework"}</div>
+              <div style={{fontSize:11,color:"#8B5CF6",fontFamily:fm,opacity:.75}}>{"Custom GPT, Gemini Gem, Claude Project, checklist, any document — paste it and we’ll extract your filters."}</div>
+            </div>
+            <button onClick={function(){setShowImport(true);}} style={{padding:"8px 16px",borderRadius:_isBm?0:7,border:"none",background:"#8B5CF6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"Import →"}</button>
           </div>}
           {showImport&&<div style={{marginBottom:14,border:"1px solid #8B5CF630",borderRadius:_isBm?0:10,overflow:"hidden"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#8B5CF6"+"08",borderBottom:"1px solid #8B5CF620"}}>
