@@ -1119,6 +1119,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     fetchMrMarketData().then(function(d){setMrMarket(d);setMrMarketLoading(false);});
   },[loaded,sideTab]);
 
+  useEffect(function(){
+    if(!selId)return;
+    var co=cos.find(function(c){return c.id===selId;});
+    if(!co)return;
+    var hasDive=(co.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+    setDossierTab(hasDive?"monitoring":"deepdive");
+  },[selId]);
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,shortlists:shortlists,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
@@ -13322,6 +13329,26 @@ function ProWelcomeGift(){
     var watching=cos.filter(function(c2){return c2.status==="watchlist";});
     var hasOtherAssets=(otherAssets&&otherAssets.length>0)||(netWorthHistory&&netWorthHistory.length>0);
 
+    // ── PHASE 1: RESEARCH FIRST ──────────────────────────────────────────
+    if(!focus){var noDiveHeld=portfolio.filter(function(c2){
+      var hasDive=(c2.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+      var daysHeld=c2.addedAt?Math.ceil((Date.now()-new Date(c2.addedAt))/864e5):0;
+      return !hasDive&&daysHeld>=3;});
+    if(noDiveHeld.length>0){var _dh=noDiveHeld[0];var _dhDays=Math.ceil((Date.now()-new Date(_dh.addedAt))/864e5);
+      focus={icon:"search",color:"#8B5CF6",area:"Research",
+        title:"Deep dive "+_dh.ticker+" before your thesis sets",
+        sub:"You have held this "+_dhDays+"d without a structured analysis. Ten minutes with the AI prompt — five filters, DCF, verdict.",
+        onClick:function(){setSelId(_dh.id);setDossierTab("deepdive");setDetailTab("dossier");setPage("dashboard");}};};}
+    if(!focus){var noDiveWatch=watching.filter(function(c2){
+      var hasDive=(c2.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+      var daysOn=c2.addedAt?Math.ceil((Date.now()-new Date(c2.addedAt))/864e5):0;
+      return !hasDive&&daysOn>=7;});
+    if(noDiveWatch.length>0){var _dw=noDiveWatch[0];var _dwDays=Math.ceil((Date.now()-new Date(_dw.addedAt))/864e5);
+      focus={icon:"search",color:"#8B5CF6",area:"Watchlist",
+        title:"Research "+_dw.ticker+" properly",
+        sub:"On your watchlist "+_dwDays+" days with no deep dive. Run the analysis or remove it.",
+        onClick:function(){setSelId(_dw.id);setDossierTab("deepdive");setDetailTab("dossier");setPage("dashboard");}};};}
+
     // ── PORTFOLIO AREA ──────────────────────────────────────────────────
     // P1: earnings TODAY
     var todayEarnings=portfolio.filter(function(c2){return c2.earningsDate&&dU(c2.earningsDate)===0&&c2.kpis.length>0;});
@@ -13401,12 +13428,7 @@ function ProWelcomeGift(){
         title:"Finish reading: "+unread[0].title,
         sub:"You saved this but haven't written what you took from it. What's the one idea worth keeping?",
         onClick:function(){setSelId(null);setPage("library");}};};
-    // R2: portfolio company with no deep dive
-    if(!focus){var noDive=portfolio.find(function(c2){return!(c2.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});});
-      if(noDive)focus={icon:"search",color:"#8B5CF6",area:"Research",
-        title:"Run a deep dive on "+noDive.ticker,
-        sub:"You own this but haven't done the full five-filter analysis. Use the Claude Project to start.",
-        onClick:function(){setSelId(noDive.id);setDetailTab("dossier");setPage("dashboard");}};};
+    // R2: no deep dive — handled in Phase 1 above
     // R3: no strategy written
     if(!focus){var hasStrategy=myStrategy&&(myStrategy.whatIInvestIn||myStrategy.howIBehave||myStrategy.whatIAvoid);
       if(!hasStrategy)focus={icon:"shield",color:"#8B5CF6",area:"Research",
