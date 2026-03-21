@@ -6915,6 +6915,7 @@ function calcMoatFromData(finData,businessModelType){
           </div>;
         })()}
         </div>}
+        </div>}
 
         {/* ══════════════════════════════════════════════════════
             TAB 2: DEEP DIVE
@@ -7165,7 +7166,6 @@ function calcMoatFromData(finData,businessModelType){
               {dy>0&&<span>Yield: +{dy.toFixed(1)}%</span>}
               <span>Multiple: {mc>=0?"+":""}{mc.toFixed(1)}%</span></div>
           </div>})()}
-          </div>}
 
           {/* Financials */}
           {deepDiveTab==="financials"&&<div>
@@ -7201,7 +7201,6 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
         </div>})()}
-      </div>}{/* end dossierMktOpen */}
 
         {/* ── PEERS & COMPETITORS ── */}
         <div style={{marginBottom:24}}>
@@ -7261,7 +7260,7 @@ function calcMoatFromData(finData,businessModelType){
 
         </div>}
       </div>}
-    </div>
+    </div>}
   }
 
 
