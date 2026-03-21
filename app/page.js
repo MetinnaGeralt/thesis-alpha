@@ -6961,7 +6961,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
         })()}
-        </div>;})():null}
+        </div>})():null}
 
         {/* ══════════════════════════════════════════════════════
             TAB 2: DEEP DIVE
