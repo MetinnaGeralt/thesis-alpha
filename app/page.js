@@ -6306,14 +6306,12 @@ function calcMoatFromData(finData,businessModelType){
 
         {/* ── 2. THE EVIDENCE ── */}
         <div id="ds-evidence" style={{marginBottom:48}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
-            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.grn+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <span style={{fontSize:12,fontWeight:800,color:K.grn,fontFamily:fm}}>2</span>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Evidence</div>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{h.m>0?h.ok+"/"+h.m+" KPIs passing":"No KPIs yet"}</span>
             </div>
-            <div>
-              <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Does the evidence support the thesis?</div>
-              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>KPIs, earnings, stress tests</div>
-            </div>
+            <button onClick={function(){setModal({type:"kpi",data:null})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}><IC name="plus" size={10} color={K.acc}/>Add KPI</button>
           </div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
@@ -6406,17 +6404,13 @@ function calcMoatFromData(finData,businessModelType){
 
         {/* ── 3. THE LEDGER ── */}
         <div id="ds-ledger" style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.amb+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <span style={{fontSize:12,fontWeight:800,color:K.amb,fontFamily:fm}}>3</span>
-              </div>
-              <div>
-                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>What have you done, and why?</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Conviction, position, decisions</div>
-              </div>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Position</div>
+              {c.position&&c.position.avgCost&&c.position.currentPrice&&(function(){var ret=((c.position.currentPrice-c.position.avgCost)/c.position.avgCost*100);return<span style={{fontSize:13,fontWeight:700,color:ret>=0?K.grn:K.red,fontFamily:fm}}>{(ret>=0?"+":"")+ret.toFixed(1)+"%"}</span>;})()}
             </div>
-            <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
+            <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}>Rate conviction</button>
+          </div>
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
