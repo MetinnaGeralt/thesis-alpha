@@ -4129,49 +4129,64 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var allMet=metCount===kpis.length&&kpis.length>0;
     var ticker=d.ticker||"";var quarter=d.quarter||"Latest";var srcLabel=d.sourceLabel||"FMP";
     function fmtVal(v,unit){if(v==null)return"—";var abs=Math.abs(v);return(abs>=1000?Number(v).toFixed(0):abs>=10?Number(v).toFixed(1):Number(v).toFixed(2))+(unit||"")}
-    return<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(0,0,0,.72)"}} onClick={function(e){if(e.target===e.currentTarget)setModal(null)}}>
-      <div style={{background:"#fff",borderRadius:_isBm?0:22,padding:"26px 26px 22px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,.28)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18}}>
-          <div>
-            <div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:8}}>
-              <span style={{fontSize:26,fontWeight:800,color:"#1a1a2e",letterSpacing:"-0.5px"}}>{ticker}</span>
-              <span style={{fontSize:15,color:"#9ca3af",fontWeight:500}}>{quarter} Earnings</span>
+    var scoreColor=allMet?K.grn:metCount>0?K.amb:K.red;
+    return<div style={{position:"fixed",inset:0,zIndex:10001,display:"flex",alignItems:"center",justifyContent:"center",padding:16,background:"rgba(0,0,0,.75)"}} onClick={function(e){if(e.target===e.currentTarget)setModal(null)}}>
+      <div style={{background:K.card,borderRadius:_isBm?0:20,width:"100%",maxWidth:440,boxShadow:"0 40px 100px rgba(0,0,0,.4)",overflow:"hidden"}}>
+        {/* Header band */}
+        <div style={{padding:"22px 24px 18px",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
+                <span style={{fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{ticker}</span>
+                <span style={{fontSize:13,color:K.mid,fontWeight:500,fontFamily:fm}}>{quarter} Earnings</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:_isBm?0:999,background:scoreColor+"15",border:"1px solid "+scoreColor+"30"}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:scoreColor}}/>
+                  <span style={{fontSize:11,fontWeight:700,color:scoreColor,fontFamily:fm}}>{metCount}/{kpis.length} KPIs {allMet?"passed":"met"} {allMet?"🎉":""}</span>
+                </div>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"2px 7px"}}>{srcLabel}</span>
+              </div>
             </div>
-            <span style={{fontSize:11,fontWeight:700,color:allMet?"#16a34a":metCount>0?"#d97706":"#dc2626",background:allMet?"#f0fdf4":metCount>0?"#fffbeb":"#fef2f2",border:"1px solid "+(allMet?"#bbf7d0":metCount>0?"#fde68a":"#fecaca"),borderRadius:_isBm?0:20,padding:"3px 10px",fontFamily:fm}}>
-              {metCount}/{kpis.length} KPIs met {allMet?"🎉":metCount>0?"✓":"😬"}
-            </span>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-            <button onClick={function(){setModal(null)}} style={{background:"#f3f4f6",border:"none",borderRadius:_isBm?0:8,width:28,height:28,cursor:"pointer",color:"#6b7280",fontSize:16,lineHeight:1}}>×</button>
-            <span style={{fontSize:10,fontWeight:600,color:"#9ca3af",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:_isBm?0:10,padding:"2px 8px",fontFamily:fm}}>Live Data: {srcLabel}</span>
+            <button onClick={function(){setModal(null)}} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,width:30,height:30,cursor:"pointer",color:K.dim,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>×</button>
           </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
-          {kpis.map(function(k,i){var res=k.lastResult;var met=res&&res.status==="met";var missed=res&&res.status==="missed";
+        {/* KPI rows */}
+        <div style={{padding:"16px 24px",display:"flex",flexDirection:"column",gap:8}}>
+          {kpis.map(function(k,i){
+            var res=k.lastResult;var met=res&&res.status==="met";var missed=res&&res.status==="missed";
             var unit=METRIC_MAP[k.metricId]?METRIC_MAP[k.metricId].unit:"";
             var val=res&&res.actual!=null?fmtVal(res.actual,unit):"—";
-            var bg=met?"#f0fdf4":missed?"#fef2f2":"#f9fafb";var border=met?"#bbf7d0":missed?"#fecaca":"#e5e7eb";var vc=met?"#16a34a":missed?"#dc2626":"#374151";
-            return<div key={i} style={{background:bg,border:"2px solid "+border,borderRadius:_isBm?0:14,padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            var vc=met?K.grn:missed?K.red:K.mid;
+            var bg=met?K.grn+"0a":missed?K.red+"0a":K.bg;
+            var bdr=met?K.grn+"25":missed?K.red+"25":K.bdr;
+            return<div key={i} style={{background:bg,border:"1px solid "+bdr,borderRadius:_isBm?0:12,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div>
-                <div style={{fontSize:11,fontWeight:700,color:"#9ca3af",letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:4}}>{k.name}</div>
-                <div style={{fontSize:32,fontWeight:800,color:vc,letterSpacing:"-0.5px",lineHeight:1}}>{val}</div>
+                <div style={{fontSize:9,fontWeight:700,color:K.dim,letterSpacing:2,textTransform:"uppercase",fontFamily:fm,marginBottom:5}}>{k.name}</div>
+                <div style={{fontSize:36,fontWeight:900,color:vc,letterSpacing:"-1px",lineHeight:1,fontFamily:fh}}>{val}</div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:11,color:"#9ca3af",fontFamily:fm,marginBottom:6}}>Target: {k.target}</div>
-                {met&&<div style={{background:"#16a34a",color:"#fff",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✓ MET 🎉</div>}
-                {missed&&<div style={{background:"#dc2626",color:"#fff",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>✗ MISSED</div>}
-                {!met&&!missed&&<div style={{background:"#e5e7eb",color:"#6b7280",borderRadius:_isBm?0:8,padding:"5px 12px",fontSize:12,fontWeight:700,fontFamily:fm}}>? UNCLEAR</div>}
+              <div style={{textAlign:"right",display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>Target: <span style={{fontWeight:600,color:K.mid}}>{k.target}</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 11px",borderRadius:_isBm?0:7,background:met?K.grn:missed?K.red:K.bdr,color:"#fff"}}>
+                  <span style={{fontSize:11,fontWeight:800,fontFamily:fm}}>{met?"✓ MET":missed?"✗ MISSED":"? UNCLEAR"}</span>
+                  {met&&allMet&&<span>🎉</span>}
+                </div>
               </div>
-            </div>})}
+            </div>;
+          })}
         </div>
-        {d.summary&&<div style={{background:"#f9fafb",borderRadius:_isBm?0:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#6b7280",lineHeight:1.6}}>{d.summary.substring(0,200)}{d.summary.length>200?"…":""}</div>}
-        <div style={{display:"flex",gap:8}}>
-          <button style={{flex:1,background:"#1a1a2e",color:"#fff",border:"none",borderRadius:_isBm?0:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>{allMet?"🎯 Rate Conviction":"Update Conviction"}</button>
-          <button style={{background:"#f3f4f6",color:"#374151",border:"none",borderRadius:_isBm?0:10,padding:"11px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}} onClick={function(){setModal({type:"earningsReport",data:0})}}>Full Report</button>
+        {/* Summary */}
+        {d.summary&&<div style={{margin:"0 24px 16px",padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr}}>
+          <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}>Summary</div>
+          <div style={{fontSize:12,color:K.mid,lineHeight:1.6,fontFamily:fb}}>{d.summary.substring(0,220)}{d.summary.length>220?"…":""}</div>
+        </div>}
+        {/* Actions */}
+        <div style={{padding:"0 24px 22px",display:"flex",gap:8}}>
+          <button style={{flex:1,background:K.txt,color:K.bg,border:"none",borderRadius:_isBm?0:10,padding:"12px 16px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}} onClick={function(){setModal({type:"conviction"})}}>{allMet?"🎯 Rate Conviction":"Update Conviction"}</button>
+          <button style={{background:K.bg,color:K.mid,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}} onClick={function(){setModal({type:"earningsReport",data:0})}}>Full Report</button>
         </div>
       </div>
     </div>}
-
 
   function MgmtModal(){
     if(!modal||modal.type!=="mgmt")return null;
