@@ -12767,6 +12767,8 @@ function ProWelcomeGift(){
 
     // Active list: "watching" | "toohard" | shortlist id
     var _active=React.useState("watching"),activeList=_active[0],setActiveList=_active[1];
+    var _viewMode=React.useState("list"),viewMode=_viewMode[0],setViewMode=_viewMode[1];
+    var _sortBy=React.useState("overall"),sortBy=_sortBy[0],setSortBy=_sortBy[1];
 
     // Inline create/rename state
     var _editing=React.useState(null),editingSlId=_editing[0],setEditingSlId=_editing[1];
@@ -13145,20 +13147,156 @@ function ProWelcomeGift(){
         </div>}
 
         {/* Active list header */}
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}> 
           <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
             {activeList!=="watching"&&activeList!=="toohard"&&<div style={{width:10,height:10,borderRadius:"50%",background:activeColor}}/>}
             <h2 style={{margin:0,fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{activeName}</h2>
             {activeCount>0&&<span style={{fontSize:12,color:K.dim,fontFamily:fm,background:K.bg,borderRadius:10,padding:"2px 9px",border:"1px solid "+K.bdr}}>{activeCount}</span>}
           </div>
-          {activeList==="watching"&&<button onClick={function(){setAddQ("");setSearchFocused(true);}}
-            style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:K.acc,borderColor:K.acc})}>{"+ Add"}</button>}
+          {activeList==="watching"&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{display:"flex",borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
+              {[{id:"list",icon:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"},{id:"board",icon:"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"}].map(function(v){
+                var act=viewMode===v.id;
+                return<button key={v.id} onClick={function(){setViewMode(v.id);}} style={{padding:"6px 10px",background:act?K.acc+"15":"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",borderRight:v.id==="list"?"1px solid "+K.bdr:"none"}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={act?K.acc:K.dim} strokeWidth="1.8" strokeLinecap="round"><path d={v.icon}/></svg>
+                </button>;
+              })}
+            </div>
+            <button onClick={function(){setAddQ("");setSearchFocused(true);}}
+              style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:K.acc,borderColor:K.acc})}>{"+ Add"}</button>
+          </div>}
           {activeList!=="watching"&&activeList!=="toohard"&&<button onClick={function(){setSlSearch("");setSlFocused(true);}}
             style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:activeColor,borderColor:activeColor})}>{"+ Add"}</button>}
         </div>
 
+        {/* ── RESEARCH BOARD ── */}
+        {activeList==="watching"&&viewMode==="board"&&(function(){
+          // Score each company from its deep dive
+          function ddScore(c2){
+            var doc=(c2.docs||[]).find(function(d){return d.deepDive&&d.deepDive.filters&&d.deepDive.filters.length>0;});
+            if(!doc)return null;
+            var dd=doc.deepDive;var filters=dd.filters||[];
+            function filterScore(id){
+              var f=filters.find(function(f2){return f2.id===id||(f2.title&&f2.title.toLowerCase().includes(id));});
+              if(!f)return null;
+              var checks=f.checks||[];if(checks.length===0)return f.verdictType==="pass"?1:f.verdictType==="fail"?0:0.5;
+              var passed=checks.filter(function(ch){return ch.result==="pass"||ch.pass===true;}).length;
+              return passed/checks.length;
+            }
+            var competence=filterScore("filter1")||filterScore("circle")||filterScore("competence");
+            var moat=filterScore("filter2")||filterScore("moat");
+            var mgmt=filterScore("filter3")||filterScore("management");
+            var financial=filterScore("filter4")||filterScore("financial");
+            var valuation2=filterScore("filter5")||filterScore("price")||filterScore("valuation");
+            var scores=[competence,moat,mgmt,financial,valuation2].filter(function(s2){return s2!=null;});
+            var overall=scores.length>0?scores.reduce(function(a,b){return a+b;},0)/scores.length:null;
+            var fp=c2.fatPitchPrice?parseFloat(c2.fatPitchPrice):null;
+            var price=(c2.position||{}).currentPrice||0;
+            var fpGap=fp&&price>0?((fp-price)/fp*100):null;
+            return{competence:competence,moat:moat,mgmt:mgmt,financial:financial,valuation:valuation2,overall:overall,fpGap:fpGap,hasDive:true,doc:doc};
+          }
+          var withScores=watching.map(function(c2){return{c:c2,score:ddScore(c2)};});
+          var hasDives=withScores.filter(function(x){return x.score&&x.score.hasDive;});
+          var noDives=withScores.filter(function(x){return!x.score||!x.score.hasDive;});
+          // Sort
+          var sortKey={overall:"overall",quality:"moat",financials:"financial",valuation:"valuation",competence:"competence"}[sortBy]||"overall";
+          hasDives.sort(function(a,b){
+            if(sortBy==="rank"){var ra=a.c.researchRank||999;var rb=b.c.researchRank||999;return ra-rb;}
+            var sa=a.score[sortKey]!=null?a.score[sortKey]:-1;
+            var sb=b.score[sortKey]!=null?b.score[sortKey]:-1;
+            return sb-sa;
+          });
+          function ScorePill({val,label}){
+            if(val==null)return<div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"—"}</div>;
+            var pct=Math.round(val*100);
+            var color=pct>=70?K.grn:pct>=40?K.amb:K.red;
+            return<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <div style={{fontSize:14,fontWeight:800,color:color,fontFamily:fm,lineHeight:1}}>{pct+"%"}</div>
+              <div style={{fontSize:8,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>{label}</div>
+            </div>;
+          }
+          var SORT_OPTS=[
+            {id:"overall",label:"Overall"},
+            {id:"quality",label:"Quality"},
+            {id:"financials",label:"Financials"},
+            {id:"valuation",label:"Valuation"},
+            {id:"competence",label:"My edge"},
+          ];
+          return<div>
+            {/* Sort bar */}
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm,marginRight:4}}>Sort by:</span>
+              {SORT_OPTS.map(function(opt){var act=sortBy===opt.id;return<button key={opt.id} onClick={function(){setSortBy(opt.id);}} style={{padding:"5px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(act?K.acc:K.bdr),background:act?K.acc+"12":"transparent",color:act?K.acc:K.dim,fontSize:11,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}>{opt.label}</button>;})}
+            </div>
+            {/* Board cards */}
+            {hasDives.length===0&&noDives.length===0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim,fontFamily:fm,fontSize:13}}>{"Add companies to your research queue to get started."}</div>}
+            {hasDives.map(function(x,xi){
+              var c2=x.c;var sc=x.score;
+              var pos=c2.position||{};var price=pos.currentPrice||0;
+              var fp=c2.fatPitchPrice?parseFloat(c2.fatPitchPrice):null;
+              var nearFP=fp&&price>0&&price<=fp*1.05;
+              return<div key={c2.id} style={{background:K.card,border:"1px solid "+(nearFP?K.grn+"40":K.bdr),borderRadius:_isBm?0:14,padding:"18px 20px",marginBottom:10,transition:"box-shadow .15s"}}
+                onMouseEnter={function(e){e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,.08)";}}
+                onMouseLeave={function(e){e.currentTarget.style.boxShadow="none";}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  {/* Rank */}
+                  <div style={{width:24,flexShrink:0,textAlign:"center"}}>
+                    <span style={{fontSize:13,fontWeight:700,color:K.dim,fontFamily:fm}}>{xi+1}</span>
+                  </div>
+                  {/* Logo + name */}
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={28}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                      <span style={{fontSize:14,fontWeight:800,color:K.txt,fontFamily:fh}}>{c2.ticker}</span>
+                      {nearFP&&<span style={{fontSize:8,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>FAT PITCH</span>}
+                    </div>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c2.name}</div>
+                  </div>
+                  {/* Scores */}
+                  <div style={{display:"flex",gap:20,alignItems:"center",flexShrink:0}}>
+                    <ScorePill val={sc.overall} label="Overall"/>
+                    <ScorePill val={sc.moat} label="Moat"/>
+                    <ScorePill val={sc.mgmt} label="Mgmt"/>
+                    <ScorePill val={sc.financial} label="Finance"/>
+                    <ScorePill val={sc.valuation} label="Value"/>
+                    {sc.fpGap!=null&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                      <div style={{fontSize:14,fontWeight:800,color:sc.fpGap>0?K.grn:K.amb,fontFamily:fm,lineHeight:1}}>{(sc.fpGap>0?"+":"")+sc.fpGap.toFixed(0)+"%"}</div>
+                      <div style={{fontSize:8,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase"}}>to pitch</div>
+                    </div>}
+                  </div>
+                  {/* Price */}
+                  {price>0&&<div style={{flexShrink:0,textAlign:"right"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>
+                    {fp&&<div style={{fontSize:10,color:nearFP?K.grn:K.dim,fontFamily:fm}}>{"→ "+cSym+fp.toFixed(2)}</div>}
+                  </div>}
+                  {/* Actions */}
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={function(){setPanelId(c2.id);}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:"transparent",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>View</button>
+                    <button onClick={function(){upd(c2.id,{status:"portfolio"});showToast(c2.ticker+" moved to portfolio","info",2500);}} style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.grn+"40",background:K.grn+"10",color:K.grn,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>Buy →</button>
+                  </div>
+                </div>
+              </div>;
+            })}
+            {/* No dive companies */}
+            {noDives.length>0&&<div style={{marginTop:hasDives.length>0?32:0}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"No deep dive yet — start here"}</div>
+              {noDives.map(function(x){
+                var c2=x.c;var pos=c2.position||{};var price=pos.currentPrice||0;
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",background:K.bg,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:10,marginBottom:8}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={24}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh,marginRight:8}}>{c2.ticker}</span>
+                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c2.name}</span>
+                  </div>
+                  {price>0&&<span style={{fontSize:12,color:K.mid,fontFamily:fm,flexShrink:0}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</span>}
+                  <button onClick={function(){setSelId(c2.id);setDetailTab("dossier");setPage("portfolio");showToast("Open Deep Dive tab to start analysis","info",3000);}} style={{padding:"5px 12px",borderRadius:_isBm?0:7,border:"1px solid #8B5CF6"+"40",background:"#8B5CF6"+"0d",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Run Deep Dive →</button>
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })()}
         {/* ── WATCHING ── */}
-        {activeList==="watching"&&<div>
+        {activeList==="watching"&&viewMode==="list"&&<div>
           {/* Instant add bar */}
           <div style={{marginBottom:fatPitchAlerts.length>0?16:20,position:"relative"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.card,
