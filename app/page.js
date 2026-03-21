@@ -6200,63 +6200,26 @@ function calcMoatFromData(finData,businessModelType){
               <IC name={st.icon} size={10} color={st.color}/>{st.label}</button>})}</div></div>}
 
 
-        {/* ── YOUR RESEARCH (Library items tagged to this holding) ── */}
-        {(function(){
-          var tagged=(library.items||[]).filter(function(it){return it.ticker===c.ticker;});
-          if(tagged.length===0)return null;
-          var myWorkItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
-          var refItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
-          return<div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-              <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-                <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Your Research</div>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{tagged.length+" item"+(tagged.length>1?"s":"")}</span>
-              </div>
-              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>View all →</button>
-            </div>
-            {myWorkItems.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:refItems.length>0?12:0}}>
-              {myWorkItems.map(function(it){
-                var tc2=({Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"})[it.type]||"#10B981";
-                return<div key={it.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:K.card,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,borderLeft:"3px solid "+tc2}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:9,fontWeight:700,color:tc2,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{it.type}</div>
-                    <div style={{fontSize:12,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>{it.title}</div>
-                  </div>
-                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 7px",fontSize:10,color:K.dim,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Open ↗</button>}
-                </div>;
-              })}
-            </div>}
-            {refItems.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-              {refItems.map(function(it){
-                var tc2=({Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim})[it.type]||K.dim;
-                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
-                  <span style={{fontSize:10,fontWeight:700,color:tc2}}>{it.type}</span>
-                  <span style={{fontSize:11,color:K.txt,fontFamily:fm}}>{it.title}</span>
-                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",padding:0}}>↗</button>}
-                </div>;
-              })}
-            </div>}
-          </div>;
-        })()}
 
         <div id="ds-score"/>
 
 
         {/* ── 2. THE EVIDENCE ── */}
         <div id="ds-evidence" style={{marginBottom:48}}>
-          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:8,borderBottom:"1px solid "+K.bdr}}>
             <div style={{display:"flex",alignItems:"baseline",gap:10}}>
               <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Evidence</div>
               <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{h.m>0?h.ok+"/"+h.m+" KPIs passing":"No KPIs yet"}</span>
             </div>
             <button onClick={function(){setModal({type:"kpi",data:null})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}><IC name="plus" size={10} color={K.acc}/>Add KPI</button>
           </div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:20}}>{"Does the business still behave the way your thesis predicted? These are the metrics you committed to watch before you owned it — not what felt important after the fact."}</div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}{_fs.grahamDiscount&&_fs.grahamDiscount.numVal!=null&&Math.abs(_fs.grahamDiscount.numVal)<80&&<span style={{fontSize:10,fontWeight:600,color:_fs.grahamDiscount.numVal<0?K.grn:K.amb,background:(_fs.grahamDiscount.numVal<0?K.grn:K.amb)+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm}} title={"Graham Number (sqrt(22.5×EPS×BVPS)) — conservative floor for asset-heavy businesses: "+(_fs.grahamNum?_fs.grahamNum.value:"—")}>{_fs.grahamDiscount.numVal<0?Math.abs(_fs.grahamDiscount.numVal).toFixed(0)+"% below Graham":_fs.grahamDiscount.numVal.toFixed(0)+"% above Graham"}</span>}</span>})()}
+                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}</span>})()}
                 <span style={S.badge(h.c)}>{h.l}</span>
               </div>
             </div>
@@ -6370,26 +6333,31 @@ function calcMoatFromData(finData,businessModelType){
               {/* Price vs Target bar */}
               {(function(){
                 var price=pos.currentPrice;var tgt=c.targetPrice||0;
-                var snap_=c.financialSnapshot||{};var graham=snap_.grahamNum?snap_.grahamNum.numVal:0;
-                if(!price||(!tgt&&!graham))return null;
-                var lo=Math.min(price*0.55,graham>0?graham*0.8:price*0.55);
-                var hi=Math.max(price*1.45,tgt>0?tgt*1.25:price*1.45);
+                var snap_=c.financialSnapshot||{};
+                var nd=snap_.netDebtEbitda&&snap_.netDebtEbitda.numVal!=null?snap_.netDebtEbitda.numVal:null;
+                var de=snap_.debtEquity&&snap_.debtEquity.numVal!=null?snap_.debtEquity.numVal:null;
+                if(!price&&!tgt)return null;
+                if(!price)return null;
+                var lo=price*0.55;var hi=Math.max(price*1.45,tgt>0?tgt*1.25:price*1.45);
                 var pct=Math.max(2,Math.min(98,(price-lo)/(hi-lo)*100));
                 var tgtPct=tgt>0?Math.max(2,Math.min(98,(tgt-lo)/(hi-lo)*100)):null;
-                var gPct=graham>0?Math.max(2,Math.min(98,(graham-lo)/(hi-lo)*100)):null;
                 var priceColor=tgt>0?(price<tgt*0.85?K.grn:price<tgt*1.1?K.amb:K.red):K.mid;
+                var bsLabel=nd!=null?(nd<0?"Net cash":nd.toFixed(1)+"x ND/EBITDA"):de!=null?(de.toFixed(2)+"x D/E"):null;
+                var bsColor=nd!=null?(nd<0?K.grn:nd<2?K.amb:K.red):de!=null?(de<0.5?K.grn:de<1.5?K.amb:K.red):K.dim;
                 return<div style={{marginTop:2}}>
                   <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:"linear-gradient(90deg,"+K.grn+"55,"+K.amb+"55 50%,"+K.red+"55)",marginBottom:6}}>
-                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.blue+"bb"}} title={"Graham: "+cSym+graham.toFixed(2)}/>}
                     {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.acc}} title={"Target: "+cSym+tgt}/>}
                     <div style={{position:"absolute",top:"50%",left:pct+"%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:priceColor,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9,color:K.dim,fontFamily:fm}}>
                     <span>Cheap</span>
                     {tgtPct!=null&&<span style={{color:K.acc,fontSize:9}}>Target {cSym}{tgt}</span>}
-                    {tgtPct==null&&gPct!=null&&<span style={{color:K.blue,fontSize:9}}>Graham {cSym}{graham.toFixed(0)}</span>}
                     <span>Pricey</span>
                   </div>
+                  {bsLabel&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:8,padding:"5px 8px",borderRadius:_isBm?0:6,background:bsColor+"10",border:"1px solid "+bsColor+"25"}}>
+                    <div style={{width:5,height:5,borderRadius:"50%",background:bsColor,flexShrink:0}}/>
+                    <span style={{fontSize:10,color:bsColor,fontFamily:fm,fontWeight:600}}>{bsLabel}</span>
+                  </div>}
                 </div>
               })()}
             </div></div>
@@ -6489,13 +6457,17 @@ function calcMoatFromData(finData,businessModelType){
             var roic=snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:(snap.roe&&snap.roe.numVal!=null?snap.roe.numVal:null);
             var roicLabel=snap.roic&&snap.roic.numVal!=null?"ROIC":"ROE";
             var de=snap.debtEquity&&snap.debtEquity.numVal!=null?snap.debtEquity.numVal:null;
+            var nd=snap.netDebtEbitda&&snap.netDebtEbitda.numVal!=null?snap.netDebtEbitda.numVal:null;
+            var fcf=snap.fcf&&snap.fcf.numVal!=null?snap.fcf.numVal:null;
             var stats=[];
             if(rg!=null)stats.push({label:"Rev growth",value:rg.toFixed(1)+"%",good:rg>10,neutral:rg>=0&&rg<=10,bad:rg<0});
             if(gm!=null)stats.push({label:"Gross margin",value:gm.toFixed(1)+"%",good:gm>50,neutral:gm>=30&&gm<=50,bad:gm<30});
             if(roic!=null)stats.push({label:roicLabel,value:roic.toFixed(1)+"%",good:roic>15,neutral:roic>=8&&roic<=15,bad:roic<8});
-            if(de!=null)stats.push({label:"Debt / equity",value:de.toFixed(2)+"x",good:de<0.5,neutral:de>=0.5&&de<=1.5,bad:de>1.5});
+            if(nd!=null)stats.push({label:"Net debt/EBITDA",value:nd<0?"Net cash":nd.toFixed(1)+"x",good:nd<0,neutral:nd>=0&&nd<=2,bad:nd>3});
+            else if(de!=null)stats.push({label:"Debt / equity",value:de.toFixed(2)+"x",good:de<0.5,neutral:de>=0.5&&de<=1.5,bad:de>1.5});
+            if(fcf!=null)stats.push({label:"FCF / share",value:cSym+fcf.toFixed(2),good:fcf>0,neutral:false,bad:fcf<=0});
             if(stats.length===0)return null;
-            return<div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(stats.length,4)+", 1fr)",gap:8,marginBottom:16}}>
+            return<div style={{display:"grid",gridTemplateColumns:"repeat("+Math.min(stats.length,3)+", 1fr)",gap:8,marginBottom:16}}>
               {stats.map(function(s,si){
                 var valColor=s.good?K.grn:s.bad?K.red:K.mid;
                 return<div key={si} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",border:"1px solid "+K.bdr}}>
