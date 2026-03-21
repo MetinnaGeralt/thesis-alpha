@@ -2388,7 +2388,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Prompt text box */}
       <div style={{marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>System prompt — paste into your Claude Project</div>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>THE PROMPT — copy &amp; paste into your AI</div>
           <button onClick={copyPrompt}
             style={{display:"flex",alignItems:"center",gap:6,padding:"6px 16px",borderRadius:_isBm?0:7,
               border:"none",background:copied?K.grn:PURPLE,color:"#fff",
@@ -2398,9 +2398,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               :<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
           </button>
         </div>
-        <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",
-          fontFamily:fb,fontSize:11,color:K.dim,lineHeight:1.7,maxHeight:200,overflowY:"auto",
-          whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+        <div style={{background:K.bg2||K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",
+          fontFamily:fb,fontSize:11,color:K.mid,lineHeight:1.7,maxHeight:200,overflowY:"auto",
+          whiteSpace:"pre-wrap",wordBreak:"break-word",opacity:.85}}>
           {PROMPT.substring(0,600)+"..."}
         </div>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>{"Full prompt copied to clipboard when you click Copy."}</div>
@@ -10176,10 +10176,10 @@ function ProWelcomeGift(){
     var ATYPES=[
       {id:"real_estate",label:"Real Estate",color:"#8b5cf6",icon:"moat",manual:true},
       {id:"etf",label:"ETFs & Funds",color:"#10b981",icon:"chart"},
-      {id:"gold",label:"Gold & Precious Metals",color:"#f59e0b",icon:"shield"},
+      {id:"gold",label:"Gold & Precious Metals",color:"#f59e0b",icon:"shield",manual:true,goldLike:true},
       {id:"crypto",label:"Crypto",color:"#f97316",icon:"dice"},
       {id:"portfolio2",label:"2nd Stock Portfolio",color:"#06b6d4",icon:"trending",isPortfolio2:true},
-      {id:"cash",label:"Cash & Savings",color:"#22c55e",icon:"dollar"},
+      {id:"cash",label:"Cash & Savings",color:"#22c55e",icon:"dollar",manual:true,cashLike:true},
       {id:"bonds",label:"Bonds & Fixed Income",color:"#6b7280",icon:"overview"},
       {id:"valuables",label:"Valuables & Collectibles",color:"#ec4899",icon:"shield",manual:true},
       {id:"royalties",label:"Royalties & IP",color:"#a78bfa",icon:"book",manual:true},
@@ -10984,13 +10984,13 @@ function ProWelcomeGift(){
               <IC name={atype.icon||"folder"} size={16} color={atype.color||K.acc}/>
               <div style={{fontSize:18,fontWeight:700,color:K.txt,fontFamily:fh}}>{modal==="edit"?"Edit Asset":atype.label}</div>
             </div>
-            <div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Property Name / Address":"Name"}</label><input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.isPortfolio2?"e.g. ISK Account":atype.id==="real_estate"?"e.g. Main St apartment, vacation home":"Asset name"} style={inputStyle}/></div>
+            <div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Property Name / Address":atype.cashLike?"Account Name / Description":atype.goldLike?"Description (e.g. Gold bars, Krugerrands)":"Name"}</label><input value={form.name||""} onChange={function(e){setForm(Object.assign({},form,{name:e.target.value}))}} placeholder={atype.isPortfolio2?"e.g. ISK Account":atype.id==="real_estate"?"e.g. Main St apartment, vacation home":"Asset name"} style={inputStyle}/></div>
             {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Ticker</label><input value={form.ticker||""} onChange={function(e){setForm(Object.assign({},form,{ticker:e.target.value.toUpperCase()}))}} placeholder="e.g. VOO, BTC" style={inputStyle}/></div>}
             {!atype.manual&&!atype.isPortfolio2&&<div style={{marginBottom:14}}><label style={secLabel}>Quantity</label><input type="number" value={form.quantity||""} onChange={function(e){setForm(Object.assign({},form,{quantity:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
-            {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Current Market Value":"Current Value"} ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
-            <div style={{marginBottom:14}}><label style={secLabel}>Total Cost Basis ({cSym})</label><input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/><div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid — used for gain/loss calculation</div></div>
+            {atype.manual&&<div style={{marginBottom:14}}><label style={secLabel}>{atype.id==="real_estate"?"Current Market Value":atype.cashLike?"Current Balance":atype.goldLike?"Current Market Value":"Current Value"} ({cSym})</label><input type="number" value={form.manualValue||""} onChange={function(e){setForm(Object.assign({},form,{manualValue:e.target.value}))}} placeholder="0" style={inputStyle}/></div>}
+            <div style={{marginBottom:14}}><label style={secLabel}>{atype.cashLike?"Amount Deposited / Original Balance":atype.goldLike?"Total Purchase Cost":"Total Cost Basis"} ({cSym})</label><input type="number" value={form.costBasis||""} onChange={function(e){setForm(Object.assign({},form,{costBasis:e.target.value}))}} placeholder="0" style={inputStyle}/><div style={{fontSize:11,color:K.dim,marginTop:4}}>Total amount paid — used for gain/loss calculation</div></div>
             {(atype.manual||atype.id==="bonds"||atype.id==="etf"||atype.id==="royalties"||atype.id==="valuables")&&<div style={{marginBottom:14}}>
-              <label style={secLabel}>{atype.id==="real_estate"?"Annual Rental Income":"Annual Income"} ({cSym}) — optional</label>
+              <label style={secLabel}>{atype.id==="real_estate"?"Annual Rental Income":atype.cashLike?"Annual Interest Income":"Annual Income"} ({cSym}) — optional</label>
               <input type="number" value={form.annualIncome||""} onChange={function(e){setForm(Object.assign({},form,{annualIncome:e.target.value}))}} placeholder={atype.id==="royalties"?"e.g. book/music royalties":atype.id==="etf"?"ETF dividend income p.a.":atype.id==="valuables"?"e.g. watch rental income":"e.g. rental income, bond coupons"} style={inputStyle}/>
               {(atype.id==="etf"||atype.id==="bonds")&&form.annualIncome>0&&<div style={{marginTop:8}}>
                 <label style={Object.assign({},secLabel,{marginBottom:4})}>Payment Frequency</label>
@@ -12518,7 +12518,7 @@ function ProWelcomeGift(){
               onClick={function(e){e.stopPropagation();}}>
               <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
               <input value={apVal} onChange={function(e){setApVal(e.target.value);}}
-                onBlur={function(){upd(c.id,{alertPrice:apVal.trim()||null});}}
+                onBlur={function(){}}
                 placeholder={"Alert price"}
                 style={{flex:1,background:"none",border:"none",outline:"none",padding:"9px 0",fontSize:14,color:K.txt,fontFamily:fm}}
               />
@@ -12641,10 +12641,13 @@ function ProWelcomeGift(){
 
       {/* Footer */}
       <div style={{padding:"14px 20px",borderTop:"1px solid "+K.bdr,flexShrink:0,display:"flex",gap:8}}>
-        <button onClick={onClose}
-          style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
-            background:K.card,color:K.txt,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-          {"Done"}
+        <button onClick={function(){
+            var fp=fpVal.trim();if(fp!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:fp||null});
+            var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
+            onClose();}}
+          style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"none",
+            background:K.acc,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+          {"Done ✓"}
         </button>
         <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
           style={{padding:"11px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
@@ -13099,8 +13102,12 @@ function ProWelcomeGift(){
             </div>
           </div>}
           {watching.length===0&&<div style={{textAlign:"center",padding:"60px 24px"}}>
-            <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>Start your watchlist above</div>
-            <div style={{fontSize:14,color:K.dim,lineHeight:1.7,maxWidth:400,margin:"0 auto"}}>Search for a business, set your fat pitch price, wait patiently.</div>
+            <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your research queue is empty"}</div>
+            <div style={{fontSize:14,color:K.dim,lineHeight:1.8,maxWidth:400,margin:"0 auto"}}>{"Search above to add a company. Research it deeply, set your fat pitch price, and wait patiently. Most great investments are made in the waiting."}</div>
+          </div>}
+          {watching.length>0&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+            <IC name="target" size={13} color={K.acc}/>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{"Research deeply. Set a fat pitch price. Wait. The discipline is in not acting — until the price comes to you."}</div>
           </div>}
           {watching.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
             {watching.map(function(c){return<WatchRow key={c.id} c={c}/>;})}</div>}
