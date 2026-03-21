@@ -1907,7 +1907,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       }
     }
 
-    return<Modal title="" onClose={function(){setModal(null)}} wide={false}>
+    return<Modal title="" onClose={function(){setModal(null)}} wide={false} K={K}>
       <div style={{padding:"4px 0 0"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
           <div>
@@ -2052,7 +2052,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var active=activeEntry!==null?activeEntry:0;
     var entry=entries[active];
     var prevEntry=entries[active+1]||null;
-    return<Modal title="" onClose={function(){setModal(null)}} wide={true}>
+    return<Modal title="" onClose={function(){setModal(null)}} wide={true} K={K}>
       <div style={{display:"flex",gap:0,height:"70vh",minHeight:480}}>
         {/* Left timeline nav */}
         <div style={{width:200,flexShrink:0,borderRight:"1px solid "+K.bdr,overflowY:"auto",padding:"0 0 20px"}}>
@@ -2349,7 +2349,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {n:"4",text:"Copy the full output, come back, click \"Paste output →\""},
     ];
 
-    return<Modal title={"Deep Dive — AI Analysis Setup"} onClose={function(){setModal(null);}} w={620}>
+    return<Modal title={"Deep Dive — AI Analysis Setup"} onClose={function(){setModal(null);}} w={620} K={K}>
       {/* Framework tab bar — only shows if user has defined a custom framework */}
       {hasCustomFw&&<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {[{id:"standard",label:"ThesisAlpha Framework"},{id:"custom",label:fw.name||"My Framework"}].map(function(t){
@@ -2752,7 +2752,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       );
     }
 
-    return<Modal title={"Import Deep Dive — "+sel.ticker} onClose={function(){setModal(null);}} w={680}>
+    return<Modal title={"Import Deep Dive — "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
       {/* Instructions */}
       <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16}}>
         <div style={{fontSize:12,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:6}}>How it works</div>
