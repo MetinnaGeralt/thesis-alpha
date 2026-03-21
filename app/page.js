@@ -6586,6 +6586,7 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}>
               <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
               <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div></div>}
+        </div>}
         {/* ── LINKS ── */}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:20}}>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
@@ -6608,7 +6609,6 @@ function calcMoatFromData(finData,businessModelType){
           {(c.decisions||[]).concat((c.docs||[]).map(function(d2){return Object.assign({},d2,{cardType:d2.isClip?"clip":d2.isMemo?"memo":d2.isIR?"ir":"doc",date:d2.updatedAt})})).sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,3).map(function(d2,di){
             return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:6,fontSize:12,color:K.mid}}>
               <span style={{fontWeight:600,color:K.txt}}>{d2.title||d2.ticker||""}</span> {d2.content?d2.content.substring(0,80)+"...":d2.reasoning?d2.reasoning.substring(0,80)+"...":""}</div>})}</div>}
-        </div>}
 
         {/* Charts & analyst data (collapsible) */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
