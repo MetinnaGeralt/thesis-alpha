@@ -2342,7 +2342,30 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste the prompt, then ask it to analyse "+ticker}</div>
         </div>
       </div>
-      </div>
+
+      {/* ── IR tip ── */}
+      {sel&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,
+        padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"flex-start",gap:12}}>
+        <div style={{flexShrink:0,marginTop:2}}><IC name="book" size={14} color={K.acc}/></div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>
+            {"For the best output — attach these to your AI conversation:"}
+          </div>
+          <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.7}}>
+            {"Annual report (latest), investor presentation, and latest earnings transcript. "}
+            {"The AI will ground its analysis in the actual numbers rather than training data."}
+          </div>
+          {sel.irUrl&&<a href={sel.irUrl} target="_blank" rel="noopener noreferrer"
+            style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,
+              fontSize:11,fontWeight:600,color:K.acc,textDecoration:"none",
+              padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.acc+"40",
+              background:K.acc+"08"}}>
+            <IC name="search" size={11} color={K.acc}/>
+            {(sel.name||ticker)+" investor relations ↗"}
+          </a>}
+        </div>
+      </div>}
+
 
       {/* Prompt text box */}
       <div style={{marginBottom:12}}>
