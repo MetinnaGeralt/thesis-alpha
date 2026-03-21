@@ -3010,6 +3010,9 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   }
 
   function DeepDiveView({doc,K,_isBm,fm,fb,fh,cSym}){
+    var _PW={buffett:[0.15,0.30,0.20,0.20,0.15],munger:[0.20,0.35,0.20,0.15,0.10],lynch:[0.25,0.10,0.15,0.20,0.30],schloss:[0.10,0.10,0.15,0.30,0.35],sleep:[0.20,0.35,0.25,0.10,0.10],greenblatt:[0.10,0.20,0.10,0.35,0.25]};
+    var profileW=investorProfile&&investorProfile!=="custom"&&_PW[investorProfile]?_PW[investorProfile]:[0.2,0.2,0.2,0.2,0.2];
+    var PROFILE_WEIGHTS=_PW;
     var dd=doc.deepDive;if(!dd)return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No deep dive data.</div>;
     var _open=React.useState({}),openFilters=_open[0],setOpenFilters=_open[1];
     var PURPLE="#8B5CF6";
@@ -3036,21 +3039,37 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Five filters / Custom dims */}
       {dd.filters&&dd.filters.filter(function(f){return f.isCustomDim?(f.verdict||f.analysis||f.checks.length>0):(f.checks&&f.checks.some(function(c){return c.text;}));}).length>0&&<div style={{marginBottom:20}}>
         {(function(){var hasCustom=dd.filters.some(function(f){return f.isCustomDim;});var hasStd=dd.filters.some(function(f){return!f.isCustomDim;});
-          return<div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{hasCustom&&!hasStd?"Framework Analysis":hasCustom?"Mixed Analysis":"Five-Filter Analysis"}</div>;
-        })()}
-        {dd.filters.map(function(fil,fi){
+          // Sort standard filters by profile weight (most important first)
+          // competence=filter1[idx0], moat=filter2[idx1], mgmt=filter3[idx2], financial=filter4[idx3], valuation=filter5[idx4]
+          var FILTER_WEIGHTS={filter1:profileW[0],filter2:profileW[1],filter3:profileW[2],filter4:profileW[3],filter5:profileW[4]};
+          var sortedFilters=dd.filters.slice().sort(function(a,b){
+            var wa=FILTER_WEIGHTS[a.id]!=null?FILTER_WEIGHTS[a.id]:0.2;
+            var wb=FILTER_WEIGHTS[b.id]!=null?FILTER_WEIGHTS[b.id]:0.2;
+            return wb-wa; // highest weight first
+          });
+          // Show weight badge only when profile is active (non-equal weights)
+          var showWeights=investorProfile&&investorProfile!=="custom"&&PROFILE_WEIGHTS&&PROFILE_WEIGHTS[investorProfile];
+          return<div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{hasCustom&&!hasStd?"Framework Analysis":hasCustom?"Mixed Analysis":"Five-Filter Analysis"}</div>
+              {showWeights&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:3,padding:"1px 6px"}}>{"weighted · "+investorProfile}</div>}
+            </div>
+        {sortedFilters.map(function(fil,fi){
           var hasContent=fil.checks&&fil.checks.some(function(c){return c.text;});
           // Custom dims: show if they have a verdict, analysis, or any checks
           var hasCustomContent=fil.isCustomDim&&(fil.verdict||fil.analysis||(fil.checks&&fil.checks.length>0));
           if(!hasContent&&!hasCustomContent)return null;
           var isOpen=openFilters[fi]!==false;
           var vc=statusColor(fil.verdictType||"note");
-          return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:6,overflow:"hidden"}}>
+          // Weight badge for this filter
+          var filterW=FILTER_WEIGHTS[fil.id];
+          var isTopFilter=showWeights&&filterW!=null&&filterW===Math.max.apply(null,Object.values(FILTER_WEIGHTS));
+          return<div key={fi} style={{border:"1px solid "+(isTopFilter?PURPLE+"40":K.bdr),borderRadius:_isBm?0:8,marginBottom:6,overflow:"hidden"}}>
             <button onClick={function(){setOpenFilters(function(p){var n=Object.assign({},p);n[fi]=!isOpen;return n;});}}
               style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",
-                background:K.bg,border:"none",cursor:"pointer",textAlign:"left"}}>
+                background:isTopFilter?PURPLE+"05":K.bg,border:"none",cursor:"pointer",textAlign:"left"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:9,color:K.dim,fontFamily:fm,width:16,flexShrink:0}}>{"F"+fil.id}</span>
+                <span style={{fontSize:9,color:isTopFilter?PURPLE:K.dim,fontFamily:fm,width:16,flexShrink:0}}>{"F"+fil.id}</span>
                 <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fil.title}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -3068,6 +3087,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             </div>}
           </div>;
         })}
+          </div>;
+        })()}
       </div>}
 
       {/* DCF */}
@@ -13402,6 +13423,20 @@ function ProWelcomeGift(){
         {/* ── RESEARCH BOARD ── */}
         {activeList==="watching"&&viewMode==="board"&&(function(){
           // Score each company from its deep dive
+          // Profile-based filter weights — default is equal (ThesisAlpha standard)
+          // competence, moat, mgmt, financial, valuation
+          var PROFILE_WEIGHTS={
+            buffett: [0.15,0.30,0.20,0.20,0.15],
+            munger:  [0.20,0.35,0.20,0.15,0.10],
+            lynch:   [0.25,0.10,0.15,0.20,0.30],
+            schloss: [0.10,0.10,0.15,0.30,0.35],
+            sleep:   [0.20,0.35,0.25,0.10,0.10],
+            greenblatt:[0.10,0.20,0.10,0.35,0.25],
+          };
+          var profileW=investorProfile&&investorProfile!=="custom"&&PROFILE_WEIGHTS[investorProfile]
+            ?PROFILE_WEIGHTS[investorProfile]
+            :[0.2,0.2,0.2,0.2,0.2]; // equal default
+
           function ddScore(c2){
             var doc=(c2.docs||[]).find(function(d){return d.deepDive&&d.deepDive.filters&&d.deepDive.filters.length>0;});
             if(!doc)return null;
@@ -13427,8 +13462,18 @@ function ProWelcomeGift(){
               if(f.scoreVal!=null)return f.scoreVal/10;
               return f.verdictType==="pass"?1:f.verdictType==="fail"?0:f.verdictType==="warn"?0.5:null;
             }).filter(function(s){return s!=null;}):[];
-            var scores=isCustomFw?customScores:stdScores;
-            var overall=scores.length>0?scores.reduce(function(a,b){return a+b;},0)/scores.length:null;
+            // Weighted overall — uses profile weights when set, equal weights as default
+            var w=profileW;
+            var slots=[competence,moat,mgmt,financial,valuation2];
+            var overall;
+            if(isCustomFw){
+              var scores=customScores;
+              overall=scores.length>0?scores.reduce(function(a,b){return a+b;},0)/scores.length:null;
+            } else {
+              var wSum=0,wScore=0;
+              slots.forEach(function(s,i){if(s!=null){wSum+=w[i];wScore+=s*w[i];}});
+              overall=wSum>0?wScore/wSum:null;
+            }
             // Map custom dims to named slots by position or title match
             if(isCustomFw){
               filters.filter(function(f){return f.isCustomDim;}).forEach(function(f){
