@@ -7029,10 +7029,10 @@ function calcMoatFromData(finData,businessModelType){
               {/* ── How-to card ── */}
               <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:14,padding:"24px 28px",marginBottom:16}}>
                 <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
-                  {"Run a Deep Dive on "+c.ticker+" with AI"}
+                  {"Understand "+c.ticker+" before you own it"}
                 </div>
                 <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:20,maxWidth:520}}>
-                  {"The Deep Dive uses a structured prompt — works with Claude, ChatGPT, or Gemini. Five filters, owner earnings DCF, inversion, and a verdict. Takes 5–10 minutes and becomes the foundation of your thesis."}
+                  {"Buffett reads annual reports before he invests. This is your version — five filters, owner earnings DCF, inversion, and a verdict. The AI runs it in 10 minutes. Import the output and it becomes your thesis foundation."}
                 </div>
 
                 {/* Steps */}
@@ -8085,7 +8085,7 @@ function calcMoatFromData(finData,businessModelType){
       <div style={{padding:isMobile?"20px 0 20px":"28px 0 24px"}}>
         <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6}}>Research Prompts</div>
         <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.6,maxWidth:620}}>
-          These prompts are for your own research — not financial advice. They package your thesis, conviction history, KPIs and decisions into structured questions you can take to any AI to challenge your own thinking.
+          The best investors think in questions. Munger inverts. Buffett asks what could permanently destroy the thesis. These prompts package your exact thesis, conviction history, and KPIs into structured AI sessions — so you're challenging your own thinking, not asking generic questions.
         </div>
       </div>
 
@@ -10458,8 +10458,8 @@ function ProWelcomeGift(){
       {/* ── Header ── */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:isMobile?"20px 0 20px":"28px 0 20px"}}>
         <div>
-          <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Net Worth</div>
-          <div style={{fontSize:13,color:K.dim}}>{portCos.length} stocks · {otherAssets.length} assets · {liabilities.length} liabilities{currency!=="USD"&&fxRate!==1?" · FX live":""}</div>
+          <div style={{fontSize:isMobile?20:26,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:4}}>Capital Overview</div>
+          <div style={{fontSize:13,color:K.dim}}>{portCos.length} stocks · {(otherAssets||[]).length} assets · {liabilities.length} liabilities{currency!=="USD"&&fxRate!==1?" · FX live":""}</div>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={function(){setLmodal("pick")}} style={{padding:"9px 14px",borderRadius:_isBm?0:10,border:"1px solid "+K.red+"50",background:K.red+"0d",color:K.red,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>+ Liability</button>
@@ -12213,8 +12213,8 @@ function ProWelcomeGift(){
       {/* Header */}
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 18px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{"Library"}</h1>
-          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>{"Your work and what you read — indexed by holding, compounding over time."}</p>
+          <h1 style={{margin:0,fontSize:isMobile?22:28,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{"Research Library"}</h1>
+          <p style={{margin:"6px 0 0",fontSize:14,color:K.dim}}>{"Munger read 500 pages a week. Build your compounding knowledge base — every report, video, and insight indexed by the business it belongs to."}</p>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={function(){setLibModal({type:"folder"});}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"+ Folder"}</button>
@@ -12907,7 +12907,7 @@ function ProWelcomeGift(){
 
         {/* Built-in lists */}
         {[
-          {id:"watching",label:"Watching",count:watching.length,color:K.acc,
+          {id:"watching",label:"Research Queue",count:watching.length,color:K.acc,
             alerts:fatPitchAlerts.length},
           {id:"toohard",label:"Too Hard",count:tooHard.length,color:K.red,alerts:0},
         ].map(function(item){
@@ -13439,8 +13439,8 @@ function ProWelcomeGift(){
     // ── NET WORTH AREA ──────────────────────────────────────────────────
     // N1: no net worth tracked yet
     if(!focus&&portfolio.length>=2&&!hasOtherAssets)focus={icon:"dollar",color:K.amb,area:"Net Worth",
-      title:"Track your full net worth",
-      sub:"You have holdings — but what about cash, real estate, other assets? The full picture matters.",
+      title:"See your full picture as a capital allocator",
+      sub:"Where is your capital deployed? Stocks, real estate, cash — an owner tracks everything, not just the portfolio.",
       onClick:function(){setSelId(null);setPage("assets");}};
 
     // ── FALLBACK: concentration check ──────────────────────────────────
@@ -13645,9 +13645,9 @@ function ProWelcomeGift(){
 
         {/* ── Empty portfolio ── */}
         {portfolio.length===0&&<div style={{textAlign:"center",padding:"60px 0"}}>
-          <div style={{fontSize:16,fontWeight:700,color:K.mid,fontFamily:fh,marginBottom:8}}>Which business do you understand well enough to own?</div>
+          <div style={{fontSize:16,fontWeight:700,color:K.mid,fontFamily:fh,marginBottom:8}}>Which business do you understand best well enough to own?</div>
           <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.7,maxWidth:380,margin:"0 auto 20px"}}>
-            Add your first holding — thesis, conviction, and all.
+            Own like Buffett — one business at a time, deeply understood. Add your first holding and build the thesis that keeps you honest.
           </div>
           <button onClick={function(){setModal({type:"add"});}}
             style={Object.assign({},S.btnP,{padding:"11px 28px",fontSize:14})}>Add first holding</button>
@@ -14622,7 +14622,7 @@ function ProWelcomeGift(){
 
       // Page-level crumb
       var pageLabels={strategy:"My Strategy",watchlist:"Watchlist",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
-        timeline:"Portfolio",assets:"All Assets",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
+        timeline:"Portfolio",assets:"Capital Overview",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
         ai:"Research Prompts",hub:"Portfolio"};
       if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
         crumbs.push(sep);
@@ -14740,7 +14740,7 @@ function ProWelcomeGift(){
          {id:"watchlist",label:"Watchlist",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>},
          {id:"add",label:"Add",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>},
          {id:"library",label:"Research",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>},
-         {id:"assets",label:"Net Worth",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>},
+         {id:"assets",label:"Capital Overview",svg:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>},
        ];
       return mItems.map(function(item){
         var active=(item.id==="home"?page==="home":page===item.id)&&!selId;
