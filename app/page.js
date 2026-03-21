@@ -3000,24 +3000,133 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _PW={buffett:[0.15,0.30,0.20,0.20,0.15],munger:[0.20,0.35,0.20,0.15,0.10],lynch:[0.25,0.10,0.15,0.20,0.30],schloss:[0.10,0.10,0.15,0.30,0.35],sleep:[0.20,0.35,0.25,0.10,0.10],greenblatt:[0.10,0.20,0.10,0.35,0.25]};
     var profileW=investorProfile&&investorProfile!=="custom"&&_PW[investorProfile]?_PW[investorProfile]:[0.2,0.2,0.2,0.2,0.2];
     var PROFILE_WEIGHTS=_PW;
-    var dd=doc.deepDive;if(!dd)return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No deep dive data.</div>;
+    var dd=doc.deepDive;if(!dd)return<div style={{color:K.dim,fontSize:14,fontFamily:fm}}>No deep dive data.</div>;
     var _open=React.useState({}),openFilters=_open[0],setOpenFilters=_open[1];
     var PURPLE="#8B5CF6";
     function statusColor(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#6B7280";}
     function statusIcon(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"—";}
     function verdictBg(v){return v==="pass"?"#10B98112":v==="warn"?"#F59E0B12":"#EF444412";}
 
-    return<div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:4}}>
+    function exportPDF(){
+      var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+(doc.title||"Deep Dive")+"</title><style>"+
+        "body{font-family:Georgia,serif;max-width:780px;margin:40px auto;color:#1a1a1a;line-height:1.7;font-size:14px}"+
+        "h1{font-size:22px;font-weight:800;margin:0 0 4px;letter-spacing:-.5px}"+
+        ".meta{font-size:11px;color:#888;margin-bottom:28px;text-transform:uppercase;letter-spacing:1px}"+
+        ".section-label{font-size:9px;font-weight:700;color:#8B5CF6;letter-spacing:2px;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #e5e7eb;padding-bottom:6px}"+
+        ".filter{border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;overflow:hidden}"+
+        ".filter-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9fafb}"+
+        ".filter-title{font-size:14px;font-weight:700;color:#111}"+
+        ".verdict{font-size:11px;font-weight:700;padding:2px 10px;border-radius:4px}"+
+        ".pass{background:#d1fae5;color:#065f46}.warn{background:#fef3c7;color:#92400e}.fail{background:#fee2e2;color:#991b1b}"+
+        ".check{display:flex;gap:10px;padding:6px 14px;font-size:13px;color:#374151}"+
+        ".check-icon{font-weight:700;width:16px;flex-shrink:0;margin-top:1px}"+
+        ".check-icon.pass{color:#10B981}.check-icon.warn{color:#F59E0B}.check-icon.fail{color:#EF4444}.check-icon.note{color:#9CA3AF}"+
+        ".analysis-text{padding:8px 14px;font-size:12px;color:#6b7280;font-style:italic;border-top:1px solid #f3f4f6}"+
+        ".metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}"+
+        ".metric{border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px}"+
+        ".metric-val{font-size:15px;font-weight:700}.metric-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}"+
+        ".dcf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}"+
+        ".dcf-scenario{border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px}"+
+        ".dcf-label{font-size:9px;font-weight:700;text-transform:uppercase;margin-bottom:6px}"+
+        ".dcf-irr{font-size:20px;font-weight:800;margin-bottom:6px}"+
+        ".dcf-row{display:flex;justify-content:space-between;font-size:11px;color:#666;margin-bottom:2px}"+
+        ".inversion-item{margin-bottom:12px;padding:10px 14px;background:#faf5ff;border-radius:6px;border-left:3px solid #8B5CF6}"+
+        ".inv-mech{font-size:13px;font-weight:700;color:#5B21B6;margin-bottom:4px}"+
+        ".inv-ark{font-size:12px;color:#4B5563}"+
+        ".verdict-box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px}"+
+        ".verdict-text{font-size:13px;color:#374151;margin-bottom:10px}"+
+        ".verdict-pills{display:flex;gap:16px;flex-wrap:wrap}"+
+        ".verdict-pill span:first-child{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;display:block}"+
+        ".verdict-pill span:last-child{font-size:13px;font-weight:700;color:#111}"+
+        "@media print{body{margin:20px}}"+
+        "</style></head><body>";
+      html+="<h1>"+(doc.title||"Deep Dive — "+doc.ticker||"")+"</h1>";
+      html+="<div class='meta'>"+(new Date().toLocaleDateString("en-US",{month:"long",year:"numeric",day:"numeric"}))+"</div>";
+      // Metrics
+      if(dd.metrics&&dd.metrics.filter(function(m){return m.label&&m.value}).length>0){
+        html+="<div class='section-label'>Key Metrics</div><div class='metrics'>";
+        dd.metrics.filter(function(m){return m.label&&m.value}).forEach(function(m){
+          var c=m.status==="pass"?"#10B981":m.status==="fail"?"#EF4444":"#F59E0B";
+          html+="<div class='metric'><div class='metric-val' style='color:"+c+"'>"+m.value+"</div><div class='metric-label'>"+m.label+"</div></div>";
+        });
+        html+="</div>";
+      }
+      // Filters
+      if(dd.filters&&dd.filters.length>0){
+        html+="<div class='section-label'>Five-Filter Analysis</div>";
+        dd.filters.forEach(function(f){
+          if(!f.checks||(!f.checks.some(function(c){return c.text}))&&!f.analysis&&!f.verdict)return;
+          var vc=f.verdictType==="pass"?"pass":f.verdictType==="fail"?"fail":"warn";
+          html+="<div class='filter'><div class='filter-header'>";
+          html+="<span class='filter-title'>"+f.title+"</span>";
+          if(f.verdict)html+="<span class='verdict "+vc+"'>"+f.verdict+"</span>";
+          html+="</div>";
+          if(f.analysis)html+="<div class='analysis-text'>"+f.analysis+"</div>";
+          if(f.checks)f.checks.filter(function(c){return c.text}).forEach(function(c){
+            var ico=c.status==="pass"?"✓":c.status==="warn"?"⚠":c.status==="fail"?"✗":"—";
+            html+="<div class='check'><span class='check-icon "+c.status+"'>"+ico+"</span><span>"+c.text+"</span></div>";
+          });
+          html+="</div>";
+        });
+      }
+      // DCF
+      if(dd.dcf&&dd.dcf.scenarios&&dd.dcf.scenarios.some(function(s){return s.irr})){
+        html+="<div class='section-label'>Owner Earnings DCF</div><div class='dcf-grid'>";
+        dd.dcf.scenarios.forEach(function(s){
+          var c=s.irrType==="pass"?"#10B981":s.irrType==="fail"?"#EF4444":"#F59E0B";
+          html+="<div class='dcf-scenario'><div class='dcf-label' style='color:"+c+"'>"+s.label+(s.weight?" · "+s.weight:"")+"</div>";
+          html+="<div class='dcf-irr' style='color:"+c+"'>"+s.irr+"</div>";
+          [["CAGR",s.cagr],["OE margin",s.oeMargin],["Intrinsic",s.intrinsic],["MOS",s.mos]].filter(function(r){return r[1]}).forEach(function(r){
+            html+="<div class='dcf-row'><span>"+r[0]+"</span><span>"+r[1]+"</span></div>";
+          });
+          html+="</div>";
+        });
+        html+="</div>";
+        if(dd.dcf.summary)html+="<p style='font-size:13px;color:#4B5563;margin:0 0 16px'>"+dd.dcf.summary+"</p>";
+      }
+      // Inversion
+      if(dd.inversion&&dd.inversion.length>0){
+        html+="<div class='section-label'>Inversion</div>";
+        dd.inversion.forEach(function(inv){
+          html+="<div class='inversion-item'><div class='inv-mech'>"+inv.mechanism+"</div><div class='inv-ark'>"+inv.ark+"</div></div>";
+        });
+      }
+      // Verdict
+      if(dd.verdict&&(dd.verdict.text||dd.verdict.fatPitch)){
+        html+="<div class='section-label'>Verdict</div><div class='verdict-box'>";
+        if(dd.verdict.text)html+="<div class='verdict-text'>"+dd.verdict.text+"</div>";
+        html+="<div class='verdict-pills'>";
+        if(dd.verdict.weight)html+="<div class='verdict-pill'><span>Position</span><span>"+dd.verdict.weight+"</span></div>";
+        if(dd.verdict.fatPitch)html+="<div class='verdict-pill'><span>Fat Pitch</span><span>"+dd.verdict.fatPitch+"</span></div>";
+        if(dd.verdict.pending)html+="<div class='verdict-pill'><span>Pending</span><span>"+dd.verdict.pending+"</span></div>";
+        html+="</div></div>";
+      }
+      html+="</body></html>";
+      var w=window.open("","_blank","width=900,height=700");
+      if(w){w.document.write(html);w.document.close();setTimeout(function(){w.print();},400);}
+    }
+
+    return<div>
+      {/* Export button */}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+        <button onClick={exportPDF} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:K.card,color:K.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
+          onMouseEnter={function(e){e.currentTarget.style.borderColor=PURPLE;e.currentTarget.style.color=PURPLE;}}
+          onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          {"Export PDF"}
+        </button>
+      </div>
+    <div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:4}}>
 
       {/* Metrics grid */}
       {dd.metrics&&dd.metrics.filter(function(m){return m.label&&m.value;}).length>0&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Metrics</div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Key Metrics</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:6}}>
           {dd.metrics.filter(function(m){return m.label&&m.value;}).map(function(m,i){
             var c=statusColor(m.status);
             return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"8px 10px",border:"1px solid "+K.bdr}}>
               <div style={{fontSize:14,fontWeight:700,color:c,fontFamily:fm,lineHeight:1}}>{m.value}</div>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:3,textTransform:"uppercase",letterSpacing:0.5}}>{m.label}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:3,textTransform:"uppercase",letterSpacing:0.5}}>{m.label}</div>
             </div>;
           })}
         </div>
@@ -3038,8 +3147,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           var showWeights=investorProfile&&investorProfile!=="custom"&&PROFILE_WEIGHTS&&PROFILE_WEIGHTS[investorProfile];
           return<div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-              <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{hasCustom&&!hasStd?"Framework Analysis":hasCustom?"Mixed Analysis":"Five-Filter Analysis"}</div>
-              {showWeights&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:3,padding:"1px 6px"}}>{"weighted · "+investorProfile}</div>}
+              <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{hasCustom&&!hasStd?"Framework Analysis":hasCustom?"Mixed Analysis":"Five-Filter Analysis"}</div>
+              {showWeights&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,background:K.bg,border:"1px solid "+K.bdr,borderRadius:3,padding:"1px 6px"}}>{"weighted · "+investorProfile}</div>}
             </div>
         {sortedFilters.map(function(fil,fi){
           var hasContent=fil.checks&&fil.checks.some(function(c){return c.text;});
@@ -3056,20 +3165,20 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",
                 background:isTopFilter?PURPLE+"05":K.bg,border:"none",cursor:"pointer",textAlign:"left"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:9,color:isTopFilter?PURPLE:K.dim,fontFamily:fm,width:16,flexShrink:0}}>{"F"+fil.id}</span>
-                <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{fil.title}</span>
+                <span style={{fontSize:10,color:isTopFilter?PURPLE:K.dim,fontFamily:fm,width:16,flexShrink:0}}>{"F"+fil.id}</span>
+                <span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{fil.title}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {fil.verdict&&<span style={{fontSize:10,fontWeight:700,color:vc,background:verdictBg(fil.verdictType),
+                {fil.verdict&&<span style={{fontSize:11,fontWeight:700,color:vc,background:verdictBg(fil.verdictType),
                   border:"1px solid "+vc+"30",borderRadius:4,padding:"2px 8px",fontFamily:fm}}>{fil.verdict}</span>}
-                <span style={{fontSize:10,color:K.dim}}>{isOpen?"▲":"▼"}</span>
+                <span style={{fontSize:11,color:K.dim}}>{isOpen?"▲":"▼"}</span>
               </div>
             </button>
             {isOpen&&<div style={{borderTop:"1px solid "+K.bdr,padding:"10px 14px 14px"}}>
-              {fil.analysis&&<p style={{margin:"0 0 10px",fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.7,borderBottom:fil.checks.filter(function(c){return c.text;}).length>0?"1px solid "+K.bdr+"40":"none",paddingBottom:fil.checks.filter(function(c){return c.text;}).length>0?10:0}}>{fil.analysis}</p>}
+              {fil.analysis&&<p style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,borderBottom:fil.checks.filter(function(c){return c.text;}).length>0?"1px solid "+K.bdr+"40":"none",paddingBottom:fil.checks.filter(function(c){return c.text;}).length>0?10:0}}>{fil.analysis}</p>}
               {fil.checks.filter(function(c){return c.text;}).map(function(ch,ci){return<div key={ci} style={{display:"flex",gap:10,marginBottom:8}}>
-                <span style={{fontSize:12,fontWeight:700,color:statusColor(ch.status),width:14,flexShrink:0,marginTop:1}}>{statusIcon(ch.status)}</span>
-                <p style={{margin:0,fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{ch.text}</p>
+                <span style={{fontSize:13,fontWeight:700,color:statusColor(ch.status),width:14,flexShrink:0,marginTop:1}}>{statusIcon(ch.status)}</span>
+                <p style={{margin:0,fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{ch.text}</p>
               </div>;})}
             </div>}
           </div>;
@@ -3080,52 +3189,53 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       {/* DCF */}
       {dd.dcf&&dd.dcf.scenarios&&dd.dcf.scenarios.some(function(s){return s.irr;})&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Owner Earnings DCF</div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Owner Earnings DCF</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:dd.dcf.summary?8:0}}>
           {dd.dcf.scenarios.map(function(s,si){
             var ic=statusColor(s.irrType);
             return<div key={si} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
-              <div style={{fontSize:9,fontWeight:700,color:ic,fontFamily:fm,textTransform:"uppercase",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:ic,fontFamily:fm,textTransform:"uppercase",marginBottom:6}}>
                 {s.label+(s.weight?" · "+s.weight:"")}
               </div>
               {s.irr&&<div style={{fontSize:22,fontWeight:800,color:ic,fontFamily:fm,lineHeight:1,marginBottom:8}}>{s.irr}</div>}
               {[["CAGR",s.cagr],["OE margin",s.oeMargin],["Terminal",s.terminal],["Intrinsic",s.intrinsic],["MOS",s.mos]]
                 .filter(function(row){return row[1];})
-                .map(function(row){return<div key={row[0]} style={{display:"flex",justifyContent:"space-between",fontSize:11,color:K.dim,marginBottom:2}}>
+                .map(function(row){return<div key={row[0]} style={{display:"flex",justifyContent:"space-between",fontSize:12,color:K.dim,marginBottom:2}}>
                   <span>{row[0]}</span><span style={{fontFamily:fm,fontWeight:500,color:K.mid}}>{row[1]}</span>
                 </div>;})}
             </div>;
           })}
         </div>
         {dd.dcf.summary&&<div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px"}}>
-          <p style={{margin:0,fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{dd.dcf.summary}</p>
+          <p style={{margin:0,fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{dd.dcf.summary}</p>
         </div>}
       </div>}
 
       {/* Inversion */}
       {dd.inversion&&dd.inversion.filter(function(r){return r.mechanism;}).length>0&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Inversion — Bear Case Mechanisms</div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Inversion — Bear Case Mechanisms</div>
         <div style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,overflow:"hidden"}}>
           {dd.inversion.filter(function(r){return r.mechanism;}).map(function(r,i){return<div key={i}
             style={{padding:"10px 14px",borderBottom:i<dd.inversion.filter(function(x){return x.mechanism;}).length-1?"1px solid "+K.bdr:"none"}}>
-            <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{r.mechanism}</div>
-            <p style={{margin:0,fontSize:12,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{r.ark}</p>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:3}}>{r.mechanism}</div>
+            <p style={{margin:0,fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.6}}>{r.ark}</p>
           </div>;})}
         </div>
       </div>}
 
       {/* Verdict */}
       {dd.verdict&&(dd.verdict.text||dd.verdict.fatPitch)&&<div>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Verdict</div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Verdict</div>
         <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"14px 16px"}}>
-          {dd.verdict.text&&<p style={{margin:"0 0 12px",fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.7}}>{dd.verdict.text}</p>}
+          {dd.verdict.text&&<p style={{margin:"0 0 12px",fontSize:14,color:K.mid,fontFamily:fm,lineHeight:1.7}}>{dd.verdict.text}</p>}
           <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
-            {dd.verdict.weight&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Portfolio weight: </span><span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{dd.verdict.weight}</span></div>}
-            {dd.verdict.fatPitch&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Fat pitch: </span><span style={{fontSize:11,fontWeight:700,color:"#10B981",fontFamily:fm}}>{dd.verdict.fatPitch}</span></div>}
-            {dd.verdict.pending&&<div><span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Pending: </span><span style={{fontSize:11,color:K.mid,fontFamily:fm}}>{dd.verdict.pending}</span></div>}
+            {dd.verdict.weight&&<div><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Portfolio weight: </span><span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{dd.verdict.weight}</span></div>}
+            {dd.verdict.fatPitch&&<div><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Fat pitch: </span><span style={{fontSize:12,fontWeight:700,color:"#10B981",fontFamily:fm}}>{dd.verdict.fatPitch}</span></div>}
+            {dd.verdict.pending&&<div><span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Pending: </span><span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{dd.verdict.pending}</span></div>}
           </div>
         </div>
       </div>}
+    </div>
     </div>;
   }
 
