@@ -2363,7 +2363,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
           {[{n:"1",text:'Copy your custom prompt below — it uses the dimensions you defined in My Strategy'},
             {n:"2",text:"Open Claude, ChatGPT, or Gemini. Paste the prompt, then ask it to analyse "+ticker},
-            {n:"3",text:"Copy the full output and come back — click "Paste output →""},
+            {n:"3",text:"Copy the full output and come back — click Paste output →"},
           ].map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?10:0}}>
             <div style={{width:22,height:22,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:11,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
             <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
