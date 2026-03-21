@@ -7024,10 +7024,10 @@ function calcMoatFromData(finData,businessModelType){
                 {/* Steps */}
                 <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
                   {[
-                    {n:1,title:"Copy the prompt",desc:"Click the button below to copy the ThesisAlpha Deep Dive prompt to your clipboard."},
-                    {n:2,title:"Open your AI of choice",desc:"Go to claude.ai and start a new conversation — or use your ThesisAlpha Project if you have one set up."},
-                    {n:3,title:"Paste and add the ticker",desc:"Paste the prompt, then type the company name and ticker. The AI will run the full structured analysis."},
-                    {n:4,title:"Paste the output back here",desc:'When Claude finishes, copy its entire response and click "Import output" below. ThesisAlpha will parse and store it.'},
+                    {n:1,title:"Get the prompt",desc:"Click \"Get started\" below to open the setup guide and copy the ThesisAlpha Deep Dive prompt."},
+                    {n:2,title:"Open your AI",desc:"Go to Claude.ai, ChatGPT, or Gemini and paste the prompt in a new conversation."},
+                    {n:3,title:"Ask it to analyse "+c.ticker,desc:"The AI runs the full structured analysis — five filters, owner earnings DCF, inversion, and a verdict."},
+                    {n:4,title:"Import the output",desc:"Copy the full response, come back, click \"Import output →\". ThesisAlpha parses and stores it automatically."},
                   ].map(function(step){
                     return<div key={step.n} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
                       <div style={{width:26,height:26,borderRadius:"50%",background:PURPLE,color:"#fff",
@@ -7051,7 +7051,7 @@ function calcMoatFromData(finData,businessModelType){
                       background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,
                       cursor:"pointer",fontFamily:fm}}>
                     <IC name="search" size={13} color="#fff"/>
-                    {"Copy prompt"}
+                    {"Get started →"}
                   </button>
                   <button onClick={function(){setModal({type:"importDeepDive"});}}
                     style={{padding:"10px 22px",borderRadius:_isBm?0:8,
