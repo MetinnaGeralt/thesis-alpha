@@ -10152,6 +10152,51 @@ function ProWelcomeGift(){
     var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
     var _ef=React.useState(0),expandedFilter=_ef[0],setExpandedFilter=_ef[1];
     var _sp=React.useState(false),showPrompt=_sp[0],setShowPrompt=_sp[1];
+    var _ip=React.useState(false),showImport=_ip[0],setShowImport=_ip[1];
+    var _it=React.useState(""),importText=_it[0],setImportText=_it[1];
+    var _il=React.useState(false),importLoading=_il[0],setImportLoading=_il[1];
+    var _ie=React.useState(""),importErr=_ie[0],setImportErr=_ie[1];
+
+    function runImport(){
+      if(!importText.trim()||importLoading)return;
+      setImportLoading(true);setImportErr("");
+      var prompt="You are helping set up an investment analysis framework in ThesisAlpha.\n"+
+        "Read the following investment instructions or framework document and extract 3-7 named evaluation filters.\n\n"+
+        "For each filter return:\n"+
+        "- label: short name (e.g. \"Economic Moat\", \"Management Quality\")\n"+
+        "- desc: one sentence — what does this filter evaluate?\n"+
+        "- checks: 3-5 check items as a single string, each on its own line, prefixed with ✓ (strong positive), ⚠ (caution), or ✗ (red flag)\n\n"+
+        "Return ONLY valid JSON in this exact format:\n"+
+        "{\"name\":\"<framework name>\",\"filters\":[{\"label\":\"\",\"desc\":\"\",\"checks\":\"\"}]}\n\n"+
+        "Rules:\n"+
+        "- Preserve the user\'s original intent and language exactly\n"+
+        "- Do not substitute different criteria or add generic investment advice\n"+
+        "- Consolidate to 3-7 filters max — merge related items\n"+
+        "- Each checks string: one item per line, prefixed ✓ / ⚠ / ✗\n\n"+
+        "Source framework:\n"+importText.substring(0,4000);
+      (async function(){
+        var tok=await getAuthToken();
+        return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
+          body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,
+            messages:[{role:"user",content:prompt}],callType:"digest"})});
+      })().then(function(r){return r.json();}).then(function(d){
+        var t=(d.content&&d.content[0]&&d.content[0].text)||"";
+        var clean=t.replace(/```json|```/g,"").trim();
+        var parsed=JSON.parse(clean);
+        if(parsed.filters&&parsed.filters.length>0){
+          setFw({name:parsed.name||fw.name,filters:parsed.filters.map(function(f){
+            return{label:f.label||"",desc:f.desc||"",checks:f.checks||""};
+          }),useCustom:true});
+          setExpandedFilter(0);
+          setShowImport(false);setImportText("");
+          showToast("Framework imported — review and save","info",3000);
+        }else{setImportErr("Could not extract filters. Try pasting more detail.");}
+        setImportLoading(false);
+      }).catch(function(e){
+        setImportErr("Something went wrong. Check your input and try again.");
+        setImportLoading(false);
+      });
+    }
     var DEFAULT_FILTERS=[
       {label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Do you understand how it makes money, why customers stay, and why a competitor can\'t easily copy it?",checks:"✓ Business model is simple and predictable\n✓ You can explain the moat in one sentence\n⚠ Industry requires specialist knowledge\n✗ Outcome depends on macro or commodity prices"},
       {label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded, intelligent competitor willingly enter this market? What protects margins and returns over a decade?",checks:"✓ Switching costs are high\n✓ Network effects compound with scale\n✓ Cost advantages are structural, not cyclical\n✗ Competitors have entered and competed away returns"},
@@ -10312,6 +10357,38 @@ function ProWelcomeGift(){
         </div>}
         {/* Editable view — two column: list left, editor right */}
         {fw.useCustom&&<div>
+          {/* Import from existing instructions */}
+          {!showImport&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px dashed "+K.bdr}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{"Have a custom GPT, framework doc, or checklist?"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste it and we'll extract your filters automatically."}</div>
+            </div>
+            <button onClick={function(){setShowImport(true);}} style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"1px solid #8B5CF640",background:"#8B5CF6"+"0d",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"Import →"}</button>
+          </div>}
+          {showImport&&<div style={{marginBottom:14,border:"1px solid #8B5CF630",borderRadius:_isBm?0:10,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#8B5CF6"+"08",borderBottom:"1px solid #8B5CF620"}}>
+              <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Paste your framework, custom GPT prompt, or checklist"}</span>
+              <button onClick={function(){setShowImport(false);setImportText("");setImportErr("");}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",lineHeight:1}}>{"×"}</button>
+            </div>
+            <div style={{padding:"12px 14px",background:K.card}}>
+              <textarea value={importText} onChange={function(e){setImportText(e.target.value);}}
+                placeholder={"Paste your framework document, custom GPT instructions, Gemini Gem prompt, checklist, or any text that describes how you evaluate investments..."}
+                rows={6}
+                style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"10px 12px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"vertical",outline:"none",marginBottom:10}}
+                onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
+                onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+              {importErr&&<div style={{fontSize:11,color:K.red,fontFamily:fm,marginBottom:8}}>{importErr}</div>}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"We’ll extract 3–7 filters and populate the editor. You can edit before saving."}</div>
+                <button onClick={runImport} disabled={!importText.trim()||importLoading}
+                  style={{padding:"8px 18px",borderRadius:_isBm?0:7,border:"none",background:importLoading||!importText.trim()?"#8B5CF6"+"50":"#8B5CF6",color:"#fff",fontSize:12,fontWeight:700,cursor:importLoading||!importText.trim()?"default":"pointer",fontFamily:fm,flexShrink:0,display:"flex",alignItems:"center",gap:7,transition:"all .2s"}}>
+                  {importLoading
+                    ?<><div style={{width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/><span>{"Extracting..."}</span></>
+                    :<><span>{"✨"}</span><span>{"Extract filters →"}</span></>}
+                </button>
+              </div>
+            </div>
+          </div>}
           {/* Framework name */}
           <div style={{marginBottom:14}}>
             <input value={fw.name||""} onChange={function(e){setFw({name:e.target.value});}}
