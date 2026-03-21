@@ -2313,13 +2313,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     }
 
     var STEPS=[
-      {n:"1",text:"Go to claude.ai and create a new Project"},
-      {n:"2",text:"Paste this as the Project system prompt"},
-      {n:"3",text:'In the project, ask Claude: "Analyse '+ticker+'"'},
-      {n:"4",text:"Copy the full output, come back, click \"I already have output\""},
+      {n:"1",text:"Copy the prompt below — it works with Claude, ChatGPT, and Gemini"},
+      {n:"2",text:"Open your AI of choice. For Claude: create a Project and paste as the system prompt. For ChatGPT/Gemini: start a new conversation and paste at the top."},
+      {n:"3",text:'Ask your AI: "Analyse '+ticker+'"'},
+      {n:"4",text:"Copy the full output, come back, click \"Paste output →\""},
     ];
 
-    return<Modal title={"Deep Dive — Claude Project Setup"} onClose={function(){setModal(null);}} w={620}>
+    return<Modal title={"Deep Dive — AI Analysis Setup"} onClose={function(){setModal(null);}} w={620}>
       {/* Steps */}
       <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
         {STEPS.map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<STEPS.length-1?10:0}}>
@@ -2329,15 +2329,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>
           <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
         </div>;})}
-        <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
           <button onClick={function(){window.open("https://claude.ai","_blank");}}
-            style={{padding:"8px 18px",borderRadius:_isBm?0:8,border:"none",background:PURPLE,color:"#fff",
-              fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            {"Open Claude.ai"}
-          </button>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Create your Project there, then come back."}</div>
+            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",background:PURPLE,color:"#fff",
+              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Claude.ai"}</button>
+          <button onClick={function(){window.open("https://chatgpt.com","_blank");}}
+            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",
+              color:K.mid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{"ChatGPT"}</button>
+          <button onClick={function(){window.open("https://gemini.google.com","_blank");}}
+            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",
+              color:K.mid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{"Gemini"}</button>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste the prompt, then ask it to analyse "+ticker}</div>
         </div>
+      </div>
       </div>
 
       {/* Prompt text box */}
@@ -6970,18 +6974,18 @@ function calcMoatFromData(finData,businessModelType){
               {/* ── How-to card ── */}
               <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:14,padding:"24px 28px",marginBottom:16}}>
                 <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
-                  {"Run a Deep Dive on "+c.ticker+" with Claude"}
+                  {"Run a Deep Dive on "+c.ticker+" with AI"}
                 </div>
                 <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:20,maxWidth:520}}>
-                  {"The Deep Dive uses a structured prompt in Claude.ai — five filters, owner earnings DCF, inversion, and a verdict. It takes 5–10 minutes and becomes the foundation of your thesis."}
+                  {"The Deep Dive uses a structured prompt — works with Claude, ChatGPT, or Gemini. Five filters, owner earnings DCF, inversion, and a verdict. Takes 5–10 minutes and becomes the foundation of your thesis."}
                 </div>
 
                 {/* Steps */}
                 <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
                   {[
                     {n:1,title:"Copy the prompt",desc:"Click the button below to copy the ThesisAlpha Deep Dive prompt to your clipboard."},
-                    {n:2,title:"Open Claude.ai",desc:"Go to claude.ai and start a new conversation — or use your ThesisAlpha Project if you have one set up."},
-                    {n:3,title:"Paste and add the ticker",desc:"Paste the prompt, then type the company name and ticker at the end. Claude will run the full analysis."},
+                    {n:2,title:"Open your AI of choice",desc:"Go to claude.ai and start a new conversation — or use your ThesisAlpha Project if you have one set up."},
+                    {n:3,title:"Paste and add the ticker",desc:"Paste the prompt, then type the company name and ticker. The AI will run the full structured analysis."},
                     {n:4,title:"Paste the output back here",desc:'When Claude finishes, copy its entire response and click "Import output" below. ThesisAlpha will parse and store it.'},
                   ].map(function(step){
                     return<div key={step.n} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
