@@ -2330,15 +2330,16 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
         </div>;})}
         <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={function(){window.open("https://claude.ai","_blank");}}
-            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",background:PURPLE,color:"#fff",
-              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"Claude.ai"}</button>
-          <button onClick={function(){window.open("https://chatgpt.com","_blank");}}
-            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",
-              color:K.mid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{"ChatGPT"}</button>
-          <button onClick={function(){window.open("https://gemini.google.com","_blank");}}
-            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",
-              color:K.mid,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{"Gemini"}</button>
+          {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
+            {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
+            {label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"},
+          ].map(function(ai){return<button key={ai.label}
+            onClick={function(){window.open(ai.url,"_blank");}}
+            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",
+              background:ai.bg,color:ai.clr,
+              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+            {ai.label}
+          </button>;})}
           <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste the prompt, then ask it to analyse "+ticker}</div>
         </div>
       </div>
@@ -2352,8 +2353,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             {"For the best output — attach these to your AI conversation:"}
           </div>
           <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.7}}>
-            {"Annual report (latest), investor presentation, and latest earnings transcript. "}
-            {"The AI will ground its analysis in the actual numbers rather than training data."}
+            {"Download these PDFs from the IR page and attach them directly to your AI conversation:"}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:8}}>
+            {["Annual report (latest full year)","Investor / capital markets day presentation","Latest earnings transcript or press release"].map(function(item){
+              return<div key={item} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,fontFamily:fm}}>
+                <div style={{width:4,height:4,borderRadius:"50%",background:K.acc,flexShrink:0}}/>
+                {item}
+              </div>;
+            })}
+          </div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginTop:6,lineHeight:1.6}}>
+            {"Attaching the actual PDFs grounds the AI in real numbers — not training data."}
           </div>
           {sel.irUrl&&<a href={sel.irUrl} target="_blank" rel="noopener noreferrer"
             style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,
