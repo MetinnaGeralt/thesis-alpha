@@ -10363,9 +10363,7 @@ function ProWelcomeGift(){
                   onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
                 <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{"Check items — prefix ✓ ⚠ ✗ —"}</div>
                 <textarea value={f.checks||""} onChange={function(e){setFilter(fi,{checks:e.target.value});}}
-                  placeholder={"✓ Switching costs lock customers in
-⚠ Market is growing but competitive
-✗ No differentiation from peers"}
+                  placeholder={"✓ Switching costs lock customers in\n⚠ Market is growing but competitive\n✗ No differentiation from peers"}
                   rows={4}
                   style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:11,color:K.txt,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.8,resize:"none",outline:"none"}}
                   onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
