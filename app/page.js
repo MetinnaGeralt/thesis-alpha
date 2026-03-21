@@ -6537,11 +6537,9 @@ function calcMoatFromData(finData,businessModelType){
           var isIntl=isIntlTicker(c.ticker);
           var isSparse=isIntl&&snapKeys.length<4;
           if(!hasSnap&&isIntl)return<div style={{marginBottom:24}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
-              <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.blue,flexShrink:0}}/>
-              <div>
-                <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>{"Owner’s Numbers"}</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Fundamentals, ratios, valuation</div>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+                <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>{"Owner’s Numbers"}</div>
               </div>
             </div>
             {isSparse&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.amb+"08",border:"1px solid "+K.amb+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
