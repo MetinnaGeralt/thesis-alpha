@@ -2361,130 +2361,117 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>}
       {/* Custom framework prompt view */}
       {promptTab==="custom"&&<div>
-        <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
-          {[{n:"1",text:'Copy your custom prompt below — it uses the filters you defined in My Strategy'},
-            {n:"2",text:"Open Claude, ChatGPT, or Gemini. Paste the prompt, then ask it to analyse "+ticker},
-            {n:"3",text:"Copy the full output and come back — click Paste output →"},
-          ].map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?10:0}}>
-            <div style={{width:22,height:22,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:11,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
-            <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
-          </div>;})}
-          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-            {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},{label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},{label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"}].map(function(ai){return<button key={ai.label} onClick={function(){window.open(ai.url,"_blank");}} style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",background:ai.bg,color:ai.clr,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{ai.label}</button>;})}
-          </div>
-        </div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,marginBottom:16,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:"1px solid "+K.bdr}}>
-            <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{fw.name+(fwFilters?" — "+fwFilters.length+" filters":"")}</span>
-            <button onClick={function(){try{navigator.clipboard.writeText(customPrompt);}catch(e){}setCopied(true);setTimeout(function(){setCopied(false);},2500);}}
-              style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"40",background:copied?PURPLE+"20":"transparent",color:PURPLE,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
-              {copied?<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>{"Copied!"}</>:<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
-            </button>
-          </div>
-          <pre style={{margin:0,padding:"14px 16px",fontSize:11,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:260,overflowY:"auto",background:"transparent"}}>{customPrompt}</pre>
-        </div>
-        <div style={{padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px solid "+K.bdr,fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:16}}>
-          {"ThesisAlpha will parse your custom filters automatically on import. INVERSION and VERDICT are always extracted regardless of framework."}
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Already ran the analysis?"}</div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
-            <button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>{"Paste output →"}</button>
-          </div>
-        </div>
-      </div>}
-      {/* Standard ThesisAlpha framework — only shown on standard tab */}
-      {promptTab==="standard"&&<div>
-      {/* Steps */}
-      <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
-        {STEPS.map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<STEPS.length-1?10:0}}>
-          <div style={{width:22,height:22,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,
-            fontSize:11,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
-            {s.n}
-          </div>
-          <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
-        </div>;})}
-        <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-          {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
-            {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
-            {label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"},
-          ].map(function(ai){return<button key={ai.label}
-            onClick={function(){window.open(ai.url,"_blank");}}
-            style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",
-              background:ai.bg,color:ai.clr,
-              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
-            {ai.label}
-          </button>;})}
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Paste the prompt, then ask it to analyse "+ticker}</div>
-        </div>
-      </div>
-
-      {/* ── IR tip ── */}
-      {sel&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,
-        padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"flex-start",gap:12}}>
-        <div style={{flexShrink:0,marginTop:2}}><IC name="book" size={14} color={K.acc}/></div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>
-            {"For the best output — attach these to your AI conversation:"}
-          </div>
-          <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.7}}>
-            {"Download these PDFs from the IR page and attach them directly to your AI conversation:"}
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:8}}>
-            {["Annual report (latest full year)","Investor / capital markets day presentation","Latest earnings transcript or press release"].map(function(item){
-              return<div key={item} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,fontFamily:fm}}>
-                <div style={{width:4,height:4,borderRadius:"50%",background:K.acc,flexShrink:0}}/>
-                {item}
-              </div>;
-            })}
-          </div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fb,marginTop:6,lineHeight:1.6}}>
-            {"Attaching the actual PDFs grounds the AI in real numbers — not training data."}
-          </div>
-          {sel.irUrl&&<a href={sel.irUrl} target="_blank" rel="noopener noreferrer"
-            style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,
-              fontSize:11,fontWeight:600,color:K.acc,textDecoration:"none",
-              padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.acc+"40",
-              background:K.acc+"08"}}>
-            <IC name="search" size={11} color={K.acc}/>
-            {(sel.name||ticker)+" investor relations ↗"}
-          </a>}
-        </div>
-      </div>}
-
-
-      {/* Prompt text box */}
-      <div style={{marginBottom:12}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>THE PROMPT — copy &amp; paste into your AI</div>
-          <button onClick={copyPrompt}
-            style={{display:"flex",alignItems:"center",gap:6,padding:"6px 16px",borderRadius:_isBm?0:7,
-              border:"none",background:copied?K.grn:PURPLE,color:"#fff",
-              fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,transition:"background .3s"}}>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 1 — Copy your "+(fw.name||"custom")+" prompt"}</div>
+          <button onClick={function(){try{navigator.clipboard.writeText(customPrompt);}catch(e){}setCopied(true);setTimeout(function(){setCopied(false);},2500);}}
+            style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+              padding:"16px 24px",borderRadius:_isBm?0:10,border:"none",
+              background:copied?K.grn:PURPLE,color:"#fff",fontSize:15,fontWeight:700,
+              cursor:"pointer",fontFamily:fm,transition:"all .25s",
+              boxShadow:copied?"0 4px 20px "+K.grn+"50":"0 4px 20px "+PURPLE+"50"}}>
             {copied
-              ?<><IC name="check" size={12} color="#fff"/>{"Copied!"}</>
-              :<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
+              ?<><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>{"Prompt copied!"}</>
+              :<><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
           </button>
         </div>
-        <div style={{background:K.bg2||K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",
-          fontFamily:fb,fontSize:11,color:K.mid,lineHeight:1.7,maxHeight:200,overflowY:"auto",
-          whiteSpace:"pre-wrap",wordBreak:"break-word",opacity:.85}}>
-          {PROMPT.substring(0,600)+"..."}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 2 — Open your AI and paste"}</div>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
+              {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
+              {label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"},
+            ].map(function(ai){return<button key={ai.label}
+              onClick={function(){window.open(ai.url,"_blank");}}
+              style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:8,
+                border:"2px solid "+(copied?"transparent":K.bdr),
+                background:copied?ai.bg:K.bg,color:copied?ai.clr:K.dim,
+                fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,
+                transition:"all .25s",opacity:copied?1:0.45}}>
+              {ai.label}
+            </button>;})}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:_isBm?0:8,background:PURPLE+"08",border:"1px solid "+PURPLE+"20"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={PURPLE} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{"Paste the prompt, then type: "}<strong style={{color:K.txt}}>{"“Analyse "+ticker+"”"}</strong></span>
+          </div>
         </div>
-        <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>{"Full prompt copied to clipboard when you click Copy."}</div>
-      </div>
-
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
-        <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Already ran the analysis?"}</div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Step 3 — come back and paste the output"}</div>
           <button onClick={function(){setModal({type:"importDeepDive"});}}
-            style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>
+            style={Object.assign({},S.btnP,{padding:"9px 22px",background:PURPLE,borderColor:PURPLE})}>
             {"Paste output →"}
           </button>
         </div>
-      </div>
+      </div>}
+            {/* Standard ThesisAlpha framework — only shown on standard tab */}
+      {promptTab==="standard"&&<div>
+        {/* ── Step 1: Copy ── */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 1 — Copy the prompt"}</div>
+          <button onClick={copyPrompt}
+            style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,
+              padding:"16px 24px",borderRadius:_isBm?0:10,border:"none",
+              background:copied?K.grn:PURPLE,color:"#fff",fontSize:15,fontWeight:700,
+              cursor:"pointer",fontFamily:fm,transition:"all .25s",
+              boxShadow:copied?"0 4px 20px "+K.grn+"50":"0 4px 20px "+PURPLE+"50"}}>
+            {copied
+              ?<><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>{"Prompt copied!"}</>
+              :<><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
+          </button>
+        </div>
+        {/* ── Step 2: Open AI ── */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Step 2 — Open your AI and paste"}</div>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},
+              {label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},
+              {label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"},
+            ].map(function(ai){return<button key={ai.label}
+              onClick={function(){window.open(ai.url,"_blank");}}
+              style={{flex:1,padding:"10px 8px",borderRadius:_isBm?0:8,
+                border:"2px solid "+(copied?"transparent":K.bdr),
+                background:copied?ai.bg:K.bg,color:copied?ai.clr:K.dim,
+                fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm,
+                transition:"all .25s",opacity:copied?1:0.45}}>
+              {ai.label}
+            </button>;})}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:_isBm?0:8,background:PURPLE+"08",border:"1px solid "+PURPLE+"20"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={PURPLE} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{"Paste the prompt, then type: "}<strong style={{color:K.txt}}>{"“Analyse "+ticker+"”"}</strong></span>
+          </div>
+        </div>
+        {/* ── IR tip — collapsed ── */}
+        {sel&&(sel.irUrl||true)&&<div style={{marginBottom:16}}>
+          <details style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,overflow:"hidden"}}>
+            <summary style={{padding:"10px 14px",fontSize:12,color:K.dim,fontFamily:fm,cursor:"pointer",listStyle:"none",display:"flex",alignItems:"center",gap:8}}>
+              <IC name="book" size={12} color={K.dim}/>
+              {"Tip: attach company documents for better results"}
+            </summary>
+            <div style={{padding:"0 14px 12px",borderTop:"1px solid "+K.bdr}}>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:10,marginBottom:6}}>{"Download from the IR page and attach directly to your AI conversation:"}</div>
+              {["Annual report (latest full year)","Investor / capital markets day presentation","Latest earnings transcript or press release"].map(function(item){
+                return<div key={item} style={{display:"flex",alignItems:"center",gap:6,fontSize:11,color:K.mid,fontFamily:fm,marginBottom:4}}>
+                  <div style={{width:4,height:4,borderRadius:"50%",background:K.acc,flexShrink:0}}/>
+                  {item}
+                </div>;
+              })}
+              {sel&&sel.irUrl&&<a href={sel.irUrl} target="_blank" rel="noopener noreferrer"
+                style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:8,fontSize:11,fontWeight:600,color:K.acc,textDecoration:"none",padding:"4px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.acc+"40",background:K.acc+"08"}}>
+                <IC name="search" size={11} color={K.acc}/>
+                {(sel.name||ticker)+" investor relations ↗"}
+              </a>}
+            </div>
+          </details>
+        </div>}
+        {/* ── Step 3: Return ── */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Step 3 — come back and paste the output"}</div>
+          <button onClick={function(){setModal({type:"importDeepDive"});}}
+            style={Object.assign({},S.btnP,{padding:"9px 22px",background:PURPLE,borderColor:PURPLE})}>
+            {"Paste output →"}
+          </button>
+        </div>
       </div>}
     </Modal>;}
 
