@@ -5833,6 +5833,17 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>
         </div>
+        {/* ── INVERSION CHECK ── */}
+        {c.inversionNote&&<div style={{marginBottom:28,padding:"16px 20px",borderRadius:_isBm?0:12,background:K.red+"08",border:"1px solid "+K.red+"20",display:"flex",alignItems:"flex-start",gap:14}}>
+          <div style={{flexShrink:0,marginTop:2}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.red} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,fontWeight:700,color:K.red,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>Thesis Kill Switch</div>
+            <div style={{fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,marginBottom:6}}>{c.inversionNote}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Has this happened? If yes, everything else on this page is noise."}</div>
+          </div>
+        </div>}
         {/* ── PRE-EARNINGS RITUAL ── */}
         {c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7&&(function(){
           var daysOut=dU(c.earningsDate);
@@ -5899,6 +5910,141 @@ function calcMoatFromData(finData,businessModelType){
           </div>
         })()}
 
+        {/* ── 2. THE EVIDENCE ── */}
+        <div id="ds-evidence" style={{marginBottom:48}}>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:8,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Evidence</div>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{h.m>0?h.ok+"/"+h.m+" KPIs passing":"No KPIs yet"}</span>
+            </div>
+            <button onClick={function(){setModal({type:"kpi",data:null})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}><IC name="plus" size={10} color={K.acc}/>Add KPI</button>
+          </div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:20}}>{"Does the business still behave the way your thesis predicted? These are the metrics you committed to watch before you owned it — not what felt important after the fact."}</div>
+          {/* Deep Dive KPI Suggestions */}
+          {(function(){
+            var ddDoc=(c.docs||[]).find(function(d){return d.deepDive&&d.deepDive.metrics&&d.deepDive.metrics.length>0;});
+            if(!ddDoc)return null;
+            var ddMetrics=ddDoc.deepDive.metrics||[];
+            var ddFilters=ddDoc.deepDive.filters||[];
+            var existingNames=(c.kpis||[]).map(function(k){return k.name.toLowerCase();});
+            // Suggest metrics from deep dive that aren't already tracked
+            var suggestions=ddMetrics.filter(function(m){
+              if(!m.label)return false;
+              var ml=m.label.toLowerCase();
+              return!existingNames.some(function(n){return n.includes(ml.substring(0,5))||ml.includes(n.substring(0,5));});
+            }).slice(0,4);
+            // Also check Filter 2 (moat) checks for qualitative signals
+            var moatFilter=ddFilters.find(function(f){return f.id==="filter2"||f.title&&f.title.toLowerCase().includes("moat");});
+            var moatChecks=moatFilter&&moatFilter.checks?moatFilter.checks.filter(function(ch){return ch.label&&!existingNames.some(function(n){return n.includes(ch.label.toLowerCase().substring(0,5));})}).slice(0,2):[];
+            if(suggestions.length===0&&moatChecks.length===0)return null;
+            return<div style={{background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:12,padding:"14px 18px",marginBottom:16}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>{"Your deep dive measured these — are you watching them?"}</span>
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {suggestions.map(function(m,mi){
+                  return<button key={mi} onClick={function(){setModal({type:"kpi",data:null,prefill:{name:m.label,value:m.value}});}} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 11px",borderRadius:_isBm?0:999,background:K.card,border:"1px solid "+K.acc+"30",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                    <span style={{fontSize:13,lineHeight:1}}>+</span>{m.label}{m.value&&<span style={{color:K.mid,fontWeight:400}}>{" ("+m.value+")"}</span>}
+                  </button>;
+                })}
+                {moatChecks.map(function(ch,ci){
+                  return<button key={"m"+ci} onClick={function(){setModal({type:"kpi",data:null,prefill:{name:ch.label}});}} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 11px",borderRadius:_isBm?0:999,background:K.card,border:"1px solid "+K.acc+"30",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                    <span style={{fontSize:13,lineHeight:1}}>+</span>{ch.label}
+                  </button>;
+                })}
+              </div>
+            </div>;
+          })()}
+          {/* KPI Scorecard */}
+          {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}</span>})()}
+                <span style={S.badge(h.c)}>{h.l}</span>
+              </div>
+            </div>
+            {/* KPI Row List */}
+            <div style={{display:"flex",flexDirection:"column",gap:0,marginBottom:4}}>
+            {c.kpis.map(function(k,ki){
+              var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results[mid]||e.results[k.name];if(match!=null)hist.push({q:e.quarter||e.date,v:match,s:k.lastResult&&e.quarter===c.earningsHistory[c.earningsHistory.length-1]?.quarter?k.lastResult.status:"unknown"});}});}
+              hist.sort(function(a,b){return a.q>b.q?1:-1});
+              var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.dim;
+              var statusLabel=k.lastResult?k.lastResult.status==="met"?"Met":k.lastResult.status==="unclear"?"N/A":"Missed":"—";
+              var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]||{};return(typeof v==="number"?v.toFixed(1):v)+(u.unit||"");})():null;
+              var isLast=ki===c.kpis.length-1;
+              return<div key={k.id} onClick={function(){setModal({type:"kpi",data:k.id})}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:isLast?"none":"1px solid "+K.bdr,cursor:"pointer"}}>
+                {/* Pass/fail icon */}
+                <div style={{width:20,height:20,borderRadius:_isBm?0:"50%",background:statusColor+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {k.lastResult?(
+                    k.lastResult.status==="met"
+                    ?<svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke={K.grn} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                    :k.lastResult.status==="unclear"
+                    ?<span style={{fontSize:9,color:K.dim,fontWeight:700}}>—</span>
+                    :<svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke={K.red} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                  ):<span style={{fontSize:9,color:K.dim}}>?</span>}
+                </div>
+                {/* KPI name */}
+                <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k.name}</span>
+                {/* Sparkline */}
+                {hist.length>1&&<div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:18,flexShrink:0}}>
+                  {hist.slice(-6).map(function(hh,hi){var barH=Math.max(2,Math.min(16,8));return<div key={hi} style={{width:3,height:barH,borderRadius:1,background:hi===hist.slice(-6).length-1?statusColor:K.bdr2}}/>})}
+                </div>}
+                {/* Target */}
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0,textAlign:"right"}}>{k.target||"—"}</span>
+                {/* Last result */}
+                <span style={{fontSize:12,fontWeight:700,color:statusColor,fontFamily:fm,flexShrink:0,minWidth:42,textAlign:"right"}}>{lastVal||"—"}</span>
+              </div>;
+            })}
+            </div>
+            <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
+          </div>
+          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:14,padding:"32px 24px",textAlign:"center",marginBottom:12}}>
+            <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:5}}>{"Define your KPIs for "+c.ticker}</div>
+            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:280,margin:"0 auto 16px"}}>{"Pick 2–3 metrics that would prove or disprove your thesis. You’ll check them after each earnings release."}</div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:12,fontSize:10,color:K.dim,fontFamily:fm}}>
+              {["Gross margin","Revenue growth","ROIC","Free cash flow","Net income"].map(function(eg){return<span key={eg} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,padding:"3px 10px"}}>{eg}</span>})}
+            </div>
+            <button onClick={function(){setModal({type:"kpi"})}} style={{padding:"9px 20px",borderRadius:_isBm?0:8,background:K.blue,border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"+ Add KPIs →"}</button>
+          </div>}
+          {/* Earnings check */}
+          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+            <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:12,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
+            {c.earningsHistory&&c.earningsHistory.length>0&&<button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"earningsReport",data:0})}}>Read Report</button>}
+            <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
+          {/* Post-earnings loop close */}
+          {(function(){
+            var earningsJustPassed=c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-14;
+            var hasInversionNote=c.preEarningsNote&&c.preEarningsNote.trim().length>0;
+            var hasInversionAnswer=c.postEarningsAnswer&&c.postEarningsAnswer.trim().length>0;
+            if(!earningsJustPassed||!hasInversionNote||hasInversionAnswer)return null;
+            return<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,marginBottom:8}}>{"Close the loop — you wrote this before earnings:"}</div>
+              <div style={{fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,fontStyle:"italic",marginBottom:10,padding:"8px 12px",background:K.card,borderRadius:_isBm?0:6}}>{"\u201c"+c.preEarningsNote+"\u201d"}</div>
+              <div style={{fontSize:12,color:K.mid,marginBottom:8}}>{"Did it hold? What actually happened?"}</div>
+              <textarea
+                placeholder={"e.g. Gross retention came in at 96% — thesis held. Management was more cautious on guidance than expected..."}
+                rows={2}
+                style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6,marginBottom:8}}
+                onBlur={function(e){
+                  if(!e.target.value.trim())return;
+                  upd(c.id,{postEarningsAnswer:e.target.value.trim()});
+                  logJournalEntry(c.id,{cardType:"earnings_inversion",ticker:c.ticker,
+                    preNote:c.preEarningsNote,postNote:e.target.value.trim(),
+                    date:new Date().toISOString()});
+                }}
+              />
+            </div>;
+          })()}
+          {/* Latest earnings card from journal */}
+          {(function(){var latestEarnings=(c.decisions||[]).find(function(d2){return d2.cardType==="earnings_review"});
+            if(latestEarnings)return<JournalCard entry={latestEarnings}/>;return null})()}
+        </div>
+
         {/* ── 1. THE STORY ── */}
         <div id="ds-story" style={{marginBottom:48}}>
           <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
@@ -5918,6 +6064,23 @@ function calcMoatFromData(finData,businessModelType){
               </button>}
               <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button>
             </div></div>
+          {/* Deep Dive Verdict drift check */}
+          {(function(){
+            var ddDoc=(c.docs||[]).find(function(d){return d.deepDive&&d.deepDive.verdict&&d.deepDive.verdict.text;});
+            if(!ddDoc)return null;
+            var verdict=ddDoc.deepDive.verdict.text;
+            var fatPitch=ddDoc.deepDive.verdict.fatPitch;
+            var trunc=verdict.length>200?verdict.substring(0,200)+"…":verdict;
+            return<div style={{marginBottom:16,padding:"12px 16px",borderRadius:_isBm?0:10,background:K.bg,border:"1px solid "+K.bdr}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#8B5CF6",fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>From your Deep Dive</div>
+              <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:fatPitch?8:0}}>{trunc}</div>
+              {fatPitch&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:K.grn}}/>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>Fat pitch entry: </span>
+                <span style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm}}>{fatPitch}</span>
+              </div>}
+            </div>;
+          })()}
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"20px 20px":"28px 32px"}}>
               {(function(){
@@ -6175,105 +6338,6 @@ function calcMoatFromData(finData,businessModelType){
         <div id="ds-score"/>
 
 
-        {/* ── 2. THE EVIDENCE ── */}
-        <div id="ds-evidence" style={{marginBottom:48}}>
-          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:8,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-              <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Evidence</div>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{h.m>0?h.ok+"/"+h.m+" KPIs passing":"No KPIs yet"}</span>
-            </div>
-            <button onClick={function(){setModal({type:"kpi",data:null})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}><IC name="plus" size={10} color={K.acc}/>Add KPI</button>
-          </div>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:20}}>{"Does the business still behave the way your thesis predicted? These are the metrics you committed to watch before you owned it — not what felt important after the fact."}</div>
-          {/* KPI Scorecard */}
-          {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <span style={{fontSize:13,fontWeight:600,color:K.txt}}>KPI Scorecard</span>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {(function(){var _fs=c.financialSnapshot||{};return<span>{_fs.shareholderYield&&_fs.shareholderYield.numVal>0.5&&<span style={{fontSize:10,fontWeight:600,color:K.grn,background:K.grn+"12",padding:"2px 7px",borderRadius:_isBm?0:4,fontFamily:fm,marginRight:4}}>{_fs.shareholderYield.value} SH yield</span>}</span>})()}
-                <span style={S.badge(h.c)}>{h.l}</span>
-              </div>
-            </div>
-            {/* KPI Row List */}
-            <div style={{display:"flex",flexDirection:"column",gap:0,marginBottom:4}}>
-            {c.kpis.map(function(k,ki){
-              var hist=[];if(c.earningsHistory){c.earningsHistory.forEach(function(e){if(e.results){var mid=k.metricId||k.name;var match=e.results[mid]||e.results[k.name];if(match!=null)hist.push({q:e.quarter||e.date,v:match,s:k.lastResult&&e.quarter===c.earningsHistory[c.earningsHistory.length-1]?.quarter?k.lastResult.status:"unknown"});}});}
-              hist.sort(function(a,b){return a.q>b.q?1:-1});
-              var statusColor=k.lastResult?k.lastResult.status==="met"?K.grn:k.lastResult.status==="unclear"?K.dim:K.red:K.dim;
-              var statusLabel=k.lastResult?k.lastResult.status==="met"?"Met":k.lastResult.status==="unclear"?"N/A":"Missed":"—";
-              var lastVal=k.lastResult&&k.lastResult.actual!=null?(function(){var v=k.lastResult.actual;var u=METRIC_MAP[k.metricId]||{};return(typeof v==="number"?v.toFixed(1):v)+(u.unit||"");})():null;
-              var isLast=ki===c.kpis.length-1;
-              return<div key={k.id} onClick={function(){setModal({type:"kpi",data:k.id})}} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:isLast?"none":"1px solid "+K.bdr,cursor:"pointer"}}>
-                {/* Pass/fail icon */}
-                <div style={{width:20,height:20,borderRadius:_isBm?0:"50%",background:statusColor+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  {k.lastResult?(
-                    k.lastResult.status==="met"
-                    ?<svg width="10" height="10" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke={K.grn} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                    :k.lastResult.status==="unclear"
-                    ?<span style={{fontSize:9,color:K.dim,fontWeight:700}}>—</span>
-                    :<svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6" stroke={K.red} strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                  ):<span style={{fontSize:9,color:K.dim}}>?</span>}
-                </div>
-                {/* KPI name */}
-                <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{k.name}</span>
-                {/* Sparkline */}
-                {hist.length>1&&<div style={{display:"flex",alignItems:"flex-end",gap:1.5,height:18,flexShrink:0}}>
-                  {hist.slice(-6).map(function(hh,hi){var barH=Math.max(2,Math.min(16,8));return<div key={hi} style={{width:3,height:barH,borderRadius:1,background:hi===hist.slice(-6).length-1?statusColor:K.bdr2}}/>})}
-                </div>}
-                {/* Target */}
-                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0,textAlign:"right"}}>{k.target||"—"}</span>
-                {/* Last result */}
-                <span style={{fontSize:12,fontWeight:700,color:statusColor,fontFamily:fm,flexShrink:0,minWidth:42,textAlign:"right"}}>{lastVal||"—"}</span>
-              </div>;
-            })}
-            </div>
-            <button onClick={function(){setModal({type:"kpi"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,marginTop:4,padding:0}}>+ Add KPI</button>
-          </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:14,padding:"32px 24px",textAlign:"center",marginBottom:12}}>
-            <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:K.blue+"12",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.blue} strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            </div>
-            <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:5}}>{"Define your KPIs for "+c.ticker}</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.6,maxWidth:280,margin:"0 auto 16px"}}>{"Pick 2–3 metrics that would prove or disprove your thesis. You’ll check them after each earnings release."}</div>
-            <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:12,fontSize:10,color:K.dim,fontFamily:fm}}>
-              {["Gross margin","Revenue growth","ROIC","Free cash flow","Net income"].map(function(eg){return<span key={eg} style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,padding:"3px 10px"}}>{eg}</span>})}
-            </div>
-            <button onClick={function(){setModal({type:"kpi"})}} style={{padding:"9px 20px",borderRadius:_isBm?0:8,background:K.blue,border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{"+ Add KPIs →"}</button>
-          </div>}
-          {/* Earnings check */}
-          <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-            <button style={Object.assign({},S.btnChk,{padding:"6px 14px",fontSize:12,flex:1,opacity:cs==="checking"?.6:1})} onClick={function(){if(requirePro("earnings"))checkOne(c.id)}} disabled={cs==="checking"}>{cs==="checking"?"Checking…":cs==="found"?"✓ Found":cs==="not-yet"?"Not Yet":cs==="error"?"✘ Error":"Check Earnings"}</button>
-            {c.earningsHistory&&c.earningsHistory.length>0&&<button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"earningsReport",data:0})}}>Read Report</button>}
-            <button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12})} onClick={function(){setModal({type:"manualEarnings"})}}>Enter Manually</button></div>
-          {/* Post-earnings loop close */}
-          {(function(){
-            var earningsJustPassed=c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-14;
-            var hasInversionNote=c.preEarningsNote&&c.preEarningsNote.trim().length>0;
-            var hasInversionAnswer=c.postEarningsAnswer&&c.postEarningsAnswer.trim().length>0;
-            if(!earningsJustPassed||!hasInversionNote||hasInversionAnswer)return null;
-            return<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"30",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,marginBottom:8}}>{"Close the loop — you wrote this before earnings:"}</div>
-              <div style={{fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,fontStyle:"italic",marginBottom:10,padding:"8px 12px",background:K.card,borderRadius:_isBm?0:6}}>{"\u201c"+c.preEarningsNote+"\u201d"}</div>
-              <div style={{fontSize:12,color:K.mid,marginBottom:8}}>{"Did it hold? What actually happened?"}</div>
-              <textarea
-                placeholder={"e.g. Gross retention came in at 96% — thesis held. Management was more cautious on guidance than expected..."}
-                rows={2}
-                style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6,marginBottom:8}}
-                onBlur={function(e){
-                  if(!e.target.value.trim())return;
-                  upd(c.id,{postEarningsAnswer:e.target.value.trim()});
-                  logJournalEntry(c.id,{cardType:"earnings_inversion",ticker:c.ticker,
-                    preNote:c.preEarningsNote,postNote:e.target.value.trim(),
-                    date:new Date().toISOString()});
-                }}
-              />
-            </div>;
-          })()}
-          {/* Latest earnings card from journal */}
-          {(function(){var latestEarnings=(c.decisions||[]).find(function(d2){return d2.cardType==="earnings_review"});
-            if(latestEarnings)return<JournalCard entry={latestEarnings}/>;return null})()}
-        </div>
-
         {/* ── 3. THE LEDGER ── */}
         <div id="ds-ledger" style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
@@ -6332,6 +6396,25 @@ function calcMoatFromData(finData,businessModelType){
                 </div>
               })()}
             </div></div>
+          {/* Fat pitch reference from deep dive */}
+          {(function(){
+            var fp=c.fatPitchPrice?parseFloat(c.fatPitchPrice):null;
+            var price=(c.position||{}).currentPrice||0;
+            if(!fp||!price)return null;
+            var pct=((price-fp)/fp*100);
+            var above=pct>=0;
+            var color=above?K.amb:K.grn;
+            return<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:_isBm?0:8,background:color+"08",border:"1px solid "+color+"20",marginBottom:12}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Fat pitch price from deep dive: "}</span>
+                <span style={{fontSize:11,fontWeight:700,color:color,fontFamily:fm}}>{cSym+fp.toFixed(2)}</span>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{" — current price is "}</span>
+                <span style={{fontSize:11,fontWeight:700,color:color,fontFamily:fm}}>{(above?"+":"")+pct.toFixed(1)+"% "+(above?"above":"below")+" that level"}</span>
+              </div>
+              {above&&<div style={{fontSize:10,color:K.amb,fontFamily:fm,fontWeight:600}}>{"Was the thesis stronger then?"}</div>}
+            </div>;
+          })()}
           {/* Recent decisions */}
           {(function(){var recent=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)}).slice(0,2);
             if(recent.length===0)return null;
