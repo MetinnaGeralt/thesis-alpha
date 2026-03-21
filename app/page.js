@@ -7181,133 +7181,139 @@ function calcMoatFromData(finData,businessModelType){
             <div className="ta-skel" style={{height:10,width:"60%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
             <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div>}
         </div>
-
-        {/* Expected CAGR contribution */}
-        {isPro&&(function(){var p2=c.position||{};if(!p2.shares||!p2.currentPrice||p2.currentPrice<=0)return null;
-          var fs=c.financialSnapshot||{};
-          function dpv(field){if(!fs[field])return 0;var v=fs[field].value;if(typeof v==="number")return v;if(typeof v==="string")return parseFloat(v.replace(/[^\d.\-]/g,""))||0;return 0}
-          var eg=0;var kpiA=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.lastResult&&k.lastResult.actual});
-          var kpiT=c.kpis.find(function(k){return(k.metricId==="revGrowth"||k.metricId==="epsGrowth")&&k.value>0});
-          var snapG=dpv("revGrowth")||dpv("epsGrowth");
-          if(snapG){eg=snapG}else if(kpiA){eg=kpiA.lastResult.actual}else if(kpiT){eg=kpiT.value}else{var se={growth:18,aggressive:22,quality:12,value:8,income:6,compounder:14,speculative:25};eg=se[c.investStyle]||10}
-          // Market cap mean reversion (same logic as Performance & Goals)
-          var mcap=c.mktCap||0;
-          var baseR=mcap>500e9?9:mcap>100e9?11:mcap>50e9?13:mcap>10e9?15:mcap>1e9?17:20;
-          var capG=mcap>500e9?15:mcap>100e9?20:mcap>50e9?25:mcap>10e9?35:mcap>1e9?45:60;
-          eg=Math.min(eg,capG);
-          var bw=mcap>500e9?0.55:mcap>100e9?0.4:mcap>50e9?0.3:mcap>10e9?0.2:0.1;
-          eg=eg*(1-bw)+baseR*bw;
-          if(eg>baseR){var dcay=mcap>500e9?0.08:mcap>100e9?0.06:0.04;eg=baseR+(eg-baseR)*Math.pow(1-dcay,Math.max(goals.horizon,5)/2)}
-          var convEst=c.convGrowthEst&&c.convGrowthEst.value>0?c.convGrowthEst.value:null;var modelEg=eg;if(convEst!=null){eg=convEst;}
-          var dy=dpv("divYield")||(c.divYield||0);var pe=dpv("pe");
-          var fairPE=eg>30?40:eg>20?30:eg>12?25:eg>5?18:14;
-          var mc=0;if(pe>0&&pe<200){mc=(Math.pow(fairPE/pe,1/Math.max(goals.horizon,1))-1)*100;mc=Math.max(-12,Math.min(12,mc))}
-          var expected=eg+dy+mc;if(eg===0&&dy===0)return null;
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm}}>Expected Return Contribution</div>
-              <button onClick={function(){if(isPro){setPage("hub");setHubTab("goals")}else{setShowUpgrade(true);setUpgradeCtx("goals")}}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm}}>Goals {"\u2192"}</button></div>
-            <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:6}}>
-              <span style={{fontSize:22,fontWeight:700,color:expected>=0?K.grn:K.red,fontFamily:fm}}>{expected>=0?"+":""}{expected.toFixed(1)}%</span>
-              <span style={{fontSize:12,color:K.dim}}>expected annual</span></div>
-            <div style={{display:"flex",gap:12,fontSize:11,color:K.dim,fontFamily:fm}}>
-              <span>Earnings: {eg>=0?"+":""}{eg.toFixed(1)}%</span>
-              {dy>0&&<span>Yield: +{dy.toFixed(1)}%</span>}
-              <span>Multiple: {mc>=0?"+":""}{mc.toFixed(1)}%</span></div>
-          </div>})()}
+          </div>}
 
           {/* Financials */}
-          {deepDiveTab==="financials"&&<div>
+          {deepDiveTab==="financials"&&<div style={{paddingTop:8}}>
             {(function(){
-              return<div style={{padding:"20px 0"}}>
-                <FinancialsPage company={c} embedded={true}/>
+              var snap=c.financialSnapshot||{};
+              var snapKeys=Object.keys(snap).filter(function(k){return snap[k]&&snap[k].value!=null;});
+              return<div>
+                {/* Open full financials button */}
+                <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+                  <button onClick={function(){setSubPage("financials");}}
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",
+                      borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.card,
+                      color:K.acc,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                    <IC name="bar" size={12} color={K.acc}/>
+                    {"Open 10-year financials"}
+                  </button>
+                </div>
+                {/* Key metrics from snapshot */}
+                {snapKeys.length>0?<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:8}}>
+                  {snapKeys.map(function(k){
+                    var s=snap[k];
+                    if(!s||!s.label)return null;
+                    var numVal=s.numVal!=null?s.numVal:null;
+                    var isPos=numVal!=null&&numVal>0;
+                    var isNeg=numVal!=null&&numVal<0;
+                    var color=s.color||K.txt;
+                    return<div key={k} style={{background:K.card,border:"1px solid "+K.bdr,
+                      borderRadius:_isBm?0:10,padding:"12px 14px"}}>
+                      <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,
+                        letterSpacing:1.2,textTransform:"uppercase",marginBottom:4}}>{s.label}</div>
+                      <div style={{fontSize:16,fontWeight:700,color:color,fontFamily:fm}}>
+                        {String(s.value)}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+                :<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,
+                  padding:"32px",textAlign:"center"}}>
+                  <div style={{fontSize:13,color:K.dim,fontFamily:fm,marginBottom:12}}>
+                    {"Check your KPIs — they surface financial data automatically after each earnings check."}
+                  </div>
+                  <button onClick={function(){setSubPage("financials");}}
+                    style={{padding:"9px 20px",borderRadius:_isBm?0:8,border:"none",
+                      background:K.acc,color:"#fff",fontSize:13,fontWeight:600,
+                      cursor:"pointer",fontFamily:fm}}>{"Open full financials"}</button>
+                </div>}
               </div>;
             })()}
           </div>}
 
           {/* Peers */}
           {deepDiveTab==="peers"&&<div>
-        {/* ── STRESS TEST ── */}
-        {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
-          return<div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
-            <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
-          {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-              <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
-              <div style={{flex:1}}/>
-              <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:_isBm?0:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
-            {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
-              <IC name="check" size={12} color={K.grn}/>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
-                <div style={{fontSize:12,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
-          </div>
-          :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
-            <IC name="shield" size={20} color={K.acc}/>
-            <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
-            <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
-        </div>})()}
+          {/* ── STRESS TEST ── */}
+          {(function(){var scenarios=c.scenarios||[];var answeredCount=scenarios.length;
+            return<div style={{marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>STRESS TEST</div>
+              <button onClick={function(){setModal({type:"scenario"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="shield" size={10} color={K.acc}/>{answeredCount>0?"Review plans":"Plan ahead"}</button></div>
+            {answeredCount>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <div style={{fontSize:14,fontWeight:600,color:K.txt}}>{answeredCount} scenario{answeredCount>1?"s":""} planned</div>
+                <div style={{flex:1}}/>
+                <span style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600,background:K.grn+"10",padding:"2px 8px",borderRadius:_isBm?0:4}}>{answeredCount>=5?"Well prepared":answeredCount>=3?"Good start":"Keep going"}</span></div>
+              {scenarios.slice(0,3).map(function(s){return<div key={s.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 0",borderTop:"1px solid "+K.bdr+"30",cursor:"pointer"}} onClick={function(){setModal({type:"scenario",data:s.id})}}>
+                <IC name="check" size={12} color={K.grn}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:10,fontWeight:600,color:K.acc,fontFamily:fm}}>{(s.category||"").toUpperCase()}</div>
+                  <div style={{fontSize:12,color:K.mid,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{s.response}</div></div>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{s.answeredAt?fD(s.answeredAt):""}</span></div>})}
+            </div>
+            :<div style={{background:K.card,border:"1px dashed "+K.acc+"30",borderRadius:_isBm?0:12,padding:"20px",textAlign:"center",cursor:"pointer"}} onClick={function(){setModal({type:"scenario"})}}>
+              <IC name="shield" size={20} color={K.acc}/>
+              <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4}}>Stress-test your conviction</div>
+              <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>What would you do if {c.ticker} dropped 40%? If the CEO resigned? Plan your response now.</div></div>}
+          </div>})()}
 
-        {/* ── PEERS & COMPETITORS ── */}
-        <div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>PEERS & COMPETITORS</div>
-            <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>via Finnhub</span>
+          {/* ── PEERS & COMPETITORS ── */}
+          <div style={{marginBottom:24}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>PEERS & COMPETITORS</div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>via Finnhub</span>
+            </div>
+            {peersLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}><div style={{fontSize:12,color:K.dim}}>Loading peers...</div></div>}
+            {!peersLoading&&peersData&&peersData.length>0&&(function(){
+              var COLS=[
+                {label:"Gross Margin",key:function(m){return m&&m.ratios?m.ratios.grossProfitMarginTTM!=null?m.ratios.grossProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>40}},
+                {label:"Op Margin",key:function(m){return m&&m.ratios?m.ratios.operatingProfitMarginTTM!=null?m.ratios.operatingProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>15}},
+                {label:"ROIC",key:function(m){return m&&m.km?m.km.returnOnInvestedCapitalTTM!=null?m.km.returnOnInvestedCapitalTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>12}},
+                {label:"P/E",key:function(m){return m&&m.km?m.km.peRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},good:function(v){return v<25}},
+                {label:"Rev Growth",key:function(m){return m&&m.ratios?m.ratios.revenueGrowthTTM!=null?m.ratios.revenueGrowthTTM*100:null:null},fmt:function(v){return(v>0?"+":"")+v.toFixed(1)+"%"},good:function(v){return v>5}},
+              ];
+              var mySnap=c.financialSnapshot||{};
+              var myRow={ticker:c.ticker,isSelf:true,metrics:{
+                ratios:{grossProfitMarginTTM:mySnap.grossMargin&&mySnap.grossMargin.numVal!=null?mySnap.grossMargin.numVal/100:null,
+                  operatingProfitMarginTTM:mySnap.opMargin&&mySnap.opMargin.numVal!=null?mySnap.opMargin.numVal/100:null,
+                  revenueGrowthTTM:mySnap.revGrowth&&mySnap.revGrowth.numVal!=null?mySnap.revGrowth.numVal/100:null},
+                km:{returnOnInvestedCapitalTTM:mySnap.roic&&mySnap.roic.numVal!=null?mySnap.roic.numVal/100:null,peRatioTTM:mySnap.pe&&mySnap.pe.numVal!=null?mySnap.pe.numVal:null}
+              }};
+              var allRows=[myRow].concat(peersData);
+              return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+                {/* Header */}
+                <div style={{display:"flex",padding:"8px 16px",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
+                  <div style={{width:70,fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+                  {COLS.map(function(col,ci){return<div key={ci} style={{flex:1,textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>})}
+                </div>
+                {allRows.map(function(row,ri){
+                  return<div key={ri} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?K.acc+"06":"transparent",cursor:row.isSelf?"default":"pointer"}}
+                    onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker});if(found){setSelId(found.id);setDetailTab("dossier")}}}}
+                    onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"04"}}
+                    onMouseLeave={function(e){if(!row.isSelf)e.currentTarget.style.background="transparent"}}>
+                    <div style={{width:70,display:"flex",alignItems:"center",gap:4}}>
+                      <CoLogo ticker={row.ticker} domain={row.isSelf?c.domain:""} size={16}/>
+                      <span style={{fontSize:11,fontWeight:row.isSelf?700:500,color:row.isSelf?K.acc:K.txt,fontFamily:fm}}>{row.ticker}</span>
+                      {row.isSelf&&<span style={{fontSize:8,color:K.acc,fontFamily:fm}}>you</span>}
+                    </div>
+                    {COLS.map(function(col,ci){
+                      var val=col.key(row.metrics);
+                      var isGood=val!=null&&col.good(val);
+                      var color=val!=null?(isGood?K.grn:K.red):K.dim;
+                      return<div key={ci} style={{flex:1,textAlign:"right",fontSize:11,fontWeight:600,color:color,fontFamily:fm}}>
+                        {val!=null?col.fmt(val):"—"}
+                      </div>})}
+                  </div>})}
+              </div>;
+            })()}
+            {!peersLoading&&(!peersData||peersData.length===0)&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",fontSize:12,color:K.dim}}>No peer data available for {c.ticker}.</div>}
           </div>
-          {peersLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}><div style={{fontSize:12,color:K.dim}}>Loading peers...</div></div>}
-          {!peersLoading&&peersData&&peersData.length>0&&(function(){
-            var COLS=[
-              {label:"Gross Margin",key:function(m){return m&&m.ratios?m.ratios.grossProfitMarginTTM!=null?m.ratios.grossProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>40}},
-              {label:"Op Margin",key:function(m){return m&&m.ratios?m.ratios.operatingProfitMarginTTM!=null?m.ratios.operatingProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>15}},
-              {label:"ROIC",key:function(m){return m&&m.km?m.km.returnOnInvestedCapitalTTM!=null?m.km.returnOnInvestedCapitalTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>12}},
-              {label:"P/E",key:function(m){return m&&m.km?m.km.peRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},good:function(v){return v<25}},
-              {label:"Rev Growth",key:function(m){return m&&m.ratios?m.ratios.revenueGrowthTTM!=null?m.ratios.revenueGrowthTTM*100:null:null},fmt:function(v){return(v>0?"+":"")+v.toFixed(1)+"%"},good:function(v){return v>5}},
-            ];
-            var mySnap=c.financialSnapshot||{};
-            var myRow={ticker:c.ticker,isSelf:true,metrics:{
-              ratios:{grossProfitMarginTTM:mySnap.grossMargin&&mySnap.grossMargin.numVal!=null?mySnap.grossMargin.numVal/100:null,
-                operatingProfitMarginTTM:mySnap.opMargin&&mySnap.opMargin.numVal!=null?mySnap.opMargin.numVal/100:null,
-                revenueGrowthTTM:mySnap.revGrowth&&mySnap.revGrowth.numVal!=null?mySnap.revGrowth.numVal/100:null},
-              km:{returnOnInvestedCapitalTTM:mySnap.roic&&mySnap.roic.numVal!=null?mySnap.roic.numVal/100:null,peRatioTTM:mySnap.pe&&mySnap.pe.numVal!=null?mySnap.pe.numVal:null}
-            }};
-            var allRows=[myRow].concat(peersData);
-            return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-              {/* Header */}
-              <div style={{display:"flex",padding:"8px 16px",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
-                <div style={{width:70,fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
-                {COLS.map(function(col,ci){return<div key={ci} style={{flex:1,textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>})}
-              </div>
-              {allRows.map(function(row,ri){
-                return<div key={ri} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?K.acc+"06":"transparent",cursor:row.isSelf?"default":"pointer"}}
-                  onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker});if(found){setSelId(found.id);setDetailTab("dossier")}}}}
-                  onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"04"}}
-                  onMouseLeave={function(e){if(!row.isSelf)e.currentTarget.style.background="transparent"}}>
-                  <div style={{width:70,display:"flex",alignItems:"center",gap:4}}>
-                    <CoLogo ticker={row.ticker} domain={row.isSelf?c.domain:""} size={16}/>
-                    <span style={{fontSize:11,fontWeight:row.isSelf?700:500,color:row.isSelf?K.acc:K.txt,fontFamily:fm}}>{row.ticker}</span>
-                    {row.isSelf&&<span style={{fontSize:8,color:K.acc,fontFamily:fm}}>you</span>}
-                  </div>
-                  {COLS.map(function(col,ci){
-                    var val=col.key(row.metrics);
-                    var isGood=val!=null&&col.good(val);
-                    var color=val!=null?(isGood?K.grn:K.red):K.dim;
-                    return<div key={ci} style={{flex:1,textAlign:"right",fontSize:11,fontWeight:600,color:color,fontFamily:fm}}>
-                      {val!=null?col.fmt(val):"—"}
-                    </div>})}
-                </div>})}
-            </div>;
-          })()}
-          {!peersLoading&&(!peersData||peersData.length===0)&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",fontSize:12,color:K.dim}}>No peer data available for {c.ticker}.</div>}
-        </div>
 
           </div>}
 
         </div>}
 
-        </div>}
       </div>}
     </div>}
     </div>
