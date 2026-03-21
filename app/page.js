@@ -4356,7 +4356,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       return<div style={{padding:"20px 16px 16px",textAlign:"center",flex:1,display:"flex",flexDirection:"column",justifyContent:"center"}}>
         <style>{"@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap');"}</style>
         <p style={{fontFamily:"'Caveat', cursive",fontSize:16,lineHeight:1.65,color:isDark?"rgba(255,255,255,0.65)":"rgba(255,255,255,0.82)",margin:"0 0 10px",letterSpacing:0.2}}>{q.q}</p>
-        <span style={{fontFamily:fm,fontSize:9,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.22)":"rgba(22,22,29,0.25)"}}>{"— "+q.a}</span>
+        <span style={{fontFamily:fm,fontSize:9,fontWeight:700,letterSpacing:1.4,textTransform:"uppercase",color:isDark?"rgba(255,255,255,0.45)":"rgba(255,255,255,0.6)"}}>{"— "+q.a}</span>
       </div>;
     })()}
     </div></div>}
