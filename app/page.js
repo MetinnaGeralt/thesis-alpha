@@ -6608,6 +6608,7 @@ function calcMoatFromData(finData,businessModelType){
           {(c.decisions||[]).concat((c.docs||[]).map(function(d2){return Object.assign({},d2,{cardType:d2.isClip?"clip":d2.isMemo?"memo":d2.isIR?"ir":"doc",date:d2.updatedAt})})).sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1}).slice(0,3).map(function(d2,di){
             return d2.cardType&&CARD_STYLES[d2.cardType]?<JournalCard key={di} entry={d2}/>:<div key={di} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:6,fontSize:12,color:K.mid}}>
               <span style={{fontWeight:600,color:K.txt}}>{d2.title||d2.ticker||""}</span> {d2.content?d2.content.substring(0,80)+"...":d2.reasoning?d2.reasoning.substring(0,80)+"...":""}</div>})}</div>}
+        </div>}
 
         {/* Charts & analyst data (collapsible) */}
         {dashSet.showPriceChart&&<PriceChart company={c}/>}
@@ -7089,7 +7090,7 @@ function calcMoatFromData(finData,businessModelType){
           </div>}
 
         </div>}
-      </div>}
+        </div>}
 
     </div>}
     </div>
