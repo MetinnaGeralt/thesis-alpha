@@ -15538,19 +15538,21 @@ function ProWelcomeGift(){
       var fabTgt=sel||(fabPortfolio[0]||null);
       function goCompany(fn){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard");setTimeout(fn,80)}else{showToast("Add a holding first","info",3000)}}
       var FAB_ALL=[
-        {id:"hub",label:"Focus",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("command")}},
-        {id:"trail",label:"Library",icon:"book",color:"#9333EA",action:function(){setFabOpen(false);setSelId(null);setPage("library");}},
-        {id:"journal",label:"Research Journal",icon:"book",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("docs")}},
-        {id:"journal",label:"Journal",icon:"edit",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("journal")}},
-        {id:"review",label:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),icon:"shield",color:K.grn,action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
-        {id:"add",label:"Add Holding",icon:"trending",color:K.acc,action:function(){setFabOpen(false);setModal({type:"add"})}},
-        {id:"calendar",label:"Earnings Calendar",icon:"calendar",color:K.red,action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
-        {id:"analytics",label:"Analytics",icon:"bar",color:K.blue,action:function(){setFabOpen(false);setSelId(null);setPage("analytics")}},
-        {id:"library",label:"Library",icon:"video",color:K.acc,action:function(){setFabOpen(false);setSelId(null);setPage("library")}},
-        {id:"thesis",label:"Why I Own",icon:"lightbulb",color:K.grn,action:function(){goCompany(function(){setModal({type:"thesis"})})}},
-        {id:"conviction",label:"Rate Conviction",icon:"star",color:K.amb,action:function(){goCompany(function(){setModal({type:"conviction"})})}},
-        {id:"kpi",label:"Check Earnings",icon:"target",color:K.amb,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to check earnings","info",3000)}}},
-        {id:"quicknote",label:"Quick Note",icon:"edit",color:K.mid,action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding to add a note","info",3000)}}},
+        // ── Research ──────────────────────────────────────────
+        {id:"watchlist",  label:"Add to Research Queue", icon:"search",   color:K.acc,    group:"Research",   action:function(){setFabOpen(false);setModal({type:"add",defaultStatus:"watchlist"})}},
+        {id:"deepdive",   label:"Run Deep Dive",          icon:"search",   color:"#8B5CF6",group:"Research",   action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setDossierTab("deepdive");setPage("dashboard")}else{showToast("Select a company first","info",2500)}}},
+        {id:"library",    label:"Save to Library",        icon:"book",     color:"#9333EA",group:"Research",   action:function(){setFabOpen(false);setSelId(null);setPage("library")}},
+        {id:"strategy",   label:"My Strategy",            icon:"lightbulb",color:K.acc,    group:"Research",   action:function(){setFabOpen(false);setSelId(null);setPage("strategy")}},
+        // ── Monitoring ────────────────────────────────────────
+        {id:"earnings",   label:"Check Earnings",         icon:"target",   color:K.amb,    group:"Monitoring", action:function(){setFabOpen(false);if(fabTgt){setSelId(fabTgt.id);setDetailTab("dossier");setPage("dashboard")}else{showToast("Select a holding first","info",2500)}}},
+        {id:"conviction", label:"Rate Conviction",        icon:"star",     color:K.grn,    group:"Monitoring", action:function(){goCompany(function(){setModal({type:"conviction"})})}},
+        {id:"thesis",     label:"Update Thesis",          icon:"edit",     color:K.grn,    group:"Monitoring", action:function(){goCompany(function(){setModal({type:"thesis"})})}},
+        {id:"quicknote",  label:"Quick Note",             icon:"edit",     color:K.mid,    group:"Monitoring", action:function(){goCompany(function(){setModal({type:"memo"})})}},
+        {id:"calendar",   label:"Earnings Calendar",      icon:"calendar", color:K.red,    group:"Monitoring", action:function(){setFabOpen(false);setSelId(null);setPage("calendar")}},
+        // ── Learning ──────────────────────────────────────────
+        {id:"focus",      label:"Focus Tasks",            icon:"trending", color:K.acc,    group:"Learning",   action:function(){setFabOpen(false);setSelId(null);setPage("hub");setHubTab("command")}},
+        {id:"letter",     label:"Owner's Letter",         icon:"shield",   color:K.grn,    group:"Learning",   action:function(){setFabOpen(false);setSelId(null);setPage("review")}},
+        {id:"add",        label:"Add Holding",            icon:"trending", color:K.acc,    group:"Learning",   action:function(){setFabOpen(false);setModal({type:"add"})}},
       ];
       var activeShortcuts=fabCfg.map(function(id){return FAB_ALL.find(function(s){return s.id===id})}).filter(Boolean);
       return<div style={{position:"fixed",bottom:28,right:28,zIndex:150,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
@@ -15560,16 +15562,22 @@ function ProWelcomeGift(){
             <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,letterSpacing:.5}}>CUSTOMIZE SHORTCUTS</span>
             <button onClick={function(){setFabCustomize(false)}} style={{background:"none",border:"none",color:K.dim,fontSize:14,cursor:"pointer",padding:"2px 6px",borderRadius:_isBm?0:6}}>✕</button>
           </div>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts. Drag to reorder.</div>
-          {FAB_ALL.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 0",borderBottom:"1px solid "+K.bdr+"40",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
-            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <IC name={s.icon} size={14} color={s.color}/>
-            </div>
-            <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{s.label}</span>
-            <div style={{width:18,height:18,borderRadius:_isBm?0:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
-              {on&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
-            </div>
-          </div>})}
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:12}}>Pick up to 5 shortcuts.</div>
+          {["Research","Monitoring","Learning"].map(function(grp){
+            var grpItems=FAB_ALL.filter(function(s){return s.group===grp;});
+            return<div key={grp} style={{marginBottom:10}}>
+              <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6,paddingBottom:4,borderBottom:"1px solid "+K.bdr}}>{grp}</div>
+              {grpItems.map(function(s){var on=fabCfg.indexOf(s.id)>=0;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",cursor:"pointer"}} onClick={function(){var next=on?fabCfg.filter(function(x){return x!==s.id}):fabCfg.length<5?fabCfg.concat([s.id]):fabCfg;saveFabCfg(next)}}>
+                <div style={{width:26,height:26,borderRadius:_isBm?0:7,background:s.color+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <IC name={s.icon} size={13} color={s.color}/>
+                </div>
+                <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm}}>{s.label}</span>
+                <div style={{width:18,height:18,borderRadius:_isBm?0:5,border:"2px solid "+(on?s.color:K.bdr),background:on?s.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+                  {on&&<span style={{color:"#fff",fontSize:10,lineHeight:1}}>✓</span>}
+                </div>
+              </div>;})}
+            </div>;
+          })}
           <div style={{marginTop:12,fontSize:10,color:K.dim,fontFamily:fm,textAlign:"center"}}>{fabCfg.length}/5 selected</div>
         </div>}
         {/* Action pills — fan upward when open */}
