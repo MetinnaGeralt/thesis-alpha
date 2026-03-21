@@ -5739,7 +5739,55 @@ function calcMoatFromData(finData,businessModelType){
         {/* ══════════════════════════════════════════════════════
             TAB 1: THESIS & MONITORING
             ══════════════════════════════════════════════════════ */}
-        {dossierTab==="monitoring"&&<div>
+        {dossierTab==="monitoring"&&<div style={{display:"flex",gap:0,alignItems:"flex-start"}}>
+        {/* ── Scroll Sidebar ── */}
+        {!isMobile&&<div style={{width:148,flexShrink:0,position:"sticky",top:24,alignSelf:"flex-start",paddingRight:16}}>
+          {(function(){
+            var NAV=[
+              {id:"ds-cover",  label:"Overview"},
+              {id:"ds-story",  label:"Thesis"},
+              {id:"ds-evidence",label:"Evidence"},
+              {id:"ds-ledger", label:"Position"},
+              {id:"ds-numbers",label:"Numbers"},
+              {id:"ds-research",label:"Research"},
+            ];
+            var _act=React.useState("ds-cover"),activeSection=_act[0],setActiveSection=_act[1];
+            React.useEffect(function(){
+              var observers=[];
+              var opts={root:null,rootMargin:"-20% 0px -60% 0px",threshold:0};
+              NAV.forEach(function(n){
+                var el=document.getElementById(n.id);
+                if(!el)return;
+                var obs=new IntersectionObserver(function(entries){
+                  entries.forEach(function(entry){
+                    if(entry.isIntersecting)setActiveSection(n.id);
+                  });
+                },opts);
+                obs.observe(el);
+                observers.push(obs);
+              });
+              return function(){observers.forEach(function(o){o.disconnect();});};
+            },[c.id,dossierTab]);
+            return<nav style={{display:"flex",flexDirection:"column",gap:2}}>
+              {NAV.map(function(n){
+                var act=activeSection===n.id;
+                return<button key={n.id}
+                  onClick={function(){var el=document.getElementById(n.id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:"none",
+                    border:"none",cursor:"pointer",borderRadius:_isBm?0:6,
+                    textAlign:"left",transition:"all .15s",
+                    background:act?K.acc+"10":"transparent"}}>
+                  <div style={{width:3,height:act?20:12,borderRadius:2,flexShrink:0,transition:"all .2s",
+                    background:act?K.acc:K.bdr}}/>
+                  <span style={{fontSize:11,fontWeight:act?700:400,color:act?K.acc:K.dim,
+                    fontFamily:fm,letterSpacing:act?0:.2,transition:"all .15s"}}>{n.label}</span>
+                </button>;
+              })}
+            </nav>;
+          })()}
+        </div>}
+        {/* ── Main content ── */}
+        <div style={{flex:1,minWidth:0}}>
         <div id="ds-cover"/>
         {/* ── COVER ── */}
         <div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
@@ -5881,25 +5929,30 @@ function calcMoatFromData(finData,businessModelType){
         })()}
 
         {/* ── 1. THE STORY ── */}
-        <div id="ds-story" style={{marginBottom:52}}>
-          {/* Clean chapter header */}
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:12}}>
-              <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Thesis"}</div>
-              {_thesisAgeDays!=null&&_thesisAgeDays>0&&<span style={{fontSize:11,color:_thesisStale?K.amb:K.dim,fontFamily:fm}}>{_thesisStaleBadge}</span>}
+        <div id="ds-story" style={{marginBottom:48}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.acc+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.acc,fontFamily:fm}}>1</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Thesis</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Your investment case</div>
+              </div>
+              {(sel.thesisVersions||[]).length>0&&<span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"12",border:"1px solid "+K.acc+"25",borderRadius:_isBm?0:4,padding:"1px 7px",fontFamily:fm,letterSpacing:0.5}}>{"v"+(sel.thesisVersions.length+1)}</span>}
+              {_thesisAgeDays!=null&&_thesisAgeDays>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{_thesisAgeDays>365?Math.floor(_thesisAgeDays/365)+"y ago":_thesisAgeDays>30?Math.floor(_thesisAgeDays/30)+"mo ago":_thesisAgeDays+"d ago"}</span>}
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              {(sel.thesisVersions||[]).length>=1&&<button onClick={function(){setModal({type:"thesisDiary"})}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {(sel.thesisVersions||[]).length>=1&&<button onClick={function(){setModal({type:"thesisDiary"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 History
               </button>}
-              {sel.thesisNote&&sel.thesisNote.trim().length>20&&<button onClick={function(){setModal({type:"shareThesis"})}} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              {sel.thesisNote&&sel.thesisNote.trim().length>20&&<button onClick={function(){setModal({type:"shareThesis"})}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 Share
               </button>}
-              <button onClick={function(){setModal({type:"thesis"})}} style={{padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"Edit"}</button>
-            </div>
-          </div>
+              <button onClick={function(){setModal({type:"thesis"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}><IC name="edit" size={10} color={K.acc}/>Edit</button>
+            </div></div>
           {c.thesisNote?(function(){var sec=parseThesis(c.thesisNote);
             return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"20px 20px":"28px 32px"}}>
               {(function(){
@@ -5932,70 +5985,341 @@ function calcMoatFromData(finData,businessModelType){
             <button onClick={function(){setModal({type:"thesis"})}} style={{background:K.acc,color:"#fff",border:"none",borderRadius:_isBm?0:8,padding:"12px 30px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:fm,letterSpacing:"-0.2px"}}>{"Write my thesis"}</button>
             <div style={{marginTop:14,fontSize:11,color:K.dim,fontFamily:fm,opacity:0.7}}>{"Takes 10 minutes. The most important thing you can do as an owner."}</div>
           </div>}
-          {/* ── Thesis drift — compact signal ── */}
+          {/* ── THESIS HISTORY + DRIFT ── */}
           {(function(){
             var versions=sel.thesisVersions||[];
-            if(versions.length<2)return null;
-            var lastV=versions[versions.length-1];
+            var thesisAge=sel.thesisUpdatedAt?Math.ceil((new Date()-new Date(sel.thesisUpdatedAt))/864e5):null;
+            var earnDays=dU(sel.earningsDate);
+            var preEarningsAlert=thesisAge!=null&&thesisAge>90&&earnDays>=0&&earnDays<=21;
+            var hasHistory=versions.length>=2;
+
+            // Drift detection — compare current to previous version
+            function diffSection(curr,prev){
+              if(!prev||!curr)return null;
+              if(!prev.trim()&&curr.trim())return"added";
+              if(prev.trim()&&!curr.trim())return"removed";
+              var prevWords=prev.trim().split(/\s+/);
+              var currWords=curr.trim().split(/\s+/);
+              // Simple word-level change ratio
+              var maxLen=Math.max(prevWords.length,currWords.length);
+              if(maxLen===0)return null;
+              var sameCount=0;
+              var minLen=Math.min(prevWords.length,currWords.length);
+              for(var wi=0;wi<minLen;wi++){if(prevWords[wi].toLowerCase()===currWords[wi].toLowerCase())sameCount++;}
+              var similarity=sameCount/maxLen;
+              if(similarity<0.7)return"major";
+              if(similarity<0.9)return"minor";
+              return null;
+            }
+
+            var _dh=useState(false),showHistory=_dh[0],setShowHistory=_dh[1];
+            var _dv=useState(null),diffWith=_dv[0],setDiffWith=_dv[1];
             var currentParsed=parseThesis(sel.thesisNote||"");
-            var prevParsed={core:lastV.core||"",moat:lastV.moat||"",risks:lastV.risks||"",sell:lastV.sell||""};
-            var changed=Object.keys(currentParsed).some(function(k){return(currentParsed[k]||"").trim()!==(prevParsed[k]||"").trim();});
-            if(!changed)return null;
-            return<div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 10px",
-              borderRadius:_isBm?0:99,background:K.acc+"10",border:"1px solid "+K.acc+"30",
-              marginTop:8,cursor:"pointer"}} onClick={function(){setModal({type:"thesisDiary"})}}>
-              <div style={{width:5,height:5,borderRadius:"50%",background:K.acc}}/>
-              <span style={{fontSize:10,color:K.acc,fontFamily:fm}}>{"Thesis changed since last version · View history →"}</span>
+
+            // Compute drift from last version
+            var driftSignals=[];
+            if(hasHistory){
+              var lastV=versions[versions.length-1];
+              var prevParsed={core:lastV.core||"",moat:lastV.moat||"",risks:lastV.risks||"",sell:lastV.sell||""};
+              var coreDrift=diffSection(currentParsed.core,prevParsed.core);
+              var moatDrift=diffSection(currentParsed.moat,prevParsed.moat);
+              var risksDrift=diffSection(currentParsed.risks,prevParsed.risks);
+              var sellDrift=diffSection(currentParsed.sell,prevParsed.sell);
+              if(coreDrift)driftSignals.push({section:"Core thesis",change:coreDrift,color:coreDrift==="major"?K.amb:K.blue});
+              if(moatDrift)driftSignals.push({section:"Moat",change:moatDrift,color:moatDrift==="major"?K.amb:K.blue});
+              if(risksDrift)driftSignals.push({section:"Risks",change:risksDrift,color:K.amb});
+              if(sellDrift)driftSignals.push({section:"Sell criteria",change:sellDrift,color:K.red});
+            }
+
+            return<div style={{marginTop:16}}>
+              {/* Pre-earnings inversion card */}
+              {preEarningsAlert&&<div style={{background:K.amb+"08",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm,marginBottom:6}}>{"Earnings in "+earnDays+" day"+(earnDays!==1?"s":""+" — before you read the numbers")}</div>
+                <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:10}}>{"What result would make you seriously reconsider this position?"}</div>
+                {(function(){
+                  var stored=sel.preEarningsNote||"";
+                  if(stored){return<div style={{background:K.card,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,marginBottom:8,fontStyle:"italic"}}>{"\u201c"+stored+"\u201d"}</div>;}
+                  return null;
+                })()}
+                <textarea
+                  defaultValue={sel.preEarningsNote||""}
+                  onBlur={function(e){if(e.target.value.trim()!==sel.preEarningsNote)upd(sel.id,{preEarningsNote:e.target.value.trim(),preEarningsDate:sel.earningsDate});}}
+                  placeholder={"e.g. If gross retention falls below 90%, or management guides for margin compression without clear explanation..."}
+                  rows={2}
+                  style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,resize:"none",outline:"none",lineHeight:1.6}}
+                />
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:6}}>{"Write it now. The letter will show it back after results."}</div>
+              </div>}
+
+              {/* Drift signals */}
+              {driftSignals.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+                <span style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",alignSelf:"center"}}>Since last version:</span>
+                {driftSignals.map(function(d,i){return<span key={i} style={{fontSize:10,fontWeight:600,color:d.color,background:d.color+"10",border:"1px solid "+d.color+"25",borderRadius:_isBm?0:4,padding:"2px 8px",fontFamily:fm}}>{d.section+": "+(d.change==="major"?"major change":d.change==="minor"?"refined":d.change==="added"?"added":d.change==="removed"?"removed":"changed")}</span>;})}
+              </div>}
+
+              {/* History toggle */}
+              {versions.length>0&&<div>
+                <button onClick={function(){setShowHistory(!showHistory)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",color:K.dim,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:showHistory?10:0}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {versions.length} version{versions.length!==1?"s":""} saved
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">{showHistory?<polyline points="18 15 12 9 6 15"/>:<polyline points="6 9 12 15 18 9"/>}</svg>
+                </button>
+
+                {showHistory&&<div style={{display:"flex",flexDirection:"column",gap:0,borderLeft:"2px solid "+K.bdr,marginLeft:5}}>
+                  {versions.slice().reverse().map(function(v,i){
+                    var isLatest=i===0;
+                    var isCurrent=isLatest;
+                    var isDiffing=diffWith===i;
+                    var vParsed={core:v.core||"",moat:v.moat||"",risks:v.risks||"",sell:v.sell||""};
+                    var vDate=v.savedAt?new Date(v.savedAt):new Date(v.date);
+                    var daysAgo=Math.floor((new Date()-vDate)/864e5);
+                    var daysLabel=daysAgo===0?"Today":daysAgo===1?"Yesterday":daysAgo+"d ago";
+
+                    return<div key={i} style={{marginLeft:12,marginBottom:8}}>
+                      {/* Version header */}
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                        <div style={{width:7,height:7,borderRadius:"50%",background:isCurrent?K.acc:K.bdr,flexShrink:0,marginLeft:-15.5,border:"2px solid "+K.bg}}/>
+                        <span style={{fontSize:11,fontWeight:isCurrent?700:500,color:isCurrent?K.acc:K.mid,fontFamily:fm}}>{v.date||vDate.toISOString().split("T")[0]}</span>
+                        <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{daysLabel}</span>
+                        {isCurrent&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:_isBm?0:3,fontFamily:fm,fontWeight:700}}>Current</span>}
+                        {!isCurrent&&v.fullText&&<button onClick={function(){setDiffWith(isDiffing?null:i)}} style={{fontSize:9,color:isDiffing?K.acc:K.dim,background:"none",border:"1px solid "+(isDiffing?K.acc+"40":K.bdr),borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>{isDiffing?"Hide diff":"Diff"}</button>}
+                        {!isCurrent&&v.fullText&&<button onClick={function(){
+                          // Restore this version
+                          if(window.confirm("Restore this version? Your current thesis will be saved as a snapshot first.")){
+                            var curVersions=(sel.thesisVersions||[]).slice();
+                            var curParsed=parseThesis(sel.thesisNote||"");
+                            curVersions.push({date:new Date().toISOString().split("T")[0],savedAt:new Date().toISOString(),summary:"Auto-saved before restore",fullText:sel.thesisNote||"",core:curParsed.core||"",moat:curParsed.moat||"",risks:curParsed.risks||"",sell:curParsed.sell||""});
+                            upd(selId,{thesisNote:v.fullText,thesisVersions:curVersions,thesisUpdatedAt:new Date().toISOString()});
+                          }
+                        }} style={{fontSize:9,color:K.dim,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>Restore</button>}
+                      </div>
+
+                      {/* Version excerpt or diff */}
+                      {isDiffing&&v.fullText?<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:11,fontFamily:fm,lineHeight:1.7}}>
+                        {["core","moat","risks","sell"].map(function(field){
+                          var currText=currentParsed[field]||"";
+                          var prevText=vParsed[field]||"";
+                          if(!currText&&!prevText)return null;
+                          var changed=currText!==prevText;
+                          var fieldLabels={core:"Core thesis",moat:"Moat",risks:"Risks",sell:"Sell criteria"};
+                          var fieldColors={core:K.acc,moat:K.grn,risks:K.amb,sell:K.red};
+                          return<div key={field} style={{marginBottom:8}}>
+                            <div style={{fontSize:9,fontWeight:700,color:changed?fieldColors[field]:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3,display:"flex",alignItems:"center",gap:6}}>
+                              {fieldLabels[field]}
+                              {changed&&<span style={{fontWeight:600,color:fieldColors[field],background:fieldColors[field]+"15",padding:"0px 5px",borderRadius:2}}>changed</span>}
+                            </div>
+                            {changed?<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                              <div style={{borderLeft:"2px solid "+K.red+"60",paddingLeft:8,color:K.dim,fontSize:11,lineHeight:1.6,opacity:0.8}}>{prevText.substring(0,200)+(prevText.length>200?"...":"")}</div>
+                              <div style={{borderLeft:"2px solid "+K.grn+"60",paddingLeft:8,color:K.txt,fontSize:11,lineHeight:1.6}}>{currText.substring(0,200)+(currText.length>200?"...":"")}</div>
+                            </div>
+                            :<div style={{color:K.dim,fontSize:11,lineHeight:1.6}}>{currText.substring(0,120)+(currText.length>120?"...":"")}</div>}
+                          </div>;
+                        })}
+                      </div>
+                      :(v.core||v.summary)&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5,fontStyle:"italic",paddingLeft:2}}>
+                        {"\u201c"+(v.core||v.summary||"").substring(0,120)+((v.core||v.summary||"").length>120?"...":"")+"\u201d"}
+                      </div>}
+                    </div>;
+                  })}
+                </div>}
+              </div>}
             </div>;
           })()}
 
-        {/* ── YOUR RESEARCH (Library items tagged to this holding) ── */}
+          {/* Flywheel Note — Nick Sleep profile only */}
+          {investorProfile==="sleep"&&sel&&<div style={{marginTop:12,marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#3B82F6",fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Flywheel Note
+              </div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>Does scale get shared with customers?</span>
+            </div>
+            {c.flywheelNote
+              ?<div style={{background:K.bg,borderRadius:_isBm?0:8,border:"1px solid #3B82F630",borderLeft:"3px solid #3B82F6",padding:"10px 14px",fontSize:13,color:K.txt,lineHeight:1.7,cursor:"pointer"}}
+                onClick={function(){var v=window.prompt("Does "+c.ticker+" share its scale economics with customers? How does the flywheel compound?",c.flywheelNote||"");if(v!==null)upd(c.id,{flywheelNote:v.trim()})}}>
+                {c.flywheelNote}
+              </div>
+              :<div style={{background:"#3B82F608",border:"1px dashed #3B82F640",borderRadius:_isBm?0:8,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+                onClick={function(){var v=window.prompt("Does "+c.ticker+" share its scale economics with customers? How does the flywheel compound?","");if(v&&v.trim())upd(c.id,{flywheelNote:v.trim()})}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.8" strokeLinecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#3B82F6",marginBottom:2}}>Add flywheel note</div>
+                  <div style={{fontSize:10,color:K.dim}}>{"“Destination companies make more economic sense over time.” — Nick Sleep"}</div>
+                </div>
+              </div>}
+          </div>}
+
+          {/* Lynch Test */}
+          <div style={{marginTop:12}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                The Lynch Test
+              </div>
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>Can you explain this to an 11-year-old?</span>
+            </div>
+            {c.lynchExplanation
+              ?<div style={{background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,padding:"10px 14px",fontSize:13,color:K.txt,lineHeight:1.7,cursor:"pointer"}}
+                onClick={function(){var v=window.prompt("Explain "+c.ticker+" to an 11-year-old — what does this business do, why do people pay for it, and why can't someone else just copy it?",c.lynchExplanation||"");if(v!==null)upd(c.id,{lynchExplanation:v.trim()})}}>
+                {c.lynchExplanation}
+              </div>
+              :<div style={{background:K.acc+"08",border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:8,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+                onClick={function(){var v=window.prompt("Explain "+c.ticker+" to an 11-year-old — what does this business do, why do people pay for it, and why can't someone else just copy it?","");if(v&&v.trim())upd(c.id,{lynchExplanation:v.trim()})}}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.acc}}>Write the Lynch Test</div>
+                  <div style={{fontSize:11,color:K.dim,marginTop:2}}>{"If you can't explain it simply, you don't understand it well enough — Peter Lynch"}</div>
+                </div>
+              </div>}
+          </div>
+
+          {/* Thesis Timeline */}
+          {(function(){
+            var tevents=[];
+            var addedAt=c.addedAt||c.purchaseDate||null;
+            if(addedAt)tevents.push({label:"Added",date:addedAt,color:K.dim});
+            if(c.thesisVersions&&c.thesisVersions.length>0){var firstV=c.thesisVersions[0];tevents.push({label:"Thesis",date:firstV.savedAt||firstV.date||addedAt,color:K.acc})}
+            else if(c.thesisUpdatedAt)tevents.push({label:"Thesis",date:c.thesisUpdatedAt,color:K.acc});
+            if(c.thesisVersions&&c.thesisVersions.length>1)tevents.push({label:"Rev "+c.thesisVersions.length,date:c.thesisVersions[c.thesisVersions.length-1].savedAt,color:K.blue});
+            if(c.thesisUpdatedAt)tevents.push({label:"Updated",date:c.thesisUpdatedAt,color:_thesisStale?K.amb:K.grn});
+            tevents.push({label:"Today",date:null,color:K.mid,today:true});
+            if(tevents.length<3)return null;
+            return<div style={{marginTop:10,padding:"8px 12px",background:K.bg+"80",borderRadius:_isBm?0:8}}>
+              <div style={{display:"flex",alignItems:"flex-start",position:"relative"}}>
+                <div style={{position:"absolute",left:"5%",right:"5%",height:1,background:K.bdr,top:4}}/>
+                {tevents.map(function(ev,ei){return<div key={ei} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative",zIndex:1}}>
+                  <div style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:ev.today?K.bg:ev.color,border:"1.5px solid "+(ev.today?K.dim:ev.color)}}/>
+                  <div style={{fontSize:8,color:ev.color,fontFamily:fm,textAlign:"center",lineHeight:1.2}}>{ev.label}</div>
+                  {!ev.today&&ev.date&&<div style={{fontSize:7,color:K.dim,fontFamily:fm}}>{ev.date.slice(0,7)}</div>}
+                </div>})}
+              </div>
+            </div>
+          })()}
+        </div>
+
+        {/* Investment style */}
+        {!c.investStyle&&<div style={{background:K.acc+"06",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20}}>
+          <div style={{fontSize:11,fontWeight:600,color:K.acc,marginBottom:6,fontFamily:fm}}>What type of investment is {c.ticker}?</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {INVEST_STYLES.map(function(st){return<button key={st.id} onClick={function(){upd(c.id,{investStyle:st.id})}} style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:_isBm?0:5,border:"1px solid "+st.color+"30",background:st.color+"08",color:st.color,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+              <IC name={st.icon} size={10} color={st.color}/>{st.label}</button>})}</div></div>}
+
+
+        {/* ── YOUR WORK (Library items tagged to this holding) ── */}
         {(function(){
           var tagged=(library.items||[]).filter(function(it){return it.ticker===c.ticker;});
           if(tagged.length===0)return null;
           var myWorkItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
           var refItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
-          var TYPE_COLORS={Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280",Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim};
-          return<div style={{marginBottom:40}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
-              <div style={{fontSize:isMobile?16:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{"Your Research"}</div>
-              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"View all →"}</button>
+          return<div style={{marginTop:16,marginBottom:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your library</div>
+              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm}}>{"View all →"}</button>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8}}>
-              {myWorkItems.concat(refItems).map(function(it){
-                var col=TYPE_COLORS[it.type]||K.dim;
-                return<div key={it.id}
-                  onClick={function(){if(it.url)window.open(it.url,"_blank");}}
-                  style={{display:"flex",gap:12,padding:"12px 14px",
-                    background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,
-                    cursor:it.url?"pointer":"default",transition:"border-color .15s",
-                    alignItems:"flex-start"}}
-                  onMouseEnter={function(e){if(it.url)e.currentTarget.style.borderColor=col+"60";}}
-                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}>
-                  <div style={{width:32,height:32,borderRadius:_isBm?0:8,background:col+"15",
-                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":it.type==="Video"?"play":it.type==="Book"?"book":"edit"} size={14} color={col}/>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2,
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:9,fontWeight:700,color:col,background:col+"15",
-                        padding:"1px 6px",borderRadius:99,fontFamily:fm}}>{it.type}</span>
-                      {it.date&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{it.date}</span>}
-                    </div>
-                  </div>
+            {myWorkItems.length>0&&<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+              {myWorkItems.map(function(it){
+                var tc2=({Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"})[it.type]||"#10B981";
+                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:K.bg,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,borderLeft:"2px solid "+tc2}}>
+                  <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":"edit"} size={11} color={tc2}/>
+                  <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</span>
+                  <span style={{fontSize:9,fontWeight:700,color:tc2,background:tc2+"15",padding:"1px 5px",borderRadius:3,fontFamily:fm}}>{it.type}</span>
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",padding:0,fontFamily:fm}}>{"Open ↗"}</button>}
                 </div>;
               })}
-            </div>
+            </div>}
+            {refItems.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {refItems.map(function(it){
+                var tc2=({Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim})[it.type]||K.dim;
+                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
+                  <span style={{fontSize:10,fontWeight:700,color:tc2}}>{it.type}</span>
+                  <span style={{fontSize:11,color:K.txt,fontFamily:fm}}>{it.title}</span>
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",padding:0}}>{"↗"}</button>}
+                </div>;
+              })}
+            </div>}
           </div>;
         })()}
+
         <div id="ds-score"/>
+        {(function(){
+          var mm=calcMastery(c);var fs=c.financialSnapshot||{};
+          // 1. Thesis depth (0-100)
+          var th=c.thesisNote||"";var thSec=1;if(th.indexOf("## MOAT")>=0)thSec++;if(th.indexOf("## RISKS")>=0)thSec++;if(th.indexOf("## SELL")>=0)thSec++;
+          var thesisScore=th.length<20?0:Math.min(100,thSec*25);
+          // 2. KPI coverage (0-100)
+          var kpiDefined=c.kpis.length;var kpiMet=c.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
+          var kpiChecked=c.kpis.filter(function(k2){return k2.lastResult}).length;var kpiScore=kpiDefined===0?0:Math.min(100,kpiDefined*15+kpiChecked*10+kpiMet*15);
+          // 3. Conviction (0-100)
+          var convScore=(c.conviction||0)*10;
+          // 4. Fundamentals (0-100) — from snapshot data
+          function pv2(k2){if(!fs[k2])return 0;if(fs[k2].numVal!=null)return fs[k2].numVal;var v2=fs[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||0:0}
+          var fundScore=25;var gm2=pv2("grossMargin");if(gm2>60)fundScore+=15;else if(gm2>40)fundScore+=8;
+          var roic3=pv2("roic")||pv2("roe");if(roic3>20)fundScore+=20;else if(roic3>12)fundScore+=10;
+          var de2=pv2("debtEquity");if(de2>0&&de2<1)fundScore+=10;else if(de2>=2)fundScore-=10;
+          var rg2=pv2("revGrowth");if(rg2>15)fundScore+=15;else if(rg2>5)fundScore+=8;
+          if(Object.keys(fs).length>=8)fundScore+=15;else if(Object.keys(fs).length>=4)fundScore+=8;fundScore=Object.keys(fs).length===0?0:Math.max(0,Math.min(100,fundScore));
+          // 5. Mastery (0-100)
+          var mastScore=Math.round(mm.stars/6*100);
+          // 6. Monitoring freshness (0-100)
+          var monScore=0;var now3=Date.now();
+          if(c.thesisUpdatedAt){var thAge=Math.ceil((now3-new Date(c.thesisUpdatedAt))/864e5);monScore+=thAge<30?35:thAge<90?25:thAge<180?10:0}
+          if(c.lastChecked){var lc2=Math.ceil((now3-new Date(c.lastChecked))/864e5);monScore+=lc2<30?35:lc2<90?25:lc2<180?10:0}
+          if((c.convictionHistory||[]).length>0){var lastConv=c.convictionHistory[c.convictionHistory.length-1];if(lastConv.date){var cvAge=Math.ceil((now3-new Date(lastConv.date))/864e5);monScore+=cvAge<60?30:cvAge<120?15:0}}
+          monScore=Math.min(100,monScore);
+          var axes=[{label:"Thesis",score:thesisScore,color:"#8B5CF6",tip:"How thorough is your written thesis? Covers core belief, moat, risks, and sell criteria."},{label:"KPIs",score:kpiScore,color:"#3B82F6",tip:"How many key metrics are you tracking, and how many have been checked against earnings?"},{label:"Conviction",score:convScore,color:"#F59E0B",tip:"Your self-rated confidence in this investment on a 1-10 scale."},{label:"Fundamentals",score:fundScore,color:"#22C55E",tip:"Quality of the underlying business: margins, ROIC, growth, and balance sheet strength."},{label:"Mastery",score:mastScore,color:"#EC4899",tip:"Overall ownership completeness: thesis + KPIs + conviction + moat + monitoring combined."},{label:"Monitoring",score:monScore,color:"#14B8A6",tip:"How recently you have reviewed your thesis, checked earnings, and updated conviction."}];
+          var avgScore=Math.round(axes.reduce(function(s2,a2){return s2+a2.score},0)/6);
+          // SVG radar — rounded Simply Wall St style
+          var cx=100,cy=90,r=65;var n=6;var angleOff=-Math.PI/2;
+          function pt(i2,val){var ang=angleOff+i2/n*2*Math.PI;return{x:cx+Math.cos(ang)*r*val/100,y:cy+Math.sin(ang)*r*val/100}}
+          var gridLevels=[25,50,75,100];
+          // Build smooth rounded path from data points
+          function roundedPath(pts2){if(pts2.length<3)return"";var d="";for(var i3=0;i3<pts2.length;i3++){var prev=pts2[(i3-1+pts2.length)%pts2.length];var curr=pts2[i3];var next=pts2[(i3+1)%pts2.length];var smooth=0.25;var cp1x=curr.x+(next.x-prev.x)*smooth;var cp1y=curr.y+(next.y-prev.y)*smooth;var prevNext=pts2[(i3+2)%pts2.length];var cp2x=next.x-(prevNext.x-curr.x)*smooth;var cp2y=next.y-(prevNext.y-curr.y)*smooth;if(i3===0)d+="M"+curr.x.toFixed(1)+","+curr.y.toFixed(1)+" ";d+="C"+cp1x.toFixed(1)+","+cp1y.toFixed(1)+" "+cp2x.toFixed(1)+","+cp2y.toFixed(1)+" "+next.x.toFixed(1)+","+next.y.toFixed(1)+" "}return d+"Z"}
+          function roundedGridPath(level){var pts2=[];for(var i3=0;i3<n;i3++)pts2.push(pt(i3,level));return roundedPath(pts2)}
+          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:16}}>
+              <svg width="200" height="180" viewBox="0 0 200 180">
+                {/* Rounded grid rings */}
+                {gridLevels.map(function(gl){return<path key={gl} d={roundedGridPath(gl)} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
+                {/* Axis lines — subtle */}
+                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
+                {/* Filled shape — rounded, more opaque */}
+                {(function(){var dataPts=axes.map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
+                  return<g>
+                    <path d={roundedPath(dataPts)} fill={"#3B82F618"} stroke={"#3B82F6"} strokeWidth="2"/>
+                    {dataPts.map(function(p4,i4){return<circle key={i4} cx={p4.x} cy={p4.y} r="3" fill={axes[i4].color} stroke={K.bg} strokeWidth="1.5"/>})}
+                  </g>;})()}
+                {/* Axis labels with hover tooltips */}
+                {axes.map(function(a2,i3){var lp=pt(i3,118);
+                  return<g key={i3} style={{cursor:"help"}}><title>{a2.label}: {a2.score}/100 — {a2.tip}</title>
+                    <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle" style={{cursor:"help"}}>{a2.label}</text></g>})}
+                {/* Center score */}
+                <text x={cx} y={cy-5} fill={avgScore>=70?K.grn:avgScore>=45?K.acc:K.amb} fontSize="22" fontWeight="900" fontFamily={fm} textAnchor="middle">{avgScore}</text>
+                <text x={cx} y={cy+8} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1.5">OWNER SCORE</text>
+              </svg>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
+                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
+                  <div style={{width:5,height:5,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
+                  <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:75}}>{a2.label}</span>
+                  <div style={{flex:1,height:5,borderRadius:_isBm?0:3,background:K.bdr+"50",overflow:"hidden"}}>
+                    <div style={{height:"100%",width:a2.score+"%",background:a2.color,borderRadius:_isBm?0:3,transition:"width .4s"}}/>
+                  </div>
+                  <span style={{fontSize:10,fontWeight:700,color:a2.score>=70?a2.color:K.dim,fontFamily:fm,width:28,textAlign:"right"}}>{a2.score}</span>
+                </div>})}
+              </div></div></div>})()}
+
+
         {/* ── 2. THE EVIDENCE ── */}
-        <div id="ds-evidence" style={{marginBottom:52}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Evidence"}</div>
-            <button onClick={function(){setDetailTab("kpis");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"Manage KPIs →"}</button>
+        <div id="ds-evidence" style={{marginBottom:48}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.grn+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:12,fontWeight:800,color:K.grn,fontFamily:fm}}>2</span>
+            </div>
+            <div>
+              <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Does the evidence support the thesis?</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>KPIs, earnings, stress tests</div>
+            </div>
           </div>
           {/* KPI Scorecard */}
           {c.kpis.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
@@ -6087,25 +6411,55 @@ function calcMoatFromData(finData,businessModelType){
         </div>
 
         {/* ── 3. THE LEDGER ── */}
-        <div id="ds-ledger" style={{marginBottom:52}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Position"}</div>
-            <button onClick={function(){setModal({type:"conviction"});}} style={{padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"Update conviction"}</button>
-          </div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:12}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:20,flexWrap:"wrap"}}>
-              {/* Position P&L */}
-              <div style={{flex:1,minWidth:120}}>
-                <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,textTransform:"uppercase",marginBottom:6}}>{"Position"}</div>
-                {pos.shares>0?<div>
-                  <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{pos.shares+" shares"}</div>
-                  {pos.currentPrice>0&&<div style={{fontSize:13,fontWeight:700,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm}}>
-                    {(((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":"")+((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%"}
-                    <span style={{fontSize:11,color:K.dim,fontWeight:400,marginLeft:6}}>{cSym+pos.avgCost.toFixed(2)+" avg"}</span>
-                  </div>}
-                </div>:<div style={{fontSize:12,color:K.dim,cursor:"pointer"}} onClick={function(){setModal({type:"position",id:c.id})}}>{"Tap to add position"}</div>}
+        <div id="ds-ledger" style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.amb+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.amb,fontFamily:fm}}>3</span>
               </div>
-              {/* Price vs target bar */}
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>What have you done, and why?</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Conviction, position, decisions</div>
+              </div>
+            </div>
+            <button onClick={function(){setModal({type:"conviction"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Rate conviction</button></div>
+          {/* Conviction + Position row */}
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+              {(function(){
+                var cx=60,cy=62,r=50;
+                var ang=function(v){return Math.PI*(1-v/10)};
+                var arcP=function(v1,v2){var a1=ang(v1);var a2=ang(v2);var x1=(cx+r*Math.cos(a1)).toFixed(1);var y1=(cy-r*Math.sin(a1)).toFixed(1);var x2=(cx+r*Math.cos(a2)).toFixed(1);var y2=(cy-r*Math.sin(a2)).toFixed(1);return"M"+x1+" "+y1+" A"+r+" "+r+" 0 0 1 "+x2+" "+y2};
+                var convColor=conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim;
+                var cv=Math.max(0.01,Math.min(conv,9.99));
+                var na=ang(cv);var nx=(cx+42*Math.cos(na)).toFixed(1);var ny=(cy-42*Math.sin(na)).toFixed(1);
+                return<div style={{textAlign:"center"}}>
+                  <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:2,textTransform:"uppercase"}}>Conviction</div>
+                  <svg viewBox="0 0 120 68" style={{width:"100%",maxWidth:150,display:"block",margin:"0 auto"}}>
+                    <path d={arcP(0,3.5)} fill="none" stroke={K.red+"35"} strokeWidth="11"/>
+                    <path d={arcP(3.5,6.5)} fill="none" stroke={K.amb+"35"} strokeWidth="11"/>
+                    <path d={arcP(6.5,9.99)} fill="none" stroke={K.grn+"35"} strokeWidth="11"/>
+                    {conv>0&&<path d={arcP(0.01,cv)} fill="none" stroke={convColor} strokeWidth="11" strokeLinecap="round"/>}
+                    {conv>0&&<line x1={cx} y1={cy} x2={nx} y2={ny} stroke={K.txt} strokeWidth="2.5" strokeLinecap="round" opacity="0.9"/>}
+                    <circle cx={cx} cy={cy} r="4.5" fill={K.card} stroke={conv>0?convColor:K.bdr} strokeWidth="2"/>
+                  </svg>
+                  <div style={{marginTop:-4,lineHeight:1}}>
+                    <span style={{fontSize:22,fontWeight:800,color:convColor,fontFamily:fm}}>{conv||"—"}</span>
+                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>/10</span>
+                  </div>
+                  {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:6,justifyContent:"center",alignItems:"flex-end",height:14}}>
+                    {c.convictionHistory.slice(-8).map(function(ch,i2){return<div key={i2} style={{width:8,borderRadius:_isBm?0:1,height:Math.max(2,Math.round(ch.rating/10*12))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.75}}/>})}
+                  </div>}
+                </div>
+              })()}
+            </div>
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
+              <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:6,textTransform:"uppercase"}}>Position</div>
+              {pos.shares>0?<div>
+                <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{pos.shares>=1000?(pos.shares/1000).toFixed(1)+"k":pos.shares}<span style={{fontSize:11,fontWeight:400,color:K.dim}}> sh @ {cSym}{pos.avgCost}</span></div>
+                {pos.currentPrice>0&&<div style={{fontSize:12,fontWeight:700,color:((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?K.grn:K.red,fontFamily:fm,marginBottom:8}}>{((pos.currentPrice-pos.avgCost)/pos.avgCost*100)>=0?"+":""}{((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)}% ({cSym}{Math.abs((pos.currentPrice-pos.avgCost)*pos.shares).toFixed(0)})</div>}
+              </div>:<div style={{fontSize:12,color:K.dim,marginBottom:10}}>Tap to add position</div>}
+              {/* Price vs Target bar */}
               {(function(){
                 var price=pos.currentPrice;var tgt=c.targetPrice||0;
                 var snap_=c.financialSnapshot||{};var graham=snap_.grahamNum?snap_.grahamNum.numVal:0;
@@ -6116,34 +6470,21 @@ function calcMoatFromData(finData,businessModelType){
                 var tgtPct=tgt>0?Math.max(2,Math.min(98,(tgt-lo)/(hi-lo)*100)):null;
                 var gPct=graham>0?Math.max(2,Math.min(98,(graham-lo)/(hi-lo)*100)):null;
                 var priceColor=tgt>0?(price<tgt*0.85?K.grn:price<tgt*1.1?K.amb:K.red):K.mid;
-                return<div style={{flex:2,minWidth:160}}>
-                  <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,textTransform:"uppercase",marginBottom:8}}>{"Price vs Target"}</div>
-                  <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:"linear-gradient(90deg,"+K.grn+"40,"+K.amb+"40,"+K.red+"40)"}}>
-                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,background:K.blue+"80",borderRadius:1}}/>}
-                    {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,background:K.acc+"90",borderRadius:1}}/>}
-                    <div style={{position:"absolute",top:"50%",left:pct+"%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:priceColor,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+                return<div style={{marginTop:2}}>
+                  <div style={{position:"relative",height:6,borderRadius:_isBm?0:3,background:"linear-gradient(90deg,"+K.grn+"55,"+K.amb+"55 50%,"+K.red+"55)",marginBottom:6}}>
+                    {gPct!=null&&<div style={{position:"absolute",top:-3,left:gPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.blue+"bb"}} title={"Graham: "+cSym+graham.toFixed(2)}/>}
+                    {tgtPct!=null&&<div style={{position:"absolute",top:-3,left:tgtPct+"%",transform:"translateX(-50%)",width:2,height:12,borderRadius:_isBm?0:1,background:K.acc}} title={"Target: "+cSym+tgt}/>}
+                    <div style={{position:"absolute",top:"50%",left:pct+"%",transform:"translate(-50%,-50%)",width:12,height:12,borderRadius:"50%",background:priceColor,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,.4)"}}/>
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:K.dim,fontFamily:fm,marginTop:4}}>
-                    <span>{"Cheap"}</span>
-                    {tgtPct!=null&&<span style={{color:K.acc}}>{"Target "+cSym+tgt}</span>}
-                    {tgtPct==null&&gPct!=null&&<span style={{color:K.blue}}>{"Graham "+cSym+graham.toFixed(0)}</span>}
-                    <span>{"Pricey"}</span>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:9,color:K.dim,fontFamily:fm}}>
+                    <span>Cheap</span>
+                    {tgtPct!=null&&<span style={{color:K.acc,fontSize:9}}>Target {cSym}{tgt}</span>}
+                    {tgtPct==null&&gPct!=null&&<span style={{color:K.blue,fontSize:9}}>Graham {cSym}{graham.toFixed(0)}</span>}
+                    <span>Pricey</span>
                   </div>
-                </div>;
-              })()}
-              {/* Conviction history dots */}
-              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{flexShrink:0}}>
-                <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,textTransform:"uppercase",marginBottom:8}}>{"Conviction trend"}</div>
-                <div style={{display:"flex",gap:3,alignItems:"flex-end",height:28}}>
-                  {c.convictionHistory.slice(-10).map(function(ch,i2){
-                    var col=ch.v>=7?K.grn:ch.v>=4?K.amb:K.red;
-                    return<div key={i2} style={{width:8,borderRadius:_isBm?0:2,background:col,opacity:.8,
-                      height:(ch.v/10*24+4)+"px",transition:"height .3s"}}/>;
-                  })}
                 </div>
-              </div>}
-            </div>
-          </div>
+              })()}
+            </div></div>
           {/* Recent decisions */}
           {(function(){var recent=(c.decisions||[]).filter(function(d2){return d2.cardType==="decision"||(!d2.cardType&&d2.reasoning)}).slice(0,2);
             if(recent.length===0)return null;
@@ -6158,13 +6499,18 @@ function calcMoatFromData(finData,businessModelType){
           var passCount=results.filter(function(r){return r.pass===true}).length;var failCount=results.filter(function(r){return r.pass===false}).length;
           var totalJudged=passCount+failCount;var verdict=totalJudged===0?null:passCount>=totalJudged*0.75?"Attractive":passCount>=totalJudged*0.5?"Fair":"Expensive";
           var verdictColor=verdict==="Attractive"?K.grn:verdict==="Fair"?K.amb:verdict==="Expensive"?K.red:K.dim;
-          return<div style={{marginBottom:52}}>
-          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-              <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"Valuation"}</div>
-              {verdict&&<span style={{fontSize:13,fontWeight:700,color:verdictColor,fontFamily:fm}}>{verdict}</span>}
+          return<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.red+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:K.red,fontFamily:fm}}>5</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Valuation</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Your price discipline</div>
+              </div>
             </div>
-            <button onClick={function(){setModal({type:"valuation"});}} style={{padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"none",color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"Edit criteria"}</button>
+            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit":"Set up"}</button>
           </div>
           {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
             {verdict&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
@@ -6184,6 +6530,25 @@ function calcMoatFromData(finData,businessModelType){
             <div style={{fontSize:13,color:K.acc,fontWeight:600,marginBottom:4,marginTop:6}}>Define your valuation framework</div>
             <div style={{fontSize:12,color:K.dim,lineHeight:1.5,maxWidth:320,margin:"0 auto"}}>Pick the metrics that matter to you — FCF yield, P/E, PEG, earnings yield — and set your own thresholds for what constitutes good value.</div></div>}
         </div>})()}
+        {/* ── MARKET DATA DIVIDER ── */}
+        {(function(){
+          var hasSnap=Object.keys(c.financialSnapshot||{}).length>0;
+          var hasEarnings=c.earningSummary||c.earningsHistory&&c.earningsHistory.length>0;
+          if(!hasSnap&&!hasEarnings)return null;
+          var mktOpen=dossierMktOpen!==false;
+          return<div style={{marginBottom:mktOpen?20:0}}>
+            <div onClick={function(){setDossierMktOpen(function(v){return v===false?true:false})}} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",padding:"10px 0",marginBottom:mktOpen?16:0,userSelect:"none"}}>
+              <div style={{flex:1,height:1,background:K.bdr}}/>
+              <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:_isBm?0:999,background:K.card,border:"1px solid "+K.bdr,flexShrink:0}}>
+                <IC name="bar" size={12} color={K.dim}/>
+                <span style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:600}}>Market Data</span>
+                <span style={{fontSize:11,color:K.dim,transform:mktOpen?"rotate(0)":"rotate(-90deg)",transition:"transform .2s",display:"inline-block",lineHeight:1}}>▾</span>
+              </div>
+              <div style={{flex:1,height:1,background:K.bdr}}/>
+            </div>
+          </div>
+        })()}
+        {dossierMktOpen!==false&&<div>
         {/* ── OWNER'S NUMBERS ── */}
         {(function(){var snap=c.financialSnapshot||{};var snapKeys=Object.keys(snap).filter(function(k){return snap[k]&&snap[k].value});var hasSnap=snapKeys.length>0;
           // If international and very sparse data — show manual prompt
@@ -6359,8 +6724,7 @@ function calcMoatFromData(finData,businessModelType){
               scoreItems.push({l:"Buffett Criteria",v:_bScore+"/"+_bTotal,isGood:_bScore>=4,isNeutral:_bScore>=3&&_bScore<4,tip:"Buffett quality checklist — Criteria met: "+(_bLines.length>0?_bLines.join(", "):"few")+". Looking for: high ROIC, strong margins, FCF generation, modest debt, consistent growth."})
             }
           }catch(scoreErr){}
-          // Quality signals — rendered as compact pills, not a section
-          var _qualityRow=scoreItems.length>0?scoreItems:null;
+          if(scoreItems.length>0)sections.push({title:"INVESTMENT SCORES",items:scoreItems,color:"#7C3AED"});
 
           if(pvSection.length>0)sections.push({title:"PRICE vs VALUE",items:pvSection,color:"#9333EA"});
           if(valuation.length>0)sections.push({title:"VALUATION",items:valuation,color:K.blue});
@@ -6407,25 +6771,16 @@ function calcMoatFromData(finData,businessModelType){
                 <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{_bmtCtx.guidance}</div>
               </div>
             </div>}
-            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-              <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Numbers"}</div>
-              <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials");}}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{"Full financials →"}</button>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
+              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:"#3B82F615",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontSize:12,fontWeight:800,color:"#3B82F6",fontFamily:fm}}>4</span>
+              </div>
+              <div>
+                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>The Numbers</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Financials, ratios, health</div>
+              </div>
             </div>
-            {/* ── Quality signals: Piotroski / Magic Formula / Buffett */}
-            {_qualityRow&&_qualityRow.length>0&&<div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
-              {_qualityRow.map(function(q,qi){
-                var col=q.isGood?K.grn:q.isNeutral?K.amb:K.red;
-                return<div key={qi} title={q.tip||""}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",
-                    background:K.card,border:"1px solid "+col+"30",borderRadius:_isBm?0:10,flex:1,minWidth:120}}>
-                  <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
-                  <div>
-                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:1}}>{q.l}</div>
-                    <div style={{fontSize:15,fontWeight:800,color:col,fontFamily:fm}}>{q.v}</div>
-                  </div>
-                </div>;
-              })}
-            </div>}
+            {heroStats}
             {bsSection&&<div style={{marginBottom:16}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                 <div style={{width:3,height:10,borderRadius:_isBm?0:2,background:"#EF4444",flexShrink:0}}/>
@@ -6585,6 +6940,59 @@ function calcMoatFromData(finData,businessModelType){
               <div className="ta-skel" style={{height:8,width:"70%",background:K.bdr,margin:"0 auto 8px",borderRadius:_isBm?0:4}}/>
               <div className="ta-skel" style={{height:6,background:K.bdr,borderRadius:_isBm?0:3}}/></div></div>}
         </div>}
+        {/* ── 5. KEY METRICS CHART ── */}
+        {keyFin&&keyFin.length>=2&&<div style={{marginBottom:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
+            <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials")}}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Full financials {"→"}</button></div>
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
+            <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
+              {[{k:"revenue",l:"Revenue",c:"#1cb0f6"},{k:"netIncome",l:"Net Income",c:"#58cc02"},{k:"fcf",l:"Free Cash Flow",c:"#ff9600"},{k:"sbc",l:"Stock-Based Comp",c:"#ce82ff"}].map(function(m){
+                return<div key={m.k} style={{display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{width:8,height:8,borderRadius:_isBm?0:2,background:m.c}}/>
+                  <span style={{fontSize:10,color:K.mid,fontFamily:fm}}>{m.l}</span></div>})}</div>
+            {(function(){
+              var MK=[{k:"revenue",c:"#1cb0f6"},{k:"netIncome",c:"#58cc02"},{k:"fcf",c:"#ff9600"},{k:"sbc",c:"#ce82ff"}];
+              var allV2=[];keyFin.forEach(function(p2){MK.forEach(function(m){if(p2[m.k]!=null)allV2.push(p2[m.k])})});
+              if(allV2.length===0)return null;
+              var gMx2=Math.max.apply(null,allV2.concat([0]));var gMn2=Math.min.apply(null,allV2.concat([0]));var gRange2=gMx2-gMn2||1;
+              var cW3=Math.max(400,keyFin.length*80);var cH3=180;var pad3={l:50,r:10,t:16,b:26};
+              var plotW3=cW3-pad3.l-pad3.r;var plotH3=cH3-pad3.t-pad3.b;
+              var nD=keyFin.length;var nS=4;
+              var gW=Math.max(30,plotW3/nD-8);var bW=Math.max(6,Math.min(16,(gW-4)/nS));
+              var gG=nD>1?(plotW3-gW*nD)/(nD-1):0;
+              var zY=gMn2>=0?pad3.t+plotH3:pad3.t+(gMx2/gRange2)*plotH3;
+              return<div style={{overflowX:"auto",position:"relative"}}>
+                <svg width={cW3} height={cH3} style={{display:"block"}}>
+                  {[0,0.25,0.5,0.75,1].map(function(f,fi){var y=pad3.t+f*plotH3;var val=gMx2-(f*gRange2);
+                    return<g key={fi}><line x1={pad3.l} y1={y} x2={cW3-pad3.r} y2={y} stroke={K.bdr} strokeWidth={1} strokeDasharray="3,3"/>
+                      <text x={pad3.l-6} y={y+3} textAnchor="end" fill={K.dim} fontSize={8} fontFamily="JetBrains Mono,monospace">{fmtBig(val)}</text></g>})}
+                  {gMn2<0&&<line x1={pad3.l} y1={zY} x2={cW3-pad3.r} y2={zY} stroke={K.txt+"40"} strokeWidth={1.5}/>}
+                  {keyFin.map(function(pt,di){
+                    var gX=pad3.l+di*(gW+(nD>1?gG:0));
+                    return<g key={di}>
+                      {MK.map(function(m,si){
+                        var val=pt[m.k];if(val==null)return null;
+                        var barH2=Math.abs(val)/gRange2*plotH3;
+                        var y2=val>=0?zY-barH2:zY;
+                        if(gMn2>=0){y2=pad3.t+plotH3-(val-gMn2)/gRange2*plotH3;barH2=(val-gMn2)/gRange2*plotH3}
+                        return<rect key={m.k} x={gX+(si*(bW+1))} y={y2} width={bW} height={Math.max(barH2,2)} rx={2} fill={hovD===pt.date?m.c:m.c+"90"} style={{transition:"fill .15s",animation:"fadeInFast .3s ease both",animationDelay:(di*30+si*50)+"ms"}}/>})}
+                      <text x={gX+gW/2} y={cH3-4} textAnchor="middle" fill={K.dim} fontSize={9} fontFamily="JetBrains Mono,monospace">{pt.date?pt.date.substring(0,4):""}</text>
+                      <rect x={gX-2} y={pad3.t} width={gW+4} height={plotH3} fill="transparent" style={{cursor:"pointer"}} onMouseEnter={function(){setHovD(pt.date)}} onMouseLeave={function(){setHovD(null)}}/>
+                    </g>})}
+                </svg>
+                {hovD&&(function(){var hi=keyFin.findIndex(function(p2){return p2.date===hovD});if(hi<0)return null;var pt=keyFin[hi];
+                  var tx=pad3.l+hi*(gW+(nD>1?gG:0));
+                  return<div style={{position:"absolute",left:Math.min(Math.max(tx,8),cW3-160),top:4,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 12px",boxShadow:"0 4px 16px rgba(0,0,0,.2)",pointerEvents:"none",zIndex:10,minWidth:130}}>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>{pt.date?pt.date.substring(0,4):""}</div>
+                    {MK.map(function(m){return pt[m.k]!=null?<div key={m.k} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                      <span style={{width:6,height:6,borderRadius:_isBm?0:2,background:m.c,flexShrink:0}}/>
+                      <span style={{fontSize:10,color:K.mid,fontFamily:fm,flex:1}}>{m.k==="revenue"?"Revenue":m.k==="netIncome"?"Net Income":m.k==="fcf"?"FCF":"SBC"}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:m.c,fontFamily:fm}}>{fmtBig(pt[m.k])}</span></div>:null})}</div>})()}
+              </div>})()}
+          </div>
+        </div>}
+
         {/* ── LINKS ── */}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:10,marginBottom:20}}>
           <div className="ta-card" style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:10}} onClick={function(){if(isPro){setSubPage("financials")}else{setShowUpgrade(true);setUpgradeCtx("financials")}}}>
@@ -6627,9 +7035,15 @@ function calcMoatFromData(finData,businessModelType){
               <button style={Object.assign({},S.btn,{padding:"4px 11px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
             </div>:null;
           return<div id="ds-research" style={{marginBottom:48,marginTop:8}}>
-            <div style={{marginBottom:0}}>
-              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-                <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"Research Trail"}</div>
+            <div style={{paddingTop:20,borderTop:"1px solid "+K.bdr,marginBottom:0}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Research Trail</div>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Notes, links, filings</div>
+                  </div>
+                </div>
                 {addBtn}
               </div>
               <div style={{display:"flex",gap:4,marginBottom:14}}>
@@ -6713,6 +7127,8 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
         })()}
+        </div>}
+        </div>
         </div>}
 
         {/* ══════════════════════════════════════════════════════
@@ -7088,8 +7504,8 @@ function calcMoatFromData(finData,businessModelType){
           </div>}
 
         </div>}
-        </div>}
 
+      </div>}
     </div>}
     </div>
   }
