@@ -825,7 +825,7 @@ function TrackerApp(props){
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var _proWelcome=useState(false),showProWelcome=_proWelcome[0],setShowProWelcome=_proWelcome[1];
-  var _myStrategy=useState(function(){try{var s=localStorage.getItem("ta-my-strategy");return s?JSON.parse(s):{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}}}catch(e){return{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}}}}),myStrategy=_myStrategy[0],setMyStrategy=_myStrategy[1];
+  var _myStrategy=useState(function(){try{var s=localStorage.getItem("ta-my-strategy");return s?JSON.parse(s):{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}}}catch(e){return{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}}}}),myStrategy=_myStrategy[0],setMyStrategy=_myStrategy[1];
   var _ownersLetters=useState(function(){try{var s=localStorage.getItem("ta-owners-letters");return s?JSON.parse(s):[];}catch(e){return [];}}),ownersLetters=_ownersLetters[0],setOwnersLetters=_ownersLetters[1];
   var _journalEntries=useState(function(){try{var s=localStorage.getItem("ta-journal");return s?JSON.parse(s):[];}catch(e){return [];}}),journalEntries=_journalEntries[0],setJournalEntries=_journalEntries[1];
   var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
@@ -2214,24 +2214,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _copied=React.useState(false),copied=_copied[0],setCopied=_copied[1];
     var _tab=React.useState("standard"),promptTab=_tab[0],setPromptTab=_tab[1];
     var fw=myStrategy.framework||{name:"",dimensions:[],useCustom:false};
-    var fwDims=(fw.dimensions||[]).filter(function(d){return d.name&&d.name.trim();});
-    var hasCustomFw=fwDims.length>0&&fw.name&&fw.name.trim();
-    // Build custom prompt inline (same logic as MyStrategyPage.buildCustomPrompt)
+    var fwFilters=fw.filters&&fw.filters.length>0?fw.filters:null;
+    var hasCustomFw=fw.useCustom&&fwFilters&&fwFilters.length>0&&fw.name&&fw.name.trim();
     function buildCustomPrompt(){
-      var name=fw.name||"Custom Framework";
-      var dimBlock=fwDims.map(function(d,i){
-        var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
-        return"## DIMENSION "+(i+1)+": "+d.name+"\n"+typeDesc+"\nAnalysis: [your detailed assessment of "+ticker+"]";
+      var name=fw.name||"My Framework";
+      var filterBlock=fwFilters.map(function(f,i){
+        return"## FILTER "+(i+1)+": "+f.label+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n"+
+          (f.checks&&f.checks.trim()?f.checks.trim().replace(/[\[\]]/g,"")+"\n":"\u2713 [check]\n")+"\n"+
+          "ANALYSIS: "+f.desc;
       }).join("\n\n");
-      return "You are producing a structured investment analysis of "+ticker+" using the "+name+" framework. "+
-        "ThesisAlpha will parse this output automatically \u2014 follow the format exactly.\n\n"+
-        "## TITLE\n"+ticker+" \u2014 "+name+" Analysis\n\n"+
-        dimBlock+"\n\n"+
-        "## INVERSION\nMECHANISM: [the single thing that would kill this thesis]\nARK: [probability and what signal to watch]\n\n"+
-        "## VERDICT\n[2-3 sentence overall conclusion. Would you invest in "+ticker+"?]\n"+
-        "FAT PITCH: [target entry price]\n"+
+      return "You are a structured investment analyst. Produce a deep dive on "+ticker+" using the "+name+" framework.\n"+
+        "Output in EXACTLY this format \u2014 ThesisAlpha parses it automatically.\n\n"+
+        "## TITLE\n"+ticker+" \u2014 "+name+"\n\n"+
+        "## METRICS\n[Key metric] | [Value] | [pass/warn/fail]\n(3\u20136 key metrics)\n\n"+
+        filterBlock+"\n\n"+
+        "## INVERSION\nMECHANISM: [single thing that would permanently break this thesis]\nARK: [probability and specific signal to watch]\n\n"+
+        "## VERDICT\n[2\u20133 sentences. Is "+ticker+" worth owning?]\n"+
+        "FAT PITCH: [entry price where even the bear case clears your hurdle]\n"+
         "PENDING: [one specific thing still to verify]\n\n"+
-        "STATUS SYMBOLS:\n\u2713 = pass\n\u26a0 = caution\n\u2717 = red flag\n\u2014 = neutral";
+        "STATUS SYMBOLS: \u2713=pass \u26a0=caution \u2717=fail \u2014=neutral";
     }
     var customPrompt=hasCustomFw?buildCustomPrompt():"";
 
@@ -2556,6 +2557,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             currentFilter.verdict=vparts[0].trim();
             if(vparts.length>1){var vt=vparts[1].trim().toLowerCase();currentFilter.verdictType=vt.indexOf("warn")>=0||vt.indexOf("border")>=0?"warn":vt.indexOf("fail")>=0?"fail":"pass";}
             else{var vl=currentFilter.verdict.toLowerCase();currentFilter.verdictType=vl.indexOf("warn")>=0||vl.indexOf("border")>=0?"warn":vl.indexOf("fail")>=0?"fail":vl.indexOf("pass")>=0?"pass":"note";}
+            continue;
+          }
+          // Analysis: line → store as filter.analysis, not a check
+          if(/^Analysis\s*[:]/i.test(trimmed)){currentFilter.analysis=trimmed.replace(/^Analysis\s*[:]?\s*/i,"").trim();continue;}
+          // Score: [1-10] or Score: 7 → convert to verdictType
+          if(/^Score\s*[:]/i.test(trimmed)){
+            var scoreRaw=trimmed.replace(/^Score\s*[:]?\s*/i,"").replace(/[\[\]]/g,"").trim();
+            var scoreNum=parseFloat(scoreRaw);
+            if(!isNaN(scoreNum)){
+              currentFilter.verdict=scoreRaw+"/10";
+              currentFilter.scoreVal=scoreNum;
+              currentFilter.verdictType=scoreNum>=7?"pass":scoreNum>=4?"warn":"fail";
+            }
             continue;
           }
           // Check lines: ✓/⚠/✗/— or pass/warn/fail/note prefix
@@ -3019,14 +3033,18 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
       </div>}
 
-      {/* Five filters */}
-      {dd.filters&&dd.filters.filter(function(f){return f.checks&&f.checks.some(function(c){return c.text;});}).length>0&&<div style={{marginBottom:20}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>Five-Filter Analysis</div>
+      {/* Five filters / Custom dims */}
+      {dd.filters&&dd.filters.filter(function(f){return f.isCustomDim?(f.verdict||f.analysis||f.checks.length>0):(f.checks&&f.checks.some(function(c){return c.text;}));}).length>0&&<div style={{marginBottom:20}}>
+        {(function(){var hasCustom=dd.filters.some(function(f){return f.isCustomDim;});var hasStd=dd.filters.some(function(f){return!f.isCustomDim;});
+          return<div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{hasCustom&&!hasStd?"Framework Analysis":hasCustom?"Mixed Analysis":"Five-Filter Analysis"}</div>;
+        })()}
         {dd.filters.map(function(fil,fi){
           var hasContent=fil.checks&&fil.checks.some(function(c){return c.text;});
-          if(!hasContent)return null;
+          // Custom dims: show if they have a verdict, analysis, or any checks
+          var hasCustomContent=fil.isCustomDim&&(fil.verdict||fil.analysis||(fil.checks&&fil.checks.length>0));
+          if(!hasContent&&!hasCustomContent)return null;
           var isOpen=openFilters[fi]!==false;
-          var vc=statusColor(fil.verdictType);
+          var vc=statusColor(fil.verdictType||"note");
           return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:6,overflow:"hidden"}}>
             <button onClick={function(){setOpenFilters(function(p){var n=Object.assign({},p);n[fi]=!isOpen;return n;});}}
               style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",
@@ -3042,6 +3060,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
               </div>
             </button>
             {isOpen&&<div style={{borderTop:"1px solid "+K.bdr,padding:"10px 14px 14px"}}>
+              {fil.analysis&&<p style={{margin:"0 0 10px",fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.7,borderBottom:fil.checks.filter(function(c){return c.text;}).length>0?"1px solid "+K.bdr+"40":"none",paddingBottom:fil.checks.filter(function(c){return c.text;}).length>0?10:0}}>{fil.analysis}</p>}
               {fil.checks.filter(function(c){return c.text;}).map(function(ch,ci){return<div key={ci} style={{display:"flex",gap:10,marginBottom:8}}>
                 <span style={{fontSize:12,fontWeight:700,color:statusColor(ch.status),width:14,flexShrink:0,marginTop:1}}>{statusIcon(ch.status)}</span>
                 <p style={{margin:0,fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.65}}>{ch.text}</p>
@@ -10108,36 +10127,38 @@ function ProWelcomeGift(){
 
   // ── My Strategy ─────────────────────────────────────────────────────────
   function MyStrategyPage(){
-    var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
-    var fw=draft.framework||{name:"",dimensions:[],useCustom:false};
-    var fwDims=fw.dimensions||[];
+    var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
+    var DEFAULT_FILTERS=[
+      {label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Do you understand how it makes money, why customers stay, and why a competitor can\'t easily copy it?",checks:"✓ Business model is simple and predictable\n✓ You can explain the moat in one sentence\n⚠ Industry requires specialist knowledge\n✗ Outcome depends on macro or commodity prices"},
+      {label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded, intelligent competitor willingly enter this market? What protects margins and returns over a decade?",checks:"✓ Switching costs are high\n✓ Network effects compound with scale\n✓ Cost advantages are structural, not cyclical\n✗ Competitors have entered and competed away returns"},
+      {label:"Management Quality",desc:"Owner-operator test. Capital allocation over a full cycle. Has every \u20ac1 retained created more than \u20ac1 of shareholder value?",checks:"✓ Management owns significant equity\n✓ Capital allocation record is excellent\n✓ Honest, candid communication with shareholders\n✗ History of value-destructive acquisitions"},
+      {label:"Financial Strength",desc:"ROIC vs WACC. FCF conversion. Revenue quality. The numbers that separate great businesses from mediocre ones.",checks:"✓ ROIC consistently above 15%\n✓ FCF conversion above 80%\n✓ Gross margins stable or expanding\n✗ Rising debt without clear return on investment"},
+      {label:"Price & Margin of Safety",desc:"Owner earnings DCF — not P/E. What does this business need to be worth in 10 years for you to make your target return at today\'s price?",checks:"✓ Price implies a reasonable owner earnings yield\n✓ Bear case still clears your hurdle rate\n⚠ Multiple assumes continued high growth\n✗ Price leaves no room for error"},
+    ];
+    var fw=draft.framework||{name:"",filters:[],useCustom:false};
+    var fwFilters=fw.filters&&fw.filters.length>0?fw.filters:DEFAULT_FILTERS.map(function(f){return Object.assign({},f);});
     function setFw(patch){var next=Object.assign({},draft);next.framework=Object.assign({},fw,patch);setDraft(next);}
-    function setDim(idx,patch){var dims=fwDims.slice();dims[idx]=Object.assign({},dims[idx],patch);setFw({dimensions:dims});}
-    function addDim(){if(fwDims.length>=8)return;setFw({dimensions:fwDims.concat([{name:"",type:"score"}])});}
-    function removeDim(idx){setFw({dimensions:fwDims.filter(function(_,i){return i!==idx;})});}
-    // Generate the custom prompt from framework dimensions
+    function setFilter(idx,patch){var fs=fwFilters.slice();fs[idx]=Object.assign({},fs[idx],patch);setFw({filters:fs});}
+    function addFilter(){if(fwFilters.length>=7)return;setFw({filters:fwFilters.concat([{label:"Filter "+(fwFilters.length+1),desc:"",checks:""}])});}
+    function removeFilter(idx){if(fwFilters.length<=2)return;setFw({filters:fwFilters.filter(function(_,i){return i!==idx;})});}
+    function resetFilters(){setFw({filters:DEFAULT_FILTERS.map(function(f){return Object.assign({},f);})});}
     function buildCustomPrompt(){
-      var dims=fwDims.filter(function(d){return d.name&&d.name.trim();});
-      if(dims.length===0)return"";
-      var name=fw.name||"Custom Framework";
-      var dimBlock=dims.map(function(d,i){
-        var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
-        return"## DIMENSION "+(i+1)+": "+d.name+"\n"+typeDesc+"\nAnalysis: [your detailed assessment]";
+      var name=fw.name||"My Framework";
+      var filterBlock=fwFilters.map(function(f,i){
+        return"## FILTER "+(i+1)+": "+f.label+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n"+
+          (f.checks&&f.checks.trim()?f.checks.trim()+"\n":"✓ [check]\n⚠ [check]\n")+"\n"+
+          "ANALYSIS: "+f.desc;
       }).join("\n\n");
-      return "You are producing a structured investment analysis using the "+name+" framework. "+
-        "ThesisAlpha will parse this output automatically \u2014 follow the format exactly.\n\n"+
-        "Company: [Company Name] ([TICKER])\n\n"+
-        "## TITLE\n[Company Name] \u2014 "+name+" Analysis\n\n"+
-        dimBlock+"\n\n"+
-        "## INVERSION\nMECHANISM: [the single thing that would kill this thesis]\nARK: [probability and what signal to watch]\n\n"+
-        "## VERDICT\n[2-3 sentence overall conclusion. Would you invest?]\n"+
-        "FAT PITCH: [target entry price, e.g. $120]\n"+
+      return "You are a structured investment analyst. Produce a deep dive on [COMPANY] ([TICKER]) using the "+name+" framework.\n"+
+        "Output in EXACTLY this format — ThesisAlpha parses it automatically.\n\n"+
+        "## TITLE\n[Company] \u2014 "+name+"\n\n"+
+        "## METRICS\n[Key metric] | [Value] | [pass/warn/fail]\n(3\u20136 key metrics)\n\n"+
+        filterBlock+"\n\n"+
+        "## INVERSION\nMECHANISM: [single thing that would permanently break this thesis]\nARK: [probability and specific signal to watch]\n\n"+
+        "## VERDICT\n[2\u20133 sentences. Is this worth owning?]\n"+
+        "FAT PITCH: [entry price where even the bear case clears your hurdle]\n"+
         "PENDING: [one specific thing still to verify]\n\n"+
-        "DIMENSION STATUS SYMBOLS:\n"+
-        "\u2713 = strong positive signal\n"+
-        "\u26a0 = caution / watch\n"+
-        "\u2717 = red flag\n"+
-        "\u2014 = neutral or insufficient data";
+        "STATUS SYMBOLS: \u2713=pass \u26a0=caution \u2717=fail \u2014=neutral";
     }
     var _saved=React.useState(false),justSaved=_saved[0],setJustSaved=_saved[1];
     var hasContent=draft.whatIInvestIn.trim().length>0||draft.whatIPay.trim().length>0||draft.howIBehave.trim().length>0||draft.whatIAvoid.trim().length>0;
@@ -10244,69 +10265,91 @@ function ProWelcomeGift(){
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:16}}>
           <div>
             <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",marginBottom:4}}>{"Analysis Framework"}</div>
-            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"Define the dimensions you use to evaluate companies. ThesisAlpha will generate a structured prompt you copy into Claude or ChatGPT — the output comes back in a format ThesisAlpha can parse automatically."}</div>
+            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"The five questions you ask before owning any business. These become the structure of your deep dive prompt — rename them, rewrite the criteria, make them yours."}</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use custom framework"}</span>
-            <div onClick={function(){setFw({useCustom:!fw.useCustom});}} style={{width:40,height:22,borderRadius:11,background:fw.useCustom?K.acc:K.bdr,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Customise"}</span>
+            <div onClick={function(){setFw({useCustom:!fw.useCustom});}} style={{width:40,height:22,borderRadius:11,background:fw.useCustom?"#8B5CF6":K.bdr,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
               <div style={{position:"absolute",top:3,left:fw.useCustom?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
             </div>
           </div>
         </div>
-        {/* Framework name */}
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Framework name</div>
-          <input value={fw.name||""} onChange={function(e){setFw({name:e.target.value});}}
-            placeholder={"e.g. My Quality Compounder Framework, Lynch Growth Checklist..."}
-            style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
-            onFocus={function(e){e.target.style.borderColor=K.acc+"60";}}
-            onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
-        </div>
-        {/* Dimensions */}
-        <div style={{marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Evaluation dimensions (up to 8)"}</div>
-            {fwDims.length<8&&<button onClick={addDim} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>{"+ Add dimension"}</button>}
-          </div>
-          {fwDims.length===0&&<div style={{padding:"20px",borderRadius:_isBm?0:10,background:K.bg,border:"1px dashed "+K.bdr,textAlign:"center",color:K.dim,fontSize:13,fontFamily:fm}}>{"Add the criteria you evaluate every company on — e.g. Moat strength, Management quality, Unit economics, TAM..."}</div>}
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {fwDims.map(function(dim,di){
-              return<div key={di} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
-                <input value={dim.name||""} onChange={function(e){setDim(di,{name:e.target.value});}}
-                  placeholder={"Dimension name, e.g. Moat strength"}
-                  style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,color:K.txt,fontFamily:fm,minWidth:0}}/>
-                <select value={dim.type||"score"} onChange={function(e){setDim(di,{type:e.target.value});}}
-                  style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,fontSize:11,fontFamily:fm,padding:"4px 8px",cursor:"pointer",flexShrink:0}}>
-                  <option value="score">Score 1-10</option>
-                  <option value="passfail">Pass / Fail</option>
-                  <option value="text">Notes only</option>
-                </select>
-                <button onClick={function(){removeDim(di);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",flexShrink:0,lineHeight:1}}>{"×"}</button>
-              </div>;
-            })}
-          </div>
-        </div>
-        {/* Generated prompt */}
-        {fwDims.filter(function(d){return d.name&&d.name.trim();}).length>0&&(function(){
-          var prompt=buildCustomPrompt();
-          var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
-          return<div style={{background:"#8B5CF6"+"08",border:"1px solid "+"#8B5CF6"+"25",borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid "+"#8B5CF6"+"20"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Your custom prompt — copy this into Claude or ChatGPT"}</span>
-              </div>
-              <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedFw(true);setTimeout(function(){setCopiedFw(false);},2000);}}
-                style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+"#8B5CF6"+"40",background:copiedFw?"#8B5CF6"+"20":"transparent",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
-                {copiedFw?"Copied ✓":"Copy prompt"}
-              </button>
+        {/* When not customising — show read-only default */}
+        {!fw.useCustom&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+          {DEFAULT_FILTERS.map(function(f,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
+            <div style={{width:22,height:22,borderRadius:"50%",background:"#8B5CF6"+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:10,fontWeight:800,color:"#8B5CF6",fontFamily:fm}}>{i+1}</span>
             </div>
-            <pre style={{margin:0,padding:"14px 16px",fontSize:11,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,overflowX:"auto",whiteSpace:"pre-wrap",maxHeight:220,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
-          </div>;
-        })()}
-        {fwDims.filter(function(d){return d.name&&d.name.trim();}).length>0&&<div style={{marginTop:12,padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <div style={{fontSize:12,color:K.dim,lineHeight:1.6,fontFamily:fb}}>{"When you import the output, ThesisAlpha will recognise your dimension names and structure the results automatically. The INVERSION and VERDICT sections always get parsed regardless of framework."}</div>
+            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{f.label}</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.desc.substring(0,80)+(f.desc.length>80?"...":"")}</span>
+          </div>;})}
+          <div style={{padding:"8px 14px",fontSize:11,color:K.dim,fontFamily:fm}}>{"These are the ThesisAlpha defaults. Toggle Customise above to rename filters, rewrite criteria, or add your own."}</div>
+        </div>}
+        {/* When customising — editable filter list */}
+        {fw.useCustom&&<div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Framework name</div>
+            <input value={fw.name||""} onChange={function(e){setFw({name:e.target.value});}}
+              placeholder={"e.g. My Compounder Framework, Lynch Growth Method..."}
+              style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
+              onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"60";}}
+              onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Your filters (2–7)"}</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={resetFilters} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}>{"Reset to defaults"}</button>
+                {fwFilters.length<7&&<button onClick={addFilter} style={{background:"none",border:"1px solid #8B5CF640",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>{"+ Add filter"}</button>}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {fwFilters.map(function(f,fi){
+                return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.card,borderBottom:"1px solid "+K.bdr}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:"#8B5CF6"+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span style={{fontSize:10,fontWeight:800,color:"#8B5CF6",fontFamily:fm}}>{fi+1}</span>
+                    </div>
+                    <input value={f.label||""} onChange={function(e){setFilter(fi,{label:e.target.value});}}
+                      placeholder={"Filter name, e.g. Economic Moat"}
+                      style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:0}}/>
+                    {fwFilters.length>2&&<button onClick={function(){removeFilter(fi);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",flexShrink:0,lineHeight:1}}>{"×"}</button>}
+                  </div>
+                  <div style={{padding:"10px 14px",background:K.bg,display:"flex",flexDirection:"column",gap:8}}>
+                    <textarea value={f.desc||""} onChange={function(e){setFilter(fi,{desc:e.target.value});}}
+                      placeholder={"What does this filter evaluate? What are you looking for?"}
+                      rows={2}
+                      style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,resize:"vertical",outline:"none"}}
+                      onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
+                      onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Check items — one per line, prefix with ✓ / ⚠ / ✗ / —"}</div>
+                    <textarea value={f.checks||""} onChange={function(e){setFilter(fi,{checks:e.target.value});}}
+                      placeholder={"✓ Switching costs are high
+⚠ Market is competitive but margins hold
+✗ No durable differentiation"}
+                      rows={3}
+                      style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,resize:"vertical",outline:"none"}}
+                      onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
+                      onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>
+          {(function(){
+            var prompt=buildCustomPrompt();
+            var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
+            return<div style={{background:"#8B5CF6"+"08",border:"1px solid #8B5CF625",borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #8B5CF620"}}>
+                <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Generated prompt"}</span>
+                <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedFw(true);setTimeout(function(){setCopiedFw(false);},2000);}}
+                  style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid #8B5CF640",background:copiedFw?"#8B5CF620":"transparent",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                  {copiedFw?"✓ Copied":"Copy"}
+                </button>
+              </div>
+              <pre style={{margin:0,padding:"12px 16px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
+            </div>;
+          })()}
         </div>}
       </div>
 
@@ -13368,8 +13411,10 @@ function ProWelcomeGift(){
             function filterScore(id){
               var f=filters.find(function(f2){return f2.id===id||(f2.title&&f2.title.toLowerCase().includes(id));});
               if(!f)return null;
-              var checks=f.checks||[];if(checks.length===0)return f.verdictType==="pass"?1:f.verdictType==="fail"?0:0.5;
-              var passed=checks.filter(function(ch){return ch.result==="pass"||ch.pass===true;}).length;
+              // Score-type custom dim: use scoreVal directly
+              if(f.scoreVal!=null)return f.scoreVal/10;
+              var checks=f.checks||[];if(checks.length===0)return f.verdictType==="pass"?1:f.verdictType==="fail"?0:f.verdictType==="warn"?0.5:null;
+              var passed=checks.filter(function(ch){return ch.status==="pass"||ch.result==="pass"||ch.pass===true;}).length;
               return passed/checks.length;
             }
             var competence=filterScore("filter1")||filterScore("circle")||filterScore("competence");
@@ -13377,8 +13422,28 @@ function ProWelcomeGift(){
             var mgmt=filterScore("filter3")||filterScore("management");
             var financial=filterScore("filter4")||filterScore("financial");
             var valuation2=filterScore("filter5")||filterScore("price")||filterScore("valuation");
-            var scores=[competence,moat,mgmt,financial,valuation2].filter(function(s2){return s2!=null;});
+            var stdScores=[competence,moat,mgmt,financial,valuation2].filter(function(s2){return s2!=null;});
+            // For custom frameworks: score all dims
+            var isCustomFw=stdScores.length===0&&filters.some(function(f){return f.isCustomDim;});
+            var customScores=isCustomFw?filters.filter(function(f){return f.isCustomDim;}).map(function(f){
+              if(f.scoreVal!=null)return f.scoreVal/10;
+              return f.verdictType==="pass"?1:f.verdictType==="fail"?0:f.verdictType==="warn"?0.5:null;
+            }).filter(function(s){return s!=null;}):[];
+            var scores=isCustomFw?customScores:stdScores;
             var overall=scores.length>0?scores.reduce(function(a,b){return a+b;},0)/scores.length:null;
+            // Map custom dims to named slots by position or title match
+            if(isCustomFw){
+              filters.filter(function(f){return f.isCustomDim;}).forEach(function(f){
+                var t=f.title.toLowerCase();
+                var s=f.scoreVal!=null?f.scoreVal/10:f.verdictType==="pass"?1:f.verdictType==="fail"?0:f.verdictType==="warn"?0.5:null;
+                if(s==null)return;
+                if(!competence&&(t.includes("competence")||t.includes("understand")||t.includes("circle")))competence=s;
+                else if(!moat&&(t.includes("moat")||t.includes("competitive")||t.includes("advantage")||t.includes("quality")))moat=s;
+                else if(!mgmt&&(t.includes("manag")||t.includes("team")||t.includes("founder")||t.includes("ceo")))mgmt=s;
+                else if(!financial&&(t.includes("financ")||t.includes("balance")||t.includes("unit econ")||t.includes("margin")))financial=s;
+                else if(!valuation2&&(t.includes("valuat")||t.includes("price")||t.includes("dcf")||t.includes("margin of safety")))valuation2=s;
+              });
+            }
             var fp=c2.fatPitchPrice?parseFloat(c2.fatPitchPrice):null;
             var price=(c2.position||{}).currentPrice||0;
             var fpGap=fp&&price>0?((fp-price)/fp*100):null;
