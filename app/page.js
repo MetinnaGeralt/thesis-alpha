@@ -2213,7 +2213,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var PURPLE="#8B5CF6";
     var _copied=React.useState(false),copied=_copied[0],setCopied=_copied[1];
     var _tab=React.useState("standard"),promptTab=_tab[0],setPromptTab=_tab[1];
-    var fw=myStrategy.framework||{name:"",dimensions:[],useCustom:false};
+    var fw=myStrategy.framework||{name:"",filters:[],useCustom:false};
     var fwFilters=fw.filters&&fw.filters.length>0?fw.filters:null;
     var hasCustomFw=fw.useCustom&&fwFilters&&fwFilters.length>0&&fw.name&&fw.name.trim();
     function buildCustomPrompt(){
@@ -2362,7 +2362,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       {/* Custom framework prompt view */}
       {promptTab==="custom"&&<div>
         <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
-          {[{n:"1",text:'Copy your custom prompt below — it uses the dimensions you defined in My Strategy'},
+          {[{n:"1",text:'Copy your custom prompt below — it uses the filters you defined in My Strategy'},
             {n:"2",text:"Open Claude, ChatGPT, or Gemini. Paste the prompt, then ask it to analyse "+ticker},
             {n:"3",text:"Copy the full output and come back — click Paste output →"},
           ].map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?10:0}}>
@@ -2375,7 +2375,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </div>
         <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,marginBottom:16,overflow:"hidden"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:"1px solid "+K.bdr}}>
-            <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{fw.name+" prompt — "+fwDims.length+" dimensions"}</span>
+            <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{fw.name+(fwFilters?" — "+fwFilters.length+" filters":"")}</span>
             <button onClick={function(){try{navigator.clipboard.writeText(customPrompt);}catch(e){}setCopied(true);setTimeout(function(){setCopied(false);},2500);}}
               style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"40",background:copied?PURPLE+"20":"transparent",color:PURPLE,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
               {copied?<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>{"Copied!"}</>:<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
@@ -2384,7 +2384,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <pre style={{margin:0,padding:"14px 16px",fontSize:11,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:260,overflowY:"auto",background:"transparent"}}>{customPrompt}</pre>
         </div>
         <div style={{padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px solid "+K.bdr,fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:16}}>
-          {"ThesisAlpha will parse your custom dimensions automatically on import. INVERSION and VERDICT are always extracted regardless of framework."}
+          {"ThesisAlpha will parse your custom filters automatically on import. INVERSION and VERDICT are always extracted regardless of framework."}
         </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
           <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Already ran the analysis?"}</div>
