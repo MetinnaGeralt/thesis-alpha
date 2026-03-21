@@ -15217,7 +15217,7 @@ function ProWelcomeGift(){
       return<div style={{width:200,minWidth:200,background:K.side,borderRight:"1px solid "+K.bdr,height:"100vh",position:"sticky",top:0,display:"flex",flexDirection:"column",overflowY:"auto",zIndex:1}}>
         {/* Back to portfolio */}
         <div style={{padding:"18px 16px 14px",borderBottom:"1px solid "+K.bdr}}>
-          <button onClick={function(){setSelId(null);setSubPage(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:K.dim,cursor:"pointer",padding:0,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:12,letterSpacing:0.2}}>
+          <button onClick={function(){setSelId(null);setSubPage(null)}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",padding:0,fontFamily:fm,fontSize:11,fontWeight:600,marginBottom:12,letterSpacing:0.2}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             {sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too Hard":"Portfolio"}
           </button>
@@ -15225,13 +15225,13 @@ function ProWelcomeGift(){
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <CoLogo domain={sel.domain} ticker={sel.ticker} size={32}/>
             <div style={{minWidth:0}}>
-              <div style={{fontSize:14,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",lineHeight:1}}>{sel.ticker}</div>
-              <div style={{fontSize:10,color:K.dim,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:110}}>{sel.name}</div>
+              <div style={{fontSize:14,fontWeight:800,color:"rgba(255,255,255,0.95)",fontFamily:fh,letterSpacing:"-0.3px",lineHeight:1}}>{sel.ticker}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:110}}>{sel.name}</div>
             </div>
           </div>
           {/* Price + return */}
           {pos.currentPrice>0&&<div style={{marginTop:10,display:"flex",alignItems:"baseline",gap:6}}>
-            <span style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</span>
+            <span style={{fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.95)",fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</span>
             {pctReturn!=null&&<span style={{fontSize:11,fontWeight:600,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</span>}
           </div>}
         </div>
