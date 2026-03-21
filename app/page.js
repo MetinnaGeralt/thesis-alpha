@@ -5754,55 +5754,7 @@ function calcMoatFromData(finData,businessModelType){
         {/* ══════════════════════════════════════════════════════
             TAB 1: THESIS & MONITORING
             ══════════════════════════════════════════════════════ */}
-        {dossierTab==="monitoring"&&<div style={{display:"flex",gap:0,alignItems:"flex-start"}}>
-        {/* ── Scroll Sidebar ── */}
-        {!isMobile&&<div style={{width:148,flexShrink:0,position:"sticky",top:24,alignSelf:"flex-start",paddingRight:16}}>
-          {(function(){
-            var NAV=[
-              {id:"ds-cover",  label:"Overview"},
-              {id:"ds-story",  label:"Thesis"},
-              {id:"ds-evidence",label:"Evidence"},
-              {id:"ds-ledger", label:"Position"},
-              {id:"ds-numbers",label:"Numbers"},
-              {id:"ds-research",label:"Research"},
-            ];
-            var _act=React.useState("ds-cover"),activeSection=_act[0],setActiveSection=_act[1];
-            React.useEffect(function(){
-              var observers=[];
-              var opts={root:null,rootMargin:"-20% 0px -60% 0px",threshold:0};
-              NAV.forEach(function(n){
-                var el=document.getElementById(n.id);
-                if(!el)return;
-                var obs=new IntersectionObserver(function(entries){
-                  entries.forEach(function(entry){
-                    if(entry.isIntersecting)setActiveSection(n.id);
-                  });
-                },opts);
-                obs.observe(el);
-                observers.push(obs);
-              });
-              return function(){observers.forEach(function(o){o.disconnect();});};
-            },[c.id,dossierTab]);
-            return<nav style={{display:"flex",flexDirection:"column",gap:2}}>
-              {NAV.map(function(n){
-                var act=activeSection===n.id;
-                return<button key={n.id}
-                  onClick={function(){var el=document.getElementById(n.id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:"none",
-                    border:"none",cursor:"pointer",borderRadius:_isBm?0:6,
-                    textAlign:"left",transition:"all .15s",
-                    background:act?K.acc+"10":"transparent"}}>
-                  <div style={{width:3,height:act?20:12,borderRadius:2,flexShrink:0,transition:"all .2s",
-                    background:act?K.acc:K.bdr}}/>
-                  <span style={{fontSize:11,fontWeight:act?700:400,color:act?K.acc:K.dim,
-                    fontFamily:fm,letterSpacing:act?0:.2,transition:"all .15s"}}>{n.label}</span>
-                </button>;
-              })}
-            </nav>;
-          })()}
-        </div>}
-        {/* ── Main content ── */}
-        <div style={{flex:1,minWidth:0}}>
+        {dossierTab==="monitoring"&&<div>
         <div id="ds-cover"/>
         {/* ── COVER ── */}
         <div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
@@ -7009,9 +6961,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
         })()}
-        </div>}
-        </div>
-        </div>}
+        </div>;})():null}
 
         {/* ══════════════════════════════════════════════════════
             TAB 2: DEEP DIVE
@@ -14656,7 +14606,7 @@ function ProWelcomeGift(){
                 if(container){container.scrollTop=el.offsetTop-80}
                 else el.scrollIntoView({behavior:"smooth",block:"start"});
               }
-            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.mid,transition:"all .2s ease",borderLeft:"2px solid transparent"}}
+            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.txt,transition:"all .2s ease",borderLeft:"2px solid transparent"}}
             onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"12";e.currentTarget.style.color=K.acc;e.currentTarget.style.paddingLeft="20px"}}
             onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid;e.currentTarget.style.paddingLeft="16px"}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
