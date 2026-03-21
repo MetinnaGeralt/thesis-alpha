@@ -7240,7 +7240,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>
 
                 {/* Action buttons */}
-                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
                   <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
                     style={{display:"flex",alignItems:"center",gap:8,padding:"11px 24px",
                       borderRadius:_isBm?0:8,border:"none",
@@ -7255,6 +7255,14 @@ function calcMoatFromData(finData,businessModelType){
                       color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
                     {"Already have output? Import →"}
                   </button>
+                </div>
+                {/* Custom framework nudge */}
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.6}}>
+                  {"Prefer your own research method? "}
+                  <button onClick={function(){setPage("strategy");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm,fontWeight:600,textDecoration:"underline"}}>
+                    {"Define your own framework in My Strategy →"}
+                  </button>
+                  {" Your custom prompt will appear here automatically."}
                 </div>
               </div>
             </div>}
@@ -10236,7 +10244,7 @@ function ProWelcomeGift(){
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:16}}>
           <div>
             <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",marginBottom:4}}>{"Analysis Framework"}</div>
-            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"Define the dimensions you use to evaluate companies. ThesisAlpha will generate a structured prompt you copy into Claude or ChatGPT — the output comes back in a format ThesisAlpha can parse automatically. No second API call."}</div>
+            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"Define the dimensions you use to evaluate companies. ThesisAlpha will generate a structured prompt you copy into Claude or ChatGPT — the output comes back in a format ThesisAlpha can parse automatically."}</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
             <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use custom framework"}</span>
