@@ -2221,41 +2221,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var name=fw.name||"Custom Framework";
       var dimBlock=fwDims.map(function(d,i){
         var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
-        return"## DIMENSION "+(i+1)+": "+d.name+"
-"+typeDesc+"
-Analysis: [your detailed assessment of "+ticker+"]";
-      }).join("
-
-");
+        return"## DIMENSION "+(i+1)+": "+d.name+"\n"+typeDesc+"\nAnalysis: [your detailed assessment of "+ticker+"]";
+      }).join("\n\n");
       return "You are producing a structured investment analysis of "+ticker+" using the "+name+" framework. "+
-        "ThesisAlpha will parse this output automatically — follow the format exactly.
-
-"+
-        "## TITLE
-"+ticker+" — "+name+" Analysis
-
-"+
-        dimBlock+"
-
-"+
-        "## INVERSION
-MECHANISM: [the single thing that would kill this thesis]
-ARK: [probability and what signal to watch]
-
-"+
-        "## VERDICT
-[2-3 sentence overall conclusion. Would you invest in "+ticker+"?]
-"+
-        "FAT PITCH: [target entry price]
-"+
-        "PENDING: [one specific thing still to verify]
-
-"+
-        "STATUS SYMBOLS:
-✓ = pass
-⚠ = caution
-✗ = red flag
-— = neutral";
+        "ThesisAlpha will parse this output automatically \u2014 follow the format exactly.\n\n"+
+        "## TITLE\n"+ticker+" \u2014 "+name+" Analysis\n\n"+
+        dimBlock+"\n\n"+
+        "## INVERSION\nMECHANISM: [the single thing that would kill this thesis]\nARK: [probability and what signal to watch]\n\n"+
+        "## VERDICT\n[2-3 sentence overall conclusion. Would you invest in "+ticker+"?]\n"+
+        "FAT PITCH: [target entry price]\n"+
+        "PENDING: [one specific thing still to verify]\n\n"+
+        "STATUS SYMBOLS:\n\u2713 = pass\n\u26a0 = caution\n\u2717 = red flag\n\u2014 = neutral";
     }
     var customPrompt=hasCustomFw?buildCustomPrompt():"";
 
@@ -10138,48 +10114,22 @@ function ProWelcomeGift(){
       var name=fw.name||"Custom Framework";
       var dimBlock=dims.map(function(d,i){
         var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
-        return"## DIMENSION "+(i+1)+": "+d.name+"
-"+typeDesc+"
-Analysis: [your detailed assessment]";
-      }).join("
-
-");
+        return"## DIMENSION "+(i+1)+": "+d.name+"\n"+typeDesc+"\nAnalysis: [your detailed assessment]";
+      }).join("\n\n");
       return "You are producing a structured investment analysis using the "+name+" framework. "+
-        "ThesisAlpha will parse this output automatically — follow the format exactly.
-
-"+
-        "Company: [Company Name] ([TICKER])
-
-"+
-        "## TITLE
-[Company Name] — "+name+" Analysis
-
-"+
-        dimBlock+"
-
-"+
-        "## INVERSION
-MECHANISM: [the single thing that would kill this thesis]
-ARK: [probability and what signal to watch]
-
-"+
-        "## VERDICT
-[2-3 sentence overall conclusion. Would you invest?]
-"+
-        "FAT PITCH: [target entry price, e.g. $120]
-"+
-        "PENDING: [one specific thing still to verify]
-
-"+
-        "DIMENSION STATUS SYMBOLS:
-"+
-        "✓ = strong positive signal
-"+
-        "⚠ = caution / watch
-"+
-        "✗ = red flag
-"+
-        "— = neutral or insufficient data";
+        "ThesisAlpha will parse this output automatically \u2014 follow the format exactly.\n\n"+
+        "Company: [Company Name] ([TICKER])\n\n"+
+        "## TITLE\n[Company Name] \u2014 "+name+" Analysis\n\n"+
+        dimBlock+"\n\n"+
+        "## INVERSION\nMECHANISM: [the single thing that would kill this thesis]\nARK: [probability and what signal to watch]\n\n"+
+        "## VERDICT\n[2-3 sentence overall conclusion. Would you invest?]\n"+
+        "FAT PITCH: [target entry price, e.g. $120]\n"+
+        "PENDING: [one specific thing still to verify]\n\n"+
+        "DIMENSION STATUS SYMBOLS:\n"+
+        "\u2713 = strong positive signal\n"+
+        "\u26a0 = caution / watch\n"+
+        "\u2717 = red flag\n"+
+        "\u2014 = neutral or insufficient data";
     }
     var _saved=React.useState(false),justSaved=_saved[0],setJustSaved=_saved[1];
     var hasContent=draft.whatIInvestIn.trim().length>0||draft.whatIPay.trim().length>0||draft.howIBehave.trim().length>0||draft.whatIAvoid.trim().length>0;
