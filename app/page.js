@@ -10128,6 +10128,7 @@ function ProWelcomeGift(){
   // ── My Strategy ─────────────────────────────────────────────────────────
   function MyStrategyPage(){
     var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
+    var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
     var DEFAULT_FILTERS=[
       {label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Do you understand how it makes money, why customers stay, and why a competitor can\'t easily copy it?",checks:"✓ Business model is simple and predictable\n✓ You can explain the moat in one sentence\n⚠ Industry requires specialist knowledge\n✗ Outcome depends on macro or commodity prices"},
       {label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded, intelligent competitor willingly enter this market? What protects margins and returns over a decade?",checks:"✓ Switching costs are high\n✓ Network effects compound with scale\n✓ Cost advantages are structural, not cyclical\n✗ Competitors have entered and competed away returns"},
@@ -10336,7 +10337,6 @@ function ProWelcomeGift(){
           </div>
           {(function(){
             var prompt=buildCustomPrompt();
-            var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
             return<div style={{background:"#8B5CF6"+"08",border:"1px solid #8B5CF625",borderRadius:_isBm?0:12,overflow:"hidden"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #8B5CF620"}}>
                 <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Generated prompt"}</span>
