@@ -10324,9 +10324,7 @@ function ProWelcomeGift(){
                       onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
                     <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Check items — one per line, prefix with ✓ / ⚠ / ✗ / —"}</div>
                     <textarea value={f.checks||""} onChange={function(e){setFilter(fi,{checks:e.target.value});}}
-                      placeholder={"✓ Switching costs are high
-⚠ Market is competitive but margins hold
-✗ No durable differentiation"}
+                      placeholder={"✓ Switching costs are high\n⚠ Market is competitive but margins hold\n✗ No durable differentiation"}
                       rows={3}
                       style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,resize:"vertical",outline:"none"}}
                       onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
