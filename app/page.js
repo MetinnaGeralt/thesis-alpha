@@ -7280,7 +7280,7 @@ function calcMoatFromData(finData,businessModelType){
                     style={{padding:"11px 22px",borderRadius:_isBm?0:8,
                       border:"1px solid "+PURPLE+"50",background:"transparent",
                       color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-                    {"Already have output? Import →"}
+                    {"Paste output →"}
                   </button>
                 </div>
                 {/* Custom framework nudge */}
