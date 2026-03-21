@@ -10150,6 +10150,8 @@ function ProWelcomeGift(){
   function MyStrategyPage(){
     var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
     var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
+    var _ef=React.useState(0),expandedFilter=_ef[0],setExpandedFilter=_ef[1];
+    var _sp=React.useState(false),showPrompt=_sp[0],setShowPrompt=_sp[1];
     var DEFAULT_FILTERS=[
       {label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Do you understand how it makes money, why customers stay, and why a competitor can\'t easily copy it?",checks:"✓ Business model is simple and predictable\n✓ You can explain the moat in one sentence\n⚠ Industry requires specialist knowledge\n✗ Outcome depends on macro or commodity prices"},
       {label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded, intelligent competitor willingly enter this market? What protects margins and returns over a decade?",checks:"✓ Switching costs are high\n✓ Network effects compound with scale\n✓ Cost advantages are structural, not cyclical\n✗ Competitors have entered and competed away returns"},
@@ -10284,89 +10286,115 @@ function ProWelcomeGift(){
 
       {/* ── ANALYSIS FRAMEWORK ── */}
       <div style={{marginBottom:28,paddingTop:28,borderTop:"1px solid "+K.bdr}}>
+        {/* Header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:16}}>
           <div>
             <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",marginBottom:4}}>{"Analysis Framework"}</div>
-            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"The five questions you ask before owning any business. These become the structure of your deep dive prompt — rename them, rewrite the criteria, make them yours."}</div>
+            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"The five filters you apply before owning any business. These become the structure of your deep dive prompt. Use the defaults or make them yours."}</div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
             <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Customise"}</span>
-            <div onClick={function(){setFw({useCustom:!fw.useCustom});}} style={{width:40,height:22,borderRadius:11,background:fw.useCustom?"#8B5CF6":K.bdr,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+            <div onClick={function(){setFw({useCustom:!fw.useCustom});setExpandedFilter(0);}} style={{width:40,height:22,borderRadius:11,background:fw.useCustom?"#8B5CF6":K.bdr,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
               <div style={{position:"absolute",top:3,left:fw.useCustom?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
             </div>
           </div>
         </div>
-        {/* When not customising — show read-only default */}
-        {!fw.useCustom&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
-          {DEFAULT_FILTERS.map(function(f,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:K.bg,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
-            <div style={{width:22,height:22,borderRadius:"50%",background:"#8B5CF6"+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <span style={{fontSize:10,fontWeight:800,color:"#8B5CF6",fontFamily:fm}}>{i+1}</span>
+        {/* Read-only default view */}
+        {!fw.useCustom&&<div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:12}}>
+          {DEFAULT_FILTERS.map(function(f,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",background:K.bg,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr}}>
+            <div style={{width:20,height:20,borderRadius:"50%",background:"#8B5CF6"+"12",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:9,fontWeight:800,color:"#8B5CF6",fontFamily:fm}}>{i+1}</span>
             </div>
-            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{f.label}</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.desc.substring(0,80)+(f.desc.length>80?"...":"")}</span>
+            <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,flexShrink:0}}>{f.label}</span>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginLeft:4}}>{f.desc.substring(0,70)+(f.desc.length>70?"...":"")}</span>
           </div>;})}
-          <div style={{padding:"8px 14px",fontSize:11,color:K.dim,fontFamily:fm}}>{"These are the ThesisAlpha defaults. Toggle Customise above to rename filters, rewrite criteria, or add your own."}</div>
+          <div style={{padding:"6px 14px",fontSize:11,color:K.dim,fontFamily:fm}}>{"Toggle Customise to rename filters or rewrite the criteria."}</div>
         </div>}
-        {/* When customising — editable filter list */}
+        {/* Editable view — two column: list left, editor right */}
         {fw.useCustom&&<div>
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Framework name</div>
+          {/* Framework name */}
+          <div style={{marginBottom:14}}>
             <input value={fw.name||""} onChange={function(e){setFw({name:e.target.value});}}
-              placeholder={"e.g. My Compounder Framework, Lynch Growth Method..."}
-              style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
+              placeholder={"Framework name, e.g. My Compounder Method..."}
+              style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none",fontWeight:600}}
               onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"60";}}
               onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
           </div>
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Your filters (2–7)"}</div>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={resetFilters} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 10px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}>{"Reset to defaults"}</button>
-                {fwFilters.length<7&&<button onClick={addFilter} style={{background:"none",border:"1px solid #8B5CF640",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>{"+ Add filter"}</button>}
-              </div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {/* Two-col editor */}
+          <div style={{display:"flex",gap:0,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden",marginBottom:14}}>
+            {/* Left: filter list */}
+            <div style={{width:170,flexShrink:0,borderRight:"1px solid "+K.bdr,background:K.bg}}>
               {fwFilters.map(function(f,fi){
-                return<div key={fi} style={{border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,overflow:"hidden"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:K.card,borderBottom:"1px solid "+K.bdr}}>
-                    <div style={{width:22,height:22,borderRadius:"50%",background:"#8B5CF6"+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      <span style={{fontSize:10,fontWeight:800,color:"#8B5CF6",fontFamily:fm}}>{fi+1}</span>
-                    </div>
-                    <input value={f.label||""} onChange={function(e){setFilter(fi,{label:e.target.value});}}
-                      placeholder={"Filter name, e.g. Economic Moat"}
-                      style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:0}}/>
-                    {fwFilters.length>2&&<button onClick={function(){removeFilter(fi);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",flexShrink:0,lineHeight:1}}>{"×"}</button>}
+                var active=expandedFilter===fi;
+                return<div key={fi} onClick={function(){setExpandedFilter(fi);}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",cursor:"pointer",
+                    background:active?"#8B5CF6"+"10":"transparent",
+                    borderLeft:"2px solid "+(active?"#8B5CF6":"transparent"),
+                    borderBottom:fi<fwFilters.length-1?"1px solid "+K.bdr:"none",transition:"all .1s"}}>
+                  <div style={{width:18,height:18,borderRadius:"50%",background:active?"#8B5CF6":"#8B5CF6"+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <span style={{fontSize:9,fontWeight:800,color:active?"#fff":"#8B5CF6",fontFamily:fm}}>{fi+1}</span>
                   </div>
-                  <div style={{padding:"10px 14px",background:K.bg,display:"flex",flexDirection:"column",gap:8}}>
-                    <textarea value={f.desc||""} onChange={function(e){setFilter(fi,{desc:e.target.value});}}
-                      placeholder={"What does this filter evaluate? What are you looking for?"}
-                      rows={2}
-                      style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,resize:"vertical",outline:"none"}}
-                      onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
-                      onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
-                    <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Check items — one per line, prefix with ✓ / ⚠ / ✗ / —"}</div>
-                    <textarea value={f.checks||""} onChange={function(e){setFilter(fi,{checks:e.target.value});}}
-                      placeholder={"✓ Switching costs are high\n⚠ Market is competitive but margins hold\n✗ No durable differentiation"}
-                      rows={3}
-                      style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 12px",fontSize:12,color:K.txt,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,resize:"vertical",outline:"none"}}
-                      onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
-                      onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
-                  </div>
+                  <span style={{fontSize:12,fontWeight:active?700:400,color:active?"#8B5CF6":K.txt,fontFamily:fm,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.label||"Filter "+(fi+1)}</span>
                 </div>;
               })}
+              {fwFilters.length<7&&<div onClick={addFilter} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 12px",cursor:"pointer",color:K.dim,fontSize:11,fontFamily:fm,borderTop:"1px solid "+K.bdr}}
+                onMouseEnter={function(e){e.currentTarget.style.color="#8B5CF6";}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>
+                <span style={{fontSize:14,lineHeight:1}}>+</span>{"Add filter"}
+              </div>}
             </div>
+            {/* Right: edit panel for selected filter */}
+            {fwFilters[expandedFilter]&&(function(){
+              var f=fwFilters[expandedFilter];var fi=expandedFilter;
+              return<div style={{flex:1,minWidth:0,padding:"14px 16px",background:K.card}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <input value={f.label||""} onChange={function(e){setFilter(fi,{label:e.target.value});}}
+                    placeholder={"Filter name"}
+                    style={{flex:1,background:"none",border:"none",outline:"none",fontSize:14,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:0}}/>
+                  {fwFilters.length>2&&<button onClick={function(){removeFilter(fi);setExpandedFilter(Math.max(0,fi-1));}}
+                    style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",flexShrink:0,lineHeight:1}}>{"×"}</button>}
+                </div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{"What are you evaluating?"}</div>
+                <textarea value={f.desc||""} onChange={function(e){setFilter(fi,{desc:e.target.value});}}
+                  placeholder={"e.g. Does a well-funded competitor want to enter this market?"}
+                  rows={2}
+                  style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:12,color:K.txt,fontFamily:fb,lineHeight:1.6,resize:"none",outline:"none",marginBottom:10}}
+                  onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
+                  onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>{"Check items — prefix ✓ ⚠ ✗ —"}</div>
+                <textarea value={f.checks||""} onChange={function(e){setFilter(fi,{checks:e.target.value});}}
+                  placeholder={"✓ Switching costs lock customers in
+⚠ Market is growing but competitive
+✗ No differentiation from peers"}
+                  rows={4}
+                  style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"8px 10px",fontSize:11,color:K.txt,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.8,resize:"none",outline:"none"}}
+                  onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"40";}}
+                  onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+              </div>;
+            })()}
           </div>
+          {/* Actions row */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <button onClick={resetFilters} style={{background:"none",border:"none",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>{"Reset to ThesisAlpha defaults"}</button>
+          </div>
+          {/* Generated prompt — collapsed by default, expand on click */}
           {(function(){
             var prompt=buildCustomPrompt();
-            return<div style={{background:"#8B5CF6"+"08",border:"1px solid #8B5CF625",borderRadius:_isBm?0:12,overflow:"hidden"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #8B5CF620"}}>
-                <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Generated prompt"}</span>
-                <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedFw(true);setTimeout(function(){setCopiedFw(false);},2000);}}
-                  style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid #8B5CF640",background:copiedFw?"#8B5CF620":"transparent",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-                  {copiedFw?"✓ Copied":"Copy"}
-                </button>
+            return<div style={{border:"1px solid #8B5CF625",borderRadius:_isBm?0:10,overflow:"hidden"}}>
+              <div onClick={function(){setShowPrompt(!showPrompt);}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#8B5CF6"+"06",cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span style={{fontSize:11,fontWeight:600,color:"#8B5CF6",fontFamily:fm}}>{"Preview generated prompt"}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {showPrompt&&<button onClick={function(e){e.stopPropagation();try{navigator.clipboard.writeText(prompt);}catch(err){}setCopiedFw(true);setTimeout(function(){setCopiedFw(false);},2000);}}
+                    style={{padding:"3px 10px",borderRadius:_isBm?0:5,border:"1px solid #8B5CF640",background:copiedFw?"#8B5CF620":"transparent",color:"#8B5CF6",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                    {copiedFw?"✓ Copied":"Copy"}
+                  </button>}
+                  <span style={{fontSize:10,color:"#8B5CF6",fontFamily:fm}}>{showPrompt?"▲":"▼"}</span>
+                </div>
               </div>
-              <pre style={{margin:0,padding:"12px 16px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:180,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
+              {showPrompt&&<pre style={{margin:0,padding:"12px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:200,overflowY:"auto",background:"transparent"}}>{prompt}</pre>}
             </div>;
           })()}
         </div>}
