@@ -5739,26 +5739,129 @@ function calcMoatFromData(finData,businessModelType){
         {/* ══════════════════════════════════════════════════════
             TAB 1: THESIS & MONITORING
             ══════════════════════════════════════════════════════ */}
-        {dossierTab==="monitoring"&&<div>
-        {/* ── OWNER'S SCORECARD ── */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:"16px 20px",marginBottom:20,display:"flex",flexWrap:"wrap",gap:0}}>
-          {[
-            {label:"Conviction",value:conv>0?conv+"/10":"—",sub:conv>=7?"High":conv>=4?"Medium":conv>0?"Low":"Unrated",color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,onClick:function(){setModal({type:"conviction"})}},
-            {label:"Thesis",value:_tScore+"%",sub:_tScore>=80?"Strong":_tScore>=50?"Developing":"Weak",color:_tScoreColor,onClick:function(){setModal({type:"thesis"})}},
-            {label:"KPIs",value:h.m>0?h.ok+"/"+h.m:"None",sub:h.m>0?(h.ok===h.m?"All met":h.ok>0?"Partial":"Missed"):"Add KPIs",color:h.m>0?(h.ok===h.m?K.grn:h.ok>0?K.amb:K.red):K.dim,onClick:function(){setDetailTab("dossier")}},
-            {label:"Held",value:(function(){if(!c.purchaseDate)return"—";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);if(d<=0||d>18250)return"—";return d<30?d+"d":d<365?Math.floor(d/30)+"mo":Math.floor(d/365)+"yr"+(Math.floor((d%365)/30)>0?" "+Math.floor((d%365)/30)+"mo":"")})(),sub:(function(){if(!c.purchaseDate)return"Set date";var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d<90?"Short term":d<730?"Medium term":"Long term"})(),color:K.mid,onClick:function(){setModal({type:"position"})}},
-            {label:"Return",value:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"—";return((p2.currentPrice-p2.avgCost)/p2.avgCost*100).toFixed(1)+"%"})(),sub:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return"No position";var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=20?"Performing":r>=0?"Positive":r>=-10?"Small loss":"Deep loss"})(),color:(function(){var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return K.dim;var r=(p2.currentPrice-p2.avgCost)/p2.avgCost*100;return r>=0?K.grn:K.red})(),onClick:function(){setModal({type:"position"})}},
-            {label:"My CAGR",value:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return"—";return"+"+(c.convGrowthEst.value).toFixed(1)+"%";})(),sub:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return"Not set";if(c.convGrowthEst.note)return c.convGrowthEst.note.substring(0,22)+(c.convGrowthEst.note.length>22?"...":"");var d=c.convGrowthEst.date?Math.ceil((Date.now()-new Date(c.convGrowthEst.date))/864e5):null;return d?d+"d ago":"Set";})(),color:(function(){if(!c.convGrowthEst||!c.convGrowthEst.value)return K.dim;var v=c.convGrowthEst.value;return v>=15?K.grn:v>=8?K.acc:K.dim;})(),onClick:function(){setModal({type:"position",id:c.id})}},
-            {label:"Thesis age",value:_thesisStaleBadge,sub:_thesisStale?"Needs review":_thesisAgeDays!=null&&_thesisAgeDays<30?"Fresh":"OK",color:_thesisStale?K.amb:K.grn,onClick:function(){setModal({type:"thesis"})}},
-          ].map(function(item,i){return<div key={i} onClick={item.onClick} style={{flex:"1 1 0",minWidth:80,padding:"6px 12px",cursor:"pointer",borderLeft:i>0?"1px solid "+K.bdr:"none",textAlign:"center"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=K.bg}}
-            onMouseLeave={function(e){e.currentTarget.style.background="transparent"}}>
-            <div style={{fontSize:10,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:4}}>{item.label}</div>
-            <div style={{fontSize:17,fontWeight:800,color:item.color,fontFamily:fm,lineHeight:1,marginBottom:2}}>{item.value}</div>
-            <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.sub}</div>
-          </div>})}
+        {dossierTab==="monitoring"&&<div style={{display:"flex",gap:0,alignItems:"flex-start"}}>
+        {/* ── Scroll Sidebar ── */}
+        {!isMobile&&<div style={{width:148,flexShrink:0,position:"sticky",top:24,alignSelf:"flex-start",paddingRight:16}}>
+          {(function(){
+            var NAV=[
+              {id:"ds-cover",  label:"Overview"},
+              {id:"ds-story",  label:"Thesis"},
+              {id:"ds-evidence",label:"Evidence"},
+              {id:"ds-ledger", label:"Position"},
+              {id:"ds-numbers",label:"Numbers"},
+              {id:"ds-research",label:"Research"},
+            ];
+            var _act=React.useState("ds-cover"),activeSection=_act[0],setActiveSection=_act[1];
+            React.useEffect(function(){
+              var observers=[];
+              var opts={root:null,rootMargin:"-20% 0px -60% 0px",threshold:0};
+              NAV.forEach(function(n){
+                var el=document.getElementById(n.id);
+                if(!el)return;
+                var obs=new IntersectionObserver(function(entries){
+                  entries.forEach(function(entry){
+                    if(entry.isIntersecting)setActiveSection(n.id);
+                  });
+                },opts);
+                obs.observe(el);
+                observers.push(obs);
+              });
+              return function(){observers.forEach(function(o){o.disconnect();});};
+            },[c.id,dossierTab]);
+            return<nav style={{display:"flex",flexDirection:"column",gap:2}}>
+              {NAV.map(function(n){
+                var act=activeSection===n.id;
+                return<button key={n.id}
+                  onClick={function(){var el=document.getElementById(n.id);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:"none",
+                    border:"none",cursor:"pointer",borderRadius:_isBm?0:6,
+                    textAlign:"left",transition:"all .15s",
+                    background:act?K.acc+"10":"transparent"}}>
+                  <div style={{width:3,height:act?20:12,borderRadius:2,flexShrink:0,transition:"all .2s",
+                    background:act?K.acc:K.bdr}}/>
+                  <span style={{fontSize:11,fontWeight:act?700:400,color:act?K.acc:K.dim,
+                    fontFamily:fm,letterSpacing:act?0:.2,transition:"all .15s"}}>{n.label}</span>
+                </button>;
+              })}
+            </nav>;
+          })()}
+        </div>}
+        {/* ── Main content ── */}
+        <div style={{flex:1,minWidth:0}}>
+        <div id="ds-cover"/>
+        {/* ── COVER ── */}
+        <div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
+          {/* Three big signals */}
+          <div style={{display:"flex",gap:isMobile?16:32,alignItems:"flex-start",flexWrap:"wrap"}}>
+            {/* Conviction — dominant signal */}
+            <div onClick={function(){setModal({type:"conviction"})}} style={{cursor:"pointer",flexShrink:0}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>{"Conviction"}</div>
+              <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+                <span style={{fontSize:isMobile?48:56,fontWeight:900,lineHeight:1,fontFamily:fm,
+                  color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim}}>{conv||"—"}</span>
+                {conv>0&&<span style={{fontSize:16,color:K.dim,fontFamily:fm}}>{"/10"}</span>}
+              </div>
+              <div style={{fontSize:11,color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim,fontFamily:fm,marginTop:2,fontWeight:600}}>
+                {conv>=7?"High conviction":conv>=4?"Medium conviction":conv>0?"Low conviction":"Not rated"}
+              </div>
+            </div>
+            {/* Divider */}
+            <div style={{width:1,height:70,background:K.bdr,flexShrink:0,alignSelf:"center",display:isMobile?"none":"block"}}/>
+            {/* Return */}
+            {(function(){
+              var p2=c.position||{};if(!p2.avgCost||!p2.currentPrice)return null;
+              var ret=((p2.currentPrice-p2.avgCost)/p2.avgCost*100);
+              var retCol=ret>=0?K.grn:K.red;
+              return<div style={{flexShrink:0}}>
+                <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>{"Return"}</div>
+                <div style={{fontSize:isMobile?36:44,fontWeight:800,lineHeight:1,fontFamily:fm,color:retCol}}>
+                  {(ret>=0?"+":"")+ret.toFixed(1)+"%"}
+                </div>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>
+                  {cSym+p2.avgCost.toFixed(2)+" avg cost"}
+                </div>
+              </div>;
+            })()}
+            {/* Divider */}
+            {c.position&&c.position.avgCost&&c.position.currentPrice&&!isMobile&&<div style={{width:1,height:70,background:K.bdr,flexShrink:0,alignSelf:"center"}}/>}
+            {/* Thesis quality */}
+            <div style={{flexShrink:0}}>
+              <div style={{fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:4}}>{"Thesis"}</div>
+              <div style={{fontSize:isMobile?36:44,fontWeight:800,lineHeight:1,fontFamily:fm,color:_tScoreColor}}>
+                {_tScore+"%"}
+              </div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>
+                {_tScore>=80?"Strong":_tScore>=50?"Developing":_tScore>0?"Weak":"Not written"}
+              </div>
+            </div>
+            {/* Right side — KPIs + held + CAGR estimate */}
+            <div style={{flex:1,minWidth:140,display:"flex",flexDirection:"column",gap:10,alignSelf:"center"}}>
+              <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                <div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:2}}>{"KPIs"}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:h.m>0?(h.ok===h.m?K.grn:h.ok>0?K.amb:K.red):K.dim,fontFamily:fm}}>
+                    {h.m>0?h.ok+"/"+h.m:"—"}
+                  </div>
+                </div>
+                {c.purchaseDate&&<div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:2}}>{"Held"}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fm}}>
+                    {(function(){var d=Math.ceil((Date.now()-new Date(c.purchaseDate))/864e5);return d>=365?Math.floor(d/365)+"y "+(Math.floor((d%365)/30))+"m":d>=30?Math.floor(d/30)+"m":d+"d";})()}
+                  </div>
+                </div>}
+                {c.convGrowthEst&&c.convGrowthEst.value&&<div>
+                  <div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,marginBottom:2}}>{"Est. CAGR"}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:K.grn,fontFamily:fm}}>{"+"+c.convGrowthEst.value+"%"}</div>
+                </div>}
+              </div>
+              {/* Thesis age pill */}
+              {_thesisAgeDays!=null&&<div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:_isBm?0:99,background:_thesisStale?K.amb+"15":K.bg,border:"1px solid "+(_thesisStale?K.amb+"40":K.bdr)}}>
+                <div style={{width:5,height:5,borderRadius:"50%",background:_thesisStale?K.amb:K.grn}}/>
+                <span style={{fontSize:10,color:_thesisStale?K.amb:K.dim,fontFamily:fm}}>{_thesisStaleBadge}</span>
+              </div>}
+            </div>
+          </div>
         </div>
-
         {/* ── PRE-EARNINGS RITUAL ── */}
         {c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0&&dU(c.earningsDate)<=7&&(function(){
           var daysOut=dU(c.earningsDate);
@@ -7025,6 +7128,7 @@ function calcMoatFromData(finData,businessModelType){
           </div>;
         })()}
         </div>}
+        </div>
         </div>}
 
         {/* ══════════════════════════════════════════════════════
