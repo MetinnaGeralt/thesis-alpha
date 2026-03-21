@@ -5659,8 +5659,15 @@ function calcMoatFromData(finData,businessModelType){
               borderBottom:"2px solid "+(dossierTab==="deepdive"?"#8B5CF6":"transparent"),
               color:dossierTab==="deepdive"?"#8B5CF6":K.dim,cursor:"pointer",
               fontSize:14,fontFamily:fm,fontWeight:dossierTab==="deepdive"?700:400,
-              transition:"all .15s"}}>
+              transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
             {"Deep Dive"}
+            {(function(){
+              var hasDive=(c.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+              if(hasDive||dossierTab==="deepdive")return null;
+              return<span style={{width:7,height:7,borderRadius:"50%",background:"#10B981",
+                display:"inline-block",flexShrink:0,
+                boxShadow:"0 0 0 2px #10B98130"}}/>;
+            })()}
           </button>
         </div>
 
