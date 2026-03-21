@@ -7026,41 +7026,64 @@ function calcMoatFromData(finData,businessModelType){
             </div>
 
             {!latestDive&&<div>
-              {/* ── How-to card ── */}
-              <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:14,padding:"24px 28px",marginBottom:16}}>
-                <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
-                  {"Understand "+c.ticker+" before you own it"}
-                </div>
-                <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:20,maxWidth:520}}>
-                  {"Buffett reads annual reports before he invests. This is your version — five filters, owner earnings DCF, inversion, and a verdict. The AI runs it in 10 minutes. Import the output and it becomes your thesis foundation."}
+              {/* ── Deep Dive invitation card ── */}
+              <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"25",borderRadius:_isBm?0:16,padding:"28px 28px 24px",marginBottom:20}}>
+
+                {/* Headline */}
+                <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18}}>
+                  <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:PURPLE+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <IC name="search" size={18} color={PURPLE}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:17,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:4,letterSpacing:"-.3px"}}>
+                      {"The Buffett & Munger framework — distilled into one prompt"}
+                    </div>
+                    <div style={{fontSize:12,color:PURPLE,fontFamily:fm,fontWeight:600,letterSpacing:.5}}>
+                      {"DEEP DIVE ANALYSIS · "+c.ticker}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Steps */}
-                <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
+                {/* The pitch */}
+                <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.85,marginBottom:20,maxWidth:560}}>
+                  {"This isn't a generic \"analyse this stock\" prompt. It took years of reading, studying, and distilling what Buffett and Munger actually look for — not what they say in soundbites, but the framework they've used to compound capital for six decades."}
+                </div>
+
+                {/* Five filters */}
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:20}}>
                   {[
-                    {n:1,title:"Get the prompt",desc:"Click \"Get started\" below to open the setup guide and copy the ThesisAlpha Deep Dive prompt."},
-                    {n:2,title:"Open your AI",desc:"Go to Claude.ai, ChatGPT, or Gemini and paste the prompt in a new conversation."},
-                    {n:3,title:"Ask it to analyse "+c.ticker,desc:"The AI runs the full structured analysis — five filters, owner earnings DCF, inversion, and a verdict."},
-                    {n:4,title:"Import the output",desc:"Copy the full response, come back, click \"Import output →\". ThesisAlpha parses and stores it automatically."},
-                  ].map(function(step){
-                    return<div key={step.n} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
-                      <div style={{width:26,height:26,borderRadius:"50%",background:PURPLE,color:"#fff",
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        fontSize:12,fontWeight:800,fontFamily:fm,flexShrink:0,marginTop:1}}>
-                        {step.n}
-                      </div>
-                      <div>
-                        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{step.title}</div>
-                        <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{step.desc}</div>
-                      </div>
-                    </div>;
-                  })}
+                    {n:"1",label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Munger won't touch what he can't understand cold."},
+                    {n:"2",label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded competitor willingly wrestle for market share? If yes, there's no moat."},
+                    {n:"3",label:"Management Quality",desc:"Owner-operator test. Capital allocation over a full cycle. The retained earnings test: has every €1 kept created >€1 of value?"},
+                    {n:"4",label:"Financial Strength",desc:"18-check framework. ROIC vs WACC. FCF conversion. Revenue quality. The numbers that separate great businesses from mediocre ones."},
+                    {n:"5",label:"Price & Margin of Safety",desc:"Owner earnings DCF — not P/E. Three scenarios. Buffett's fat pitch price: the entry point where even the bear case clears your hurdle rate."},
+                  ].map(function(f){return<div key={f.n} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                      <div style={{width:20,height:20,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:10,fontWeight:800,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.n}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{f.label}</div>
+                    </div>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{f.desc}</div>
+                  </div>;})}
+                </div>
+
+                {/* Inversion callout */}
+                <div style={{background:PURPLE+"10",border:"1px solid "+PURPLE+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,display:"flex",gap:10}}>
+                  <div style={{fontSize:16,flexShrink:0}}>{"↩"}</div>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:3}}>{"+ Inversion — Munger's secret weapon"}</div>
+                    <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.6}}>{"\"Invert, always invert.\" The prompt forces you to ask: what specific mechanism would permanently destroy this thesis? What signal confirms it? Most investors never ask this question until it is too late."}</div>
+                  </div>
+                </div>
+
+                {/* How it works */}
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:16,paddingBottom:16,borderBottom:"1px solid "+K.bdr}}>
+                  {"Works with Claude, ChatGPT, or Gemini. Copy the prompt, run the analysis, import the output — it becomes your thesis foundation automatically. 10 minutes."}
                 </div>
 
                 {/* Action buttons */}
                 <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
                   <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
-                    style={{display:"flex",alignItems:"center",gap:8,padding:"10px 22px",
+                    style={{display:"flex",alignItems:"center",gap:8,padding:"11px 24px",
                       borderRadius:_isBm?0:8,border:"none",
                       background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,
                       cursor:"pointer",fontFamily:fm}}>
@@ -7068,10 +7091,10 @@ function calcMoatFromData(finData,businessModelType){
                     {"Get started →"}
                   </button>
                   <button onClick={function(){setModal({type:"importDeepDive"});}}
-                    style={{padding:"10px 22px",borderRadius:_isBm?0:8,
+                    style={{padding:"11px 22px",borderRadius:_isBm?0:8,
                       border:"1px solid "+PURPLE+"50",background:"transparent",
                       color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-                    {"Import output →"}
+                    {"Already have output? Import →"}
                   </button>
                 </div>
               </div>
