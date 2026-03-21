@@ -7260,7 +7260,7 @@ function calcMoatFromData(finData,businessModelType){
 
         </div>}
       </div>}
-    </div>}
+    </div>
   }
 
 
