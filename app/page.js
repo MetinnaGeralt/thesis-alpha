@@ -6200,35 +6200,39 @@ function calcMoatFromData(finData,businessModelType){
               <IC name={st.icon} size={10} color={st.color}/>{st.label}</button>})}</div></div>}
 
 
-        {/* ── YOUR WORK (Library items tagged to this holding) ── */}
+        {/* ── YOUR RESEARCH (Library items tagged to this holding) ── */}
         {(function(){
           var tagged=(library.items||[]).filter(function(it){return it.ticker===c.ticker;});
           if(tagged.length===0)return null;
           var myWorkItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)>=0;});
           var refItems=tagged.filter(function(it){return MY_WORK_TYPES.indexOf(it.type)<0;});
-          return<div style={{marginTop:16,marginBottom:4}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your library</div>
-              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm}}>{"View all →"}</button>
+          return<div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+                <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Your Research</div>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{tagged.length+" item"+(tagged.length>1?"s":"")}</span>
+              </div>
+              <button onClick={function(){setPage("library");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,padding:0}}>View all →</button>
             </div>
-            {myWorkItems.length>0&&<div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+            {myWorkItems.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:refItems.length>0?12:0}}>
               {myWorkItems.map(function(it){
                 var tc2=({Analysis:"#EC4899","Research Doc":"#F59E0B",Model:"#10B981",Notes:"#6B7280"})[it.type]||"#10B981";
-                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",background:K.bg,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,borderLeft:"2px solid "+tc2}}>
-                  <IC name={it.type==="Model"?"bar":it.type==="Analysis"?"trending":"edit"} size={11} color={tc2}/>
-                  <span style={{flex:1,fontSize:12,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.title}</span>
-                  <span style={{fontSize:9,fontWeight:700,color:tc2,background:tc2+"15",padding:"1px 5px",borderRadius:3,fontFamily:fm}}>{it.type}</span>
-                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:11,color:K.acc,cursor:"pointer",padding:0,fontFamily:fm}}>{"Open ↗"}</button>}
+                return<div key={it.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",background:K.card,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,borderLeft:"3px solid "+tc2}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:9,fontWeight:700,color:tc2,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{it.type}</div>
+                    <div style={{fontSize:12,color:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>{it.title}</div>
+                  </div>
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,padding:"3px 7px",fontSize:10,color:K.dim,cursor:"pointer",fontFamily:fm,flexShrink:0}}>Open ↗</button>}
                 </div>;
               })}
             </div>}
             {refItems.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5}}>
               {refItems.map(function(it){
                 var tc2=({Video:K.acc,Article:K.grn,Book:K.amb,Podcast:"#8B5CF6",Course:"#06B6D4",Other:K.dim})[it.type]||K.dim;
-                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
+                return<div key={it.id} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
                   <span style={{fontSize:10,fontWeight:700,color:tc2}}>{it.type}</span>
                   <span style={{fontSize:11,color:K.txt,fontFamily:fm}}>{it.title}</span>
-                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",padding:0}}>{"↗"}</button>}
+                  {it.url&&<button onClick={function(){window.open(it.url,"_blank");}} style={{background:"none",border:"none",fontSize:10,color:K.dim,cursor:"pointer",padding:0}}>↗</button>}
                 </div>;
               })}
             </div>}
@@ -6236,72 +6240,6 @@ function calcMoatFromData(finData,businessModelType){
         })()}
 
         <div id="ds-score"/>
-        {(function(){
-          var mm=calcMastery(c);var fs=c.financialSnapshot||{};
-          // 1. Thesis depth (0-100)
-          var th=c.thesisNote||"";var thSec=1;if(th.indexOf("## MOAT")>=0)thSec++;if(th.indexOf("## RISKS")>=0)thSec++;if(th.indexOf("## SELL")>=0)thSec++;
-          var thesisScore=th.length<20?0:Math.min(100,thSec*25);
-          // 2. KPI coverage (0-100)
-          var kpiDefined=c.kpis.length;var kpiMet=c.kpis.filter(function(k2){return k2.lastResult&&k2.lastResult.status==="met"}).length;
-          var kpiChecked=c.kpis.filter(function(k2){return k2.lastResult}).length;var kpiScore=kpiDefined===0?0:Math.min(100,kpiDefined*15+kpiChecked*10+kpiMet*15);
-          // 3. Conviction (0-100)
-          var convScore=(c.conviction||0)*10;
-          // 4. Fundamentals (0-100) — from snapshot data
-          function pv2(k2){if(!fs[k2])return 0;if(fs[k2].numVal!=null)return fs[k2].numVal;var v2=fs[k2].value;return typeof v2==="string"?parseFloat(v2.replace(/[^\d.\-]/g,""))||0:0}
-          var fundScore=25;var gm2=pv2("grossMargin");if(gm2>60)fundScore+=15;else if(gm2>40)fundScore+=8;
-          var roic3=pv2("roic")||pv2("roe");if(roic3>20)fundScore+=20;else if(roic3>12)fundScore+=10;
-          var de2=pv2("debtEquity");if(de2>0&&de2<1)fundScore+=10;else if(de2>=2)fundScore-=10;
-          var rg2=pv2("revGrowth");if(rg2>15)fundScore+=15;else if(rg2>5)fundScore+=8;
-          if(Object.keys(fs).length>=8)fundScore+=15;else if(Object.keys(fs).length>=4)fundScore+=8;fundScore=Object.keys(fs).length===0?0:Math.max(0,Math.min(100,fundScore));
-          // 5. Mastery (0-100)
-          var mastScore=Math.round(mm.stars/6*100);
-          // 6. Monitoring freshness (0-100)
-          var monScore=0;var now3=Date.now();
-          if(c.thesisUpdatedAt){var thAge=Math.ceil((now3-new Date(c.thesisUpdatedAt))/864e5);monScore+=thAge<30?35:thAge<90?25:thAge<180?10:0}
-          if(c.lastChecked){var lc2=Math.ceil((now3-new Date(c.lastChecked))/864e5);monScore+=lc2<30?35:lc2<90?25:lc2<180?10:0}
-          if((c.convictionHistory||[]).length>0){var lastConv=c.convictionHistory[c.convictionHistory.length-1];if(lastConv.date){var cvAge=Math.ceil((now3-new Date(lastConv.date))/864e5);monScore+=cvAge<60?30:cvAge<120?15:0}}
-          monScore=Math.min(100,monScore);
-          var axes=[{label:"Thesis",score:thesisScore,color:"#8B5CF6",tip:"How thorough is your written thesis? Covers core belief, moat, risks, and sell criteria."},{label:"KPIs",score:kpiScore,color:"#3B82F6",tip:"How many key metrics are you tracking, and how many have been checked against earnings?"},{label:"Conviction",score:convScore,color:"#F59E0B",tip:"Your self-rated confidence in this investment on a 1-10 scale."},{label:"Fundamentals",score:fundScore,color:"#22C55E",tip:"Quality of the underlying business: margins, ROIC, growth, and balance sheet strength."},{label:"Mastery",score:mastScore,color:"#EC4899",tip:"Overall ownership completeness: thesis + KPIs + conviction + moat + monitoring combined."},{label:"Monitoring",score:monScore,color:"#14B8A6",tip:"How recently you have reviewed your thesis, checked earnings, and updated conviction."}];
-          var avgScore=Math.round(axes.reduce(function(s2,a2){return s2+a2.score},0)/6);
-          // SVG radar — rounded Simply Wall St style
-          var cx=100,cy=90,r=65;var n=6;var angleOff=-Math.PI/2;
-          function pt(i2,val){var ang=angleOff+i2/n*2*Math.PI;return{x:cx+Math.cos(ang)*r*val/100,y:cy+Math.sin(ang)*r*val/100}}
-          var gridLevels=[25,50,75,100];
-          // Build smooth rounded path from data points
-          function roundedPath(pts2){if(pts2.length<3)return"";var d="";for(var i3=0;i3<pts2.length;i3++){var prev=pts2[(i3-1+pts2.length)%pts2.length];var curr=pts2[i3];var next=pts2[(i3+1)%pts2.length];var smooth=0.25;var cp1x=curr.x+(next.x-prev.x)*smooth;var cp1y=curr.y+(next.y-prev.y)*smooth;var prevNext=pts2[(i3+2)%pts2.length];var cp2x=next.x-(prevNext.x-curr.x)*smooth;var cp2y=next.y-(prevNext.y-curr.y)*smooth;if(i3===0)d+="M"+curr.x.toFixed(1)+","+curr.y.toFixed(1)+" ";d+="C"+cp1x.toFixed(1)+","+cp1y.toFixed(1)+" "+cp2x.toFixed(1)+","+cp2y.toFixed(1)+" "+next.x.toFixed(1)+","+next.y.toFixed(1)+" "}return d+"Z"}
-          function roundedGridPath(level){var pts2=[];for(var i3=0;i3<n;i3++)pts2.push(pt(i3,level));return roundedPath(pts2)}
-          return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
-            <div style={{display:"flex",alignItems:"center",gap:16}}>
-              <svg width="200" height="180" viewBox="0 0 200 180">
-                {/* Rounded grid rings */}
-                {gridLevels.map(function(gl){return<path key={gl} d={roundedGridPath(gl)} fill="none" stroke={K.bdr} strokeWidth={gl===100?"1":"0.5"}/>})}
-                {/* Axis lines — subtle */}
-                {axes.map(function(a2,i3){var p3=pt(i3,100);return<line key={i3} x1={cx} y1={cy} x2={p3.x} y2={p3.y} stroke={K.bdr} strokeWidth="0.3" strokeDasharray="2,3"/>})}
-                {/* Filled shape — rounded, more opaque */}
-                {(function(){var dataPts=axes.map(function(a2,i3){return pt(i3,Math.max(a2.score,8))});
-                  return<g>
-                    <path d={roundedPath(dataPts)} fill={"#3B82F618"} stroke={"#3B82F6"} strokeWidth="2"/>
-                    {dataPts.map(function(p4,i4){return<circle key={i4} cx={p4.x} cy={p4.y} r="3" fill={axes[i4].color} stroke={K.bg} strokeWidth="1.5"/>})}
-                  </g>;})()}
-                {/* Axis labels with hover tooltips */}
-                {axes.map(function(a2,i3){var lp=pt(i3,118);
-                  return<g key={i3} style={{cursor:"help"}}><title>{a2.label}: {a2.score}/100 — {a2.tip}</title>
-                    <text x={lp.x} y={lp.y} fill={K.dim} fontSize="8" fontFamily={fm} textAnchor="middle" dominantBaseline="middle" style={{cursor:"help"}}>{a2.label}</text></g>})}
-                {/* Center score */}
-                <text x={cx} y={cy-5} fill={avgScore>=70?K.grn:avgScore>=45?K.acc:K.amb} fontSize="22" fontWeight="900" fontFamily={fm} textAnchor="middle">{avgScore}</text>
-                <text x={cx} y={cy+8} fill={K.dim} fontSize="7" fontFamily={fm} textAnchor="middle" letterSpacing="1.5">OWNER SCORE</text>
-              </svg>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,marginBottom:10}}>Investment Mastery</div>
-                {axes.map(function(a2){return<div key={a2.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7}}>
-                  <div style={{width:5,height:5,borderRadius:_isBm?1:"50%",background:a2.color,flexShrink:0}}/>
-                  <span style={{fontSize:10,color:K.mid,fontFamily:fm,width:75}}>{a2.label}</span>
-                  <div style={{flex:1,height:5,borderRadius:_isBm?0:3,background:K.bdr+"50",overflow:"hidden"}}>
-                    <div style={{height:"100%",width:a2.score+"%",background:a2.color,borderRadius:_isBm?0:3,transition:"width .4s"}}/>
-                  </div>
-                  <span style={{fontSize:10,fontWeight:700,color:a2.score>=70?a2.color:K.dim,fontFamily:fm,width:28,textAlign:"right"}}>{a2.score}</span>
-                </div>})}
-              </div></div></div>})()}
 
 
         {/* ── 2. THE EVIDENCE ── */}
@@ -6413,33 +6351,15 @@ function calcMoatFromData(finData,businessModelType){
           </div>
           {/* Conviction + Position row */}
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12,marginBottom:12}}>
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
-              {(function(){
-                var cx=60,cy=62,r=50;
-                var ang=function(v){return Math.PI*(1-v/10)};
-                var arcP=function(v1,v2){var a1=ang(v1);var a2=ang(v2);var x1=(cx+r*Math.cos(a1)).toFixed(1);var y1=(cy-r*Math.sin(a1)).toFixed(1);var x2=(cx+r*Math.cos(a2)).toFixed(1);var y2=(cy-r*Math.sin(a2)).toFixed(1);return"M"+x1+" "+y1+" A"+r+" "+r+" 0 0 1 "+x2+" "+y2};
-                var convColor=conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim;
-                var cv=Math.max(0.01,Math.min(conv,9.99));
-                var na=ang(cv);var nx=(cx+42*Math.cos(na)).toFixed(1);var ny=(cy-42*Math.sin(na)).toFixed(1);
-                return<div style={{textAlign:"center"}}>
-                  <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:2,textTransform:"uppercase"}}>Conviction</div>
-                  <svg viewBox="0 0 120 68" style={{width:"100%",maxWidth:150,display:"block",margin:"0 auto"}}>
-                    <path d={arcP(0,3.5)} fill="none" stroke={K.red+"35"} strokeWidth="11"/>
-                    <path d={arcP(3.5,6.5)} fill="none" stroke={K.amb+"35"} strokeWidth="11"/>
-                    <path d={arcP(6.5,9.99)} fill="none" stroke={K.grn+"35"} strokeWidth="11"/>
-                    {conv>0&&<path d={arcP(0.01,cv)} fill="none" stroke={convColor} strokeWidth="11" strokeLinecap="round"/>}
-                    {conv>0&&<line x1={cx} y1={cy} x2={nx} y2={ny} stroke={K.txt} strokeWidth="2.5" strokeLinecap="round" opacity="0.9"/>}
-                    <circle cx={cx} cy={cy} r="4.5" fill={K.card} stroke={conv>0?convColor:K.bdr} strokeWidth="2"/>
-                  </svg>
-                  <div style={{marginTop:-4,lineHeight:1}}>
-                    <span style={{fontSize:22,fontWeight:800,color:convColor,fontFamily:fm}}>{conv||"—"}</span>
-                    <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>/10</span>
-                  </div>
-                  {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,marginTop:6,justifyContent:"center",alignItems:"flex-end",height:14}}>
-                    {c.convictionHistory.slice(-8).map(function(ch,i2){return<div key={i2} style={{width:8,borderRadius:_isBm?0:1,height:Math.max(2,Math.round(ch.rating/10*12))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.75}}/>})}
-                  </div>}
-                </div>
-              })()}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"18px 20px",cursor:"pointer"}} onClick={function(){setModal({type:"conviction"})}}>
+              <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:8,textTransform:"uppercase"}}>Conviction</div>
+              <div style={{display:"flex",alignItems:"baseline",gap:4,marginBottom:10}}>
+                <span style={{fontSize:40,fontWeight:900,lineHeight:1,fontFamily:fm,color:conv>=7?K.grn:conv>=4?K.amb:conv>0?K.red:K.dim}}>{conv||"—"}</span>
+                {conv>0&&<span style={{fontSize:14,color:K.dim,fontFamily:fm}}>/10</span>}
+              </div>
+              {c.convictionHistory&&c.convictionHistory.length>1&&<div style={{display:"flex",gap:2,alignItems:"flex-end",height:18}}>
+                {c.convictionHistory.slice(-10).map(function(ch,i2){return<div key={i2} style={{width:10,borderRadius:_isBm?0:2,height:Math.max(3,Math.round(ch.rating/10*16))+"px",background:ch.rating>=7?K.grn:ch.rating>=4?K.amb:K.red,opacity:.7}}/>})}
+              </div>}
             </div>
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px",cursor:"pointer"}} onClick={function(){setModal({type:"position"})}}>
               <div style={{fontSize:9,letterSpacing:1.5,color:K.dim,fontFamily:fm,marginBottom:6,textTransform:"uppercase"}}>Position</div>
@@ -6819,6 +6739,17 @@ function calcMoatFromData(finData,businessModelType){
                     <div style={{fontSize:10,color:K.mid,lineHeight:1.6,fontFamily:fm}}>{sec.items.find(function(it){return it.contextNote}).contextNote}</div>
                   </div>}
                   </>
+                  :sec.title==="INVESTMENT SCORES"
+                  ?<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {sec.items.map(function(item,ii){
+                      var pillColor=item.isGood===true?K.grn:item.isNeutral?K.amb:K.red;
+                      return<div key={ii} title={item.tip||""} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:_isBm?0:999,background:pillColor+"12",border:"1px solid "+pillColor+"30",cursor:item.tip?"help":"default"}}>
+                        <div style={{width:6,height:6,borderRadius:"50%",background:pillColor,flexShrink:0}}/>
+                        <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{item.l}</span>
+                        <span style={{fontSize:12,fontWeight:800,color:pillColor,fontFamily:fm}}>{item.v}</span>
+                      </div>;
+                    })}
+                  </div>
                   :<div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:6}}>
                   {sec.items.map(function(item,ii){
                     var valColor=item.isGood===true?K.grn:item.isGood===false?K.red:item.isNeutral?K.mid:K.txt;
