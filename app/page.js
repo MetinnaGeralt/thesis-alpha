@@ -14695,9 +14695,9 @@ function ProWelcomeGift(){
                 if(container){container.scrollTop=el.offsetTop-80}
                 else el.scrollIntoView({behavior:"smooth",block:"start"});
               }
-            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:K.txt,transition:"all .2s ease",borderLeft:"2px solid transparent"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"12";e.currentTarget.style.color=K.acc;e.currentTarget.style.paddingLeft="20px"}}
-            onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color=K.mid;e.currentTarget.style.paddingLeft="16px"}}>
+            }} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:"rgba(255,255,255,0.55)",transition:"all .2s ease",borderLeft:"2px solid transparent"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=K.acc+"25";e.currentTarget.style.color="rgba(255,255,255,0.95)";e.currentTarget.style.paddingLeft="20px"}}
+            onMouseLeave={function(e){e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(255,255,255,0.55)";e.currentTarget.style.paddingLeft="16px"}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                 <path d={sec2.icon}/>
               </svg>
