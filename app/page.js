@@ -2593,10 +2593,43 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
       var autoThesis=thesisParts.join("\n\n");
 
+      // ── Derive additional fields from deep dive ──
+      // Fat pitch price
+      var fpRaw=dd.verdict.fatPitch||"";
+      var fpNum=fpRaw.replace(/[^0-9.]/g,"");
+      var fatPitchVal=parseFloat(fpNum)||null;
+
+      // Inversion — primary mechanism becomes the inversion note
+      var invNote="";
+      if(dd.inversion&&dd.inversion.length>0&&dd.inversion[0].mechanism){
+        invNote=dd.inversion[0].mechanism.trim();
+      }
+
+      // Circle of Competence score from Filter 1
+      var circleVal=null;
+      var f1=dd.filters.find(function(f){return f.id===1||(f.title&&f.title.toLowerCase().indexOf("circle")>=0);});
+      if(f1&&f1.verdictType){
+        circleVal=f1.verdictType==="pass"?4:f1.verdictType==="warn"?3:f1.verdictType==="fail"?2:null;
+      }
+
+      // Management grade from Filter 3
+      var mgmtGrade=null;
+      var f3=dd.filters.find(function(f){return f.id===3||(f.title&&f.title.toLowerCase().indexOf("manag")>=0);});
+      if(f3&&f3.verdictType){
+        mgmtGrade=f3.verdictType==="pass"?"A":f3.verdictType==="warn"?"B":f3.verdictType==="fail"?"C":null;
+      }
+
+      // Initial conviction from overall filter verdicts
+      var convVal=null;
+      if(dd.filters.length>=3){
+        var passes=dd.filters.filter(function(f){return f.verdictType==="pass";}).length;
+        var fails=dd.filters.filter(function(f){return f.verdictType==="fail";}).length;
+        convVal=fails>=2?3:fails===1?5:passes>=4?7:5;
+      }
+
       upd(selId,function(c2){
         var updated=Object.assign({},c2,{docs:c2.docs.concat([doc])});
-        // Only update thesis if it's empty or very short (< 80 chars)
-        // Don't overwrite a real thesis the user has written
+        // Only update thesis if empty or very short (<80 chars)
         var hasRealThesis=c2.thesisNote&&c2.thesisNote.trim().length>=80;
         if(!hasRealThesis&&autoThesis.length>0){
           updated=Object.assign({},updated,{
@@ -2604,15 +2637,36 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             thesisUpdatedAt:new Date().toISOString()
           });
         }
+        // Fat pitch — only set if not already set
+        if(fatPitchVal&&!c2.fatPitchPrice){
+          updated=Object.assign({},updated,{fatPitchPrice:String(fatPitchVal)});
+        }
+        // Inversion note — only if empty
+        if(invNote&&!c2.inversionNote){
+          updated=Object.assign({},updated,{inversionNote:invNote});
+        }
+        // Circle of competence — only if not set
+        if(circleVal&&!c2.circleScore){
+          updated=Object.assign({},updated,{circleScore:circleVal});
+        }
+        // Management grade — only if not set
+        if(mgmtGrade&&!c2.managementGrade){
+          updated=Object.assign({},updated,{managementGrade:mgmtGrade});
+        }
+        // Initial conviction — only if not set
+        if(convVal&&(!c2.conviction||c2.conviction===0)){
+          updated=Object.assign({},updated,{conviction:convVal});
+        }
         return updated;
       });
 
       setModal(null);
+      setDossierTab("monitoring");
       var hadThesis=sel.thesisNote&&sel.thesisNote.trim().length>=80;
       showToast(
         hadThesis
           ?"Deep Dive saved for "+sel.ticker
-          :"Deep Dive saved · Thesis pre-filled from analysis",
+          :"Deep Dive saved · Thesis, fat pitch, moat & conviction pre-filled",
         "info",4000
       );
     }
@@ -2622,13 +2676,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:16}}>
         <div style={{fontSize:12,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:6}}>How it works</div>
         <div style={{fontSize:12,color:K.mid,fontFamily:fm,lineHeight:1.7}}>
-          {"1. Open Claude.ai and use the ThesisAlpha Deep Dive Project. Ask it to analyze "+sel.ticker+"."}
+          {"1. Get the prompt from the Analysis tab, run it in Claude.ai, ChatGPT, or Gemini for "+sel.ticker+"."}
           <br/>{"2. Copy the full output."}
           <br/>{"3. Paste it below and click Parse."}
         </div>
-        <a href="https://claude.ai" target="_blank" rel="noopener noreferrer"
+        <a href="#" onClick={function(e){e.preventDefault();setModal({type:"deepDivePrompt",ticker:sel.ticker});}}
           style={{display:"inline-block",marginTop:8,fontSize:11,color:PURPLE,fontFamily:fm,fontWeight:600}}>
-          {"Open Claude.ai →"}
+          {"← Get the prompt first"}
         </a>
       </div>
 
