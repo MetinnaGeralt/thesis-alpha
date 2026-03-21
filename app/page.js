@@ -6488,24 +6488,18 @@ function calcMoatFromData(finData,businessModelType){
           var totalJudged=passCount+failCount;var verdict=totalJudged===0?null:passCount>=totalJudged*0.75?"Attractive":passCount>=totalJudged*0.5?"Fair":"Expensive";
           var verdictColor=verdict==="Attractive"?K.grn:verdict==="Fair"?K.amb:verdict==="Expensive"?K.red:K.dim;
           return<div style={{marginBottom:24}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:K.red+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <span style={{fontSize:12,fontWeight:800,color:K.red,fontFamily:fm}}>5</span>
-              </div>
-              <div>
-                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Valuation</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Your price discipline</div>
-              </div>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+            <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+              <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Valuation</div>
+              {verdict&&<span style={{fontSize:13,fontWeight:700,color:verdictColor,fontFamily:fm}}>{verdict}</span>}
+              {totalJudged>0&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{passCount+"/"+totalJudged}</span>}
             </div>
-            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>{results.length>0?"Edit":"Set up"}</button>
+            <button onClick={function(){setModal({type:"valuation"})}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}>{results.length>0?"Edit":"Set up"}</button>
           </div>
           {results.length>0?<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 18px"}}>
-            {verdict&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:16,fontWeight:800,color:verdictColor,fontFamily:fm}}>{verdict}</span>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{passCount}/{totalJudged} criteria met</span></div>
-              <div style={{display:"flex",gap:3}}>{results.map(function(r){return<div key={r.id} style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}</div></div>}
+            {results.length>0&&<div style={{display:"flex",justifyContent:"flex-end",gap:3,marginBottom:10}}>
+              {results.map(function(r){return<div key={r.id} style={{width:_isBm?6:8,height:_isBm?6:8,borderRadius:_isBm?1:"50%",background:r.pass===true?K.grn:r.pass===false?K.red:K.dim+"40"}}/>})}
+            </div>}
             {results.map(function(r,ri){return<div key={r.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:ri>0?"1px solid "+K.bdr+"30":"none"}}>
               <span style={{fontSize:12,color:K.mid,flex:1}}>{r.label}</span>
               <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{r.rule==="gte"?"\u2265":"\u2264"}{r.threshold}{r.unit}</span>
