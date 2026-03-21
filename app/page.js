@@ -5992,7 +5992,6 @@ function calcMoatFromData(finData,businessModelType){
         })()}
         <div id="ds-score"/>
         {/* ── 2. THE EVIDENCE ── */}
-        <div id="ds-evidence" style={{marginBottom:48}}>
         <div id="ds-evidence" style={{marginBottom:52}}>
           <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
             <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Evidence"}</div>
@@ -6088,7 +6087,6 @@ function calcMoatFromData(finData,businessModelType){
         </div>
 
         {/* ── 3. THE LEDGER ── */}
-        <div id="ds-ledger" style={{marginBottom:24}}>
         <div id="ds-ledger" style={{marginBottom:52}}>
           <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:20,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
             <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.4px"}}>{"The Position"}</div>
