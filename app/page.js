@@ -2506,13 +2506,70 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     function handleSave(){
       if(!parsed)return;
+      var dd=parsed.dd;
       var doc={id:nId(sel.docs),title:titleVal.trim()||parsed.title,
-        content:parsed.dd.verdict.text||("Deep Dive — "+sel.ticker),
-        docType:"deep_dive",folder:"deep-dives",deepDive:parsed.dd,
+        content:dd.verdict.text||("Deep Dive — "+sel.ticker),
+        docType:"deep_dive",folder:"deep-dives",deepDive:dd,
         updatedAt:new Date().toISOString()};
-      upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([doc])});});
+
+      // ── Auto-build thesis from deep dive ──
+      // Build structured thesis sections from the deep dive output
+      var thesisParts=[];
+
+      // Core: take verdict text as the core belief
+      if(dd.verdict&&dd.verdict.text&&dd.verdict.text.trim().length>20){
+        thesisParts.push("## WHY I OWN IT\n"+dd.verdict.text.trim());
+      }
+
+      // Moat: extract from Filter 2 (Grizzly Bear / competitive moat filter)
+      var moatFilter=dd.filters.find(function(f){return f.id===2||(f.title&&f.title.toLowerCase().indexOf("grizzly")>=0);});
+      if(moatFilter&&moatFilter.analysis&&moatFilter.analysis.trim().length>20){
+        thesisParts.push("## MOAT\n"+moatFilter.analysis.trim());
+      }
+
+      // Risks: extract from Filter 3 (Patterson / management/risks)
+      var riskFilter=dd.filters.find(function(f){return f.id===3||(f.title&&f.title.toLowerCase().indexOf("patterson")>=0);});
+      if(riskFilter&&riskFilter.analysis&&riskFilter.analysis.trim().length>20){
+        thesisParts.push("## RISKS\n"+riskFilter.analysis.trim());
+      }
+
+      // Sell criteria: use pending items from verdict + inversion
+      var sellParts=[];
+      if(dd.verdict&&dd.verdict.pending&&dd.verdict.pending.trim().length>10){
+        sellParts.push(dd.verdict.pending.trim());
+      }
+      if(dd.inversion&&dd.inversion.length>0){
+        var arkItems=dd.inversion.filter(function(inv){return inv.ark;}).map(function(inv){return"— "+inv.ark;});
+        if(arkItems.length>0){sellParts=sellParts.concat(arkItems.slice(0,3));}
+      }
+      if(sellParts.length>0){
+        thesisParts.push("## WHEN I WOULD SELL\n"+sellParts.join("\n"));
+      }
+
+      var autoThesis=thesisParts.join("\n\n");
+
+      upd(selId,function(c2){
+        var updated=Object.assign({},c2,{docs:c2.docs.concat([doc])});
+        // Only update thesis if it's empty or very short (< 80 chars)
+        // Don't overwrite a real thesis the user has written
+        var hasRealThesis=c2.thesisNote&&c2.thesisNote.trim().length>=80;
+        if(!hasRealThesis&&autoThesis.length>0){
+          updated=Object.assign({},updated,{
+            thesisNote:autoThesis,
+            thesisUpdatedAt:new Date().toISOString()
+          });
+        }
+        return updated;
+      });
+
       setModal(null);
-      showToast("Deep Dive imported for "+sel.ticker,"info",3000);
+      var hadThesis=sel.thesisNote&&sel.thesisNote.trim().length>=80;
+      showToast(
+        hadThesis
+          ?"Deep Dive saved for "+sel.ticker
+          :"Deep Dive saved · Thesis pre-filled from analysis",
+        "info",4000
+      );
     }
 
     return<Modal title={"Import Deep Dive — "+sel.ticker} onClose={function(){setModal(null);}} w={680}>
@@ -6908,29 +6965,58 @@ function calcMoatFromData(finData,businessModelType){
               </div>}
             </div>
 
-            {!latestDive&&<div style={{background:PURPLE+"06",border:"1px dashed "+PURPLE+"40",borderRadius:_isBm?0:12,padding:"20px 24px"}}>
-              <div style={{fontSize:15,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
-                {"Run a deep dive on "+c.ticker+" with Claude"}
-              </div>
-              <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.7,marginBottom:16,maxWidth:480}}>
-                {"Use the ThesisAlpha Deep Dive prompt in Claude.ai — five filters, owner earnings DCF, inversion checklist. Paste the output here and it renders instantly."}
-              </div>
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
-                  style={{display:"flex",alignItems:"center",gap:8,padding:"10px 20px",borderRadius:_isBm?0:8,border:"none",
-                    background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
-                  <IC name="search" size={13} color="#fff"/>
-                  {"Copy Claude prompt"}
-                </button>
-                <button onClick={function(){setModal({type:"importDeepDive"});}}
-                  style={{padding:"10px 20px",borderRadius:_isBm?0:8,border:"1px solid "+PURPLE+"50",background:"transparent",
-                    color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-                  {"I already have output →"}
-                </button>
+            {!latestDive&&<div>
+              {/* ── How-to card ── */}
+              <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:14,padding:"24px 28px",marginBottom:16}}>
+                <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:6,letterSpacing:"-0.2px"}}>
+                  {"Run a Deep Dive on "+c.ticker+" with Claude"}
+                </div>
+                <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,marginBottom:20,maxWidth:520}}>
+                  {"The Deep Dive uses a structured prompt in Claude.ai — five filters, owner earnings DCF, inversion, and a verdict. It takes 5–10 minutes and becomes the foundation of your thesis."}
+                </div>
+
+                {/* Steps */}
+                <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
+                  {[
+                    {n:1,title:"Copy the prompt",desc:"Click the button below to copy the ThesisAlpha Deep Dive prompt to your clipboard."},
+                    {n:2,title:"Open Claude.ai",desc:"Go to claude.ai and start a new conversation — or use your ThesisAlpha Project if you have one set up."},
+                    {n:3,title:"Paste and add the ticker",desc:"Paste the prompt, then type the company name and ticker at the end. Claude will run the full analysis."},
+                    {n:4,title:"Paste the output back here",desc:'When Claude finishes, copy its entire response and click "Import output" below. ThesisAlpha will parse and store it.'},
+                  ].map(function(step){
+                    return<div key={step.n} style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+                      <div style={{width:26,height:26,borderRadius:"50%",background:PURPLE,color:"#fff",
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        fontSize:12,fontWeight:800,fontFamily:fm,flexShrink:0,marginTop:1}}>
+                        {step.n}
+                      </div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{step.title}</div>
+                        <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{step.desc}</div>
+                      </div>
+                    </div>;
+                  })}
+                </div>
+
+                {/* Action buttons */}
+                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
+                    style={{display:"flex",alignItems:"center",gap:8,padding:"10px 22px",
+                      borderRadius:_isBm?0:8,border:"none",
+                      background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,
+                      cursor:"pointer",fontFamily:fm}}>
+                    <IC name="search" size={13} color="#fff"/>
+                    {"Copy prompt"}
+                  </button>
+                  <button onClick={function(){setModal({type:"importDeepDive"});}}
+                    style={{padding:"10px 22px",borderRadius:_isBm?0:8,
+                      border:"1px solid "+PURPLE+"50",background:"transparent",
+                      color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                    {"Import output →"}
+                  </button>
+                </div>
               </div>
             </div>}
-
-            {latestDive&&<div>
+{latestDive&&<div>
               {existingDives.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
                 {existingDives.map(function(d,di){return<button key={d.id}
                   style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+PURPLE+"40",background:di===existingDives.length-1?PURPLE+"12":"transparent",
