@@ -6759,14 +6759,11 @@ function calcMoatFromData(finData,businessModelType){
                 <div style={{fontSize:11,color:K.mid,lineHeight:1.6}}>{_bmtCtx.guidance}</div>
               </div>
             </div>}
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingBottom:14,borderBottom:"1px solid "+K.bdr+"40"}}>
-              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:"#3B82F615",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <span style={{fontSize:12,fontWeight:800,color:"#3B82F6",fontFamily:fm}}>4</span>
+            <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+              <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+                <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>The Numbers</div>
               </div>
-              <div>
-                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>The Numbers</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>Financials, ratios, health</div>
-              </div>
+              <button onClick={function(){setDetailTab("financials")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4,padding:0}}>Full financials →</button>
             </div>
             {heroStats}
             {bsSection&&<div style={{marginBottom:16}}>
@@ -7024,13 +7021,9 @@ function calcMoatFromData(finData,businessModelType){
             </div>:null;
           return<div id="ds-research" style={{marginBottom:48,marginTop:8}}>
             <div style={{paddingTop:20,borderTop:"1px solid "+K.bdr,marginBottom:0}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:3,height:22,borderRadius:_isBm?0:2,background:K.acc,flexShrink:0}}/>
-                  <div>
-                    <div style={{fontSize:14,letterSpacing:1,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:800}}>Research Trail</div>
-                    <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1,letterSpacing:0.2}}>Notes, links, filings</div>
-                  </div>
+              <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",paddingBottom:16,marginBottom:16,borderBottom:"1px solid "+K.bdr}}>
+                <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+                  <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,lineHeight:1}}>Research Trail</div>
                 </div>
                 {addBtn}
               </div>
