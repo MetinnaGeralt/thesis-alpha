@@ -825,7 +825,7 @@ function TrackerApp(props){
   function handleAvatarUpload(e){var file=e.target.files&&e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){var url=ev.target.result;setAvatarUrl(url);try{localStorage.setItem("ta-avatar",url)}catch(e){}};reader.readAsDataURL(file);}
   var _chest=useState(null),chestOverlay=_chest[0],setChestOverlay=_chest[1];
   var _proWelcome=useState(false),showProWelcome=_proWelcome[0],setShowProWelcome=_proWelcome[1];
-  var _myStrategy=useState(function(){try{var s=localStorage.getItem("ta-my-strategy");return s?JSON.parse(s):{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""}}catch(e){return{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""}}}),myStrategy=_myStrategy[0],setMyStrategy=_myStrategy[1];
+  var _myStrategy=useState(function(){try{var s=localStorage.getItem("ta-my-strategy");return s?JSON.parse(s):{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}}}catch(e){return{whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}}}}),myStrategy=_myStrategy[0],setMyStrategy=_myStrategy[1];
   var _ownersLetters=useState(function(){try{var s=localStorage.getItem("ta-owners-letters");return s?JSON.parse(s):[];}catch(e){return [];}}),ownersLetters=_ownersLetters[0],setOwnersLetters=_ownersLetters[1];
   var _journalEntries=useState(function(){try{var s=localStorage.getItem("ta-journal");return s?JSON.parse(s):[];}catch(e){return [];}}),journalEntries=_journalEntries[0],setJournalEntries=_journalEntries[1];
   var _letterLoading=useState(false),letterLoading=_letterLoading[0],setLetterLoading=_letterLoading[1];
@@ -2212,6 +2212,52 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var ticker=(modal&&modal.ticker)||"your company";
     var PURPLE="#8B5CF6";
     var _copied=React.useState(false),copied=_copied[0],setCopied=_copied[1];
+    var _tab=React.useState("standard"),promptTab=_tab[0],setPromptTab=_tab[1];
+    var fw=myStrategy.framework||{name:"",dimensions:[],useCustom:false};
+    var fwDims=(fw.dimensions||[]).filter(function(d){return d.name&&d.name.trim();});
+    var hasCustomFw=fwDims.length>0&&fw.name&&fw.name.trim();
+    // Build custom prompt inline (same logic as MyStrategyPage.buildCustomPrompt)
+    function buildCustomPrompt(){
+      var name=fw.name||"Custom Framework";
+      var dimBlock=fwDims.map(function(d,i){
+        var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
+        return"## DIMENSION "+(i+1)+": "+d.name+"
+"+typeDesc+"
+Analysis: [your detailed assessment of "+ticker+"]";
+      }).join("
+
+");
+      return "You are producing a structured investment analysis of "+ticker+" using the "+name+" framework. "+
+        "ThesisAlpha will parse this output automatically — follow the format exactly.
+
+"+
+        "## TITLE
+"+ticker+" — "+name+" Analysis
+
+"+
+        dimBlock+"
+
+"+
+        "## INVERSION
+MECHANISM: [the single thing that would kill this thesis]
+ARK: [probability and what signal to watch]
+
+"+
+        "## VERDICT
+[2-3 sentence overall conclusion. Would you invest in "+ticker+"?]
+"+
+        "FAT PITCH: [target entry price]
+"+
+        "PENDING: [one specific thing still to verify]
+
+"+
+        "STATUS SYMBOLS:
+✓ = pass
+⚠ = caution
+✗ = red flag
+— = neutral";
+    }
+    var customPrompt=hasCustomFw?buildCustomPrompt():"";
 
     var PROMPT=(
 "You are a structured investment analyst working within the ThesisAlpha framework. "+
@@ -2327,6 +2373,52 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     ];
 
     return<Modal title={"Deep Dive — AI Analysis Setup"} onClose={function(){setModal(null);}} w={620}>
+      {/* Framework tab bar — only shows if user has defined a custom framework */}
+      {hasCustomFw&&<div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
+        {[{id:"standard",label:"ThesisAlpha Framework"},{id:"custom",label:fw.name||"My Framework"}].map(function(t){
+          var act=promptTab===t.id;
+          return<button key={t.id} onClick={function(){setPromptTab(t.id);}} style={{padding:"9px 18px",background:"none",border:"none",borderBottom:"2px solid "+(act?PURPLE:"transparent"),color:act?PURPLE:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,fontWeight:act?700:400,transition:"all .15s"}}>
+            {t.label}
+          </button>;
+        })}
+      </div>}
+      {/* Custom framework prompt view */}
+      {promptTab==="custom"&&<div>
+        <div style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
+          {[{n:"1",text:'Copy your custom prompt below — it uses the dimensions you defined in My Strategy'},
+            {n:"2",text:"Open Claude, ChatGPT, or Gemini. Paste the prompt, then ask it to analyse "+ticker},
+            {n:"3",text:"Copy the full output and come back — click "Paste output →""},
+          ].map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<2?10:0}}>
+            <div style={{width:22,height:22,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:11,fontWeight:700,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
+            <div style={{fontSize:13,color:K.mid,fontFamily:fm,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
+          </div>;})}
+          <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid "+PURPLE+"20",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+            {[{label:"Claude.ai",url:"https://claude.ai",bg:PURPLE,clr:"#fff"},{label:"ChatGPT",url:"https://chatgpt.com",bg:"#10A37F",clr:"#fff"},{label:"Gemini",url:"https://gemini.google.com",bg:"#4285F4",clr:"#fff"}].map(function(ai){return<button key={ai.label} onClick={function(){window.open(ai.url,"_blank");}} style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"none",background:ai.bg,color:ai.clr,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{ai.label}</button>;})}
+          </div>
+        </div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,marginBottom:16,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:"1px solid "+K.bdr}}>
+            <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{fw.name+" prompt — "+fwDims.length+" dimensions"}</span>
+            <button onClick={function(){try{navigator.clipboard.writeText(customPrompt);}catch(e){}setCopied(true);setTimeout(function(){setCopied(false);},2500);}}
+              style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"40",background:copied?PURPLE+"20":"transparent",color:PURPLE,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
+              {copied?<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>{"Copied!"}</>:<><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>{"Copy prompt"}</>}
+            </button>
+          </div>
+          <pre style={{margin:0,padding:"14px 16px",fontSize:11,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:260,overflowY:"auto",background:"transparent"}}>{customPrompt}</pre>
+        </div>
+        <div style={{padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px solid "+K.bdr,fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:16}}>
+          {"ThesisAlpha will parse your custom dimensions automatically on import. INVERSION and VERDICT are always extracted regardless of framework."}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Already ran the analysis?"}</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
+            <button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>{"Paste output →"}</button>
+          </div>
+        </div>
+      </div>}
+      {/* Standard ThesisAlpha framework — only shown on standard tab */}
+      {promptTab==="standard"&&<div>
       {/* Steps */}
       <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:16}}>
         {STEPS.map(function(s,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:i<STEPS.length-1?10:0}}>
@@ -2416,6 +2508,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </button>
         </div>
       </div>
+      </div>}
     </Modal>;}
 
   // ── Import Deep Dive Modal ──────────────────────────────────────────────────
@@ -2454,6 +2547,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(/^##\s+DCF/i.test(trimmed)){section="dcf";continue;}
         if(/^##\s+INVERSION/i.test(trimmed)){section="inversion";currentInversion=null;continue;}
         if(/^##\s+VERDICT/i.test(trimmed)){section="verdict";continue;}
+        // Custom framework dimensions
+        if(/^##\s+DIMENSION\s*\d+/i.test(trimmed)){
+          var dmatch=trimmed.match(/^##\s+DIMENSION\s*\d+\s*[:\-–]?\s*(.*)/i);
+          var dimName=dmatch?dmatch[1].trim():"";
+          if(dimName){
+            currentFilter={id:"dim_"+dd.filters.length,title:dimName,verdict:"",verdictType:"note",checks:[],analysis:"",isCustomDim:true};
+            dd.filters.push(currentFilter);
+            section="filter";
+          }
+          continue;
+        }
 
         // Title
         if(section==="title"){title=trimmed;continue;}
@@ -10020,10 +10124,66 @@ function ProWelcomeGift(){
 
   // ── My Strategy ─────────────────────────────────────────────────────────
   function MyStrategyPage(){
-    var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:""},myStrategy)),draft=_draft[0],setDraft=_draft[1];
+    var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",dimensions:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
+    var fw=draft.framework||{name:"",dimensions:[],useCustom:false};
+    var fwDims=fw.dimensions||[];
+    function setFw(patch){var next=Object.assign({},draft);next.framework=Object.assign({},fw,patch);setDraft(next);}
+    function setDim(idx,patch){var dims=fwDims.slice();dims[idx]=Object.assign({},dims[idx],patch);setFw({dimensions:dims});}
+    function addDim(){if(fwDims.length>=8)return;setFw({dimensions:fwDims.concat([{name:"",type:"score"}])});}
+    function removeDim(idx){setFw({dimensions:fwDims.filter(function(_,i){return i!==idx;})});}
+    // Generate the custom prompt from framework dimensions
+    function buildCustomPrompt(){
+      var dims=fwDims.filter(function(d){return d.name&&d.name.trim();});
+      if(dims.length===0)return"";
+      var name=fw.name||"Custom Framework";
+      var dimBlock=dims.map(function(d,i){
+        var typeDesc=d.type==="score"?"Score: [1-10]":d.type==="passfail"?"VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]":"Notes: [your assessment]";
+        return"## DIMENSION "+(i+1)+": "+d.name+"
+"+typeDesc+"
+Analysis: [your detailed assessment]";
+      }).join("
+
+");
+      return "You are producing a structured investment analysis using the "+name+" framework. "+
+        "ThesisAlpha will parse this output automatically — follow the format exactly.
+
+"+
+        "Company: [Company Name] ([TICKER])
+
+"+
+        "## TITLE
+[Company Name] — "+name+" Analysis
+
+"+
+        dimBlock+"
+
+"+
+        "## INVERSION
+MECHANISM: [the single thing that would kill this thesis]
+ARK: [probability and what signal to watch]
+
+"+
+        "## VERDICT
+[2-3 sentence overall conclusion. Would you invest?]
+"+
+        "FAT PITCH: [target entry price, e.g. $120]
+"+
+        "PENDING: [one specific thing still to verify]
+
+"+
+        "DIMENSION STATUS SYMBOLS:
+"+
+        "✓ = strong positive signal
+"+
+        "⚠ = caution / watch
+"+
+        "✗ = red flag
+"+
+        "— = neutral or insufficient data";
+    }
     var _saved=React.useState(false),justSaved=_saved[0],setJustSaved=_saved[1];
     var hasContent=draft.whatIInvestIn.trim().length>0||draft.whatIPay.trim().length>0||draft.howIBehave.trim().length>0||draft.whatIAvoid.trim().length>0;
-    var wordCount=Object.values(draft).reduce(function(s,v){return s+(v.trim()?v.trim().split(/\s+/).length:0)},0);
+    var wordCount=["whatIInvestIn","whatIPay","howIBehave","whatIAvoid"].reduce(function(s,k){var v=draft[k]||"";return s+(v.trim()?v.trim().split(/\s+/).length:0)},0);
 
     function save(){
       saveMyStrategy(draft);
@@ -10120,6 +10280,77 @@ function ProWelcomeGift(){
           />
         </div>;
       })}
+
+      {/* ── ANALYSIS FRAMEWORK ── */}
+      <div style={{marginBottom:28,paddingTop:28,borderTop:"1px solid "+K.bdr}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20,gap:16}}>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",marginBottom:4}}>{"Analysis Framework"}</div>
+            <div style={{fontSize:13,color:K.dim,lineHeight:1.7,maxWidth:480}}>{"Define the dimensions you use to evaluate companies. ThesisAlpha will generate a structured prompt you copy into Claude or ChatGPT — the output comes back in a format ThesisAlpha can parse automatically. No second API call."}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            <span style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use custom framework"}</span>
+            <div onClick={function(){setFw({useCustom:!fw.useCustom});}} style={{width:40,height:22,borderRadius:11,background:fw.useCustom?K.acc:K.bdr,cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}}>
+              <div style={{position:"absolute",top:3,left:fw.useCustom?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+            </div>
+          </div>
+        </div>
+        {/* Framework name */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Framework name</div>
+          <input value={fw.name||""} onChange={function(e){setFw({name:e.target.value});}}
+            placeholder={"e.g. My Quality Compounder Framework, Lynch Growth Checklist..."}
+            style={{width:"100%",boxSizing:"border-box",padding:"10px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=K.acc+"60";}}
+            onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+        </div>
+        {/* Dimensions */}
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Evaluation dimensions (up to 8)"}</div>
+            {fwDims.length<8&&<button onClick={addDim} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:K.acc,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:4}}>{"+ Add dimension"}</button>}
+          </div>
+          {fwDims.length===0&&<div style={{padding:"20px",borderRadius:_isBm?0:10,background:K.bg,border:"1px dashed "+K.bdr,textAlign:"center",color:K.dim,fontSize:13,fontFamily:fm}}>{"Add the criteria you evaluate every company on — e.g. Moat strength, Management quality, Unit economics, TAM..."}</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {fwDims.map(function(dim,di){
+              return<div key={di} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
+                <input value={dim.name||""} onChange={function(e){setDim(di,{name:e.target.value});}}
+                  placeholder={"Dimension name, e.g. Moat strength"}
+                  style={{flex:1,background:"none",border:"none",outline:"none",fontSize:13,color:K.txt,fontFamily:fm,minWidth:0}}/>
+                <select value={dim.type||"score"} onChange={function(e){setDim(di,{type:e.target.value});}}
+                  style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,color:K.txt,fontSize:11,fontFamily:fm,padding:"4px 8px",cursor:"pointer",flexShrink:0}}>
+                  <option value="score">Score 1-10</option>
+                  <option value="passfail">Pass / Fail</option>
+                  <option value="text">Notes only</option>
+                </select>
+                <button onClick={function(){removeDim(di);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",flexShrink:0,lineHeight:1}}>{"×"}</button>
+              </div>;
+            })}
+          </div>
+        </div>
+        {/* Generated prompt */}
+        {fwDims.filter(function(d){return d.name&&d.name.trim();}).length>0&&(function(){
+          var prompt=buildCustomPrompt();
+          var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
+          return<div style={{background:"#8B5CF6"+"08",border:"1px solid "+"#8B5CF6"+"25",borderRadius:_isBm?0:12,overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid "+"#8B5CF6"+"20"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span style={{fontSize:12,fontWeight:700,color:"#8B5CF6",fontFamily:fm}}>{"Your custom prompt — copy this into Claude or ChatGPT"}</span>
+              </div>
+              <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedFw(true);setTimeout(function(){setCopiedFw(false);},2000);}}
+                style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"1px solid "+"#8B5CF6"+"40",background:copiedFw?"#8B5CF6"+"20":"transparent",color:"#8B5CF6",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .2s"}}>
+                {copiedFw?"Copied ✓":"Copy prompt"}
+              </button>
+            </div>
+            <pre style={{margin:0,padding:"14px 16px",fontSize:11,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,overflowX:"auto",whiteSpace:"pre-wrap",maxHeight:220,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
+          </div>;
+        })()}
+        {fwDims.filter(function(d){return d.name&&d.name.trim();}).length>0&&<div style={{marginTop:12,padding:"10px 14px",borderRadius:_isBm?0:8,background:K.bg,border:"1px solid "+K.bdr,display:"flex",alignItems:"flex-start",gap:10}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={K.acc} strokeWidth="2" style={{flexShrink:0,marginTop:1}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div style={{fontSize:12,color:K.dim,lineHeight:1.6,fontFamily:fb}}>{"When you import the output, ThesisAlpha will recognise your dimension names and structure the results automatically. The INVERSION and VERDICT sections always get parsed regardless of framework."}</div>
+        </div>}
+      </div>
 
       {/* Save button bottom */}
       {hasContent&&<div style={{display:"flex",justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid "+K.bdr}}>
