@@ -8819,6 +8819,29 @@ function calcMoatFromData(finData,businessModelType){
     if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1–10 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
     var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
+    // ── Atomic Moat hub cards ─────────────────────────────────────────────
+    if(atomicArticles&&atomicArticles.length>0&&actions.length<6){
+      try{var seenRaw=localStorage.getItem("ta-atomic-seen");var seen=seenRaw?JSON.parse(seenRaw):[];}catch(e){var seen=[];}
+      portfolio.concat(watchlist).forEach(function(c){
+        var arts=getArticlesForTicker(c.ticker).filter(function(a){return seen.indexOf(a.link)<0;});
+        if(arts.length===0||actions.length>=6)return;
+        var a=arts[0];
+        var typeColor={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899"}[a.type]||"#8B5CF6";
+        var isOwned=(c.status||"portfolio")==="portfolio";
+        actions.push({
+          icon:"book",color:typeColor,
+          title:"Atomic Moat: "+a.type+" on "+c.ticker,
+          desc:(isOwned?"You own ":"Watching ")+(c.name||c.ticker)+" — "+a.title.replace(/^(Deep Dive|Simple Truth|Titan Test|The Radar|Money Mind)[:\-–]\s*/i,"").substring(0,80),
+          action:"Read",
+          isAtomic:true,atomicLink:a.link,atomicId:a.link,
+          onClick:function(){
+            var link=a.link;
+            try{var s2=localStorage.getItem("ta-atomic-seen");var s3=s2?JSON.parse(s2):[];if(s3.indexOf(link)<0){s3.push(link);localStorage.setItem("ta-atomic-seen",JSON.stringify(s3));}}catch(e){}
+            window.open(link,"_blank");
+          }
+        });
+      });
+    }
     // Tabs
     var ht=hubTab,setHt=setHubTab;
     var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
@@ -9044,6 +9067,47 @@ function calcMoatFromData(finData,businessModelType){
             {unchecked.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
               <IC name="target" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>KPIs unchecked: <strong style={{color:K.txt}}>{unchecked.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
           </div>})()}
+
+        {/* ── Atomic Moat Research Zone ── */}
+        {atomicArticles&&atomicArticles.length>0&&(function(){
+          var matches=portfolio.concat(watchlist).map(function(c2){
+            var arts=getArticlesForTicker(c2.ticker);
+            return arts.length>0?{c:c2,arts:arts}:null;
+          }).filter(Boolean);
+          if(matches.length===0)return null;
+          var typeColor={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899"};
+          return<div style={{background:"#8B5CF608",border:"1px solid #8B5CF625",borderRadius:_isBm?0:12,padding:"14px 16px",marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:7}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span style={{fontSize:11,fontWeight:700,color:"#8B5CF6",fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Atomic Moat — Research on your holdings"}</span>
+              </div>
+              <button onClick={function(){setHubTab("docs");setPage("library");setTimeout(function(){setLibTab("featured");},100);}} style={{fontSize:11,color:"#8B5CF6",background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600}}>{"See all →"}</button>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {matches.slice(0,3).map(function(m){
+                var a=m.arts[0];var c2=m.c;
+                var tc=typeColor[a.type]||"#8B5CF6";
+                var isOwned=(c2.status||"portfolio")==="portfolio";
+                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,cursor:"pointer",transition:"border-color .15s"}}
+                  onMouseEnter={function(e){e.currentTarget.style.borderColor="#8B5CF650";}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}
+                  onClick={function(){window.open(a.link,"_blank");}}>
+                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={22}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+                      <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
+                      <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>{a.type}</span>
+                      {isOwned&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>owned</span>}
+                    </div>
+                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title.replace(/^(Deep Dive|Simple Truth|Titan Test|The Radar|Money Mind)[:–—\-]\s*/i,"")}</div>
+                  </div>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
 
         {/* ── Zone 2: Your Portfolio ── */}
         <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:_isBm?0:2,background:"#8B5CF6"}}/> Your Portfolio</div></div>
@@ -11405,7 +11469,7 @@ function ProWelcomeGift(){
               return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
                 <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}{getArticlesForTicker(c.ticker).length>0&&<span title={"Atomic Moat research available"} style={{fontSize:8,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 5px",fontFamily:fm,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"●"}</span>}</div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
@@ -13736,6 +13800,7 @@ function ProWelcomeGift(){
               {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>FAT PITCH</span>}
               {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
+              {getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"research"}</span>}
             </div>
             {hi52>lo52&&price>0&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
@@ -14275,7 +14340,7 @@ function ProWelcomeGift(){
           {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
             return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
-              <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
+              <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontWeight:400,color:K.mid,fontSize:13}}>{c.name}</span>{getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:8,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,cursor:"pointer"}} title={"Atomic Moat has research on "+c.ticker} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"RESEARCH"}</span>}</div>
                 <div style={{fontSize:12,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:K.amb,fontFamily:fm}}>{d===0?"Today":d===1?"Tomorrow":d+"d"}</div>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</div></div>
