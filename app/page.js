@@ -13896,6 +13896,68 @@ function ProWelcomeGift(){
           </div>}
         </div>
 
+        {/* ── Mini Financials Chart ── */}
+        {(function(){
+          var hist=c.earningsHistory||[];
+          if(hist.length<2)return null;
+          // Get last 5 quarters sorted
+          var sorted=hist.slice().sort(function(a,b){return a.quarter<b.quarter?-1:1}).slice(-5);
+          var revs=sorted.map(function(h){return h.revenue||h.actualRevenue||0;});
+          var nets=sorted.map(function(h){return h.netIncome||0;});
+          var maxRev=Math.max.apply(null,revs)||1;
+          var maxNet=Math.max.apply(null,nets)||1;
+          var margins=sorted.map(function(h){var r=h.revenue||h.actualRevenue||0;var n=h.netIncome||0;return r>0?n/r*100:null;});
+          var validMargins=margins.filter(function(m){return m!=null;});
+          var minM=validMargins.length?Math.min.apply(null,validMargins):0;
+          var maxM=validMargins.length?Math.max.apply(null,validMargins):30;
+          var mRange=Math.max(maxM-minM,5);
+          var barW=16;var chartH=60;var chartW=sorted.length*(barW*2+6);
+          return<div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"14px 16px"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{"Financials"}</div>
+              <button onClick={function(){setSelId(c.id);setDetailTab("financials");setSubPage("financials");setPage("dashboard");}}
+                style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0}}>
+                {"More →"}
+              </button>
+            </div>
+            <div style={{position:"relative",height:chartH+20,width:"100%",overflowX:"auto"}}>
+              <svg width="100%" height={chartH+20} viewBox={"0 0 "+(chartW+10)+" "+(chartH+20)} preserveAspectRatio="none">
+                {sorted.map(function(h,i){
+                  var x=i*(barW*2+6);
+                  var revH=revs[i]>0?Math.max(3,Math.round(revs[i]/maxRev*chartH)):0;
+                  var netH=nets[i]>0?Math.max(2,Math.round(nets[i]/maxNet*chartH*0.65)):0;
+                  return React.createElement(React.Fragment,{key:i},
+                    React.createElement("rect",{x:x,y:chartH-revH,width:barW,height:revH,fill:K.blue||"#3B82F6",rx:2,opacity:0.8}),
+                    nets[i]>0&&React.createElement("rect",{x:x+barW+2,y:chartH-netH,width:barW,height:netH,fill:"#06B6D4",rx:2,opacity:0.85}),
+                    React.createElement("text",{x:x+barW-2,y:chartH+12,textAnchor:"middle",fontSize:7,fill:K.dim||"#9CA3AF"},
+                      h.quarter?(h.quarter.replace(/\s*\d{4}/,"").trim()+"'"+String(h.quarter.match(/\d{4}/)?h.quarter.match(/\d{4}/)[0].slice(2):"")):"")
+                  );
+                })}
+                {/* Net margin line */}
+                {validMargins.length>=2&&React.createElement("polyline",{
+                  points:sorted.map(function(h,i){
+                    var m=margins[i];if(m==null)return null;
+                    var x=i*(barW*2+6)+barW-2;
+                    var y=chartH-Math.round(((m-minM)/mRange)*chartH*0.9);
+                    return x+","+y;
+                  }).filter(Boolean).join(" "),
+                  fill:"none",stroke:K.amb||"#F59E0B",strokeWidth:1.5,strokeLinecap:"round",strokeLinejoin:"round"
+                })}
+              </svg>
+            </div>
+            <div style={{display:"flex",gap:10,marginTop:2}}>
+              {[{color:K.blue||"#3B82F6",label:"Revenue"},{color:"#06B6D4",label:"Net income"},{color:K.amb||"#F59E0B",label:"Net margin %",line:true}].map(function(lg){
+                return<div key={lg.label} style={{display:"flex",alignItems:"center",gap:4}}>
+                  {lg.line
+                    ?<svg width="14" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke={lg.color} strokeWidth="1.5"/></svg>
+                    :<div style={{width:8,height:8,borderRadius:1,background:lg.color,opacity:.8}}/>}
+                  <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{lg.label}</span>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+
         {/* Valuation Gauge */}
         <div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"16px"}}>
           <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Valuation gauge — fat pitch price"}</div>
@@ -13961,6 +14023,9 @@ function ProWelcomeGift(){
                 var patch={alertEnabled:nowEnabled};
                 if(nowEnabled&&apVal.trim())patch.alertPrice=apVal.trim();
                 upd(c.id,patch);
+                if(nowEnabled&&apVal.trim())showToast("✓ Alert set — you'll be notified when "+c.ticker+" reaches "+cSym+apVal.trim(),"info",4000);
+                else if(nowEnabled)showToast("Alert on — add a price to activate","info",3000);
+                else showToast("Alert turned off for "+c.ticker,"info",2500);
               }}
               style={{padding:"9px 16px",borderRadius:_isBm?0:7,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
                 background:c.alertEnabled?K.grn:K.bdr,color:c.alertEnabled?"#fff":K.dim,transition:"all .2s",flexShrink:0}}>
@@ -14246,97 +14311,71 @@ function ProWelcomeGift(){
       var pctAway=fp>0&&price>0?((price-fp)/fp*100):null;
       var rangePos2=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
       var isOpen=panelId===c.id;
-      // Days on watchlist
-      var daysWatched=c.addedAt?Math.ceil((Date.now()-new Date(c.addedAt))/864e5):null;
-      var daysLabel=daysWatched?daysWatched>365?Math.floor(daysWatched/365)+"y "+(Math.floor((daysWatched%365)/30))+"m":daysWatched>30?Math.floor(daysWatched/30)+"mo":daysWatched+"d":null;
-      // Business quality from snapshot
-      var snap=c.financialSnapshot||{};
-      function snapVal(k){if(!snap[k])return null;var v=snap[k].numVal!=null?snap[k].numVal:parseFloat(String(snap[k].value||"").replace(/[^0-9.-]/g,""));return isNaN(v)?null:v;}
-      var roic=snapVal("roic")||snapVal("roce");
-      var grossMargin=snapVal("grossMargin");
-      var revenueGrowth=snapVal("revGrowth");
-      // Circle of competence
-      var coc=c.circleScore||0;
-      var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.dim;
-      var cocLabel=coc===5?"Expert":coc===4?"Deep":coc===3?"Solid":coc===2?"Basics":coc===1?"Thin":"?";
-      // Why watching
-      var note=c._watchNote||"";
-
-      return<div style={{padding:"12px 14px",background:isOpen?K.acc+"06":nearFP?K.grn+"05":"transparent",
-          borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",position:"relative",
+      return<div style={{padding:"11px 14px",background:isOpen?K.acc+"08":nearFP?K.grn+"06":"transparent",
+          borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",
           border:"1px solid "+(isOpen?K.acc+"30":nearFP?K.grn+"30":"transparent")}}
         onClick={function(){setPanelId(isOpen?null:c.id);}}
         onMouseEnter={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background=K.bg;}}
         onMouseLeave={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background="transparent";}}>
-
-        {/* ── Row main line ── */}
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
           <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:hi52>0||fp>0?3:0}}>
               <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}}>{c.ticker}</span>
               <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{c.name}</span>
               {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>FAT PITCH</span>}
               {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
-              {getArticlesForTicker&&getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"research"}</span>}
             </div>
-            {/* Why watching note */}
-            {note&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"90%",marginBottom:2,fontStyle:"italic"}}>{note}</div>}
-          </div>
-
-          {/* Right side: price + target */}
-          <div style={{textAlign:"right",flexShrink:0,minWidth:70}}>
-            {price>0&&<div style={{fontSize:13,fontWeight:700,color:nearFP?K.grn:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
-            {fp>0&&price>0&&<div style={{fontSize:10,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400}}>
-              {nearFP?"At target":pctAway!=null?(pctAway.toFixed(0)+"%"):""}
-              {" → "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}
+            {hi52>lo52&&price>0&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
+              <div style={{position:"relative",height:3,background:K.bdr,borderRadius:2,width:80,flexShrink:0}}>
+                <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos2||0))+"%",
+                  background:nearFP?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+K.acc+")",
+                  borderRadius:2,opacity:0.6}}/>
+                {fp>0&&fp>=lo52&&fp<=hi52&&<div style={{position:"absolute",top:-2,width:1,height:7,
+                  background:K.grn+"90",left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/> }
+                <div style={{position:"absolute",top:-4,width:11,height:11,borderRadius:"50%",
+                  background:nearFP?K.grn:K.acc,border:"1.5px solid "+K.card,
+                  boxShadow:"0 1px 4px rgba(0,0,0,0.25)",
+                  left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)",transition:"left .4s ease"}}/>
+              </div>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w H: "+cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
+              {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400,flexShrink:0,whiteSpace:"nowrap",marginLeft:2}}>{"·  "+(nearFP?"at target":pctAway.toFixed(0)+"% to target")}</span>}
             </div>}
-            {!fp&&price>0&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:1}}>no target</div>}
           </div>
-
-          {/* X remove — always visible on hover via state */}
-          <button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();else{if(window.confirm("Remove "+c.ticker+" from watchlist?"))upd(c.id,{status:"archived"});}}}
-            style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4,flexShrink:0,lineHeight:1,opacity:0.5,transition:"opacity .15s,color .15s"}}
-            onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.opacity="1";}}
-            onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.opacity="0.5";}}>{"×"}</button>
-        </div>
-
-        {/* ── 52w range bar + quality chips ── */}
-        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,paddingLeft:32}}>
-          {hi52>lo52&&price>0&&<>
-            <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
-            <div style={{position:"relative",height:3,background:K.bdr,borderRadius:2,width:70,flexShrink:0}}>
-              <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos2||0))+"%",
-                background:nearFP?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+K.acc+")",
-                borderRadius:2,opacity:0.6}}/>
-              {fp>0&&fp>=lo52&&fp<=hi52&&<div style={{position:"absolute",top:-2,width:1,height:7,
-                background:K.grn+"90",left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/>}
-              <div style={{position:"absolute",top:-4,width:10,height:10,borderRadius:"50%",
-                background:nearFP?K.grn:K.acc,border:"1.5px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,0.2)",
-                left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)",transition:"left .4s ease"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            <div style={{textAlign:"right"}}>
+              {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
+              {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
             </div>
-            <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
-          </>}
-          {/* Quality chips */}
-          <div style={{display:"flex",gap:5,marginLeft:"auto",flexWrap:"nowrap",alignItems:"center"}}>
-            {coc>0&&<div title={"Circle of competence: "+cocLabel} style={{display:"flex",alignItems:"center",gap:3,padding:"2px 7px",borderRadius:_isBm?0:4,background:cocColor+"12",border:"1px solid "+cocColor+"30"}}>
-              <div style={{width:5,height:5,borderRadius:"50%",background:cocColor}}/>
-              <span style={{fontSize:9,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</span>
-            </div>}
-            {roic!=null&&<div title={"ROIC: "+roic.toFixed(1)+"%"} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:roic>=15?K.grn+"12":roic>=8?K.amb+"12":K.red+"12",border:"1px solid "+(roic>=15?K.grn:roic>=8?K.amb:K.red)+"30"}}>
-              <span style={{fontSize:9,fontWeight:600,color:roic>=15?K.grn:roic>=8?K.amb:K.red,fontFamily:fm}}>{"ROIC "+roic.toFixed(0)+"%"}</span>
-            </div>}
-            {grossMargin!=null&&<div title={"Gross margin: "+grossMargin.toFixed(1)+"%"} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:K.bg,border:"1px solid "+K.bdr}}>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"GM "+grossMargin.toFixed(0)+"%"}</span>
-            </div>}
-            {daysLabel&&<div title={"Watching for "+daysLabel} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:K.bg,border:"1px solid "+K.bdr}}>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"⏱ "+daysLabel}</span>
-            </div>}
+            {/* Bell — alert indicator */}
+            <div title={c.alertEnabled&&c.alertPrice?"Alert set at "+cSym+c.alertPrice:"No alert set"}
+              style={{flexShrink:0,opacity:c.alertEnabled?1:0.3,cursor:"default"}}>
+              {c.alertEnabled
+                ?<svg width="14" height="14" viewBox="0 0 24 24" fill={K.amb} stroke={K.amb} strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                :<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
+            </div>
+            <button onClick={function(e){e.stopPropagation();setModal({type:"deepDivePrompt",ticker:c.ticker});}}
+              style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid #8B5CF640",
+                background:"#8B5CF60d",color:"#8B5CF6",fontSize:10,fontWeight:600,cursor:"pointer",
+                fontFamily:fm,flexShrink:0,whiteSpace:"nowrap",lineHeight:1.4,transition:"all .15s"}}
+              onMouseEnter={function(e){e.currentTarget.style.background="#8B5CF620";e.currentTarget.style.borderColor="#8B5CF670";}}
+              onMouseLeave={function(e){e.currentTarget.style.background="#8B5CF60d";e.currentTarget.style.borderColor="#8B5CF640";}}>
+              {"Deep Dive →"}
+            </button>
           </div>
+          {showRemove
+            ?<button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
+                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4}}
+                onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.background=K.red+"10";}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>{"×"}</button>
+            :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
+                style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>}
         </div>
-      </div>;
-    }
+      </div>;}
 
     // ── List info ──────────────────────────────────────────────────────────
     var activeCount=activeList==="watching"?watching.length:activeList==="toohard"?tooHard.length:(activeShortlist?(activeShortlist.tickers||[]).length:0);
