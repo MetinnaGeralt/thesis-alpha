@@ -14407,16 +14407,18 @@ function ProWelcomeGift(){
               {"Deep Dive →"}
             </button>
           </div>
-          {showRemove
-            ?<button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
-                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4}}
-                onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.background=K.red+"10";}}
-                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>{"×"}</button>
-            :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
-                style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>}
-        </div>
+          <>
+          {/* Always-visible X remove */}
+          <button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
+            title={"Remove "+c.ticker}
+            style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4,flexShrink:0,opacity:0.35,transition:"opacity .15s,color .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.opacity="1";}}
+            onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.opacity="0.35";}}>{"\u00d7"}</button>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
+              style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
+              <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </>
       </div>;}
 
     // ── List info ──────────────────────────────────────────────────────────
@@ -14586,7 +14588,7 @@ function ProWelcomeGift(){
 
         {/* Overlay + panel */}
         {panelId&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
-        {panelCo&&<WatchlistDetailPanel c={panelCo} onClose={function(){setPanelId(null);}}
+        {panelCo&&<WatchlistDetailPanel key={panelId} c={panelCo} onClose={function(){setPanelId(null);}}
           upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
           setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast}/>}
 
