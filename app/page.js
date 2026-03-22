@@ -2510,74 +2510,188 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   function CustomEditorModal(){
     if(!sel)return null;
     var PURPLE="#8B5CF6";
-    var ALL_BLOCKS=[
-      {type:"filter",label:"Filter (pass/fail)",desc:"Evaluation criterion with Pass/Borderline/Fail verdict",color:K.grn},
-      {type:"metric",label:"Metric Row",desc:"Key financial metric with value and status",color:K.blue},
-      {type:"verdict",label:"Verdict",desc:"Overall conclusion, position size, fat pitch price",color:K.amb},
-      {type:"inversion",label:"Inversion",desc:"What would permanently break this thesis?",color:PURPLE},
-      {type:"dcf",label:"DCF Scenario",desc:"Bear / Base / Bull valuation scenario",color:K.grn},
-      {type:"mgmt",label:"Management Check",desc:"Owner-operator test and capital allocation",color:K.acc},
-      {type:"moat",label:"Moat Test",desc:"Competitive advantage identification and durability",color:PURPLE},
-      {type:"text",label:"Free Text",desc:"Notes, context, or unstructured analysis",color:K.dim},
+    var BLOCK_DEFS=[
+      {type:"filter",label:"Filter",desc:"Named evaluation criterion",color:K.grn,
+       defaults:{name:"",checks:""},
+       placeholder:{name:"e.g. Pricing Power",checks:"e.g. Can raise prices without losing volume"}},
+      {type:"metric",label:"Metrics",desc:"Specific financial metrics to analyse",color:K.blue,
+       defaults:{items:""},
+       placeholder:{items:"One per line, e.g.:
+ROIC
+Revenue growth
+FCF margin
+Gross margin
+Net debt / EBITDA"}},
+      {type:"verdict",label:"Verdict",desc:"Final conclusion with fat pitch price",color:K.amb,
+       defaults:{},placeholder:{}},
+      {type:"inversion",label:"Inversion",desc:"What would permanently break this thesis?",color:PURPLE,
+       defaults:{},placeholder:{}},
+      {type:"dcf",label:"DCF Scenario",desc:"Bear / Base / Bull valuation",color:K.grn,
+       defaults:{},placeholder:{}},
+      {type:"mgmt",label:"Management Check",desc:"Owner-operator and capital allocation",color:K.acc,
+       defaults:{},placeholder:{}},
+      {type:"moat",label:"Moat Test",desc:"Competitive advantage identification",color:PURPLE,
+       defaults:{},placeholder:{}},
+      {type:"text",label:"Free Text",desc:"Open-ended section with a topic",color:K.dim,
+       defaults:{name:""},
+       placeholder:{name:"e.g. Competitive Landscape"}},
     ];
     var _bks=React.useState([]),blocks=_bks[0],setBlocks=_bks[1];
     var _nm=React.useState("My Framework"),fwName=_nm[0],setFwName=_nm[1];
     var _cp2=React.useState(false),copiedEd=_cp2[0],setCopiedEd=_cp2[1];
-    function addBlock(type){var def=ALL_BLOCKS.find(function(b){return b.type===type;});setBlocks(function(prev){return prev.concat([{type:type,label:def?def.label:"Block",id:Date.now()}]);});}
+
+    function addBlock(type){
+      var def=BLOCK_DEFS.find(function(b){return b.type===type;});
+      setBlocks(function(prev){return prev.concat([Object.assign({type:type,id:Date.now()},def?JSON.parse(JSON.stringify(def.defaults)):{})]);});
+    }
     function removeBlock(id){setBlocks(function(prev){return prev.filter(function(b){return b.id!==id;});});}
     function moveBlock(id,dir){setBlocks(function(prev){var ix=prev.findIndex(function(b){return b.id===id;});if(ix<0)return prev;var next=prev.slice();var tg=ix+dir;if(tg<0||tg>=next.length)return prev;var tmp=next[ix];next[ix]=next[tg];next[tg]=tmp;return next;});}
+    function patchBlock(id,patch){setBlocks(function(prev){return prev.map(function(b){return b.id===id?Object.assign({},b,patch):b;});});}
+
     function buildPrompt(){
-      var out=["You are producing a structured investment analysis of "+sel.ticker+" using the "+fwName+" framework.","Output in EXACTLY this format \u2014 ThesisAlpha parses it automatically.","","## TITLE",""+sel.ticker+" \u2014 "+fwName,"","## METRICS","[Key metric] | [Value] | [pass/warn/fail]","(3-5 key metrics)",""];
-      blocks.forEach(function(b,i){var n=i+1;
-        if(b.type==="filter"||b.type==="moat"||b.type==="mgmt"){var t=b.type==="moat"?"Economic Moat":b.type==="mgmt"?"Management Quality":b.label;out.push("## FILTER "+n+": "+t+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n\u2713 [key check]\n\u26a0 [concern]\n\u2717 [red flag]\n");}
-        else if(b.type==="verdict")out.push("## VERDICT\n[2-3 sentence conclusion.]\nFAT PITCH: [entry price]\nPENDING: [one thing to verify]\n");
-        else if(b.type==="inversion")out.push("## INVERSION\nMECHANISM: [what would break this thesis]\nARK: [probability and signal]\n");
-        else if(b.type==="dcf")out.push("## DCF\nBear | [CAGR] | [margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail\nBase | ... | warn\nBull | ... | pass\nSUMMARY: [conclusion]\n");
-        else if(b.type==="metric")out.push("## METRICS\n[Label] | [Value] | [pass/warn/fail]\n");
-        else out.push("## NOTES\n[Free-form analysis and context]\n");
+      var filterN=0;
+      var out=["You are producing a structured investment analysis of "+sel.ticker+" using the "+fwName+" framework.",
+        "Output in EXACTLY this format — ThesisAlpha parses it automatically.","","## TITLE",sel.ticker+" — "+fwName,""];
+      // Collect all metric blocks first for a single ## METRICS section
+      var metricItems=[];
+      blocks.forEach(function(b){
+        if(b.type==="metric"){
+          (b.items||"").split("
+").map(function(s){return s.trim();}).filter(Boolean).forEach(function(m){metricItems.push(m);});
+        }
       });
-      out.push("STATUS SYMBOLS: \u2713=pass \u26a0=caution \u2717=fail \u2014=neutral");
-      return out.join("\n");
+      if(metricItems.length>0){
+        out.push("## METRICS");
+        metricItems.forEach(function(m){out.push(m+" | [value] | [pass/warn/fail]");});
+        out.push("");
+      } else {
+        out.push("## METRICS","[Key metric] | [Value] | [pass/warn/fail]","(3-5 key metrics)","");
+      }
+      blocks.forEach(function(b){
+        if(b.type==="metric")return; // already handled above
+        if(b.type==="filter"){
+          filterN++;
+          var title=(b.name&&b.name.trim())?b.name.trim():"Filter "+filterN;
+          var checks=(b.checks&&b.checks.trim())?"
+"+b.checks.trim().split("
+").map(function(c){return"✓ "+c.trim();}).join("
+"):"
+✓ [key check]
+⚠ [concern]
+✗ [red flag]";
+          out.push("## FILTER "+filterN+": "+title+"
+VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]"+checks+"
+");
+        } else if(b.type==="moat"){filterN++;out.push("## FILTER "+filterN+": Economic Moat
+VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]
+✓ [moat source identified and durable]
+⚠ [competitive threat]
+✗ [no moat signal]
+");}
+        else if(b.type==="mgmt"){filterN++;out.push("## FILTER "+filterN+": Management Quality
+VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]
+✓ [owner-operator signal]
+⚠ [capital allocation concern]
+✗ [integrity issue]
+");}
+        else if(b.type==="verdict")out.push("## VERDICT
+[2-3 sentence conclusion. Is this worth owning?]
+FAT PITCH: [entry price]
+PENDING: [one thing to verify]
+");
+        else if(b.type==="inversion")out.push("## INVERSION
+MECHANISM: [what would permanently break this thesis]
+ARK: [probability 1-5% and early signal to watch]
+");
+        else if(b.type==="dcf")out.push("## DCF
+Bear | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail
+Base | ... | warn
+Bull | ... | pass
+SUMMARY: [weighted intrinsic value conclusion]
+");
+        else if(b.type==="text"){var topic=(b.name&&b.name.trim())?b.name.trim():"Notes";out.push("## "+topic.toUpperCase()+"
+[Your analysis here]
+");}
+      });
+      out.push("STATUS SYMBOLS: ✓=pass ⚠=caution ✗=fail —=neutral");
+      return out.join("
+");
     }
     var prompt=buildPrompt();
-    return<Modal title={"Custom Editor \u2014 "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
-      <div style={{marginBottom:16}}>
-        <input value={fwName} onChange={function(e){setFwName(e.target.value);}} placeholder={"Framework name"}
-          style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:14,fontFamily:fh,fontWeight:700,outline:"none",marginBottom:12}}
-          onFocus={function(e){e.target.style.borderColor=K.amb+"60";}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
-        <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Add blocks to build your format"}</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
-          {ALL_BLOCKS.map(function(b){return<button key={b.type} onClick={function(){addBlock(b.type);}}
-            style={{padding:"6px 12px",borderRadius:_isBm?0:7,border:"1px solid "+b.color+"40",background:b.color+"08",color:b.color,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=b.color+"18";}} onMouseLeave={function(e){e.currentTarget.style.background=b.color+"08";}}>{b.label}</button>;})}
+
+    function BlockEditor({b,bi}){
+      var def=BLOCK_DEFS.find(function(d){return d.type===b.type;});
+      var col=def?def.color:K.dim;
+      var inputStyle={width:"100%",boxSizing:"border-box",padding:"6px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:12,fontFamily:fm,outline:"none"};
+      return<div style={{background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,overflow:"hidden"}}>
+        {/* Block header */}
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:col+"08",borderBottom:"1px solid "+K.bdr}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
+          <div style={{fontSize:11,fontWeight:700,color:col,fontFamily:fm,flex:1}}>{def?def.label:b.type}</div>
+          <button onClick={function(){moveBlock(b.id,-1);}} disabled={bi===0} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===0?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===0?0.3:1}}>{"↑"}</button>
+          <button onClick={function(){moveBlock(b.id,1);}} disabled={bi===blocks.length-1} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===blocks.length-1?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===blocks.length-1?0.3:1}}>{"↓"}</button>
+          <button onClick={function(){removeBlock(b.id);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 2px",lineHeight:1}}>{"×"}</button>
         </div>
-        {blocks.length===0&&<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:13,fontFamily:fm,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:8,marginBottom:16}}>{"Add blocks above to build your format"}</div>}
-        {blocks.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
-          {blocks.map(function(b,bi){var def=ALL_BLOCKS.find(function(d){return d.type===b.type;});
-            return<div key={b.id} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
-              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{b.label}</div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{def?def.desc:""}</div></div>
-              <div style={{display:"flex",gap:4}}>
-                <button onClick={function(){moveBlock(b.id,-1);}} disabled={bi===0} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===0?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===0?0.3:1}}>{"\u2191"}</button>
-                <button onClick={function(){moveBlock(b.id,1);}} disabled={bi===blocks.length-1} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===blocks.length-1?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===blocks.length-1?0.3:1}}>{"\u2193"}</button>
-                <button onClick={function(){removeBlock(b.id);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",lineHeight:1}}>{"\u00d7"}</button>
-              </div>
-            </div>;
-          })}
+        {/* Block config */}
+        {b.type==="filter"&&<div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:6}}>
+          <input value={b.name||""} onChange={function(e){patchBlock(b.id,{name:e.target.value});}}
+            placeholder={def&&def.placeholder.name||"Filter name"}
+            style={inputStyle}/>
+          <textarea value={b.checks||""} onChange={function(e){patchBlock(b.id,{checks:e.target.value});}}
+            placeholder={(def&&def.placeholder.checks)||"What specific things should the AI check? One per line."}
+            rows={3} style={Object.assign({},inputStyle,{resize:"vertical",lineHeight:1.5})}/>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Each line becomes a ✓ check in the prompt"}</div>
         </div>}
+        {b.type==="metric"&&<div style={{padding:"10px 12px"}}>
+          <textarea value={b.items||""} onChange={function(e){patchBlock(b.id,{items:e.target.value});}}
+            placeholder={(def&&def.placeholder.items)||"One metric per line"}
+            rows={5} style={Object.assign({},inputStyle,{resize:"vertical",lineHeight:1.6})}/>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4}}>{"One metric per line — e.g. ROIC, Revenue growth, FCF margin"}</div>
+        </div>}
+        {b.type==="text"&&<div style={{padding:"10px 12px"}}>
+          <input value={b.name||""} onChange={function(e){patchBlock(b.id,{name:e.target.value});}}
+            placeholder={(def&&def.placeholder.name)||"Section title"}
+            style={inputStyle}/>
+        </div>}
+        {(b.type==="verdict"||b.type==="inversion"||b.type==="dcf"||b.type==="moat"||b.type==="mgmt")&&<div style={{padding:"8px 12px"}}>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{def?def.desc:""}</div>
+        </div>}
+      </div>;
+    }
+
+    return<Modal title={"Custom Editor — "+sel.ticker} onClose={function(){setModal(null);}} w={700} K={K}>
+      <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:"80vh",overflowY:"auto"}}>
+        <div style={{marginBottom:12}}>
+          <input value={fwName} onChange={function(e){setFwName(e.target.value);}} placeholder={"Framework name"}
+            style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:14,fontFamily:fh,fontWeight:700,outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=K.amb+"60";}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+        </div>
+        {/* Block picker */}
+        <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Add blocks"}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
+          {BLOCK_DEFS.map(function(def){return<button key={def.type} onClick={function(){addBlock(def.type);}}
+            style={{padding:"5px 11px",borderRadius:_isBm?0:6,border:"1px solid "+def.color+"40",background:def.color+"08",color:def.color,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=def.color+"18";}} onMouseLeave={function(e){e.currentTarget.style.background=def.color+"08";}}>{"+ "+def.label}</button>;})}
+        </div>
+        {/* Block list */}
+        {blocks.length===0&&<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:13,fontFamily:fm,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:8,marginBottom:12}}>{"Add blocks above — configure each one, then copy the generated prompt"}</div>}
+        {blocks.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+          {blocks.map(function(b,bi){return<BlockEditor key={b.id} b={b} bi={bi}/>;})}</div>}
+        {/* Generated prompt */}
         {blocks.length>0&&<div style={{border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:K.amb+"08",borderBottom:"1px solid "+K.amb+"20"}}>
-            <span style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm}}>{"Generated prompt"}</span>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:K.amb+"08",borderBottom:"1px solid "+K.amb+"20"}}>
+            <span style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm}}>{"Generated prompt — copy and run in your AI"}</span>
             <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedEd(true);setTimeout(function(){setCopiedEd(false);},2000);}} style={{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",background:copiedEd?K.amb+"20":"transparent",color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-              {copiedEd?"\u2713 Copied":"Copy"}</button>
+              {copiedEd?"✓ Copied":"Copy"}</button>
           </div>
-          <pre style={{margin:0,padding:"12px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:200,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
+          <pre style={{margin:0,padding:"10px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:160,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
         </div>}
       </div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
-        <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Build \u2192 copy prompt \u2192 run in AI \u2192 paste output"}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,marginTop:12,borderTop:"1px solid "+K.bdr}}>
+        <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Build → copy → run in AI → paste output"}</div>
         <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
-          {blocks.length>0&&<button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"9px 22px",background:K.amb,borderColor:K.amb})}>{"Paste output \u2192"}</button>}
+          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"8px 18px"})}>Close</button>
+          {blocks.length>0&&<button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"8px 18px",background:K.amb,borderColor:K.amb})}>{"Paste output →"}</button>}
         </div>
       </div>
     </Modal>;
