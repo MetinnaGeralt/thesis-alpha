@@ -8006,7 +8006,7 @@ function calcMoatFromData(finData,businessModelType){
         {/* ── DEEP DIVE ── */}
         {(function(){
           var PURPLE="#8B5CF6";
-          var existingDives=(c.docs||[]).filter(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+          var existingDives=(c.docs||[]).filter(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
           var latestDive=existingDives.length>0?existingDives[existingDives.length-1]:null;
           return<div style={{marginBottom:24}}>
             {existingDives.length>0&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
@@ -8122,13 +8122,16 @@ function calcMoatFromData(finData,businessModelType){
             </div>}
 {latestDive&&<div>
               {existingDives.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-                {existingDives.map(function(d,di){return<button key={d.id}
-                  style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+PURPLE+"40",background:di===existingDives.length-1?PURPLE+"12":"transparent",
-                    color:di===existingDives.length-1?PURPLE:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:di===existingDives.length-1?600:400}}>
+                {existingDives.map(function(d,di){var isAct=di===existingDives.length-1;return<button key={d.id}
+                  style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+PURPLE+"40",background:isAct?PURPLE+"12":"transparent",
+                    color:isAct?PURPLE:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:isAct?600:400,display:"flex",alignItems:"center",gap:5}}>
+                  {d.docType==="freeform_dive"&&<span style={{fontSize:9,color:K.blue,background:K.blue+"18",borderRadius:3,padding:"1px 5px",fontFamily:fm,fontWeight:700}}>IMPORT</span>}
                   {d.title||(new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",year:"numeric"}))}
                 </button>;})}
               </div>}
-              <DeepDiveView doc={latestDive} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>
+              {latestDive.docType==="freeform_dive"
+                ?<FreeformDiveView doc={latestDive} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>
+                :<DeepDiveView doc={latestDive} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
             </div>}
           </div>;
         })()}
