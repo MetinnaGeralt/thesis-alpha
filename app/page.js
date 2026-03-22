@@ -6,6 +6,7 @@ import {
   FOLDERS, SAMPLE, METRICS, METRIC_MAP,
   INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
   SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
+  ALERT_QUOTES,
 } from './components/constants';
 import {
   ldS, svS, cacheGet, cacheSet, xJSON, stripCite, autoFormat,
@@ -738,6 +739,8 @@ function TrackerApp(props){
   // ── Atomic Moat feed ──────────────────────────────────────────────────
   var _am=useState(null),atomicArticles=_am[0],setAtomicArticles=_am[1];
   var _ab=useState(function(){try{var b=localStorage.getItem('ta-alert-banners');return b?JSON.parse(b):[]}catch(e){return[]}}),alertBanners=_ab[0],setAlertBanners=_ab[1];
+  var _at=useState(null),alertToast=_at[0],setAlertToast=_at[1];
+  function showAlertToast(msg){setAlertToast(msg);setTimeout(function(){setAlertToast(null);},5000);}
   function dismissAlertBanner(id){setAlertBanners(function(prev){var next=prev.filter(function(b){return b.id!==id;});try{localStorage.setItem('ta-alert-banners',JSON.stringify(next));}catch(e){}return next;});}
   var _amLoaded=useState(false),atomicLoaded=_amLoaded[0],setAtomicLoaded=_amLoaded[1];
   useEffect(function(){
@@ -816,7 +819,7 @@ function TrackerApp(props){
           if(d.profile.milestones)setMilestones(d.profile.milestones);
           if(d.profile.weeklyReviews)setWeeklyReviews(d.profile.weeklyReviews);
           if(d.profile.dashSettings)setDashSet(Object.assign({},DEFAULT_DASH,d.profile.dashSettings));
-          if(d.profile.theme){var t=d.profile.theme;setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}
+          if(d.profile.theme){var t=d.profile.theme;var localTheme=null;try{localTheme=localStorage.getItem("ta-theme");}catch(e){}if(!localTheme){setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}}
           if(d.profile.myStrategy)setMyStrategy(d.profile.myStrategy);
         }
       }
@@ -13845,12 +13848,13 @@ function ProWelcomeGift(){
 
 
   // ── Watchlist Detail Panel (standalone — avoids re-mount on upd) ──────────
-  function WatchlistDetailPanel({c,onClose,upd,cSym,K,isMobile,_isBm,fh,fm,fb,setSelId,setDetailTab,setPage,showToast}){
+  function WatchlistDetailPanel({c,onClose,upd,cSym,K,isMobile,_isBm,fh,fm,fb,setSelId,setDetailTab,setPage,showToast,showAlertToast}){
     if(!c)return null;
     // All editable fields in local state — save to cos on blur/change
     var pos=c.position||{};
     var _fp=React.useState(c.fatPitchPrice||""),fpVal=_fp[0],setFpVal=_fp[1];
     var _ap=React.useState(c.alertPrice||""),apVal=_ap[0],setApVal=_ap[1];
+    var apRef=React.useRef(c.alertPrice||"");
     var _wn=React.useState(c._watchNote||""),wnVal=_wn[0],setWnVal=_wn[1];
     // CAGR inputs
     var _eps=React.useState(c._cagrEps||""),epsVal=_eps[0],setEpsVal=_eps[1];
@@ -14054,20 +14058,24 @@ function ProWelcomeGift(){
             <div style={{display:"flex",alignItems:"center",gap:6,flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:7,padding:"0 10px"}}
               onClick={function(e){e.stopPropagation();}}>
               <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
-              <input value={apVal} onChange={function(e){setApVal(e.target.value);}}
-                onBlur={function(){if(apVal.trim())upd(c.id,{alertPrice:apVal.trim()});}}
+              <input value={apVal} onChange={function(e){setApVal(e.target.value);apRef.current=e.target.value;}}
+                onBlur={function(){var v=apRef.current.trim();if(v)upd(c.id,{alertPrice:v});}}
                 placeholder={"Alert price"}
                 style={{flex:1,background:"none",border:"none",outline:"none",padding:"9px 0",fontSize:14,color:K.txt,fontFamily:fm}}
               />
             </div>
-            <button onClick={function(){
+            <button onClick={function(e){
+                var currentPrice=apRef.current.trim()||apVal.trim();
                 var nowEnabled=!c.alertEnabled;
                 var patch={alertEnabled:nowEnabled};
-                if(nowEnabled&&apVal.trim())patch.alertPrice=apVal.trim();
+                if(nowEnabled&&currentPrice)patch.alertPrice=currentPrice;
                 upd(c.id,patch);
-                if(nowEnabled&&apVal.trim())showToast("✓ Alert set — you'll be notified when "+c.ticker+" reaches "+cSym+apVal.trim(),"info",4000);
+                if(nowEnabled&&currentPrice){
+                  var q=ALERT_QUOTES[Math.floor(Math.random()*ALERT_QUOTES.length)];
+                  showAlertToast(c.ticker+" at "+cSym+currentPrice+" — "+q);
+                }
                 else if(nowEnabled)showToast("Alert on — add a price to activate","info",3000);
-                else showToast("Alert turned off for "+c.ticker,"info",2500);
+                else showToast("Alert off for "+c.ticker,"info",2000);
               }}
               style={{padding:"9px 16px",borderRadius:_isBm?0:7,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
                 background:c.alertEnabled?K.grn:K.bdr,color:c.alertEnabled?"#fff":K.dim,transition:"all .2s",flexShrink:0}}>
@@ -14075,9 +14083,9 @@ function ProWelcomeGift(){
             </button>
           </div>
           <div style={{fontSize:11,color:c.alertEnabled?K.grn:K.dim,fontFamily:fm}}>
-            {c.alertEnabled&&apVal?"Alert active — fires in morning brief when "+c.ticker+" reaches "+cSym+apVal
-              :c.alertEnabled?"Set a price above to activate the alert."
-              :"Toggle ON to get alerted in your morning brief."}
+            {c.alertEnabled&&(apRef.current.trim()||apVal)?("Alert active at "+cSym+(apRef.current.trim()||apVal)+" — email + dashboard notification when "+c.ticker+" hits.")
+              :c.alertEnabled?"Enter a price above to activate."
+              :"Turn on to get notified when the price hits your target."}
           </div>
         </div>
 
@@ -14589,7 +14597,7 @@ function ProWelcomeGift(){
         {panelId&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
         {panelCo&&<WatchlistDetailPanel key={panelId} c={panelCo} onClose={function(){setPanelId(null);}}
           upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
-          setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast}/>}
+          setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast} showAlertToast={showAlertToast}/>}
 
         {/* Mobile list selector */}
         {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
@@ -14845,7 +14853,7 @@ function ProWelcomeGift(){
             <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{"Research deeply. Set a fat pitch price. Wait. The discipline is in not acting — until the price comes to you."}</div>
           </div>}
           {watching.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
-            {watching.map(function(c){return<WatchRow key={c.id} c={c}/>;})}</div>}
+            {watching.map(function(c){return<WatchRow key={c.id} c={c} onRemove={function(){upd(c.id,{status:"archived",_watchNote:c._watchNote||""});}}/>;})}</div>}
         </div>}
 
         {/* ── TOO HARD ── */}
@@ -14857,7 +14865,7 @@ function ProWelcomeGift(){
             </div>
           </div>}
           {tooHard.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
-            {tooHard.map(function(c){return<WatchRow key={c.id} c={c}/>;})}</div>}
+            {tooHard.map(function(c){return<WatchRow key={c.id} c={c} onRemove={function(){upd(c.id,{status:"archived"});}}/>;})}</div>}
         </div>}
 
         {/* ── NAMED LIST ── */}
@@ -16316,6 +16324,30 @@ function ProWelcomeGift(){
       <div style={{fontSize:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?14:12,fontWeight:toast.type==="levelup"||toast.type==="milestone"||toast.type==="streak"?700:500,color:toast.type==="levelup"||toast.type==="streak"?"#1a1a2e":toast.type==="milestone"?K.txt:K.txt,fontFamily:fm}}>{toast.msg}</div>
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
+    {/* ── Achievement-style alert toast — bottom right ── */}
+    {alertToast&&<>
+      <style>{"\n@keyframes slideInRight{from{opacity:0;transform:translateX(80px)}to{opacity:1;transform:translateX(0)}}\n"}</style>
+      <div onClick={function(){setAlertToast(null);}}
+        style={{position:"fixed",bottom:28,right:28,zIndex:99999,
+          background:"linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)",
+          border:"1px solid #6366f1",borderRadius:_isBm?0:14,
+          padding:"14px 18px",boxShadow:"0 12px 40px rgba(0,0,0,.5)",
+          display:"flex",alignItems:"center",gap:14,cursor:"pointer",maxWidth:360,minWidth:280,
+          animation:"slideInRight .4s cubic-bezier(.34,1.56,.64,1) both"}}>
+        <div style={{width:44,height:44,borderRadius:_isBm?0:10,background:"#4338ca",
+          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.3)"}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:10,fontWeight:800,color:"#a5b4fc",fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{"Price Alert Set"}</div>
+          <div style={{fontSize:13,fontWeight:600,color:"#fff",fontFamily:fm,lineHeight:1.5}}>{alertToast}</div>
+        </div>
+        <div style={{fontSize:18,color:"#6366f1",lineHeight:1,flexShrink:0,paddingLeft:4}}>{"×"}</div>
+      </div>
+    </>}
     {(!selId||isMobile)&&<Sidebar/>}
     {/* Dossier internal sidebar — desktop only, shown when company selected */}
     {selId&&!isMobile&&sel&&(function(){
