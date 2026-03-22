@@ -2516,12 +2516,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
        placeholder:{name:"e.g. Pricing Power",checks:"e.g. Can raise prices without losing volume"}},
       {type:"metric",label:"Metrics",desc:"Specific financial metrics to analyse",color:K.blue,
        defaults:{items:""},
-       placeholder:{items:"One per line, e.g.:
-ROIC
-Revenue growth
-FCF margin
-Gross margin
-Net debt / EBITDA"}},
+       placeholder:{items:"One per line, e.g.: ROIC, Revenue growth, FCF margin, Gross margin, Net debt / EBITDA"}},
       {type:"verdict",label:"Verdict",desc:"Final conclusion with fat pitch price",color:K.amb,
        defaults:{},placeholder:{}},
       {type:"inversion",label:"Inversion",desc:"What would permanently break this thesis?",color:PURPLE,
