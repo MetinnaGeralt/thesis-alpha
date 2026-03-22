@@ -3490,7 +3490,96 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     // Track consecutive bullet runs for visual grouping
     function isH(b){return b.type==="h1"||b.type==="h2"||b.type==="h3"||b.type==="h4";}
 
-    return<div style={{maxHeight:"75vh",overflowY:"auto",paddingRight:4}}>
+    // ── PDF export for freeform analysis ──────────────────────────────────────
+    function exportFreeformPDF(){
+      var title=doc.title||"Analysis";
+      var css="body{font-family:Georgia,serif;max-width:780px;margin:40px auto;color:#1a1a1a;line-height:1.8;font-size:14px}"+
+        "h1{font-size:24px;font-weight:800;margin:0 0 6px;letter-spacing:-.5px}"+
+        "h2{font-size:10px;font-weight:700;color:#8B5CF6;letter-spacing:2px;text-transform:uppercase;margin:24px 0 8px;padding-bottom:5px;border-bottom:1px solid #e5e7eb}"+
+        "h3{font-size:16px;font-weight:700;margin:18px 0 6px;color:#111}"+
+        "h4{font-size:10px;font-weight:700;color:#6366f1;letter-spacing:1px;text-transform:uppercase;margin:12px 0 5px}"+
+        "p{margin:0 0 10px;color:#374151}"+
+        "ul{margin:0 0 10px;padding-left:0;list-style:none}"+
+        "li{display:flex;gap:10px;margin-bottom:4px;font-size:13px;color:#374151}"+
+        ".dot{color:#8B5CF6;font-size:16px;line-height:1;margin-top:1px;flex-shrink:0}"+
+        ".pass-icon{color:#10B981;font-weight:700;flex-shrink:0}"+
+        ".warn-icon{color:#F59E0B;font-weight:700;flex-shrink:0}"+
+        ".fail-icon{color:#EF4444;font-weight:700;flex-shrink:0}"+
+        ".kv-table{border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;margin-bottom:10px;font-size:13px}"+
+        ".kv-row{display:flex;border-bottom:1px solid #f3f4f6}.kv-row:last-child{border-bottom:none}"+
+        ".kv-key{padding:7px 12px;font-weight:700;background:#f9fafb;min-width:140px;border-right:1px solid #e5e7eb}"+
+        ".kv-val{padding:7px 12px;color:#374151;flex:1}"+
+        "blockquote{border-left:3px solid #8B5CF6;padding:10px 14px;background:#f5f3ff;margin:12px 0;font-style:italic;color:#4b5563}"+
+        "pre{background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px;font-size:11px;overflow-x:auto;white-space:pre-wrap}"+
+        "hr{border:none;border-top:1px solid #e5e7eb;margin:18px 0}"+
+        "table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:12px}"+
+        "th{background:#f9fafb;padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #e5e7eb}"+
+        "td{padding:7px 12px;border-bottom:1px solid #f3f4f6}"+
+        ".footer{margin-top:40px;padding-top:10px;border-top:2px solid #1a1a1a;display:flex;justify-content:space-between;font-size:10px;color:#9ca3af}";
+
+      var blks=parseBlocks(raw);
+      function blockToHtml(b){
+        if(b.type==="h1")return"<h1>"+b.text+"</h1>";
+        if(b.type==="h2")return"<h2>"+b.text+"</h2>";
+        if(b.type==="h3")return"<h3>"+b.text+"</h3>";
+        if(b.type==="h4")return"<h4>"+b.text+"</h4>";
+        if(b.type==="hr")return"<hr>";
+        if(b.type==="quote")return"<blockquote>"+b.text+"</blockquote>";
+        if(b.type==="code")return"<pre>"+b.text.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</pre>";
+        if(b.type==="para")return"<p>"+b.text+"</p>";
+        if(b.type==="bullet"){
+          var ic=b.status==="pass"?"<span class='pass-icon'>✓</span>":b.status==="warn"?"<span class='warn-icon'>⚠</span>":b.status==="fail"?"<span class='fail-icon'>✗</span>":"<span class='dot'>•</span>";
+          return"<li>"+ic+"<span>"+b.text+"</span></li>";
+        }
+        if(b.type==="numitem")return"<li><span style='font-weight:700;color:#8B5CF6;min-width:20px'>"+b.n+".</span><span>"+b.text+"</span></li>";
+        if(b.type==="kv")return"<div class='kv-row'><div class='kv-key'>"+b.key+"</div><div class='kv-val'>"+b.value+"</div></div>";
+        if(b.type==="table"){var rows=b.rows.map(function(row,ri){return"<tr>"+row.map(function(c){return ri===0?"<th>"+c+"</th>":"<td>"+c+"</td>";}).join("")+"</tr>";});return"<table>"+rows.join("")+"</table>";}
+        return"";
+      }
+      // Wrap consecutive bullets and kv in containers
+      var htmlParts=[];var inList=false;var inKv=false;
+      blks.forEach(function(b){
+        if(b.type==="bullet"||b.type==="numitem"){
+          if(!inList){htmlParts.push("<ul>");inList=true;}
+          if(inKv){htmlParts.push("</div>");inKv=false;}
+        } else {
+          if(inList){htmlParts.push("</ul>");inList=false;}
+        }
+        if(b.type==="kv"){
+          if(!inKv){htmlParts.push("<div class='kv-table'>");inKv=true;}
+          if(inList){htmlParts.push("</ul>");inList=false;}
+        } else {
+          if(inKv){htmlParts.push("</div>");inKv=false;}
+        }
+        htmlParts.push(blockToHtml(b));
+      });
+      if(inList)htmlParts.push("</ul>");
+      if(inKv)htmlParts.push("</div>");
+
+      var html="<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+title+"</title><style>"+css+"</style></head><body>"+
+        "<h1>"+title+"</h1>"+
+        "<div style='font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:28px'>Research Analysis</div>"+
+        htmlParts.join("")+
+        "<div class='footer'><span>ThesisAlpha — Research Analysis</span><span>"+new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+"</span></div>"+
+        "</body></html>";
+
+      var w=window.open("","_blank","width=900,height=700");
+      if(!w)return;
+      w.document.write(html);w.document.close();
+      setTimeout(function(){w.print();},400);
+    }
+
+    return<div>
+      {/* Export button */}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+        <button onClick={exportFreeformPDF} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:K.card,color:K.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
+          onMouseEnter={function(e){e.currentTarget.style.borderColor="#8B5CF6";e.currentTarget.style.color="#8B5CF6";}}
+          onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          {"Export PDF"}
+        </button>
+      </div>
+    <div style={{maxHeight:"75vh",overflowY:"auto",paddingRight:4}}>
       {/* Doc title */}
       <div style={{marginBottom:16,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
         <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{doc.title||"Analysis"}</div>
@@ -3583,6 +3672,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(b.type==="para")return<p key={bi} style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.8}}>{renderInline(b.text)}</p>;
         return null;
       })}
+    </div>
     </div>;
   }
 
@@ -3883,7 +3973,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})});}
       setModal(null);}
     var isDeepDive=f.docType==="deep_dive"||f.docType==="freeform_dive";
-    var _ddEdit=React.useState(!ex||!ex.deepDive),ddEditing=_ddEdit[0],setDdEditing=_ddEdit[1];
+    var _ddEdit=React.useState(!ex||(f.docType!=="freeform_dive"&&!ex.deepDive)),ddEditing=_ddEdit[0],setDdEditing=_ddEdit[1];
     return<Modal title={ex&&isDeepDive?"Deep Dive — "+sel.ticker:ex?"Edit note":"New note — "+sel.ticker} onClose={function(){setModal(null)}} w={isDeepDive?760:600} K={K}>
       <div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:8}}>Note type</div>
@@ -3902,8 +3992,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           {ddEditing?"← View":"Edit"}
         </button>
       </div>}
-      {isDeepDive&&!ddEditing&&ex&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
-            {f.docType==="freeform_dive"&&!ddEditing&&ex&&<FreeformDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
+      {isDeepDive&&!ddEditing&&ex&&f.docType!=="freeform_dive"&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
+      {f.docType==="freeform_dive"&&!ddEditing&&ex&&<FreeformDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
       {(!isDeepDive||ddEditing)&&<div>
       <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
       {!isDeepDive&&<div style={{marginBottom:16}}>
@@ -3918,7 +4008,13 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           rows={12} placeholder={activeType.prompt||"Write your research note..."}
           style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"vertical",outline:"none"}}/>
       </div>}
-      {isDeepDive&&ddEditing&&<DeepDiveForm f={f} set={set} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
+      {isDeepDive&&ddEditing&&f.docType!=="freeform_dive"&&<DeepDiveForm f={f} set={set} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
+      {f.docType==="freeform_dive"&&ddEditing&&<div style={{marginBottom:12}}>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:8}}>Raw analysis text</div>
+        <textarea value={f.rawText||f.content||""} onChange={function(e){set("rawText",e.target.value);set("content",e.target.value.substring(0,200)+"...");}}
+          rows={16} placeholder={"Paste your analysis here..."}
+          style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.7,resize:"vertical",outline:"none"}}/>
+      </div>}
       </div>}
       {(!isDeepDive||ddEditing)&&<div style={{display:"flex",justifyContent:"flex-end",gap:10}}>
         {ex&&<button style={S.btnD} onClick={function(){if(!window.confirm("Delete this note?"))return;upd(selId,function(c){return Object.assign({},c,{docs:c.docs.filter(function(d){return d.id!==did})})});setModal(null)}}>Delete</button>}
