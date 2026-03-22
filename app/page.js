@@ -13312,7 +13312,7 @@ function ProWelcomeGift(){
     var _readerNotes=useState(""),readerNotes=_readerNotes[0],setReaderNotes=_readerNotes[1];
     var _iframeErr=useState(false),iframeErr=_iframeErr[0],setIframeErr=_iframeErr[1];
     var _tab=useState("resources"),libTab=_tab[0],setLibTab=_tab[1];
-
+    var _af=useState("All"),atomicFilter=_af[0],setAtomicFilter=_af[1];
     var FOLDER_COLORS=[K.acc,K.grn,K.amb,K.red,"#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
     var ITEM_TYPES=["Article","Video","Book","Podcast","Course","Other"];
     var MY_WORK_TYPES=["Analysis","Model","Research Doc","Notes"];
@@ -13731,7 +13731,6 @@ function ProWelcomeGift(){
         {/* Type filter pills */}
         {atomicArticles&&atomicArticles.length>0&&(function(){
           var types=["All","Deep Dive","The Radar","Titan Test","Simple Truth","Money Mind"];
-          var _af=React.useState("All"),atomicFilter=_af[0],setAtomicFilter=_af[1];
           var shown=atomicFilter==="All"?atomicArticles:atomicArticles.filter(function(a){return a.type===atomicFilter;});
           var typeColors={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899","Article":K.dim};
           return<div>
