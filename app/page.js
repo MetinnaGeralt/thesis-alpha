@@ -13894,8 +13894,6 @@ function ProWelcomeGift(){
     var mRange=Math.max(maxM-minM,5);
     var barW=14;var chartH=52;
 
-    function Label({text}){return<div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{text}</div>;}
-    function Section({children,noBg}){return<div style={{background:noBg?"transparent":K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>{children}</div>;}
 
     return<div style={{position:"fixed",inset:0,zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)"}}
       onClick={onClose}>
@@ -13937,8 +13935,8 @@ function ProWelcomeGift(){
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
 
             {/* 52w range */}
-            {hi52>lo52&&price>0&&<Section>
-              <Label text="52-Week Range"/>
+            {hi52>lo52&&price>0&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"52-Week Range"}</div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
                 <div style={{position:"relative",flex:1,height:4,background:K.bdr,borderRadius:2}}>
@@ -13960,11 +13958,11 @@ function ProWelcomeGift(){
                   :"Fat pitch target: "+cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))+(pctAway!=null?" \u2014 "+pctAway.toFixed(0)+"% away":"")}
               </div>}
               {!fatPitch&&<div style={{marginTop:6,fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>No fat pitch price set. Add one in the full dossier.</div>}
-            </Section>}
+            </div>}
 
             {/* Why watching */}
-            <Section noBg>
-              <Label text="Why I'm Watching"/>
+            <div style={{background:"transparent",borderRadius:_isBm?0:10,padding:"14px 0"}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Why I'm Watching"}</div>
               <textarea value={wnVal} onChange={function(e){setWnVal(e.target.value);}}
                 onBlur={function(){upd(c.id,{_watchNote:wnVal.trim()});}}
                 placeholder={"What makes this business worth watching? What would make it an obvious buy?"}
@@ -13974,11 +13972,11 @@ function ProWelcomeGift(){
                   lineHeight:1.7,resize:"vertical",outline:"none",fontFamily:fb}}
                 onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"60";}}
                 onBlur={function(e){e.target.style.borderColor=K.bdr;upd(c.id,{_watchNote:e.target.value.trim()});}}/>
-            </Section>
+            </div>
 
             {/* Conviction */}
-            <Section noBg>
-              <Label text="Conviction"/>
+            <div style={{background:"transparent",borderRadius:_isBm?0:10,padding:"14px 0"}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Conviction"}</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                 {[1,2,3,4,5,6,7,8,9,10].map(function(n){var act=c.conviction===n;var cc=n>=7?K.grn:n>=4?K.amb:K.red;
                   return<button key={n} onClick={function(){upd(c.id,{conviction:n});}}
@@ -13990,15 +13988,15 @@ function ProWelcomeGift(){
               {c.conviction>0&&<div style={{fontSize:11,color:convColor,fontFamily:fm,marginTop:6,fontWeight:600}}>
                 {c.conviction>=8?"High conviction — you understand this well.":c.conviction>=5?"Building understanding — keep researching.":"Low conviction — is this worth the watchlist slot?"}
               </div>}
-            </Section>
+            </div>
           </div>
 
           {/* Right column */}
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
 
             {/* Price Alert */}
-            <Section>
-              <Label text="Price Alert"/>
+            <div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Price Alert"}</div>
               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"0 10px"}}>
                   <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
@@ -14027,17 +14025,17 @@ function ProWelcomeGift(){
               </div>
               {/* Active alerts list */}
               <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Active alerts</div>
-              {c.alertEnabled&&c.alertPrice
+              {c.alertEnabled&&(c.alertPrice||apVal)
                 ?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",
                     background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:8}}>
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill={K.amb} stroke={K.amb} strokeWidth="1.5" strokeLinecap="round">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                       </svg>
-                      <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+c.alertPrice}</span>
+                      <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(c.alertPrice||apVal)}</span>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      {price>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{((parseFloat(c.alertPrice)-price)/price*100).toFixed(1)+"% away"}</span>}
+                      {price>0&&(c.alertPrice||apVal)&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{((parseFloat(c.alertPrice||apVal)-price)/price*100).toFixed(1)+"% away"}</span>}
                       <button onClick={function(){upd(c.id,{alertEnabled:false,alertPrice:null});setApVal("");apRef.current="";}}
                         style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:"2px 4px",borderRadius:4,lineHeight:1}}
                         onMouseEnter={function(e){e.currentTarget.style.color=K.red;}}
@@ -14045,12 +14043,12 @@ function ProWelcomeGift(){
                     </div>
                   </div>
                 :<div style={{fontSize:12,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>No active alerts. Set a price and turn ON.</div>}
-            </Section>
+            </div>
 
             {/* Mini chart */}
-            {chartSorted.length>=2&&<Section>
+            {chartSorted.length>=2&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <Label text="Financials"/>
+                <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Financials"}</div>
                 <button onClick={function(){setSelId(c.id);setDetailTab("financials");setSubPage("financials");setPage("dashboard");onClose();}}
                   style={{fontSize:10,color:"#8B5CF6",background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0,marginBottom:8}}>{"More →"}</button>
               </div>
@@ -14083,11 +14081,11 @@ function ProWelcomeGift(){
                     <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{lg.label}</span>
                   </div>;})}
               </div>
-            </Section>}
+            </div>}
 
             {/* Expected CAGR */}
-            <Section>
-              <Label text="Expected CAGR"/>
+            <div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Expected CAGR"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
                 {[
                   {label:"EPS",val:epsVal,set:setEpsVal,save:"_cagrEps",ph:"e.g. 12.5"},
@@ -14115,7 +14113,7 @@ function ProWelcomeGift(){
                   </div>;})}
               </div>}
               {!cagrResult&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>Fill in EPS, growth, and exit P/E to see expected returns.</div>}
-            </Section>
+            </div>
 
           </div>
         </div>
