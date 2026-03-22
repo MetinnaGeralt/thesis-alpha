@@ -16346,25 +16346,29 @@ function ProWelcomeGift(){
       {toast.type==="levelup"&&<button onClick={function(e){e.stopPropagation();setPage("hub");setToast(null)}} style={{background:"rgba(0,0,0,.15)",border:"none",borderRadius:_isBm?0:6,padding:"4px 12px",fontSize:11,color:"#1a1a2e",cursor:"pointer",fontFamily:fm,fontWeight:600,whiteSpace:"nowrap"}}>View Hub</button>}
     </div>}
     {/* ── Achievement-style alert toast — bottom right ── */}
-    {alertToast&&<div className="ta-fade" onClick={function(){setAlertToast(null);}}
-      style={{position:"fixed",bottom:24,right:24,zIndex:9999,
-        background:"linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)",
-        border:"1px solid #6366f1",borderRadius:_isBm?0:14,
-        padding:"14px 18px",boxShadow:"0 8px 32px rgba(0,0,0,.4)",
-        display:"flex",alignItems:"center",gap:14,cursor:"pointer",maxWidth:340,
-        animation:"slideInRight .35s cubic-bezier(.34,1.56,.64,1)"}}>
-      <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:"#4f46e5",
-        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
+    {alertToast&&<>
+      <style>{"\n@keyframes slideInRight{from{opacity:0;transform:translateX(80px)}to{opacity:1;transform:translateX(0)}}\n"}</style>
+      <div onClick={function(){setAlertToast(null);}}
+        style={{position:"fixed",bottom:28,right:28,zIndex:99999,
+          background:"linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)",
+          border:"1px solid #6366f1",borderRadius:_isBm?0:14,
+          padding:"14px 18px",boxShadow:"0 12px 40px rgba(0,0,0,.5)",
+          display:"flex",alignItems:"center",gap:14,cursor:"pointer",maxWidth:360,minWidth:280,
+          animation:"slideInRight .4s cubic-bezier(.34,1.56,.64,1) both"}}>
+        <div style={{width:44,height:44,borderRadius:_isBm?0:10,background:"#4338ca",
+          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(0,0,0,.3)"}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:10,fontWeight:800,color:"#a5b4fc",fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{"Price Alert Set"}</div>
+          <div style={{fontSize:13,fontWeight:600,color:"#fff",fontFamily:fm,lineHeight:1.5}}>{alertToast}</div>
+        </div>
+        <div style={{fontSize:18,color:"#6366f1",lineHeight:1,flexShrink:0,paddingLeft:4}}>{"×"}</div>
       </div>
-      <div>
-        <div style={{fontSize:10,fontWeight:700,color:"#a5b4fc",fontFamily:fm,letterSpacing:1.2,textTransform:"uppercase",marginBottom:3}}>{"Price Alert Set"}</div>
-        <div style={{fontSize:13,fontWeight:600,color:"#fff",fontFamily:fm,lineHeight:1.4}}>{alertToast}</div>
-      </div>
-    </div>}
+    </>}
     {(!selId||isMobile)&&<Sidebar/>}
     {/* Dossier internal sidebar — desktop only, shown when company selected */}
     {selId&&!isMobile&&sel&&(function(){
