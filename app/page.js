@@ -735,6 +735,23 @@ function TrackerApp(props){
   function cycleTheme(){var streakWeeks=(streakData&&streakData.current)||0;var all=["thesis_dark","thesis_light","dark","light","forest","purple","paypal","bloomberg"];var available=trialActive||isPro?all:(function(){var a=["thesis_dark","thesis_light","dark","light"];if(streakWeeks>=1){a.push("forest");a.push("purple")}if(streakWeeks>=3){a.push("paypal")}if(streakWeeks>=10){a.push("bloomberg")}return a})();var idx=available.indexOf(theme);var n=available[(idx+1)%available.length];setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   function toggleTheme(){var n=theme==="thesis_dark"?"thesis_light":theme==="thesis_light"?"thesis_dark":theme==="dark"?"light":"dark";setTheme(n);try{localStorage.setItem("ta-theme",n)}catch(e){}}
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
+  // ── Atomic Moat feed ──────────────────────────────────────────────────
+  var _am=useState(null),atomicArticles=_am[0],setAtomicArticles=_am[1];
+  var _amLoaded=useState(false),atomicLoaded=_amLoaded[0],setAtomicLoaded=_amLoaded[1];
+  useEffect(function(){
+    var cacheKey="ta-atomic-feed";var cacheTTL=3600000;// 1h
+    try{var cached=localStorage.getItem(cacheKey);if(cached){var p=JSON.parse(cached);if(p.t&&Date.now()-p.t<cacheTTL){setAtomicArticles(p.articles);setAtomicLoaded(true);return;}}}catch(e){}
+    fetch("/api/substack").then(function(r){return r.json();}).then(function(d){
+      if(d.articles){
+        setAtomicArticles(d.articles);setAtomicLoaded(true);
+        try{localStorage.setItem(cacheKey,JSON.stringify({articles:d.articles,t:Date.now()}));}catch(e){}
+      }
+    }).catch(function(){setAtomicLoaded(true);});
+  },[]);
+  function getArticlesForTicker(ticker){
+    if(!atomicArticles||!ticker)return[];
+    return atomicArticles.filter(function(a){return a.ticker===ticker.toUpperCase();});
+  }
   var _s=useState(null),selId=_s[0],setSelId=_s[1];var _ek=useState(null),expKpi=_ek[0],setExpKpi=_ek[1];
   var _sp=useState(null),subPage=_sp[0],setSubPage=_sp[1];
   var _dt=useState("dossier"),detailTab=_dt[0],setDetailTab=_dt[1];var _dst=useState("monitoring"),dossierTab=_dst[0],setDossierTab=_dst[1];var _ddtab=useState("analysis"),deepDiveTab=_ddtab[0],setDeepDiveTab=_ddtab[1];
@@ -7215,6 +7232,45 @@ function calcMoatFromData(finData,businessModelType){
                 })}
               </div>
             </div>
+            {/* ── Atomic Moat research card ── */}
+            {(function(){
+              var amArts=getArticlesForTicker(c.ticker);
+              if(!amArts||amArts.length===0)return null;
+              var typeColors={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899","Article":K.dim};
+              return<div style={{marginBottom:16,padding:"12px 14px",background:"#8B5CF608",border:"1px solid #8B5CF625",borderRadius:_isBm?0:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:10}}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span style={{fontSize:10,fontWeight:700,color:"#8B5CF6",fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Atomic Moat — "+amArts.length+" article"+(amArts.length>1?"s":"")+" on "+c.ticker}</span>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {amArts.slice(0,3).map(function(a,ai){
+                    var tc=typeColors[a.type]||"#8B5CF6";
+                    return<div key={ai} onClick={function(){window.open(a.link,"_blank");}}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
+                        background:K.card,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
+                        cursor:"pointer",transition:"border-color .15s"}}
+                      onMouseEnter={function(e){e.currentTarget.style.borderColor="#8B5CF650";}}
+                      onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}>
+                      <div style={{width:3,height:32,background:tc,borderRadius:2,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fh,lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2}}>
+                          <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"18",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>{a.type}</span>
+                          {a.date&&<span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{new Date(a.date).toLocaleDateString("en-US",{month:"short",year:"numeric"})}</span>}
+                        </div>
+                      </div>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </div>;
+                  })}
+                </div>
+                {amArts.length>3&&<div style={{marginTop:6,textAlign:"center"}}>
+                  <button onClick={function(){setPage("library");setTimeout(function(){setLibTab("featured");},100);}}
+                    style={{background:"none",border:"none",color:"#8B5CF6",fontSize:11,fontFamily:fm,cursor:"pointer",fontWeight:600}}>
+                    {"View all "+amArts.length+" articles →"}
+                  </button>
+                </div>}
+              </div>;
+            })()}
             {rtTab==="notes"&&<ThesisVault company={c}/>}
             {rtTab==="links"&&<ResearchLinks company={c}/>}
             {rtTab==="filings"&&<div>
@@ -12809,18 +12865,20 @@ function ProWelcomeGift(){
       {/* ── Research sub-nav ── */}
       <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
         {[
-          {id:"library",l:"Library",pg:"library"},
-          {id:"journal",l:"Journal",pg:"journal"},
-          {id:"strategy",l:"My Strategy",pg:"strategy"},
-          {id:"ai",l:"AI Prompts",pg:"ai"},
+          {id:"library",l:"Library",pg:"library",sub:null},
+          {id:"featured",l:"Featured Research",pg:"library",sub:"featured"},
+          {id:"journal",l:"Journal",pg:"journal",sub:null},
+          {id:"strategy",l:"My Strategy",pg:"strategy",sub:null},
+          {id:"ai",l:"AI Prompts",pg:"ai",sub:null},
         ].map(function(t){
-          var act=page===t.pg;
-          return<button key={t.id} onClick={function(){setPage(t.pg);}}
+          var act=t.sub?libTab===t.sub:(page===t.pg&&libTab!=="featured");
+          return<button key={t.id} onClick={function(){if(t.sub){setLibTab(t.sub);}else{setLibTab("resources");setPage(t.pg);}}}
             style={{padding:"9px 16px",background:"none",border:"none",
-              borderBottom:"2px solid "+(act?K.acc:"transparent"),
-              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
-              fontWeight:act?700:400,transition:"all .15s"}}>
+              borderBottom:"2px solid "+(act?t.sub?"#8B5CF6":K.acc:"transparent"),
+              color:act?t.sub?"#8B5CF6":K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
+              fontWeight:act?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:5}}>
             {t.l}
+            {t.sub&&atomicArticles&&atomicArticles.length>0&&<span style={{fontSize:9,background:"#8B5CF620",color:"#8B5CF6",borderRadius:3,padding:"1px 5px",fontFamily:fm,fontWeight:700}}>{atomicArticles.length}</span>}
           </button>;
         })}
       </div>
@@ -12885,8 +12943,77 @@ function ProWelcomeGift(){
           </div>;})}
       </div>}
 
+      {/* ── Featured Research (Atomic Moat) ── */}
+      {libTab==="featured"&&<div>
+        <div style={{marginBottom:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+            <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:"#8B5CF615",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <div>
+              <div style={{fontSize:16,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{"The Atomic Moat"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Quality investing research — deep dives, financial audits, and investor frameworks"}</div>
+            </div>
+            <a href={"https://www.atomicmoatresearch.com"} target={"_blank"} rel={"noopener noreferrer"}
+              style={{marginLeft:"auto",fontSize:11,color:"#8B5CF6",fontFamily:fm,fontWeight:600,textDecoration:"none",border:"1px solid #8B5CF640",borderRadius:_isBm?0:6,padding:"4px 10px",background:"#8B5CF608",flexShrink:0}}>
+              {"Subscribe ↗"}
+            </a>
+          </div>
+        </div>
+        {/* Type filter pills */}
+        {atomicArticles&&atomicArticles.length>0&&(function(){
+          var types=["All","Deep Dive","The Radar","Titan Test","Simple Truth","Money Mind"];
+          var _af=React.useState("All"),atomicFilter=_af[0],setAtomicFilter=_af[1];
+          var shown=atomicFilter==="All"?atomicArticles:atomicArticles.filter(function(a){return a.type===atomicFilter;});
+          var typeColors={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899","Article":K.dim};
+          return<div>
+            <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+              {types.map(function(tp){var act=atomicFilter===tp;var ct=tp==="All"?atomicArticles.length:atomicArticles.filter(function(a){return a.type===tp;}).length;if(tp!=="All"&&ct===0)return null;
+                return<button key={tp} onClick={function(){setAtomicFilter(tp);}}
+                  style={{padding:"4px 12px",borderRadius:_isBm?0:999,border:"1px solid "+(act?"#8B5CF6":K.bdr),
+                    background:act?"#8B5CF612":"transparent",color:act?"#8B5CF6":K.dim,
+                    fontSize:11,fontFamily:fm,fontWeight:act?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                  {tp}{ct>0&&<span style={{fontSize:9,opacity:.7}}>{ct}</span>}
+                </button>;
+              })}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {shown.map(function(a,ai){
+                var tc=typeColors[a.type]||"#8B5CF6";
+                var co=a.ticker?cos.find(function(c){return c.ticker===a.ticker;}):null;
+                return<div key={ai}
+                  style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",
+                    background:K.card,borderRadius:_isBm?0:10,border:"1px solid "+K.bdr,
+                    transition:"border-color .15s",cursor:"pointer"}}
+                  onMouseEnter={function(e){e.currentTarget.style.borderColor="#8B5CF650";}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}
+                  onClick={function(){window.open(a.link,"_blank");}}>
+                  {/* Left accent */}
+                  <div style={{width:3,height:"100%",minHeight:40,background:tc,borderRadius:2,flexShrink:0,alignSelf:"stretch"}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,flexWrap:"wrap"}}>
+                      <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"15",borderRadius:3,padding:"2px 7px",fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",flexShrink:0}}>{a.type}</span>
+                      {a.ticker&&<span style={{fontSize:9,fontWeight:600,color:K.dim,background:K.bg,borderRadius:3,padding:"2px 7px",fontFamily:fm,border:"1px solid "+K.bdr,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+                        {co&&<CoLogo domain={co.domain} ticker={co.ticker} size={10}/>}
+                        {"$"+a.ticker}
+                      </span>}
+                      {a.date&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{new Date(a.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>}
+                    </div>
+                    <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,lineHeight:1.3,marginBottom:4,letterSpacing:"-0.2px"}}>{a.title}</div>
+                    {a.description&&<div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{a.description}</div>}
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0,marginTop:4}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+        {!atomicLoaded&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:13,fontFamily:fm}}>{"Loading research..."}</div>}
+        {atomicLoaded&&(!atomicArticles||atomicArticles.length===0)&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:13,fontFamily:fm}}>{"Could not load feed — check back shortly."}</div>}
+      </div>}
+
       {/* Items */}
-      {filtered.length>0&&<div>
+      {libTab!=="featured"&&filtered.length>0&&<div>
         {myWork.length>0&&<div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,paddingBottom:8,borderBottom:"1px solid "+K.bdr}}>
             <div style={{fontSize:10,fontWeight:700,color:K.grn,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>YOUR WORK</div>
@@ -12948,7 +13075,7 @@ function ProWelcomeGift(){
         <div style={{fontSize:14,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7,color:K.dim}}>{"Save articles, annual reports, and your own research — tagged to the companies you follow."}</div>
         <button onClick={function(){setLibModal({type:"item"});}} style={Object.assign({},S.btnP,{padding:"11px 28px",fontSize:14})}>{"Add first resource"}</button>
       </div>}
-      {filtered.length===0&&items.length>0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
+      {libTab!=="featured"&&filtered.length===0&&items.length>0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
         <div style={{fontSize:14,marginBottom:8}}>No resources match your filters</div>
         <button onClick={function(){setLibSearch("");setLibFolder(null);setLibTypeFilter("all");setLibTickerFilter("");}} style={{background:"none",border:"none",color:K.acc,cursor:"pointer",fontSize:13,fontFamily:fm}}>Clear filters</button>
       </div>}
