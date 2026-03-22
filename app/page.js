@@ -768,6 +768,40 @@ function TrackerApp(props){
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _lensData=useState({}),lensData=_lensData[0],setLensData=_lensData[1];
   var _lensLd=useState(false),lensLoading=_lensLd[0],setLensLoading=_lensLd[1];
+  var _scrTab=useState("screener"),screenTab=_scrTab[0],setScreenTab=_scrTab[1];
+  // Fetch lens data when screener lenses tab is opened
+  useEffect(function(){
+    if(screenTab!=="lenses")return;
+    var allCos=cos.filter(function(c){return c.status==="portfolio";});
+    var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
+    if(needsFetch.length===0)return;
+    setLensLoading(true);
+    var fetchAll=async function(){
+      var data=Object.assign({},lensData);
+      for(var i=0;i<needsFetch.length;i++){
+        var c=needsFetch[i];
+        try{
+          var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
+          var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
+          var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
+          if(!ra&&!km)continue;
+          var mk=function(v){return{num:v!=null?v:null,value:v!=null?String(v.toFixed(1)):null,score:null};};
+          data[c.ticker]={
+            grossMargin:mk(ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:null),
+            opLeverage:mk(ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:null),
+            roic:mk(km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:null),
+            netMargin:mk(ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null),
+            fcfConversion:mk(ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:null),
+            revGrowth:mk(ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:null),
+            fortress:mk(km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:null),
+            pe:mk(km&&km.peRatioTTM!=null?km.peRatioTTM:null),
+          };
+        }catch(e){}
+      }
+      setLensData(data);setLensLoading(false);
+    };
+    fetchAll();
+  },[screenTab]);
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
@@ -14586,7 +14620,6 @@ function ProWelcomeGift(){
     var CATS=["Quality","Growth","Valuation","Health","Income"];
 
     // State
-    var _stab=useState("screener"),screenTab=_stab[0],setScreenTab=_stab[1];
     var _sActiveLens=useState("smith"),sActiveLens=_sActiveLens[0],setSActiveLens=_sActiveLens[1];
     var _filters=useState([]),filters=_filters[0],setFilters=_filters[1];
     var _sort=useState({id:"grossMargin",dir:"desc"}),sortState=_sort[0],setSortState=_sort[1];
@@ -14598,39 +14631,7 @@ function ProWelcomeGift(){
     var _cols=useState(["grossMargin","roic","revGrowth","pe","evEbitda","debtEquity"]),cols=_cols[0],setCols=_cols[1];
     var _addPicker=useState(false),addPicker=_addPicker[0],setAddPicker=_addPicker[1];
 
-    // Fetch lens data when lenses tab opens — must be unconditional hook
-    useEffect(function(){
-      if(screenTab!=="lenses")return;
-      var allCos=cos.filter(function(c){return c.status==="portfolio";});
-      var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
-      if(needsFetch.length===0)return;
-      setLensLoading(true);
-      var fetchAll=async function(){
-        var data=Object.assign({},lensData);
-        for(var i=0;i<needsFetch.length;i++){
-          var c=needsFetch[i];
-          try{
-            var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
-            var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
-            var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
-            if(!ra&&!km)continue;
-            var mk=function(v){return{num:v!=null?v:null,value:v!=null?v.toFixed(1):null,score:v!=null?Math.min(10,Math.max(0,Math.round(v/10))):null};};
-            data[c.ticker]={
-              grossMargin:mk(ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:null),
-              opLeverage:mk(ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:null),
-              roic:mk(km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:null),
-              netMargin:mk(ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null),
-              fcfConversion:mk(ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:null),
-              revGrowth:mk(ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:null),
-              fortress:mk(km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:null),
-              pe:mk(km&&km.peRatioTTM!=null?km.peRatioTTM:null),
-            };
-          }catch(e){}
-        }
-        setLensData(data);setLensLoading(false);
-      };
-      fetchAll();
-    },[screenTab]);
+
 
     // Own companies with snapshots
     var ownCos=cos.filter(function(c){return c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0;});
