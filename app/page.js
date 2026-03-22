@@ -6754,6 +6754,17 @@ function calcMoatFromData(finData,businessModelType){
               fontSize:14,fontFamily:fm,fontWeight:dossierTab==="deepdive"?700:400,
               transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
             {"Deep Dive"}
+          </button>
+          <button onClick={function(){setDossierTab("news");}}
+            style={{padding:"9px 20px",background:"none",border:"none",
+              borderBottom:"2px solid "+(dossierTab==="news"?"#F59E0B":"transparent"),
+              color:dossierTab==="news"?"#F59E0B":K.dim,cursor:"pointer",
+              fontSize:14,fontFamily:fm,fontWeight:dossierTab==="news"?700:400,
+              transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
+            {"News"}
+            {(c.latestNews||[]).length>0&&dossierTab!=="news"&&<span style={{fontSize:9,fontWeight:700,color:"#F59E0B",background:"#F59E0B18",borderRadius:99,padding:"1px 5px",fontFamily:fm}}>{(c.latestNews||[]).length}</span>}
+          </button>
+          <button onClick={function(){setDossierTab("deepdive");}} style={{display:"none"}}>
             {(function(){
               var hasDive=(c.docs||[]).some(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
               if(hasDive||dossierTab==="deepdive")return null;
@@ -8174,6 +8185,44 @@ function calcMoatFromData(finData,businessModelType){
         </div>}
 
         {/* ══════════════════════════════════════════════════════
+            TAB: NEWS
+            ══════════════════════════════════════════════════════ */}
+        {dossierTab==="news"&&(function(){
+          var AMB="#F59E0B";
+          var news=c.latestNews||[];
+          function fmtAgo(dt){if(!dt)return"";var d=Math.floor((Date.now()-new Date(dt).getTime())/86400000);if(d===0)return"Today";if(d===1)return"Yesterday";return d+"d ago";}
+          return<div>
+            {news.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:K.dim}}>
+              <div style={{fontSize:32,marginBottom:12}}>📰</div>
+              <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:6}}>No news cached yet</div>
+              <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Run a KPI check to fetch the latest news for "+c.ticker+"."}</div>
+            </div>}
+            {news.length>0&&<div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{news.length+" articles · last 14 days"}</div>
+              </div>
+              {news.map(function(item,i){
+                var url=item.url||item.link||"";
+                return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:10,cursor:url?"pointer":"default",transition:"border-color .15s"}}
+                  onClick={function(){if(url)window.open(url,"_blank");}}
+                  onMouseEnter={function(e){if(url)e.currentTarget.style.borderColor=AMB+"60";}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}>
+                  <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fh,lineHeight:1.4,flex:1}}>{item.headline||item.title||"No title"}</div>
+                    <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0,marginTop:2}}>{fmtAgo(item.datetime?(new Date(item.datetime*1000).toISOString()):item.date)}</span>
+                  </div>
+                  {item.summary&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6,marginBottom:6}}>{item.summary.substring(0,200)+(item.summary.length>200?"...":"")}</div>}
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    {item.source&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,fontWeight:600}}>{item.source}</span>}
+                    {url&&<span style={{fontSize:10,color:AMB,fontFamily:fm}}>{"Read →"}</span>}
+                  </div>
+                </div>;
+              })}
+            </div>}
+          </div>;
+        })()}
+
+        {/* ══════════════════════════════════════════════════════
             TAB 2: DEEP DIVE
             ══════════════════════════════════════════════════════ */}
         {dossierTab==="deepdive"&&<div>
@@ -8483,12 +8532,22 @@ function calcMoatFromData(finData,businessModelType){
             {peersLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px",textAlign:"center"}}><div style={{fontSize:12,color:K.dim}}>Loading peers...</div></div>}
             {!peersLoading&&peersData&&peersData.length>0&&(function(){
               var COLS=[
-                {label:"Gross Margin",key:function(m){return m&&m.ratios?m.ratios.grossProfitMarginTTM!=null?m.ratios.grossProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>40}},
-                {label:"Op Margin",key:function(m){return m&&m.ratios?m.ratios.operatingProfitMarginTTM!=null?m.ratios.operatingProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>15}},
-                {label:"ROIC",key:function(m){return m&&m.km?m.km.returnOnInvestedCapitalTTM!=null?m.km.returnOnInvestedCapitalTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},good:function(v){return v>12}},
-                {label:"P/E",key:function(m){return m&&m.km?m.km.peRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},good:function(v){return v<25}},
-                {label:"Rev Growth",key:function(m){return m&&m.ratios?m.ratios.revenueGrowthTTM!=null?m.ratios.revenueGrowthTTM*100:null:null},fmt:function(v){return(v>0?"+":"")+v.toFixed(1)+"%"},good:function(v){return v>5}},
+                {label:"Gross Margin",key:function(m){return m&&m.ratios?m.ratios.grossProfitMarginTTM!=null?m.ratios.grossProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},higherBetter:true,threshold:40},
+                {label:"ROIC",key:function(m){return m&&m.km?m.km.returnOnInvestedCapitalTTM!=null?m.km.returnOnInvestedCapitalTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},higherBetter:true,threshold:12},
+                {label:"Net Margin",key:function(m){return m&&m.ratios?m.ratios.netProfitMarginTTM!=null?m.ratios.netProfitMarginTTM*100:null:null},fmt:function(v){return v.toFixed(1)+"%"},higherBetter:true,threshold:10},
+                {label:"FCF Margin",key:function(m){return m&&m.ratios?m.ratios.freeCashFlowPerRevenueTTM!=null?m.ratios.freeCashFlowPerRevenueTTM*100:(m.ratios.freeCashFlowToRevenueTTM!=null?m.ratios.freeCashFlowToRevenueTTM*100:null):null},fmt:function(v){return v.toFixed(1)+"%"},higherBetter:true,threshold:10},
+                {label:"Rev Growth",key:function(m){return m&&m.ratios?m.ratios.revenueGrowthTTM!=null?m.ratios.revenueGrowthTTM*100:null:null},fmt:function(v){return(v>0?"+":"")+v.toFixed(1)+"%"},higherBetter:true,threshold:5},
+                {label:"P/E",key:function(m){return m&&m.km?m.km.peRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},higherBetter:false,threshold:25},
+                {label:"EV/EBITDA",key:function(m){return m&&m.km?m.km.enterpriseValueOverEBITDATTM:null},fmt:function(v){return v.toFixed(1)+"x"},higherBetter:false,threshold:20},
+                {label:"P/S",key:function(m){return m&&m.km?m.km.priceToSalesRatioTTM:null},fmt:function(v){return v.toFixed(1)+"x"},higherBetter:false,threshold:5},
               ];
+              // Rank each column — best to worst
+              function getRank(col,rows){
+                var vals=rows.map(function(r){return{ticker:r.ticker,v:col.key(r.metrics)};}).filter(function(x){return x.v!=null&&isFinite(x.v);});
+                vals.sort(function(a,b){return col.higherBetter?b.v-a.v:a.v-b.v;});
+                var rank={};vals.forEach(function(x,i){rank[x.ticker]=i+1;});
+                return{rank:rank,total:vals.length};
+              }
               var mySnap=c.financialSnapshot||{};
               var myRow={ticker:c.ticker,isSelf:true,metrics:{
                 ratios:{grossProfitMarginTTM:mySnap.grossMargin&&mySnap.grossMargin.numVal!=null?mySnap.grossMargin.numVal/100:null,
@@ -8497,30 +8556,39 @@ function calcMoatFromData(finData,businessModelType){
                 km:{returnOnInvestedCapitalTTM:mySnap.roic&&mySnap.roic.numVal!=null?mySnap.roic.numVal/100:null,peRatioTTM:mySnap.pe&&mySnap.pe.numVal!=null?mySnap.pe.numVal:null}
               }};
               var allRows=[myRow].concat(peersData);
+              var PURPLE2="#8B5CF6";
+              var rankMaps=COLS.map(function(col){return getRank(col,allRows);});
               return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
                 {/* Header */}
-                <div style={{display:"flex",padding:"8px 16px",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
-                  <div style={{width:70,fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
-                  {COLS.map(function(col,ci){return<div key={ci} style={{flex:1,textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>})}
+                <div style={{display:"grid",gridTemplateColumns:"90px repeat("+COLS.length+",1fr)",padding:"8px 12px",borderBottom:"1px solid "+K.bdr,background:K.bg}}>
+                  <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>Company</div>
+                  {COLS.map(function(col,ci){return<div key={ci} style={{textAlign:"right",fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:.5}}>{col.label}</div>;})}
                 </div>
                 {allRows.map(function(row,ri){
-                  return<div key={ri} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?K.acc+"06":"transparent",cursor:row.isSelf?"default":"pointer"}}
-                    onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker});if(found){setSelId(found.id);setDetailTab("dossier")}}}}
-                    onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"04"}}
-                    onMouseLeave={function(e){if(!row.isSelf)e.currentTarget.style.background="transparent"}}>
-                    <div style={{width:70,display:"flex",alignItems:"center",gap:4}}>
+                  var isOwned=cos.some(function(co){return co.ticker===row.ticker&&co.status==="portfolio";});
+                  return<div key={ri} style={{display:"grid",gridTemplateColumns:"90px repeat("+COLS.length+",1fr)",alignItems:"center",padding:"10px 12px",borderBottom:ri<allRows.length-1?"1px solid "+K.bdr+"40":"none",background:row.isSelf?PURPLE2+"08":"transparent",cursor:row.isSelf?"default":"pointer",transition:"background .12s"}}
+                    onClick={function(){if(!row.isSelf){var found=cos.find(function(co){return co.ticker===row.ticker;});if(found){setSelId(found.id);setDetailTab("dossier");}}}}
+                    onMouseEnter={function(e){if(!row.isSelf)e.currentTarget.style.background=K.acc+"05";}}
+                    onMouseLeave={function(e){if(!row.isSelf)e.currentTarget.style.background=row.isSelf?PURPLE2+"08":"transparent";}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
                       <CoLogo ticker={row.ticker} domain={row.isSelf?c.domain:""} size={16}/>
-                      <span style={{fontSize:11,fontWeight:row.isSelf?700:500,color:row.isSelf?K.acc:K.txt,fontFamily:fm}}>{row.ticker}</span>
-                      {row.isSelf&&<span style={{fontSize:8,color:K.acc,fontFamily:fm}}>you</span>}
+                      <span style={{fontSize:11,fontWeight:row.isSelf?700:500,color:row.isSelf?PURPLE2:K.txt,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{row.ticker}</span>
+                      {row.isSelf&&<span style={{fontSize:8,fontWeight:700,color:PURPLE2,background:PURPLE2+"18",borderRadius:3,padding:"1px 4px",fontFamily:fm,flexShrink:0}}>YOU</span>}
+                      {isOwned&&!row.isSelf&&<span style={{fontSize:8,color:K.grn,fontFamily:fm,flexShrink:0}}>★</span>}
                     </div>
                     {COLS.map(function(col,ci){
                       var val=col.key(row.metrics);
-                      var isGood=val!=null&&col.good(val);
-                      var color=val!=null?(isGood?K.grn:K.red):K.dim;
-                      return<div key={ci} style={{flex:1,textAlign:"right",fontSize:11,fontWeight:600,color:color,fontFamily:fm}}>
-                        {val!=null?col.fmt(val):"—"}
-                      </div>})}
-                  </div>})}
+                      var rk=rankMaps[ci];
+                      var rank=rk.rank[row.ticker];
+                      var total=rk.total;
+                      var isTop=rank===1;
+                      var isBottom=rank===total&&total>1;
+                      var color=val==null?K.dim:isTop?(col.higherBetter?K.grn:K.grn):isBottom?(col.higherBetter?K.red:K.red):K.mid;
+                      return<div key={ci} style={{textAlign:"right",fontFamily:fm}}>
+                        <div style={{fontSize:11,fontWeight:row.isSelf?700:500,color:color}}>{val!=null?col.fmt(val):"—"}</div>
+                        {rank&&total>1&&<div style={{fontSize:8,color:K.dim,marginTop:1}}>{"#"+rank+"/"+total}</div>}
+                      </div>;})}
+                  </div>;})}
               </div>;
             })()}
             {!peersLoading&&(!peersData||peersData.length===0)&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",fontSize:12,color:K.dim}}>No peer data available for {c.ticker}.</div>}
@@ -12508,63 +12576,168 @@ function ProWelcomeGift(){
   // ── Portfolio Timeline ─────────────────────────────────────
   function PortfolioTimeline(){
     var _tlf=useState("all"),tlFilter=_tlf[0],setTlFilter=_tlf[1];
+    var _exp=useState({}),tlExp=_exp[0],setTlExp=_exp[1];
+
+    // Build all events from all companies
     var allEvents=[];
+    var actionColors={BUY:K.grn,ADD:K.grn,SELL:K.red,TRIM:K.red,HOLD:K.amb,PASS:K.dim,NOTE:K.acc};
     cos.forEach(function(c){
-      (c.decisions||[]).forEach(function(d){allEvents.push({type:"decision",date:d.date||d.createdAt||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:d.action==="buy"||d.action==="add"?K.grn:d.action==="sell"||d.action==="trim"?K.red:K.acc,badge:(d.action||"NOTE").toUpperCase(),heading:d.reasoning?d.reasoning.substring(0,100):(d.action||"Note"),detail:d.reasoning||"",invalidator:d.invalidator||""})});
-      (c.convictionHistory||[]).forEach(function(ch,i2){var prev=(c.convictionHistory||[])[i2-1];var delta=prev?ch.rating-prev.rating:0;allEvents.push({type:"conviction",date:ch.date||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:delta>0?K.grn:delta<0?K.red:K.dim,badge:"CONVICTION",heading:(delta>0?"▲ ":delta<0?"▼ ":"─ ")+ch.rating+"/10"+(delta!==0?" ("+(delta>0?"+":"")+delta+")":""),detail:ch.note||"",invalidator:""})});
-      (c.earningsHistory||[]).forEach(function(eh){allEvents.push({type:"earnings",date:eh.checkedAt||"",ticker:c.ticker,companyId:c.id,domain:c.domain,color:K.blue,badge:"EARNINGS",heading:(eh.quarter||"")+" — "+(eh.summary||"").substring(0,70),detail:eh.summary||"",invalidator:""})});
+      // Decisions
+      (c.decisions||[]).forEach(function(d){
+        allEvents.push({
+          type:"decision",date:d.date||d.createdAt||"",
+          ticker:c.ticker,companyId:c.id,domain:c.domain,name:c.name,
+          color:actionColors[d.action]||K.acc,
+          badge:d.action||"NOTE",
+          heading:(d.action||"Note")+(d.price?" @ $"+d.price:""),
+          detail:d.reasoning||"",
+          outcome:d.outcome||null,
+          conviction:d.convictionAtTime||null,
+        });
+      });
+      // Conviction changes
+      (c.convictionHistory||[]).forEach(function(ch,i2){
+        var prev=(c.convictionHistory||[])[i2-1];
+        var delta=prev?ch.rating-prev.rating:0;
+        allEvents.push({
+          type:"conviction",date:ch.date||"",
+          ticker:c.ticker,companyId:c.id,domain:c.domain,name:c.name,
+          color:delta>0?K.grn:delta<0?K.red:K.dim,
+          badge:"CONVICTION",
+          heading:"Conviction "+(delta>0?"▲ +"+delta:delta<0?"▼ "+delta:"─")+" → "+ch.rating+"/10",
+          detail:ch.note||"",
+          conviction:ch.rating,
+        });
+      });
+      // Earnings milestones
+      (c.earningsHistory||[]).slice(0,5).forEach(function(eh){
+        if(!eh.checkedAt)return;
+        var beat=(eh.results||[]).filter(function(r){return r.status==="met";}).length;
+        var total=(eh.results||[]).length;
+        allEvents.push({
+          type:"earnings",date:eh.checkedAt,
+          ticker:c.ticker,companyId:c.id,domain:c.domain,name:c.name,
+          color:beat===total&&total>0?K.grn:beat>0?K.amb:total>0?K.red:K.dim,
+          badge:"EARNINGS",
+          heading:(eh.quarter||"Quarter")+" — "+(total>0?beat+"/"+total+" KPIs met":"reported"),
+          detail:eh.summary||"",
+          conviction:null,
+        });
+      });
     });
-    allEvents.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1});
-    var filtered=tlFilter==="all"?allEvents:allEvents.filter(function(e){return e.type===tlFilter});
-    var byYear={};filtered.forEach(function(e){var yr=e.date?e.date.substring(0,4):"—";(byYear[yr]||(byYear[yr]=[])).push(e)});
-    var years=Object.keys(byYear).sort().reverse();
-    var typeCounts={decision:allEvents.filter(function(e){return e.type==="decision"}).length,conviction:allEvents.filter(function(e){return e.type==="conviction"}).length,earnings:allEvents.filter(function(e){return e.type==="earnings"}).length};
-    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:820}}>
-      <div style={{padding:isMobile?"20px 0 16px":"28px 0 20px",display:"flex",alignItems:isMobile?"flex-start":"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+
+    // Sort by date descending
+    allEvents.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1;});
+
+    // Filter
+    var tickers=Array.from(new Set(allEvents.map(function(e){return e.ticker;}))).sort();
+    var filtered=tlFilter==="all"?allEvents:allEvents.filter(function(e){return e.ticker===tlFilter;});
+
+    function fmtDate(dt){
+      if(!dt)return"";
+      try{var d=new Date(dt);return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});}
+      catch(e){return dt.substring(0,10);}
+    }
+
+    var typeColors={decision:K.acc,conviction:"#8B5CF6",earnings:K.grn};
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?20:24,fontWeight:isThesis?800:700,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Investment Story</h1>
-          <div style={{fontSize:12,color:K.dim,marginTop:3}}>{allEvents.length} event{allEvents.length!==1?"s":""} across {cos.length} holding{cos.length!==1?"s":""}</div>
+          <h1 style={{margin:0,fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>Portfolio Timeline</h1>
+          <p style={{margin:"4px 0 0",fontSize:13,color:K.dim,fontFamily:fm}}>{allEvents.length+" events across "+cos.length+" companies"}</p>
         </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {[{id:"all",label:"All",count:allEvents.length},{id:"decision",label:"Decisions",count:typeCounts.decision},{id:"conviction",label:"Conviction",count:typeCounts.conviction},{id:"earnings",label:"Earnings",count:typeCounts.earnings}].map(function(f){var active=tlFilter===f.id;return<button key={f.id} onClick={function(){setTlFilter(f.id)}} style={{background:active?K.acc:K.card,border:"1px solid "+(active?K.acc:K.bdr),color:active?"#fff":K.mid,padding:"5px 12px",borderRadius:_isBm?0:20,fontSize:12,cursor:"pointer",fontFamily:fm,fontWeight:active?600:400}}>{f.label}{f.count>0?" ("+f.count+")":""}</button>})}
+        {/* Ticker filter */}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>Filter</span>
+          <button onClick={function(){setTlFilter("all");}}
+            style={{padding:"4px 10px",borderRadius:_isBm?0:99,border:"1px solid "+(tlFilter==="all"?K.acc+"50":K.bdr),background:tlFilter==="all"?K.acc+"12":"transparent",color:tlFilter==="all"?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:tlFilter==="all"?700:400}}>
+            All
+          </button>
+          {tickers.map(function(tk){return<button key={tk} onClick={function(){setTlFilter(tk);}}
+            style={{padding:"4px 10px",borderRadius:_isBm?0:99,border:"1px solid "+(tlFilter===tk?K.acc+"50":K.bdr),background:tlFilter===tk?K.acc+"12":"transparent",color:tlFilter===tk?K.acc:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:tlFilter===tk?700:400}}>
+            {tk}
+          </button>;})}
         </div>
       </div>
-      {allEvents.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center",color:K.dim,fontSize:14,lineHeight:1.7}}>Your investment story starts here.<br/><span style={{fontSize:12,opacity:.7}}>Log decisions or conviction scores to build your record.</span></div>}
-      {years.map(function(yr){var evts=byYear[yr];return<div key={yr} style={{marginBottom:28}}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-          <div style={{fontSize:20,fontWeight:800,color:K.txt,fontFamily:fh,opacity:.4,minWidth:48}}>{yr}</div>
-          <div style={{flex:1,height:1,background:K.bdr}}/>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,opacity:.7}}>{evts.length} event{evts.length!==1?"s":""}</div>
-        </div>
-        {evts.map(function(ev,i){
-          var dt=ev.date?new Date(ev.date):null;
-          var ds=dt?dt.toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
-          var isLast=i===evts.length-1;
-          return<div key={i} style={{display:"flex",gap:0,marginBottom:isLast?0:2}}>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",width:isMobile?36:64,flexShrink:0,paddingTop:5}}>
-              <span style={{fontSize:isMobile?9:10,color:K.dim,fontFamily:fm,textAlign:"right",lineHeight:1.2,whiteSpace:"nowrap"}}>{ds}</span>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",width:26,flexShrink:0}}>
-              <div style={{width:9,height:9,borderRadius:"50%",background:ev.color,flexShrink:0,marginTop:5,border:"2px solid "+K.bg,zIndex:1}}/>
-              {!isLast&&<div style={{width:2,flex:1,minHeight:8,background:K.bdr+"50",margin:"2px 0"}}/>}
-            </div>
-            <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:9,padding:"9px 13px",marginBottom:isLast?0:7,cursor:"pointer",transition:"border-color .15s"}} onClick={function(){setSelId(ev.companyId);setDetailTab("dossier");setPage("dashboard")}} onMouseEnter={function(e){e.currentTarget.style.borderColor=ev.color+"60"}} onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:9,fontWeight:700,color:ev.color,background:ev.color+"18",border:"1px solid "+ev.color+"30",borderRadius:_isBm?0:4,padding:"2px 6px",letterSpacing:.5,flexShrink:0}}>{ev.badge}</span>
-                <CoLogo domain={ev.domain} ticker={ev.ticker} size={14}/>
-                <span style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{ev.ticker}</span>
-                <span style={{fontSize:12,color:K.mid,flex:1,lineHeight:1.3}}>{ev.heading}</span>
-              </div>
-              {ev.detail&&ev.detail.length>ev.heading.length&&<div style={{fontSize:11,color:K.dim,lineHeight:1.5,marginTop:5,paddingTop:5,borderTop:"1px solid "+K.bdr+"30"}}>{ev.detail.substring(0,200)}{ev.detail.length>200?"…":""}</div>}
-              {ev.invalidator&&<div style={{fontSize:10,color:K.amb,marginTop:3,fontStyle:"italic",opacity:.8}}>If wrong: {ev.invalidator.substring(0,100)}</div>}
-            </div>
-          </div>
+
+      {/* Legend */}
+      <div style={{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+        {[{type:"decision",label:"Decision"},{type:"conviction",label:"Conviction"},{type:"earnings",label:"Earnings"}].map(function(l){
+          return<div key={l.type} style={{display:"flex",alignItems:"center",gap:5}}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:typeColors[l.type]}}/>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{l.label}</span>
+          </div>;
         })}
-      </div>})}
-    </div>
+      </div>
+
+      {/* Timeline */}
+      {filtered.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:K.dim}}>
+        <div style={{fontSize:40,marginBottom:12}}>📋</div>
+        <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:6}}>No events yet</div>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>Log decisions and track conviction to build your investment timeline.</div>
+      </div>}
+
+      <div style={{position:"relative"}}>
+        {/* Vertical spine */}
+        {filtered.length>0&&<div style={{position:"absolute",left:19,top:8,bottom:8,width:2,background:K.bdr,borderRadius:1,zIndex:0}}/>}
+
+        {filtered.map(function(ev,i){
+          var isExp=tlExp[i];
+          var prevDate=i>0?filtered[i-1].date:"";
+          var showDate=!prevDate||fmtDate(prevDate)!==fmtDate(ev.date);
+          var badgeBg=ev.type==="decision"?actionColors[ev.badge]||K.acc:ev.type==="conviction"?"#8B5CF6":K.grn;
+
+          return<div key={i}>
+            {/* Date separator */}
+            {showDate&&i>0&&<div style={{display:"flex",alignItems:"center",gap:10,margin:"20px 0 12px 0",paddingLeft:40}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{fmtDate(ev.date)}</div>
+            </div>}
+            {i===0&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,paddingLeft:40}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{fmtDate(ev.date)}</div>
+            </div>}
+
+            <div style={{display:"flex",gap:14,marginBottom:8,position:"relative",zIndex:1}}>
+              {/* Node dot */}
+              <div style={{width:22,height:22,borderRadius:"50%",background:badgeBg+"20",border:"2px solid "+badgeBg,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",marginTop:2,zIndex:2,backdropFilter:"blur(4px)"}}>
+                <div style={{width:7,height:7,borderRadius:"50%",background:badgeBg}}/>
+              </div>
+
+              {/* Card */}
+              <div style={{flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px",cursor:ev.detail?"pointer":"default",transition:"border-color .12s"}}
+                onClick={function(){if(ev.detail){var n=Object.assign({},tlExp);n[i]=!n[i];setTlExp(n);}}}
+                onMouseEnter={function(e){e.currentTarget.style.borderColor=badgeBg+"40";}}
+                onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:ev.detail&&isExp?8:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    {/* Ticker */}
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <CoLogo domain={ev.domain} ticker={ev.ticker} size={16}/>
+                      <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,cursor:"pointer"}}
+                        onClick={function(e){e.stopPropagation();var found=cos.find(function(co){return co.id===ev.companyId;});if(found){setSelId(found.id);setDetailTab("dossier");setPage("dashboard");}}}>{ev.ticker}</span>
+                    </div>
+                    {/* Badge */}
+                    <span style={{fontSize:9,fontWeight:700,color:badgeBg,background:badgeBg+"18",borderRadius:3,padding:"1px 6px",fontFamily:fm,border:"1px solid "+badgeBg+"30"}}>{ev.badge}</span>
+                    {/* Heading */}
+                    <span style={{fontSize:12,color:K.txt,fontFamily:fm,fontWeight:500}}>{ev.heading}</span>
+                    {/* Outcome */}
+                    {ev.outcome&&<span style={{fontSize:9,fontWeight:700,color:ev.outcome==="right"?K.grn:K.red,background:(ev.outcome==="right"?K.grn:K.red)+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{ev.outcome==="right"?"✓ Right":"✗ Wrong"}</span>}
+                  </div>
+                  {ev.conviction!=null&&<span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{ev.conviction+"/10"}</span>}
+                </div>
+                {/* Expandable detail */}
+                {ev.detail&&isExp&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6,marginTop:6,paddingTop:6,borderTop:"1px solid "+K.bdr+"60"}}>{ev.detail}</div>}
+                {ev.detail&&!isExp&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4}}>{"▼ Show notes"}</div>}
+              </div>
+            </div>
+          </div>;
+        })}
+      </div>
+    </div>;
   }
 
-  // ── Portfolio Analytics (Munger-focused) ─────────────────
+
   function PortfolioAnalytics(){
     var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
     var _moats=useState({}),moats=_moats[0],setMoats=_moats[1];
@@ -16162,6 +16335,59 @@ function ProWelcomeGift(){
             })}
           </div>
         </div>}
+
+      {/* ── Portfolio News Feed ── */}
+      {(function(){
+        var AMB="#F59E0B";
+        var allNews=[];
+        cos.forEach(function(c){
+          (c.latestNews||[]).forEach(function(item){
+            allNews.push(Object.assign({},item,{_ticker:c.ticker,_domain:c.domain,_coId:c.id}));
+          });
+        });
+        // Sort by datetime desc
+        allNews.sort(function(a,b){
+          var da=a.datetime?a.datetime*1000:new Date(a.date||0).getTime();
+          var db=b.datetime?b.datetime*1000:new Date(b.date||0).getTime();
+          return db-da;
+        });
+        var top=allNews.slice(0,8);
+        if(top.length===0)return null;
+        function fmtAgo(item){
+          var ms=item.datetime?item.datetime*1000:new Date(item.date||0).getTime();
+          if(!ms)return"";
+          var d=Math.floor((Date.now()-ms)/86400000);
+          return d===0?"Today":d===1?"Yesterday":d+"d ago";
+        }
+        return<div style={{marginTop:24}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{"Latest News"}</div>
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{allNews.length+" articles"}</span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {top.map(function(item,i){
+              var url=item.url||item.link||"";
+              return<div key={i}
+                style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"11px 14px",cursor:url?"pointer":"default",transition:"border-color .15s"}}
+                onClick={function(){if(url)window.open(url,"_blank");}}
+                onMouseEnter={function(e){if(url)e.currentTarget.style.borderColor=AMB+"50";}}
+                onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  <CoLogo domain={item._domain} ticker={item._ticker} size={18}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                      <span style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm}}>{item._ticker}</span>
+                      {item.source&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{item.source}</span>}
+                      <span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto",flexShrink:0}}>{fmtAgo(item)}</span>
+                    </div>
+                    <div style={{fontSize:12,fontWeight:500,color:K.txt,fontFamily:fm,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{item.headline||item.title||""}</div>
+                  </div>
+                </div>
+              </div>;
+            })}
+          </div>
+        </div>;
+      })()}
 
     </div>;
 
