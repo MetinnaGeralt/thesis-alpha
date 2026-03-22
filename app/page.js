@@ -6635,7 +6635,7 @@ function calcMoatFromData(finData,businessModelType){
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             {c.irUrl&&<a href={c.irUrl} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:K.acc,textDecoration:"none",display:"flex",alignItems:"center",gap:3,padding:"4px 9px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,fontFamily:fm}}>IR ↗</a>}
             <button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){setModal({type:"edit"})}}>Edit</button>
-            {!isMobile&&<button style={{fontSize:11,color:K.mid,background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"4px 9px",cursor:"pointer",fontFamily:fm}} onClick={function(){exportPDF()}}>PDF</button>}
+
           </div>
         </div>
       </div>
@@ -6682,6 +6682,14 @@ function calcMoatFromData(finData,businessModelType){
         {!isMobile&&<div style={{width:0,overflow:"hidden",flexShrink:0}}/>}
         {/* ── Main content ── */}
         <div style={{flex:1,minWidth:0}}>
+        {!isMobile&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+          <button onClick={function(){exportPDF();}} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:K.card,color:K.dim,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.borderColor=K.acc;e.currentTarget.style.color=K.acc;}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            {"Export dossier"}
+          </button>
+        </div>}
         <div id="ds-cover"/>
         {/* ── COVER ── */}
         <div style={{marginBottom:40,paddingBottom:36,borderBottom:"1px solid "+K.bdr}}>
