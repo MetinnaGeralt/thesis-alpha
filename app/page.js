@@ -7716,6 +7716,12 @@ function calcMoatFromData(finData,businessModelType){
                    onClick:function(){setModal({type:"customEditor",ticker:c.ticker});}}
                 ];
                 return<div style={{marginBottom:20}}>
+                  {/* Choose one label */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <div style={{flex:1,height:1,background:K.bdr}}/>
+                    <span style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",flexShrink:0}}>{"Choose your approach"}</span>
+                    <div style={{flex:1,height:1,background:K.bdr}}/>
+                  </div>
                   <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:ddCard?12:0}}>
                     {CARDS.map(function(card){
                       var active=ddCard===card.id;
@@ -7726,7 +7732,7 @@ function calcMoatFromData(finData,businessModelType){
                         onMouseEnter={function(e){if(!active){e.currentTarget.style.borderColor=card.color+"60";e.currentTarget.style.background=card.color+"05";}}}
                         onMouseLeave={function(e){if(!active){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.background=K.card;}}}
                       >
-                        <div style={{fontSize:26,fontWeight:900,color:active?card.color:K.bdr,fontFamily:fh,lineHeight:1,marginBottom:10,letterSpacing:"-1px",transition:"color .18s"}}>{card.num}</div>
+                        <div style={{width:10,height:10,borderRadius:"50%",background:active?card.color:K.bdr,marginBottom:12,transition:"background .18s"}}/>
                         <div style={{fontSize:13,fontWeight:800,color:active?card.color:K.txt,fontFamily:fh,letterSpacing:"-.2px",marginBottom:3,transition:"color .18s"}}>{card.label}</div>
                         <div style={{fontSize:11,color:active?card.color+"cc":K.dim,fontFamily:fm,fontWeight:600,marginBottom:10,transition:"color .18s"}}>{card.sub}</div>
                         <div style={{fontSize:10,color:active?card.color:K.dim,fontFamily:fm}}>{active?"▲ Less":"▼ Details"}</div>
