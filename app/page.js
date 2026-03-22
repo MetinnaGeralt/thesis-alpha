@@ -15071,7 +15071,7 @@ function ProWelcomeGift(){
               ]}
           ];
           var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
-          var portCos=cos.filter(function(c){return((c.status||"portfolio")==="portfolio"||(c.status||"")==="watchlist")&&lensData[c.ticker]});
+          var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
           var portMetrics=lens.metrics.map(function(m){
@@ -15160,7 +15160,6 @@ function ProWelcomeGift(){
                 <div style={{display:"flex",gap:8,fontSize:10,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
             </div>}
           </div>
-        return null;
       })()}
 
     </div>;
