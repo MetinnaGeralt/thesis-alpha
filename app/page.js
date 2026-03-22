@@ -8276,7 +8276,7 @@ function calcMoatFromData(finData,businessModelType){
                             <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{f.d}</div>
                           </div>;})}
                         </div>
-                        <button onClick={card.onClick} style={{padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:K.blue,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{card.cta}</button>
+                        <button onClick={card.onClick} style={{padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:"#3B82F6",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{card.cta}</button>
                       </div>}
                       {ddCard==="custom"&&<div style={{padding:"12px 16px"}}>
                         <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{"Available blocks — combine to build your format:"}</div>
