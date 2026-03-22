@@ -5292,6 +5292,21 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Sidebar + TopBar ──────────────────────────────────────
   var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
+  // ── Learning context link ──────────────────────────────────────────────────
+  function LearnLink({id,label}){
+    return<button onClick={function(e){e.stopPropagation();setPage("learn");}}
+      title={"Learn about: "+(label||id)}
+      style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 4px",
+        display:"inline-flex",alignItems:"center",verticalAlign:"middle",opacity:0.5,
+        transition:"opacity .15s"}}
+      onMouseEnter={function(e){e.currentTarget.style.opacity="1";}}
+      onMouseLeave={function(e){e.currentTarget.style.opacity="0.5";}}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </button>;
+  }
+
   function Sidebar(){var pCos=cos.filter(function(c){return(c.status||"portfolio")===sideTab});
     if(sideSearch.trim()){var q=sideSearch.toLowerCase();pCos=pCos.filter(function(c){return c.ticker.toLowerCase().indexOf(q)>=0||c.name.toLowerCase().indexOf(q)>=0||(c.sector||"").toLowerCase().indexOf(q)>=0})}
     if(isMobile&&!sideOpen)return null;
@@ -5569,9 +5584,19 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var _sg=useState(false),sellGateOpen=_sg[0],setSellGateOpen=_sg[1];
     var _sq=useState(""),sellQ=_sq[0],setSellQ=_sq[1];
     var _crd=useState(false),cleaningReasoning=_crd[0],setCleaningReasoning=_crd[1];
+    var _pb=useState(false),preBuyOpen=_pb[0],setPreBuyOpen=_pb[1];
+    var _pbChecks=useState({}),pbChecks=_pbChecks[0],setPbChecks=_pbChecks[1];
+    var PRE_BUY=[
+      {id:"circle",q:"Is this inside your circle of competence?"},
+      {id:"moat",q:"Can you clearly articulate the economic moat?"},
+      {id:"mgmt",q:"Do you trust management to allocate capital well?"},
+      {id:"price",q:"Are you buying at a price that provides a margin of safety?"},
+      {id:"inversion",q:"Have you stress-tested the bear case (inversion)?"},
+    ];
     function addDecision(){if(!f.reasoning.trim())return;
+      if((f.action==="BUY"||f.action==="ADD")&&!preBuyOpen){setPreBuyOpen(true);return;}
       if((f.action==="SELL"||f.action==="TRIM")&&!sellGateOpen){setSellGateOpen(true);return;}
-      setSellGateOpen(false);setSellQ("");
+      setPreBuyOpen(false);setPbChecks({});setSellGateOpen(false);setSellQ("");
       logJournalEntry(c.id,{cardType:"decision",ticker:c.ticker,action:f.action,price:f.price?parseFloat(f.price):null,shares:f.shares?parseInt(f.shares):null,reasoning:f.reasoning.trim()+(sellQ.trim()?"\n\nSell rationale: "+sellQ.trim():""),invalidator:f.invalidator.trim(),timeHorizon:f.timeHorizon,convictionAtTime:c.conviction||0,priceAtTime:c.position&&c.position.currentPrice?c.position.currentPrice:null,outcome:null,outcomeNote:""});
       var allDecCount=0;cos.forEach(function(cc){allDecCount+=(cc.decisions||[]).length});
       if(allDecCount<=1)setTimeout(function(){showToast("\u2713 First decision logged","info",3000)},300);
@@ -5626,6 +5651,22 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
             <label style={{display:"block",fontSize:11,color:K.red,marginBottom:5,letterSpacing:.5,textTransform:"uppercase",fontFamily:fm,fontWeight:600}}>What would prove me wrong?</label>
             <textarea value={f.invalidator} onChange={function(e){set("invalidator",e.target.value)}} rows={1} placeholder="Specific event or metric that would change my mind" style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.red+"25",borderRadius:_isBm?0:6,color:K.txt,padding:"10px 12px",fontSize:13,fontFamily:fb,outline:"none",resize:"vertical",lineHeight:1.5}}/>
           </div>
+          {preBuyOpen&&(f.action==="BUY"||f.action==="ADD")&&<div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:4}}>
+            <div style={{fontSize:11,fontWeight:700,color:K.grn,fontFamily:fm,marginBottom:10}}>{"Pre-buy checklist — Munger's five questions"}</div>
+            {PRE_BUY.map(function(item){var checked=!!pbChecks[item.id];return<div key={item.id} onClick={function(){setPbChecks(function(p){var n=Object.assign({},p);n[item.id]=!p[item.id];return n});}}
+              style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,cursor:"pointer",userSelect:"none"}}>
+              <div style={{width:16,height:16,borderRadius:3,border:"2px solid "+(checked?K.grn:K.bdr),background:checked?K.grn:"transparent",flexShrink:0,marginTop:1,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .15s"}}>
+                {checked&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+              <div style={{fontSize:12,color:checked?K.mid:K.txt,fontFamily:fb,lineHeight:1.5,textDecoration:checked?"line-through":"none"}}>{item.q}</div>
+            </div>;})}
+            <div style={{display:"flex",gap:8,marginTop:12}}>
+              <button onClick={function(){setPreBuyOpen(false);setPbChecks({});}} style={{flex:1,padding:"8px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>Go back</button>
+              <button onClick={function(){setPreBuyOpen(false);setTimeout(addDecision,50);}} style={{flex:2,padding:"8px",borderRadius:_isBm?0:8,border:"none",background:K.grn,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                {Object.keys(pbChecks).filter(function(k){return pbChecks[k];}).length+"/"+PRE_BUY.length+" checked — Log "+f.action}
+              </button>
+            </div>
+          </div>}
           {sellGateOpen&&<div style={{background:K.red+"08",border:"1px solid "+K.red+"25",borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:4}}>
             <div style={{fontSize:13,fontWeight:700,color:K.red,marginBottom:6}}>{f.action==="SELL"?"Before you sell":"Before you trim"}</div>
             <div style={{fontSize:13,color:K.txt,marginBottom:10,lineHeight:1.6}}>{f.action==="SELL"?"Has the thesis changed \u2014 or are you reacting to price?":"What specifically changed that reduces conviction?"}</div>
@@ -7328,7 +7369,7 @@ function calcMoatFromData(finData,businessModelType){
             {/* 1. Circle of Competence */}
             <div style={{background:K.card,border:"1px solid "+(coc>0&&coc<3?K.amb+"40":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
               onClick={function(){var v=parseInt(window.prompt("Circle of competence — "+c.ticker+"\n\nCould you give a one-hour lecture on this industry,\nits economics, and its competitive dynamics?\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:",String(coc||3)));if(!isNaN(v)&&v>=1&&v<=5)upd(c.id,{circleScore:v})}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Circle of Competence</div>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>{"Circle of Competence"}<LearnLink id="circle_of_competence" label="Circle of Competence"/></div>
               <div style={{display:"flex",gap:4,marginBottom:6}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{flex:1,height:6,borderRadius:_isBm?0:3,background:n<=coc?cocColor:K.bdr,transition:"background .2s"}}/>})}</div>
               <div style={{fontSize:13,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</div>
               {coc>0&&coc<3&&<div style={{fontSize:10,color:K.amb,marginTop:4,lineHeight:1.5}}>{"Outside your circle? If you can't describe this business clearly, that's information."}</div>}
@@ -7337,7 +7378,7 @@ function calcMoatFromData(finData,businessModelType){
             {/* 2. Inversion — pre-mortem */}
             <div style={{background:K.card,border:"1px solid "+(c.inversionNote?K.bdr:K.acc+"20"),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
               onClick={function(){var v=window.prompt("Inversion: imagine it is 5 years from now and this investment has failed completely.\n\nWhat happened? Be specific.\n\n(Munger: 'Invert, always invert')",c.inversionNote||"");if(v!==null)upd(c.id,{inversionNote:v.trim()})}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Inversion</div>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>{"Inversion"}<LearnLink id="inversion" label="Inversion (Munger)"/></div>
               {c.inversionNote
                 ?<div>
                   <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:4}}>{c.inversionNote.substring(0,120)+(c.inversionNote.length>120?"...":"")}</div>
@@ -7350,7 +7391,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>
             {/* 3. Management Quality */}
             <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}} onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8,display:"flex",alignItems:"center",gap:4}}>{"Management"}<LearnLink id="management_quality" label="Management Quality (Fisher)"/></div>
               {c.managementGrade
                 ?<div>
                   <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
@@ -15391,51 +15432,160 @@ function ProWelcomeGift(){
 
   // ── Earnings Calendar ──────────────────────────────────────
   function EarningsCalendar(){
-    var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});
+    var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist";});
     var upcoming=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)>=0}).sort(function(a,b){return a.earningsDate>b.earningsDate?1:-1});
     var recent=allCos.filter(function(c){return c.earningsDate&&c.earningsDate!=="TBD"&&dU(c.earningsDate)<0&&dU(c.earningsDate)>=-30}).sort(function(a,b){return b.earningsDate>a.earningsDate?-1:1});
-    var tbdCos=allCos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD"});
-    return<div className="ta-page-pad" style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px"}}><h1 style={{margin:0,fontSize:isMobile?24:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Earnings Calendar</h1>
-        <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{upcoming.length} upcoming · {recent.length} recent · {tbdCos.length} TBD</p></div>
+    var tbdCos=allCos.filter(function(c){return!c.earningsDate||c.earningsDate==="TBD";});
+    var _exp=useState({}),expanded=_exp[0],setExpanded=_exp[1];
+    function toggle(id){setExpanded(function(p){var n=Object.assign({},p);n[id]=!p[id];return n;});}
+
+    function EarningsRow({c,urgency}){
+      var d=dU(c.earningsDate);
+      var h=gH(c.kpis);
+      var isExp=expanded[c.id];
+      var urgencyColor=d===0?"#EF4444":d<=3?"#F59E0B":d<=7?K.acc:K.dim;
+      var kpisTracked=c.kpis&&c.kpis.length>0;
+      var lastQ=c.earningsHistory&&c.earningsHistory.length>0?c.earningsHistory[c.earningsHistory.length-1]:null;
+      var hasDeepDive=(c.docs||[]).some(function(doc){return doc.docType==="deep_dive"||doc.docType==="freeform_dive";});
+      return<div style={{background:K.card,border:"1px solid "+(urgency?urgencyColor+"30":K.bdr),borderLeft:"4px solid "+(urgency?urgencyColor:K.bdr),borderRadius:_isBm?0:12,marginBottom:8,overflow:"hidden"}}>
+        {/* Main row */}
+        <div style={{padding:"14px 18px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}}
+          onClick={function(){toggle(c.id);}}>
+          <CoLogo domain={c.domain} ticker={c.ticker} size={32}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+              <span style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh}}>{c.ticker}</span>
+              <span style={{fontSize:12,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+              {c.status==="portfolio"&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm,flexShrink:0}}>OWNED</span>}
+              {c.status==="watchlist"&&<span style={{fontSize:9,fontWeight:700,color:K.acc,background:K.acc+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm,flexShrink:0}}>WATCHING</span>}
+            </div>
+            <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>
+                {c.earningsTime==="BMO"?"Before market open":c.earningsTime==="AMC"?"After market close":c.earningsTime||"Time TBD"}
+              </span>
+              {kpisTracked&&<span style={{fontSize:11,color:K.acc,fontFamily:fm,fontWeight:600}}>{c.kpis.length+" KPI"+(c.kpis.length>1?"s":"")+" tracked"}</span>}
+              {hasDeepDive&&<span style={{fontSize:11,color:"#8B5CF6",fontFamily:fm,fontWeight:600}}>{"Deep dive ✓"}</span>}
+              {c.conviction>0&&<span style={{fontSize:11,color:c.conviction>=7?K.grn:c.conviction>=4?K.amb:K.red,fontFamily:fm}}>{"Conviction: "+c.conviction+"/10"}</span>}
+            </div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            {d!=null&&<div style={{fontSize:16,fontWeight:800,color:urgencyColor,fontFamily:fm,lineHeight:1}}>
+              {d===0?"Today":d===1?"Tomorrow":d+"d"}
+            </div>}
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:2}}>{fD(c.earningsDate)}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" style={{flexShrink:0,transform:isExp?"rotate(180deg)":"none",transition:"transform .2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        {/* Expanded preparation panel */}
+        {isExp&&<div style={{borderTop:"1px solid "+K.bdr,padding:"16px 18px",background:K.bg,display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:14}}>
+          {/* KPIs to watch */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"KPIs to Watch"}</div>
+            {c.kpis&&c.kpis.length>0
+              ?c.kpis.map(function(k,i){
+                  var lr=k.lastResult;
+                  return<div key={i} style={{marginBottom:6,padding:"6px 10px",background:K.card,borderRadius:_isBm?0:7,border:"1px solid "+K.bdr}}>
+                    <div style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{k.name}</div>
+                    <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Target: "+k.value+k.unit}</div>
+                    {lr&&<div style={{fontSize:10,color:lr.status==="met"?K.grn:lr.status==="missed"?K.red:K.amb,fontFamily:fm,fontWeight:600,marginTop:2}}>
+                      {"Last: "+(lr.actual!=null?lr.actual+k.unit:"–")+" ("+lr.status+")"}
+                    </div>}
+                  </div>;})
+              :<div style={{fontSize:12,color:K.dim,fontFamily:fb,fontStyle:"italic",lineHeight:1.6}}>
+                {"No KPIs defined yet."}<br/>
+                <span style={{cursor:"pointer",color:K.acc,textDecoration:"none"}} onClick={function(){setSelId(c.id);setDetailTab("kpis");setPage("dashboard");}}>{"Add KPIs →"}</span>
+              </div>}
+          </div>
+
+          {/* Thesis check */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Pre-Earnings Checklist"}</div>
+            {[
+              {q:"Is the thesis still intact?",done:!!c.thesisNote},
+              {q:"KPIs defined to track?",done:kpisTracked},
+              {q:"Deep dive completed?",done:hasDeepDive},
+              {q:"Sell criteria written?",done:!!(c.docs||[]).find(function(d){return d.folder==="sell-criteria"||d.folder==="bear-case";})},
+            ].map(function(item,i){
+              return<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <div style={{width:16,height:16,borderRadius:3,border:"2px solid "+(item.done?K.grn:K.bdr),background:item.done?K.grn:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {item.done&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <span style={{fontSize:11,color:item.done?K.mid:K.txt,fontFamily:fm,textDecoration:item.done?"line-through":"none"}}>{item.q}</span>
+              </div>;
+            })}
+          </div>
+
+          {/* Last earnings + actions */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Last Quarter"}</div>
+            {lastQ
+              ?<div>
+                <div style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm,marginBottom:4}}>{lastQ.quarter}</div>
+                <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.5,marginBottom:8}}>{(lastQ.summary||"").substring(0,150)+(lastQ.summary&&lastQ.summary.length>150?"...":"")}</div>
+              </div>
+              :<div style={{fontSize:12,color:K.dim,fontFamily:fb,fontStyle:"italic",marginBottom:8}}>{"No earnings history yet."}</div>}
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+                style={{flex:1,padding:"7px 10px",borderRadius:_isBm?0:7,border:"1px solid "+K.acc+"40",background:K.acc+"10",color:K.acc,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                {"Open dossier →"}
+              </button>
+            </div>
+          </div>
+        </div>}
+      </div>;
+    }
+
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
+      {/* Header */}
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between"}}>
+        <div>
+          <h1 style={{margin:0,fontSize:isMobile?22:24,fontWeight:isThesis?800:700,color:K.txt,fontFamily:fh,letterSpacing:isThesis?"-0.5px":"normal"}}>Earnings Calendar</h1>
+          <p style={{margin:"4px 0 0",fontSize:13,color:K.dim,fontFamily:fm}}>{upcoming.length+" upcoming · "+recent.length+" recent · "+tbdCos.length+" TBD"}</p>
+        </div>
+      </div>
+
       {/* This week */}
-      {function(){var thisWeek=upcoming.filter(function(c){return dU(c.earningsDate)<=7});
+      {(function(){var thisWeek=upcoming.filter(function(c){return dU(c.earningsDate)<=7;});
         if(!thisWeek.length)return null;
-        return<div style={{marginBottom:24}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:10,fontFamily:fm,fontWeight:600}}>This Week</div>
-          {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
-            return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
-              <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
-              <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
-                <div style={{fontSize:12,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:K.amb,fontFamily:fm}}>{d===0?"Today":d===1?"Tomorrow":d+"d"}</div>
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</div></div>
-              <span style={S.badge(h.c)}>{h.l}</span></div>})}</div>}()}
-      {/* Upcoming (>7 days) */}
-      {function(){var later=upcoming.filter(function(c){return dU(c.earningsDate)>7});
+        return<div style={{marginBottom:28}}>
+          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.amb,marginBottom:12,fontFamily:fm,fontWeight:700}}>{"This Week — "+thisWeek.length+" reporting"}</div>
+          {thisWeek.map(function(c){return<EarningsRow key={c.id} c={c} urgency={true}/>;})}</div>;})()}
+
+      {/* Upcoming > 7 days */}
+      {(function(){var later=upcoming.filter(function(c){return dU(c.earningsDate)>7;});
         if(!later.length)return null;
-        return<div style={{marginBottom:24}}>
-          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Upcoming</div>
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-            {later.map(function(c,i){var d=dU(c.earningsDate);
-              return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<later.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
-                <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-                <div style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:12,color:K.dim}}>{c.name}</span></div>
-                <span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</span>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm,minWidth:30,textAlign:"right"}}>{d}d</span></div>})}</div></div>}()}
+        return<div style={{marginBottom:28}}>
+          <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm,fontWeight:700}}>{"Upcoming"}</div>
+          {later.map(function(c){return<EarningsRow key={c.id} c={c} urgency={false}/>;})}</div>;})()}
+
       {/* Recently reported */}
-      {recent.length>0&&<div style={{marginBottom:24}}>
-        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Recently Reported</div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
-          {recent.map(function(c,i){var h=gH(c.kpis);
-            return<div key={c.id} style={{padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid "+K.bdr:"none",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
-              <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
-              <div style={{flex:1}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontSize:12,color:K.dim}}>{c.name}</span></div>
-              <span style={S.badge(h.c)}>{h.l}</span>
-              <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)}</span></div>})}</div></div>}
-      {tbdCos.length>0&&<div><div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,marginBottom:10,fontFamily:fm,fontWeight:600}}>Date Not Set ({tbdCos.length})</div>
-        <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>Earnings dates auto-update via Finnhub. These companies don't have a known upcoming date yet: {tbdCos.map(function(c){return c.ticker}).join(", ")}</div></div>}
-    </div>}
+      {recent.length>0&&<div style={{marginBottom:28}}>
+        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12,fontFamily:fm,fontWeight:700}}>{"Recently Reported"}</div>
+        {recent.map(function(c){return<EarningsRow key={c.id} c={c} urgency={false}/>;})}
+      </div>}
+
+      {/* TBD */}
+      {tbdCos.length>0&&<div>
+        <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:10,fontFamily:fm,fontWeight:700}}>{"Date Not Set ("+tbdCos.length+")"}</div>
+        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px"}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {tbdCos.map(function(c){return<div key={c.id} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
+              style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:20,cursor:"pointer"}}>
+              <CoLogo domain={c.domain} ticker={c.ticker} size={14}/>
+              <span style={{fontSize:11,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>
+            </div>;})}
+          </div>
+        </div>
+      </div>}
+
+      {allCos.length===0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
+        <div style={{fontSize:40,marginBottom:16}}>📅</div>
+        <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:6}}>No companies tracked</div>
+        <div style={{fontSize:12,color:K.dim}}>Add portfolio or watchlist companies to see their earnings calendar.</div>
+      </div>}
+    </div>;
+  }
 
   // ── CSV Import Modal ──────────────────────────────────────
   function AddReadingModal(){
