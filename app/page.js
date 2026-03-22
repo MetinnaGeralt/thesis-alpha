@@ -3385,6 +3385,36 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     if(!raw.trim())return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No content.</div>;
     var PURPLE="#8B5CF6";
 
+    // ── Pre-processing ────────────────────────────────────────────────────────
+    function preProcess(text){
+      // 1. Strip AI citation artifacts: "Wikipedia+1", "Business Wire+2", "SEC+1", etc.
+      text=text.replace(/\s+(?:Wikipedia|Business Wire|Reuters|Bloomberg|SEC|Forbes|CNBC|BBC|FT|WSJ|NYT|Seeking Alpha|Motley Fool|Yahoo Finance|Google Finance|Investopedia|Morningstar|Simply Wall St|Macrotrends|Statista|MarketWatch|ZeroHedge|investors\.com|fool\.com)\+?\d*/gi," ");
+      // 2. Strip bare citation numbers like "[1]", "[2]", "^1", "^2"
+      text=text.replace(/\s*\[\d+\]/g,"").replace(/\s*\^\d+/g,"");
+      // 3. Convert comma-continuation bullets: lines ending with comma that follow
+      //    a line ending with colon — mark them for bullet conversion
+      var lines=text.split("\n");var result=[];var afterColon=false;
+      for(var i=0;i<lines.length;i++){
+        var l=lines[i];var tr=l.trim();
+        if(!tr){afterColon=false;result.push(l);continue;}
+        if(tr.endsWith(":")){afterColon=true;result.push(l);continue;}
+        // Short comma-terminated line after a colon line = bullet
+        if(afterColon&&tr.endsWith(",")&&tr.length<120&&!tr.startsWith("-")&&!tr.startsWith("•")){
+          result.push("- "+tr.replace(/,$/,""));continue;
+        }
+        // Period-terminated short line after colon = last bullet
+        if(afterColon&&tr.endsWith(".")&&tr.length<80&&tr.indexOf(" ")>0&&!tr.match(/^[A-Z]{2,}/)){
+          result.push("- "+tr.replace(/\.$/,""));afterColon=false;continue;
+        }
+        // Multi-word line without punctuation after colon = bullet
+        if(afterColon&&!tr.endsWith(":")&&tr.length<80&&tr.split(" ").length<=6&&!tr.match(/^\d/)&&!tr.match(/^#{1,4}\s/)){
+          result.push("- "+tr);continue;
+        }
+        afterColon=false;result.push(l);
+      }
+      return result.join("\n");
+    }
+
     // ── Inline markdown renderer ──────────────────────────────────────────────
     // Handles **bold**, *italic*, `code`, and plain text
     function renderInline(text){
@@ -3416,87 +3446,43 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     // ── Block parser ──────────────────────────────────────────────────────────
     function parseBlocks(text){
+      text=preProcess(text);
       var lines=text.split("\n");
       var blocks=[];var buf=[];var tableRows=null;
-      function flush(){
-        if(buf.length>0){
-          blocks.push({type:"para",text:buf.join(" ").trim()});
-          buf=[];
-        }
-      }
-      function flushTable(){
-        if(tableRows&&tableRows.length>0){blocks.push({type:"table",rows:tableRows});tableRows=null;}
-      }
+      function flush(){if(buf.length>0){blocks.push({type:"para",text:buf.join(" ").trim()});buf=[];}}
+      function flushTable(){if(tableRows&&tableRows.length>0){blocks.push({type:"table",rows:tableRows});tableRows=null;}}
       for(var i=0;i<lines.length;i++){
         var l=lines[i];var tr=l.trim();
-        // Empty line
         if(!tr){flush();flushTable();continue;}
-        // Horizontal rule
         if(/^(---+|===+|\*\*\*+)$/.test(tr)){flush();flushTable();blocks.push({type:"hr"});continue;}
-        // H1: # 
-        if(/^#\s/.test(tr)){flush();flushTable();blocks.push({type:"h1",text:tr.replace(/^#\s+/,"")});continue;}
-        // H2: ##
-        if(/^##\s/.test(tr)){flush();flushTable();blocks.push({type:"h2",text:tr.replace(/^##\s+/,"")});continue;}
-        // H3: ###
-        if(/^###\s/.test(tr)){flush();flushTable();blocks.push({type:"h3",text:tr.replace(/^###\s+/,"")});continue;}
-        // H4: ####
-        if(/^####\s/.test(tr)){flush();flushTable();blocks.push({type:"h4",text:tr.replace(/^####\s+/,"")});continue;}
-        // ALL-CAPS short line = section heading
-        if(tr===tr.toUpperCase()&&tr.length<=80&&tr.length>3&&/[A-Z]{3}/.test(tr)&&!/[0-9$€£%]/.test(tr)){
-          flush();flushTable();blocks.push({type:"h2",text:tr});continue;
-        }
-        // Code block: ```
-        if(tr.startsWith("```")){
-          flush();flushTable();
-          var codeLines=[];var j=i+1;
-          while(j<lines.length&&!lines[j].trim().startsWith("```"))codeLines.push(lines[j++]);
-          blocks.push({type:"code",text:codeLines.join("\n"),lang:tr.slice(3)});
-          i=j;continue;
-        }
-        // Blockquote: > text
-        if(/^>\s/.test(tr)){flush();flushTable();blocks.push({type:"quote",text:tr.replace(/^>\s+/,"")});continue;}
-        // Table row: | col | col |
-        if(/^\|.+\|/.test(tr)){
-          flushTable();flush();
-          if(!tableRows)tableRows=[];
-          var cols=tr.split("|").map(function(c){return c.trim();}).filter(function(c){return c.length>0;});
-          // Skip separator rows like |---|---|
-          if(!/^[-:\s]+$/.test(cols[0])){tableRows.push(cols);}
-          continue;
-        }
-        flushTable();
-        // Numbered list: 1. 2. 3.
-        if(/^\d+\.\s/.test(tr)){
-          flush();
-          blocks.push({type:"numitem",text:tr.replace(/^\d+\.\s+/,""),n:tr.match(/^(\d+)/)[1]});
-          continue;
-        }
-        // Status bullets: ✓ ⚠ ✗
-        if(/^[✓⚠✗]/.test(tr)){
-          flush();
-          var st=tr.startsWith("✓")?"pass":tr.startsWith("⚠")?"warn":"fail";
-          blocks.push({type:"bullet",text:tr.slice(1).trim(),status:st});continue;
-        }
-        // Standard bullets: - • *
-        if(/^[-•*]\s/.test(tr)){
-          flush();
-          blocks.push({type:"bullet",text:tr.replace(/^[-•*]\s+/,""),status:"note"});continue;
-        }
-        // Key: Value (short key, up to 40 chars before colon)
-        if(/^[^\n]{1,40}:\s.+/.test(tr)&&tr.indexOf(":")<40&&!tr.startsWith("http")){
-          var ci=tr.indexOf(": ");
-          if(ci>0&&ci<40){
-            flush();
-            blocks.push({type:"kv",key:tr.slice(0,ci).trim(),value:tr.slice(ci+2).trim()});
-            continue;
+        if(/^#\ /.test(tr)){flush();flushTable();blocks.push({type:"h1",text:tr.replace(/^#\ +/,"")});continue;}
+        if(/^##\ /.test(tr)){flush();flushTable();blocks.push({type:"h2",text:tr.replace(/^##\ +/,"")});continue;}
+        if(/^###\ /.test(tr)){flush();flushTable();blocks.push({type:"h3",text:tr.replace(/^###\ +/,"")});continue;}
+        if(/^####\ /.test(tr)){flush();flushTable();blocks.push({type:"h4",text:tr.replace(/^####\ +/,"")});continue;}
+        // Sub-numbered heading: "1.1 Title", "2.3 Something"
+        if(/^\d+\.\d+\ /.test(tr)){flush();flushTable();blocks.push({type:"h3",text:tr});continue;}
+        // ALL-CAPS line = H2
+        if(tr===tr.toUpperCase()&&tr.length<=80&&tr.length>3&&/[A-Z]{3}/.test(tr)&&!/[0-9$€£%]/.test(tr)){flush();flushTable();blocks.push({type:"h2",text:tr});continue;}
+        // Short standalone line with no end punctuation = H4 sub-heading
+        if(tr.length>=4&&tr.length<=60&&!tr.match(/[.!?,;:]$/)&&buf.length===0){
+          var wds=tr.split(/\ +/);
+          if(wds.length>=2&&wds.length<=7&&/^[A-Z]/.test(tr)&&!tr.match(/^[-•*\d✓⚠✗]/)&&(tr.indexOf(":")<0||tr.indexOf("/")/tr.length>0.5)){
+            flush();flushTable();blocks.push({type:"h4",text:tr});continue;
           }
         }
+        if(tr.startsWith("```")){flush();flushTable();var codeLines=[];var j=i+1;while(j<lines.length&&!lines[j].trim().startsWith("```"))codeLines.push(lines[j++]);blocks.push({type:"code",text:codeLines.join("\n"),lang:tr.slice(3)});i=j;continue;}
+        if(/^>\ /.test(tr)){flush();flushTable();blocks.push({type:"quote",text:tr.replace(/^>\ +/,"")});continue;}
+        if(/^\|.+\|/.test(tr)){flushTable();flush();if(!tableRows)tableRows=[];var cols=tr.split("|").map(function(c){return c.trim();}).filter(function(c){return c.length>0;});if(!/^[-:\ ]+$/.test(cols[0]))tableRows.push(cols);continue;}
+        flushTable();
+        if(/^\d+\.\ /.test(tr)&&!tr.match(/^\d+\.\d+/)){flush();blocks.push({type:"numitem",text:tr.replace(/^\d+\.\ +/,""),n:tr.match(/^(\d+)/)[1]});continue;}
+        if(/^[✓⚠✗]/.test(tr)){flush();var st2=tr.startsWith("✓")?"pass":tr.startsWith("⚠")?"warn":"fail";blocks.push({type:"bullet",text:tr.slice(1).trim(),status:st2});continue;}
+        if(/^[-•*]\ /.test(tr)){flush();blocks.push({type:"bullet",text:tr.replace(/^[-•*]\ +/,""),status:"note"});continue;}
+        if(tr.indexOf(": ")>0&&tr.indexOf(": ")<40&&!tr.startsWith("http")){var ci=tr.indexOf(": ");if(ci>0&&ci<40){flush();blocks.push({type:"kv",key:tr.slice(0,ci).trim(),value:tr.slice(ci+2).trim()});continue;}}
         buf.push(tr);
       }
       flush();flushTable();
       return blocks;
     }
-
     var blocks=parseBlocks(raw);
     function sc(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#9CA3AF";}
     function si(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"·";}
