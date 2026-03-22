@@ -1150,7 +1150,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     if(!selId)return;
     var co=cos.find(function(c){return c.id===selId;});
     if(!co)return;
-    var hasDive=(co.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+    var hasDive=(co.docs||[]).some(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
     setDossierTab(hasDive?"monitoring":"deepdive");
   },[selId]);
   useEffect(function(){if(!loaded)return;var payload={cos:cos,notifs:notifs,trial:trial,readingList:readingList,shortlists:shortlists,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};
@@ -2506,6 +2506,104 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </Modal>;}
 
   // ── Import Deep Dive Modal ──────────────────────────────────────────────────
+  // ── Import Freeform Analysis Modal ───────────────────────────────────────
+  function ImportFreeformModal(){
+    if(!sel)return null;
+    var PURPLE="#8B5CF6";
+    var _txt=React.useState(""),rawText=_txt[0],setRawText=_txt[1];
+    var _title=React.useState(""),titleVal=_title[0],setTitleVal=_title[1];
+    var _preview=React.useState(false),showPreview=_preview[0],setShowPreview=_preview[1];
+
+    var canSave=rawText.trim().length>50;
+
+    // Try to auto-extract a title from the first non-empty line
+    React.useEffect(function(){
+      if(!rawText.trim())return;
+      var firstLine=rawText.trim().split("\n").find(function(l){return l.trim().length>3;});
+      if(firstLine&&!titleVal){
+        var clean=firstLine.replace(/^#+\s*/,"").replace(/\*\*/g,"").trim();
+        if(clean.length<=80)setTitleVal(clean);
+      }
+    },[rawText]);
+
+    function handleSave(){
+      if(!canSave)return;
+      var doc={
+        id:nId(sel.docs),
+        title:titleVal.trim()||("Analysis — "+sel.ticker),
+        content:rawText.substring(0,200)+"...",
+        rawText:rawText,
+        docType:"freeform_dive",
+        folder:"deep-dives",
+        updatedAt:new Date().toISOString()
+      };
+      upd(selId,function(c2){
+        return Object.assign({},c2,{docs:c2.docs.concat([doc])});
+      });
+      setModal(null);
+      showToast("Analysis saved to Research Trail","info",3000);
+    }
+
+    return<Modal title={"Import Your Own Analysis — "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
+      {!showPreview&&<div>
+        <div style={{fontSize:13,color:K.dim,fontFamily:fb,lineHeight:1.7,marginBottom:16}}>
+          {"Paste your own research, notes, report, or analysis below. ThesisAlpha will structure and display it in your dossier — whatever format you use."}
+        </div>
+        <div style={{marginBottom:12}}>
+          <input value={titleVal} onChange={function(e){setTitleVal(e.target.value);}}
+            placeholder={"Title (auto-detected from your text)"}
+            style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,
+              border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fm,outline:"none",marginBottom:10}}
+            onFocus={function(e){e.target.style.borderColor=PURPLE+"60";}}
+            onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+          <textarea value={rawText} onChange={function(e){setRawText(e.target.value);}}
+            placeholder={"Paste anything — your own deep dive, a research note, a PDF you copied, a framework analysis, bullet points, paragraphs. Any format works.\n\nThesisAlpha will detect headers, bullet points, and key/value lines and render them cleanly in your dossier."}
+            rows={14}
+            style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:_isBm?0:8,
+              border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:13,fontFamily:fb,
+              lineHeight:1.7,resize:"vertical",outline:"none"}}
+            onFocus={function(e){e.target.style.borderColor=PURPLE+"60";}}
+            onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:6}}>
+            {rawText.trim()?rawText.trim().split(/\s+/).length+" words":"Paste your analysis above"}
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+          <button onClick={function(){if(canSave)setShowPreview(true);}}
+            disabled={!canSave}
+            style={{padding:"9px 20px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
+              background:K.bg,color:canSave?K.mid:K.dim,fontSize:12,cursor:canSave?"pointer":"default",
+              fontFamily:fm,opacity:canSave?1:0.4,transition:"all .15s"}}
+            onMouseEnter={function(e){if(canSave){e.currentTarget.style.borderColor=PURPLE+"50";e.currentTarget.style.color=PURPLE;}}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.mid;}}>
+            {"Preview →"}
+          </button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Cancel</button>
+            <button onClick={handleSave} disabled={!canSave}
+              style={Object.assign({},S.btnP,{padding:"9px 24px",opacity:canSave?1:0.4,background:PURPLE,borderColor:PURPLE})}>
+              {"Save to dossier →"}
+            </button>
+          </div>
+        </div>
+      </div>}
+      {showPreview&&<div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,padding:"8px 12px",background:PURPLE+"08",border:"1px solid "+PURPLE+"20",borderRadius:_isBm?0:8}}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={PURPLE} strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span style={{fontSize:11,color:PURPLE,fontFamily:fm,fontWeight:600}}>{"Preview — this is how your analysis will appear in the dossier"}</span>
+          <button onClick={function(){setShowPreview(false);}} style={{marginLeft:"auto",background:"none",border:"none",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>{"← Edit"}</button>
+        </div>
+        <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"16px 18px",marginBottom:16,maxHeight:400,overflowY:"auto"}}>
+          <FreeformDiveView doc={{title:titleVal||"Analysis",rawText:rawText}} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:8,paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+          <button onClick={function(){setShowPreview(false);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>{"← Edit"}</button>
+          <button onClick={handleSave} style={Object.assign({},S.btnP,{padding:"9px 24px",background:PURPLE,borderColor:PURPLE})}>{"Save to dossier →"}</button>
+        </div>
+      </div>}
+    </Modal>;
+  }
+
   function ImportDeepDiveModal(){
     if(!sel)return null;
     var _txt=React.useState(""),rawText=_txt[0],setRawText=_txt[1];
@@ -3026,6 +3124,62 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>;
   }
 
+  // ── Freeform Analysis View (renders arbitrary pasted text cleanly) ────────
+  function FreeformDiveView({doc,K,_isBm,fm,fb,fh}){
+    var raw=doc.rawText||doc.content||"";
+    if(!raw.trim())return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No content.</div>;
+    var PURPLE="#8B5CF6";
+    // Parse into blocks
+    function parseBlocks(text){
+      var lines=text.split("\n");
+      var blocks=[];
+      var buf=[];
+      function flush(){if(buf.length>0){blocks.push({type:"para",text:buf.join(" ").trim()});buf=[];}}
+      for(var i=0;i<lines.length;i++){
+        var l=lines[i];var tr=l.trim();
+        if(!tr){flush();continue;}
+        // Headers: ## or # prefix
+        if(/^#{1,3}\s/.test(tr)){flush();blocks.push({type:"heading",text:tr.replace(/^#+\s*/,"")});continue;}
+        // ALL CAPS short line = heading
+        if(tr===tr.toUpperCase()&&tr.length<=60&&tr.length>3&&/[A-Z]/.test(tr)){flush();blocks.push({type:"heading",text:tr});continue;}
+        // Bullet lines
+        if(/^[\-•\*✓⚠✗—]\s/.test(tr)){flush();
+          var st="note";var txt=tr.replace(/^[\-•\*✓⚠✗—]\s*/,"");
+          if(tr.startsWith("✓")||tr.startsWith("*"))st="pass";
+          else if(tr.startsWith("⚠"))st="warn";
+          else if(tr.startsWith("✗"))st="fail";
+          blocks.push({type:"bullet",text:txt,status:st});continue;}
+        // Key: Value lines
+        if(/^[A-Z][^:]{1,20}:\s/.test(tr)&&tr.indexOf(":")<30){
+          flush();var parts=tr.split(/:\s+/,2);
+          blocks.push({type:"kv",key:parts[0],value:parts[1]||""});continue;}
+        buf.push(tr);
+      }
+      flush();
+      return blocks;
+    }
+    var blocks=parseBlocks(raw);
+    var stColor=function(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#9CA3AF";};
+    var stIcon=function(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"—";};
+    return<div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:4}}>
+      <div style={{marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{doc.title||"Analysis"}</div>
+      </div>
+      {blocks.map(function(b,bi){
+        if(b.type==="heading")return<div key={bi} style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginTop:bi>0?20:0,marginBottom:6,paddingBottom:5,borderBottom:"1px solid "+K.bdr}}>{b.text}</div>;
+        if(b.type==="bullet")return<div key={bi} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+          <span style={{fontSize:12,fontWeight:700,color:stColor(b.status),flexShrink:0,marginTop:1,width:14}}>{stIcon(b.status)}</span>
+          <p style={{margin:0,fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.65}}>{b.text}</p>
+        </div>;
+        if(b.type==="kv")return<div key={bi} style={{display:"flex",gap:10,marginBottom:6,padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
+          <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,flexShrink:0,minWidth:80}}>{b.key}</span>
+          <span style={{fontSize:11,color:K.mid,fontFamily:fb}}>{b.value}</span>
+        </div>;
+        return<p key={bi} style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.75}}>{b.text}</p>;
+      })}
+    </div>;
+  }
+
   function DeepDiveView({doc,K,_isBm,fm,fb,fh,cSym}){
     var _PW={buffett:[0.15,0.30,0.20,0.20,0.15],munger:[0.20,0.35,0.20,0.15,0.10],lynch:[0.25,0.10,0.15,0.20,0.30],schloss:[0.10,0.10,0.15,0.30,0.35],sleep:[0.20,0.35,0.25,0.10,0.10],greenblatt:[0.10,0.20,0.10,0.35,0.25]};
     var profileW=investorProfile&&investorProfile!=="custom"&&_PW[investorProfile]?_PW[investorProfile]:[0.2,0.2,0.2,0.2,0.2];
@@ -3322,7 +3476,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       if(ex){upd(selId,function(c){return Object.assign({},c,{docs:c.docs.map(function(d){return d.id===did?Object.assign({},d,doc):d})})});}
       else{upd(selId,function(c){return Object.assign({},c,{docs:c.docs.concat([Object.assign({id:nId(c.docs)},doc)])})});}
       setModal(null);}
-    var isDeepDive=f.docType==="deep_dive";
+    var isDeepDive=f.docType==="deep_dive"||f.docType==="freeform_dive";
     var _ddEdit=React.useState(!ex||!ex.deepDive),ddEditing=_ddEdit[0],setDdEditing=_ddEdit[1];
     return<Modal title={ex&&isDeepDive?"Deep Dive — "+sel.ticker:ex?"Edit note":"New note — "+sel.ticker} onClose={function(){setModal(null)}} w={isDeepDive?760:600} K={K}>
       <div style={{marginBottom:16}}>
@@ -3343,6 +3497,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         </button>
       </div>}
       {isDeepDive&&!ddEditing&&ex&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
+            {f.docType==="freeform_dive"&&!ddEditing&&ex&&<FreeformDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh}/>}
       {(!isDeepDive||ddEditing)&&<div>
       <Inp label="Title" value={f.title} onChange={function(v){set("title",v)}} placeholder={activeType.id==="earnings"?"e.g. FICO Q2 2025 Earnings":activeType.id==="bear_case"?"e.g. The bear case for FICO":"Note title"} K={K}/>
       {!isDeepDive&&<div style={{marginBottom:16}}>
@@ -4504,7 +4659,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </Modal>;
   }
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,importDeepDive:ImportDeepDiveModal,deepDivePrompt:DeepDivePromptModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,importDeepDive:ImportDeepDiveModal,importFreeform:ImportFreeformModal,deepDivePrompt:DeepDivePromptModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -5989,7 +6144,7 @@ function calcMoatFromData(finData,businessModelType){
               transition:"all .15s",display:"flex",alignItems:"center",gap:6}}>
             {"Deep Dive"}
             {(function(){
-              var hasDive=(c.docs||[]).some(function(d){return d.docType==="deep_dive"&&d.deepDive;});
+              var hasDive=(c.docs||[]).some(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
               if(hasDive||dossierTab==="deepdive")return null;
               return<span style={{width:7,height:7,borderRadius:"50%",background:"#10B981",
                 display:"inline-block",flexShrink:0,
@@ -7469,6 +7624,26 @@ function calcMoatFromData(finData,businessModelType){
                     {"Define your own framework in My Strategy →"}
                   </button>
                   {" Your custom prompt will appear here automatically."}
+                </div>
+                {/* Divider */}
+                <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
+                  <div style={{flex:1,height:1,background:K.bdr}}/>
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>or</span>
+                  <div style={{flex:1,height:1,background:K.bdr}}/>
+                </div>
+                {/* Import own analysis */}
+                <div style={{marginTop:8}}>
+                  <button onClick={function(){setModal({type:"importFreeform",ticker:c.ticker});}}
+                    style={{width:"100%",padding:"10px",borderRadius:_isBm?0:8,
+                      border:"1px solid "+K.bdr,background:K.bg,color:K.mid,
+                      fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                      transition:"all .15s"}}
+                    onMouseEnter={function(e){e.currentTarget.style.borderColor=PURPLE+"50";e.currentTarget.style.color=PURPLE;}}
+                    onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.mid;}}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    {"Import your own analysis"}
+                  </button>
                 </div>
               </div>
             </div>}
