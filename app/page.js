@@ -2554,10 +2554,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var im=txt.match(invRx);if(im&&!sel.inversionNote)patch.inversionNote=im[1].trim().substring(0,200);
       // 4. Thesis starter — first real paragraph (>80 chars, no special prefix)
       if(!sel.thesisNote||sel.thesisNote.trim().length<40){
-        var paras=txt.split(/
-{2,}/).map(function(p){return p.replace(/
-/g,"").trim();})
-          .filter(function(p){return p.length>80&&!/^[#*\-•✓⚠✗]/.test(p)&&!/^[A-Z\s]{5,}$/.test(p);});
+        var paras=txt.split(/\n{2,}/).map(function(p){return p.replace(/\r?\n/g," ").trim();})
+          .filter(function(p){return p.length>80&&p[0]!=="#"&&p[0]!=="*"&&p[0]!=="-"&&p[0]!=="\u2022"&&p[0]!=="\u2713"&&p[0]!=="\u26a0"&&p[0]!=="\u2717"&&!/^[A-Z ]{5,}$/.test(p);});
         if(paras.length>0)patch.thesisNote=paras[0].substring(0,600);
       }
       upd(selId,function(c2){
