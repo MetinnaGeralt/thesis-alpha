@@ -7679,22 +7679,12 @@ function calcMoatFromData(finData,businessModelType){
           var existingDives=(c.docs||[]).filter(function(d){return d.docType==="deep_dive"&&d.deepDive;});
           var latestDive=existingDives.length>0?existingDives[existingDives.length-1]:null;
           return<div style={{marginBottom:24}}>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,paddingBottom:12,borderBottom:"1px solid "+K.bdr}}>
-              <div style={{width:28,height:28,borderRadius:_isBm?0:8,background:PURPLE+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <IC name="search" size={14} color={PURPLE}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,letterSpacing:.8,textTransform:"uppercase",color:K.txt,fontFamily:fh,fontWeight:700}}>Deep Dive</div>
-                <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:1}}>{"Five-filter analysis · Owner earnings DCF · Inversion"}</div>
-              </div>
-              {existingDives.length>0&&<div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{existingDives.length+" dive"+(existingDives.length>1?"s":"")}</span>
-                <button onClick={function(){setModal({type:"importDeepDive"});}}
-                  style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"50",background:PURPLE+"08",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
-                  {"+ Import new"}
-                </button>
-              </div>}
-            </div>
+            {existingDives.length>0&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
+              <button onClick={function(){setModal({type:"importDeepDive"});}}
+                style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"50",background:PURPLE+"08",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+                {"+ Import new"}
+              </button>
+            </div>}
 
             {!latestDive&&<div>
               {/* ── Deep Dive — 3 path selector ── */}
@@ -7743,38 +7733,37 @@ function calcMoatFromData(finData,businessModelType){
                   {ddCard&&(function(){
                     var card=CARDS.find(function(c2){return c2.id===ddCard;});if(!card)return null;
                     return<div style={{border:"1px solid "+card.color+"30",borderRadius:_isBm?0:12,overflow:"hidden",background:card.color+"04"}}>
-                      <div style={{padding:"16px 20px",borderBottom:"1px solid "+card.color+"20"}}>
-                        <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:4}}>{card.sub}</div>
-                        <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7}}>{card.desc}</div>
+                      <div style={{padding:"12px 16px",borderBottom:"1px solid "+card.color+"20",display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:8,height:8,borderRadius:"50%",background:card.color,flexShrink:0}}/>
+                        <div style={{fontSize:13,fontWeight:700,color:card.color,fontFamily:fm}}>{card.sub}</div>
                       </div>
-                      {ddCard==="recommended"&&<div style={{padding:"16px 20px"}}>
-                        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:14}}>
+                      {ddCard==="recommended"&&<div style={{padding:"12px 16px"}}>
+                        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:6,marginBottom:10}}>
                           {[{n:"1",label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Munger won’t touch what he can’t understand cold."},
                             {n:"2",label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded competitor willingly wrestle for market share? If yes, there’s no moat."},
                             {n:"3",label:"Management Quality",desc:"Owner-operator test. Capital allocation over a full cycle. Has every €1 kept created >€1 of value?"},
                             {n:"4",label:"Financial Strength",desc:"18-check framework. ROIC vs WACC. FCF conversion. The numbers that separate great businesses from mediocre ones."},
                             {n:"5",label:"Price & Margin of Safety",desc:"Owner earnings DCF. Three scenarios. Buffett’s fat pitch price: where even the bear case clears your hurdle rate."},
-                          ].map(function(f){return<div key={f.n} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px"}}>
-                            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}>
-                              <div style={{width:18,height:18,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:9,fontWeight:800,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.n}</div>
-                              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{f.label}</div>
+                          ].map(function(f){return<div key={f.n} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 10px",display:"flex",alignItems:"flex-start",gap:8}}>
+                            <div style={{width:16,height:16,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:8,fontWeight:800,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{f.n}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{f.label}</div>
+                              <div style={{fontSize:10,color:K.dim,fontFamily:fb,lineHeight:1.4}}>{f.desc}</div>
                             </div>
-                            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{f.desc}</div>
                           </div>;})}
                         </div>
-                        <div style={{background:PURPLE+"10",border:"1px solid "+PURPLE+"25",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"flex-start"}}>
-                          <div style={{fontSize:14,flexShrink:0}}>{"↩"}</div>
-                          <div><div style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:2}}>{"“+ Inversion — Munger’s secret weapon”"}</div>
-                            <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.5}}>{"“Invert, always invert.” What specific mechanism would permanently destroy this thesis?"}</div></div>
+                        <div style={{background:PURPLE+"10",border:"1px solid "+PURPLE+"25",borderRadius:_isBm?0:8,padding:"8px 12px",marginBottom:12,display:"flex",gap:8,alignItems:"center"}}>
+                          <div style={{fontSize:13,flexShrink:0}}>{"↩"}</div>
+                          <div style={{fontSize:11,color:PURPLE,fontFamily:fm,fontWeight:600}}>{"“Invert, always invert.” The prompt forces the question: what specific mechanism would permanently destroy this thesis?"}</div>
                         </div>
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          <button onClick={card.onClick} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
-                            <IC name="search" size={13} color="#fff"/>{card.cta}
+                          <button onClick={card.onClick} style={{display:"flex",alignItems:"center",gap:7,padding:"9px 18px",borderRadius:_isBm?0:8,border:"none",background:PURPLE,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                            <IC name="search" size={12} color="#fff"/>{card.cta}
                           </button>
-                          <button onClick={card.onSecondary} style={{padding:"10px 18px",borderRadius:_isBm?0:8,border:"1px solid "+PURPLE+"50",background:"transparent",color:PURPLE,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{card.ctaSecondary}</button>
+                          <button onClick={card.onSecondary} style={{padding:"9px 16px",borderRadius:_isBm?0:8,border:"1px solid "+PURPLE+"50",background:"transparent",color:PURPLE,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{card.ctaSecondary}</button>
                         </div>
                       </div>}
-                      {ddCard==="freeform"&&<div style={{padding:"16px 20px"}}>
+                      {ddCard==="freeform"&&<div style={{padding:"12px 16px"}}>
                         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:8,marginBottom:14}}>
                           {[{l:"Any format",d:"PDF notes, Word doc, bullet points — paste anything"},
                             {l:"Auto-links dossier",d:"Fat pitch, conviction, inversion extracted automatically"},
@@ -7786,7 +7775,7 @@ function calcMoatFromData(finData,businessModelType){
                         </div>
                         <button onClick={card.onClick} style={{padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:K.blue,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{card.cta}</button>
                       </div>}
-                      {ddCard==="custom"&&<div style={{padding:"16px 20px"}}>
+                      {ddCard==="custom"&&<div style={{padding:"12px 16px"}}>
                         <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{"Available blocks — combine to build your format:"}</div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
                           {["Filter (pass/fail)","Metric Row","Verdict","Inversion","DCF Scenario","Management Check","Moat Test","Free Text"].map(function(b){
