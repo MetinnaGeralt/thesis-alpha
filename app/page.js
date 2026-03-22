@@ -5430,7 +5430,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}</div>})}
       </div>}
     </div>}
-    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"6px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.card,position:"sticky",top:0,zIndex:50,gap:12}}>
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"6px 16px":"12px 32px",borderBottom:"1px solid "+K.bdr,background:K.side,position:"sticky",top:0,zIndex:50,gap:12}}>
     {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -14277,16 +14277,21 @@ function ProWelcomeGift(){
           </div>}
 
           {/* Related dossier link */}
-          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div>
-              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{"Apply this in your dossier"}</div>
-              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Use this framework when building your next deep dive."}</div>
+          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px"}}>
+            <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>{"Apply this in your dossier"}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:10}}>{"Use this framework when building your next deep dive or reviewing a position."}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button onClick={function(){setSelId(null);setPage("dashboard");}}
+                style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"1px solid "+AMB+"50",
+                  background:AMB+"12",color:AMB,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+                {"\uD83D\uDCBC Open portfolio \u2192"}
+              </button>
+              <button onClick={function(){setSelId(null);setPage("watchlist");}}
+                style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
+                  background:"transparent",color:K.dim,fontSize:11,cursor:"pointer",fontFamily:fm}}>
+                {"Watchlist"}
+              </button>
             </div>
-            <button onClick={function(){setPage("watchlist");}}
-              style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+AMB+"50",
-                background:AMB+"12",color:AMB,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>
-              {"Go to watchlist \u2192"}
-            </button>
           </div>
         </div>}
 
@@ -16913,7 +16918,7 @@ function ProWelcomeGift(){
       // Page-level crumb
       var pageLabels={strategy:"My Strategy",watchlist:"Watchlist",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",
         timeline:"Portfolio",assets:"Capital Overview",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",
-        ai:"Research Prompts",hub:"Portfolio"};
+        ai:"Research Prompts",hub:"Portfolio",learn:"Learning Hub",screener:"Screener"};
       if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
         crumbs.push(sep);
         var hubTabLabels={docs:"Research Trail",lenses:"Investor Lenses",goals:"Goals",feed:"Feed",reading:"Reading",guide:"How It Works",command:"Command Center"};
@@ -16947,7 +16952,7 @@ function ProWelcomeGift(){
         }
       }
 
-      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.bg,position:"sticky",top:_isBm?0:56,zIndex:40,minHeight:30}}>
+      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.side,position:"sticky",top:_isBm?0:56,zIndex:40,minHeight:30}}>
         {/* Home icon */}
         <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Portfolio home">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
