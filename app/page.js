@@ -6815,6 +6815,68 @@ function calcMoatFromData(finData,businessModelType){
 
         <div id="ds-score"/>
 
+        {/* ── Investor Mindset — Circle, Inversion, Management ── */}
+        <div style={{marginBottom:32}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Investor Mindset"}</div>
+{/* ── QUALITATIVE CHECKS (Munger's three questions) ── */}
+        {(function(){
+          var coc=c.circleScore||0;
+          var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.dim;
+          var cocLabel=coc===5?"Expert":coc===4?"Deep knowledge":coc===3?"Solid understanding":coc===2?"Know the basics":coc===1?"Barely understand":"Not rated";
+          return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+            {/* 1. Circle of Competence */}
+            <div style={{background:K.card,border:"1px solid "+(coc>0&&coc<3?K.amb+"40":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
+              onClick={function(){var v=parseInt(window.prompt("Circle of competence — "+c.ticker+"\n\nCould you give a one-hour lecture on this industry,\nits economics, and its competitive dynamics?\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:",String(coc||3)));if(!isNaN(v)&&v>=1&&v<=5)upd(c.id,{circleScore:v})}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Circle of Competence</div>
+              <div style={{display:"flex",gap:4,marginBottom:6}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{flex:1,height:6,borderRadius:_isBm?0:3,background:n<=coc?cocColor:K.bdr,transition:"background .2s"}}/>})}</div>
+              <div style={{fontSize:13,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</div>
+              {coc>0&&coc<3&&<div style={{fontSize:10,color:K.amb,marginTop:4,lineHeight:1.5}}>{"Outside your circle? If you can't describe this business clearly, that's information."}</div>}
+              {!coc&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>Click to rate your understanding</div>}
+            </div>
+            {/* 2. Inversion — pre-mortem */}
+            <div style={{background:K.card,border:"1px solid "+(c.inversionNote?K.bdr:K.acc+"20"),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
+              onClick={function(){var v=window.prompt("Inversion: imagine it is 5 years from now and this investment has failed completely.\n\nWhat happened? Be specific.\n\n(Munger: 'Invert, always invert')",c.inversionNote||"");if(v!==null)upd(c.id,{inversionNote:v.trim()})}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Inversion</div>
+              {c.inversionNote
+                ?<div>
+                  <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:4}}>{c.inversionNote.substring(0,120)+(c.inversionNote.length>120?"...":"")}</div>
+                  <div style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:700}}>{"Pre-mortem written \u2713"}</div>
+                </div>
+                :<div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.acc,marginBottom:3}}>Write the pre-mortem</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"\"Invert, always invert.\" Imagine total failure. What happened?"}</div>
+                </div>}
+            </div>
+            {/* 3. Management Quality */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}} onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
+              {c.managementGrade
+                ?<div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
+                    <span style={{fontSize:28,fontWeight:900,color:c.managementGrade==="A"?K.grn:c.managementGrade==="B"?K.acc:c.managementGrade==="C"?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{c.managementGrade}</span>
+                    <span style={{fontSize:11,color:K.dim}}>{c.ceo||"CEO"}</span>
+                  </div>
+                  {c.managementNote&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{c.managementNote}</div>}
+                  {/* Management notes log */}
+                  {(c.managementNotes||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid "+K.bdr,paddingTop:8}}>
+                    <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{"Said vs. did"}</div>
+                    {(c.managementNotes||[]).slice(0,4).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,lineHeight:1.6,marginBottom:4,paddingBottom:4,borderBottom:ni<Math.min((c.managementNotes||[]).length,4)-1?"1px solid "+K.bdr:"none"}}>
+                      <span style={{color:n.kept?K.grn:K.red,fontWeight:600}}>{n.kept?"✓ ":"✗ "}</span>
+                      <span style={{color:K.dim,marginRight:4}}>{n.date}</span>
+                      {n.note}
+                    </div>;})}
+                  </div>}
+                </div>
+                :<div>
+                  <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>{"Did management do what they said they would?"}</div>
+                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div>
+                </div>}
+            </div>
+          </div>;
+        })()}
+          </div>}
+
+        </div>
 
         {/* ── 3. THE LEDGER ── */}
         <div id="ds-ledger" style={{marginBottom:24}}>
@@ -7732,63 +7794,6 @@ function calcMoatFromData(finData,businessModelType){
             </div>}
           </div>;
         })()}
-        {/* ── QUALITATIVE CHECKS (Munger's three questions) ── */}
-        {(function(){
-          var coc=c.circleScore||0;
-          var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.dim;
-          var cocLabel=coc===5?"Expert":coc===4?"Deep knowledge":coc===3?"Solid understanding":coc===2?"Know the basics":coc===1?"Barely understand":"Not rated";
-          return<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:16}}>
-            {/* 1. Circle of Competence */}
-            <div style={{background:K.card,border:"1px solid "+(coc>0&&coc<3?K.amb+"40":K.bdr),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
-              onClick={function(){var v=parseInt(window.prompt("Circle of competence — "+c.ticker+"\n\nCould you give a one-hour lecture on this industry,\nits economics, and its competitive dynamics?\n\n1  Barely understand the business\n2  Know the basics\n3  Solid understanding\n4  Deep industry knowledge\n5  Expert level\n\nRate 1–5:",String(coc||3)));if(!isNaN(v)&&v>=1&&v<=5)upd(c.id,{circleScore:v})}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Circle of Competence</div>
-              <div style={{display:"flex",gap:4,marginBottom:6}}>{[1,2,3,4,5].map(function(n){return<div key={n} style={{flex:1,height:6,borderRadius:_isBm?0:3,background:n<=coc?cocColor:K.bdr,transition:"background .2s"}}/>})}</div>
-              <div style={{fontSize:13,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</div>
-              {coc>0&&coc<3&&<div style={{fontSize:10,color:K.amb,marginTop:4,lineHeight:1.5}}>{"Outside your circle? If you can't describe this business clearly, that's information."}</div>}
-              {!coc&&<div style={{fontSize:10,color:K.dim,marginTop:4}}>Click to rate your understanding</div>}
-            </div>
-            {/* 2. Inversion — pre-mortem */}
-            <div style={{background:K.card,border:"1px solid "+(c.inversionNote?K.bdr:K.acc+"20"),borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}}
-              onClick={function(){var v=window.prompt("Inversion: imagine it is 5 years from now and this investment has failed completely.\n\nWhat happened? Be specific.\n\n(Munger: 'Invert, always invert')",c.inversionNote||"");if(v!==null)upd(c.id,{inversionNote:v.trim()})}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Inversion</div>
-              {c.inversionNote
-                ?<div>
-                  <div style={{fontSize:12,color:K.mid,lineHeight:1.6,marginBottom:4}}>{c.inversionNote.substring(0,120)+(c.inversionNote.length>120?"...":"")}</div>
-                  <div style={{fontSize:9,color:K.grn,fontFamily:fm,fontWeight:700}}>{"Pre-mortem written \u2713"}</div>
-                </div>
-                :<div>
-                  <div style={{fontSize:13,fontWeight:600,color:K.acc,marginBottom:3}}>Write the pre-mortem</div>
-                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"\"Invert, always invert.\" Imagine total failure. What happened?"}</div>
-                </div>}
-            </div>
-            {/* 3. Management Quality */}
-            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"14px 16px",cursor:"pointer"}} onClick={function(){setModal({type:"mgmt",id:c.id,ticker:c.ticker,grade:c.managementGrade||"",note:c.managementNote||"",notes:c.managementNotes||[]});}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:8}}>Management</div>
-              {c.managementGrade
-                ?<div>
-                  <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
-                    <span style={{fontSize:28,fontWeight:900,color:c.managementGrade==="A"?K.grn:c.managementGrade==="B"?K.acc:c.managementGrade==="C"?K.amb:K.red,fontFamily:fm,lineHeight:1}}>{c.managementGrade}</span>
-                    <span style={{fontSize:11,color:K.dim}}>{c.ceo||"CEO"}</span>
-                  </div>
-                  {c.managementNote&&<div style={{fontSize:11,color:K.mid,lineHeight:1.5}}>{c.managementNote}</div>}
-                  {/* Management notes log */}
-                  {(c.managementNotes||[]).length>0&&<div style={{marginTop:10,borderTop:"1px solid "+K.bdr,paddingTop:8}}>
-                    <div style={{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>{"Said vs. did"}</div>
-                    {(c.managementNotes||[]).slice(0,4).map(function(n,ni){return<div key={ni} style={{fontSize:11,color:K.mid,lineHeight:1.6,marginBottom:4,paddingBottom:4,borderBottom:ni<Math.min((c.managementNotes||[]).length,4)-1?"1px solid "+K.bdr:"none"}}>
-                      <span style={{color:n.kept?K.grn:K.red,fontWeight:600}}>{n.kept?"✓ ":"✗ "}</span>
-                      <span style={{color:K.dim,marginRight:4}}>{n.date}</span>
-                      {n.note}
-                    </div>;})}
-                  </div>}
-                </div>
-                :<div>
-                  <div style={{fontSize:13,fontWeight:600,color:K.dim,marginBottom:3}}>{"Did management do what they said they would?"}</div>
-                  <div style={{fontSize:11,color:K.dim,lineHeight:1.5}}>{"Click to grade integrity, capital allocation, and candour. This compounds in value over time."}</div>
-                </div>}
-            </div>
-          </div>;
-        })()}
-          </div>}
 
           {/* Moat */}
           {deepDiveTab==="moat"&&<div>
