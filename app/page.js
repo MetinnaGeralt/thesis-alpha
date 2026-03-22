@@ -14597,6 +14597,39 @@ function ProWelcomeGift(){
     var _cols=useState(["grossMargin","roic","revGrowth","pe","evEbitda","debtEquity"]),cols=_cols[0],setCols=_cols[1];
     var _addPicker=useState(false),addPicker=_addPicker[0],setAddPicker=_addPicker[1];
 
+    // Fetch lens data when lenses tab opens — must be unconditional hook
+    useEffect(function(){
+      if(screenTab!=="lenses")return;
+      var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist";});
+      var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
+      if(needsFetch.length===0)return;
+      setLensLoading(true);
+      var fetchAll=async function(){
+        var data=Object.assign({},lensData);
+        for(var i=0;i<needsFetch.length;i++){
+          var c=needsFetch[i];
+          try{
+            var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
+            var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
+            var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
+            var snap=c.financialSnapshot||{};
+            data[c.ticker]={
+              grossMargin:ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:(snap.grossMargin&&snap.grossMargin.numVal!=null?snap.grossMargin.numVal:null),
+              opLeverage:ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:(snap.opMargin&&snap.opMargin.numVal!=null?snap.opMargin.numVal:null),
+              roic:km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:(snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:null),
+              netMargin:ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:(snap.netMargin&&snap.netMargin.numVal!=null?snap.netMargin.numVal:null),
+              fcfConversion:ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(snap.fcfMargin&&snap.fcfMargin.numVal!=null?snap.fcfMargin.numVal:null),
+              revGrowth:ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(snap.revGrowth&&snap.revGrowth.numVal!=null?snap.revGrowth.numVal:null),
+              fortress:km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:(snap.netDebtEbitda&&snap.netDebtEbitda.numVal!=null?snap.netDebtEbitda.numVal:null),
+              pe:km&&km.peRatioTTM!=null?km.peRatioTTM:(snap.pe&&snap.pe.numVal!=null?snap.pe.numVal:null),
+            };
+          }catch(e){}
+        }
+        setLensData(data);setLensLoading(false);
+      };
+      fetchAll();
+    },[screenTab]);
+
     // Own companies with snapshots
     var ownCos=cos.filter(function(c){return c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0;});
 
@@ -14945,37 +14978,7 @@ function ProWelcomeGift(){
 
       {screenTab==="lenses"&&(function(){
         var PURPLE2="#8B5CF6";
-        // Fetch financial data for lenses when tab opens
-        useEffect(function(){
-          var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist";});
-          var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
-          if(needsFetch.length===0)return;
-          setLensLoading(true);
-          var fetchAll=async function(){
-            var data=Object.assign({},lensData);
-            for(var i=0;i<needsFetch.length;i++){
-              var c=needsFetch[i];
-              try{
-                var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
-                var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
-                var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
-                var snap=c.financialSnapshot||{};
-                data[c.ticker]={
-                  grossMargin:ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:(snap.grossMargin&&snap.grossMargin.numVal!=null?snap.grossMargin.numVal:null),
-                  opLeverage:ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:(snap.opMargin&&snap.opMargin.numVal!=null?snap.opMargin.numVal:null),
-                  roic:km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:(snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:null),
-                  netMargin:ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:(snap.netMargin&&snap.netMargin.numVal!=null?snap.netMargin.numVal:null),
-                  fcfConversion:ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(snap.fcfMargin&&snap.fcfMargin.numVal!=null?snap.fcfMargin.numVal:null),
-                  revGrowth:ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(snap.revGrowth&&snap.revGrowth.numVal!=null?snap.revGrowth.numVal:null),
-                  fortress:km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:(snap.netDebtEbitda&&snap.netDebtEbitda.numVal!=null?snap.netDebtEbitda.numVal:null),
-                  pe:km&&km.peRatioTTM!=null?km.peRatioTTM:(snap.pe&&snap.pe.numVal!=null?snap.pe.numVal:null),
-                };
-              }catch(e){}
-            }
-            setLensData(data);setLensLoading(false);
-          };
-          fetchAll();
-        },[screenTab]);
+        // (lens fetch handled at component level)
 
           // Parse numeric value from moat cache strings like "45.2%", "+12.3%", "Net Cash", "1.5x"
           function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
