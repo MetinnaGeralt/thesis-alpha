@@ -14978,7 +14978,7 @@ function ProWelcomeGift(){
       </div>
       </div>}
 
-      {screenTab==="lenses"&&(function(){
+      {screenTab==="lenses"&&(function(){try{
         var PURPLE2="#8B5CF6";
         // (lens fetch handled at component level)
 
@@ -15162,7 +15162,7 @@ function ProWelcomeGift(){
                 <div style={{display:"flex",gap:8,fontSize:10,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
             </div>}
           </div>
-      })()}
+      }catch(e){return<div style={{padding:"40px",color:K.red,fontFamily:fm}}>{"Error: "+e.message}</div>;}})()}
 
     </div>;
   }
