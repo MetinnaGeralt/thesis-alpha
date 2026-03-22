@@ -14005,7 +14005,7 @@ function ProWelcomeGift(){
                     placeholder={"Alert price"}
                     style={{flex:1,background:"none",border:"none",outline:"none",padding:"10px 0",fontSize:14,color:K.txt,fontFamily:fm}}/>
                 </div>
-                <button onClick={function(){
+                <button onMouseDown={function(e){e.preventDefault();}} onClick={function(){
                   var currentPrice=apRef.current.trim()||apVal.trim();
                   var nowEnabled=!c.alertEnabled;
                   var patch={alertEnabled:nowEnabled};
