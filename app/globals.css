@@ -14104,9 +14104,9 @@ function ProWelcomeGift(){
             </button>
           </div>
           <div style={{fontSize:11,color:c.alertEnabled?K.grn:K.dim,fontFamily:fm}}>
-            {c.alertEnabled&&apVal?"Alert active — fires in morning brief when "+c.ticker+" reaches "+cSym+apVal
-              :c.alertEnabled?"Set a price above to activate the alert."
-              :"Toggle ON to get alerted in your morning brief."}
+            {c.alertEnabled&&(apRef.current.trim()||apVal)?("Alert active at "+cSym+(apRef.current.trim()||apVal)+" — email + dashboard notification when "+c.ticker+" hits.")
+              :c.alertEnabled?"Enter a price above to activate."
+              :"Turn on to get notified when the price hits your target."}
           </div>
         </div>
 
