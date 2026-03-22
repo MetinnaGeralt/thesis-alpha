@@ -7659,6 +7659,20 @@ function calcMoatFromData(finData,businessModelType){
 
           {/* Analysis = Claude deep dive structured output */}
           {deepDiveTab==="analysis"&&<div>
+        {/* ── Deep Dive intro ── */}
+        <div style={{marginBottom:24,paddingBottom:20,borderBottom:"1px solid "+K.bdr}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.3px",marginBottom:6}}>{"Your research, structured."}</div>
+              <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.75,maxWidth:600}}>
+                {"A Deep Dive turns a stock idea into a thesis you can defend. It forces you to answer the questions that matter before the market forces them on you: Is this inside your circle? Does the moat hold up? Is management allocating capital well? And crucially — what would break it?"}
+              </div>
+              <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.75,maxWidth:600,marginTop:8}}>
+                {"Once done, ThesisAlpha uses your deep dive to populate your thesis, set a fat pitch price, track KPIs, and generate context-rich prompts for future reviews. It is the foundation everything else is built on."}
+              </div>
+            </div>
+          </div>
+        </div>
         {/* ── DEEP DIVE ── */}
         {(function(){
           var PURPLE="#8B5CF6";
