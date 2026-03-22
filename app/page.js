@@ -14246,64 +14246,97 @@ function ProWelcomeGift(){
       var pctAway=fp>0&&price>0?((price-fp)/fp*100):null;
       var rangePos2=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
       var isOpen=panelId===c.id;
-      return<div style={{padding:"11px 14px",background:isOpen?K.acc+"08":nearFP?K.grn+"06":"transparent",
-          borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",
+      // Days on watchlist
+      var daysWatched=c.addedAt?Math.ceil((Date.now()-new Date(c.addedAt))/864e5):null;
+      var daysLabel=daysWatched?daysWatched>365?Math.floor(daysWatched/365)+"y "+(Math.floor((daysWatched%365)/30))+"m":daysWatched>30?Math.floor(daysWatched/30)+"mo":daysWatched+"d":null;
+      // Business quality from snapshot
+      var snap=c.financialSnapshot||{};
+      function snapVal(k){if(!snap[k])return null;var v=snap[k].numVal!=null?snap[k].numVal:parseFloat(String(snap[k].value||"").replace(/[^0-9.-]/g,""));return isNaN(v)?null:v;}
+      var roic=snapVal("roic")||snapVal("roce");
+      var grossMargin=snapVal("grossMargin");
+      var revenueGrowth=snapVal("revGrowth");
+      // Circle of competence
+      var coc=c.circleScore||0;
+      var cocColor=coc>=4?K.grn:coc>=3?K.amb:coc>0?K.red:K.dim;
+      var cocLabel=coc===5?"Expert":coc===4?"Deep":coc===3?"Solid":coc===2?"Basics":coc===1?"Thin":"?";
+      // Why watching
+      var note=c._watchNote||"";
+
+      return<div style={{padding:"12px 14px",background:isOpen?K.acc+"06":nearFP?K.grn+"05":"transparent",
+          borderRadius:_isBm?0:8,cursor:"pointer",transition:"background .15s",position:"relative",
           border:"1px solid "+(isOpen?K.acc+"30":nearFP?K.grn+"30":"transparent")}}
         onClick={function(){setPanelId(isOpen?null:c.id);}}
         onMouseEnter={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background=K.bg;}}
         onMouseLeave={function(e){if(!isOpen&&!nearFP)e.currentTarget.style.background="transparent";}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
+
+        {/* ── Row main line ── */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
           <CoLogo domain={c.domain} ticker={c.ticker} size={22}/>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:hi52>0||fp>0?3:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
               <span style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}}>{c.ticker}</span>
               <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{c.name}</span>
               {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>FAT PITCH</span>}
               {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
+              {getArticlesForTicker&&getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"research"}</span>}
             </div>
-            {hi52>lo52&&price>0&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
-              <div style={{position:"relative",height:3,background:K.bdr,borderRadius:2,width:80,flexShrink:0}}>
-                <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos2||0))+"%",
-                  background:nearFP?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+K.acc+")",
-                  borderRadius:2,opacity:0.6}}/>
-                {fp>0&&fp>=lo52&&fp<=hi52&&<div style={{position:"absolute",top:-2,width:1,height:7,
-                  background:K.grn+"90",left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/> }
-                <div style={{position:"absolute",top:-4,width:11,height:11,borderRadius:"50%",
-                  background:nearFP?K.grn:K.acc,border:"1.5px solid "+K.card,
-                  boxShadow:"0 1px 4px rgba(0,0,0,0.25)",
-                  left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)",transition:"left .4s ease"}}/>
-              </div>
-              <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w H: "+cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
-              {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400,flexShrink:0,whiteSpace:"nowrap",marginLeft:2}}>{"·  "+(nearFP?"at target":pctAway.toFixed(0)+"% to target")}</span>}
+            {/* Why watching note */}
+            {note&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"90%",marginBottom:2,fontStyle:"italic"}}>{note}</div>}
+          </div>
+
+          {/* Right side: price + target */}
+          <div style={{textAlign:"right",flexShrink:0,minWidth:70}}>
+            {price>0&&<div style={{fontSize:13,fontWeight:700,color:nearFP?K.grn:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
+            {fp>0&&price>0&&<div style={{fontSize:10,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400}}>
+              {nearFP?"At target":pctAway!=null?(pctAway.toFixed(0)+"%"):""}
+              {" → "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}
+            </div>}
+            {!fp&&price>0&&<div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:1}}>no target</div>}
+          </div>
+
+          {/* X remove — always visible on hover via state */}
+          <button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();else{if(window.confirm("Remove "+c.ticker+" from watchlist?"))upd(c.id,{status:"archived"});}}}
+            style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4,flexShrink:0,lineHeight:1,opacity:0.5,transition:"opacity .15s,color .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.opacity="1";}}
+            onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.opacity="0.5";}}>{"×"}</button>
+        </div>
+
+        {/* ── 52w range bar + quality chips ── */}
+        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:6,paddingLeft:32}}>
+          {hi52>lo52&&price>0&&<>
+            <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
+            <div style={{position:"relative",height:3,background:K.bdr,borderRadius:2,width:70,flexShrink:0}}>
+              <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos2||0))+"%",
+                background:nearFP?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+K.acc+")",
+                borderRadius:2,opacity:0.6}}/>
+              {fp>0&&fp>=lo52&&fp<=hi52&&<div style={{position:"absolute",top:-2,width:1,height:7,
+                background:K.grn+"90",left:((fp-lo52)/(hi52-lo52)*100)+"%"}}/>}
+              <div style={{position:"absolute",top:-4,width:10,height:10,borderRadius:"50%",
+                background:nearFP?K.grn:K.acc,border:"1.5px solid "+K.card,boxShadow:"0 1px 3px rgba(0,0,0,0.2)",
+                left:"calc("+Math.max(0,Math.min(100,rangePos2||0))+"% - 5px)",transition:"left .4s ease"}}/>
+            </div>
+            <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
+          </>}
+          {/* Quality chips */}
+          <div style={{display:"flex",gap:5,marginLeft:"auto",flexWrap:"nowrap",alignItems:"center"}}>
+            {coc>0&&<div title={"Circle of competence: "+cocLabel} style={{display:"flex",alignItems:"center",gap:3,padding:"2px 7px",borderRadius:_isBm?0:4,background:cocColor+"12",border:"1px solid "+cocColor+"30"}}>
+              <div style={{width:5,height:5,borderRadius:"50%",background:cocColor}}/>
+              <span style={{fontSize:9,fontWeight:700,color:cocColor,fontFamily:fm}}>{cocLabel}</span>
+            </div>}
+            {roic!=null&&<div title={"ROIC: "+roic.toFixed(1)+"%"} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:roic>=15?K.grn+"12":roic>=8?K.amb+"12":K.red+"12",border:"1px solid "+(roic>=15?K.grn:roic>=8?K.amb:K.red)+"30"}}>
+              <span style={{fontSize:9,fontWeight:600,color:roic>=15?K.grn:roic>=8?K.amb:K.red,fontFamily:fm}}>{"ROIC "+roic.toFixed(0)+"%"}</span>
+            </div>}
+            {grossMargin!=null&&<div title={"Gross margin: "+grossMargin.toFixed(1)+"%"} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:K.bg,border:"1px solid "+K.bdr}}>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"GM "+grossMargin.toFixed(0)+"%"}</span>
+            </div>}
+            {daysLabel&&<div title={"Watching for "+daysLabel} style={{padding:"2px 7px",borderRadius:_isBm?0:4,background:K.bg,border:"1px solid "+K.bdr}}>
+              <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"⏱ "+daysLabel}</span>
             </div>}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-            <div style={{textAlign:"right"}}>
-              {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
-              {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
-            </div>
-            <button onClick={function(e){e.stopPropagation();setModal({type:"deepDivePrompt",ticker:c.ticker});}}
-              style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid #8B5CF640",
-                background:"#8B5CF60d",color:"#8B5CF6",fontSize:10,fontWeight:600,cursor:"pointer",
-                fontFamily:fm,flexShrink:0,whiteSpace:"nowrap",lineHeight:1.4,transition:"all .15s"}}
-              onMouseEnter={function(e){e.currentTarget.style.background="#8B5CF620";e.currentTarget.style.borderColor="#8B5CF670";}}
-              onMouseLeave={function(e){e.currentTarget.style.background="#8B5CF60d";e.currentTarget.style.borderColor="#8B5CF640";}}>
-              {"Deep Dive →"}
-            </button>
-          </div>
-          {showRemove
-            ?<button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
-                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"2px 6px",borderRadius:4}}
-                onMouseEnter={function(e){e.currentTarget.style.color=K.red;e.currentTarget.style.background=K.red+"10";}}
-                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;e.currentTarget.style.background="none";}}>{"×"}</button>
-            :<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isOpen?K.acc:K.dim} strokeWidth="2"
-                style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>}
         </div>
-      </div>;}
+      </div>;
+    }
 
     // ── List info ──────────────────────────────────────────────────────────
     var activeCount=activeList==="watching"?watching.length:activeList==="toohard"?tooHard.length:(activeShortlist?(activeShortlist.tickers||[]).length:0);
