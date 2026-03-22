@@ -13954,33 +13954,13 @@ function ProWelcomeGift(){
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
               </div>
               {rangePos!=null&&rangePos<25&&<div style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600}}>Near 52-week low</div>}
-            </Section>}
-
-            {/* Fat pitch */}
-            <Section>
-              <Label text="Fat Pitch Price"/>
-              <div style={{display:"flex",alignItems:"center",gap:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"0 12px"}}>
-                <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
-                <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
-                  onBlur={function(){var v=fpVal.trim();if(v!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:v||null});}}
-                  placeholder={"e.g. 180"}
-                  style={{flex:1,background:"none",border:"none",outline:"none",padding:"10px 0",fontSize:14,color:K.txt,fontFamily:fm}}/>
-              </div>
-              {fatPitch>0&&price>0&&<div style={{marginTop:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>
-                  <span>Current {cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</span>
-                  <span>Target {cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))}</span>
-                </div>
-                <div style={{height:5,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:Math.max(2,Math.min(100,100-(pctAway||0)))+"%",
-                    background:nearFatPitch?K.grn:"#8B5CF6",borderRadius:3,transition:"width .4s ease"}}/>
-                </div>
-                <div style={{fontSize:11,color:nearFatPitch?K.grn:K.dim,fontFamily:fm,marginTop:4,fontWeight:nearFatPitch?700:400}}>
-                  {nearFatPitch?"At your fat pitch price \u2713":pctAway!=null&&pctAway>0?(pctAway.toFixed(0)+"% above target \u2014 waiting..."):pctAway!=null?"Below target \u2014 check your thesis":""}
-                </div>
+              {fatPitch>0&&<div style={{marginTop:6,fontSize:11,color:nearFatPitch?K.grn:K.dim,fontFamily:fm,fontWeight:nearFatPitch?700:400}}>
+                {nearFatPitch
+                  ?"\u{1F7E2} Fat pitch — "+c.ticker+" is at your target of "+cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))
+                  :"Fat pitch target: "+cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))+(pctAway!=null?" \u2014 "+pctAway.toFixed(0)+"% away":"")}
               </div>}
-              {!fatPitch&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>Set the price where this becomes an obvious buy.</div>}
-            </Section>
+              {!fatPitch&&<div style={{marginTop:6,fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>No fat pitch price set. Add one in the full dossier.</div>}
+            </Section>}
 
             {/* Why watching */}
             <Section noBg>
