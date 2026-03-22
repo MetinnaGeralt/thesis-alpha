@@ -13412,9 +13412,19 @@ function ProWelcomeGift(){
               {fp>0&&pctAway!=null&&<span style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?700:400,flexShrink:0,whiteSpace:"nowrap",marginLeft:2}}>{"·  "+(nearFP?"at target":pctAway.toFixed(0)+"% to target")}</span>}
             </div>}
           </div>
-          <div style={{textAlign:"right",flexShrink:0}}>
-            {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
-            {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
+          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            <div style={{textAlign:"right"}}>
+              {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>}
+              {fp>0&&price>0&&<div style={{fontSize:9,color:nearFP?K.grn:K.dim,fontFamily:fm,fontWeight:nearFP?600:400}}>{"→ "+cSym+(fp>=100?fp.toFixed(0):fp.toFixed(2))}</div>}
+            </div>
+            <button onClick={function(e){e.stopPropagation();setModal({type:"deepDivePrompt",ticker:c.ticker});}}
+              style={{padding:"5px 10px",borderRadius:_isBm?0:6,border:"1px solid #8B5CF640",
+                background:"#8B5CF60d",color:"#8B5CF6",fontSize:10,fontWeight:600,cursor:"pointer",
+                fontFamily:fm,flexShrink:0,whiteSpace:"nowrap",lineHeight:1.4,transition:"all .15s"}}
+              onMouseEnter={function(e){e.currentTarget.style.background="#8B5CF620";e.currentTarget.style.borderColor="#8B5CF670";}}
+              onMouseLeave={function(e){e.currentTarget.style.background="#8B5CF60d";e.currentTarget.style.borderColor="#8B5CF640";}}>
+              {"Deep Dive →"}
+            </button>
           </div>
           {showRemove
             ?<button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
@@ -13631,8 +13641,7 @@ function ProWelcomeGift(){
                 </button>;
               })}
             </div>
-            <button onClick={function(){setAddQ("");setSearchFocused(true);}}
-              style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:K.acc,borderColor:K.acc})}>{"+ Add"}</button>
+
           </div>}
           {activeList!=="watching"&&activeList!=="toohard"&&<button onClick={function(){setSlSearch("");setSlFocused(true);}}
             style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:activeColor,borderColor:activeColor})}>{"+ Add"}</button>}
