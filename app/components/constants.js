@@ -468,3 +468,43 @@ var GLOSSARY=[
    threshold:"Graham's baseline: 33% minimum (buy at ≤2/3 of intrinsic value). For high-quality businesses: 15–25% is commonly accepted. For deep-value situations: 40–50%.",
    source:"Benjamin Graham, The Intelligent Investor, Chapter 20, 1949"},
 ];
+
+// ── Additional Glossary Entries ───────────────────────────────────────────
+var GLOSSARY_EXTRA=[
+  {id:"ev_ebitda",term:"EV/EBITDA",cat:"Valuation",
+   definition:"Enterprise Value divided by Earnings Before Interest, Taxes, Depreciation, and Amortisation. A capital-structure-neutral valuation multiple — unlike P/E, it is unaffected by leverage or tax treatment, making it the preferred multiple for comparing companies across capital structures and geographies. EV = market cap + net debt + minority interests. EBITDA approximates operating cash generation before capital allocation decisions.",
+   formula:"EV/EBITDA = (Market Cap + Net Debt) / EBITDA",
+   threshold:"Below 10x: potentially cheap for a quality business. 10–20x: fair value range. Above 25x: pricing in significant growth. Below 7x may indicate a value trap — always check why.",
+   source:"Aswath Damodaran, Investment Valuation, 2012"},
+
+  {id:"free_cash_flow",term:"Free Cash Flow (FCF)",cat:"Metrics",
+   definition:"Operating cash flow minus capital expenditure. The cash a business generates after maintaining its asset base — the most honest measure of economic output because it cannot be manipulated through accrual accounting. A business that consistently earns net income but generates no FCF is likely consuming cash through working capital growth or excessive capex. Persistent FCF > net income signals a high-quality, asset-light model.",
+   formula:"FCF = Operating Cash Flow − Capital Expenditure",
+   threshold:"FCF yield (FCF/Market Cap) above 4–5% is generally attractive. FCF conversion (FCF/Net Income) above 90% is excellent; below 60% warrants investigation.",
+   source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1986"},
+
+  {id:"capital_allocation",term:"Capital Allocation",cat:"Concepts",
+   definition:"The decisions a management team makes about where to deploy the cash a business generates: reinvestment in organic growth, acquisitions, debt repayment, dividends, or buybacks. Buffett has argued that capital allocation is the CEO's most important function — and the one for which they receive the least training. The test: does each dollar retained create more than one dollar of market value? A business that compounds at 20% ROIC but allocates capital into low-return acquisitions destroys far more value than the core operations create.",
+   formula:"Return on Incremental Capital = Change in NOPAT / Capital Invested",
+   threshold:"Management that has compounded book value per share above 15% per year for a decade has demonstrated capital allocation skill. Watch for serial acquirers whose goodwill grows faster than earnings.",
+   source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1987"},
+
+  {id:"buybacks",term:"Share Buybacks",cat:"Concepts",
+   definition:"A company repurchasing its own shares, reducing the share count and increasing per-share metrics (EPS, FCF per share, book value per share) for remaining shareholders. Buybacks are value-creating only when the shares are repurchased below intrinsic value. Buybacks at inflated prices — particularly common when management is compensated in options — are a capital allocation failure. Munger: 'All buybacks are not created equal. The ones done at 30x earnings when the business is deteriorating are destructive.'",
+   formula:"Buyback Yield = (Shares Repurchased × Price) / Market Cap",
+   threshold:"Net buyback yield (buybacks minus issuance) above 3% at prices below intrinsic value is shareholder-friendly. Watch for companies that issue options to management and buy back shares to neutralise dilution — this transfers value from shareholders to management.",
+   source:"Michael Mauboussin, Expectations Investing, 2001"},
+
+  {id:"net_debt_ebitda",term:"Net Debt/EBITDA",cat:"Metrics",
+   definition:"Total financial debt minus cash and equivalents, divided by EBITDA. Measures how many years of operating earnings would be required to repay net debt. The primary leverage ratio used by credit analysts and lenders. A business with Net Debt/EBITDA above 4x has limited financial flexibility and is vulnerable in downturns. Net Cash (negative net debt) provides optionality and is a competitive advantage in crises.",
+   formula:"Net Debt/EBITDA = (Total Debt − Cash) / EBITDA",
+   threshold:"0–1x: conservative. 1–2x: modest. 2–3x: elevated. Above 4x: high risk. Net cash position: exceptional flexibility.",
+   source:"Standard & Poor's Credit Ratings Methodology"},
+
+  {id:"scuttlebutt_g",term:"Scuttlebutt",cat:"Process",
+   definition:"Philip Fisher's term for the practice of gathering qualitative competitive intelligence from a business's ecosystem — customers, suppliers, competitors, former employees, and industry analysts. The goal is to develop an understanding of the business that cannot be obtained from financial statements or management presentations alone. Fisher argued that publicly available information is already in the price; the edge comes from better-than-average qualitative insight about management quality, competitive dynamics, and reinvestment discipline.",
+   formula:null,
+   threshold:"Fisher's 15 questions (Common Stocks and Uncommon Profits, 1958) provide the framework: Does the company have products with sufficient market potential? How effective is the R&D? Does management communicate honestly with investors when things go wrong?",
+   source:"Philip Fisher, Common Stocks and Uncommon Profits, Chapter 3, 1958"},
+];
+GLOSSARY=GLOSSARY.concat(GLOSSARY_EXTRA);
