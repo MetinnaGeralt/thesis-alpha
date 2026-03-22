@@ -5430,7 +5430,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}</div>})}
       </div>}
     </div>}
-    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"8px 16px":"10px 32px",borderBottom:"1px solid "+K.bdr,background:K.side,position:"sticky",top:0,zIndex:50,gap:14}}>
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"8px 16px":"0 32px",height:isThesis?64:56,boxSizing:"border-box",borderBottom:"1px solid "+K.bdr,background:K.side,position:"sticky",top:0,zIndex:50,gap:14}}>
 
     {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid rgba(255,255,255,0.12)",borderRadius:_isBm?0:8,padding:"4px 6px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
@@ -16927,7 +16927,7 @@ function ProWelcomeGift(){
         if(subPage){crumbs.push(sep);crumbs.push(<button key="sp" style={{background:"none",border:"none",color:K.acc,fontSize:11,fontWeight:700,cursor:"default",padding:"0 2px",fontFamily:fm}}>{{financials:"Financials",moat:"Moat Tracker"}[subPage]||subPage}</button>);}
         else if(detailTab&&detailTab!=="dossier"){crumbs.push(sep);crumbs.push(<span key="dt" style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>{{kpis:"KPI Tracker",library:"Research"}[detailTab]||detailTab}</span>);}
       }
-      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.side,position:"sticky",top:_isBm?0:51,zIndex:40,minHeight:28}}>
+      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.side,position:"sticky",top:_isBm?0:56,zIndex:40,minHeight:28}}>
         <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Home">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </button>
