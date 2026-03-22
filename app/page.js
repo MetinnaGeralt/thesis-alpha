@@ -14587,6 +14587,7 @@ function ProWelcomeGift(){
 
     // State
     var _stab=useState("screener"),screenTab=_stab[0],setScreenTab=_stab[1];
+    var _sActiveLens=useState("smith"),sActiveLens=_sActiveLens[0],setSActiveLens=_sActiveLens[1];
     var _filters=useState([]),filters=_filters[0],setFilters=_filters[1];
     var _sort=useState({id:"grossMargin",dir:"desc"}),sortState=_sort[0],setSortState=_sort[1];
     var _scope=useState("own"),scope=_scope[0],setScope=_scope[1];
@@ -14600,7 +14601,7 @@ function ProWelcomeGift(){
     // Fetch lens data when lenses tab opens — must be unconditional hook
     useEffect(function(){
       if(screenTab!=="lenses")return;
-      var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist";});
+      var allCos=cos.filter(function(c){return c.status==="portfolio";});
       var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
       if(needsFetch.length===0)return;
       setLensLoading(true);
@@ -14609,20 +14610,18 @@ function ProWelcomeGift(){
         for(var i=0;i<needsFetch.length;i++){
           var c=needsFetch[i];
           try{
-            var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
-            var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
-            var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
-            var snap=c.financialSnapshot||{};
-            data[c.ticker]={
-              grossMargin:ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:(snap.grossMargin&&snap.grossMargin.numVal!=null?snap.grossMargin.numVal:null),
-              opLeverage:ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:(snap.opMargin&&snap.opMargin.numVal!=null?snap.opMargin.numVal:null),
-              roic:km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:(snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:null),
-              netMargin:ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:(snap.netMargin&&snap.netMargin.numVal!=null?snap.netMargin.numVal:null),
-              fcfConversion:ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(snap.fcfMargin&&snap.fcfMargin.numVal!=null?snap.fcfMargin.numVal:null),
-              revGrowth:ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(snap.revGrowth&&snap.revGrowth.numVal!=null?snap.revGrowth.numVal:null),
-              fortress:km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:(snap.netDebtEbitda&&snap.netDebtEbitda.numVal!=null?snap.netDebtEbitda.numVal:null),
-              pe:km&&km.peRatioTTM!=null?km.peRatioTTM:(snap.pe&&snap.pe.numVal!=null?snap.pe.numVal:null),
-            };
+            var fin=await fetchFinancialStatements(c.ticker,"annual");
+            if(fin){
+              var moatResult=calcMoatFromData(fin);
+              if(moatResult&&moatResult.metrics){
+                var vals={};
+                moatResult.metrics.forEach(function(m){
+                  var num=parseFloat(String(m.value).replace(/[^0-9.\-]/g,""));
+                  vals[m.id]={score:m.score,value:m.value,num:isNaN(num)?null:num};
+                });
+                data[c.ticker]=vals;
+              }
+            }
           }catch(e){}
         }
         setLensData(data);setLensLoading(false);
@@ -15070,7 +15069,7 @@ function ProWelcomeGift(){
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:10,desc:"Profitability after all obligations"}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===sActiveLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -15102,8 +15101,8 @@ function ProWelcomeGift(){
           return<div>
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-              {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
-                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
+              {LENSES.map(function(l){var active=l.id===sActiveLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+                return<button key={l.id} onClick={function(){if(!locked)setSActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
                   {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
                   {l.name}
                   {locked&&<span style={{display:"block",fontSize:8,color:K.dim,marginTop:1}}>Week {l.unlock} streak</span>}
