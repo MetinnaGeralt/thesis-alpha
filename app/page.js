@@ -5307,7 +5307,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       </div>
     </div>}
     {(function(){var portCount=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";}).length;var isActive=(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="timeline"||page==="analytics"||page==="dividends"||page==="review"))||!!selId;return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={navColor(isActive,K.acc)}/>{"Portfolio"}</span>{portCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{portCount}</span>}</span></div>;})()}
-    {(function(){var wCount=cos.filter(function(c){return c.status==="watchlist";}).length;var wAlerts=cos.filter(function(c){var p=c.position||{};var fp=parseFloat(c.fatPitchPrice)||0;return c.status==="watchlist"&&fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;}).length;var isActive=page==="watchlist";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("watchlist");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,K.acc)}/>{"Watchlist"}</span><span style={{display:"flex",alignItems:"center",gap:4}}>{wAlerts>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}{wCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{wCount}</span>}</span></span></div>;})()}
+    {(function(){var isActive=page==="screener";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,"#10B981"),borderLeft:navBorder(isActive,"#10B981"),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("screener");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,"#10B981"),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,"#10B981")}/>{"Screener"}</span></div>;})()}
+        {(function(){var wCount=cos.filter(function(c){return c.status==="watchlist";}).length;var wAlerts=cos.filter(function(c){var p=c.position||{};var fp=parseFloat(c.fatPitchPrice)||0;return c.status==="watchlist"&&fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;}).length;var isActive=page==="watchlist";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("watchlist");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,K.acc)}/>{"Watchlist"}</span><span style={{display:"flex",alignItems:"center",gap:4}}>{wAlerts>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}{wCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{wCount}</span>}</span></span></div>;})()}
     <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderLeft:navBorder(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("library");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),fontWeight:(page==="library"||page==="journal"||page==="strategy"||page==="ai")?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc)}/>{"Research"}</span></div>
     <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="assets",K.amb),borderLeft:navBorder(page==="assets",K.amb),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("assets");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="assets",K.amb),fontWeight:page==="assets"?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={navColor(page==="assets",K.amb)}/>{"Net Worth"}</span></div>
         {isThesis&&<div style={{height:1,background:"rgba(255,255,255,0.06)",margin:"8px 16px"}}/>}
@@ -14140,6 +14141,372 @@ function ProWelcomeGift(){
     </div>;
   }
 
+  // ── Screener Page ────────────────────────────────────────────────────────────
+  function ScreenerPage(){
+    var GRN="#10B981";
+    // Metric definitions for filters
+    var SCREEN_METRICS=[
+      {id:"grossMargin",label:"Gross Margin",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"opMargin",label:"Operating Margin",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"netMargin",label:"Net Margin",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"fcfMargin",label:"FCF Margin",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"roic",label:"ROIC",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"roe",label:"ROE",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"roa",label:"ROA",unit:"%",cat:"Quality",dir:"higher"},
+      {id:"revGrowth",label:"Revenue Growth",unit:"%",cat:"Growth",dir:"higher"},
+      {id:"epsGrowth",label:"EPS Growth",unit:"%",cat:"Growth",dir:"higher"},
+      {id:"pe",label:"P/E Ratio",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"ps",label:"P/S Ratio",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"pb",label:"P/B Ratio",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"evEbitda",label:"EV/EBITDA",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"evRevenue",label:"EV/Revenue",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"peg",label:"PEG Ratio",unit:"x",cat:"Valuation",dir:"lower"},
+      {id:"debtEquity",label:"Debt/Equity",unit:"x",cat:"Health",dir:"lower"},
+      {id:"currentRatio",label:"Current Ratio",unit:"x",cat:"Health",dir:"higher"},
+      {id:"netDebtEbitda",label:"Net Debt/EBITDA",unit:"x",cat:"Health",dir:"lower"},
+      {id:"interestCoverage",label:"Interest Coverage",unit:"x",cat:"Health",dir:"higher"},
+      {id:"divYield",label:"Dividend Yield",unit:"%",cat:"Income",dir:"higher"},
+    ];
+    var CATS=["Quality","Growth","Valuation","Health","Income"];
+
+    // State
+    var _filters=useState([]),filters=_filters[0],setFilters=_filters[1];
+    var _sort=useState({id:"grossMargin",dir:"desc"}),sortState=_sort[0],setSortState=_sort[1];
+    var _scope=useState("own"),scope=_scope[0],setScope=_scope[1];
+    var _loading=useState(false),loading=_loading[0],setLoading=_loading[1];
+    var _fmpResults=useState([]),fmpResults=_fmpResults[0],setFmpResults=_fmpResults[1];
+    var _fmpError=useState(null),fmpError=_fmpError[0],setFmpError=_fmpError[1];
+    var _selCat=useState("Quality"),selCat=_selCat[0],setSelCat=_selCat[1];
+    var _cols=useState(["grossMargin","roic","revGrowth","pe","evEbitda","debtEquity"]),cols=_cols[0],setCols=_cols[1];
+    var _addPicker=useState(false),addPicker=_addPicker[0],setAddPicker=_addPicker[1];
+
+    // Own companies with snapshots
+    var ownCos=cos.filter(function(c){return c.financialSnapshot&&Object.keys(c.financialSnapshot).length>0;});
+
+    function getVal(co,metId){
+      var snap=co.financialSnapshot||{};
+      var entry=snap[metId];
+      if(!entry)return null;
+      if(entry.numVal!=null)return entry.numVal;
+      var raw=String(entry.value||"").replace(/[^0-9.-]/g,"");
+      var v=parseFloat(raw);
+      return isNaN(v)?null:v;
+    }
+
+    // Apply filters to a company list
+    function applyFilters(list){
+      return list.filter(function(co){
+        return filters.every(function(f){
+          var v=getVal(co,f.id);
+          if(v==null)return false;
+          if(f.min!==""&&!isNaN(parseFloat(f.min))&&v<parseFloat(f.min))return false;
+          if(f.max!==""&&!isNaN(parseFloat(f.max))&&v>parseFloat(f.max))return false;
+          return true;
+        });
+      });
+    }
+
+    // Sort
+    function applySort(list){
+      if(!sortState.id)return list;
+      return list.slice().sort(function(a,b){
+        var av=getVal(a,sortState.id);var bv=getVal(b,sortState.id);
+        if(av==null&&bv==null)return 0;
+        if(av==null)return 1;if(bv==null)return -1;
+        return sortState.dir==="desc"?bv-av:av-bv;
+      });
+    }
+
+    var displayList=applySort(applyFilters(scope==="own"?ownCos:fmpResults));
+
+    // FMP universe screen
+    async function screenMarket(){
+      setLoading(true);setFmpError(null);setFmpResults([]);
+      try{
+        // Build FMP screener params from filters
+        var params="limit=100&isEtf=false&isActivelyTrading=true";
+        // Map our filter IDs to FMP screener params where possible
+        filters.forEach(function(f){
+          if(f.id==="pe"&&f.max!=="")params+="&priceToEarningsLowerThan="+f.max;
+          if(f.id==="pe"&&f.min!=="")params+="&priceToEarningsGreaterThan="+f.min;
+          if(f.id==="pb"&&f.max!=="")params+="&priceToBookLowerThan="+f.max;
+          if(f.id==="ps"&&f.max!=="")params+="&priceToSalesLowerThan="+f.max;
+          if(f.id==="divYield"&&f.min!=="")params+="&dividendMoreThan="+(parseFloat(f.min)/100||0);
+        });
+        var r=await fmp("stock-screener?"+params);
+        if(!r||!Array.isArray(r)){setFmpError("No results from screener. Try adjusting your filters.");setLoading(false);return;}
+        // Build company-like objects from FMP screener results
+        var mapped=r.map(function(item){
+          var snap={};
+          if(item.priceEarningsRatio!=null)snap.pe={numVal:item.priceEarningsRatio,value:item.priceEarningsRatio.toFixed(1)+"x"};
+          if(item.priceToBookRatio!=null)snap.pb={numVal:item.priceToBookRatio,value:item.priceToBookRatio.toFixed(2)+"x"};
+          if(item.priceToSalesRatio!=null)snap.ps={numVal:item.priceToSalesRatio,value:item.priceToSalesRatio.toFixed(2)+"x"};
+          if(item.dividendYield!=null)snap.divYield={numVal:item.dividendYield*100,value:(item.dividendYield*100).toFixed(2)+"%"};
+          return{id:"fmp-"+item.symbol,ticker:item.symbol,name:item.companyName||item.symbol,
+            sector:item.sector||"",country:item.country||"",mktCap:item.marketCap||0,
+            financialSnapshot:snap,position:{currentPrice:item.price||0},status:"external",
+            _fmpData:item};
+        });
+        // For ratio filters (grossMargin, roic etc) that FMP screener doesn't support directly,
+        // fetch key-metrics for top results in batches
+        var toEnrich=mapped.slice(0,30);
+        for(var i=0;i<toEnrich.length;i+=5){
+          var batch=toEnrich.slice(i,i+5);
+          await Promise.all(batch.map(async function(co){
+            try{
+              var rr=await Promise.all([fmp("ratios-ttm/"+co.ticker),fmp("key-metrics-ttm/"+co.ticker)]);
+              var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
+              var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
+              if(!ra&&!km)return;
+              var s=co.financialSnapshot;
+              if(ra){
+                if(ra.grossProfitMarginTTM!=null)s.grossMargin={numVal:ra.grossProfitMarginTTM*100,value:(ra.grossProfitMarginTTM*100).toFixed(1)+"%"};
+                if(ra.operatingProfitMarginTTM!=null)s.opMargin={numVal:ra.operatingProfitMarginTTM*100,value:(ra.operatingProfitMarginTTM*100).toFixed(1)+"%"};
+                if(ra.netProfitMarginTTM!=null)s.netMargin={numVal:ra.netProfitMarginTTM*100,value:(ra.netProfitMarginTTM*100).toFixed(1)+"%"};
+                if(ra.returnOnEquityTTM!=null)s.roe={numVal:ra.returnOnEquityTTM*100,value:(ra.returnOnEquityTTM*100).toFixed(1)+"%"};
+                if(ra.debtEquityRatioTTM!=null)s.debtEquity={numVal:ra.debtEquityRatioTTM,value:ra.debtEquityRatioTTM.toFixed(2)+"x"};
+                if(ra.currentRatioTTM!=null)s.currentRatio={numVal:ra.currentRatioTTM,value:ra.currentRatioTTM.toFixed(2)+"x"};
+              }
+              if(km){
+                if(km.returnOnInvestedCapitalTTM!=null)s.roic={numVal:km.returnOnInvestedCapitalTTM*100,value:(km.returnOnInvestedCapitalTTM*100).toFixed(1)+"%"};
+                if(km.revenueGrowthTTM!=null)s.revGrowth={numVal:km.revenueGrowthTTM*100,value:(km.revenueGrowthTTM*100).toFixed(1)+"%"};
+                if(km.enterpriseValueOverEBITDATTM!=null)s.evEbitda={numVal:km.enterpriseValueOverEBITDATTM,value:km.enterpriseValueOverEBITDATTM.toFixed(1)+"x"};
+              }
+            }catch(e){}
+          }));
+        }
+        setFmpResults(mapped);
+      }catch(e){setFmpError("Screener error: "+e.message);}
+      setLoading(false);
+    }
+
+    function addFilter(metId){
+      if(filters.find(function(f){return f.id===metId;}))return;
+      setFilters(function(p){return p.concat([{id:metId,min:"",max:""}]);});
+      setAddPicker(false);
+    }
+    function removeFilter(metId){setFilters(function(p){return p.filter(function(f){return f.id!==metId;});});}
+    function updateFilter(metId,field,val){setFilters(function(p){return p.map(function(f){return f.id===metId?Object.assign({},f,{[field]:val}):f;});});}
+    function toggleCol(id){setCols(function(p){return p.includes(id)?p.filter(function(c){return c!==id;}):p.concat([id]);});}
+
+    function metLabel(id){var m=SCREEN_METRICS.find(function(x){return x.id===id;});return m?m.label:id;}
+    function metUnit(id){var m=SCREEN_METRICS.find(function(x){return x.id===id;});return m?m.unit:"";}
+    function fmtVal(v,unit){if(v==null)return"—";if(unit==="%")return v.toFixed(1)+"%";if(unit==="x")return v.toFixed(1)+"x";return v.toFixed(1);}
+    function valColor(v,metId){
+      var m=SCREEN_METRICS.find(function(x){return x.id===metId;});if(!m||v==null)return K.mid;
+      if(m.dir==="higher"){return v>=(metId==="roic"?15:metId==="grossMargin"?50:metId==="revGrowth"?15:20)?GRN:v>=(metId==="roic"?8:metId==="grossMargin"?30:metId==="revGrowth"?5:10)?K.amb:K.red;}
+      return v<=(metId==="pe"?20:metId==="evEbitda"?15:metId==="debtEquity"?1:2)?GRN:v<=(metId==="pe"?30:metId==="evEbitda"?25:metId==="debtEquity"?2:4)?K.amb:K.red;
+    }
+
+    function isOwn(co){return cos.some(function(c){return c.ticker===co.ticker;});}
+    function addToWatchlist(co){
+      if(isOwn(co))return;
+      upd(null,function(){return null;}); // no-op — just navigate
+      setModal({type:"add",data:{_ticker:co.ticker,_name:co.name,_status:"watchlist"}});
+    }
+
+    var PRESET_FILTERS=[
+      {label:"Quality Compounder",icon:"★",filters:[{id:"grossMargin",min:"40",max:""},{id:"roic",min:"15",max:""},{id:"revGrowth",min:"10",max:""}]},
+      {label:"Buffett Value",icon:"◆",filters:[{id:"pe",min:"",max:"20"},{id:"roe",min:"15",max:""},{id:"debtEquity",min:"",max:"1"}]},
+      {label:"Growth at Value",icon:"▲",filters:[{id:"revGrowth",min:"15",max:""},{id:"pe",min:"",max:"35"},{id:"grossMargin",min:"30",max:""}]},
+      {label:"Dividend Quality",icon:"●",filters:[{id:"divYield",min:"2",max:""},{id:"netMargin",min:"10",max:""},{id:"debtEquity",min:"",max:"2"}]},
+    ];
+
+    return<div style={{padding:isMobile?"0 16px 80px":"32px 40px 60px",maxWidth:1100,margin:"0 auto"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",marginBottom:24,flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",marginBottom:4}}>{"Screener"}</div>
+          <div style={{fontSize:13,color:K.dim,fontFamily:fm}}>{"Filter companies by quality, valuation, and growth."}</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {/* Scope toggle */}
+          <div style={{display:"flex",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,overflow:"hidden"}}>
+            {[{id:"own",label:"My companies"},{id:"market",label:"Full market"}].map(function(s2){
+              var act=scope===s2.id;
+              return<button key={s2.id} onClick={function(){setScope(s2.id);setFmpResults([]);setFmpError(null);}}
+                style={{padding:"7px 14px",border:"none",background:act?GRN:K.bg,color:act?"#fff":K.dim,
+                  fontSize:11,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}>
+                {s2.label}
+              </button>;})}
+          </div>
+          {scope==="market"&&<button onClick={screenMarket} disabled={loading}
+            style={{padding:"8px 18px",borderRadius:_isBm?0:8,border:"none",
+              background:loading?K.bdr:GRN,color:"#fff",fontSize:12,fontWeight:700,
+              cursor:loading?"default":"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:6}}>
+            {loading&&<div style={{width:10,height:10,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin .8s linear infinite"}}/>}
+            {loading?"Screening...":"Run screen"}
+          </button>}
+        </div>
+      </div>
+
+      {/* Preset filters */}
+      <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+        <span style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",alignSelf:"center",marginRight:4}}>Presets</span>
+        {PRESET_FILTERS.map(function(p){
+          return<button key={p.label} onClick={function(){setFilters(p.filters.map(function(f){return Object.assign({},f);}));}}
+            style={{padding:"5px 12px",borderRadius:_isBm?0:20,border:"1px solid "+K.bdr,
+              background:K.card,color:K.mid,fontSize:11,cursor:"pointer",fontFamily:fm,
+              display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.borderColor=GRN;e.currentTarget.style.color=GRN;}}
+            onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.mid;}}>
+            <span>{p.icon}</span><span>{p.label}</span>
+          </button>;})}
+        {filters.length>0&&<button onClick={function(){setFilters([]);}}
+          style={{padding:"5px 12px",borderRadius:_isBm?0:20,border:"1px solid "+K.red+"40",
+            background:K.red+"08",color:K.red,fontSize:11,cursor:"pointer",fontFamily:fm}}>
+          {"Clear all"}
+        </button>}
+      </div>
+
+      {/* Filter builder */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:filters.length>0?14:0}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{"Filters"}{filters.length>0&&<span style={{marginLeft:8,background:GRN+"20",color:GRN,borderRadius:99,padding:"1px 7px",fontSize:10}}>{filters.length}</span>}</div>
+          <div style={{position:"relative"}}>
+            <button onClick={function(){setAddPicker(!addPicker);}}
+              style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+GRN+"50",
+                background:GRN+"10",color:GRN,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,display:"flex",alignItems:"center",gap:5}}>
+              <span style={{fontSize:14,lineHeight:1}}>{"+"}</span><span>{"Add filter"}</span>
+            </button>
+            {addPicker&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,boxShadow:"0 8px 32px rgba(0,0,0,0.15)",zIndex:100,width:280,overflow:"hidden"}}>
+              <div style={{display:"flex",gap:0,borderBottom:"1px solid "+K.bdr}}>
+                {CATS.map(function(cat){return<button key={cat} onClick={function(){setSelCat(cat);}}
+                  style={{flex:1,padding:"8px 4px",border:"none",background:selCat===cat?GRN+"12":"transparent",
+                    color:selCat===cat?GRN:K.dim,fontSize:10,fontWeight:selCat===cat?700:400,cursor:"pointer",fontFamily:fm}}>
+                  {cat}
+                </button>;})}
+              </div>
+              <div style={{padding:"8px"}}>
+                {SCREEN_METRICS.filter(function(m){return m.cat===selCat;}).map(function(m){
+                  var active=!!filters.find(function(f){return f.id===m.id;});
+                  return<button key={m.id} onClick={function(){if(!active)addFilter(m.id);}}
+                    style={{width:"100%",textAlign:"left",padding:"7px 10px",borderRadius:_isBm?0:6,
+                      border:"none",background:active?GRN+"10":"transparent",
+                      color:active?GRN:K.txt,fontSize:12,cursor:active?"default":"pointer",
+                      fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
+                    <span>{m.label}</span>
+                    <span style={{fontSize:10,color:K.dim}}>{active?"✓ Added":m.unit}</span>
+                  </button>;})}
+              </div>
+            </div>}
+          </div>
+        </div>
+
+        {filters.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {filters.map(function(f){
+            var m=SCREEN_METRICS.find(function(x){return x.id===f.id;});if(!m)return null;
+            return<div key={f.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",
+              background:K.bg,border:"1px solid "+GRN+"30",borderRadius:_isBm?0:8,minWidth:240}}>
+              <div style={{fontSize:11,fontWeight:700,color:GRN,fontFamily:fm,flexShrink:0,minWidth:110}}>{m.label}</div>
+              <div style={{display:"flex",alignItems:"center",gap:4,flex:1}}>
+                <input value={f.min} onChange={function(e){updateFilter(f.id,"min",e.target.value);}}
+                  placeholder={"Min"} type="number"
+                  style={{width:60,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,
+                    padding:"4px 7px",fontSize:12,color:K.txt,fontFamily:fm,outline:"none"}}/>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"–"}</span>
+                <input value={f.max} onChange={function(e){updateFilter(f.id,"max",e.target.value);}}
+                  placeholder={"Max"} type="number"
+                  style={{width:60,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:5,
+                    padding:"4px 7px",fontSize:12,color:K.txt,fontFamily:fm,outline:"none"}}/>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{m.unit}</span>
+              </div>
+              <button onClick={function(){removeFilter(f.id);}}
+                style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:"0 2px",lineHeight:1,flexShrink:0}}
+                onMouseEnter={function(e){e.currentTarget.style.color=K.red;}}
+                onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>{"×"}</button>
+            </div>;})}
+        </div>}
+      </div>
+
+      {/* Column picker */}
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginRight:4}}>Columns</span>
+        {SCREEN_METRICS.map(function(m){var on=cols.includes(m.id);return<button key={m.id} onClick={function(){toggleCol(m.id);}}
+          style={{padding:"3px 10px",borderRadius:_isBm?0:99,border:"1px solid "+(on?GRN+"50":K.bdr),
+            background:on?GRN+"12":"transparent",color:on?GRN:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:on?600:400}}>
+          {m.label}
+        </button>;})}
+      </div>
+
+      {/* Results */}
+      {fmpError&&<div style={{padding:"12px 16px",background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,marginBottom:16,fontSize:12,color:K.red,fontFamily:fm}}>{fmpError}</div>}
+
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+        {/* Table header */}
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr "+cols.map(function(){return"1fr";}).join(" ")+(scope==="market"?" 80px":""),
+          borderBottom:"1px solid "+K.bdr,background:K.bg,padding:"0 4px"}}>
+          <div style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1}}>{"COMPANY"}</div>
+          <div style={{padding:"10px 8px",fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1}}>{"SECTOR"}</div>
+          {cols.map(function(id){
+            var act=sortState.id===id;
+            return<div key={id} onClick={function(){setSortState(function(p){return{id:id,dir:p.id===id&&p.dir==="desc"?"asc":"desc"};});}}
+              style={{padding:"10px 8px",fontSize:10,fontWeight:700,color:act?GRN:K.dim,fontFamily:fm,
+                letterSpacing:1,cursor:"pointer",display:"flex",alignItems:"center",gap:3,userSelect:"none"}}
+              onMouseEnter={function(e){e.currentTarget.style.color=GRN;}}
+              onMouseLeave={function(e){e.currentTarget.style.color=act?GRN:K.dim;}}>
+              {metLabel(id).toUpperCase().slice(0,8)}
+              <span style={{fontSize:8}}>{act?(sortState.dir==="desc"?"↓":"↑"):"↕"}</span>
+            </div>;})}
+          {scope==="market"&&<div style={{padding:"10px 8px"}}/>}
+        </div>
+
+        {/* Rows */}
+        {displayList.length===0&&<div style={{padding:"40px 24px",textAlign:"center",color:K.dim,fontSize:13,fontFamily:fm}}>
+          {scope==="own"&&ownCos.length===0?"No companies with financial data yet. Add companies to your portfolio and refresh prices."
+            :scope==="own"&&filters.length>0?"No companies match your filters. Try relaxing the criteria."
+            :scope==="market"&&fmpResults.length===0&&!loading?"Set filters and click \"Run screen\" to search the full market."
+            :"No results."}
+        </div>}
+
+        {displayList.slice(0,100).map(function(co,ri){
+          var own=isOwn(co);
+          return<div key={co.id||co.ticker}
+            style={{display:"grid",
+              gridTemplateColumns:"2fr 1fr "+cols.map(function(){return"1fr";}).join(" ")+(scope==="market"?" 80px":""),
+              borderBottom:ri<displayList.length-1?"1px solid "+K.bdr+"60":"none",
+              background:ri%2===0?K.card:"transparent",transition:"background .1s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=GRN+"05";}}
+            onMouseLeave={function(e){e.currentTarget.style.background=ri%2===0?K.card:"transparent";}}>
+            {/* Company */}
+            <div style={{padding:"10px 12px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",minWidth:0}}
+              onClick={function(){if(own){var c2=cos.find(function(c){return c.ticker===co.ticker;});if(c2){setSelId(c2.id);setPage("dashboard");}}}}>
+              <CoLogo domain={co.domain} ticker={co.ticker} size={22}/>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:700,color:own?K.txt:K.mid,fontFamily:fm,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{co.ticker}</div>
+                <div style={{fontSize:10,color:K.dim,fontFamily:fm,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{co.name}</div>
+              </div>
+              {own&&<span style={{fontSize:8,fontWeight:700,color:GRN,background:GRN+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm,flexShrink:0}}>{"OWNED"}</span>}
+            </div>
+            {/* Sector */}
+            <div style={{padding:"10px 8px",fontSize:11,color:K.dim,fontFamily:fm,alignSelf:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(co.sector||"").split(" ")[0]}</div>
+            {/* Metric columns */}
+            {cols.map(function(id){
+              var v=getVal(co,id);var unit=metUnit(id);var cc=valColor(v,id);
+              return<div key={id} style={{padding:"10px 8px",fontSize:12,fontWeight:600,color:cc,fontFamily:fm,alignSelf:"center"}}>
+                {fmtVal(v,unit)}
+              </div>;})}
+            {/* Add to watchlist (market scope) */}
+            {scope==="market"&&<div style={{padding:"8px",alignSelf:"center"}}>
+              {own?<span style={{fontSize:10,color:GRN,fontFamily:fm}}>{"✓"}</span>
+                :<button onClick={function(){addToWatchlist(co);}}
+                  style={{padding:"3px 8px",borderRadius:_isBm?0:4,border:"1px solid "+K.bdr,
+                    background:K.bg,color:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,whiteSpace:"nowrap"}}
+                  onMouseEnter={function(e){e.currentTarget.style.borderColor=GRN;e.currentTarget.style.color=GRN;}}
+                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.dim;}}>
+                  {"+ Watch"}
+                </button>}
+            </div>}
+          </div>;})}
+
+        {displayList.length>100&&<div style={{padding:"10px 16px",fontSize:11,color:K.dim,fontFamily:fm,textAlign:"center",borderTop:"1px solid "+K.bdr}}>
+          {"Showing 100 of "+displayList.length+" results"}
+        </div>}
+      </div>
+    </div>;
+  }
+
+
   function WatchlistPage(){
     var watching=cos.filter(function(c){return c.status==="watchlist";});
     var tooHard=cos.filter(function(c){return c.status==="toohard";});
@@ -16469,7 +16836,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="screener"?<ScreenerPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
        var mItems=[
