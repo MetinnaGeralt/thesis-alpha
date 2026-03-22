@@ -768,7 +768,17 @@ function TrackerApp(props){
     async function load(){
       var cloud=await cloudLoad(props.userId);
       var local=await ldS("ta-data");
+      // Prefer cloud, but if local has more companies (user added while offline), merge
       var d=cloud||local;
+      if(cloud&&local&&local.cos&&cloud.cos){
+        // Take whichever has more companies — catches the case where device A added
+        // companies that hadn't synced to cloud yet when device B last loaded
+        if(local.cos.length>cloud.cos.length){
+          d=Object.assign({},cloud,{cos:local.cos,shortlists:local.shortlists||cloud.shortlists});
+          // Immediately push the merged data back to cloud
+          setTimeout(function(){cloudSave(props.userId,d)},500);
+        }
+      }
       if(d){
         if(d.cos&&d.cos.length>0)setCos(d.cos.map(function(c){return Object.assign({kpis:[],decisions:[],docs:[],scenarios:[]},c)}));
         if(d.notifs)setNotifs(d.notifs);
@@ -1130,8 +1140,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(function(){svS("ta-data",payload)},500);
     if(cloudTimer.current)clearTimeout(cloudTimer.current);
-    cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},2000);
-    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current)}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,shortlists,dashSet,theme,readingList,otherAssets,netWorthHistory,assetTargets,liabilities,aiHistory]);
+    cloudTimer.current=setTimeout(function(){cloudSave(props.userId,payload)},800);
+    // Save immediately on tab hide/close — catches the 800ms debounce window
+    function onHide(){if(loaded&&props.userId){var snap={cos:cos,notifs:notifs,trial:trial,readingList:readingList,shortlists:shortlists,otherAssets:otherAssets,netWorthHistory:netWorthHistory,assetTargets:assetTargets,liabilities:liabilities,aiHistory:aiHistory,profile:{username:username,avatar:avatarUrl,milestones:milestones,weeklyReviews:weeklyReviews,dashSettings:dashSet,theme:theme,investorProfile:investorProfile,myStrategy:myStrategy}};cloudSave(props.userId,snap);}}
+    document.addEventListener("visibilitychange",onHide);
+    return function(){if(saveTimer.current)clearTimeout(saveTimer.current);if(cloudTimer.current)clearTimeout(cloudTimer.current);document.removeEventListener("visibilitychange",onHide);}},[cos,notifs,trial,loaded,username,avatarUrl,milestones,weeklyReviews,shortlists,dashSet,theme,readingList,otherAssets,netWorthHistory,assetTargets,liabilities,aiHistory]);
   // Reset expired earnings dates to TBD then auto-lookup via Finnhub (FREE, $0)
   useEffect(function(){if(!loaded)return;
     var toFetch=[];
@@ -13632,19 +13645,8 @@ function ProWelcomeGift(){
             <h2 style={{margin:0,fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{activeName}</h2>
             {activeCount>0&&<span style={{fontSize:12,color:K.dim,fontFamily:fm,background:K.bg,borderRadius:10,padding:"2px 9px",border:"1px solid "+K.bdr}}>{activeCount}</span>}
           </div>
-          {activeList==="watching"&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{display:"flex",borderRadius:_isBm?0:8,overflow:"hidden",border:"1px solid "+K.bdr}}>
-              {[{id:"list",icon:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"},{id:"board",icon:"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"}].map(function(v){
-                var act=viewMode===v.id;
-                return<button key={v.id} onClick={function(){setViewMode(v.id);}} style={{padding:"6px 10px",background:act?K.acc+"15":"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",borderRight:v.id==="list"?"1px solid "+K.bdr:"none"}}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={act?K.acc:K.dim} strokeWidth="1.8" strokeLinecap="round"><path d={v.icon}/></svg>
-                </button>;
-              })}
-            </div>
 
-          </div>}
-          {activeList!=="watching"&&activeList!=="toohard"&&<button onClick={function(){setSlSearch("");setSlFocused(true);}}
-            style={Object.assign({},S.btnP,{padding:"7px 18px",fontSize:12,background:activeColor,borderColor:activeColor})}>{"+ Add"}</button>}
+
         </div>
 
         {/* ── RESEARCH BOARD ── */}
