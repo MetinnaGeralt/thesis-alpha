@@ -6815,7 +6815,7 @@ function calcMoatFromData(finData,businessModelType){
 
         <div id="ds-score"/>
 
-        {/* ── Investor Mindset — Circle, Inversion, Management ── */}
+        {/* Investor Mindset — Circle, Inversion, Management */}
         <div style={{marginBottom:32}}>
           <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Investor Mindset"}</div>
 {/* ── QUALITATIVE CHECKS (Munger's three questions) ── */}
@@ -6874,7 +6874,6 @@ function calcMoatFromData(finData,businessModelType){
             </div>
           </div>;
         })()}
-          </div>}
 
         </div>
 
@@ -7794,6 +7793,7 @@ function calcMoatFromData(finData,businessModelType){
             </div>}
           </div>;
         })()}
+        </div>}
 
           {/* Moat */}
           {deepDiveTab==="moat"&&<div>
