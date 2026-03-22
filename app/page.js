@@ -2537,11 +2537,42 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         folder:"deep-dives",
         updatedAt:new Date().toISOString()
       };
+      // ── Silent dossier linking — regex pattern extraction, zero AI ──
+      var patch={};var txt=rawText;
+      // 1. Fat pitch / target entry price
+      var fpRx=[
+        /(?:fat\s+pitch|target\s+price|entry\s+price|fair\s+value|buy\s+below|intrinsic\s+value)[^$€£0-9]{0,30}[$€£]?\s*([0-9]+(?:[.,][0-9]+)?)/i,
+        /[$€£]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:fat\s+pitch|target|entry|fair\s+value)/i,
+        /FAT\s+PITCH[^$€£0-9]{0,20}[$€£]?\s*([0-9]+(?:[.,][0-9]+)?)/i
+      ];
+      for(var ri=0;ri<fpRx.length;ri++){var fm2=txt.match(fpRx[ri]);if(fm2){var fpN=parseFloat(fm2[1].replace(",",""));if(fpN>0&&fpN<1000000&&!sel.fatPitchPrice){patch.fatPitchPrice=String(fpN);break;}}}
+      // 2. Conviction score (1-10)
+      var cvRx=[/(?:conviction|confidence|rating|score)\s*[:\-]\s*([0-9]|10)\s*(?:\/\s*10)?/i,/([0-9]|10)\s*\/\s*10\s+(?:conviction|confidence|rating)/i];
+      for(var ci=0;ci<cvRx.length;ci++){var cm=txt.match(cvRx[ci]);if(cm){var cv=parseInt(cm[1]);if(cv>=1&&cv<=10&&!sel.conviction){patch.conviction=cv;break;}}}
+      // 3. Inversion / thesis killer — first sentence after keyword
+      var invRx=/(?:inversion|what\s+would\s+break|thesis\s+breaker|kill\s+this|permanent\s+impairment)[^:
+.]{0,15}[:
+]\s*([^
+.]{20,200})/i;
+      var im=txt.match(invRx);if(im&&!sel.inversionNote)patch.inversionNote=im[1].trim().substring(0,200);
+      // 4. Thesis starter — first real paragraph (>80 chars, no special prefix)
+      if(!sel.thesisNote||sel.thesisNote.trim().length<40){
+        var paras=txt.split(/
+{2,}/).map(function(p){return p.replace(/
+/g,"").trim();})
+          .filter(function(p){return p.length>80&&!/^[#*\-•✓⚠✗]/.test(p)&&!/^[A-Z\s]{5,}$/.test(p);});
+        if(paras.length>0)patch.thesisNote=paras[0].substring(0,600);
+      }
       upd(selId,function(c2){
-        return Object.assign({},c2,{docs:c2.docs.concat([doc])});
+        return Object.assign({},c2,{docs:c2.docs.concat([doc])},patch);
       });
+      var linked=[];
+      if(patch.fatPitchPrice)linked.push("fat pitch "+patch.fatPitchPrice);
+      if(patch.conviction)linked.push("conviction "+patch.conviction+"/10");
+      if(patch.inversionNote)linked.push("inversion note");
+      if(patch.thesisNote&&!sel.thesisNote)linked.push("thesis starter");
+      showToast(linked.length?"Analysis saved — linked "+linked.join(", "):"Analysis saved to dossier","info",4000);
       setModal(null);
-      showToast("Analysis saved to Research Trail","info",3000);
     }
 
     return<Modal title={"Import Your Own Analysis — "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
@@ -7616,14 +7647,6 @@ function calcMoatFromData(finData,businessModelType){
                       color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
                     {"Paste output →"}
                   </button>
-                </div>
-                {/* Custom framework nudge */}
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.6}}>
-                  {"Prefer your own research method? "}
-                  <button onClick={function(){setPage("strategy");}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",padding:0,fontFamily:fm,fontWeight:600,textDecoration:"underline"}}>
-                    {"Define your own framework in My Strategy →"}
-                  </button>
-                  {" Your custom prompt will appear here automatically."}
                 </div>
                 {/* Divider */}
                 <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
