@@ -13850,368 +13850,317 @@ function ProWelcomeGift(){
   // ── Watchlist Detail Panel (standalone — avoids re-mount on upd) ──────────
   function WatchlistDetailPanel({c,onClose,upd,cSym,K,isMobile,_isBm,fh,fm,fb,setSelId,setDetailTab,setPage,showToast,showAlertToast}){
     if(!c)return null;
-    // All editable fields in local state — save to cos on blur/change
     var pos=c.position||{};
     var _fp=React.useState(c.fatPitchPrice||""),fpVal=_fp[0],setFpVal=_fp[1];
     var _ap=React.useState(c.alertPrice||""),apVal=_ap[0],setApVal=_ap[1];
     var apRef=React.useRef(c.alertPrice||"");
     var _wn=React.useState(c._watchNote||""),wnVal=_wn[0],setWnVal=_wn[1];
-    // CAGR inputs
     var _eps=React.useState(c._cagrEps||""),epsVal=_eps[0],setEpsVal=_eps[1];
     var _gr=React.useState(c._cagrGrowth||""),grVal=_gr[0],setGrVal=_gr[1];
     var _pe=React.useState(c._cagrPE||""),peVal=_pe[0],setPeVal=_pe[1];
     var _yrs=React.useState(c._cagrYears||"10"),yrsVal=_yrs[0],setYrsVal=_yrs[1];
-
     var price=pos.currentPrice||0;
     var hi52=c._hi52||0;var lo52=c._lo52||0;
     var fatPitch=parseFloat(fpVal)||0;
     var atFatPitch=fatPitch>0&&price>0&&price<=fatPitch;
     var nearFatPitch=fatPitch>0&&price>0&&price<=fatPitch*1.05;
     var pctAway=fatPitch>0&&price>0?((price-fatPitch)/fatPitch*100):null;
-    var gaugeProgress=fatPitch>0&&price>0?Math.max(0,Math.min(100,(1-(price-fatPitch)/(Math.max(price,fatPitch)*0.6))*100)):0;
     var rangePos=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
     var convColor=c.conviction>=7?K.grn:c.conviction>=4?K.amb:c.conviction>0?K.red:K.dim;
-
-    // CAGR calculation
-    var cagrResult=null;
+    var PURPLE="#8B5CF6";
     var eps=parseFloat(epsVal);var gr=parseFloat(grVal)/100;var pe=parseFloat(peVal);var yrs=parseFloat(yrsVal)||10;
+    var cagrResult=null;
     var entryPrice=fatPitch>0?fatPitch:price;
     if(eps>0&&gr>0&&pe>0&&entryPrice>0){
       var futureEps=eps*Math.pow(1+gr,yrs);
       var futurePrice=futureEps*pe;
-      var cagrAtFatPitch=fatPitch>0&&entryPrice>0?(Math.pow(futurePrice/fatPitch,1/yrs)-1)*100:null;
+      var cagrAtFatPitch=fatPitch>0?(Math.pow(futurePrice/fatPitch,1/yrs)-1)*100:null;
       var cagrAtCurrent=price>0?(Math.pow(futurePrice/price,1/yrs)-1)*100:null;
       cagrResult={futureEps:futureEps,futurePrice:futurePrice,cagrAtFatPitch:cagrAtFatPitch,cagrAtCurrent:cagrAtCurrent};
     }
-
     var snap=c.financialSnapshot||{};
     function dv(k){if(!snap[k])return null;var v=snap[k].numVal!=null?snap[k].numVal:parseFloat(String(snap[k].value||"").replace(/[^0-9.-]/g,""));return isNaN(v)?null:v;}
     var revG=dv("revGrowth");var gm=dv("grossMargin");var roic=dv("roic")||dv("roce");
 
-    return<div style={{position:"fixed",top:0,right:0,bottom:0,width:isMobile?"100%":440,
-      background:K.card,borderLeft:"1px solid "+K.bdr,zIndex:400,overflowY:"auto",
-      boxShadow:"-8px 0 40px rgba(0,0,0,0.18)",display:"flex",flexDirection:"column"}}
-      onClick={function(e){e.stopPropagation();}}>
+    // Mini chart data
+    var hist=c.earningsHistory||[];
+    var chartSorted=hist.slice().sort(function(a,b){return a.quarter<b.quarter?-1:1}).slice(-5);
+    var revs=chartSorted.map(function(h){return h.revenue||h.actualRevenue||0;});
+    var nets=chartSorted.map(function(h){return h.netIncome||0;});
+    var maxRev=Math.max.apply(null,revs)||1;
+    var margins=chartSorted.map(function(h){var r=h.revenue||h.actualRevenue||0;var n=h.netIncome||0;return r>0?n/r*100:null;});
+    var validM=margins.filter(function(m){return m!=null;});
+    var minM=validM.length?Math.min.apply(null,validM):0;
+    var maxM=validM.length?Math.max.apply(null,validM):30;
+    var mRange=Math.max(maxM-minM,5);
+    var barW=14;var chartH=52;
 
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-        padding:"16px 20px",borderBottom:"1px solid "+K.bdr,flexShrink:0,
-        background:atFatPitch?K.grn+"08":"transparent"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <CoLogo domain={c.domain} ticker={c.ticker} size={30}/>
-          <div>
-            <div style={{fontSize:17,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px"}}>{c.ticker}</div>
-            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{c.name}</div>
+    function Label({text}){return<div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{text}</div>;}
+    function Section({children,noBg}){return<div style={{background:noBg?"transparent":K.bg,borderRadius:_isBm?0:10,padding:"14px 16px"}}>{children}</div>;}
+
+    return<div style={{position:"fixed",inset:0,zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)"}}
+      onClick={onClose}>
+      <div style={{background:K.card,borderRadius:_isBm?0:18,width:isMobile?"100%":620,maxWidth:"95vw",
+        maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 80px rgba(0,0,0,0.4)",
+        border:"1px solid "+K.bdr,display:"flex",flexDirection:"column"}}
+        onClick={function(e){e.stopPropagation();}}>
+
+        {/* ── Header ── */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+          padding:"18px 24px",borderBottom:"1px solid "+K.bdr,flexShrink:0,
+          background:nearFatPitch?K.grn+"08":"transparent",borderRadius:_isBm?"0":"18px 18px 0 0"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <CoLogo domain={c.domain} ticker={c.ticker} size={36}/>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontSize:20,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px"}}>{c.ticker}</div>
+                {nearFatPitch&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 7px",fontFamily:fm}}>FAT PITCH ✓</span>}
+                {c.alertEnabled&&c.alertPrice&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",border:"1px solid "+K.amb+"30",borderRadius:4,padding:"2px 7px",fontFamily:fm}}>ALERT {cSym+c.alertPrice}</span>}
+              </div>
+              <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{c.name}</div>
+            </div>
           </div>
-          {atFatPitch&&<span style={{fontSize:10,fontWeight:700,color:K.grn,background:K.grn+"15",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 8px",fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginLeft:4}}>{"Fat pitch ✓"}</span>}
-        </div>
-        <button onClick={function(){
-            var fp=fpVal.trim();if(fp!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:fp||null});
-            var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
-            onClose();}} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 8px",color:K.dim,fontSize:22,lineHeight:1,borderRadius:4}}
-          onMouseEnter={function(e){e.currentTarget.style.background=K.bdr;}}
-          onMouseLeave={function(e){e.currentTarget.style.background="none";}}>{"×"}</button>
-      </div>
-
-      <div style={{flex:1,overflowY:"auto",padding:"20px",display:"flex",flexDirection:"column",gap:18}}>
-
-        {/* Price + 52w bar */}
-        <div>
-          {price>0
-            ?<div style={{display:"flex",alignItems:"baseline",gap:10,marginBottom:hi52>0?10:0}}>
-              <span style={{fontSize:38,fontWeight:800,color:atFatPitch?K.grn:K.txt,fontFamily:fm,lineHeight:1}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</span>
-              {pos.dayChange!=null&&<span style={{fontSize:14,color:pos.dayChange>=0?K.grn:K.red,fontWeight:600}}>{pos.dayChange>=0?"+":""}{pos.dayChange.toFixed(2)+"%"}</span>}
-            </div>
-            :<div style={{fontSize:14,color:K.dim,marginBottom:10}}>{"Price loading..."}</div>}
-          {/* 52-week range bar */}
-          {hi52>0&&lo52>0&&<div>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"52w low: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(2))}</span>
-              <span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"52w high: "+cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(2))}</span>
-            </div>
-            <div style={{position:"relative",height:6,background:K.bdr,borderRadius:3}}>
-              <div style={{position:"absolute",top:0,left:0,height:"100%",borderRadius:3,
-                background:"linear-gradient(90deg,"+K.red+"60,"+K.amb+"60,"+K.grn+"60)",width:"100%",opacity:0.3}}/>
-              {rangePos!=null&&<div style={{position:"absolute",top:-3,width:12,height:12,borderRadius:"50%",
-                background:K.acc,border:"2px solid "+K.card,boxShadow:"0 1px 4px rgba(0,0,0,0.2)",
-                left:"calc("+Math.max(0,Math.min(100,rangePos))+"% - 6px)",transition:"left .4s ease"}}/>}
-            </div>
-            {rangePos!=null&&<div style={{fontSize:10,color:K.mid,fontFamily:fm,textAlign:"center",marginTop:4}}>
-              {rangePos<20?"Near 52-week low":rangePos>80?"Near 52-week high":"Mid-range — "+rangePos.toFixed(0)+"% of 52w range"}
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            {price>0&&<div style={{textAlign:"right"}}>
+              <div style={{fontSize:22,fontWeight:800,color:nearFatPitch?K.grn:K.txt,fontFamily:fm,letterSpacing:"-0.5px"}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>
+              {pctAway!=null&&<div style={{fontSize:11,color:nearFatPitch?K.grn:K.dim,fontFamily:fm}}>{nearFatPitch?"At target":(pctAway>0?"+":"")+pctAway.toFixed(0)+"% to target"}</div>}
             </div>}
-          </div>}
+            <button onClick={onClose} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:K.dim,fontSize:16,flexShrink:0}}
+              onMouseEnter={function(e){e.currentTarget.style.background=K.bg;e.currentTarget.style.color=K.txt;}}
+              onMouseLeave={function(e){e.currentTarget.style.background="none";e.currentTarget.style.color=K.dim;}}>{"×"}</button>
+          </div>
         </div>
 
-        {/* ── Mini Financials Chart ── */}
-        {(function(){
-          var hist=c.earningsHistory||[];
-          if(hist.length<2)return null;
-          // Get last 5 quarters sorted
-          var sorted=hist.slice().sort(function(a,b){return a.quarter<b.quarter?-1:1}).slice(-5);
-          var revs=sorted.map(function(h){return h.revenue||h.actualRevenue||0;});
-          var nets=sorted.map(function(h){return h.netIncome||0;});
-          var maxRev=Math.max.apply(null,revs)||1;
-          var maxNet=Math.max.apply(null,nets)||1;
-          var margins=sorted.map(function(h){var r=h.revenue||h.actualRevenue||0;var n=h.netIncome||0;return r>0?n/r*100:null;});
-          var validMargins=margins.filter(function(m){return m!=null;});
-          var minM=validMargins.length?Math.min.apply(null,validMargins):0;
-          var maxM=validMargins.length?Math.max.apply(null,validMargins):30;
-          var mRange=Math.max(maxM-minM,5);
-          var barW=16;var chartH=60;var chartW=sorted.length*(barW*2+6);
-          return<div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"14px 16px"}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{"Financials"}</div>
-              <button onClick={function(){setSelId(c.id);setDetailTab("financials");setSubPage("financials");setPage("dashboard");}}
-                style={{fontSize:10,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0}}>
-                {"More →"}
-              </button>
-            </div>
-            <div style={{position:"relative",height:chartH+20,width:"100%",overflowX:"auto"}}>
-              <svg width="100%" height={chartH+20} viewBox={"0 0 "+(chartW+10)+" "+(chartH+20)} preserveAspectRatio="none">
-                {sorted.map(function(h,i){
-                  var x=i*(barW*2+6);
-                  var revH=revs[i]>0?Math.max(3,Math.round(revs[i]/maxRev*chartH)):0;
-                  var netH=nets[i]>0?Math.max(2,Math.round(nets[i]/maxNet*chartH*0.65)):0;
-                  return React.createElement(React.Fragment,{key:i},
-                    React.createElement("rect",{x:x,y:chartH-revH,width:barW,height:revH,fill:K.blue||"#3B82F6",rx:2,opacity:0.8}),
-                    nets[i]>0&&React.createElement("rect",{x:x+barW+2,y:chartH-netH,width:barW,height:netH,fill:"#06B6D4",rx:2,opacity:0.85}),
-                    React.createElement("text",{x:x+barW-2,y:chartH+12,textAnchor:"middle",fontSize:7,fill:K.dim||"#9CA3AF"},
-                      h.quarter?(h.quarter.replace(/\s*\d{4}/,"").trim()+"'"+String(h.quarter.match(/\d{4}/)?h.quarter.match(/\d{4}/)[0].slice(2):"")):"")
-                  );
-                })}
-                {/* Net margin line */}
-                {validMargins.length>=2&&React.createElement("polyline",{
-                  points:sorted.map(function(h,i){
-                    var m=margins[i];if(m==null)return null;
-                    var x=i*(barW*2+6)+barW-2;
-                    var y=chartH-Math.round(((m-minM)/mRange)*chartH*0.9);
-                    return x+","+y;
-                  }).filter(Boolean).join(" "),
-                  fill:"none",stroke:K.amb||"#F59E0B",strokeWidth:1.5,strokeLinecap:"round",strokeLinejoin:"round"
-                })}
-              </svg>
-            </div>
-            <div style={{display:"flex",gap:10,marginTop:2}}>
-              {[{color:K.blue||"#3B82F6",label:"Revenue"},{color:"#06B6D4",label:"Net income"},{color:K.amb||"#F59E0B",label:"Net margin %",line:true}].map(function(lg){
-                return<div key={lg.label} style={{display:"flex",alignItems:"center",gap:4}}>
-                  {lg.line
-                    ?<svg width="14" height="8"><line x1="0" y1="4" x2="14" y2="4" stroke={lg.color} strokeWidth="1.5"/></svg>
-                    :<div style={{width:8,height:8,borderRadius:1,background:lg.color,opacity:.8}}/>}
-                  <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{lg.label}</span>
-                </div>;
-              })}
-            </div>
-          </div>;
-        })()}
+        {/* ── Body — two column grid ── */}
+        <div style={{padding:"20px 24px",display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14,flex:1}}>
 
-        {/* Valuation Gauge */}
-        <div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"16px"}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Valuation gauge — fat pitch price"}</div>
-          {c.fatPitchPrice&&parseFloat(c.fatPitchPrice)>0&&price>0
-            ?<div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:10}}>
-                <div>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>{"Current"}</div>
-                  <div style={{fontSize:17,fontWeight:700,color:K.txt,fontFamily:fm}}>{cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</div>
+          {/* Left column */}
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+            {/* 52w range */}
+            {hi52>lo52&&price>0&&<Section>
+              <Label text="52-Week Range"/>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
+                <div style={{position:"relative",flex:1,height:4,background:K.bdr,borderRadius:2}}>
+                  <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos||0))+"%",
+                    background:nearFatPitch?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+PURPLE+")",
+                    borderRadius:2,opacity:0.7}}/>
+                  {fatPitch>0&&fatPitch>=lo52&&fatPitch<=hi52&&<div style={{position:"absolute",top:-3,width:2,height:10,
+                    background:K.grn+"90",left:((fatPitch-lo52)/(hi52-lo52)*100)+"%"}}/>}
+                  <div style={{position:"absolute",top:-5,width:14,height:14,borderRadius:"50%",
+                    background:nearFatPitch?K.grn:PURPLE,border:"2px solid "+K.card,
+                    left:"calc("+Math.max(0,Math.min(100,rangePos||0))+"% - 7px)",transition:"left .4s ease"}}/>
                 </div>
-                {pctAway!=null&&<div style={{textAlign:"center"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:atFatPitch?K.grn:nearFatPitch?K.acc:K.dim,fontFamily:fm}}>
-                    {atFatPitch?"At price":pctAway.toFixed(1)+"%"}
+                <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
+              </div>
+              {rangePos!=null&&rangePos<25&&<div style={{fontSize:10,color:K.grn,fontFamily:fm,fontWeight:600}}>Near 52-week low</div>}
+            </Section>}
+
+            {/* Fat pitch */}
+            <Section>
+              <Label text="Fat Pitch Price"/>
+              <div style={{display:"flex",alignItems:"center",gap:8,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"0 12px"}}>
+                <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
+                <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
+                  onBlur={function(){var v=fpVal.trim();if(v!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:v||null});}}
+                  placeholder={"e.g. 180"}
+                  style={{flex:1,background:"none",border:"none",outline:"none",padding:"10px 0",fontSize:14,color:K.txt,fontFamily:fm}}/>
+              </div>
+              {fatPitch>0&&price>0&&<div style={{marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>
+                  <span>Current {cSym+(price>=100?price.toFixed(0):price.toFixed(2))}</span>
+                  <span>Target {cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))}</span>
+                </div>
+                <div style={{height:5,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:Math.max(2,Math.min(100,100-(pctAway||0)))+"%",
+                    background:nearFatPitch?K.grn:PURPLE,borderRadius:3,transition:"width .4s ease"}}/>
+                </div>
+                <div style={{fontSize:11,color:nearFatPitch?K.grn:K.dim,fontFamily:fm,marginTop:4,fontWeight:nearFatPitch?700:400}}>
+                  {nearFatPitch?"At your fat pitch price ✓":pctAway!=null&&pctAway>0?(pctAway.toFixed(0)+"% above target — waiting..."):pctAway!=null?"Below target — check your thesis"}
+                </div>
+              </div>}
+              {!fatPitch&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>Set the price where this becomes an obvious buy.</div>}
+            </Section>
+
+            {/* Why watching */}
+            <Section noBg>
+              <Label text="Why I'm Watching"/>
+              <textarea value={wnVal} onChange={function(e){setWnVal(e.target.value);}}
+                onBlur={function(){upd(c.id,{_watchNote:wnVal.trim()});}}
+                placeholder={"What makes this business worth watching? What would make it an obvious buy?"}
+                rows={3}
+                style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,
+                  borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,
+                  lineHeight:1.7,resize:"vertical",outline:"none",fontFamily:fb}}
+                onFocus={function(e){e.target.style.borderColor=PURPLE+"60";}}
+                onBlur={function(e){e.target.style.borderColor=K.bdr;upd(c.id,{_watchNote:e.target.value.trim()});}}/>
+            </Section>
+
+            {/* Conviction */}
+            <Section noBg>
+              <Label text="Conviction"/>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                {[1,2,3,4,5,6,7,8,9,10].map(function(n){var act=c.conviction===n;var cc=n>=7?K.grn:n>=4?K.amb:K.red;
+                  return<button key={n} onClick={function(){upd(c.id,{conviction:n});}}
+                    style={{width:34,height:34,borderRadius:_isBm?0:8,border:"2px solid "+(act?cc:K.bdr),
+                      background:act?cc+"20":"transparent",color:act?cc:K.dim,
+                      fontSize:13,fontWeight:act?700:400,cursor:"pointer",transition:"all .12s",fontFamily:fm}}>
+                    {n}</button>;})}
+              </div>
+              {c.conviction>0&&<div style={{fontSize:11,color:convColor,fontFamily:fm,marginTop:6,fontWeight:600}}>
+                {c.conviction>=8?"High conviction — you understand this well.":c.conviction>=5?"Building understanding — keep researching.":"Low conviction — is this worth the watchlist slot?"}
+              </div>}
+            </Section>
+          </div>
+
+          {/* Right column */}
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+            {/* Price Alert */}
+            <Section>
+              <Label text="Price Alert"/>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"0 10px"}}>
+                  <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
+                  <input value={apVal} onChange={function(e){setApVal(e.target.value);apRef.current=e.target.value;}}
+                    onBlur={function(){var v=apRef.current.trim();if(v)upd(c.id,{alertPrice:v});}}
+                    placeholder={"Alert price"}
+                    style={{flex:1,background:"none",border:"none",outline:"none",padding:"10px 0",fontSize:14,color:K.txt,fontFamily:fm}}/>
+                </div>
+                <button onClick={function(){
+                  var currentPrice=apRef.current.trim()||apVal.trim();
+                  var nowEnabled=!c.alertEnabled;
+                  var patch={alertEnabled:nowEnabled};
+                  if(nowEnabled&&currentPrice)patch.alertPrice=currentPrice;
+                  upd(c.id,patch);
+                  if(nowEnabled&&currentPrice){
+                    var q=ALERT_QUOTES[Math.floor(Math.random()*ALERT_QUOTES.length)];
+                    showAlertToast(c.ticker+" at "+cSym+currentPrice+" — "+q);
+                  }
+                  else if(nowEnabled)showToast("Alert on — add a price to activate","info",3000);
+                  else showToast("Alert off for "+c.ticker,"info",2000);
+                }}
+                  style={{padding:"10px 16px",borderRadius:_isBm?0:8,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
+                    background:c.alertEnabled?K.grn:K.bdr,color:c.alertEnabled?"#fff":K.dim,transition:"all .2s",flexShrink:0}}>
+                  {c.alertEnabled?"ON ✓":"OFF"}
+                </button>
+              </div>
+              {/* Active alerts list */}
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:6}}>Active alerts</div>
+              {c.alertEnabled&&c.alertPrice
+                ?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",
+                    background:K.amb+"10",border:"1px solid "+K.amb+"30",borderRadius:_isBm?0:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill={K.amb} stroke={K.amb} strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                      </svg>
+                      <span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{cSym+c.alertPrice}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      {price>0&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{((parseFloat(c.alertPrice)-price)/price*100).toFixed(1)+"% away"}</span>}
+                      <button onClick={function(){upd(c.id,{alertEnabled:false,alertPrice:null});setApVal("");apRef.current="";}}
+                        style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:"2px 4px",borderRadius:4,lineHeight:1}}
+                        onMouseEnter={function(e){e.currentTarget.style.color=K.red;}}
+                        onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>{"×"}</button>
+                    </div>
                   </div>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{atFatPitch?"You're here":"above target"}</div>
-                </div>}
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:2}}>{"Fat pitch"}</div>
-                  <div style={{fontSize:17,fontWeight:700,color:atFatPitch?K.grn:K.acc,fontFamily:fm}}>{cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))}</div>
-                </div>
-              </div>
-              <div style={{height:10,background:K.bdr,borderRadius:5,overflow:"hidden",marginBottom:6}}>
-                <div style={{height:"100%",width:Math.min(gaugeProgress,100)+"%",borderRadius:5,transition:"width .6s ease",
-                  background:atFatPitch?"linear-gradient(90deg,"+K.grn+","+K.grn+"90)"
-                    :nearFatPitch?"linear-gradient(90deg,"+K.acc+","+K.grn+")"
-                    :"linear-gradient(90deg,"+K.acc+"50,"+K.acc+")"}}/>
-              </div>
-              <div style={{fontSize:12,color:atFatPitch?K.grn:nearFatPitch?K.acc:K.dim,fontWeight:atFatPitch||nearFatPitch?700:400,textAlign:"center"}}>
-                {atFatPitch?"This is the fat pitch. The obvious opportunity."
-                  :nearFatPitch?"Within 5% — getting close."
-                  :"Waiting patiently."}
-              </div>
-            </div>
-            :<div>
-              <div style={{fontSize:12,color:K.dim,marginBottom:8}}>{"Set the price where this becomes an obvious buy."}</div>
-              <input value={fpVal} onChange={function(e){setFpVal(e.target.value);}}
-                placeholder={"e.g. 180"}
-                style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
-                  background:K.card,color:K.txt,fontSize:14,fontFamily:fm,outline:"none"}}
-                onFocus={function(e){e.target.style.borderColor=K.acc;}}
-                onKeyDown={function(e){if(e.key==="Enter"){var v=fpVal.trim();if(v)upd(c.id,{fatPitchPrice:v});e.target.blur();}}}
-                onBlur={function(e){e.target.style.borderColor=K.bdr;var v=fpVal.trim();if(v)upd(c.id,{fatPitchPrice:v});}}
-              />
-            </div>}
+                :<div style={{fontSize:12,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>No active alerts. Set a price and turn ON.</div>}
+            </Section>
 
-        </div>
+            {/* Mini chart */}
+            {chartSorted.length>=2&&<Section>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <Label text="Financials"/>
+                <button onClick={function(){setSelId(c.id);setDetailTab("financials");setSubPage("financials");setPage("dashboard");onClose();}}
+                  style={{fontSize:10,color:PURPLE,background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0,marginBottom:8}}>{"More →"}</button>
+              </div>
+              <div style={{position:"relative",height:chartH+18,width:"100%"}}>
+                <svg width="100%" height={chartH+18} viewBox={"0 0 "+(chartSorted.length*(barW*2+6)+10)+" "+(chartH+18)} preserveAspectRatio="none">
+                  {chartSorted.map(function(h,i){
+                    var x=i*(barW*2+6);
+                    var revH=revs[i]>0?Math.max(3,Math.round(revs[i]/maxRev*chartH)):0;
+                    var netH=nets[i]>0?Math.max(2,Math.round(nets[i]/Math.max.apply(null,nets.filter(function(n){return n>0;}))*chartH*0.65)):0;
+                    return React.createElement(React.Fragment,{key:i},
+                      React.createElement("rect",{x:x,y:chartH-revH,width:barW,height:revH,fill:K.blue||"#3B82F6",rx:2,opacity:0.8}),
+                      nets[i]>0&&React.createElement("rect",{x:x+barW+2,y:chartH-netH,width:barW,height:netH,fill:"#06B6D4",rx:2,opacity:0.85}),
+                      React.createElement("text",{x:x+barW-2,y:chartH+12,textAnchor:"middle",fontSize:7,fill:K.dim||"#9CA3AF"},
+                        h.quarter?(h.quarter.replace(/\s*\d{4}/,"").trim()+"'"+String((h.quarter.match(/\d{4}/)||[""])[0].slice(2))):"")
+                    );
+                  })}
+                  {validM.length>=2&&React.createElement("polyline",{
+                    points:chartSorted.map(function(h,i){var m=margins[i];if(m==null)return null;
+                      var x=i*(barW*2+6)+barW-2;var y=chartH-Math.round(((m-minM)/mRange)*chartH*0.9);return x+","+y;
+                    }).filter(Boolean).join(" "),
+                    fill:"none",stroke:K.amb||"#F59E0B",strokeWidth:1.5,strokeLinecap:"round",strokeLinejoin:"round"
+                  })}
+                </svg>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:2}}>
+                {[{color:K.blue||"#3B82F6",label:"Revenue"},{color:"#06B6D4",label:"Net income"},{color:K.amb||"#F59E0B",label:"Margin %",line:true}].map(function(lg){
+                  return<div key={lg.label} style={{display:"flex",alignItems:"center",gap:3}}>
+                    {lg.line?<svg width="12" height="7"><line x1="0" y1="3.5" x2="12" y2="3.5" stroke={lg.color} strokeWidth="1.5"/></svg>
+                      :<div style={{width:7,height:7,borderRadius:1,background:lg.color,opacity:.8}}/>}
+                    <span style={{fontSize:9,color:K.dim,fontFamily:fm}}>{lg.label}</span>
+                  </div>;})}
+              </div>
+            </Section>}
 
-        {/* Price Alert */}
-        <div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"16px"}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Price alert"}</div>
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,flex:1,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:7,padding:"0 10px"}}
-              onClick={function(e){e.stopPropagation();}}>
-              <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
-              <input value={apVal} onChange={function(e){setApVal(e.target.value);apRef.current=e.target.value;}}
-                onBlur={function(){var v=apRef.current.trim();if(v)upd(c.id,{alertPrice:v});}}
-                placeholder={"Alert price"}
-                style={{flex:1,background:"none",border:"none",outline:"none",padding:"9px 0",fontSize:14,color:K.txt,fontFamily:fm}}
-              />
-            </div>
-            <button onClick={function(e){
-                var currentPrice=apRef.current.trim()||apVal.trim();
-                var nowEnabled=!c.alertEnabled;
-                var patch={alertEnabled:nowEnabled};
-                if(nowEnabled&&currentPrice)patch.alertPrice=currentPrice;
-                upd(c.id,patch);
-                if(nowEnabled&&currentPrice){
-                  var q=ALERT_QUOTES[Math.floor(Math.random()*ALERT_QUOTES.length)];
-                  showAlertToast(c.ticker+" at "+cSym+currentPrice+" — "+q);
+            {/* Expected CAGR */}
+            <Section>
+              <Label text="Expected CAGR"/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
+                {[
+                  {label:"EPS",val:epsVal,set:setEpsVal,save:"_cagrEps",ph:"e.g. 12.5"},
+                  {label:"Growth %",val:grVal,set:setGrVal,save:"_cagrGrowth",ph:"e.g. 12"},
+                  {label:"Exit P/E",val:peVal,set:setPeVal,save:"_cagrPE",ph:"e.g. 25"},
+                  {label:"Years",val:yrsVal,set:setYrsVal,save:"_cagrYears",ph:"10"},
+                ].map(function(f){return<div key={f.label}>
+                  <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:3}}>{f.label}</div>
+                  <input value={f.val} onChange={function(e){f.set(e.target.value);}}
+                    onBlur={function(e){var p={};p[f.save]=e.target.value;upd(c.id,p);}}
+                    placeholder={f.ph} type="number"
+                    style={{width:"100%",boxSizing:"border-box",background:K.card,border:"1px solid "+K.bdr,
+                      borderRadius:_isBm?0:6,padding:"7px 10px",fontSize:12,color:K.txt,fontFamily:fm,outline:"none"}}/></div>;})
                 }
-                else if(nowEnabled)showToast("Alert on — add a price to activate","info",3000);
-                else showToast("Alert off for "+c.ticker,"info",2000);
-              }}
-              style={{padding:"9px 16px",borderRadius:_isBm?0:7,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
-                background:c.alertEnabled?K.grn:K.bdr,color:c.alertEnabled?"#fff":K.dim,transition:"all .2s",flexShrink:0}}>
-              {c.alertEnabled?"ON ✓":"OFF"}
-            </button>
-          </div>
-          <div style={{fontSize:11,color:c.alertEnabled?K.grn:K.dim,fontFamily:fm}}>
-            {c.alertEnabled&&(apRef.current.trim()||apVal)?("Alert active at "+cSym+(apRef.current.trim()||apVal)+" — email + dashboard notification when "+c.ticker+" hits.")
-              :c.alertEnabled?"Enter a price above to activate."
-              :"Turn on to get notified when the price hits your target."}
-          </div>
-        </div>
-
-        {/* Why watching */}
-        <div>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Why I'm watching"}</div>
-          <textarea value={wnVal} onChange={function(e){setWnVal(e.target.value);}}
-            onBlur={function(){upd(c.id,{_watchNote:wnVal.trim()});}}
-            onClick={function(e){e.stopPropagation();}}
-            placeholder={"What makes this business worth watching? What would make it an obvious buy?"}
-            rows={3}
-            style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,
-              borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,
-              lineHeight:1.7,resize:"vertical",outline:"none"}}
-            onFocus={function(e){e.target.style.borderColor=K.acc+"60";}}
-          />
-        </div>
-
-        {/* Conviction */}
-        <div>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Conviction"}</div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {[1,2,3,4,5,6,7,8,9,10].map(function(n){var act=c.conviction===n;var cc=n>=7?K.grn:n>=4?K.amb:K.red;
-              return<button key={n} onClick={function(){upd(c.id,{conviction:n});}}
-                style={{width:36,height:36,borderRadius:_isBm?0:8,border:"2px solid "+(act?cc:K.bdr),
-                  background:act?cc+"20":"transparent",color:act?cc:K.dim,
-                  fontSize:13,fontWeight:act?700:400,cursor:"pointer",transition:"all .12s",fontFamily:fm}}>
-                {n}
-              </button>;})}
-          </div>
-          {c.conviction>0&&<div style={{fontSize:11,color:convColor,fontFamily:fm,marginTop:6,fontWeight:600}}>
-            {c.conviction>=8?"High conviction — you understand this well."
-              :c.conviction>=5?"Building understanding — keep researching."
-              :"Low conviction — is this worth the watchlist slot?"}
-          </div>}
-        </div>
-
-        {/* Expected CAGR by price */}
-        <div style={{background:K.bg,borderRadius:_isBm?0:12,padding:"16px"}}>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{"Expected CAGR by entry price"}</div>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:12,lineHeight:1.6}}>{"If the fat pitch price hits, what CAGR can you expect? Enter your estimates below."}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
-            {[
-              {label:"Current EPS / FCF per share",val:epsVal,set:setEpsVal,key:"_cagrEps",ph:"e.g. 5.20"},
-              {label:"Annual growth rate (%)",val:grVal,set:setGrVal,key:"_cagrGrowth",ph:"e.g. 15"},
-              {label:"Exit PE / multiple",val:peVal,set:setPeVal,key:"_cagrPE",ph:"e.g. 25"},
-              {label:"Holding period (years)",val:yrsVal,set:setYrsVal,key:"_cagrYears",ph:"e.g. 10"},
-            ].map(function(f){return<div key={f.key}>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginBottom:4,letterSpacing:0.5,textTransform:"uppercase"}}>{f.label}</div>
-              <input value={f.val} onChange={function(e){f.set(e.target.value);}}
-                onBlur={function(){var delta={};delta[f.key]=f.val.trim()||null;upd(c.id,delta);}}
-                onClick={function(e){e.stopPropagation();}}
-                placeholder={f.ph}
-                style={{width:"100%",boxSizing:"border-box",padding:"7px 10px",borderRadius:_isBm?0:6,
-                  border:"1px solid "+K.bdr,background:K.card,color:K.txt,fontSize:13,fontFamily:fm,outline:"none"}}
-                onFocus={function(e){e.target.style.borderColor=K.acc;}}
-              />
-            </div>;})}
-          </div>
-          {cagrResult?<div style={{background:K.card,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              {cagrResult.cagrAtFatPitch!=null&&<div style={{textAlign:"center",background:K.grn+"08",borderRadius:_isBm?0:6,padding:"10px 8px"}}>
-                <div style={{fontSize:22,fontWeight:800,color:K.grn,fontFamily:fm,letterSpacing:"-0.5px"}}>
-                  {cagrResult.cagrAtFatPitch.toFixed(1)+"%"}
-                </div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{"CAGR at fat pitch ("+cSym+(fatPitch>=100?fatPitch.toFixed(0):fatPitch.toFixed(2))+")"}</div>
+              </div>
+              {cagrResult&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {[
+                  {label:"At target",val:cagrResult.cagrAtFatPitch,show:cagrResult.cagrAtFatPitch!=null},
+                  {label:"At current",val:cagrResult.cagrAtCurrent,show:cagrResult.cagrAtCurrent!=null},
+                ].filter(function(r){return r.show;}).map(function(r){
+                  var cc=r.val>=15?K.grn:r.val>=10?K.amb:K.red;
+                  return<div key={r.label} style={{background:cc+"12",border:"1px solid "+cc+"30",borderRadius:_isBm?0:8,padding:"8px 10px",textAlign:"center"}}>
+                    <div style={{fontSize:18,fontWeight:800,color:cc,fontFamily:fm}}>{r.val.toFixed(1)+"%"}</div>
+                    <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{r.label}</div>
+                  </div>;})}
               </div>}
-              {cagrResult.cagrAtCurrent!=null&&<div style={{textAlign:"center",background:K.bg,borderRadius:_isBm?0:6,padding:"10px 8px"}}>
-                <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fm,letterSpacing:"-0.5px"}}>
-                  {cagrResult.cagrAtCurrent.toFixed(1)+"%"}
-                </div>
-                <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{"CAGR at current ("+cSym+(price>=100?price.toFixed(0):price.toFixed(2))+")"}</div>
-              </div>}
-            </div>
-            <div style={{fontSize:10,color:K.dim,fontFamily:fm,lineHeight:1.5}}>
-              {"Projected in "+yrsVal+"y: "+cSym+(cagrResult.futureEps.toFixed(2))+" EPS × "+peVal+"x = "+cSym+cagrResult.futurePrice.toFixed(0)+" target price."}
-            </div>
-            {cagrResult.cagrAtFatPitch!=null&&cagrResult.cagrAtFatPitch>=15&&<div style={{fontSize:11,color:K.grn,fontFamily:fm,fontWeight:600,marginTop:6}}>
-              {"At the fat pitch price this is a "+cagrResult.cagrAtFatPitch.toFixed(0)+"% CAGR. Munger would call this obvious."}
-            </div>}
+              {!cagrResult&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>Fill in EPS, growth, and exit P/E to see expected returns.</div>}
+            </Section>
+
           </div>
-          :<div style={{fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic",textAlign:"center",padding:"8px 0"}}>
-            {"Fill in the four fields above to see your expected returns."}
-          </div>}
         </div>
 
-        {/* Key numbers */}
-        {(revG!=null||gm!=null||roic!=null)&&<div>
-          <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10}}>{"Key numbers"}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-            {revG!=null&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",textAlign:"center"}}>
-              <div style={{fontSize:18,fontWeight:700,color:revG>=15?K.grn:revG>=5?K.txt:K.red,fontFamily:fm}}>{revG.toFixed(0)+"%"}</div>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{"Rev growth"}</div>
-            </div>}
-            {gm!=null&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",textAlign:"center"}}>
-              <div style={{fontSize:18,fontWeight:700,color:gm>=60?K.grn:gm>=40?K.txt:K.dim,fontFamily:fm}}>{gm.toFixed(0)+"%"}</div>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{"Gross margin"}</div>
-            </div>}
-            {roic!=null&&<div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"10px 12px",textAlign:"center"}}>
-              <div style={{fontSize:18,fontWeight:700,color:roic>=15?K.grn:roic>=10?K.txt:K.dim,fontFamily:fm}}>{roic.toFixed(0)+"%"}</div>
-              <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{"ROIC"}</div>
-            </div>}
-          </div>
-        </div>}
-      </div>
-
-      {/* Footer */}
-      <div style={{padding:"14px 20px",borderTop:"1px solid "+K.bdr,flexShrink:0,display:"flex",gap:8}}>
-        <button onClick={function(){
-            var fp=fpVal.trim();if(fp!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:fp||null});
-            var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
-            onClose();}}
-          style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"none",
-            background:K.acc,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
-          {"Done ✓"}
-        </button>
-        <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");}}
-          style={{padding:"11px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
-            background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>
-          {"Full dossier"}
-        </button>
+        {/* ── Footer ── */}
+        <div style={{padding:"14px 24px",borderTop:"1px solid "+K.bdr,flexShrink:0,display:"flex",gap:10,background:K.card,borderRadius:_isBm?"0":"0 0 18px 18px"}}>
+          <button onClick={function(){
+              var fp=fpVal.trim();if(fp!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:fp||null});
+              var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
+              onClose();}}
+            style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"none",
+              background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+            {"Done ✓"}
+          </button>
+          <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");onClose();}}
+            style={{padding:"11px 18px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
+              background:"transparent",color:K.dim,fontSize:13,cursor:"pointer",fontFamily:fm}}>
+            {"Full dossier"}
+          </button>
+        </div>
       </div>
     </div>;
   }
 
-  // ── Watchlist Page ──────────────────────────────────────────────────────
   function WatchlistPage(){
     var watching=cos.filter(function(c){return c.status==="watchlist";});
     var tooHard=cos.filter(function(c){return c.status==="toohard";});
@@ -14473,8 +14422,6 @@ function ProWelcomeGift(){
       </div>;}
 
     return<div style={{display:"flex",height:"100%",padding:0}}>
-      {/* Overlay + panel — rendered at root level to avoid stacking context issues */}
-      {panelId&&<div style={{position:"fixed",inset:0,zIndex:399,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
       {panelCo&&<WatchlistDetailPanel key={panelId} c={panelCo} onClose={function(){setPanelId(null);}}
         upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
         setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast} showAlertToast={showAlertToast}/>}
