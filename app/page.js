@@ -13889,7 +13889,7 @@ function ProWelcomeGift(){
     var revG=dv("revGrowth");var gm=dv("grossMargin");var roic=dv("roic")||dv("roce");
 
     return<div style={{position:"fixed",top:0,right:0,bottom:0,width:isMobile?"100%":440,
-      background:K.card,borderLeft:"1px solid "+K.bdr,zIndex:200,overflowY:"auto",
+      background:K.card,borderLeft:"1px solid "+K.bdr,zIndex:400,overflowY:"auto",
       boxShadow:"-8px 0 40px rgba(0,0,0,0.18)",display:"flex",flexDirection:"column"}}
       onClick={function(e){e.stopPropagation();}}>
 
@@ -14473,6 +14473,11 @@ function ProWelcomeGift(){
       </div>;}
 
     return<div style={{display:"flex",height:"100%",padding:0}}>
+      {/* Overlay + panel — rendered at root level to avoid stacking context issues */}
+      {panelId&&<div style={{position:"fixed",inset:0,zIndex:399,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
+      {panelCo&&<WatchlistDetailPanel key={panelId} c={panelCo} onClose={function(){setPanelId(null);}}
+        upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
+        setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast} showAlertToast={showAlertToast}/>}
       {/* ── Left sidebar: list navigation ── */}
       {!isMobile&&<div style={{width:220,minWidth:220,borderRight:"1px solid "+K.bdr,
         display:"flex",flexDirection:"column",height:"100%",paddingTop:28,paddingBottom:20,overflowY:"auto"}}>
@@ -14592,12 +14597,6 @@ function ProWelcomeGift(){
 
       {/* ── Main content ── */}
       <div style={{flex:1,minWidth:0,padding:isMobile?"0 16px 80px":isThesis?"28px 40px 80px":"28px 32px 60px",maxWidth:820,overflowY:"auto"}}>
-
-        {/* Overlay + panel */}
-        {panelId&&<div style={{position:"fixed",inset:0,zIndex:199,background:"rgba(0,0,0,0.25)"}} onClick={function(){setPanelId(null);}}/>}
-        {panelCo&&<WatchlistDetailPanel key={panelId} c={panelCo} onClose={function(){setPanelId(null);}}
-          upd={upd} cSym={cSym} K={K} isMobile={isMobile} _isBm={_isBm} fh={fh} fm={fm} fb={fb}
-          setSelId={setSelId} setDetailTab={setDetailTab} setPage={setPage} showToast={showToast} showAlertToast={showAlertToast}/>}
 
         {/* Mobile list selector */}
         {isMobile&&<div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
