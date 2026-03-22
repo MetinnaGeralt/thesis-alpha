@@ -818,7 +818,7 @@ function TrackerApp(props){
           if(d.profile.milestones)setMilestones(d.profile.milestones);
           if(d.profile.weeklyReviews)setWeeklyReviews(d.profile.weeklyReviews);
           if(d.profile.dashSettings)setDashSet(Object.assign({},DEFAULT_DASH,d.profile.dashSettings));
-          if(d.profile.theme){var t=d.profile.theme;setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}
+          if(d.profile.theme){var t=d.profile.theme;var localTheme=null;try{localTheme=localStorage.getItem("ta-theme");}catch(e){}if(!localTheme){setTheme(t);try{localStorage.setItem("ta-theme",t)}catch(e){}}}
           if(d.profile.myStrategy)setMyStrategy(d.profile.myStrategy);
         }
       }
