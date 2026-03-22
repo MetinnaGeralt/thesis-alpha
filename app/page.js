@@ -14407,7 +14407,6 @@ function ProWelcomeGift(){
               {"Deep Dive →"}
             </button>
           </div>
-          <>
           {/* Always-visible X remove */}
           <button onClick={function(e){e.stopPropagation();if(onRemove)onRemove();}}
             title={"Remove "+c.ticker}
@@ -14418,7 +14417,7 @@ function ProWelcomeGift(){
               style={{flexShrink:0,transform:isOpen?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s"}}>
               <polyline points="9 18 15 12 9 6"/>
           </svg>
-        </>
+        </div>
       </div>;}
 
     // ── List info ──────────────────────────────────────────────────────────
