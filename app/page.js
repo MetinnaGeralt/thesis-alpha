@@ -6,7 +6,7 @@ import {
   FOLDERS, SAMPLE, METRICS, METRIC_MAP,
   INVEST_STYLES, STYLE_MAP, INVESTOR_PROFILES, PROFILE_MAP,
   SUPERINVESTORS, MSTAR_RATINGS, KNOWN_MONTHLY,
-  ALERT_QUOTES,
+  ALERT_QUOTES, MENTAL_MODELS, GLOSSARY,
 } from './components/constants';
 import {
   ldS, svS, cacheGet, cacheSet, xJSON, stripCite, autoFormat,
@@ -5308,6 +5308,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </div>}
     {(function(){var portCount=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";}).length;var isActive=(!selId&&(page==="dashboard"||page==="hub"||page==="calendar"||page==="timeline"||page==="analytics"||page==="dividends"||page==="review"))||!!selId;return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("dashboard");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="overview" size={14} color={navColor(isActive,K.acc)}/>{"Portfolio"}</span>{portCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{portCount}</span>}</span></div>;})()}
     {(function(){var isActive=page==="screener";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,"#10B981"),borderLeft:navBorder(isActive,"#10B981"),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("screener");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,"#10B981"),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,"#10B981")}/>{"Screener"}</span></div>;})()}
+    {(function(){var isActive=page==="learn";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,"#F59E0B"),borderLeft:navBorder(isActive,"#F59E0B"),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("learn");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,"#F59E0B"),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="lightbulb" size={14} color={navColor(isActive,"#F59E0B")}/>{"Learning"}</span></div>;})()}
         {(function(){var wCount=cos.filter(function(c){return c.status==="watchlist";}).length;var wAlerts=cos.filter(function(c){var p=c.position||{};var fp=parseFloat(c.fatPitchPrice)||0;return c.status==="watchlist"&&fp>0&&p.currentPrice>0&&p.currentPrice<=fp*1.05;}).length;var isActive=page==="watchlist";return<div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(isActive,K.acc),borderLeft:navBorder(isActive,K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("watchlist");})}><span style={{fontSize:isThesis?13:12,color:navColor(isActive,K.acc),fontWeight:isActive?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8,justifyContent:"space-between",width:"100%"}}><span style={{display:"flex",alignItems:"center",gap:8}}><IC name="search" size={14} color={navColor(isActive,K.acc)}/>{"Watchlist"}</span><span style={{display:"flex",alignItems:"center",gap:4}}>{wAlerts>0&&<span style={{width:6,height:6,borderRadius:"50%",background:K.grn,display:"inline-block"}}/>}{wCount>0&&<span style={{fontSize:10,color:navColor(isActive,K.acc),fontFamily:fm,opacity:.7}}>{wCount}</span>}</span></span></div>;})()}
     <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderLeft:navBorder(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("library");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc),fontWeight:(page==="library"||page==="journal"||page==="strategy"||page==="ai")?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="book" size={14} color={navColor(page==="library"||page==="journal"||page==="strategy"||page==="ai",K.acc)}/>{"Research"}</span></div>
     <div style={{padding:bm?"7px 12px":isThesis?"12px 20px":"12px 20px",cursor:"pointer",background:navBg(page==="assets",K.amb),borderLeft:navBorder(page==="assets",K.amb),borderRadius:_isBm?0:isThesis?6:0,margin:isThesis?"2px 8px":"0",transition:"background .15s"}} onClick={navClick(function(){setSelId(null);setPage("assets");})}><span style={{fontSize:isThesis?13:12,color:navColor(page==="assets",K.amb),fontWeight:page==="assets"?700:500,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><IC name="dollar" size={14} color={navColor(page==="assets",K.amb)}/>{"Net Worth"}</span></div>
@@ -14141,6 +14142,191 @@ function ProWelcomeGift(){
     </div>;
   }
 
+  // ── Learning Hub ────────────────────────────────────────────────────────────
+  function LearningPage(){
+    var AMB="#F59E0B";var PURPLE="#8B5CF6";
+    var _tab=useState("models"),tab=_tab[0],setTab=_tab[1];
+    var _search=useState(""),search=_search[0],setSearch=_search[1];
+    var _sel=useState(null),selId=_sel[0],setSelId2=_sel[1];
+    var _gcat=useState("All"),gcat=_gcat[0],setGcat=_gcat[1];
+    var _mcat=useState("All"),mcat=_mcat[0],setMcat=_mcat[1];
+
+    var MCATS=["All"].concat(Array.from(new Set((MENTAL_MODELS||[]).map(function(m){return m.cat;}))));
+    var GCATS=["All"].concat(Array.from(new Set((GLOSSARY||[]).map(function(g){return g.cat;}))));
+
+    var filteredModels=(MENTAL_MODELS||[]).filter(function(m){
+      var matchCat=mcat==="All"||m.cat===mcat;
+      var matchSearch=!search||m.title.toLowerCase().includes(search.toLowerCase())||m.body.toLowerCase().includes(search.toLowerCase());
+      return matchCat&&matchSearch;
+    });
+    var filteredGlossary=(GLOSSARY||[]).filter(function(g){
+      var matchCat=gcat==="All"||g.cat===gcat;
+      var matchSearch=!search||g.term.toLowerCase().includes(search.toLowerCase())||g.definition.toLowerCase().includes(search.toLowerCase());
+      return matchCat&&matchSearch;
+    });
+
+    var selModel=selId?(MENTAL_MODELS||[]).find(function(m){return m.id===selId;}):null;
+    var selGloss=selId?(GLOSSARY||[]).find(function(g){return g.id===selId;}):null;
+
+    return<div style={{display:"flex",height:"100%",overflow:"hidden"}}>
+      {/* ── Left: nav + list ── */}
+      <div style={{width:isMobile?"100%":300,minWidth:isMobile?0:300,display:"flex",flexDirection:"column",borderRight:"1px solid "+K.bdr,height:"100%",overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{padding:"24px 20px 16px",borderBottom:"1px solid "+K.bdr,flexShrink:0}}>
+          <div style={{fontSize:18,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.3px",marginBottom:4}}>{"Learning Hub"}</div>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.5}}>{"Mental models and concepts from the greatest investors."}</div>
+          {/* Search */}
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:12,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"8px 12px"}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input value={search} onChange={function(e){setSearch(e.target.value);}}
+              placeholder={"Search models, concepts..."}
+              style={{flex:1,background:"none",border:"none",outline:"none",fontSize:12,color:K.txt,fontFamily:fm}}/>
+            {search&&<button onClick={function(){setSearch("");}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:14,padding:0,lineHeight:1}}>{"×"}</button>}
+          </div>
+        </div>
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"1px solid "+K.bdr,flexShrink:0}}>
+          {[{id:"models",label:"Mental Models"},{id:"glossary",label:"Glossary"}].map(function(t){
+            var act=tab===t.id;
+            return<button key={t.id} onClick={function(){setTab(t.id);setSelId2(null);}}
+              style={{flex:1,padding:"10px 8px",border:"none",background:act?K.card:"transparent",
+                color:act?AMB:K.dim,fontSize:11,fontWeight:act?700:400,cursor:"pointer",fontFamily:fm,
+                borderBottom:act?"2px solid "+AMB:"2px solid transparent",marginBottom:-1}}>
+              {t.label}
+            </button>;})}
+        </div>
+
+        {/* Category filter */}
+        {tab==="models"&&<div style={{padding:"10px 12px",display:"flex",gap:4,flexWrap:"wrap",borderBottom:"1px solid "+K.bdr,flexShrink:0}}>
+          {MCATS.map(function(c){var act=mcat===c;return<button key={c} onClick={function(){setMcat(c);}}
+            style={{padding:"3px 8px",borderRadius:_isBm?0:99,border:"1px solid "+(act?AMB+"50":K.bdr),
+              background:act?AMB+"12":"transparent",color:act?AMB:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:act?700:400}}>
+            {c}</button>;})}
+        </div>}
+        {tab==="glossary"&&<div style={{padding:"10px 12px",display:"flex",gap:4,flexWrap:"wrap",borderBottom:"1px solid "+K.bdr,flexShrink:0}}>
+          {GCATS.map(function(c){var act=gcat===c;return<button key={c} onClick={function(){setGcat(c);}}
+            style={{padding:"3px 8px",borderRadius:_isBm?0:99,border:"1px solid "+(act?PURPLE+"50":K.bdr),
+              background:act?PURPLE+"12":"transparent",color:act?PURPLE:K.dim,fontSize:10,cursor:"pointer",fontFamily:fm,fontWeight:act?700:400}}>
+            {c}</button>;})}
+        </div>}
+
+        {/* List */}
+        <div style={{flex:1,overflowY:"auto"}}>
+          {tab==="models"&&filteredModels.map(function(m){
+            var act=selId===m.id;
+            return<div key={m.id} onClick={function(){setSelId2(m.id);}}
+              style={{padding:"12px 16px",borderBottom:"1px solid "+K.bdr+"60",cursor:"pointer",
+                background:act?AMB+"08":"transparent",borderLeft:act?"3px solid "+AMB:"3px solid transparent",
+                transition:"all .12s"}}
+              onMouseEnter={function(e){if(!act)e.currentTarget.style.background=K.bg;}}
+              onMouseLeave={function(e){if(!act)e.currentTarget.style.background="transparent";}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                <span style={{fontSize:9,fontWeight:700,color:AMB+"cc",background:AMB+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{m.cat.toUpperCase()}</span>
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:act?AMB:K.txt,fontFamily:fh,marginBottom:2}}>{m.title}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm,lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{m.tagline}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4,opacity:.7}}>{"— "+m.author}</div>
+            </div>;})}
+          {tab==="glossary"&&filteredGlossary.map(function(g){
+            var act=selId===g.id;
+            return<div key={g.id} onClick={function(){setSelId2(g.id);}}
+              style={{padding:"12px 16px",borderBottom:"1px solid "+K.bdr+"60",cursor:"pointer",
+                background:act?PURPLE+"08":"transparent",borderLeft:act?"3px solid "+PURPLE:"3px solid transparent",
+                transition:"all .12s"}}
+              onMouseEnter={function(e){if(!act)e.currentTarget.style.background=K.bg;}}
+              onMouseLeave={function(e){if(!act)e.currentTarget.style.background="transparent";}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                <span style={{fontSize:9,fontWeight:700,color:PURPLE+"cc",background:PURPLE+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{g.cat.toUpperCase()}</span>
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:act?PURPLE:K.txt,fontFamily:fh}}>{g.term}</div>
+              {g.formula&&<div style={{fontSize:10,color:K.dim,fontFamily:"'JetBrains Mono',monospace",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.formula}</div>}
+            </div>;})}
+          {((tab==="models"&&filteredModels.length===0)||(tab==="glossary"&&filteredGlossary.length===0))&&
+            <div style={{padding:"32px 16px",textAlign:"center",color:K.dim,fontSize:12,fontFamily:fm}}>{"No results for \""+(search||"this filter")+"\""}</div>}
+        </div>
+      </div>
+
+      {/* ── Right: detail view ── */}
+      {!isMobile&&<div style={{flex:1,overflowY:"auto",padding:"32px 40px"}}>
+        {!selId&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,opacity:.5}}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.2" strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <div style={{fontSize:13,color:K.dim,fontFamily:fm,textAlign:"center"}}>{"Select a model or concept to read."}</div>
+        </div>}
+
+        {selModel&&<div style={{maxWidth:680}}>
+          {/* Model header */}
+          <div style={{marginBottom:28}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <span style={{fontSize:9,fontWeight:700,color:AMB,background:AMB+"18",borderRadius:4,padding:"2px 8px",fontFamily:fm,letterSpacing:1}}>{selModel.cat.toUpperCase()}</span>
+            </div>
+            <div style={{fontSize:26,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.5px",marginBottom:6,lineHeight:1.2}}>{selModel.title}</div>
+            <div style={{fontSize:15,color:AMB,fontFamily:fb,fontStyle:"italic",marginBottom:8,lineHeight:1.5}}>{"\""+selModel.tagline+"\""}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"By "+selModel.author+" · "+selModel.source}</div>
+          </div>
+
+          {/* Divider */}
+          <div style={{height:1,background:K.bdr,marginBottom:24}}/>
+
+          {/* Body */}
+          <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.85,marginBottom:28,whiteSpace:"pre-wrap"}}>{selModel.body}</div>
+
+          {/* Quote block */}
+          {selModel.quote&&<div style={{borderLeft:"3px solid "+AMB,paddingLeft:20,marginBottom:28,background:AMB+"05",padding:"16px 20px",borderRadius:_isBm?0:"0 8px 8px 0"}}>
+            <div style={{fontSize:15,color:K.txt,fontFamily:fb,lineHeight:1.7,fontStyle:"italic",marginBottom:8}}>{"\u201C"+selModel.quote+"\u201D"}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>{selModel.quoteSource}</div>
+          </div>}
+
+          {/* Related dossier link */}
+          <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:2}}>{"Apply this in your dossier"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Use this framework when building your next deep dive."}</div>
+            </div>
+            <button onClick={function(){setPage("watchlist");}}
+              style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+AMB+"50",
+                background:AMB+"12",color:AMB,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,flexShrink:0}}>
+              {"Go to watchlist \u2192"}
+            </button>
+          </div>
+        </div>}
+
+        {selGloss&&<div style={{maxWidth:680}}>
+          {/* Glossary header */}
+          <div style={{marginBottom:28}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+              <span style={{fontSize:9,fontWeight:700,color:PURPLE,background:PURPLE+"18",borderRadius:4,padding:"2px 8px",fontFamily:fm,letterSpacing:1}}>{selGloss.cat.toUpperCase()}</span>
+            </div>
+            <div style={{fontSize:26,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.5px",lineHeight:1.2}}>{selGloss.term}</div>
+          </div>
+
+          <div style={{height:1,background:K.bdr,marginBottom:24}}/>
+
+          {/* Definition */}
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Definition"}</div>
+            <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.85}}>{selGloss.definition}</div>
+          </div>
+
+          {/* Formula */}
+          {selGloss.formula&&<div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Formula"}</div>
+            <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:PURPLE,lineHeight:1.6}}>{selGloss.formula}</div>
+          </div>}
+
+          {/* Thresholds */}
+          {selGloss.threshold&&<div style={{marginBottom:20}}>
+            <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Benchmarks"}</div>
+            <div style={{background:K.grn+"08",border:"1px solid "+K.grn+"25",borderRadius:_isBm?0:8,padding:"12px 16px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7}}>{selGloss.threshold}</div>
+          </div>}
+
+          {/* Source */}
+          {selGloss.source&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,fontStyle:"italic",borderTop:"1px solid "+K.bdr,paddingTop:16}}>{"Source: "+selGloss.source}</div>}
+        </div>}
+      </div>}
+    </div>;
+  }
+
+
   // ── Screener Page ────────────────────────────────────────────────────────────
   function ScreenerPage(){
     var GRN="#10B981";
@@ -16836,7 +17022,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="screener"?<ScreenerPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="learn"?<LearningPage/>:page==="screener"?<ScreenerPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
        var mItems=[
