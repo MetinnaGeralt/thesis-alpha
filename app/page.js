@@ -766,6 +766,8 @@ function TrackerApp(props){
   var _lid=useState(null),learnId=_lid[0],setLearnId=_lid[1];
   var _nwTab=useState("overview"),nwTab=_nwTab[0],setNwTab=_nwTab[1];
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
+  var _lensData=useState({}),lensData=_lensData[0],setLensData=_lensData[1];
+  var _lensLd=useState(false),lensLoading=_lensLd[0],setLensLoading=_lensLd[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
   var _n=useState([]),notifs=_n[0],setNotifs=_n[1];var _sn=useState(false),showNotifs=_sn[0],setShowNotifs=_sn[1];
   var _st2=useState("portfolio"),sideTab=_st2[0],setSideTab=_st2[1];var _sideHov=useState(null),sideHover=_sideHov[0],setSideHover=_sideHov[1];var _flyY=useState(80),flyY=_flyY[0],setFlyY=_flyY[1];var _showListCfg=useState(false),showListCfg=_showListCfg[0],setShowListCfg=_showListCfg[1];
@@ -9506,8 +9508,6 @@ function calcMoatFromData(finData,businessModelType){
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
     // Tabs
     var ht=hubTab,setHt=setHubTab;
-    var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
-    var _lensLoading=useState(false),lensLoading=_lensLoading[0],setLensLoading=_lensLoading[1];
     // Auto-fetch financial metrics when Lenses tab is opened
     useEffect(function(){
       if(ht!=="lenses")return;
@@ -14586,6 +14586,7 @@ function ProWelcomeGift(){
     var CATS=["Quality","Growth","Valuation","Health","Income"];
 
     // State
+    var _stab=useState("screener"),screenTab=_stab[0],setScreenTab=_stab[1];
     var _filters=useState([]),filters=_filters[0],setFilters=_filters[1];
     var _sort=useState({id:"grossMargin",dir:"desc"}),sortState=_sort[0],setSortState=_sort[1];
     var _scope=useState("own"),scope=_scope[0],setScope=_scope[1];
@@ -14756,6 +14757,27 @@ function ProWelcomeGift(){
         </div>
       </div>
 
+      {/* ── Tab bar ── */}
+      <div style={{display:"flex",gap:0,marginBottom:24,borderBottom:"1px solid "+K.bdr}}>
+        <button onClick={function(){setScreenTab("screener");}}
+          style={{padding:"9px 20px",background:"none",border:"none",
+            borderBottom:"2px solid "+(screenTab==="screener"?GRN:"transparent"),
+            color:screenTab==="screener"?GRN:K.dim,cursor:"pointer",
+            fontSize:14,fontFamily:fm,fontWeight:screenTab==="screener"?700:400,transition:"all .15s"}}>
+          {"Screener"}
+        </button>
+        <button onClick={function(){setScreenTab("lenses");}}
+          style={{padding:"9px 20px",background:"none",border:"none",
+            borderBottom:"2px solid "+(screenTab==="lenses"?"#8B5CF6":"transparent"),
+            color:screenTab==="lenses"?"#8B5CF6":K.dim,cursor:"pointer",
+            fontSize:14,fontFamily:fm,fontWeight:screenTab==="lenses"?700:400,transition:"all .15s",display:"flex",alignItems:"center",gap:7}}>
+          {"Investor Lenses"}
+          <span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF618",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{"10 investors"}</span>
+        </button>
+      </div>
+
+      {screenTab==="screener"&&<div>
+
       {/* Preset filters */}
       <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
         <span style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",alignSelf:"center",marginRight:4}}>Presets</span>
@@ -14919,8 +14941,229 @@ function ProWelcomeGift(){
           {"Showing 100 of "+displayList.length+" results"}
         </div>}
       </div>
+      </div>}
+
+      {screenTab==="lenses"&&(function(){
+        var PURPLE2="#8B5CF6";
+        // Fetch financial data for lenses when tab opens
+        useEffect(function(){
+          var allCos=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist";});
+          var needsFetch=allCos.filter(function(c){return!lensData[c.ticker];});
+          if(needsFetch.length===0)return;
+          setLensLoading(true);
+          var fetchAll=async function(){
+            var data=Object.assign({},lensData);
+            for(var i=0;i<needsFetch.length;i++){
+              var c=needsFetch[i];
+              try{
+                var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
+                var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
+                var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
+                var snap=c.financialSnapshot||{};
+                data[c.ticker]={
+                  grossMargin:ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:(snap.grossMargin&&snap.grossMargin.numVal!=null?snap.grossMargin.numVal:null),
+                  opLeverage:ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:(snap.opMargin&&snap.opMargin.numVal!=null?snap.opMargin.numVal:null),
+                  roic:km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:(snap.roic&&snap.roic.numVal!=null?snap.roic.numVal:null),
+                  netMargin:ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:(snap.netMargin&&snap.netMargin.numVal!=null?snap.netMargin.numVal:null),
+                  fcfConversion:ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:(snap.fcfMargin&&snap.fcfMargin.numVal!=null?snap.fcfMargin.numVal:null),
+                  revGrowth:ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:(snap.revGrowth&&snap.revGrowth.numVal!=null?snap.revGrowth.numVal:null),
+                  fortress:km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:(snap.netDebtEbitda&&snap.netDebtEbitda.numVal!=null?snap.netDebtEbitda.numVal:null),
+                  pe:km&&km.peRatioTTM!=null?km.peRatioTTM:(snap.pe&&snap.pe.numVal!=null?snap.pe.numVal:null),
+                };
+              }catch(e){}
+            }
+            setLensData(data);setLensLoading(false);
+          };
+          fetchAll();
+        },[screenTab]);
+
+          // Parse numeric value from moat cache strings like "45.2%", "+12.3%", "Net Cash", "1.5x"
+          function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
+          // Lens definitions with ACTUAL S&P 500 benchmarks
+          var LENSES=[
+            {id:"smith",name:"Terry Smith",subtitle:"Fundsmith Filter",unlock:0,quote:"Only invest in good companies, don’t overpay, do nothing.",bio:"Terry Smith founded Fundsmith in 2010 and built it into one of Europe's largest equity funds. A proponent of buy-and-hold quality investing, he is known for his blunt annual letters and rejection of trading.",wiki:"b/b0/Terry_Smith.jpg/220px-Terry_Smith.jpg",
+              metrics:[
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:25,desc:"Pricing power — can the business charge a premium?"},
+                {id:"roic",label:"ROCE / ROIC",sp500:15,unit:"%",weight:25,desc:"Returns on capital — is the business capital-efficient?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:20,desc:"Operational efficiency — does scale create profit?"},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Earnings quality — does profit turn into real cash?"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Financial strength — lower is better",invert:true}
+              ]},
+            {id:"kantesaria",name:"Dev Kantesaria",subtitle:"Compounder Checklist",unlock:0,quote:"We look for businesses that can compound at 15%+ with minimal risk of permanent loss.",bio:"Dev Kantesaria runs Valley Forge Capital, a concentrated fund of 6–8 positions. He looks for recession-resistant monopolies with pricing power, minimal debt, and 15%+ compounding potential.",wiki:null,
+              metrics:[
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Organic demand growth — is the TAM expanding?"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:20,desc:"Above 60% signals a capital-light moat"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Bottom-line profitability after all costs"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:20,desc:"Free cash flow quality — the real yield"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — the engine of compounding"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Low debt = low risk of permanent impairment",invert:true}
+              ]},
+            {id:"munger",name:"Charlie Munger",subtitle:"Quality at Scale",unlock:0,quote:"A great business at a fair price is superior to a fair business at a great price.",bio:"Charlie Munger was Warren Buffett's partner at Berkshire Hathaway for over 50 years. He championed the idea of buying wonderful businesses at fair prices and introduced mental models from multiple disciplines.",wiki:"7/7d/Charlie_Munger.jpg/220px-Charlie_Munger.jpg",
+              metrics:[
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"The single best measure of a moat"},
+                {id:"grossMargin",label:"Pricing Power (Gross Margin)",sp500:45,unit:"%",weight:20,desc:"Can they raise prices without losing customers?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:15,desc:"Do margins expand as revenue grows?"},
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:15,desc:"Sustainable growth within circle of competence"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Trending up = strengthening position"},
+                {id:"rdIntensity",label:"R&D / Revenue",sp500:3,unit:"%",weight:10,desc:"Reinvesting to widen the moat"}
+              ]},
+            {id:"buffett",name:"Warren Buffett",subtitle:"Owner Earnings",unlock:0,quote:"It’s far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",bio:"Warren Buffett has run Berkshire Hathaway since 1965. Influenced by Ben Graham's margin of safety and Phil Fisher's qualitative analysis, he focuses on durable competitive advantages and owner earnings.",wiki:"7/7d/Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg/220px-Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg",
+              metrics:[
+                {id:"netMargin",label:"Net Margin (Owner Earnings)",sp500:12,unit:"%",weight:20,desc:"What the owner actually takes home"},
+                {id:"roic",label:"Return on Equity",sp500:15,unit:"%",weight:20,desc:"How much profit per dollar of equity?"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:20,desc:"Conservative balance sheet = margin of safety",invert:true},
+                {id:"grossMargin",label:"Gross Margin Stability",sp500:45,unit:"%",weight:20,desc:"Stable margins = durable competitive advantage"},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Consistent cash generation year after year"}
+              ]},
+            {id:"greenblatt",name:"Joel Greenblatt",subtitle:"Magic Formula",unlock:0,quote:"Buying good businesses at bargain prices is the secret to making lots of money.",bio:"Joel Greenblatt teaches investing at Columbia and founded Gotham Capital. His Magic Formula ranks stocks by return on capital and earnings yield — a systematic approach to buying good businesses cheaply.",wiki:null,
+              metrics:[
+                {id:"roic",label:"Return on Capital",sp500:15,unit:"%",weight:35,desc:"The first pillar of the Magic Formula — high ROIC = good business"},
+                {id:"netMargin",label:"Earnings Yield",sp500:12,unit:"%",weight:35,desc:"The second pillar — high earnings yield = bargain price"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:10,desc:"Pricing power supporting high returns"},
+                {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:10,desc:"Low leverage = less risk",invert:true},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:10,desc:"Real cash backing up the earnings"}
+              ]},
+            {id:"lynch",name:"Peter Lynch",subtitle:"Growth at a Price",unlock:0,quote:"Know what you own, and know why you own it.",bio:"Peter Lynch managed Fidelity's Magellan Fund from 1977–1990, achieving a 29% annual return. He favoured investing in businesses you understand and coined the phrase: invest in what you know.",wiki:"0/0e/Peter_Lynch.jpg/220px-Peter_Lynch.jpg",
+              metrics:[
+                {id:"revGrowth",label:"Revenue / Earnings Growth",sp500:5,unit:"%",weight:30,desc:"The engine — is the company growing fast enough?"},
+                {id:"fortress",label:"Debt Level",sp500:1.5,unit:"x",weight:20,desc:"Low debt = can survive a downturn",invert:true},
+                {id:"fcfConversion",label:"Cash Conversion",sp500:85,unit:"%",weight:20,desc:"Strong cash flow funds future growth"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Are margins expanding as the company scales?"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:15,desc:"Is growth translating to bottom line?"}
+              ]},
+            {id:"davis",name:"Shelby Cullom Davis",subtitle:"Davis Double Play",unlock:0,quote:"You make most of your money in a bear market, you just don’t realize it at the time.",bio:"Shelby Cullom Davis built a $50M fortune to $900M over 47 years by focusing on financial companies. The Davis Double Play: buy growing earnings at a low multiple, then benefit from both EPS growth and multiple expansion.",wiki:null,
+              metrics:[
+                {id:"revGrowth",label:"Earnings Growth",sp500:5,unit:"%",weight:25,desc:"Growing earnings = rising stock price (first play)"},
+                {id:"netMargin",label:"Net Margin Expansion",sp500:12,unit:"%",weight:20,desc:"Expanding margins = multiple expansion (second play)"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:20,desc:"Capital efficiency sustains compounding"},
+                {id:"fortress",label:"Balance Sheet Strength",sp500:1.5,unit:"x",weight:15,desc:"Survive the bear market to reap the double play",invert:true},
+                {id:"fcfConversion",label:"Cash Generation",sp500:85,unit:"%",weight:10,desc:"Real cash flow backing earnings growth"},
+                {id:"grossMargin",label:"Pricing Power",sp500:45,unit:"%",weight:10,desc:"Durable margins through cycles"}
+              ]},
+            {id:"hohn",name:"Chris Hohn",subtitle:"Activist Value",unlock:0,quote:"We invest in quality businesses with strong free cash flow and push for better capital allocation.",bio:"Chris Hohn founded TCI Fund Management and is one of the world's highest-earning hedge fund managers. He combines activist pressure with long-term holding of high-quality, cash-generative businesses.",wiki:null,
+              metrics:[
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:30,desc:"Free cash flow relative to earnings — the real return"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:20,desc:"Is management improving profitability?"},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:15,desc:"Capital efficiency — allocating capital wisely?"},
+                {id:"opLeverage",label:"Operating Margin",sp500:13,unit:"%",weight:20,desc:"Operational efficiency gains over time"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:15,desc:"Capital discipline",invert:true}
+              ]},
+            {id:"akre",name:"Chuck Akre",subtitle:"Compounding Machine",unlock:0,quote:"The most important thing is the rate of return on reinvested capital.",
+              bio:"Chuck Akre ran Akre Capital for decades, seeking 'three-legged stools': exceptional business models, skilled managers, and reinvestment opportunities. Known for owning American Tower for 20+ years.",wiki:null,
+              metrics:[
+                {id:"roic",label:"Return on Invested Capital",sp500:15,unit:"%",weight:35,desc:"The engine of compounding — must be sustainably high"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:25,desc:"Real cash that can be reinvested at high rates"},
+                {id:"revGrowth",label:"Revenue Growth",sp500:5,unit:"%",weight:20,desc:"Growth extends the compounding runway"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:10,desc:"Pricing power funds reinvestment"},
+                {id:"fortress",label:"Net Debt / EBITDA",sp500:1.5,unit:"x",weight:10,desc:"Moderate leverage is acceptable if returns are high",invert:true}
+              ]},
+            {id:"pabrai",name:"Mohnish Pabrai",subtitle:"Heads I Win, Tails I Don't Lose",unlock:0,quote:"Invest in businesses where you have a significant probability of a big win and a small probability of permanent loss.",
+              bio:"Mohnish Pabrai runs the Pabrai Investment Funds, closely modelling his approach on Buffett. He focuses on low-risk, high-uncertainty situations — cloning great investors and waiting for fat pitches.",wiki:null,
+              metrics:[
+                {id:"fortress",label:"Balance Sheet Safety",sp500:1.5,unit:"x",weight:30,desc:"Strong balance sheet limits downside risk",invert:true},
+                {id:"roic",label:"ROIC",sp500:15,unit:"%",weight:25,desc:"High returns on capital = durable moat"},
+                {id:"fcfConversion",label:"FCF Conversion",sp500:85,unit:"%",weight:20,desc:"Cash is the scoreboard — everything else is accounting"},
+                {id:"grossMargin",label:"Gross Margin",sp500:45,unit:"%",weight:15,desc:"Pricing power is the moat"},
+                {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:10,desc:"Profitability after all obligations"}
+              ]}
+          ];
+          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
+          var portCos=cos.filter(function(c){return((c.status||"portfolio")==="portfolio"||(c.status||"")==="watchlist")&&lensData[c.ticker]});
+          var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
+          // Build actual values per holding per metric
+          var portMetrics=lens.metrics.map(function(m){
+            var weightedVal=0;var weightSum=0;var holdingData=[];
+            portCos.forEach(function(c){
+              var td=lensData[c.ticker];if(!td)return;
+              var metricData=td[m.id];if(!metricData)return;
+              var numVal=metricData.num;var rawVal=metricData.value||"";
+              // For fortress (Net Debt/EBITDA), value is like "1.5x" or "Net Cash"
+              if(m.id==="fortress"&&String(rawVal).indexOf("Net Cash")>=0)numVal=-0.5;
+              if(numVal!=null){
+                var pos=c.position||{};var val=(pos.shares||0)*(pos.currentPrice||0);
+                var w=totalVal>0?val/totalVal:1/portCos.length;
+                weightedVal+=numVal*w;weightSum+=w;
+                holdingData.push({ticker:c.ticker,value:numVal,raw:rawVal,weight:Math.round(w*100)})}});
+            var avgVal=weightSum>0?weightedVal/weightSum:null;
+            var delta=avgVal!=null?(m.invert?m.sp500-avgVal:avgVal-m.sp500):null;
+            return{id:m.id,label:m.label,unit:m.unit,weight:m.weight,desc:m.desc,invert:m.invert,portfolioVal:avgVal,sp500:m.sp500,delta:delta,holdings:holdingData}});
+          // Weighted composite: percentage of metrics beating S&P
+          var beating=portMetrics.filter(function(m){return m.delta!=null&&m.delta>0}).length;
+          var measured=portMetrics.filter(function(m){return m.portfolioVal!=null}).length;
+          var beatPct=measured>0?Math.round(beating/measured*100):0;
+          var fmtVal=function(v,unit,invert){
+            if(v==null)return"—";
+            if(unit==="x")return(v<0?"Net Cash":v.toFixed(1)+"x");
+            return v.toFixed(1)+unit};
+          var clr=function(delta){if(delta==null)return K.dim;return delta>0?K.grn:delta<-2?K.red:K.amb};
+          return<div>
+            {/* Lens selector pills */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
+              {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
+                  {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
+                  {l.name}
+                  {locked&&<span style={{display:"block",fontSize:8,color:K.dim,marginTop:1}}>Week {l.unlock} streak</span>}
+                </button>})}</div>
+            {/* Lens header */}
+            <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:12}}>
+                {lens.wiki&&<img src={"https://upload.wikimedia.org/wikipedia/commons/thumb/"+lens.wiki} alt={lens.name} style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:"1px solid "+K.bdr,background:K.bg}} onError={function(e){e.target.style.display="none"}}/>}
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                    <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh}}>{lens.name} <span style={{fontWeight:300,color:K.dim,fontSize:14}}>{lens.subtitle}</span></div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:24,fontWeight:700,color:beatPct>=70?K.grn:beatPct>=40?K.amb:K.red,fontFamily:fm}}>{beatPct}%</div>
+                      <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>metrics above S&amp;P 500</div></div></div>
+                  {lens.bio&&<div style={{fontSize:12,color:K.dim,lineHeight:1.6,marginTop:5}}>{lens.bio}</div>}
+                </div></div>
+              <div style={{fontSize:13,color:K.mid,fontStyle:"italic",lineHeight:1.6,borderTop:"1px solid "+K.bdr+"40",paddingTop:12}}>"{lens.quote}"</div>
+            </div>
+            {/* Metrics table with actual values */}
+            {lensLoading&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center"}}>
+              <div style={{display:"inline-block",width:20,height:20,border:"2px solid "+K.bdr,borderTopColor:K.acc,borderRadius:"50%",animation:"spin .8s linear infinite",marginBottom:12}}/>
+              <div style={{fontSize:14,color:K.dim}}>Fetching financial data for your holdings…</div></div>}
+            {!lensLoading&&portCos.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:40,textAlign:"center"}}>
+              <div style={{fontSize:14,color:K.dim,marginBottom:8}}>No financial data yet</div>
+              <div style={{fontSize:13,color:K.dim}}>Add portfolio companies with position data. Financial metrics are fetched automatically from FMP.</div></div>}
+            {!lensLoading&&portCos.length>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                <thead><tr style={{borderBottom:"2px solid "+K.bdr}}>
+                  <th style={{textAlign:"left",padding:"12px 14px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>Metric</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600,width:50}}>Weight</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>Your Portfolio</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>S&P 500</th>
+                  <th style={{textAlign:"center",padding:"12px 8px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>vs Benchmark</th>
+                  <th style={{textAlign:"left",padding:"12px 14px",fontSize:11,color:K.dim,fontFamily:fm,fontWeight:600}}>By Holding</th>
+                </tr></thead>
+                <tbody>{portMetrics.map(function(m){
+                  return<tr key={m.id} style={{borderBottom:"1px solid "+K.bdr+"60"}}>
+                    <td style={{padding:"12px 14px"}}><div style={{fontWeight:500,color:K.txt}}>{m.label}</div><div style={{fontSize:11,color:K.dim,marginTop:2}}>{m.desc}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px",fontSize:12,color:K.dim,fontFamily:fm}}>{m.weight}%</td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      <div style={{fontSize:18,fontWeight:700,color:m.portfolioVal!=null?clr(m.delta):K.dim,fontFamily:fm}}>{fmtVal(m.portfolioVal,m.unit,m.invert)}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      <div style={{fontSize:14,color:K.dim,fontFamily:fm}}>{fmtVal(m.sp500,m.unit)}</div></td>
+                    <td style={{textAlign:"center",padding:"12px 8px"}}>
+                      {m.delta!=null?<span style={{fontSize:13,fontWeight:600,color:clr(m.delta),fontFamily:fm,background:clr(m.delta)+"10",padding:"3px 10px",borderRadius:_isBm?0:4}}>{m.delta>=0?"+":""}{m.delta.toFixed(1)}{m.unit==="x"?"x":m.unit}</span>:<span style={{color:K.dim}}>—</span>}</td>
+                    <td style={{padding:"12px 14px"}}>
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{m.holdings.slice(0,8).map(function(h){
+                        var hDelta=m.invert?m.sp500-h.value:h.value-m.sp500;
+                        return<span key={h.ticker} style={{fontSize:10,fontFamily:fm,padding:"2px 6px",borderRadius:_isBm?0:3,background:hDelta>0?K.grn+"12":hDelta>-2?K.amb+"12":K.red+"12",color:hDelta>0?K.grn:hDelta>-2?K.amb:K.red}} title={h.raw}>{h.ticker} {h.raw||fmtVal(h.value,m.unit)}</span>})}</div></td>
+                  </tr>})}</tbody>
+              </table>
+              <div style={{padding:"12px 14px",borderTop:"1px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{fontSize:11,color:K.dim}}>Weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have data. Financial metrics via FMP.</div>
+                <div style={{display:"flex",gap:8,fontSize:10,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
+            </div>}
+          </div>
+        return null;
+      })()}
+
     </div>;
   }
+
+
 
 
   function WatchlistPage(){
