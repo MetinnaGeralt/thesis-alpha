@@ -7536,7 +7536,7 @@ function calcMoatFromData(finData,businessModelType){
             return<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:_isBm?0:8,background:color+"08",border:"1px solid "+color+"20",marginBottom:12}}>
               <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0}}/>
               <div style={{flex:1}}>
-                <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Fat pitch price from deep dive: "}</span>
+                <span style={{fontSize:11,color:K.dim,fontFamily:fm,display:"flex",alignItems:"center",gap:3}}>{"Fat pitch price from deep dive: "}<LearnLink id="fat_pitch" label="Fat Pitch (Buffett)"/></span>
                 <span style={{fontSize:11,fontWeight:700,color:color,fontFamily:fm}}>{cSym+fp.toFixed(2)}</span>
                 <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{" — current price is "}</span>
                 <span style={{fontSize:11,fontWeight:700,color:color,fontFamily:fm}}>{(above?"+":"")+pct.toFixed(1)+"% "+(above?"above":"below")+" that level"}</span>
@@ -8006,7 +8006,7 @@ function calcMoatFromData(finData,businessModelType){
         {/* ── 5. KEY METRICS CHART ── */}
         {keyFin&&keyFin.length>=2&&<div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>KEY METRICS</div>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{"KEY METRICS"}<LearnLink id="roic" label="ROIC"/></div>
             <button onClick={function(){if(isPro)setSubPage("financials");else{setShowUpgrade(true);setUpgradeCtx("financials")}}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Full financials {"→"}</button></div>
           <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"16px 20px"}}>
             <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
@@ -8442,7 +8442,7 @@ function calcMoatFromData(finData,businessModelType){
                 {/* ── 4. THE MOAT ── */}
         <div style={{marginBottom:24}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600}}>THE MOAT</div>
+            <div style={{fontSize:11,letterSpacing:2,textTransform:"uppercase",color:_isThesis?K.acc:K.dim,fontFamily:fm,fontWeight:600,display:"flex",alignItems:"center",gap:4}}>{"THE MOAT"}<LearnLink id="moat" label="Economic Moat (Buffett)"/></div>
             <button onClick={function(){setSubPage("moat")}} style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm}}>Full analysis {"→"}</button></div>
           {dossierMoat?(function(){
             var comp=dossierMoat.composite;var mColor=comp>=8?K.grn:comp>=6?K.amb:K.red;
@@ -11058,9 +11058,39 @@ function ProWelcomeGift(){
     var _cleaning=useState(false),cleaning=_cleaning[0],setCleaning=_cleaning[1];
     var _genId=useState(null),genId=_genId[0],setGenId=_genId[1];
     var _userNote=useState(""),userNote=_userNote[0],setUserNote=_userNote[1];
+    var _view=useState("overview"),view=_view[0],setView=_view[1];
 
-    // Sync userNote when selected entry changes
     useEffect(function(){if(sel){setUserNote(sel.userNote||"");}else{setUserNote("");}},[sel&&sel.weekId]);
+
+    // Aggregate decision data across all companies
+    var allDecisions=[];
+    cos.forEach(function(c){
+      (c.decisions||[]).forEach(function(d){
+        allDecisions.push(Object.assign({},d,{ticker:c.ticker,companyId:c.id,domain:c.domain,name:c.name}));
+      });
+    });
+    allDecisions.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1;});
+    var scored=allDecisions.filter(function(d){return d.outcome;});
+    var rights=scored.filter(function(d){return d.outcome==="right";}).length;
+    var rightPct=scored.length>0?Math.round(rights/scored.length*100):null;
+    var actionColors={BUY:K.grn,ADD:K.grn,SELL:K.red,TRIM:K.red,HOLD:K.amb,PASS:K.dim,NOTE:K.acc};
+    var recentDecs=allDecisions.slice(0,5);
+
+    // Conviction changes this month
+    var now=new Date();
+    var monthAgo=new Date(now.getTime()-30*86400000).toISOString();
+    var recentConvChanges=[];
+    cos.forEach(function(c){
+      var hist=c.convictionHistory||[];
+      hist.forEach(function(ch,i){
+        if((ch.date||"")>=monthAgo){
+          var prev=hist[i-1];
+          var delta=prev?ch.rating-prev.rating:0;
+          recentConvChanges.push({ticker:c.ticker,date:ch.date,rating:ch.rating,delta:delta,note:ch.note||""});
+        }
+      });
+    });
+    recentConvChanges.sort(function(a,b){return(b.date||"")>(a.date||"")?1:-1;});
 
     function generateNarrative(entry){
       if(!entry||entry.generating)return;
@@ -11069,10 +11099,10 @@ function ProWelcomeGift(){
       var changes=entry.reviewData&&entry.reviewData.changes||[];
       var refl=entry.reviewData&&entry.reviewData.reflection||"";
       var avgConv=entry.reviewData&&entry.reviewData.avgConv||"?";
-      var changeStr=changes.length>0?changes.map(function(e){return e.ticker+(e.prev!==e.new?" (conviction "+e.prev+"\u2192"+e.new+")"+(e.note?" \u2014 '"+e.note.substring(0,60)+"'":""):" (held at "+e.new+")");}).join(", "):"No conviction changes this week.";
-      var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){if(d.date){var dd=new Date(d.date);var we=new Date(entry.date);var diff=Math.abs(we-dd)/864e5;if(diff<8)recentDecs.push(c.ticker+" \u2014 "+d.action+(d.reasoning?" ("+d.reasoning.substring(0,80)+")":""));}});});
-      var prompt="Write a brief investor journal entry in first person for the week of "+entry.weekLabel+". Warm, honest, reflective tone \u2014 like a private notebook. 3-4 sentences only. Specific to the data. No generic advice.\n\nConviction review:\n"+changeStr+"\nPortfolio avg conviction: "+avgConv+"/10\n"+(recentDecs.length>0?"Decisions this week:\n"+recentDecs.join("\n")+"\n":"")+(refl?"Investor's own note: '"+refl+"'\n":"")+"\nWrite the journal entry. First person. Past tense. Short.";
-      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}],callType:"journal"})});})()
+      var changeStr=changes.length>0?changes.map(function(e){return e.ticker+(e.prev!==e.new?" (conv: "+e.prev+"→"+e.new+")":"");}).join(", "):"No conviction changes";
+      var recentDecsStr=allDecisions.slice(0,5).map(function(d){return"["+d.date+"] "+d.action+": "+d.ticker+(d.reasoning?" — "+d.reasoning.substring(0,60):"");}).join("\n")||"No recent decisions";
+      var prompt="Write a brief investor journal entry in first person for the week of "+entry.weekLabel+". Portfolio avg conviction: "+avgConv+"/10. "+changeStr+". Recent decisions:\n"+recentDecsStr+(refl?"\nMy notes: "+refl:".")+"\n\nKeep it to 2-3 paragraphs. Focus on business fundamentals and investment thinking, not market noise. Be direct and honest about uncertainties.";
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({prompt:prompt,system:"You are helping an investor write a reflective journal entry about their portfolio. Write in their voice — first person, direct, focused on business quality and long-term thinking. No financial advice.",model:"claude-haiku-4-5-20251001",max_tokens:400})})})()
         .then(function(r){return r.json();})
         .then(function(d){
           var text=(d.content&&d.content[0]&&d.content[0].text)||"";
@@ -11086,145 +11116,166 @@ function ProWelcomeGift(){
     function cleanRamble(){
       if(!ramble.trim()||cleaning)return;
       setCleaning(true);
-      var prompt="Clean up this rough investor note into one clear, well-written paragraph. Keep the person's voice and meaning. Remove filler. No more than 100 words.\n\nRaw note:\n"+ramble.substring(0,800);
-      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}],callType:"ramble"})});})()
+      var prompt="Clean up this rough investor note into one clear, well-written paragraph. Keep the voice and ideas intact. Remove filler words. Output only the cleaned paragraph.\n\n"+ramble;
+      (async function(){var tok=await getAuthToken();return fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok},body:JSON.stringify({prompt:prompt,model:"claude-haiku-4-5-20251001",max_tokens:200})})})()
         .then(function(r){return r.json();})
         .then(function(d){
           var text=(d.content&&d.content[0]&&d.content[0].text)||ramble;
           var newNote=(userNote?userNote+"\n\n":"")+text;
-          setUserNote(newNote);
-          setRamble("");
           if(sel)saveJournalEntry({weekId:sel.weekId,userNote:newNote});
-          setCleaning(false);
-        })
-        .catch(function(){setCleaning(false);});
+          setUserNote(newNote);setRamble("");setCleaning(false);
+        }).catch(function(){setCleaning(false);});
     }
 
-    function saveNote(){
-      if(sel)saveJournalEntry({weekId:sel.weekId,userNote:userNote});
-    }
+    function fmtDate(dt){if(!dt)return"";try{return new Date(dt).toLocaleDateString("en-US",{month:"short",day:"numeric"});}catch(e){return dt.substring(0,10);}}
 
-    // Get latest entry for current week (unreviewed = no review data yet)
-    var weekId=getWeekId();
-    var hasThisWeek=journalEntries.some(function(e){return e.weekId===weekId;});
-
-    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:860}}>
-      <div style={{display:"flex",gap:0,marginBottom:20,borderBottom:"1px solid "+K.bdr}}>
-        {["library","journal","strategy","ai"].map(function(pg){
-          var labels={"library":"Library","journal":"Journal","strategy":"My Strategy","ai":"AI Prompts"};
-          var act=page===pg;
-          return<button key={pg} onClick={function(){setPage(pg);}}
-            style={{padding:"9px 16px",background:"none",border:"none",
-              borderBottom:"2px solid "+(act?K.acc:"transparent"),
-              color:act?K.acc:K.dim,cursor:"pointer",fontSize:13,fontFamily:fm,
-              fontWeight:act?700:400,transition:"all .15s"}}>
-            {labels[pg]}
-          </button>;
-        })}
-      </div>
+    return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:900}}>
       {/* Header */}
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Investor Journal"}</h1>
-          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"Your week in investing \u2014 generated from what you did, with space to add what you thought."}</p>
+          <h1 style={{margin:0,fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{"Investor Journal"}</h1>
+          <p style={{margin:"4px 0 0",fontSize:13,color:K.dim,fontFamily:fm}}>{allDecisions.length+" decisions logged · "+(rightPct!=null?rightPct+"% right":"no outcomes scored yet")}</p>
         </div>
-        <button onClick={function(){
-          var newId=weekId+(effectivePlan==="pro"?"-"+Date.now():"");
-          var entry={weekId:newId,date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
-          saveJournalEntry(entry);setSel(entry);
-        }} style={Object.assign({},S.btn,{padding:"9px 18px",fontSize:13})}>{"+ New entry"}</button>
+        <div style={{display:"flex",gap:6}}>
+          {["overview","decisions","weekly"].map(function(v){return<button key={v} onClick={function(){setView(v);}}
+            style={{padding:"6px 14px",borderRadius:_isBm?0:7,border:"1px solid "+(view===v?K.acc+"50":K.bdr),
+              background:view===v?K.acc+"12":"transparent",color:view===v?K.acc:K.dim,
+              fontSize:11,fontWeight:view===v?700:400,cursor:"pointer",fontFamily:fm,textTransform:"capitalize"}}>
+            {v==="overview"?"Overview":v==="decisions"?"Decisions":"Weekly"}
+          </button>;})}
+        </div>
       </div>
 
-      {/* Empty state */}
-      {journalEntries.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:16}}>{"\ud83d\udcd3"}</div>
-        {effectivePlan==="pro"
-          ?<div>
-            <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Start your investor journal"}</div>
-            <div style={{fontSize:14,color:K.dim,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7}}>{"Create a new entry any time. Write freely, then hit \u2018Clean this up\u2019 to turn rough thoughts into a proper note."}</div>
-            <button onClick={function(){
-              var entry={weekId:weekId+"-"+Date.now(),date:new Date().toISOString(),weekLabel:new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}),reviewData:null,generated:null,userNote:"",generating:false};
-              saveJournalEntry(entry);setSel(entry);
-            }} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Write your first entry"}</button>
-          </div>
-          :<div>
-            <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your journal starts after your first weekly review"}</div>
-            <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"Finish a weekly review and a journal entry will be waiting \u2014 generated from your conviction changes, decisions, and notes."}</div>
-            <button onClick={function(){setPage("review");}} style={Object.assign({},S.btnP,{padding:"11px 32px",fontSize:14})}>{"Go to weekly review"}</button>
-          </div>}
+      {/* ── Overview tab ── */}
+      {view==="overview"&&<div>
+        {/* Stats row */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24}}>
+          {[
+            {label:"Total decisions",val:allDecisions.length,color:K.acc},
+            {label:"Outcomes scored",val:scored.length,color:K.dim},
+            {label:"Right calls",val:rightPct!=null?rightPct+"%":"—",color:rightPct!=null?(rightPct>=60?K.grn:rightPct>=40?K.amb:K.red):K.dim},
+            {label:"Conv. changes (30d)",val:recentConvChanges.length,color:K.dim},
+          ].map(function(stat,i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+            <div style={{fontSize:22,fontWeight:800,color:stat.color,fontFamily:fm,lineHeight:1,marginBottom:4}}>{stat.val}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{stat.label}</div>
+          </div>;})}
+        </div>
+
+        {/* Recent decisions */}
+        {recentDecs.length>0&&<div style={{marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Recent Decisions"}</div>
+          {recentDecs.map(function(d,i){
+            var badgeColor=actionColors[d.action]||K.acc;
+            return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"flex-start",gap:12}}>
+              <CoLogo domain={d.domain} ticker={d.ticker} size={20}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3,flexWrap:"wrap"}}>
+                  <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{d.ticker}</span>
+                  <span style={{fontSize:9,fontWeight:700,color:badgeColor,background:badgeColor+"18",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{d.action}</span>
+                  {d.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"@ $"+d.price}</span>}
+                  {d.outcome&&<span style={{fontSize:9,fontWeight:700,color:d.outcome==="right"?K.grn:K.red,background:(d.outcome==="right"?K.grn:K.red)+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{d.outcome==="right"?"✓ Right":"✗ Wrong"}</span>}
+                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>{fmtDate(d.date)}</span>
+                </div>
+                {d.reasoning&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.reasoning}</div>}
+              </div>
+              <button onClick={function(){setSelId(d.companyId);setDetailTab("dossier");setPage("dashboard");}}
+                style={{background:"none",border:"none",color:K.acc,fontSize:11,cursor:"pointer",fontFamily:fm,flexShrink:0,padding:"2px 4px"}}>{"→"}</button>
+            </div>;})}
+          <button onClick={function(){setView("decisions");}} style={{fontSize:11,color:K.acc,background:"none",border:"none",cursor:"pointer",fontFamily:fm,padding:"4px 0"}}>{"View all decisions →"}</button>
+        </div>}
+
+        {/* Conviction changes */}
+        {recentConvChanges.length>0&&<div style={{marginBottom:24}}>
+          <div style={{fontSize:11,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:12}}>{"Conviction Changes — Last 30 Days"}</div>
+          {recentConvChanges.map(function(ch,i){
+            var color=ch.delta>0?K.grn:ch.delta<0?K.red:K.dim;
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,marginBottom:6}}>
+              <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,minWidth:50}}>{ch.ticker}</span>
+              <span style={{fontSize:13,fontWeight:700,color:color,fontFamily:fm}}>{ch.delta>0?"▲ +"+ch.delta:ch.delta<0?"▼ "+ch.delta:"─"}</span>
+              <span style={{fontSize:12,color:K.mid,fontFamily:fm}}>{"→ "+ch.rating+"/10"}</span>
+              {ch.note&&<span style={{fontSize:11,color:K.dim,fontFamily:fb,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ch.note}</span>}
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{fmtDate(ch.date)}</span>
+            </div>;})}
+        </div>}
+
+        {allDecisions.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:K.dim}}>
+          <div style={{fontSize:36,marginBottom:12}}>📝</div>
+          <div style={{fontSize:14,fontWeight:600,color:K.txt,marginBottom:6}}>{"No decisions logged yet"}</div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Open any company dossier and log a decision to start your investment record."}</div>
+        </div>}
       </div>}
 
-      {/* Two-column layout */}
-      {(journalEntries.length>0||sel)&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"200px 1fr",gap:16,alignItems:"start"}}>
-
-        {/* Sidebar: entry list */}
-        <div style={{display:"flex",flexDirection:"column",gap:5}}>
-          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:4,paddingLeft:4}}>Entries</div>
-          {journalEntries.map(function(entry,i){
-            var isActive=sel&&sel.weekId===entry.weekId;
-            var hasContent=entry.generated||entry.userNote;
-            return<button key={entry.weekId} onClick={function(){setSel(entry);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+(isActive?K.acc+"50":K.bdr),background:isActive?K.acc+"08":"transparent",cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <span style={{fontSize:12,fontWeight:700,color:isActive?K.acc:K.txt,fontFamily:fm}}>{entry.weekLabel||entry.weekId}</span>
-                {!hasContent&&<span style={{width:6,height:6,borderRadius:"50%",background:K.acc,display:"inline-block",flexShrink:0}}/>}
-              </div>
-              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>
-                {entry.generated?entry.generated.substring(0,50)+"...":entry.userNote?entry.userNote.substring(0,50)+"...":"Tap to open"}
-              </span>
-            </button>;
-          })}
+      {/* ── Decisions tab ── */}
+      {view==="decisions"&&<div>
+        <div style={{marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{allDecisions.length+" total · "+scored.length+" scored"}</div>
+          {rightPct!=null&&<div style={{fontSize:12,fontWeight:700,color:rightPct>=60?K.grn:rightPct>=40?K.amb:K.red,fontFamily:fm}}>{rightPct+"% right calls"}</div>}
         </div>
+        {allDecisions.map(function(d,i){
+          var badgeColor=actionColors[d.action]||K.acc;
+          return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 16px",marginBottom:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:d.reasoning?6:0,flexWrap:"wrap"}}>
+              <CoLogo domain={d.domain} ticker={d.ticker} size={18}/>
+              <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{d.ticker}</span>
+              <span style={{fontSize:9,fontWeight:700,color:badgeColor,background:badgeColor+"18",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{d.action}</span>
+              {d.price&&<span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"@ $"+d.price}</span>}
+              {d.conviction&&<span style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Conviction: "+d.conviction+"/10"}</span>}
+              {d.outcome
+                ?<span style={{fontSize:9,fontWeight:700,color:d.outcome==="right"?K.grn:K.red,background:(d.outcome==="right"?K.grn:K.red)+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{d.outcome==="right"?"✓ Right":"✗ Wrong"}</span>
+                :<button onClick={function(){setSelId(d.companyId);setDetailTab("dossier");setPage("dashboard");}}
+                  style={{fontSize:9,color:K.dim,background:"transparent",border:"1px solid "+K.bdr,borderRadius:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm}}>{"Score outcome"}</button>}
+              <span style={{fontSize:10,color:K.dim,fontFamily:fm,marginLeft:"auto"}}>{fmtDate(d.date)}</span>
+            </div>
+            {d.reasoning&&<div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.5,paddingLeft:26}}>{d.reasoning}</div>}
+          </div>;})}
+        {allDecisions.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:K.dim,fontSize:12,fontFamily:fm}}>{"No decisions logged yet."}</div>}
+      </div>}
 
-        {/* Main pane */}
-        {sel&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
-
-          {/* Generated narrative */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:12}}>{"Week of "+( sel.weekLabel||sel.weekId)}</div>
-            {sel.generating&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"20px 0"}}>
-              <div style={{width:16,height:16,borderRadius:"50%",border:"2px solid "+K.acc+"30",borderTop:"2px solid "+K.acc,animation:"spin 1s linear infinite",flexShrink:0}}/>
-              <span style={{fontSize:13,color:K.dim,fontFamily:fm,fontStyle:"italic"}}>{"Writing this week\u2019s entry..."}</span>
-            </div>}
-            {sel.generated&&!sel.generating&&<div style={{fontSize:14,color:K.txt,lineHeight:1.9,fontFamily:fb,marginBottom:16,whiteSpace:"pre-wrap"}}>{sel.generated}</div>}
-            {!sel.generated&&!sel.generating&&<div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"flex-start"}}>
-              <div style={{fontSize:13,color:K.dim,fontStyle:"italic"}}>
-                {sel.reviewData?"Entry ready to generate from your review data.":"No review data yet for this week \u2014 complete a review to auto-generate, or write your own below."}
-              </div>
-              {sel.reviewData&&<button onClick={function(){generateNarrative(sel);}} style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px"})}>{"Generate this week\u2019s entry"}</button>}
-            </div>}
-          </div>
-
-          {/* User note */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:12}}>{"Your thoughts"}</div>
-            <textarea value={userNote} onChange={function(e){setUserNote(e.target.value);}}
-              onBlur={saveNote}
-              rows={4} placeholder={"Add anything on your mind this week\u2026"}
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,lineHeight:1.75,resize:"vertical",outline:"none"}}/>
-          </div>
-
-          {/* Ramble box */}
-          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:14,padding:isMobile?"18px 16px":"24px 28px"}}>
-            <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:6}}>{"Quick capture"}</div>
-            <div style={{fontSize:12,color:K.dim,marginBottom:10}}>{"Write whatever\u2019s on your mind \u2014 rough, unfiltered. Hit \u2018Clean this up\u2019 and it\u2019ll turn into a proper note."}</div>
-            <textarea value={ramble} onChange={function(e){setRamble(e.target.value);}}
-              rows={3} placeholder={"e.g. fico earnings were fine but i didn\u2019t love the tone on pricing, feels like they\u2019re being defensive about something..."}
-              style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fm,lineHeight:1.7,resize:"vertical",outline:"none",marginBottom:8}}/>
-            <button onClick={cleanRamble} disabled={!ramble.trim()||cleaning}
-              style={Object.assign({},S.btnP,{fontSize:12,padding:"8px 18px",opacity:(!ramble.trim()||cleaning)?0.5:1,display:"flex",alignItems:"center",gap:7})}>
-              {cleaning
-                ?<><div style={{width:12,height:12,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"Cleaning..."}</>
-                :"\u2728  Clean this up"}
-            </button>
-          </div>
-
+      {/* ── Weekly tab ── */}
+      {view==="weekly"&&<div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
+        {/* Week list */}
+        {!isMobile&&<div style={{width:180,flexShrink:0}}>
+          {journalEntries.slice(0,12).map(function(e){var act=sel&&sel.weekId===e.weekId;
+            return<div key={e.weekId} onClick={function(){setSel(e);}} style={{padding:"10px 12px",borderRadius:_isBm?0:8,background:act?K.acc+"12":"transparent",border:"1px solid "+(act?K.acc+"40":"transparent"),cursor:"pointer",marginBottom:4}}>
+              <div style={{fontSize:12,fontWeight:act?700:400,color:act?K.acc:K.txt,fontFamily:fm}}>{e.weekLabel}</div>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:2}}>{e.generated?"Narrative written":e.userNote?"Notes added":"Empty"}</div>
+            </div>;})}
         </div>}
+        {/* Week detail */}
+        <div style={{flex:1,minWidth:0}}>
+          {sel?<div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <div style={{fontSize:16,fontWeight:700,color:K.txt,fontFamily:fh}}>{sel.weekLabel}</div>
+              <button onClick={function(){generateNarrative(sel);}} disabled={!!genId||sel.generating}
+                style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"none",background:K.acc,color:"#fff",fontSize:12,fontWeight:600,cursor:genId?"default":"pointer",fontFamily:fm,opacity:genId?.6:1,display:"flex",alignItems:"center",gap:6}}>
+                {sel.generating?<div style={{width:10,height:10,borderRadius:"50%",border:"2px solid rgba(255,255,255,.3)",borderTop:"2px solid #fff",animation:"spin .8s linear infinite"}}/>:null}
+                {sel.generating?"Generating...":"Generate narrative"}
+              </button>
+            </div>
+            {sel.generated&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"16px 20px",marginBottom:16,fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.85,whiteSpace:"pre-wrap"}}>{sel.generated}</div>}
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Your notes"}</div>
+              <textarea value={userNote} onChange={function(e){setUserNote(e.target.value);if(sel)saveJournalEntry({weekId:sel.weekId,userNote:e.target.value});}}
+                placeholder={"What did you learn this week? Any decisions you'd make differently?"}
+                style={{width:"100%",minHeight:100,background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",fontSize:13,color:K.txt,fontFamily:fb,resize:"vertical",outline:"none",lineHeight:1.7,boxSizing:"border-box"}}/>
+            </div>
+            <div style={{background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Quick capture"}</div>
+              <textarea value={ramble} onChange={function(e){setRamble(e.target.value);}}
+                placeholder={"Brain dump here — rough thoughts, market noise you want to filter out, questions to investigate..."}
+                style={{width:"100%",minHeight:70,background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"10px 12px",fontSize:12,color:K.txt,fontFamily:fb,resize:"vertical",outline:"none",lineHeight:1.6,boxSizing:"border-box"}}/>
+              {ramble.trim()&&<button onClick={cleanRamble} disabled={cleaning}
+                style={{marginTop:8,padding:"6px 14px",borderRadius:_isBm?0:6,border:"none",background:K.acc,color:"#fff",fontSize:11,fontWeight:600,cursor:cleaning?"default":"pointer",fontFamily:fm}}>
+                {cleaning?"Cleaning...":"Clean with AI →"}
+              </button>}
+            </div>
+          </div>:<div style={{textAlign:"center",padding:"48px 0",color:K.dim,fontSize:12,fontFamily:fm}}>{"No weekly entries yet. Complete a weekly review to start."}</div>}
+        </div>
       </div>}
     </div>;
   }
 
 
-  // ── My Strategy ─────────────────────────────────────────────────────────
   function MyStrategyPage(){
     var _draft=React.useState(Object.assign({whatIInvestIn:"",whatIPay:"",howIBehave:"",whatIAvoid:"",framework:{name:"",filters:[],useCustom:false}},myStrategy)),draft=_draft[0],setDraft=_draft[1];
     var _cp=React.useState(false),copiedFw=_cp[0],setCopiedFw=_cp[1];
