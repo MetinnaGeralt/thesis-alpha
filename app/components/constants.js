@@ -264,4 +264,29 @@ export {
   THEMES,
   FOLDERS,
   SAMPLE,
+  ALERT_QUOTES,
 };
+var ALERT_QUOTES=[
+  "Now sit on your ass and wait.",
+  "Munger would be proud. Now go touch grass.",
+  "Alert set. The market will come to you.",
+  "Good things come to those who wait. Buffett has been waiting since 1965.",
+  "Lynch says: know what you own. You set the price. Now know when to act.",
+  "The stock doesn't know you're watching it. But you'll know when it's time.",
+  "Patience is the most underrated edge in investing. You just used it.",
+  "Temperament beats IQ. Alert set. Now close the app.",
+  "Munger: 'I have nothing to add.' Neither do you — until the price hits.",
+  "The market is a device for transferring money from the impatient to the patient.",
+  "You've done the thinking. Now let the market do the rest.",
+  "Alert set. Go read a book. Munger read 500 pages a week.",
+  "Waiting is not doing nothing. It's the strategy.",
+  "Charlie would call this 'sitting quietly in a room'. Alert set.",
+  "You don't get paid for activity. Alert set. Inactivity mode: ON.",
+  "The big money is not in the buying or the selling — it's in the waiting.",
+  "Price alert set. Your only job now is to not do anything stupid.",
+  "Buffett watches paint dry too. Alert set.",
+  "You've set your price. The market will come around. It always does.",
+  "Fisher said patience is more than a virtue — it's a prerequisite. Alert set.",
+];
+
+
