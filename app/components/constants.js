@@ -265,6 +265,8 @@ export {
   FOLDERS,
   SAMPLE,
   ALERT_QUOTES,
+  MENTAL_MODELS,
+  GLOSSARY,
 };
 var ALERT_QUOTES=[
   "Now sit on your ass and wait.",
@@ -290,3 +292,179 @@ var ALERT_QUOTES=[
 ];
 
 
+// ── Learning Hub: Mental Models ──────────────────────────────────────────────
+var MENTAL_MODELS=[
+  // ── Thinking Frameworks ──────────────────────────────────────────────────
+  {id:"inversion",cat:"Thinking",title:"Inversion",author:"Charlie Munger",source:"Poor Charlie's Almanack, 2005",
+   tagline:"Invert, always invert.",
+   body:"Munger borrowed inversion from the mathematician Carl Jacobi. Rather than asking 'how do I make this investment succeed?', inversion demands you ask 'what would guarantee failure, and how do I avoid it?' Applied to investing: instead of looking for reasons to buy, look hard for reasons you could be wrong. The companies that survive inversion scrutiny — where you genuinely cannot construct a credible bear case — are the most durable investments. Inversion is the engine behind Buffett's two rules: Rule No. 1, never lose money; Rule No. 2, never forget Rule No. 1.",
+   quote:"It is remarkable how much long-term advantage people like us have gotten by trying to be consistently not stupid, rather than trying to be very intelligent.",
+   quoteSource:"Charlie Munger, USC Law School Commencement, 2007"},
+
+  {id:"circle_of_competence",cat:"Thinking",title:"Circle of Competence",author:"Warren Buffett & Charlie Munger",source:"Berkshire Hathaway Annual Letter, 1996",
+   tagline:"Know what you know. Know what you don't.",
+   body:"Buffett and Munger define a circle of competence as the domain within which you have genuine, tested understanding — not superficial familiarity. The critical insight is not that your circle must be large; it must have clearly defined edges. Buffett has explicitly stated he cannot value most technology companies with confidence, and he doesn't try. The danger is not ignorance, which is identifiable and manageable. The danger is the illusion of competence — believing you understand a business when you do not. Regularly testing your circle means asking: can I explain this business model, its competitive dynamics, and its long-term economics to an intelligent non-specialist?",
+   quote:"What counts for most people in investing is not how much they know, but rather how realistically they define what they don't know.",
+   quoteSource:"Warren Buffett, Berkshire Hathaway Annual Letter, 1993"},
+
+  {id:"margin_of_safety",cat:"Valuation",title:"Margin of Safety",author:"Benjamin Graham",source:"The Intelligent Investor, 1949",
+   tagline:"The three most important words in investing.",
+   body:"Graham defined margin of safety as the gap between a security's intrinsic value and its market price. Buying at a substantial discount to intrinsic value provides protection against analytical errors, unforeseen deterioration in the business, and adverse market events. The concept is deliberately conservative: Graham did not assume his valuations were correct. He assumed they could be wrong by a significant margin, and still required the price to be sufficiently below value to absorb that error. Buffett has called it 'the three most important words in investing.' For high-quality businesses, Buffett later modified Graham's strict quantitative approach, accepting a smaller margin of safety in exchange for superior business economics.",
+   quote:"The margin of safety is always dependent on the price paid. It will be large at one price, small at some higher price, nonexistent at some still higher price.",
+   quoteSource:"Benjamin Graham, The Intelligent Investor, Chapter 20, 1949"},
+
+  {id:"moat",cat:"Business Quality",title:"Economic Moat",author:"Warren Buffett",source:"Berkshire Hathaway Annual Letter, 1986",
+   tagline:"A durable competitive advantage that protects returns on capital.",
+   body:"Buffett introduced the moat metaphor to describe the structural barriers that protect a business's returns on invested capital from competitive erosion. A business without a moat will, over time, see its profits competed away. The five primary moat sources identified by Morningstar (building on Buffett's framework) are: intangible assets (brands, patents, regulatory licenses), cost advantages, switching costs, network effects, and efficient scale. The critical distinction is between moats that are durable — able to withstand technological disruption and new entrants for decades — and those that are merely temporary competitive advantages. Munger emphasizes that moat analysis must be dynamic: 'All moats are in constant peril of being drained.'",
+   quote:"The key to investing is not assessing how much an industry is going to affect society, or how much it will grow, but rather determining the competitive advantage of any given company.",
+   quoteSource:"Warren Buffett, Fortune, 1999"},
+
+  {id:"owner_earnings",cat:"Valuation",title:"Owner Earnings",author:"Warren Buffett",source:"Berkshire Hathaway Annual Letter, 1986",
+   tagline:"The cash a business actually generates for its owners.",
+   body:"Buffett's owner earnings formula: reported earnings + depreciation/depletion/amortisation − average annual maintenance capital expenditure. The key departure from GAAP earnings is the treatment of capital expenditure. GAAP separates capex from the income statement, but Buffett argues that maintenance capex — the spending required merely to sustain a business's competitive position and unit volume — is an economic cost as real as wages. Businesses with large reinvestment requirements (airlines, steel mills) generate far less owner earnings than their reported earnings imply. Asset-light businesses with low maintenance capex (insurance, software) generate owner earnings that typically exceed reported earnings. Buffett uses owner earnings as the denominator in his effective P/E calculation.",
+   quote:"'Reported earnings' — defined as reported profits plus D&D minus capex — is the most important figure for owners trying to evaluate the economic value of a business.",
+   quoteSource:"Warren Buffett, Berkshire Hathaway Annual Letter, 1986"},
+
+  {id:"roic",cat:"Business Quality",title:"Return on Invested Capital",author:"Joel Greenblatt",source:"The Little Book That Beats the Market, 2005",
+   tagline:"The most important metric in equity analysis.",
+   body:"ROIC measures the after-tax operating profit generated per dollar of capital deployed in the business. It is calculated as NOPAT (Net Operating Profit After Tax) divided by invested capital (equity + net debt). A business that consistently earns ROIC above its cost of capital is creating shareholder value; one that earns below destroys it. The durability of high ROIC — not the level in any single year — is the signal of a genuine moat. Greenblatt's 'Magic Formula' uses ROIC as its quality screen precisely because high-ROIC businesses tend to mean-revert less than markets expect. Munger and Buffett focus on the long-run ROIC trajectory as the acid test of whether a moat is real or temporary.",
+   quote:"The secret to investing is to figure out the value of something — and then pay a lot less.",
+   quoteSource:"Joel Greenblatt, The Little Book That Beats the Market, 2005"},
+
+  {id:"compounding",cat:"Thinking",title:"Compound Interest",author:"Albert Einstein (attributed)",source:"Poor Charlie's Almanack; Berkshire Letters",
+   tagline:"The eighth wonder of the world.",
+   body:"Compounding is the process by which investment returns generate further returns over time. Its power is non-linear: at 15% annual returns, money doubles in approximately 4.8 years; at 20%, in 3.6 years. The critical variables are rate of return and time. Buffett's singular insight was that owning wonderful businesses — those with high returns on capital that can reinvest earnings at similarly high rates — creates a self-reinforcing compounding engine. His core holding periods ('our favourite holding period is forever') reflect the mathematics: each year of continued compounding at high rates matters enormously. Conversely, transaction friction (taxes, commissions, bid-ask spreads) has a compounding drag effect that most investors systematically underestimate.",
+   quote:"Understanding both the power of compound interest and the difficulty of getting it is the heart and soul of understanding a lot of things.",
+   quoteSource:"Charlie Munger, USC Business School, 1994"},
+
+  {id:"opportunity_cost",cat:"Thinking",title:"Opportunity Cost",author:"Charlie Munger",source:"Poor Charlie's Almanack, 2005",
+   tagline:"Every investment decision is a comparison.",
+   body:"Opportunity cost is the return foregone by choosing one investment over the best available alternative. Munger argues that most investors evaluate investments in isolation — asking only 'is this good?' — when the correct question is 'is this better than everything else I could do with this capital?' The practical implication: Berkshire's hurdle rate is not a fixed percentage but the expected return from their next-best alternative. Buffett has said that if you own the best business in the world, you should only sell it if you identify something better. This framing dramatically raises the bar for both purchases and sales, and explains why both Buffett and Munger hold concentrated portfolios — they only act when they find something clearly superior.",
+   quote:"Intelligent people make decisions based on opportunity costs — in other words, it's your alternatives that matter. That's how we make all of our decisions.",
+   quoteSource:"Charlie Munger, Berkshire Annual Meeting, 2003"},
+
+  {id:"lollapalooza",cat:"Thinking",title:"Lollapalooza Effect",author:"Charlie Munger",source:"The Psychology of Human Misjudgment, 1995",
+   tagline:"Multiple cognitive biases acting in the same direction simultaneously.",
+   body:"Munger coined 'lollapalooza' to describe situations where several psychological tendencies reinforce each other, producing extreme outcomes that no single tendency could explain. In investing, lollapalooza effects drive bubbles (social proof + incentive bias + availability heuristic + FOMO all pointing in the same direction) and catastrophic capital allocation (overconfidence + commitment bias + social proof from industry peers). The antidote is systematic checklisting — ensuring you identify which biases are potentially active in any decision, especially when multiple biases point the same way. Munger's 25 cognitive biases, compiled in 'The Psychology of Human Misjudgment', are the most comprehensive applied psychology framework in investment literature.",
+   quote:"If you get a lot of confluences, you often get lollapalooza effects — which can be for good or ill.",
+   quoteSource:"Charlie Munger, Harvard Law School, 1995"},
+
+  {id:"fat_pitch",cat:"Process",title:"Fat Pitch",author:"Warren Buffett",source:"Berkshire Hathaway Annual Letter, 1997",
+   tagline:"Swing hard, but only at the right pitch.",
+   body:"Buffett borrowed the fat pitch metaphor from baseball legend Ted Williams, who described how he divided the strike zone into 77 cells and only swung at pitches in his highest-percentage cells. In investing, a fat pitch is a situation where the odds are dramatically in your favour: a high-quality business, well understood, temporarily available at a price that implies an exceptional return. The critical difference from baseball: in investing, you can wait indefinitely without penalty for the fat pitch. There is no called strike for not swinging. This explains Buffett's willingness to hold large cash positions for years — he is not waiting to deploy capital; he is waiting for the pitch that meets his full criteria. Most investors swing at too many borderline pitches.",
+   quote:"We try to exert a Ted Williams kind of discipline. In his book 'The Science of Hitting', Ted explains that he carved the strike zone into 77 cells... Swinging only at pitches in your 'best' cells is the way to a .400 batting average.",
+   quoteSource:"Warren Buffett, Berkshire Hathaway Annual Letter, 1997"},
+
+  {id:"price_value",cat:"Valuation",title:"Price vs. Value",author:"Benjamin Graham",source:"Security Analysis, 1934",
+   tagline:"Price is what you pay. Value is what you get.",
+   body:"Graham's foundational distinction separates market price — a function of sentiment, liquidity, and short-term information — from intrinsic value, which derives from the present value of all future cash flows the business will generate. In the short run, Mr. Market (Graham's allegorical market participant) sets prices based on mood, from euphoric to despairing. In the long run, price converges on value. The practical implication: the stock market is a voting machine in the short term and a weighing machine in the long term. Buffett has repeatedly credited this distinction — and its corollary, that volatility is not risk but opportunity for the disciplined investor — as the most important insight he absorbed from Graham's teaching.",
+   quote:"In the short run, the market is a voting machine but in the long run, it is a weighing machine.",
+   quoteSource:"Benjamin Graham, Security Analysis, 1934"},
+
+  {id:"management_quality",cat:"Business Quality",title:"Management Quality",author:"Philip Fisher",source:"Common Stocks and Uncommon Profits, 1958",
+   tagline:"Invest in people, not just businesses.",
+   body:"Fisher's scuttlebutt method — gathering information from suppliers, customers, competitors, and former employees — was designed primarily to assess management quality. His key dimensions: integrity (do they act in shareholders' interests?), competence (do they allocate capital intelligently?), and adaptability (do they reinvest in the business's long-run competitive position, even at short-term profit cost?). Fisher famously warned that businesses with excellent economics but poor management will eventually be damaged, while businesses with average economics but exceptional management can be dramatically improved. Munger's addition: look for managers who think like owners — who bought their stock with their own money and did not receive most of it through options.",
+   quote:"The management of the companies in which you invest will determine, to a very large extent, the quality of the results you achieve.",
+   quoteSource:"Philip Fisher, Common Stocks and Uncommon Profits, 1958"},
+
+  {id:"mean_reversion",cat:"Thinking",title:"Mean Reversion",author:"Benjamin Graham",source:"Security Analysis; Howard Marks",
+   tagline:"Abnormal returns attract competition until they become normal.",
+   body:"Mean reversion is the empirical tendency for extreme values — unusually high profit margins, unusually high returns on capital, unusually high valuations — to revert toward historical averages over time. In competitive markets, high returns on capital attract new entrants and incremental investment by incumbents until returns converge toward the cost of capital. Understanding mean reversion is essential to long-run valuation: a business currently earning 40% gross margins should not be valued assuming 40% gross margins indefinitely unless there is a clear structural reason (a genuine moat) why competition cannot erode them. The practical error is extrapolating peak conditions — the source of most valuation disasters at market tops.",
+   quote:"Everything reverts to the mean in the long run.",
+   quoteSource:"Howard Marks, The Most Important Thing, 2011"},
+
+  {id:"incentives",cat:"Thinking",title:"Incentive-Caused Bias",author:"Charlie Munger",source:"The Psychology of Human Misjudgment, 1995",
+   tagline:"Show me the incentive and I'll show you the outcome.",
+   body:"Munger's most frequently cited mental model: people's behaviour is powerfully shaped by incentive structures, often in ways they themselves do not consciously recognise. Applied to investing: always ask how management is compensated, and whether those incentives align with long-term shareholder value. Stock options create incentives to inflate short-term earnings. Empire-building incentives lead to value-destroying acquisitions. Fee structures in fund management create incentives for asset gathering rather than return generation. The antidote is to follow the incentives before forming a view — not to assume rational, shareholder-aligned behaviour as a baseline.",
+   quote:"Never, ever, think about something else when you should be thinking about the power of incentives.",
+   quoteSource:"Charlie Munger, Poor Charlie's Almanack, 2005"},
+
+  {id:"network_effects",cat:"Business Quality",title:"Network Effects",author:"Metcalfe's Law (applied to investing)",source:"Peter Thiel, Zero to One, 2014",
+   tagline:"The value of a network grows with the square of its users.",
+   body:"A business with network effects becomes more valuable to each user as the total number of users grows — creating a self-reinforcing moat. Metcalfe's Law states that network value scales with n² (where n = users), meaning network effects compound dramatically at scale. The practical implication: network-effect businesses tend to be winner-take-most or winner-take-all in their categories, creating extreme barriers to displacement. Visa, Mastercard, MSCI's index data, LSEG's clearing infrastructure, and Apple's App Store all exhibit network effects. The investor's task is to distinguish genuine network effects (where each additional user adds value to all existing users) from mere scale advantages (where costs decline with volume but user-to-user value is absent).",
+   quote:"Network effects are the most powerful form of competitive advantage, and the most durable.",
+   quoteSource:"Peter Thiel, Zero to One, 2014"},
+
+  {id:"switching_costs",cat:"Business Quality",title:"Switching Costs",author:"Michael Porter",source:"Competitive Advantage, 1985",
+   tagline:"The cost — financial, operational, or psychological — of leaving.",
+   body:"Switching costs are barriers that make it costly or disruptive for customers to change suppliers, even when alternatives exist. They manifest as: contractual lock-in (multi-year enterprise software contracts), data portability barriers (ERP systems that accumulate years of a company's data), workflow integration (software deeply embedded in operational processes), training costs (staff proficiency in existing tools), and psychological inertia (the known vs. the unknown). High switching costs allow businesses to raise prices gradually without losing customers, generating pricing power that compounds over time. Tyler Technologies, Constellation Software, and Veeva Systems are canonical examples. The investor must assess whether switching costs are durable — i.e., whether technological change could suddenly make switching easy.",
+   quote:"Switching costs arise from the buyer's investment in learning, equipment, data, and supplier relationships.",
+   quoteSource:"Michael Porter, Competitive Advantage, 1985"},
+
+  {id:"scuttlebutt",cat:"Process",title:"Scuttlebutt Method",author:"Philip Fisher",source:"Common Stocks and Uncommon Profits, 1958",
+   tagline:"Go beyond the financial statements.",
+   body:"Fisher's scuttlebutt method involves systematically gathering qualitative information from people who interact with a company — customers, suppliers, former employees, competitors, and industry analysts — to build a picture of the business that cannot be obtained from financial statements alone. The goal is to understand: Is the business regarded as an excellent employer? Do competitors respect it? Does it have exceptional depth in management? Is it focused on long-term earnings growth rather than short-term reporting? Fisher argued that most investors rely almost exclusively on published financial data and management communications — sources that are curated and potentially misleading. The scuttlebutt approach produces genuinely differentiated insight, which is the prerequisite for an informational edge.",
+   quote:"The really great investments come from doing your homework far more thoroughly than the average investor.",
+   quoteSource:"Philip Fisher, Common Stocks and Uncommon Profits, Chapter 3, 1958"},
+
+  {id:"patience",cat:"Process",title:"Patience as Process",author:"Warren Buffett",source:"Berkshire Hathaway Annual Letters",
+   tagline:"The ability to sit on your hands is a competitive advantage.",
+   body:"Buffett has repeatedly described the temperament required for long-term investment success as more important than analytical ability. Most investors' biggest errors are not analytical failures but behavioural ones: selling high-quality businesses too early because of short-term noise, reacting to market volatility as though it represented a change in intrinsic value, or buying marginal businesses because capital feels idle. Buffett's framework: hold a business as long as it remains excellent, its competitive position is intact, and you have no better alternative use for the capital. The holding-period question is not 'when should I sell?' but 'what has fundamentally changed that would alter my original thesis?' Patience is the mechanism by which compounding works.",
+   quote:"The stock market is a device for transferring money from the impatient to the patient.",
+   quoteSource:"Warren Buffett, Berkshire Hathaway Annual Letter, 1985"},
+];
+
+// ── Learning Hub: Concept Glossary ─────────────────────────────────────────
+var GLOSSARY=[
+  {id:"roic",term:"Return on Invested Capital (ROIC)",cat:"Metrics",
+   definition:"NOPAT ÷ Invested Capital. Measures after-tax operating profitability relative to the total capital deployed (equity + net debt). The most important single metric for assessing whether a business is creating or destroying value. Businesses earning ROIC consistently above their weighted average cost of capital (WACC) create economic value; those earning below destroy it.",
+   formula:"ROIC = NOPAT / (Total Equity + Total Debt − Cash)",
+   threshold:"≥15% is generally considered excellent. ≥25% indicates a strong moat. Below 8% suggests structural disadvantage.",
+   source:"Joel Greenblatt, The Little Book That Beats the Market, 2005"},
+
+  {id:"gross_margin",term:"Gross Margin",cat:"Metrics",
+   definition:"(Revenue − Cost of Goods Sold) ÷ Revenue. Measures the percentage of revenue retained after direct production costs. High gross margins are a primary indicator of pricing power — the ability to charge more than it costs to produce. Software businesses often achieve 70–80% gross margins; commodity businesses may struggle to exceed 20%. Gross margin stability over time is as important as its absolute level.",
+   formula:"Gross Margin = (Revenue − COGS) / Revenue × 100",
+   threshold:"SaaS: 70–80% typical. Consumer brands: 40–60%. Industrial/manufacturing: 20–40%. Below 20% suggests commodity dynamics.",
+   source:"Aswath Damodaran, Investment Valuation, 2012"},
+
+  {id:"fcf",term:"Free Cash Flow (FCF)",cat:"Metrics",
+   definition:"Operating Cash Flow minus Capital Expenditure. The cash a business generates after maintaining and investing in its physical asset base. FCF is the foundation of all valuation frameworks because it represents actual cash available for distribution to shareholders, debt reduction, acquisitions, or reinvestment. Divergence between earnings and FCF over extended periods is a significant red flag.",
+   formula:"FCF = Operating Cash Flow − Capital Expenditure",
+   threshold:"FCF yield (FCF/Market Cap) above 5% is generally considered attractive for quality businesses. FCF conversion (FCF/Net Income) above 100% is excellent.",
+   source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1986"},
+
+  {id:"owner_earnings_g",term:"Owner Earnings",cat:"Metrics",
+   definition:"Buffett's preferred measure of a business's economic output. Reported net income + Depreciation/Amortisation − Maintenance Capital Expenditure − Required Working Capital increases. Unlike FCF, owner earnings uses estimated maintenance capex rather than total capex, separating the capital required to sustain the business from the capital deployed to grow it.",
+   formula:"Owner Earnings = Net Income + D&A − Maintenance Capex ± Working Capital Changes",
+   threshold:"Owner earnings significantly above reported net income typically indicates asset-light business model. Significantly below suggests heavy reinvestment requirement.",
+   source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1986"},
+
+  {id:"ev_ebitda",term:"EV/EBITDA",cat:"Valuation"},
+
+  {id:"moat_g",term:"Economic Moat",cat:"Concepts",
+   definition:"A structural competitive advantage that enables a business to earn returns on invested capital above its cost of capital for an extended period, despite competitive pressure. Morningstar categorises moat sources as: intangible assets (brands, patents, regulatory licences), cost advantages, switching costs, network effects, and efficient scale. Wide moat businesses are expected to maintain competitive advantage for 20+ years; narrow moat for 10+ years.",
+   formula:null,
+   threshold:"Wide moat: ROIC sustainably above WACC for 20+ years. Narrow moat: 10–20 years. No moat: returns likely to converge to cost of capital within 10 years.",
+   source:"Pat Dorsey, The Little Book That Builds Wealth, 2008"},
+
+  {id:"wacc",term:"Weighted Average Cost of Capital (WACC)",cat:"Valuation",
+   definition:"The minimum return a business must generate to satisfy all capital providers — equity holders and debt holders. WACC represents the opportunity cost of the capital invested in the business. A business earning ROIC above its WACC creates value; below destroys it. The gap between ROIC and WACC, multiplied by invested capital, defines economic profit (EVA).",
+   formula:"WACC = (E/V × Re) + (D/V × Rd × (1−T)) where E=equity, D=debt, V=total capital, Re=cost of equity, Rd=cost of debt, T=tax rate",
+   threshold:"Typical WACC ranges: 8–12% for large-cap developed markets; 10–15% for emerging markets; 6–10% for utilities and regulated businesses.",
+   source:"Aswath Damodaran, Applied Corporate Finance, 2014"},
+
+  {id:"dcf",term:"Discounted Cash Flow (DCF)",cat:"Valuation",
+   definition:"A valuation methodology that estimates intrinsic value as the present value of all future free cash flows, discounted at the cost of capital. DCF is theoretically complete — it captures all the variables that determine value — but is highly sensitive to assumptions about growth rates, terminal value, and discount rates. Small changes in these assumptions produce large changes in valuation output. Buffett uses DCF conceptually but rarely mechanically, preferring to ask whether free cash flows at a conservative discount rate justify the current price.",
+   formula:"Intrinsic Value = Σ(FCFt / (1+r)^t) + Terminal Value / (1+r)^n",
+   threshold:"A 1% change in the discount rate can move intrinsic value by 15–25%. Terminal value typically represents 60–80% of total DCF value, making growth rate assumptions critical.",
+   source:"Benjamin Graham & David Dodd, Security Analysis, 1934"},
+
+  {id:"pe_ratio",term:"Price-to-Earnings Ratio (P/E)",cat:"Valuation",
+   definition:"Market price per share divided by earnings per share. The most widely used valuation multiple, representing the number of years of current earnings required to justify the current price. P/E is a reciprocal of earnings yield: a P/E of 20x implies a 5% earnings yield. P/E must always be contextualised by earnings quality, growth rate, and the interest rate environment — a 20x P/E for a business growing earnings at 20% per year (PEG of 1.0) is materially different from a 20x P/E for a business with flat earnings.",
+   formula:"P/E = Market Price per Share / Earnings per Share",
+   threshold:"Historical S&P 500 average: ~16x. Below 15x: potentially cheap. 15–25x: fair value range for quality. Above 35x: growth expectations are very demanding.",
+   source:"Benjamin Graham, The Intelligent Investor, 1949"},
+
+  {id:"circle_g",term:"Circle of Competence",cat:"Concepts",
+   definition:"The domain within which an investor has genuine, tested understanding of a business's economics, competitive dynamics, and long-run prospects. Developed by Buffett and Munger to address the consistent error of investors acting outside their knowledge boundaries. The circle is defined not by the investor's confidence level but by their demonstrated ability to make accurate predictions about the business over multiple cycles.",
+   formula:null,
+   threshold:"Munger's test: can you identify five legitimate reasons the business might fail? If not, your circle may not yet encompass it.",
+   source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1996"},
+
+  {id:"margin_safety_g",term:"Margin of Safety",cat:"Concepts",
+   definition:"The discount between the market price of a security and its estimated intrinsic value. Graham required this gap to provide protection against valuation errors and unforeseen deterioration. The larger the uncertainty in the valuation, the larger the required margin of safety. For businesses with highly predictable earnings and strong competitive positions, a 15–20% discount may suffice. For cyclical, capital-intensive, or rapidly changing businesses, Graham recommended discounts of 50% or more.",
+   formula:"Margin of Safety = (Intrinsic Value − Market Price) / Intrinsic Value × 100",
+   threshold:"Graham's baseline: 33% minimum (buy at ≤2/3 of intrinsic value). For high-quality businesses: 15–25% is commonly accepted. For deep-value situations: 40–50%.",
+   source:"Benjamin Graham, The Intelligent Investor, Chapter 20, 1949"},
+];
