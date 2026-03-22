@@ -2550,10 +2550,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var cvRx=[/(?:conviction|confidence|rating|score)\s*[:\-]\s*([0-9]|10)\s*(?:\/\s*10)?/i,/([0-9]|10)\s*\/\s*10\s+(?:conviction|confidence|rating)/i];
       for(var ci=0;ci<cvRx.length;ci++){var cm=txt.match(cvRx[ci]);if(cm){var cv=parseInt(cm[1]);if(cv>=1&&cv<=10&&!sel.conviction){patch.conviction=cv;break;}}}
       // 3. Inversion / thesis killer — first sentence after keyword
-      var invRx=/(?:inversion|what\s+would\s+break|thesis\s+breaker|kill\s+this|permanent\s+impairment)[^:
-.]{0,15}[:
-]\s*([^
-.]{20,200})/i;
+      var invRx=/(?:inversion|what[\s\S]{1,6}would[\s\S]{1,6}break|thesis[\s\S]{1,6}breaker|kill this|permanent impairment)[^:.\n]{0,15}[:\n][^\n.]{0,5}([^\n.]{20,200})/i;
       var im=txt.match(invRx);if(im&&!sel.inversionNote)patch.inversionNote=im[1].trim().substring(0,200);
       // 4. Thesis starter — first real paragraph (>80 chars, no special prefix)
       if(!sel.thesisNote||sel.thesisNote.trim().length<40){
