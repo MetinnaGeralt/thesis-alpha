@@ -3387,24 +3387,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     // ── Pre-processing ────────────────────────────────────────────────────────
     function preProcess(text){
-      // 1. Strip AI citation artifacts: named sources with optional +N
-      text=text.replace(/\s+(?:Wikipedia|Business Wire|Reuters|Bloomberg|SEC|Forbes|CNBC|BBC|FT|WSJ|NYT|Seeking Alpha|Motley Fool|Yahoo Finance|Google Finance|Investopedia|Morningstar|Simply Wall St|Macrotrends|Statista|MarketWatch|ZeroHedge|investors\.com|fool\.com)\s*\+?\d*/gi," ");
-      // 2. Strip domain citations like "cdn.sea.com+1", "yougov.com+2", "gabgrowth.com+1"
-      text=text.replace(/\s+[a-zA-Z0-9][a-zA-Z0-9.-]{2,}\.[a-zA-Z]{2,6}\+\d+/g," ");
-      // 3. Strip bare citation numbers "[1]", "[2]", "^1"
-      text=text.replace(/\s*\[\d+\]/g,"").replace(/\s*\^\d+/g,"");
-      // 4. Convert comma/period continuations after a colon-ending line to bullets
-      var lines=text.split("\n");var result=[];var afterColon=false;
+      // 1. Strip named source citations: "Reuters+2", "Wikipedia+1", etc.
+      text=text.replace(/[ \t]*\b(?:Wikipedia|Business Wire|Reuters|Bloomberg|AP News|SEC|Forbes|CNBC|BBC|FT|WSJ|NYT|Seeking Alpha|Motley Fool|Yahoo Finance|Google Finance|Investopedia|Morningstar|Simply Wall St|Macrotrends|Statista|MarketWatch|ZeroHedge|investors\.com|fool\.com)\b[ \t]*[+]?[ \t]*\d*/gi," ");
+      // 2. Strip domain citations like "cdn.sea.com+1"
+      text=text.replace(/[ \t]+[a-zA-Z0-9][a-zA-Z0-9.-]{2,}\.[a-zA-Z]{2,6}[ \t]*[+]\d+/g," ");
+      // 3. Strip "[1]", "^1"
+      text=text.replace(/[ \t]*\[\d+\]/g,"").replace(/[ \t]*\^\d+/g,"");
+      // 4. Clean up double spaces from stripping
+      text=text.replace(/[ \t]{2,}/g," ").replace(/[ \t]+\./g,".").replace(/[ \t]+,/g,",");
+      // 5. Comma/period continuations after colon line — persists across up to 2 blank lines
+      var lines=text.split("\n");var result=[];var afterColon=false;var blankRun=0;
       for(var i=0;i<lines.length;i++){
         var l=lines[i];var tr=l.trim();
-        if(!tr){afterColon=false;result.push(l);continue;}
+        if(!tr){blankRun++;if(blankRun>2)afterColon=false;result.push(l);continue;}
+        blankRun=0;
         if(tr.endsWith(":")){afterColon=true;result.push(l);continue;}
-        if(afterColon&&!tr.startsWith("-")&&!tr.startsWith("•")&&!tr.match(/^#{1,4}\s/)&&!tr.match(/^\d+\.\d/)){
-          // Comma-terminated = bullet (strip comma)
-          if(tr.endsWith(",")&&tr.length<150){result.push("- "+tr.replace(/,$/,""));continue;}
-          // Period-terminated short line = last bullet
+        if(tr.match(/^#{1,4}\s/)||tr.match(/^\d+\.\d/)){afterColon=false;result.push(l);continue;}
+        if(afterColon&&!tr.startsWith("-")&&!tr.startsWith("•")){
+          if(tr.endsWith(",")&&tr.length<160){result.push("- "+tr.replace(/,$/,""));continue;}
           if(tr.endsWith(".")&&tr.length<100&&tr.indexOf(" ")>0){result.push("- "+tr.replace(/\.$/,""));afterColon=false;continue;}
-          // Short unpunctuated line (≤10 words) = bullet
           if(!tr.match(/[.!?]$/)&&tr.length<120&&tr.split(" ").length<=10){result.push("- "+tr);continue;}
         }
         afterColon=false;result.push(l);
@@ -3508,7 +3509,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
         if(b.type==="h3")return<div key={bi} style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.2px",marginTop:bi>0?18:0,marginBottom:5,lineHeight:1.3}}>{renderInline(b.text)}</div>;
 
-        if(b.type==="h4")return<div key={bi} style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginTop:bi>0?14:0,marginBottom:5}}>{renderInline(b.text)}</div>;
+        if(b.type==="h4")return<div key={bi} style={{display:"flex",alignItems:"center",gap:7,marginTop:bi>0?14:0,marginBottom:5}}>
+          <div style={{width:2,height:12,background:K.acc+"90",borderRadius:2,flexShrink:0}}/>
+          <div style={{fontSize:10,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{renderInline(b.text)}</div>
+        </div>;
 
         if(b.type==="hr")return<div key={bi} style={{height:1,background:K.bdr,margin:"18px 0"}}/>;
 
