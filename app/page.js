@@ -16927,7 +16927,7 @@ function ProWelcomeGift(){
         if(subPage){crumbs.push(sep);crumbs.push(<button key="sp" style={{background:"none",border:"none",color:K.acc,fontSize:11,fontWeight:700,cursor:"default",padding:"0 2px",fontFamily:fm}}>{{financials:"Financials",moat:"Moat Tracker"}[subPage]||subPage}</button>);}
         else if(detailTab&&detailTab!=="dossier"){crumbs.push(sep);crumbs.push(<span key="dt" style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>{{kpis:"KPI Tracker",library:"Research"}[detailTab]||detailTab}</span>);}
       }
-      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.bg,position:"sticky",top:_isBm?0:43,zIndex:40,minHeight:28}}>
+      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.side,position:"sticky",top:_isBm?0:43,zIndex:40,minHeight:28}}>
         <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Home">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         </button>
