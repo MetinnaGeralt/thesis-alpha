@@ -13014,7 +13014,10 @@ function ProWelcomeGift(){
           </div>
           {atFatPitch&&<span style={{fontSize:10,fontWeight:700,color:K.grn,background:K.grn+"15",border:"1px solid "+K.grn+"30",borderRadius:4,padding:"2px 8px",fontFamily:fm,letterSpacing:0.5,textTransform:"uppercase",marginLeft:4}}>{"Fat pitch ✓"}</span>}
         </div>
-        <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 8px",color:K.dim,fontSize:22,lineHeight:1,borderRadius:4}}
+        <button onClick={function(){
+            var fp=fpVal.trim();if(fp!==String(c.fatPitchPrice||""))upd(c.id,{fatPitchPrice:fp||null});
+            var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
+            onClose();}} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 8px",color:K.dim,fontSize:22,lineHeight:1,borderRadius:4}}
           onMouseEnter={function(e){e.currentTarget.style.background=K.bdr;}}
           onMouseLeave={function(e){e.currentTarget.style.background="none";}}>{"×"}</button>
       </div>
@@ -13088,6 +13091,7 @@ function ProWelcomeGift(){
                 style={{width:"100%",boxSizing:"border-box",padding:"9px 12px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,
                   background:K.card,color:K.txt,fontSize:14,fontFamily:fm,outline:"none"}}
                 onFocus={function(e){e.target.style.borderColor=K.acc;}}
+                onKeyDown={function(e){if(e.key==="Enter"){var v=fpVal.trim();if(v)upd(c.id,{fatPitchPrice:v});e.target.blur();}}}
                 onBlur={function(e){e.target.style.borderColor=K.bdr;var v=fpVal.trim();if(v)upd(c.id,{fatPitchPrice:v});}}
               />
             </div>}
@@ -13102,12 +13106,17 @@ function ProWelcomeGift(){
               onClick={function(e){e.stopPropagation();}}>
               <span style={{fontSize:12,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym}</span>
               <input value={apVal} onChange={function(e){setApVal(e.target.value);}}
-                onBlur={function(){}}
+                onBlur={function(){if(apVal.trim())upd(c.id,{alertPrice:apVal.trim()});}}
                 placeholder={"Alert price"}
                 style={{flex:1,background:"none",border:"none",outline:"none",padding:"9px 0",fontSize:14,color:K.txt,fontFamily:fm}}
               />
             </div>
-            <button onClick={function(){upd(c.id,{alertEnabled:!c.alertEnabled});}}
+            <button onClick={function(){
+                var nowEnabled=!c.alertEnabled;
+                var patch={alertEnabled:nowEnabled};
+                if(nowEnabled&&apVal.trim())patch.alertPrice=apVal.trim();
+                upd(c.id,patch);
+              }}
               style={{padding:"9px 16px",borderRadius:_isBm?0:7,border:"none",fontSize:12,fontWeight:700,cursor:"pointer",
                 background:c.alertEnabled?K.grn:K.bdr,color:c.alertEnabled?"#fff":K.dim,transition:"all .2s",flexShrink:0}}>
               {c.alertEnabled?"ON ✓":"OFF"}
