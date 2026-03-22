@@ -2551,8 +2551,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       var metricItems=[];
       blocks.forEach(function(b){
         if(b.type==="metric"){
-          (b.items||"").split("
-").map(function(s){return s.trim();}).filter(Boolean).forEach(function(m){metricItems.push(m);});
+          (b.items||"").split("\n").map(function(s){return s.trim();}).filter(Boolean).forEach(function(m){metricItems.push(m);});
         }
       });
       if(metricItems.length>0){
@@ -2567,50 +2566,17 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(b.type==="filter"){
           filterN++;
           var title=(b.name&&b.name.trim())?b.name.trim():"Filter "+filterN;
-          var checks=(b.checks&&b.checks.trim())?"
-"+b.checks.trim().split("
-").map(function(c){return"✓ "+c.trim();}).join("
-"):"
-✓ [key check]
-⚠ [concern]
-✗ [red flag]";
-          out.push("## FILTER "+filterN+": "+title+"
-VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]"+checks+"
-");
-        } else if(b.type==="moat"){filterN++;out.push("## FILTER "+filterN+": Economic Moat
-VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]
-✓ [moat source identified and durable]
-⚠ [competitive threat]
-✗ [no moat signal]
-");}
-        else if(b.type==="mgmt"){filterN++;out.push("## FILTER "+filterN+": Management Quality
-VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]
-✓ [owner-operator signal]
-⚠ [capital allocation concern]
-✗ [integrity issue]
-");}
-        else if(b.type==="verdict")out.push("## VERDICT
-[2-3 sentence conclusion. Is this worth owning?]
-FAT PITCH: [entry price]
-PENDING: [one thing to verify]
-");
-        else if(b.type==="inversion")out.push("## INVERSION
-MECHANISM: [what would permanently break this thesis]
-ARK: [probability 1-5% and early signal to watch]
-");
-        else if(b.type==="dcf")out.push("## DCF
-Bear | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail
-Base | ... | warn
-Bull | ... | pass
-SUMMARY: [weighted intrinsic value conclusion]
-");
-        else if(b.type==="text"){var topic=(b.name&&b.name.trim())?b.name.trim():"Notes";out.push("## "+topic.toUpperCase()+"
-[Your analysis here]
-");}
+          var checks=(b.checks&&b.checks.trim())?"\n"+b.checks.trim().split("\n").map(function(c){return"✓ "+c.trim();}).join("\n"):"\n✓ [key check]\n⚠ [concern]\n✗ [red flag]";
+          out.push("## FILTER "+filterN+": "+title+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]"+checks+"\n");
+        } else if(b.type==="moat"){filterN++;out.push("## FILTER "+filterN+": Economic Moat\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n✓ [moat source identified and durable]\n⚠ [competitive threat]\n✗ [no moat signal]\n");}
+        else if(b.type==="mgmt"){filterN++;out.push("## FILTER "+filterN+": Management Quality\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n✓ [owner-operator signal]\n⚠ [capital allocation concern]\n✗ [integrity issue]\n");}
+        else if(b.type==="verdict")out.push("## VERDICT\n[2-3 sentence conclusion. Is this worth owning?]\nFAT PITCH: [entry price]\nPENDING: [one thing to verify]\n");
+        else if(b.type==="inversion")out.push("## INVERSION\nMECHANISM: [what would permanently break this thesis]\nARK: [probability 1-5% and early signal to watch]\n");
+        else if(b.type==="dcf")out.push("## DCF\nBear | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail\nBase | ... | warn\nBull | ... | pass\nSUMMARY: [weighted intrinsic value conclusion]\n");
+        else if(b.type==="text"){var topic=(b.name&&b.name.trim())?b.name.trim():"Notes";out.push("## "+topic.toUpperCase()+"\n[Your analysis here]\n");}
       });
       out.push("STATUS SYMBOLS: ✓=pass ⚠=caution ✗=fail —=neutral");
-      return out.join("
-");
+      return out.join("\n");
     }
     var prompt=buildPrompt();
 
