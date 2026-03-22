@@ -14978,10 +14978,8 @@ function ProWelcomeGift(){
       </div>
       </div>}
 
-      {screenTab==="lenses"&&(function(){try{
-        var PURPLE2="#8B5CF6";
-        // (lens fetch handled at component level)
-
+      {screenTab==="lenses"&&<div>
+        {(function(){
           // Parse numeric value from moat cache strings like "45.2%", "+12.3%", "Net Cash", "1.5x"
           function parseVal(v){if(v==null)return null;if(typeof v==="number")return v;var s=String(v).replace(/[^\d.\-]/g,"");return s?parseFloat(s):null}
           // Lens definitions with ACTUAL S&P 500 benchmarks
@@ -15072,7 +15070,7 @@ function ProWelcomeGift(){
                 {id:"netMargin",label:"Net Margin",sp500:12,unit:"%",weight:10,desc:"Profitability after all obligations"}
               ]}
           ];
-          var lens=LENSES.find(function(l){return l.id===sActiveLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
+          var lens=LENSES.find(function(l){return l.id===activeLens&&(l.unlock===0||trialActive||isPro||(streakData.current||0)>=l.unlock)})||LENSES[0];
           var portCos=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"&&lensData[c.ticker]});
           var totalVal=0;portCos.forEach(function(c){var p=c.position||{};totalVal+=(p.shares||0)*(p.currentPrice||0)});
           // Build actual values per holding per metric
@@ -15104,8 +15102,8 @@ function ProWelcomeGift(){
           return<div>
             {/* Lens selector pills */}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:20}}>
-              {LENSES.map(function(l){var active=l.id===sActiveLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
-                return<button key={l.id} onClick={function(){if(!locked)setSActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
+              {LENSES.map(function(l){var active=l.id===activeLens;var locked=!trialActive&&!isPro&&l.unlock>0&&(streakData.current||0)<l.unlock;var weeksLeft=locked?l.unlock-(streakData.current||0):0;
+                return<button key={l.id} onClick={function(){if(!locked)setActiveLens(l.id)}} style={{padding:"7px 14px",borderRadius:_isBm?0:8,border:"1px solid "+(active?K.acc+"60":locked?K.bdr:K.bdr),background:active?K.acc+"10":locked?K.bg:"transparent",color:active?K.acc:locked?K.dim:K.mid,fontSize:12,fontWeight:active?600:400,cursor:locked?"default":"pointer",fontFamily:fm,opacity:locked?.6:1,position:"relative"}}>
                   {locked&&<span style={{position:"absolute",top:-4,right:-4,fontSize:11}}>{String.fromCodePoint(0x1F512)}</span>}
                   {l.name}
                   {locked&&<span style={{display:"block",fontSize:8,color:K.dim,marginTop:1}}>Week {l.unlock} streak</span>}
@@ -15161,8 +15159,8 @@ function ProWelcomeGift(){
                 <div style={{fontSize:11,color:K.dim}}>Weighted by position value. {portCos.length} of {cos.filter(function(c){return(c.status||"portfolio")==="portfolio"}).length} holdings have data. Financial metrics via FMP.</div>
                 <div style={{display:"flex",gap:8,fontSize:10,color:K.dim}}><span style={{color:K.grn}}>● Above S&P</span><span style={{color:K.amb}}>● Near S&P</span><span style={{color:K.red}}>● Below S&P</span></div></div>
             </div>}
-          </div>
-      }catch(e){return<div style={{padding:"40px",color:K.red,fontFamily:fm}}>{"Error: "+e.message}</div>;}})()}
+          </div>})()}
+      </div>}
 
     </div>;
   }
