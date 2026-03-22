@@ -737,6 +737,8 @@ function TrackerApp(props){
   var _c=useState([]),cos=_c[0],setCos=_c[1];var _l=useState(false),loaded=_l[0],setLoaded=_l[1];
   // ── Atomic Moat feed ──────────────────────────────────────────────────
   var _am=useState(null),atomicArticles=_am[0],setAtomicArticles=_am[1];
+  var _ab=useState(function(){try{var b=localStorage.getItem('ta-alert-banners');return b?JSON.parse(b):[]}catch(e){return[]}}),alertBanners=_ab[0],setAlertBanners=_ab[1];
+  function dismissAlertBanner(id){setAlertBanners(function(prev){var next=prev.filter(function(b){return b.id!==id;});try{localStorage.setItem('ta-alert-banners',JSON.stringify(next));}catch(e){}return next;});}
   var _amLoaded=useState(false),atomicLoaded=_amLoaded[0],setAtomicLoaded=_amLoaded[1];
   useEffect(function(){
     var cacheKey="ta-atomic-feed";var cacheTTL=3600000;// 1h
@@ -1262,7 +1264,47 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           try{var dInfo=await fetchDividendInfo(c.ticker);
             if(dInfo&&dInfo.exDivDate){upd(c.id,function(prev){return Object.assign({},prev,{exDivDate:dInfo.exDivDate,divFrequency:dInfo.divFrequency||prev.divFrequency,divCagr:dInfo.divCagr!=null?dInfo.divCagr:prev.divCagr})})}}catch(e){}}
       }}catch(e){}
-      await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false)}
+      await new Promise(function(res){setTimeout(res,300)})}setPriceLoading(false);checkPriceAlerts();}
+  // Price alert check
+  async function checkPriceAlerts(updatedCos){
+    var watched=(updatedCos||cos).filter(function(c){
+      return c.alertEnabled&&c.alertPrice&&c.position&&c.position.currentPrice>0&&
+        c.position.currentPrice<=parseFloat(c.alertPrice)*1.02;
+    });
+    if(watched.length===0)return;
+    var sent={};
+    try{var raw=localStorage.getItem('ta-alerts-sent');if(raw)sent=JSON.parse(raw);}catch(e){}
+    var newSent=Object.assign({},sent);
+    var newBanners=[];
+    for(var i=0;i<watched.length;i++){
+      var c=watched[i];
+      var alertId=c.ticker+'_'+c.alertPrice;
+      if(sent[alertId])continue;
+      newSent[alertId]=Date.now();
+      newBanners.push({id:alertId,ticker:c.ticker,name:c.name,price:c.position.currentPrice,alertPrice:c.alertPrice,time:Date.now()});
+      if(props.user){
+        var subject=c.ticker+' hit your price alert — '+cSym+c.alertPrice;
+        var bodyHtml='<div style="padding:24px 32px">'+
+          '<div style="font-size:11px;font-weight:700;color:#8B5CF6;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Price Alert Triggered</div>'+
+          '<div style="font-size:24px;font-weight:800;color:#111;margin-bottom:4px">'+c.ticker+' — '+c.name+'</div>'+
+          '<div style="font-size:14px;color:#374151;margin-bottom:16px">Current price <strong>'+cSym+(c.position.currentPrice>=100?c.position.currentPrice.toFixed(0):c.position.currentPrice.toFixed(2))+'</strong> has reached your alert of <strong>'+cSym+c.alertPrice+'</strong>.</div>'+
+          (c.fatPitchPrice?'<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#166534">Your fat pitch target is <strong>'+cSym+c.fatPitchPrice+'</strong> — check if this is the entry you’ve been waiting for.</div>':'')+
+          '<div style="font-size:13px;color:#6b7280;margin-bottom:20px">Open ThesisAlpha to review your thesis and decide if now is the time.</div>'+
+          '<a href="https://thesisalpha.com" style="display:inline-block;background:#8B5CF6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">Review '+c.ticker+' dossier →</a>'+
+          '</div>';
+        var html=emailBase(bodyHtml,c.ticker+' hit your price alert of '+cSym+c.alertPrice);
+        try{await authFetch('/api/email',{method:'POST',body:JSON.stringify({to:props.user,subject:subject,html:html})});}catch(e){}
+      }
+    }
+    if(newBanners.length>0){
+      try{localStorage.setItem('ta-alerts-sent',JSON.stringify(newSent));}catch(e){}
+      var existing=[];
+      try{var b=localStorage.getItem('ta-alert-banners');if(b)existing=JSON.parse(b);}catch(e){}
+      try{localStorage.setItem('ta-alert-banners',JSON.stringify(existing.concat(newBanners).slice(-10)));}catch(e){}
+      setAlertBanners(function(prev){return prev.concat(newBanners);});
+    }
+  }
+
   function toggleAutoNotify(){var nv=!autoNotify;setAutoNotify(nv);try{localStorage.setItem("ta-autonotify",String(nv))}catch(e){}
     if(nv){requestPushPermission();
       setNotifs(function(p){return[{id:Date.now(),type:"system",ticker:"",msg:"Auto-notify enabled — earnings will be checked and you'll be notified",time:new Date().toISOString(),read:false}].concat(p).slice(0,30)})}}
@@ -15157,6 +15199,44 @@ function ProWelcomeGift(){
     var watchAlerts=cos.filter(function(c2){var pos=c2.position||{};var price=pos.currentPrice||0;
       var fp=parseFloat(c2.fatPitchPrice)||0;return c2.status==="watchlist"&&fp>0&&price>0&&price<=fp*1.05;});
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 60px":"0 32px 60px",maxWidth:860}}>
+
+        {/* ── Price Alert Banners — persistent until dismissed ── */}
+        {alertBanners&&alertBanners.length>0&&<div style={{marginBottom:16}}>
+          {alertBanners.map(function(b){
+            var price=b.price>=100?b.price.toFixed(0):b.price.toFixed(2);
+            var co=cos.find(function(c){return c.ticker===b.ticker;});
+            return<div key={b.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",
+              background:K.amb+"10",border:"1px solid "+K.amb+"40",borderLeft:"4px solid "+K.amb,
+              borderRadius:_isBm?0:10,marginBottom:6,position:"relative"}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={K.amb} stroke={K.amb} strokeWidth="1.5" strokeLinecap="round" style={{flexShrink:0}}>
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:2}}>
+                  {b.ticker} {"hit your price alert — "+cSym+b.alertPrice}
+                </div>
+                <div style={{fontSize:12,color:K.mid,fontFamily:fm}}>
+                  {"Trading at "+cSym+price+" — review your thesis and decide if the time is right."}
+                  {" A confirmation email has been sent to your inbox."}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexShrink:0}}>
+                <button onClick={function(){if(co){setSelId(co.id);setPage("watchlist");}else setPage("watchlist");dismissAlertBanner(b.id);}}
+                  style={{padding:"6px 14px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"60",
+                    background:K.amb+"18",color:K.amb,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                  {"Review \u2192"}
+                </button>
+                <button onClick={function(){dismissAlertBanner(b.id);}}
+                  style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:18,padding:"2px 6px",lineHeight:1,borderRadius:4}}
+                  onMouseEnter={function(e){e.currentTarget.style.color=K.txt;}}
+                  onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>
+                  {"\u00d7"}
+                </button>
+              </div>
+            </div>;
+          })}
+        </div>}
 
         {/* ── Header ── */}
         <div style={{padding:isMobile?"20px 0 16px":"32px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12}}>
