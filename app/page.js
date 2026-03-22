@@ -8176,15 +8176,17 @@ function calcMoatFromData(finData,businessModelType){
           var PURPLE="#8B5CF6";
           var existingDives=(c.docs||[]).filter(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
           var latestDive=existingDives.length>0?existingDives[existingDives.length-1]:null;
+          var _showNew=React.useState(false),showNewDive=_showNew[0],setShowNewDive=_showNew[1];
           return<div style={{marginBottom:24}}>
             {existingDives.length>0&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:10}}>
-              <button onClick={function(){setModal({type:"importDeepDive"});}}
-                style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+"50",background:PURPLE+"08",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
-                {"+ Import new"}
+              <button onClick={function(){setShowNewDive(!showNewDive);}}
+                style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+PURPLE+(showNewDive?"90":"50"),background:showNewDive?PURPLE+"18":PURPLE+"08",color:PURPLE,fontSize:11,cursor:"pointer",fontFamily:fm,fontWeight:600}}>
+                {showNewDive?"✕ Cancel":"+ Import new"}
               </button>
             </div>}
 
-            {!latestDive&&<div>
+            {/* 3-card selector — shown when no dive exists OR user clicks Import new */}
+            {(!latestDive||showNewDive)&&<div>
               {/* ── Deep Dive — 3 path selector ── */}
               {(function(){
                 var _ddc=React.useState(null),ddCard=_ddc[0],setDdCard=_ddc[1];
@@ -8192,16 +8194,16 @@ function calcMoatFromData(finData,businessModelType){
                   {id:"recommended",num:"01",label:"Recommended",sub:"The Buffett & Munger Framework",color:PURPLE,
                    desc:"A structured 5-filter deep dive distilled from six decades of compounding. Copy the prompt, run it in your AI, import the output.",
                    cta:"Get the prompt →",ctaSecondary:"Already have output? Paste →",
-                   onClick:function(){setModal({type:"deepDivePrompt",ticker:c.ticker});},
-                   onSecondary:function(){setModal({type:"importDeepDive"});}},
+                   onClick:function(){setModal({type:"deepDivePrompt",ticker:c.ticker});setShowNewDive(false);},
+                   onSecondary:function(){setModal({type:"importDeepDive"});setShowNewDive(false);}},
                   {id:"freeform",num:"02",label:"Your Analysis",sub:"Paste your own deep dive",color:K.blue,
                    desc:"Already have a research document, PDF, or notes? Paste them in. ThesisAlpha will render your analysis and extract key metrics into the dossier.",
                    cta:"Import my analysis →",
-                   onClick:function(){setModal({type:"importFreeform",ticker:c.ticker});}},
+                   onClick:function(){setModal({type:"importFreeform",ticker:c.ticker});setShowNewDive(false);}},
                   {id:"custom",num:"03",label:"Custom Editor",sub:"Build your own format",color:K.amb,
                    desc:"Choose your own evaluation blocks. Build a framework that fits how you think. The editor generates a structured prompt your AI can run.",
                    cta:"Open editor →",
-                   onClick:function(){setModal({type:"customEditor",ticker:c.ticker});}}
+                   onClick:function(){setModal({type:"customEditor",ticker:c.ticker});setShowNewDive(false);}}
                 ];
                 return<div style={{marginBottom:20}}>
                   {/* Choose one label */}
@@ -8288,7 +8290,7 @@ function calcMoatFromData(finData,businessModelType){
                 </div>;
               })()}
             </div>}
-{latestDive&&<div>
+{latestDive&&!showNewDive&&<div>
               {existingDives.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
                 {existingDives.map(function(d,di){var isAct=di===existingDives.length-1;return<button key={d.id}
                   style={{padding:"4px 12px",borderRadius:999,border:"1px solid "+PURPLE+"40",background:isAct?PURPLE+"12":"transparent",
