@@ -14610,18 +14610,21 @@ function ProWelcomeGift(){
         for(var i=0;i<needsFetch.length;i++){
           var c=needsFetch[i];
           try{
-            var fin=await fetchFinancialStatements(c.ticker,"annual");
-            if(fin){
-              var moatResult=calcMoatFromData(fin);
-              if(moatResult&&moatResult.metrics){
-                var vals={};
-                moatResult.metrics.forEach(function(m){
-                  var num=parseFloat(String(m.value).replace(/[^0-9.\-]/g,""));
-                  vals[m.id]={score:m.score,value:m.value,num:isNaN(num)?null:num};
-                });
-                data[c.ticker]=vals;
-              }
-            }
+            var rr=await Promise.all([fmp("ratios-ttm/"+c.ticker),fmp("key-metrics-ttm/"+c.ticker)]);
+            var ra=rr[0]&&Array.isArray(rr[0])?rr[0][0]:rr[0];
+            var km=rr[1]&&Array.isArray(rr[1])?rr[1][0]:rr[1];
+            if(!ra&&!km)continue;
+            var mk=function(v){return{num:v!=null?v:null,value:v!=null?v.toFixed(1):null,score:v!=null?Math.min(10,Math.max(0,Math.round(v/10))):null};};
+            data[c.ticker]={
+              grossMargin:mk(ra&&ra.grossProfitMarginTTM!=null?ra.grossProfitMarginTTM*100:null),
+              opLeverage:mk(ra&&ra.operatingProfitMarginTTM!=null?ra.operatingProfitMarginTTM*100:null),
+              roic:mk(km&&km.returnOnInvestedCapitalTTM!=null?km.returnOnInvestedCapitalTTM*100:null),
+              netMargin:mk(ra&&ra.netProfitMarginTTM!=null?ra.netProfitMarginTTM*100:null),
+              fcfConversion:mk(ra&&ra.freeCashFlowPerRevenueTTM!=null?ra.freeCashFlowPerRevenueTTM*100:null),
+              revGrowth:mk(ra&&ra.revenueGrowthTTM!=null?ra.revenueGrowthTTM*100:null),
+              fortress:mk(km&&km.netDebtToEBITDATTM!=null?km.netDebtToEBITDATTM:null),
+              pe:mk(km&&km.peRatioTTM!=null?km.peRatioTTM:null),
+            };
           }catch(e){}
         }
         setLensData(data);setLensLoading(false);
