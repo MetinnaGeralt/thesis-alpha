@@ -2507,6 +2507,82 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Import Deep Dive Modal ──────────────────────────────────────────────────
   // ── Import Freeform Analysis Modal ───────────────────────────────────────
+  function CustomEditorModal(){
+    if(!sel)return null;
+    var PURPLE="#8B5CF6";
+    var ALL_BLOCKS=[
+      {type:"filter",label:"Filter (pass/fail)",desc:"Evaluation criterion with Pass/Borderline/Fail verdict",color:K.grn},
+      {type:"metric",label:"Metric Row",desc:"Key financial metric with value and status",color:K.blue},
+      {type:"verdict",label:"Verdict",desc:"Overall conclusion, position size, fat pitch price",color:K.amb},
+      {type:"inversion",label:"Inversion",desc:"What would permanently break this thesis?",color:PURPLE},
+      {type:"dcf",label:"DCF Scenario",desc:"Bear / Base / Bull valuation scenario",color:K.grn},
+      {type:"mgmt",label:"Management Check",desc:"Owner-operator test and capital allocation",color:K.acc},
+      {type:"moat",label:"Moat Test",desc:"Competitive advantage identification and durability",color:PURPLE},
+      {type:"text",label:"Free Text",desc:"Notes, context, or unstructured analysis",color:K.dim},
+    ];
+    var _bks=React.useState([]),blocks=_bks[0],setBlocks=_bks[1];
+    var _nm=React.useState("My Framework"),fwName=_nm[0],setFwName=_nm[1];
+    var _cp2=React.useState(false),copiedEd=_cp2[0],setCopiedEd=_cp2[1];
+    function addBlock(type){var def=ALL_BLOCKS.find(function(b){return b.type===type;});setBlocks(function(prev){return prev.concat([{type:type,label:def?def.label:"Block",id:Date.now()}]);});}
+    function removeBlock(id){setBlocks(function(prev){return prev.filter(function(b){return b.id!==id;});});}
+    function moveBlock(id,dir){setBlocks(function(prev){var ix=prev.findIndex(function(b){return b.id===id;});if(ix<0)return prev;var next=prev.slice();var tg=ix+dir;if(tg<0||tg>=next.length)return prev;var tmp=next[ix];next[ix]=next[tg];next[tg]=tmp;return next;});}
+    function buildPrompt(){
+      var out=["You are producing a structured investment analysis of "+sel.ticker+" using the "+fwName+" framework.","Output in EXACTLY this format \u2014 ThesisAlpha parses it automatically.","","## TITLE",""+sel.ticker+" \u2014 "+fwName,"","## METRICS","[Key metric] | [Value] | [pass/warn/fail]","(3-5 key metrics)",""];
+      blocks.forEach(function(b,i){var n=i+1;
+        if(b.type==="filter"||b.type==="moat"||b.type==="mgmt"){var t=b.type==="moat"?"Economic Moat":b.type==="mgmt"?"Management Quality":b.label;out.push("## FILTER "+n+": "+t+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n\u2713 [key check]\n\u26a0 [concern]\n\u2717 [red flag]\n");}
+        else if(b.type==="verdict")out.push("## VERDICT\n[2-3 sentence conclusion.]\nFAT PITCH: [entry price]\nPENDING: [one thing to verify]\n");
+        else if(b.type==="inversion")out.push("## INVERSION\nMECHANISM: [what would break this thesis]\nARK: [probability and signal]\n");
+        else if(b.type==="dcf")out.push("## DCF\nBear | [CAGR] | [margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail\nBase | ... | warn\nBull | ... | pass\nSUMMARY: [conclusion]\n");
+        else if(b.type==="metric")out.push("## METRICS\n[Label] | [Value] | [pass/warn/fail]\n");
+        else out.push("## NOTES\n[Free-form analysis and context]\n");
+      });
+      out.push("STATUS SYMBOLS: \u2713=pass \u26a0=caution \u2717=fail \u2014=neutral");
+      return out.join("\n");
+    }
+    var prompt=buildPrompt();
+    return<Modal title={"Custom Editor \u2014 "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
+      <div style={{marginBottom:16}}>
+        <input value={fwName} onChange={function(e){setFwName(e.target.value);}} placeholder={"Framework name"}
+          style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:14,fontFamily:fh,fontWeight:700,outline:"none",marginBottom:12}}
+          onFocus={function(e){e.target.style.borderColor=K.amb+"60";}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
+        <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:8}}>{"Add blocks to build your format"}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
+          {ALL_BLOCKS.map(function(b){return<button key={b.type} onClick={function(){addBlock(b.type);}}
+            style={{padding:"6px 12px",borderRadius:_isBm?0:7,border:"1px solid "+b.color+"40",background:b.color+"08",color:b.color,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=b.color+"18";}} onMouseLeave={function(e){e.currentTarget.style.background=b.color+"08";}}>{b.label}</button>;})}
+        </div>
+        {blocks.length===0&&<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:13,fontFamily:fm,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:8,marginBottom:16}}>{"Add blocks above to build your format"}</div>}
+        {blocks.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+          {blocks.map(function(b,bi){var def=ALL_BLOCKS.find(function(d){return d.type===b.type;});
+            return<div key={b.id} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr}}>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{b.label}</div><div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{def?def.desc:""}</div></div>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={function(){moveBlock(b.id,-1);}} disabled={bi===0} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===0?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===0?0.3:1}}>{"\u2191"}</button>
+                <button onClick={function(){moveBlock(b.id,1);}} disabled={bi===blocks.length-1} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===blocks.length-1?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===blocks.length-1?0.3:1}}>{"\u2193"}</button>
+                <button onClick={function(){removeBlock(b.id);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 4px",lineHeight:1}}>{"\u00d7"}</button>
+              </div>
+            </div>;
+          })}
+        </div>}
+        {blocks.length>0&&<div style={{border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,overflow:"hidden"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:K.amb+"08",borderBottom:"1px solid "+K.amb+"20"}}>
+            <span style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm}}>{"Generated prompt"}</span>
+            <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedEd(true);setTimeout(function(){setCopiedEd(false);},2000);}} style={{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",background:copiedEd?K.amb+"20":"transparent",color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+              {copiedEd?"\u2713 Copied":"Copy"}</button>
+          </div>
+          <pre style={{margin:0,padding:"12px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:200,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
+        </div>}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,borderTop:"1px solid "+K.bdr}}>
+        <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Build \u2192 copy prompt \u2192 run in AI \u2192 paste output"}</div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"9px 20px"})}>Close</button>
+          {blocks.length>0&&<button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"9px 22px",background:K.amb,borderColor:K.amb})}>{"Paste output \u2192"}</button>}
+        </div>
+      </div>
+    </Modal>;
+  }
+
   function ImportFreeformModal(){
     if(!sel)return null;
     var PURPLE="#8B5CF6";
@@ -2537,37 +2613,11 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         folder:"deep-dives",
         updatedAt:new Date().toISOString()
       };
-      // ── Silent dossier linking — regex pattern extraction, zero AI ──
-      var patch={};var txt=rawText;
-      // 1. Fat pitch / target entry price
-      var fpRx=[
-        /(?:fat\s+pitch|target\s+price|entry\s+price|fair\s+value|buy\s+below|intrinsic\s+value)[^$€£0-9]{0,30}[$€£]?\s*([0-9]+(?:[.,][0-9]+)?)/i,
-        /[$€£]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:fat\s+pitch|target|entry|fair\s+value)/i,
-        /FAT\s+PITCH[^$€£0-9]{0,20}[$€£]?\s*([0-9]+(?:[.,][0-9]+)?)/i
-      ];
-      for(var ri=0;ri<fpRx.length;ri++){var fm2=txt.match(fpRx[ri]);if(fm2){var fpN=parseFloat(fm2[1].replace(",",""));if(fpN>0&&fpN<1000000&&!sel.fatPitchPrice){patch.fatPitchPrice=String(fpN);break;}}}
-      // 2. Conviction score (1-10)
-      var cvRx=[/(?:conviction|confidence|rating|score)\s*[:\-]\s*([0-9]|10)\s*(?:\/\s*10)?/i,/([0-9]|10)\s*\/\s*10\s+(?:conviction|confidence|rating)/i];
-      for(var ci=0;ci<cvRx.length;ci++){var cm=txt.match(cvRx[ci]);if(cm){var cv=parseInt(cm[1]);if(cv>=1&&cv<=10&&!sel.conviction){patch.conviction=cv;break;}}}
-      // 3. Inversion / thesis killer — first sentence after keyword
-      var invRx=/(?:inversion|what[\s\S]{1,6}would[\s\S]{1,6}break|thesis[\s\S]{1,6}breaker|kill this|permanent impairment)[^:.\n]{0,15}[:\n][^\n.]{0,5}([^\n.]{20,200})/i;
-      var im=txt.match(invRx);if(im&&!sel.inversionNote)patch.inversionNote=im[1].trim().substring(0,200);
-      // 4. Thesis starter — first real paragraph (>80 chars, no special prefix)
-      if(!sel.thesisNote||sel.thesisNote.trim().length<40){
-        var paras=txt.split(/\n{2,}/).map(function(p){return p.replace(/\r?\n/g," ").trim();})
-          .filter(function(p){return p.length>80&&p[0]!=="#"&&p[0]!=="*"&&p[0]!=="-"&&p[0]!=="\u2022"&&p[0]!=="\u2713"&&p[0]!=="\u26a0"&&p[0]!=="\u2717"&&!/^[A-Z ]{5,}$/.test(p);});
-        if(paras.length>0)patch.thesisNote=paras[0].substring(0,600);
-      }
       upd(selId,function(c2){
-        return Object.assign({},c2,{docs:c2.docs.concat([doc])},patch);
+        return Object.assign({},c2,{docs:c2.docs.concat([doc])});
       });
-      var linked=[];
-      if(patch.fatPitchPrice)linked.push("fat pitch "+patch.fatPitchPrice);
-      if(patch.conviction)linked.push("conviction "+patch.conviction+"/10");
-      if(patch.inversionNote)linked.push("inversion note");
-      if(patch.thesisNote&&!sel.thesisNote)linked.push("thesis starter");
-      showToast(linked.length?"Analysis saved — linked "+linked.join(", "):"Analysis saved to dossier","info",4000);
       setModal(null);
+      showToast("Analysis saved to Research Trail","info",3000);
     }
 
     return<Modal title={"Import Your Own Analysis — "+sel.ticker} onClose={function(){setModal(null);}} w={680} K={K}>
@@ -4685,7 +4735,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     </Modal>;
   }
 
-  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,importDeepDive:ImportDeepDiveModal,importFreeform:ImportFreeformModal,deepDivePrompt:DeepDivePromptModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
+  function renderModal(){if(!modal)return null;var map={add:AddModal,edit:EditModal,mgmt:MgmtModal,thesis:ThesisModal,thesisDiary:ThesisDiaryModal,shareThesis:ShareThesisModal,postmortem:PostMortemModal,readingNote:ReadingNoteModal,kpi:KpiModal,result:ResultModal,del:DelModal,doc:DocModal,importDeepDive:ImportDeepDiveModal,importFreeform:ImportFreeformModal,customEditor:CustomEditorModal,deepDivePrompt:DeepDivePromptModal,memo:MemoModal,clip:ClipModal,irentry:IREntryModal,position:PositionModal,conviction:ConvictionModal,manualEarnings:ManualEarningsModal,earningsReport:EarningsReportModal,earningsPopup:EarningsPopup,settings:SettingsModal,csvImport:CSVImportModal,scenario:ScenarioModal,valuation:ValuationModal,addReading:AddReadingModal};var C=map[modal.type];return C?<C/>:null}
 
   // ── Onboarding Flow ──────────────────────────────────────
   function finishOnboarding(){setObStep(0);if(oUsername.trim()&&!username){setUsername(oUsername.trim());try{localStorage.setItem("ta-username",oUsername.trim())}catch(e){}}try{localStorage.setItem("ta-onboarded","true")}catch(e){}
@@ -7572,98 +7622,103 @@ function calcMoatFromData(finData,businessModelType){
             </div>
 
             {!latestDive&&<div>
-              {/* ── Deep Dive invitation card ── */}
-              <div style={{background:PURPLE+"06",border:"1px solid "+PURPLE+"25",borderRadius:_isBm?0:16,padding:"28px 28px 24px",marginBottom:20}}>
-
-                {/* Headline */}
-                <div style={{display:"flex",alignItems:"flex-start",gap:14,marginBottom:18}}>
-                  <div style={{width:40,height:40,borderRadius:_isBm?0:10,background:PURPLE+"15",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <IC name="search" size={18} color={PURPLE}/>
+              {/* ── Deep Dive — 3 path selector ── */}
+              {(function(){
+                var _ddc=React.useState(null),ddCard=_ddc[0],setDdCard=_ddc[1];
+                var CARDS=[
+                  {id:"recommended",num:"01",label:"Recommended",sub:"The Buffett & Munger Framework",color:PURPLE,
+                   desc:"A structured 5-filter deep dive distilled from six decades of compounding. Copy the prompt, run it in your AI, import the output.",
+                   cta:"Get the prompt →",ctaSecondary:"Already have output? Paste →",
+                   onClick:function(){setModal({type:"deepDivePrompt",ticker:c.ticker});},
+                   onSecondary:function(){setModal({type:"importDeepDive"});}},
+                  {id:"freeform",num:"02",label:"Your Analysis",sub:"Paste your own deep dive",color:K.blue,
+                   desc:"Already have a research document, PDF, or notes? Paste them in. ThesisAlpha will render your analysis and extract key metrics into the dossier.",
+                   cta:"Import my analysis →",
+                   onClick:function(){setModal({type:"importFreeform",ticker:c.ticker});}},
+                  {id:"custom",num:"03",label:"Custom Editor",sub:"Build your own format",color:K.amb,
+                   desc:"Choose your own evaluation blocks. Build a framework that fits how you think. The editor generates a structured prompt your AI can run.",
+                   cta:"Open editor →",
+                   onClick:function(){setModal({type:"customEditor",ticker:c.ticker});}}
+                ];
+                return<div style={{marginBottom:20}}>
+                  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:ddCard?12:0}}>
+                    {CARDS.map(function(card){
+                      var active=ddCard===card.id;
+                      return<div key={card.id} onClick={function(){setDdCard(active?null:card.id);}}
+                        style={{borderRadius:_isBm?0:12,border:"2px solid "+(active?card.color:K.bdr),
+                          background:active?card.color+"0a":K.card,cursor:"pointer",
+                          padding:"16px 14px",transition:"all .18s",position:"relative",overflow:"hidden"}}
+                        onMouseEnter={function(e){if(!active){e.currentTarget.style.borderColor=card.color+"60";e.currentTarget.style.background=card.color+"05";}}}
+                        onMouseLeave={function(e){if(!active){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.background=K.card;}}}
+                      >
+                        <div style={{fontSize:26,fontWeight:900,color:active?card.color:K.bdr,fontFamily:fh,lineHeight:1,marginBottom:10,letterSpacing:"-1px",transition:"color .18s"}}>{card.num}</div>
+                        <div style={{fontSize:13,fontWeight:800,color:active?card.color:K.txt,fontFamily:fh,letterSpacing:"-.2px",marginBottom:3,transition:"color .18s"}}>{card.label}</div>
+                        <div style={{fontSize:11,color:active?card.color+"cc":K.dim,fontFamily:fm,fontWeight:600,marginBottom:10,transition:"color .18s"}}>{card.sub}</div>
+                        <div style={{fontSize:10,color:active?card.color:K.dim,fontFamily:fm}}>{active?"▲ Less":"▼ Details"}</div>
+                        {active&&<div style={{position:"absolute",top:0,left:0,right:0,height:3,background:card.color,borderRadius:"12px 12px 0 0"}}/>}
+                      </div>;
+                    })}
                   </div>
-                  <div>
-                    <div style={{fontSize:17,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:4,letterSpacing:"-.3px"}}>
-                      {"The Buffett & Munger framework — distilled into one prompt"}
-                    </div>
-                    <div style={{fontSize:12,color:PURPLE,fontFamily:fm,fontWeight:600,letterSpacing:.5}}>
-                      {"DEEP DIVE ANALYSIS · "+c.ticker}
-                    </div>
-                  </div>
-                </div>
-
-                {/* The pitch */}
-                <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.85,marginBottom:20,maxWidth:560}}>
-                  {"This isn't a generic \"analyse this stock\" prompt. It took years of reading, studying, and distilling what Buffett and Munger actually look for — not what they say in soundbites, but the framework they've used to compound capital for six decades."}
-                </div>
-
-                {/* Five filters */}
-                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:20}}>
-                  {[
-                    {n:"1",label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Munger won't touch what he can't understand cold."},
-                    {n:"2",label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded competitor willingly wrestle for market share? If yes, there's no moat."},
-                    {n:"3",label:"Management Quality",desc:"Owner-operator test. Capital allocation over a full cycle. The retained earnings test: has every €1 kept created >€1 of value?"},
-                    {n:"4",label:"Financial Strength",desc:"18-check framework. ROIC vs WACC. FCF conversion. Revenue quality. The numbers that separate great businesses from mediocre ones."},
-                    {n:"5",label:"Price & Margin of Safety",desc:"Owner earnings DCF — not P/E. Three scenarios. Buffett's fat pitch price: the entry point where even the bear case clears your hurdle rate."},
-                  ].map(function(f){return<div key={f.n} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                      <div style={{width:20,height:20,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:10,fontWeight:800,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.n}</div>
-                      <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{f.label}</div>
-                    </div>
-                    <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{f.desc}</div>
-                  </div>;})}
-                </div>
-
-                {/* Inversion callout */}
-                <div style={{background:PURPLE+"10",border:"1px solid "+PURPLE+"30",borderRadius:_isBm?0:10,padding:"12px 16px",marginBottom:20,display:"flex",gap:10}}>
-                  <div style={{fontSize:16,flexShrink:0}}>{"↩"}</div>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:3}}>{"+ Inversion — Munger's secret weapon"}</div>
-                    <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.6}}>{"\"Invert, always invert.\" The prompt forces you to ask: what specific mechanism would permanently destroy this thesis? What signal confirms it? Most investors never ask this question until it is too late."}</div>
-                  </div>
-                </div>
-
-                {/* How it works */}
-                <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:16,paddingBottom:16,borderBottom:"1px solid "+K.bdr}}>
-                  {"Works with Claude, ChatGPT, or Gemini. Copy the prompt, run the analysis, import the output — it becomes your thesis foundation automatically. 10 minutes."}
-                </div>
-
-                {/* Action buttons */}
-                <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
-                  <button onClick={function(){setModal({type:"deepDivePrompt",ticker:c.ticker});}}
-                    style={{display:"flex",alignItems:"center",gap:8,padding:"11px 24px",
-                      borderRadius:_isBm?0:8,border:"none",
-                      background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,
-                      cursor:"pointer",fontFamily:fm}}>
-                    <IC name="search" size={13} color="#fff"/>
-                    {"Get started →"}
-                  </button>
-                  <button onClick={function(){setModal({type:"importDeepDive"});}}
-                    style={{padding:"11px 22px",borderRadius:_isBm?0:8,
-                      border:"1px solid "+PURPLE+"50",background:"transparent",
-                      color:PURPLE,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-                    {"Paste output →"}
-                  </button>
-                </div>
-                {/* Divider */}
-                <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
-                  <div style={{flex:1,height:1,background:K.bdr}}/>
-                  <span style={{fontSize:10,color:K.dim,fontFamily:fm,textTransform:"uppercase",letterSpacing:1}}>or</span>
-                  <div style={{flex:1,height:1,background:K.bdr}}/>
-                </div>
-                {/* Import own analysis */}
-                <div style={{marginTop:8}}>
-                  <button onClick={function(){setModal({type:"importFreeform",ticker:c.ticker});}}
-                    style={{width:"100%",padding:"10px",borderRadius:_isBm?0:8,
-                      border:"1px solid "+K.bdr,background:K.bg,color:K.mid,
-                      fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm,
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                      transition:"all .15s"}}
-                    onMouseEnter={function(e){e.currentTarget.style.borderColor=PURPLE+"50";e.currentTarget.style.color=PURPLE;}}
-                    onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;e.currentTarget.style.color=K.mid;}}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    {"Import your own analysis"}
-                  </button>
-                </div>
-              </div>
+                  {ddCard&&(function(){
+                    var card=CARDS.find(function(c2){return c2.id===ddCard;});if(!card)return null;
+                    return<div style={{border:"1px solid "+card.color+"30",borderRadius:_isBm?0:12,overflow:"hidden",background:card.color+"04"}}>
+                      <div style={{padding:"16px 20px",borderBottom:"1px solid "+card.color+"20"}}>
+                        <div style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:4}}>{card.sub}</div>
+                        <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7}}>{card.desc}</div>
+                      </div>
+                      {ddCard==="recommended"&&<div style={{padding:"16px 20px"}}>
+                        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:14}}>
+                          {[{n:"1",label:"Circle of Competence",desc:"Could you explain this business to a 12-year-old? Munger won’t touch what he can’t understand cold."},
+                            {n:"2",label:"Economic Moat",desc:"The Grizzly Bear Test — would a well-funded competitor willingly wrestle for market share? If yes, there’s no moat."},
+                            {n:"3",label:"Management Quality",desc:"Owner-operator test. Capital allocation over a full cycle. Has every €1 kept created >€1 of value?"},
+                            {n:"4",label:"Financial Strength",desc:"18-check framework. ROIC vs WACC. FCF conversion. The numbers that separate great businesses from mediocre ones."},
+                            {n:"5",label:"Price & Margin of Safety",desc:"Owner earnings DCF. Three scenarios. Buffett’s fat pitch price: where even the bear case clears your hurdle rate."},
+                          ].map(function(f){return<div key={f.n} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"10px 12px"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}>
+                              <div style={{width:18,height:18,borderRadius:"50%",background:PURPLE+"20",color:PURPLE,fontSize:9,fontWeight:800,fontFamily:fm,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{f.n}</div>
+                              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{f.label}</div>
+                            </div>
+                            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{f.desc}</div>
+                          </div>;})}
+                        </div>
+                        <div style={{background:PURPLE+"10",border:"1px solid "+PURPLE+"25",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"flex-start"}}>
+                          <div style={{fontSize:14,flexShrink:0}}>{"↩"}</div>
+                          <div><div style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,marginBottom:2}}>{"“+ Inversion — Munger’s secret weapon”"}</div>
+                            <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.5}}>{"“Invert, always invert.” What specific mechanism would permanently destroy this thesis?"}</div></div>
+                        </div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <button onClick={card.onClick} style={{display:"flex",alignItems:"center",gap:7,padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:PURPLE,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                            <IC name="search" size={13} color="#fff"/>{card.cta}
+                          </button>
+                          <button onClick={card.onSecondary} style={{padding:"10px 18px",borderRadius:_isBm?0:8,border:"1px solid "+PURPLE+"50",background:"transparent",color:PURPLE,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:fm}}>{card.ctaSecondary}</button>
+                        </div>
+                      </div>}
+                      {ddCard==="freeform"&&<div style={{padding:"16px 20px"}}>
+                        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:8,marginBottom:14}}>
+                          {[{l:"Any format",d:"PDF notes, Word doc, bullet points — paste anything"},
+                            {l:"Auto-links dossier",d:"Fat pitch, conviction, inversion extracted automatically"},
+                            {l:"Renders cleanly",d:"Headers, bullets, metrics displayed in the deep dive view"}
+                          ].map(function(f){return<div key={f.l} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"12px"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{f.l}</div>
+                            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{f.d}</div>
+                          </div>;})}
+                        </div>
+                        <button onClick={card.onClick} style={{padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:K.blue,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{card.cta}</button>
+                      </div>}
+                      {ddCard==="custom"&&<div style={{padding:"16px 20px"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:8}}>{"Available blocks — combine to build your format:"}</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+                          {["Filter (pass/fail)","Metric Row","Verdict","Inversion","DCF Scenario","Management Check","Moat Test","Free Text"].map(function(b){
+                            return<div key={b} style={{padding:"5px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",background:K.amb+"08",fontSize:11,color:K.amb,fontFamily:fm,fontWeight:600}}>{b}</div>;
+                          })}
+                        </div>
+                        <div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.6,marginBottom:14}}>{"The editor generates a structured prompt. Your AI fills in the content — ThesisAlpha parses and displays it automatically."}</div>
+                        <button onClick={card.onClick} style={{padding:"10px 22px",borderRadius:_isBm?0:8,border:"none",background:K.amb,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>{card.cta}</button>
+                      </div>}
+                    </div>;
+                  })()}
+                </div>;
+              })()}
             </div>}
 {latestDive&&<div>
               {existingDives.length>1&&<div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
@@ -8819,29 +8874,6 @@ function calcMoatFromData(finData,businessModelType){
     if(noConv.length>0&&actions.length<5)actions.push({icon:"trending",color:"#9333EA",title:noConv.length+" holding"+(noConv.length>1?"s":"")+" unrated",desc:"Rate your conviction 1–10 for each position",action:"Rate",onClick:function(){setSelId(noConv[0].id);setModal({type:"conviction"})}});
     var noMoat=portfolio.filter(function(c){var mt=c.moatTypes||{};return!Object.keys(mt).some(function(k){return mt[k]&&mt[k].active})});
     if(noMoat.length>0&&actions.length<5)actions.push({icon:"castle",color:K.acc,title:noMoat.length+" holding"+(noMoat.length>1?"s":"")+" with no moat classified",desc:"Identify competitive advantages to track over time",action:"Classify",onClick:function(){setSelId(noMoat[0].id);setSubPage("moat");setPage("dashboard")}});
-    // ── Atomic Moat hub cards ─────────────────────────────────────────────
-    if(atomicArticles&&atomicArticles.length>0&&actions.length<6){
-      try{var seenRaw=localStorage.getItem("ta-atomic-seen");var seen=seenRaw?JSON.parse(seenRaw):[];}catch(e){var seen=[];}
-      portfolio.concat(watchlist).forEach(function(c){
-        var arts=getArticlesForTicker(c.ticker).filter(function(a){return seen.indexOf(a.link)<0;});
-        if(arts.length===0||actions.length>=6)return;
-        var a=arts[0];
-        var typeColor={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899"}[a.type]||"#8B5CF6";
-        var isOwned=(c.status||"portfolio")==="portfolio";
-        actions.push({
-          icon:"book",color:typeColor,
-          title:"Atomic Moat: "+a.type+" on "+c.ticker,
-          desc:(isOwned?"You own ":"Watching ")+(c.name||c.ticker)+" — "+a.title.replace(/^(Deep Dive|Simple Truth|Titan Test|The Radar|Money Mind)[:\-–]\s*/i,"").substring(0,80),
-          action:"Read",
-          isAtomic:true,atomicLink:a.link,atomicId:a.link,
-          onClick:function(){
-            var link=a.link;
-            try{var s2=localStorage.getItem("ta-atomic-seen");var s3=s2?JSON.parse(s2):[];if(s3.indexOf(link)<0){s3.push(link);localStorage.setItem("ta-atomic-seen",JSON.stringify(s3));}}catch(e){}
-            window.open(link,"_blank");
-          }
-        });
-      });
-    }
     // Tabs
     var ht=hubTab,setHt=setHubTab;
     var _ld=useState({}),lensData=_ld[0],setLensData=_ld[1];
@@ -9067,47 +9099,6 @@ function calcMoatFromData(finData,businessModelType){
             {unchecked.length>0&&<div style={{display:"flex",alignItems:"center",gap:8}}>
               <IC name="target" size={12} color={K.amb}/><div style={{fontSize:12,color:K.mid}}>KPIs unchecked: <strong style={{color:K.txt}}>{unchecked.map(function(c2){return c2.ticker}).join(", ")}</strong></div></div>}
           </div>})()}
-
-        {/* ── Atomic Moat Research Zone ── */}
-        {atomicArticles&&atomicArticles.length>0&&(function(){
-          var matches=portfolio.concat(watchlist).map(function(c2){
-            var arts=getArticlesForTicker(c2.ticker);
-            return arts.length>0?{c:c2,arts:arts}:null;
-          }).filter(Boolean);
-          if(matches.length===0)return null;
-          var typeColor={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899"};
-          return<div style={{background:"#8B5CF608",border:"1px solid #8B5CF625",borderRadius:_isBm?0:12,padding:"14px 16px",marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div style={{display:"flex",alignItems:"center",gap:7}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-5.82 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                <span style={{fontSize:11,fontWeight:700,color:"#8B5CF6",fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Atomic Moat — Research on your holdings"}</span>
-              </div>
-              <button onClick={function(){setHubTab("docs");setPage("library");setTimeout(function(){setLibTab("featured");},100);}} style={{fontSize:11,color:"#8B5CF6",background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600}}>{"See all →"}</button>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {matches.slice(0,3).map(function(m){
-                var a=m.arts[0];var c2=m.c;
-                var tc=typeColor[a.type]||"#8B5CF6";
-                var isOwned=(c2.status||"portfolio")==="portfolio";
-                return<div key={c2.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,cursor:"pointer",transition:"border-color .15s"}}
-                  onMouseEnter={function(e){e.currentTarget.style.borderColor="#8B5CF650";}}
-                  onMouseLeave={function(e){e.currentTarget.style.borderColor=K.bdr;}}
-                  onClick={function(){window.open(a.link,"_blank");}}>
-                  <CoLogo domain={c2.domain} ticker={c2.ticker} size={22}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                      <span style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm}}>{c2.ticker}</span>
-                      <span style={{fontSize:9,fontWeight:700,color:tc,background:tc+"15",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>{a.type}</span>
-                      {isOwned&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 5px",fontFamily:fm}}>owned</span>}
-                    </div>
-                    <div style={{fontSize:11,color:K.dim,fontFamily:fm,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title.replace(/^(Deep Dive|Simple Truth|Titan Test|The Radar|Money Mind)[:–—\-]\s*/i,"")}</div>
-                  </div>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0}}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </div>;
-              })}
-            </div>
-          </div>;
-        })()}
 
         {/* ── Zone 2: Your Portfolio ── */}
         <div style={{marginTop:20,marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,display:"flex",alignItems:"center",gap:8}}><div style={{width:3,height:14,borderRadius:_isBm?0:2,background:"#8B5CF6"}}/> Your Portfolio</div></div>
@@ -11469,7 +11460,7 @@ function ProWelcomeGift(){
               return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 20px",borderBottom:"1px solid "+K.bdr+"50",cursor:"pointer"}} onClick={function(){setSelId(c.id);setPage("dashboard")}}>
                 <CoLogo ticker={c.ticker} domain={c.domain} size={28}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}{getArticlesForTicker(c.ticker).length>0&&<span title={"Atomic Moat research available"} style={{fontSize:8,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 5px",fontFamily:fm,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"●"}</span>}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span>{todayChg!==null&&<span style={{fontSize:10,color:todayChg>=0?K.grn:K.red,background:(todayChg>=0?K.grn:K.red)+"12",padding:"1px 6px",borderRadius:_isBm?0:4,fontFamily:fm,fontWeight:600}}>{todayChg>=0?"+":""}{todayChg.toFixed(2)}%</span>}</div>
                   <div style={{fontSize:11,color:K.dim,fontFamily:fb,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
                 {pct!==null&&<div style={{fontSize:11,color:K.dim,fontFamily:fb,minWidth:36,textAlign:"right"}}>{pct.toFixed(1)}%</div>}
@@ -12801,7 +12792,6 @@ function ProWelcomeGift(){
     var _readerNotes=useState(""),readerNotes=_readerNotes[0],setReaderNotes=_readerNotes[1];
     var _iframeErr=useState(false),iframeErr=_iframeErr[0],setIframeErr=_iframeErr[1];
     var _tab=useState("resources"),libTab=_tab[0],setLibTab=_tab[1];
-    var _af=React.useState("All"),atomicFilter=_af[0],setAtomicFilter=_af[1];
 
     var FOLDER_COLORS=[K.acc,K.grn,K.amb,K.red,"#8B5CF6","#06B6D4","#EC4899","#14B8A6"];
     var ITEM_TYPES=["Article","Video","Book","Podcast","Course","Other"];
@@ -13221,6 +13211,7 @@ function ProWelcomeGift(){
         {/* Type filter pills */}
         {atomicArticles&&atomicArticles.length>0&&(function(){
           var types=["All","Deep Dive","The Radar","Titan Test","Simple Truth","Money Mind"];
+          var _af=React.useState("All"),atomicFilter=_af[0],setAtomicFilter=_af[1];
           var shown=atomicFilter==="All"?atomicArticles:atomicArticles.filter(function(a){return a.type===atomicFilter;});
           var typeColors={"Deep Dive":"#8B5CF6","The Radar":K.blue,"Titan Test":K.amb,"Simple Truth":K.grn,"Money Mind":"#EC4899","Article":K.dim};
           return<div>
@@ -13800,7 +13791,6 @@ function ProWelcomeGift(){
               {nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.grn,background:K.grn+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>FAT PITCH</span>}
               {atAlert&&!nearFP&&<span style={{fontSize:9,fontWeight:700,color:K.amb,background:K.amb+"15",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>ALERT</span>}
               {c.status==="portfolio"&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0}}>owned</span>}
-              {getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,flexShrink:0,cursor:"pointer"}} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"research"}</span>}
             </div>
             {hi52>lo52&&price>0&&<div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
               <span style={{fontSize:9,color:K.dim,fontFamily:fm,flexShrink:0,whiteSpace:"nowrap"}}>{"52w L: "+cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
@@ -14340,7 +14330,7 @@ function ProWelcomeGift(){
           {thisWeek.map(function(c){var d=dU(c.earningsDate);var h=gH(c.kpis);
             return<div key={c.id} className="ta-card" style={{background:K.card,border:"1px solid "+K.amb+"30",borderLeft:"4px solid "+K.amb,borderRadius:_isBm?0:12,padding:"14px 20px",marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:14}} onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}>
               <CoLogo domain={c.domain} ticker={c.ticker} size={28}/>
-              <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker}</span> <span style={{fontWeight:400,color:K.mid,fontSize:13}}>{c.name}</span>{getArticlesForTicker(c.ticker).length>0&&<span style={{fontSize:8,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm,cursor:"pointer"}} title={"Atomic Moat has research on "+c.ticker} onClick={function(e){e.stopPropagation();setPage("library");setTimeout(function(){setLibTab("featured");},100);}}>{"RESEARCH"}</span>}</div>
+              <div style={{flex:1}}><div style={{fontSize:14,fontWeight:600,color:K.txt,fontFamily:fm}}>{c.ticker} <span style={{fontWeight:400,color:K.mid}}>{c.name}</span></div>
                 <div style={{fontSize:12,color:K.dim,marginTop:2}}>{c.kpis.length} KPIs tracked · Conviction: {c.conviction||"—"}/10</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:K.amb,fontFamily:fm}}>{d===0?"Today":d===1?"Tomorrow":d+"d"}</div>
                 <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{fD(c.earningsDate)} {c.earningsTime}</div></div>
