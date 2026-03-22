@@ -2507,156 +2507,260 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
   // ── Import Deep Dive Modal ──────────────────────────────────────────────────
   // ── Import Freeform Analysis Modal ───────────────────────────────────────
+  // ── Custom Editor helpers (outside modal to prevent remount on keystroke) ────
+  var CE_METRIC_PRESETS=[
+    {id:"roic",label:"ROIC",group:"Returns"},
+    {id:"roe",label:"ROE",group:"Returns"},
+    {id:"roce",label:"ROCE",group:"Returns"},
+    {id:"rev_growth",label:"Revenue Growth",group:"Growth"},
+    {id:"eps_growth",label:"EPS Growth",group:"Growth"},
+    {id:"fcf_growth",label:"FCF Growth",group:"Growth"},
+    {id:"gross_margin",label:"Gross Margin",group:"Margins"},
+    {id:"op_margin",label:"Operating Margin",group:"Margins"},
+    {id:"fcf_margin",label:"FCF Margin",group:"Margins"},
+    {id:"net_margin",label:"Net Margin",group:"Margins"},
+    {id:"nd_ebitda",label:"Net Debt / EBITDA",group:"Balance Sheet"},
+    {id:"current_ratio",label:"Current Ratio",group:"Balance Sheet"},
+    {id:"interest_cover",label:"Interest Coverage",group:"Balance Sheet"},
+    {id:"pe",label:"P/E",group:"Valuation"},
+    {id:"ev_ebitda",label:"EV/EBITDA",group:"Valuation"},
+    {id:"ev_fcf",label:"EV/FCF",group:"Valuation"},
+    {id:"pb",label:"P/B",group:"Valuation"},
+  ];
+  var CE_FILTER_PRESETS=[
+    {id:"competence",label:"Circle of Competence",placeholder:"Can you explain this business model to a 12-year-old?"},
+    {id:"moat",label:"Economic Moat",placeholder:"What protects the economics? Grizzly Bear test."},
+    {id:"mgmt",label:"Management Quality",placeholder:"Owner-operator test. Capital allocation. Said vs. did."},
+    {id:"financial",label:"Financial Strength",placeholder:"Balance sheet quality. ROIC vs WACC. FCF conversion."},
+    {id:"valuation",label:"Price & Margin of Safety",placeholder:"Owner earnings DCF. Fat pitch price. Bear case check."},
+    {id:"custom1",label:"Custom Filter",placeholder:"Your own evaluation criterion"},
+    {id:"custom2",label:"Custom Filter 2",placeholder:"Your own evaluation criterion"},
+  ];
+
+  function CeMetricChip({label,active,onToggle,K,fm,_isBm}){
+    return React.createElement("button",{
+      onClick:onToggle,
+      style:{padding:"5px 10px",borderRadius:_isBm?0:20,border:"1px solid "+(active?K.blue:K.bdr),
+        background:active?K.blue+"18":"transparent",color:active?K.blue:K.dim,
+        fontSize:11,fontWeight:active?700:400,cursor:"pointer",fontFamily:fm,
+        transition:"all .15s",flexShrink:0}
+    },label);
+  }
+
+  function CeFilterRow({f,enabled,name,notes,onToggle,onName,onNotes,K,fm,fb,fh,_isBm}){
+    var inputBase={width:"100%",boxSizing:"border-box",padding:"6px 10px",
+      borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:K.bg,
+      color:K.txt,fontSize:12,fontFamily:fm,outline:"none"};
+    return React.createElement("div",{
+      style:{borderRadius:_isBm?0:8,border:"1px solid "+(enabled?K.grn+"50":K.bdr),
+        background:enabled?K.grn+"04":"transparent",overflow:"hidden",transition:"all .18s"}
+    },
+      React.createElement("div",{
+        style:{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:"pointer"},
+        onClick:onToggle
+      },
+        React.createElement("div",{style:{
+          width:18,height:18,borderRadius:_isBm?0:4,border:"2px solid "+(enabled?K.grn:K.bdr),
+          background:enabled?K.grn:"transparent",display:"flex",alignItems:"center",justifyContent:"center",
+          flexShrink:0,transition:"all .15s"
+        }}, enabled?React.createElement("svg",{width:10,height:10,viewBox:"0 0 12 12",fill:"none",stroke:"#fff",strokeWidth:2.5,strokeLinecap:"round"},React.createElement("polyline",{points:"2 6 5 9 10 3"})):null),
+        React.createElement("div",{style:{flex:1}},
+          React.createElement("div",{style:{fontSize:12,fontWeight:700,color:enabled?K.txt:K.dim,fontFamily:fm,transition:"color .15s"}},(name&&name.trim())||f.label),
+          React.createElement("div",{style:{fontSize:10,color:K.dim,fontFamily:fm}},f.placeholder)
+        )
+      ),
+      enabled?React.createElement("div",{style:{padding:"0 12px 12px",display:"flex",flexDirection:"column",gap:6}},
+        f.id.startsWith("custom")&&React.createElement("input",{
+          value:name||"",onChange:function(e){onName(e.target.value);},
+          placeholder:"Filter name",style:inputBase,
+          onFocus:function(e){e.target.style.borderColor=K.grn+"80";},
+          onBlur:function(e){e.target.style.borderColor=K.bdr;}
+        }),
+        React.createElement("textarea",{
+          value:notes||"",onChange:function(e){onNotes(e.target.value);},
+          placeholder:"What should the AI specifically check or evaluate here? (optional — leave blank for defaults)",
+          rows:2,style:Object.assign({},inputBase,{resize:"vertical",lineHeight:1.5,fontFamily:fb})
+        })
+      ):null
+    );
+  }
+
+
   function CustomEditorModal(){
     if(!sel)return null;
     var PURPLE="#8B5CF6";
-    var BLOCK_DEFS=[
-      {type:"filter",label:"Filter",desc:"Named evaluation criterion",color:K.grn,
-       defaults:{name:"",checks:""},
-       placeholder:{name:"e.g. Pricing Power",checks:"e.g. Can raise prices without losing volume"}},
-      {type:"metric",label:"Metrics",desc:"Specific financial metrics to analyse",color:K.blue,
-       defaults:{items:""},
-       placeholder:{items:"One per line, e.g.: ROIC, Revenue growth, FCF margin, Gross margin, Net debt / EBITDA"}},
-      {type:"verdict",label:"Verdict",desc:"Final conclusion with fat pitch price",color:K.amb,
-       defaults:{},placeholder:{}},
-      {type:"inversion",label:"Inversion",desc:"What would permanently break this thesis?",color:PURPLE,
-       defaults:{},placeholder:{}},
-      {type:"dcf",label:"DCF Scenario",desc:"Bear / Base / Bull valuation",color:K.grn,
-       defaults:{},placeholder:{}},
-      {type:"mgmt",label:"Management Check",desc:"Owner-operator and capital allocation",color:K.acc,
-       defaults:{},placeholder:{}},
-      {type:"moat",label:"Moat Test",desc:"Competitive advantage identification",color:PURPLE,
-       defaults:{},placeholder:{}},
-      {type:"text",label:"Free Text",desc:"Open-ended section with a topic",color:K.dim,
-       defaults:{name:""},
-       placeholder:{name:"e.g. Competitive Landscape"}},
-    ];
-    var _bks=React.useState([]),blocks=_bks[0],setBlocks=_bks[1];
     var _nm=React.useState("My Framework"),fwName=_nm[0],setFwName=_nm[1];
-    var _cp2=React.useState(false),copiedEd=_cp2[0],setCopiedEd=_cp2[1];
+    var _cp=React.useState(false),copied=_cp[0],setCopied=_cp[1];
+    var _showPr=React.useState(false),showPrompt=_showPr[0],setShowPrompt=_showPr[1];
+    // Metrics state: set of active metric ids + custom ones
+    var _mets=React.useState({}),activeMets=_mets[0],setActiveMets=_mets[1];
+    var _custom=React.useState(""),customMet=_custom[0],setCustomMet=_custom[1];
+    var _customList=React.useState([]),customMets=_customList[0],setCustomMets=_customList[1];
+    // Filters state: per-filter {enabled, name, notes}
+    var _filters=React.useState(function(){
+      var init={};CE_FILTER_PRESETS.forEach(function(f){init[f.id]={enabled:f.id!=="custom1"&&f.id!=="custom2",name:"",notes:""};});return init;
+    }),filterState=_filters[0],setFilterState=_filters[1];
+    // Optional blocks
+    var _verdict=React.useState(true),includeVerdict=_verdict[0],setIncludeVerdict=_verdict[1];
+    var _inv=React.useState(true),includeInversion=_inv[0],setIncludeInversion=_inv[1];
+    var _dcf=React.useState(false),includeDcf=_dcf[0],setIncludeDcf=_dcf[1];
 
-    function addBlock(type){
-      var def=BLOCK_DEFS.find(function(b){return b.type===type;});
-      setBlocks(function(prev){return prev.concat([Object.assign({type:type,id:Date.now()},def?JSON.parse(JSON.stringify(def.defaults)):{})]);});
-    }
-    function removeBlock(id){setBlocks(function(prev){return prev.filter(function(b){return b.id!==id;});});}
-    function moveBlock(id,dir){setBlocks(function(prev){var ix=prev.findIndex(function(b){return b.id===id;});if(ix<0)return prev;var next=prev.slice();var tg=ix+dir;if(tg<0||tg>=next.length)return prev;var tmp=next[ix];next[ix]=next[tg];next[tg]=tmp;return next;});}
-    function patchBlock(id,patch){setBlocks(function(prev){return prev.map(function(b){return b.id===id?Object.assign({},b,patch):b;});});}
+    function toggleMet(id){setActiveMets(function(prev){var n=Object.assign({},prev);n[id]=!n[id];return n;});}
+    function addCustomMet(){var v=customMet.trim();if(!v)return;setCustomMets(function(p){return p.concat([v]);});setCustomMet("");}
+    function removeCustomMet(i){setCustomMets(function(p){return p.filter(function(_,idx){return idx!==i;});});}
+    function patchFilter(id,patch){setFilterState(function(prev){return Object.assign({},prev,{[id]:Object.assign({},prev[id],patch)});});}
 
     function buildPrompt(){
-      var filterN=0;
-      var out=["You are producing a structured investment analysis of "+sel.ticker+" using the "+fwName+" framework.",
+      var lines=["You are producing a structured investment analysis of "+sel.ticker+" using the "+fwName+" framework.",
         "Output in EXACTLY this format — ThesisAlpha parses it automatically.","","## TITLE",sel.ticker+" — "+fwName,""];
-      // Collect all metric blocks first for a single ## METRICS section
-      var metricItems=[];
-      blocks.forEach(function(b){
-        if(b.type==="metric"){
-          (b.items||"").split("\n").map(function(s){return s.trim();}).filter(Boolean).forEach(function(m){metricItems.push(m);});
-        }
-      });
-      if(metricItems.length>0){
-        out.push("## METRICS");
-        metricItems.forEach(function(m){out.push(m+" | [value] | [pass/warn/fail]");});
-        out.push("");
+      // Metrics
+      var allMets=CE_METRIC_PRESETS.filter(function(m){return activeMets[m.id];}).map(function(m){return m.label;}).concat(customMets);
+      if(allMets.length>0){
+        lines.push("## METRICS");
+        allMets.forEach(function(m){lines.push(m+" | [value] | [pass/warn/fail]");});
+        lines.push("");
       } else {
-        out.push("## METRICS","[Key metric] | [Value] | [pass/warn/fail]","(3-5 key metrics)","");
+        lines.push("## METRICS","Revenue Growth | [value] | [pass/warn/fail]","ROIC | [value] | [pass/warn/fail]","FCF Margin | [value] | [pass/warn/fail]","");
       }
-      blocks.forEach(function(b){
-        if(b.type==="metric")return; // already handled above
-        if(b.type==="filter"){
-          filterN++;
-          var title=(b.name&&b.name.trim())?b.name.trim():"Filter "+filterN;
-          var checks=(b.checks&&b.checks.trim())?"\n"+b.checks.trim().split("\n").map(function(c){return"✓ "+c.trim();}).join("\n"):"\n✓ [key check]\n⚠ [concern]\n✗ [red flag]";
-          out.push("## FILTER "+filterN+": "+title+"\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]"+checks+"\n");
-        } else if(b.type==="moat"){filterN++;out.push("## FILTER "+filterN+": Economic Moat\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n✓ [moat source identified and durable]\n⚠ [competitive threat]\n✗ [no moat signal]\n");}
-        else if(b.type==="mgmt"){filterN++;out.push("## FILTER "+filterN+": Management Quality\nVERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]\n✓ [owner-operator signal]\n⚠ [capital allocation concern]\n✗ [integrity issue]\n");}
-        else if(b.type==="verdict")out.push("## VERDICT\n[2-3 sentence conclusion. Is this worth owning?]\nFAT PITCH: [entry price]\nPENDING: [one thing to verify]\n");
-        else if(b.type==="inversion")out.push("## INVERSION\nMECHANISM: [what would permanently break this thesis]\nARK: [probability 1-5% and early signal to watch]\n");
-        else if(b.type==="dcf")out.push("## DCF\nBear | [rev CAGR] | [OE margin] | [terminal] | [weight] | [IRR] | [intrinsic] | [MOS] | fail\nBase | ... | warn\nBull | ... | pass\nSUMMARY: [weighted intrinsic value conclusion]\n");
-        else if(b.type==="text"){var topic=(b.name&&b.name.trim())?b.name.trim():"Notes";out.push("## "+topic.toUpperCase()+"\n[Your analysis here]\n");}
+      // Filters
+      var filterN=0;
+      CE_FILTER_PRESETS.forEach(function(f){
+        var fs=filterState[f.id]||{};
+        if(!fs.enabled)return;
+        filterN++;
+        var title=(f.id.startsWith("custom")&&fs.name&&fs.name.trim())?fs.name.trim():f.label;
+        var extraChecks=fs.notes&&fs.notes.trim()?"\n"+fs.notes.trim().split("\n").map(function(c){return"\u2713 "+c.trim();}).join("\n"):"";
+        lines.push("## FILTER "+filterN+": "+title);
+        lines.push("VERDICT: [Pass / Borderline / Fail] | [pass/warn/fail]"+extraChecks);
+        lines.push("\u2713 [key positive signal]","\u26a0 [concern to monitor]","\u2717 [red flag]","");
       });
-      out.push("STATUS SYMBOLS: ✓=pass ⚠=caution ✗=fail —=neutral");
-      return out.join("\n");
-    }
-    var prompt=buildPrompt();
-
-    function BlockEditor({b,bi}){
-      var def=BLOCK_DEFS.find(function(d){return d.type===b.type;});
-      var col=def?def.color:K.dim;
-      var inputStyle={width:"100%",boxSizing:"border-box",padding:"6px 10px",borderRadius:_isBm?0:6,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:12,fontFamily:fm,outline:"none"};
-      return<div style={{background:K.card,borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,overflow:"hidden"}}>
-        {/* Block header */}
-        <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:col+"08",borderBottom:"1px solid "+K.bdr}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
-          <div style={{fontSize:11,fontWeight:700,color:col,fontFamily:fm,flex:1}}>{def?def.label:b.type}</div>
-          <button onClick={function(){moveBlock(b.id,-1);}} disabled={bi===0} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===0?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===0?0.3:1}}>{"↑"}</button>
-          <button onClick={function(){moveBlock(b.id,1);}} disabled={bi===blocks.length-1} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:4,color:K.dim,cursor:bi===blocks.length-1?"default":"pointer",fontSize:10,padding:"2px 6px",opacity:bi===blocks.length-1?0.3:1}}>{"↓"}</button>
-          <button onClick={function(){removeBlock(b.id);}} style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:16,padding:"0 2px",lineHeight:1}}>{"×"}</button>
-        </div>
-        {/* Block config */}
-        {b.type==="filter"&&<div style={{padding:"10px 12px",display:"flex",flexDirection:"column",gap:6}}>
-          <input value={b.name||""} onChange={function(e){patchBlock(b.id,{name:e.target.value});}}
-            placeholder={def&&def.placeholder.name||"Filter name"}
-            style={inputStyle}/>
-          <textarea value={b.checks||""} onChange={function(e){patchBlock(b.id,{checks:e.target.value});}}
-            placeholder={(def&&def.placeholder.checks)||"What specific things should the AI check? One per line."}
-            rows={3} style={Object.assign({},inputStyle,{resize:"vertical",lineHeight:1.5})}/>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{"Each line becomes a ✓ check in the prompt"}</div>
-        </div>}
-        {b.type==="metric"&&<div style={{padding:"10px 12px"}}>
-          <textarea value={b.items||""} onChange={function(e){patchBlock(b.id,{items:e.target.value});}}
-            placeholder={(def&&def.placeholder.items)||"One metric per line"}
-            rows={5} style={Object.assign({},inputStyle,{resize:"vertical",lineHeight:1.6})}/>
-          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:4}}>{"One metric per line — e.g. ROIC, Revenue growth, FCF margin"}</div>
-        </div>}
-        {b.type==="text"&&<div style={{padding:"10px 12px"}}>
-          <input value={b.name||""} onChange={function(e){patchBlock(b.id,{name:e.target.value});}}
-            placeholder={(def&&def.placeholder.name)||"Section title"}
-            style={inputStyle}/>
-        </div>}
-        {(b.type==="verdict"||b.type==="inversion"||b.type==="dcf"||b.type==="moat"||b.type==="mgmt")&&<div style={{padding:"8px 12px"}}>
-          <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{def?def.desc:""}</div>
-        </div>}
-      </div>;
+      // Optional sections
+      if(includeVerdict){lines.push("## VERDICT","[2-3 sentence conclusion. Is "+sel.ticker+" worth owning?]","FAT PITCH: [entry price where margin of safety is compelling]","PENDING: [one specific thing to verify before committing]","");}
+      if(includeInversion){lines.push("## INVERSION","MECHANISM: [what specific event would permanently destroy this thesis]","ARK: [probability 1-5% and earliest signal to watch]","");}
+      if(includeDcf){lines.push("## DCF","Bear | [rev CAGR] | [OE margin] | [terminal multiple] | [weight%] | [IRR] | [intrinsic] | [MOS%] | fail","Base | ... | warn","Bull | ... | pass","SUMMARY: [weighted intrinsic value and conclusion]","");}
+      lines.push("STATUS SYMBOLS: \u2713=pass \u26a0=caution \u2717=fail \u2014=neutral");
+      return lines.join("\n");
     }
 
-    return<Modal title={"Custom Editor — "+sel.ticker} onClose={function(){setModal(null);}} w={700} K={K}>
-      <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:"80vh",overflowY:"auto"}}>
-        <div style={{marginBottom:12}}>
-          <input value={fwName} onChange={function(e){setFwName(e.target.value);}} placeholder={"Framework name"}
-            style={{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,background:K.bg,color:K.txt,fontSize:14,fontFamily:fh,fontWeight:700,outline:"none"}}
-            onFocus={function(e){e.target.style.borderColor=K.amb+"60";}} onBlur={function(e){e.target.style.borderColor=K.bdr;}}/>
-        </div>
-        {/* Block picker */}
-        <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:6}}>{"Add blocks"}</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:14}}>
-          {BLOCK_DEFS.map(function(def){return<button key={def.type} onClick={function(){addBlock(def.type);}}
-            style={{padding:"5px 11px",borderRadius:_isBm?0:6,border:"1px solid "+def.color+"40",background:def.color+"08",color:def.color,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=def.color+"18";}} onMouseLeave={function(e){e.currentTarget.style.background=def.color+"08";}}>{"+ "+def.label}</button>;})}
-        </div>
-        {/* Block list */}
-        {blocks.length===0&&<div style={{textAlign:"center",padding:"20px",color:K.dim,fontSize:13,fontFamily:fm,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:8,marginBottom:12}}>{"Add blocks above — configure each one, then copy the generated prompt"}</div>}
-        {blocks.length>0&&<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
-          {blocks.map(function(b,bi){return<BlockEditor key={b.id} b={b} bi={bi}/>;})}</div>}
-        {/* Generated prompt */}
-        {blocks.length>0&&<div style={{border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:K.amb+"08",borderBottom:"1px solid "+K.amb+"20"}}>
-            <span style={{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm}}>{"Generated prompt — copy and run in your AI"}</span>
-            <button onClick={function(){try{navigator.clipboard.writeText(prompt);}catch(e){}setCopiedEd(true);setTimeout(function(){setCopiedEd(false);},2000);}} style={{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",background:copiedEd?K.amb+"20":"transparent",color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
-              {copiedEd?"✓ Copied":"Copy"}</button>
-          </div>
-          <pre style={{margin:0,padding:"10px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:160,overflowY:"auto",background:"transparent"}}>{prompt}</pre>
-        </div>}
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,marginTop:12,borderTop:"1px solid "+K.bdr}}>
-        <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Build → copy → run in AI → paste output"}</div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={function(){setModal(null);}} style={Object.assign({},S.btn,{padding:"8px 18px"})}>Close</button>
-          {blocks.length>0&&<button onClick={function(){setModal({type:"importDeepDive"});}} style={Object.assign({},S.btnP,{padding:"8px 18px",background:K.amb,borderColor:K.amb})}>{"Paste output →"}</button>}
-        </div>
-      </div>
-    </Modal>;
+    var activeMetCount=Object.values(activeMets).filter(Boolean).length+customMets.length;
+    var activeFilterCount=CE_FILTER_PRESETS.filter(function(f){return(filterState[f.id]||{}).enabled;}).length;
+    var groups=[...new Set(CE_METRIC_PRESETS.map(function(m){return m.group;}))];
+
+    return React.createElement(Modal,{title:"Custom Editor \u2014 "+sel.ticker,onClose:function(){setModal(null);},w:680,K:K},
+      React.createElement("div",{style:{maxHeight:"75vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}},
+        // Framework name
+        React.createElement("input",{value:fwName,onChange:function(e){setFwName(e.target.value);},placeholder:"Framework name",
+          style:{width:"100%",boxSizing:"border-box",padding:"9px 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,
+            background:K.bg,color:K.txt,fontSize:14,fontFamily:fh,fontWeight:700,outline:"none",marginBottom:16},
+          onFocus:function(e){e.target.style.borderColor=K.amb+"60";},onBlur:function(e){e.target.style.borderColor=K.bdr;}}),
+
+        // ── Metrics ──
+        React.createElement("div",{style:{marginBottom:20}},
+          React.createElement("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}},
+            React.createElement("div",null,
+              React.createElement("div",{style:{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}},"Metrics"),
+              React.createElement("div",{style:{fontSize:11,color:K.dim,fontFamily:fm}},activeMetCount>0?activeMetCount+" selected — the AI will find and assess each one":"Click to select which metrics the AI should analyse")
+            )
+          ),
+          groups.map(function(group){
+            return React.createElement("div",{key:group,style:{marginBottom:10}},
+              React.createElement("div",{style:{fontSize:9,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:5}}),
+              React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:5}},
+                CE_METRIC_PRESETS.filter(function(m){return m.group===group;}).map(function(m){
+                  return React.createElement(CeMetricChip,{key:m.id,label:m.label,active:!!activeMets[m.id],
+                    onToggle:function(){toggleMet(m.id);},K:K,fm:fm,_isBm:_isBm});
+                })
+              )
+            );
+          }),
+          // Custom metric input
+          React.createElement("div",{style:{display:"flex",gap:6,marginTop:6}},
+            React.createElement("input",{value:customMet,onChange:function(e){setCustomMet(e.target.value);},
+              onKeyDown:function(e){if(e.key==="Enter")addCustomMet();},
+              placeholder:"+ Custom metric (press Enter)",
+              style:{flex:1,padding:"5px 10px",borderRadius:_isBm?0:20,border:"1px solid "+K.bdr,
+                background:K.bg,color:K.txt,fontSize:11,fontFamily:fm,outline:"none"}}),
+            customMet.trim()&&React.createElement("button",{onClick:addCustomMet,
+              style:{padding:"5px 12px",borderRadius:_isBm?0:20,border:"none",background:K.blue,color:"#fff",
+                fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}},"Add")
+          ),
+          customMets.length>0&&React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:5,marginTop:6}},
+            customMets.map(function(m,i){return React.createElement("span",{key:i,
+              style:{padding:"4px 10px",borderRadius:_isBm?0:20,border:"1px solid "+K.blue+"50",
+                background:K.blue+"15",color:K.blue,fontSize:11,fontFamily:fm,display:"flex",alignItems:"center",gap:5}},
+              m,React.createElement("button",{onClick:function(){removeCustomMet(i);},
+                style:{background:"none",border:"none",color:K.blue,cursor:"pointer",fontSize:13,lineHeight:1,padding:0}},"\u00d7")
+            );})
+          )
+        ),
+
+        // ── Filters ──
+        React.createElement("div",{style:{marginBottom:16}},
+          React.createElement("div",{style:{marginBottom:10}},
+            React.createElement("div",{style:{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh}},"Evaluation Filters"),
+            React.createElement("div",{style:{fontSize:11,color:K.dim,fontFamily:fm}},"Toggle the filters you want the AI to run. Expand to add your own checks.")
+          ),
+          React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+            CE_FILTER_PRESETS.map(function(f){
+              var fs=filterState[f.id]||{};
+              return React.createElement(CeFilterRow,{key:f.id,f:f,enabled:!!fs.enabled,name:fs.name,notes:fs.notes,
+                onToggle:function(){patchFilter(f.id,{enabled:!fs.enabled});},
+                onName:function(v){patchFilter(f.id,{name:v});},
+                onNotes:function(v){patchFilter(f.id,{notes:v});},
+                K:K,fm:fm,fb:fb,fh:fh,_isBm:_isBm});
+            })
+          )
+        ),
+
+        // ── Optional sections ──
+        React.createElement("div",{style:{marginBottom:16}},
+          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:10}},"Optional Sections"),
+          React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
+            [{label:"Verdict + Fat Pitch",val:includeVerdict,set:setIncludeVerdict,color:K.amb},
+             {label:"Inversion",val:includeInversion,set:setIncludeInversion,color:PURPLE},
+             {label:"DCF Scenarios",val:includeDcf,set:setIncludeDcf,color:K.grn}
+            ].map(function(opt){return React.createElement("button",{key:opt.label,onClick:function(){opt.set(!opt.val);},
+              style:{padding:"6px 14px",borderRadius:_isBm?0:20,border:"1px solid "+(opt.val?opt.color:K.bdr),
+                background:opt.val?opt.color+"15":"transparent",color:opt.val?opt.color:K.dim,
+                fontSize:11,fontWeight:opt.val?700:400,cursor:"pointer",fontFamily:fm,transition:"all .15s"}},
+              (opt.val?"\u2713 ":"")+opt.label);})
+          )
+        ),
+
+        // ── Prompt preview ──
+        React.createElement("div",{style:{border:"1px solid "+K.amb+"25",borderRadius:_isBm?0:10,overflow:"hidden"}},
+          React.createElement("button",{onClick:function(){setShowPrompt(!showPrompt);},
+            style:{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"10px 14px",background:K.amb+"08",border:"none",cursor:"pointer",
+              borderBottom:showPrompt?"1px solid "+K.amb+"20":"none"}},
+            React.createElement("span",{style:{fontSize:11,fontWeight:700,color:K.amb,fontFamily:fm}},"Generated prompt — copy and paste into your AI"),
+            React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8}},
+              React.createElement("button",{onClick:function(e){e.stopPropagation();var p=buildPrompt();try{navigator.clipboard.writeText(p);}catch(err){}setCopied(true);setTimeout(function(){setCopied(false);},2000);},
+                style:{padding:"4px 12px",borderRadius:_isBm?0:6,border:"1px solid "+K.amb+"40",
+                  background:copied?K.amb+"20":"transparent",color:K.amb,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}},
+                copied?"\u2713 Copied":"Copy"),
+              React.createElement("span",{style:{fontSize:10,color:K.dim}},(showPrompt?"\u25b2":"\u25bc")+" Preview")
+            )
+          ),
+          showPrompt&&React.createElement("pre",{
+            style:{margin:0,padding:"12px 14px",fontSize:10,color:K.mid,fontFamily:"'JetBrains Mono',monospace",
+              lineHeight:1.6,whiteSpace:"pre-wrap",maxHeight:200,overflowY:"auto",background:"transparent"}
+          },buildPrompt())
+        )
+      ),
+      React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:12,marginTop:12,borderTop:"1px solid "+K.bdr}},
+        React.createElement("div",{style:{fontSize:11,color:K.dim,fontFamily:fm}},
+          activeFilterCount+" filter"+(activeFilterCount!==1?"s":"")+" \u00b7 "+activeMetCount+" metric"+(activeMetCount!==1?"s":"")+" configured"
+        ),
+        React.createElement("div",{style:{display:"flex",gap:8}},
+          React.createElement("button",{onClick:function(){setModal(null);},style:Object.assign({},S.btn,{padding:"8px 18px"})},"Close"),
+          React.createElement("button",{onClick:function(){setModal({type:"importDeepDive"});},
+            style:Object.assign({},S.btnP,{padding:"8px 18px",background:K.amb,borderColor:K.amb})},"Paste output \u2192")
+        )
+      )
+    );
   }
+
 
   function ImportFreeformModal(){
     if(!sel)return null;
