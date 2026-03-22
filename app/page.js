@@ -763,6 +763,7 @@ function TrackerApp(props){
   var _m=useState(null),modal=_m[0],setModal=_m[1];var _ck=useState({}),checkSt=_ck[0],setCheckSt=_ck[1];
   var _scm=useState(null),sellCheckTgt=_scm[0],setSellCheckTgt=_scm[1]; // sell discipline check trigger
   var _pg=useState(function(){try{return typeof window!=="undefined"&&window.innerWidth<768?"home":"dashboard"}catch(e){return"dashboard"}}),page=_pg[0],setPage=_pg[1];
+  var _lid=useState(null),learnId=_lid[0],setLearnId=_lid[1];
   var _nwTab=useState("overview"),nwTab=_nwTab[0],setNwTab=_nwTab[1];
   var _lens2=useState("smith"),activeLens=_lens2[0],setActiveLens=_lens2[1];
   var _fcs=useState(["revenue","netIncome"]),finChartSel=_fcs[0],setFinChartSel=_fcs[1];
@@ -5294,7 +5295,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   var _sq=useState(""),sideSearch=_sq[0],setSideSearch=_sq[1];
   // ── Learning context link ──────────────────────────────────────────────────
   function LearnLink({id,label}){
-    return<button onClick={function(e){e.stopPropagation();setPage("learn");}}
+    return<button onClick={function(e){e.stopPropagation();setLearnId(id);setPage("learn");}}
       title={"Learn about: "+(label||id)}
       style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 4px",
         display:"inline-flex",alignItems:"center",verticalAlign:"middle",opacity:0.5,
@@ -14191,6 +14192,16 @@ function ProWelcomeGift(){
     var _sel=useState(null),selId=_sel[0],setSelId2=_sel[1];
     var _gcat=useState("All"),gcat=_gcat[0],setGcat=_gcat[1];
     var _mcat=useState("All"),mcat=_mcat[0],setMcat=_mcat[1];
+
+    // Auto-select entry if navigated from a LearnLink
+    useEffect(function(){
+      if(!learnId)return;
+      var inModels=(MENTAL_MODELS||[]).find(function(m){return m.id===learnId;});
+      var inGloss=(GLOSSARY||[]).find(function(g){return g.id===learnId;});
+      if(inModels){setTab("models");setSelId2(learnId);}
+      else if(inGloss){setTab("glossary");setSelId2(learnId);}
+      setLearnId(null);
+    },[]);
 
     var MCATS=["All"].concat(Array.from(new Set((MENTAL_MODELS||[]).map(function(m){return m.cat;}))));
     var GCATS=["All"].concat(Array.from(new Set((GLOSSARY||[]).map(function(g){return g.cat;}))));
