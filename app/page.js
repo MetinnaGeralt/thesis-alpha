@@ -13867,7 +13867,6 @@ function ProWelcomeGift(){
     var pctAway=fatPitch>0&&price>0?((price-fatPitch)/fatPitch*100):null;
     var rangePos=hi52>lo52&&price>0?((price-lo52)/(hi52-lo52)*100):null;
     var convColor=c.conviction>=7?K.grn:c.conviction>=4?K.amb:c.conviction>0?K.red:K.dim;
-    var _PRP="#8B5CF6";
     var eps=parseFloat(epsVal);var gr=parseFloat(grVal)/100;var pe=parseFloat(peVal);var yrs=parseFloat(yrsVal)||10;
     var cagrResult=null;
     var entryPrice=fatPitch>0?fatPitch:price;
@@ -13944,12 +13943,12 @@ function ProWelcomeGift(){
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(lo52>=100?lo52.toFixed(0):lo52.toFixed(1))}</span>
                 <div style={{position:"relative",flex:1,height:4,background:K.bdr,borderRadius:2}}>
                   <div style={{position:"absolute",left:0,top:0,height:"100%",width:Math.max(0,Math.min(100,rangePos||0))+"%",
-                    background:nearFatPitch?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+_PRP+")",
+                    background:nearFatPitch?"linear-gradient(90deg,"+K.bdr+","+K.grn+")":"linear-gradient(90deg,"+K.bdr+","+"#8B5CF6"+")",
                     borderRadius:2,opacity:0.7}}/>
                   {fatPitch>0&&fatPitch>=lo52&&fatPitch<=hi52&&<div style={{position:"absolute",top:-3,width:2,height:10,
                     background:K.grn+"90",left:((fatPitch-lo52)/(hi52-lo52)*100)+"%"}}/>}
                   <div style={{position:"absolute",top:-5,width:14,height:14,borderRadius:"50%",
-                    background:nearFatPitch?K.grn:_PRP,border:"2px solid "+K.card,
+                    background:nearFatPitch?K.grn:"#8B5CF6",border:"2px solid "+K.card,
                     left:"calc("+Math.max(0,Math.min(100,rangePos||0))+"% - 7px)",transition:"left .4s ease"}}/>
                 </div>
                 <span style={{fontSize:10,color:K.dim,fontFamily:fm,flexShrink:0}}>{cSym+(hi52>=100?hi52.toFixed(0):hi52.toFixed(1))}</span>
@@ -13974,10 +13973,10 @@ function ProWelcomeGift(){
                 </div>
                 <div style={{height:5,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
                   <div style={{height:"100%",width:Math.max(2,Math.min(100,100-(pctAway||0)))+"%",
-                    background:nearFatPitch?K.grn:_PRP,borderRadius:3,transition:"width .4s ease"}}/>
+                    background:nearFatPitch?K.grn:"#8B5CF6",borderRadius:3,transition:"width .4s ease"}}/>
                 </div>
                 <div style={{fontSize:11,color:nearFatPitch?K.grn:K.dim,fontFamily:fm,marginTop:4,fontWeight:nearFatPitch?700:400}}>
-                  {nearFatPitch?"At your fat pitch price ✓":pctAway!=null&&pctAway>0?(pctAway.toFixed(0)+"% above target — waiting..."):pctAway!=null?"Below target — check your thesis"}
+                  {nearFatPitch?"At your fat pitch price \u2713":pctAway!=null&&pctAway>0?(pctAway.toFixed(0)+"% above target \u2014 waiting..."):pctAway!=null?"Below target \u2014 check your thesis":""}
                 </div>
               </div>}
               {!fatPitch&&<div style={{fontSize:11,color:K.dim,fontFamily:fm,marginTop:6}}>Set the price where this becomes an obvious buy.</div>}
@@ -13993,7 +13992,7 @@ function ProWelcomeGift(){
                 style={{width:"100%",boxSizing:"border-box",background:K.bg,border:"1px solid "+K.bdr,
                   borderRadius:_isBm?0:8,padding:"10px 12px",fontSize:13,color:K.txt,fontFamily:fb,
                   lineHeight:1.7,resize:"vertical",outline:"none",fontFamily:fb}}
-                onFocus={function(e){e.target.style.borderColor=_PRP+"60";}}
+                onFocus={function(e){e.target.style.borderColor="#8B5CF6"+"60";}}
                 onBlur={function(e){e.target.style.borderColor=K.bdr;upd(c.id,{_watchNote:e.target.value.trim()});}}/>
             </Section>
 
@@ -14073,7 +14072,7 @@ function ProWelcomeGift(){
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <Label text="Financials"/>
                 <button onClick={function(){setSelId(c.id);setDetailTab("financials");setSubPage("financials");setPage("dashboard");onClose();}}
-                  style={{fontSize:10,color:_PRP,background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0,marginBottom:8}}>{"More →"}</button>
+                  style={{fontSize:10,color:"#8B5CF6",background:"none",border:"none",cursor:"pointer",fontFamily:fm,fontWeight:600,padding:0,marginBottom:8}}>{"More →"}</button>
               </div>
               <div style={{position:"relative",height:chartH+18,width:"100%"}}>
                 <svg width="100%" height={chartH+18} viewBox={"0 0 "+(chartSorted.length*(barW*2+6)+10)+" "+(chartH+18)} preserveAspectRatio="none">
@@ -14148,7 +14147,7 @@ function ProWelcomeGift(){
               var ap=apVal.trim();if(ap!==String(c.alertPrice||""))upd(c.id,{alertPrice:ap||null});
               onClose();}}
             style={{flex:1,padding:"11px",borderRadius:_isBm?0:8,border:"none",
-              background:_PRP,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+              background:"#8B5CF6",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
             {"Done ✓"}
           </button>
           <button onClick={function(){setSelId(c.id);setDetailTab("dossier");setPage("dashboard");onClose();}}
