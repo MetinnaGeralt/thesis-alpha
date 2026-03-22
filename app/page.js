@@ -3387,28 +3387,25 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
 
     // ── Pre-processing ────────────────────────────────────────────────────────
     function preProcess(text){
-      // 1. Strip AI citation artifacts: "Wikipedia+1", "Business Wire+2", "SEC+1", etc.
-      text=text.replace(/\s+(?:Wikipedia|Business Wire|Reuters|Bloomberg|SEC|Forbes|CNBC|BBC|FT|WSJ|NYT|Seeking Alpha|Motley Fool|Yahoo Finance|Google Finance|Investopedia|Morningstar|Simply Wall St|Macrotrends|Statista|MarketWatch|ZeroHedge|investors\.com|fool\.com)\+?\d*/gi," ");
-      // 2. Strip bare citation numbers like "[1]", "[2]", "^1", "^2"
+      // 1. Strip AI citation artifacts: named sources with optional +N
+      text=text.replace(/\s+(?:Wikipedia|Business Wire|Reuters|Bloomberg|SEC|Forbes|CNBC|BBC|FT|WSJ|NYT|Seeking Alpha|Motley Fool|Yahoo Finance|Google Finance|Investopedia|Morningstar|Simply Wall St|Macrotrends|Statista|MarketWatch|ZeroHedge|investors\.com|fool\.com)\s*\+?\d*/gi," ");
+      // 2. Strip domain citations like "cdn.sea.com+1", "yougov.com+2", "gabgrowth.com+1"
+      text=text.replace(/\s+[a-zA-Z0-9][a-zA-Z0-9.-]{2,}\.[a-zA-Z]{2,6}\+\d+/g," ");
+      // 3. Strip bare citation numbers "[1]", "[2]", "^1"
       text=text.replace(/\s*\[\d+\]/g,"").replace(/\s*\^\d+/g,"");
-      // 3. Convert comma-continuation bullets: lines ending with comma that follow
-      //    a line ending with colon — mark them for bullet conversion
+      // 4. Convert comma/period continuations after a colon-ending line to bullets
       var lines=text.split("\n");var result=[];var afterColon=false;
       for(var i=0;i<lines.length;i++){
         var l=lines[i];var tr=l.trim();
         if(!tr){afterColon=false;result.push(l);continue;}
         if(tr.endsWith(":")){afterColon=true;result.push(l);continue;}
-        // Short comma-terminated line after a colon line = bullet
-        if(afterColon&&tr.endsWith(",")&&tr.length<120&&!tr.startsWith("-")&&!tr.startsWith("•")){
-          result.push("- "+tr.replace(/,$/,""));continue;
-        }
-        // Period-terminated short line after colon = last bullet
-        if(afterColon&&tr.endsWith(".")&&tr.length<80&&tr.indexOf(" ")>0&&!tr.match(/^[A-Z]{2,}/)){
-          result.push("- "+tr.replace(/\.$/,""));afterColon=false;continue;
-        }
-        // Multi-word line without punctuation after colon = bullet
-        if(afterColon&&!tr.endsWith(":")&&tr.length<80&&tr.split(" ").length<=6&&!tr.match(/^\d/)&&!tr.match(/^#{1,4}\s/)){
-          result.push("- "+tr);continue;
+        if(afterColon&&!tr.startsWith("-")&&!tr.startsWith("•")&&!tr.match(/^#{1,4}\s/)&&!tr.match(/^\d+\.\d/)){
+          // Comma-terminated = bullet (strip comma)
+          if(tr.endsWith(",")&&tr.length<150){result.push("- "+tr.replace(/,$/,""));continue;}
+          // Period-terminated short line = last bullet
+          if(tr.endsWith(".")&&tr.length<100&&tr.indexOf(" ")>0){result.push("- "+tr.replace(/\.$/,""));afterColon=false;continue;}
+          // Short unpunctuated line (≤10 words) = bullet
+          if(!tr.match(/[.!?]$/)&&tr.length<120&&tr.split(" ").length<=10){result.push("- "+tr);continue;}
         }
         afterColon=false;result.push(l);
       }
@@ -3463,6 +3460,10 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
         if(/^\d+\.\d+\ /.test(tr)){flush();flushTable();blocks.push({type:"h3",text:tr});continue;}
         // ALL-CAPS line = H2
         if(tr===tr.toUpperCase()&&tr.length<=80&&tr.length>3&&/[A-Z]{3}/.test(tr)&&!/[0-9$€£%]/.test(tr)){flush();flushTable();blocks.push({type:"h2",text:tr});continue;}
+        // Single-word standalone line starting with capital = H4 sub-heading (e.g. "Monee", "Garena")
+        if(/^[A-Z][a-zA-Z]{1,30}$/.test(tr)&&buf.length===0){
+          flush();flushTable();blocks.push({type:"h4",text:tr});continue;
+        }
         // Short standalone line with no end punctuation = H4 sub-heading
         if(tr.length>=4&&tr.length<=60&&!tr.match(/[.!?,;:]$/)&&buf.length===0){
           var wds=tr.split(/\ +/);
@@ -3484,47 +3485,97 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       return blocks;
     }
     var blocks=parseBlocks(raw);
-    function sc(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#9CA3AF";}
-    function si(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"·";}
+    function sc(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":K.mid;}
+    // Track consecutive bullet runs for visual grouping
+    function isH(b){return b.type==="h1"||b.type==="h2"||b.type==="h3"||b.type==="h4";}
 
     return<div style={{maxHeight:"75vh",overflowY:"auto",paddingRight:4}}>
-      <div style={{marginBottom:14,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{doc.title||"Analysis"}</div>
+      {/* Doc title */}
+      <div style={{marginBottom:16,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{doc.title||"Analysis"}</div>
       </div>
       {blocks.map(function(b,bi){
-        var mt=bi>0?10:0;
-        if(b.type==="h1")return<div key={bi} style={{fontSize:20,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.5px",marginTop:bi>0?24:0,marginBottom:8}}>{renderInline(b.text)}</div>;
-        if(b.type==="h2")return<div key={bi} style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginTop:bi>0?20:0,marginBottom:6,paddingBottom:5,borderBottom:"1px solid "+K.bdr}}>{b.text}</div>;
-        if(b.type==="h3")return<div key={bi} style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginTop:bi>0?16:0,marginBottom:5}}>{renderInline(b.text)}</div>;
-        if(b.type==="h4")return<div key={bi} style={{fontSize:12,fontWeight:700,color:K.mid,fontFamily:fm,marginTop:bi>0?12:0,marginBottom:4}}>{renderInline(b.text)}</div>;
-        if(b.type==="hr")return<div key={bi} style={{height:1,background:K.bdr,margin:"16px 0"}}/>;
-        if(b.type==="quote")return<div key={bi} style={{borderLeft:"3px solid "+PURPLE+"60",paddingLeft:12,margin:"10px 0",color:K.dim,fontSize:13,fontFamily:fb,lineHeight:1.7,fontStyle:"italic"}}>{renderInline(b.text)}</div>;
-        if(b.type==="code")return<pre key={bi} style={{margin:"10px 0",padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:K.mid,overflowX:"auto",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{b.text}</pre>;
-        if(b.type==="bullet")return<div key={bi} style={{display:"flex",gap:8,marginBottom:5,alignItems:"flex-start",marginTop:2}}>
-          <span style={{fontSize:b.status!=="note"?12:16,fontWeight:700,color:sc(b.status),flexShrink:0,lineHeight:1,marginTop:b.status!=="note"?2:0,width:16}}>{si(b.status)}</span>
-          <span style={{fontSize:13,color:b.status!=="note"?K.mid:K.mid,fontFamily:fb,lineHeight:1.65}}>{renderInline(b.text)}</span>
+        var prev=bi>0?blocks[bi-1]:null;var next=bi<blocks.length-1?blocks[bi+1]:null;
+        // Extra top margin after a paragraph or before a heading
+        var topGap=prev&&(isH(prev)||prev.type==="hr")?0:prev&&b.type==="h2"?20:prev&&(b.type==="h3"||b.type==="h4")?14:0;
+
+        if(b.type==="h1")return<div key={bi} style={{fontSize:22,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.5px",marginTop:bi>0?28:0,marginBottom:10,lineHeight:1.2}}>{renderInline(b.text)}</div>;
+
+        if(b.type==="h2")return<div key={bi} style={{display:"flex",alignItems:"center",gap:8,marginTop:bi>0?24:0,marginBottom:8,paddingBottom:6,borderBottom:"1px solid "+K.bdr}}>
+          <div style={{width:3,height:14,background:PURPLE,borderRadius:2,flexShrink:0}}/>
+          <div style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{b.text}</div>
         </div>;
-        if(b.type==="numitem")return<div key={bi} style={{display:"flex",gap:10,marginBottom:5,alignItems:"flex-start"}}>
-          <span style={{fontSize:11,fontWeight:700,color:PURPLE,background:PURPLE+"15",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:fm}}>{b.n}</span>
-          <span style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.65}}>{renderInline(b.text)}</span>
+
+        if(b.type==="h3")return<div key={bi} style={{fontSize:15,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-.2px",marginTop:bi>0?18:0,marginBottom:5,lineHeight:1.3}}>{renderInline(b.text)}</div>;
+
+        if(b.type==="h4")return<div key={bi} style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginTop:bi>0?14:0,marginBottom:5}}>{renderInline(b.text)}</div>;
+
+        if(b.type==="hr")return<div key={bi} style={{height:1,background:K.bdr,margin:"18px 0"}}/>;
+
+        if(b.type==="quote")return<div key={bi} style={{borderLeft:"3px solid "+PURPLE+"50",paddingLeft:14,margin:"12px 0",background:PURPLE+"04",borderRadius:"0 6px 6px 0",padding:"10px 14px 10px 14px"}}>
+          <div style={{color:K.mid,fontSize:13,fontFamily:fb,lineHeight:1.75,fontStyle:"italic"}}>{renderInline(b.text)}</div>
         </div>;
-        if(b.type==="kv")return<div key={bi} style={{display:"flex",gap:10,marginBottom:5,padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
-          <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,flexShrink:0,minWidth:100}}>{b.key}</span>
-          <span style={{fontSize:12,color:K.mid,fontFamily:fb}}>{renderInline(b.value)}</span>
-        </div>;
-        if(b.type==="table")return<div key={bi} style={{overflowX:"auto",marginBottom:12,marginTop:8}}>
+
+        if(b.type==="code")return<pre key={bi} style={{margin:"10px 0",padding:"12px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:K.blue,overflowX:"auto",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{b.text}</pre>;
+
+        if(b.type==="bullet"){
+          var isFirst=!prev||prev.type!=="bullet";
+          var isLast=!next||next.type!=="bullet";
+          var dotColor=b.status==="pass"?"#10B981":b.status==="warn"?"#F59E0B":b.status==="fail"?"#EF4444":PURPLE;
+          var dotContent=b.status==="pass"?"✓":b.status==="warn"?"⚠":b.status==="fail"?"✗":null;
+          return<div key={bi} style={{display:"flex",gap:10,marginBottom:isLast?8:3,marginTop:isFirst?4:0,alignItems:"flex-start",paddingLeft:2}}>
+            {dotContent
+              ?<span style={{fontSize:11,fontWeight:700,color:dotColor,flexShrink:0,marginTop:3,width:14,textAlign:"center"}}>{dotContent}</span>
+              :<div style={{width:5,height:5,borderRadius:"50%",background:PURPLE+"70",flexShrink:0,marginTop:6}}/>
+            }
+            <span style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7}}>{renderInline(b.text)}</span>
+          </div>;
+        }
+
+        if(b.type==="numitem"){
+          var isFirstN=!prev||prev.type!=="numitem";
+          var isLastN=!next||next.type!=="numitem";
+          return<div key={bi} style={{display:"flex",gap:10,marginBottom:isLastN?8:4,marginTop:isFirstN?4:0,alignItems:"flex-start"}}>
+            <div style={{minWidth:22,height:22,borderRadius:"50%",background:PURPLE+"18",border:"1px solid "+PURPLE+"40",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <span style={{fontSize:10,fontWeight:800,color:PURPLE,fontFamily:fm}}>{b.n}</span>
+            </div>
+            <span style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.7,paddingTop:2}}>{renderInline(b.text)}</span>
+          </div>;
+        }
+
+        if(b.type==="kv"){
+          var isFirstKv=!prev||prev.type!=="kv";
+          var isLastKv=!next||next.type!=="kv";
+          return<div key={bi} style={{
+            display:"flex",gap:0,marginBottom:isLastKv?10:1,marginTop:isFirstKv?6:0,
+            background:K.bg,borderRadius:isFirstKv&&isLastKv?(_isBm?0:8):isFirstKv?(_isBm?0:"8px 8px 0 0"):isLastKv?(_isBm?0:"0 0 8px 8px"):0,
+            border:"1px solid "+K.bdr,
+            borderTop:isFirstKv?"1px solid "+K.bdr:"none",
+            overflow:"hidden"
+          }}>
+            <div style={{padding:"8px 12px",background:K.card,borderRight:"1px solid "+K.bdr,minWidth:120,maxWidth:160,flexShrink:0}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm}}>{b.key}</div>
+            </div>
+            <div style={{padding:"8px 12px",flex:1}}>
+              <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.5}}>{renderInline(b.value)}</div>
+            </div>
+          </div>;
+        }
+
+        if(b.type==="table")return<div key={bi} style={{overflowX:"auto",margin:"10px 0 14px",borderRadius:_isBm?0:8,border:"1px solid "+K.bdr,overflow:"hidden"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:fm}}>
             {b.rows.map(function(row,ri){
               var isHeader=ri===0;
-              return<tr key={ri} style={{borderBottom:"1px solid "+K.bdr,background:ri%2===0?K.bg:"transparent"}}>
+              return<tr key={ri} style={{background:isHeader?K.bg:ri%2===0?"transparent":K.bg+"80"}}>
                 {row.map(function(cell,ci){return isHeader
-                  ?<th key={ci} style={{padding:"6px 10px",textAlign:"left",fontWeight:700,color:K.txt,fontSize:11,letterSpacing:.5}}>{cell}</th>
-                  :<td key={ci} style={{padding:"6px 10px",color:K.mid}}>{renderInline(cell)}</td>;
+                  ?<th key={ci} style={{padding:"8px 12px",textAlign:"left",fontWeight:700,color:K.txt,fontSize:11,letterSpacing:.5,borderBottom:"1px solid "+K.bdr,whiteSpace:"nowrap"}}>{cell}</th>
+                  :<td key={ci} style={{padding:"7px 12px",color:K.mid,borderBottom:ri<b.rows.length-1?"1px solid "+K.bdr+"60":"none",verticalAlign:"top"}}>{renderInline(cell)}</td>;
                 })}
               </tr>;
             })}
           </table>
         </div>;
+
         if(b.type==="para")return<p key={bi} style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.8}}>{renderInline(b.text)}</p>;
         return null;
       })}
