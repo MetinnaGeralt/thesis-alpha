@@ -3975,21 +3975,28 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var isDeepDive=f.docType==="deep_dive"||f.docType==="freeform_dive";
     var _ddEdit=React.useState(!ex||(f.docType!=="freeform_dive"&&!ex.deepDive)),ddEditing=_ddEdit[0],setDdEditing=_ddEdit[1];
     return<Modal title={ex&&isDeepDive?"Deep Dive — "+sel.ticker:ex?"Edit note":"New note — "+sel.ticker} onClose={function(){setModal(null)}} w={isDeepDive?760:600} K={K}>
-      <div style={{marginBottom:16}}>
+      {f.docType!=="freeform_dive"&&<div style={{marginBottom:16}}>
         <div style={{fontSize:11,color:K.dim,fontFamily:fm,letterSpacing:.5,textTransform:"uppercase",marginBottom:8}}>Note type</div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {DOC_TYPES.map(function(dt){var on=f.docType===dt.id;return<button key={dt.id} onClick={function(){set("docType",dt.id);if(!f.content.trim()&&dt.prompt)set("content",dt.prompt);}} style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:_isBm?0:20,border:"1px solid "+(on?dt.color:K.bdr),background:on?dt.color+"15":"transparent",color:on?dt.color:K.dim,cursor:"pointer",fontSize:11,fontFamily:fm,fontWeight:on?700:400}}><IC name={dt.icon} size={10} color={on?dt.color:K.dim}/>{dt.label}</button>})}
         </div>
-      </div>
+      </div>}
       {f.sourceLibTitle&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:K.acc+"08",border:"1px solid "+K.acc+"20",borderRadius:_isBm?0:8,marginBottom:12}}>
         <IC name="link" size={11} color={K.acc}/>
         <span style={{fontSize:11,color:K.acc,fontFamily:fm,flex:1}}>From: {f.sourceLibTitle}</span>
         <button onClick={function(){set("sourceLibId",null);set("sourceLibTitle",null)}} style={{background:"none",border:"none",cursor:"pointer",color:K.dim,fontSize:12,lineHeight:1}}>x</button>
       </div>}
-      {isDeepDive&&ex&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+      {isDeepDive&&ex&&f.docType!=="freeform_dive"&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
         <button onClick={function(){setDdEditing(!ddEditing);}}
           style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,padding:"5px 12px",fontSize:11,color:K.dim,cursor:"pointer",fontFamily:fm}}>
           {ddEditing?"← View":"Edit"}
+        </button>
+      </div>}
+      {f.docType==="freeform_dive"&&ex&&<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,padding:"10px 14px",background:"#8B5CF608",border:"1px solid #8B5CF625",borderRadius:_isBm?0:8}}>
+        <div style={{fontSize:12,color:"#8B5CF6",fontFamily:fm}}>{"This analysis lives on the Deep Dive tab."}</div>
+        <button onClick={function(){setDeepDiveTab("analysis");setDossierTab("deepdive");setModal(null);}}
+          style={{padding:"5px 14px",borderRadius:_isBm?0:6,border:"none",background:"#8B5CF6",color:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:fm}}>
+          {"View Deep Dive →"}
         </button>
       </div>}
       {isDeepDive&&!ddEditing&&ex&&f.docType!=="freeform_dive"&&<DeepDiveView doc={f} K={K} _isBm={_isBm} fm={fm} fb={fb} fh={fh} cSym={cSym}/>}
@@ -5690,12 +5697,24 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           <button style={Object.assign({},S.btn,{padding:"7px 14px",fontSize:11})} onClick={function(){setModal({type:"doc"})}}>+ Note</button>
         </div><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"memo"})}}>Write memo</button><button style={Object.assign({},S.btn,{padding:"6px 14px",fontSize:12,marginLeft:6})} onClick={function(){setModal({type:"clip"})}}>Clip research</button></div>}
       {filtered.map(function(d){var fo=FOLDERS.find(function(f){return f.id===d.folder});
-        return<div key={d.id} style={{background:K.card,border:"1px solid "+(d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":K.bdr),borderLeft:d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:"3px solid transparent",borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}} onClick={function(){setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id})}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-            <IC name="file" size={12} color={K.dim}/>
-            <span style={{fontSize:14,fontWeight:500,color:K.txt,flex:1}}>{d.title}</span>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span></div>
-          {d.content&&<div style={{fontSize:13,color:K.dim,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.substring(0,200)}</div>}</div>})}</div>}
+        var isFreeform=d.docType==="freeform_dive";
+        var borderCol=d.isClip?K.blue+"30":d.isIR?K.amb+"30":d.isMemo?K.acc+"30":isFreeform?"#8B5CF630":K.bdr;
+        var barCol=d.isClip?"3px solid "+K.blue:d.isIR?"3px solid "+K.amb:d.isMemo?"3px solid "+K.acc:isFreeform?"3px solid #8B5CF6":"3px solid transparent";
+        return<div key={d.id} style={{background:K.card,border:"1px solid "+borderCol,borderLeft:barCol,borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:8,cursor:"pointer"}}
+          onClick={function(){
+            if(isFreeform){setDeepDiveTab("analysis");setDossierTab("deepdive");}
+            else setModal({type:d.isMemo?"memo":d.isClip?"doc":d.isIR?"doc":"doc",data:d.id});
+          }}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+            {isFreeform?<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={"#8B5CF6"} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              :<IC name="file" size={12} color={K.dim}/>}
+            <span style={{fontSize:14,fontWeight:500,color:isFreeform?"#8B5CF6":K.txt,flex:1}}>{d.title}</span>
+            {isFreeform&&<span style={{fontSize:9,fontWeight:700,color:"#8B5CF6",background:"#8B5CF615",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>DEEP DIVE</span>}
+            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{d.updatedAt?new Date(d.updatedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—"}</span>
+          </div>
+          {isFreeform&&<div style={{fontSize:11,color:"#8B5CF6",fontFamily:fm,opacity:.7}}>{"Click to view in Deep Dive tab →"}</div>}
+          {!isFreeform&&d.content&&<div style={{fontSize:13,color:K.dim,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{d.content.substring(0,200)}</div>}
+        </div>;})}</div>}
 
   function EarningsTimeline(p){var c=p.company;var hist=c.earningsHistory||[];
     if(!hist.length)return null;
