@@ -3384,53 +3384,163 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     var raw=doc.rawText||doc.content||"";
     if(!raw.trim())return<div style={{color:K.dim,fontSize:13,fontFamily:fm}}>No content.</div>;
     var PURPLE="#8B5CF6";
-    // Parse into blocks
+
+    // ── Inline markdown renderer ──────────────────────────────────────────────
+    // Handles **bold**, *italic*, `code`, and plain text
+    function renderInline(text){
+      if(!text)return null;
+      var parts=[];var i=0;var key=0;
+      while(i<text.length){
+        // Bold: **text**
+        if(text[i]==="*"&&text[i+1]==="*"){
+          var end=text.indexOf("**",i+2);
+          if(end>i+2){parts.push(React.createElement("strong",{key:key++,style:{fontWeight:700,color:K.txt}},text.slice(i+2,end)));i=end+2;continue;}
+        }
+        // Italic: *text* or _text_
+        if(text[i]==="*"||text[i]==="_"){
+          var c=text[i];var end2=text.indexOf(c,i+1);
+          if(end2>i+1&&text[i+1]!==c){parts.push(React.createElement("em",{key:key++,style:{fontStyle:"italic"}},text.slice(i+1,end2)));i=end2+1;continue;}
+        }
+        // Inline code: `code`
+        if(text[i]==="`"){
+          var end3=text.indexOf("`",i+1);
+          if(end3>i){parts.push(React.createElement("code",{key:key++,style:{fontSize:"0.85em",background:K.bg,border:"1px solid "+K.bdr,borderRadius:3,padding:"0 4px",fontFamily:"'JetBrains Mono',monospace",color:K.blue}},text.slice(i+1,end3)));i=end3+1;continue;}
+        }
+        // Collect plain text
+        var j=i+1;
+        while(j<text.length&&text[j]!=="*"&&text[j]!=="_"&&text[j]!=="`")j++;
+        parts.push(text.slice(i,j));i=j;
+      }
+      return parts.length===1&&typeof parts[0]==="string"?parts[0]:React.createElement(React.Fragment,{key:"f"},parts);
+    }
+
+    // ── Block parser ──────────────────────────────────────────────────────────
     function parseBlocks(text){
       var lines=text.split("\n");
-      var blocks=[];
-      var buf=[];
-      function flush(){if(buf.length>0){blocks.push({type:"para",text:buf.join(" ").trim()});buf=[];}}
+      var blocks=[];var buf=[];var tableRows=null;
+      function flush(){
+        if(buf.length>0){
+          blocks.push({type:"para",text:buf.join(" ").trim()});
+          buf=[];
+        }
+      }
+      function flushTable(){
+        if(tableRows&&tableRows.length>0){blocks.push({type:"table",rows:tableRows});tableRows=null;}
+      }
       for(var i=0;i<lines.length;i++){
         var l=lines[i];var tr=l.trim();
-        if(!tr){flush();continue;}
-        // Headers: ## or # prefix
-        if(/^#{1,3}\s/.test(tr)){flush();blocks.push({type:"heading",text:tr.replace(/^#+\s*/,"")});continue;}
-        // ALL CAPS short line = heading
-        if(tr===tr.toUpperCase()&&tr.length<=60&&tr.length>3&&/[A-Z]/.test(tr)){flush();blocks.push({type:"heading",text:tr});continue;}
-        // Bullet lines
-        if(/^[\-•\*✓⚠✗—]\s/.test(tr)){flush();
-          var st="note";var txt=tr.replace(/^[\-•\*✓⚠✗—]\s*/,"");
-          if(tr.startsWith("✓")||tr.startsWith("*"))st="pass";
-          else if(tr.startsWith("⚠"))st="warn";
-          else if(tr.startsWith("✗"))st="fail";
-          blocks.push({type:"bullet",text:txt,status:st});continue;}
-        // Key: Value lines
-        if(/^[A-Z][^:]{1,20}:\s/.test(tr)&&tr.indexOf(":")<30){
-          flush();var parts=tr.split(/:\s+/,2);
-          blocks.push({type:"kv",key:parts[0],value:parts[1]||""});continue;}
+        // Empty line
+        if(!tr){flush();flushTable();continue;}
+        // Horizontal rule
+        if(/^(---+|===+|\*\*\*+)$/.test(tr)){flush();flushTable();blocks.push({type:"hr"});continue;}
+        // H1: # 
+        if(/^#\s/.test(tr)){flush();flushTable();blocks.push({type:"h1",text:tr.replace(/^#\s+/,"")});continue;}
+        // H2: ##
+        if(/^##\s/.test(tr)){flush();flushTable();blocks.push({type:"h2",text:tr.replace(/^##\s+/,"")});continue;}
+        // H3: ###
+        if(/^###\s/.test(tr)){flush();flushTable();blocks.push({type:"h3",text:tr.replace(/^###\s+/,"")});continue;}
+        // H4: ####
+        if(/^####\s/.test(tr)){flush();flushTable();blocks.push({type:"h4",text:tr.replace(/^####\s+/,"")});continue;}
+        // ALL-CAPS short line = section heading
+        if(tr===tr.toUpperCase()&&tr.length<=80&&tr.length>3&&/[A-Z]{3}/.test(tr)&&!/[0-9$€£%]/.test(tr)){
+          flush();flushTable();blocks.push({type:"h2",text:tr});continue;
+        }
+        // Code block: ```
+        if(tr.startsWith("```")){
+          flush();flushTable();
+          var codeLines=[];var j=i+1;
+          while(j<lines.length&&!lines[j].trim().startsWith("```"))codeLines.push(lines[j++]);
+          blocks.push({type:"code",text:codeLines.join("\n"),lang:tr.slice(3)});
+          i=j;continue;
+        }
+        // Blockquote: > text
+        if(/^>\s/.test(tr)){flush();flushTable();blocks.push({type:"quote",text:tr.replace(/^>\s+/,"")});continue;}
+        // Table row: | col | col |
+        if(/^\|.+\|/.test(tr)){
+          flushTable();flush();
+          if(!tableRows)tableRows=[];
+          var cols=tr.split("|").map(function(c){return c.trim();}).filter(function(c){return c.length>0;});
+          // Skip separator rows like |---|---|
+          if(!/^[-:\s]+$/.test(cols[0])){tableRows.push(cols);}
+          continue;
+        }
+        flushTable();
+        // Numbered list: 1. 2. 3.
+        if(/^\d+\.\s/.test(tr)){
+          flush();
+          blocks.push({type:"numitem",text:tr.replace(/^\d+\.\s+/,""),n:tr.match(/^(\d+)/)[1]});
+          continue;
+        }
+        // Status bullets: ✓ ⚠ ✗
+        if(/^[✓⚠✗]/.test(tr)){
+          flush();
+          var st=tr.startsWith("✓")?"pass":tr.startsWith("⚠")?"warn":"fail";
+          blocks.push({type:"bullet",text:tr.slice(1).trim(),status:st});continue;
+        }
+        // Standard bullets: - • *
+        if(/^[-•*]\s/.test(tr)){
+          flush();
+          blocks.push({type:"bullet",text:tr.replace(/^[-•*]\s+/,""),status:"note"});continue;
+        }
+        // Key: Value (short key, up to 40 chars before colon)
+        if(/^[^\n]{1,40}:\s.+/.test(tr)&&tr.indexOf(":")<40&&!tr.startsWith("http")){
+          var ci=tr.indexOf(": ");
+          if(ci>0&&ci<40){
+            flush();
+            blocks.push({type:"kv",key:tr.slice(0,ci).trim(),value:tr.slice(ci+2).trim()});
+            continue;
+          }
+        }
         buf.push(tr);
       }
-      flush();
+      flush();flushTable();
       return blocks;
     }
+
     var blocks=parseBlocks(raw);
-    var stColor=function(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#9CA3AF";};
-    var stIcon=function(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"—";};
-    return<div style={{maxHeight:"70vh",overflowY:"auto",paddingRight:4}}>
-      <div style={{marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>{doc.title||"Analysis"}</div>
+    function sc(s){return s==="pass"?"#10B981":s==="warn"?"#F59E0B":s==="fail"?"#EF4444":"#9CA3AF";}
+    function si(s){return s==="pass"?"✓":s==="warn"?"⚠":s==="fail"?"✗":"·";}
+
+    return<div style={{maxHeight:"75vh",overflowY:"auto",paddingRight:4}}>
+      <div style={{marginBottom:14,paddingBottom:10,borderBottom:"1px solid "+K.bdr}}>
+        <div style={{fontSize:9,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginBottom:2}}>{doc.title||"Analysis"}</div>
       </div>
       {blocks.map(function(b,bi){
-        if(b.type==="heading")return<div key={bi} style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginTop:bi>0?20:0,marginBottom:6,paddingBottom:5,borderBottom:"1px solid "+K.bdr}}>{b.text}</div>;
-        if(b.type==="bullet")return<div key={bi} style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
-          <span style={{fontSize:12,fontWeight:700,color:stColor(b.status),flexShrink:0,marginTop:1,width:14}}>{stIcon(b.status)}</span>
-          <p style={{margin:0,fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.65}}>{b.text}</p>
+        var mt=bi>0?10:0;
+        if(b.type==="h1")return<div key={bi} style={{fontSize:20,fontWeight:900,color:K.txt,fontFamily:fh,letterSpacing:"-.5px",marginTop:bi>0?24:0,marginBottom:8}}>{renderInline(b.text)}</div>;
+        if(b.type==="h2")return<div key={bi} style={{fontSize:11,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase",marginTop:bi>0?20:0,marginBottom:6,paddingBottom:5,borderBottom:"1px solid "+K.bdr}}>{b.text}</div>;
+        if(b.type==="h3")return<div key={bi} style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginTop:bi>0?16:0,marginBottom:5}}>{renderInline(b.text)}</div>;
+        if(b.type==="h4")return<div key={bi} style={{fontSize:12,fontWeight:700,color:K.mid,fontFamily:fm,marginTop:bi>0?12:0,marginBottom:4}}>{renderInline(b.text)}</div>;
+        if(b.type==="hr")return<div key={bi} style={{height:1,background:K.bdr,margin:"16px 0"}}/>;
+        if(b.type==="quote")return<div key={bi} style={{borderLeft:"3px solid "+PURPLE+"60",paddingLeft:12,margin:"10px 0",color:K.dim,fontSize:13,fontFamily:fb,lineHeight:1.7,fontStyle:"italic"}}>{renderInline(b.text)}</div>;
+        if(b.type==="code")return<pre key={bi} style={{margin:"10px 0",padding:"10px 14px",background:K.bg,border:"1px solid "+K.bdr,borderRadius:_isBm?0:6,fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:K.mid,overflowX:"auto",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{b.text}</pre>;
+        if(b.type==="bullet")return<div key={bi} style={{display:"flex",gap:8,marginBottom:5,alignItems:"flex-start",marginTop:2}}>
+          <span style={{fontSize:b.status!=="note"?12:16,fontWeight:700,color:sc(b.status),flexShrink:0,lineHeight:1,marginTop:b.status!=="note"?2:0,width:16}}>{si(b.status)}</span>
+          <span style={{fontSize:13,color:b.status!=="note"?K.mid:K.mid,fontFamily:fb,lineHeight:1.65}}>{renderInline(b.text)}</span>
         </div>;
-        if(b.type==="kv")return<div key={bi} style={{display:"flex",gap:10,marginBottom:6,padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
-          <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,flexShrink:0,minWidth:80}}>{b.key}</span>
-          <span style={{fontSize:11,color:K.mid,fontFamily:fb}}>{b.value}</span>
+        if(b.type==="numitem")return<div key={bi} style={{display:"flex",gap:10,marginBottom:5,alignItems:"flex-start"}}>
+          <span style={{fontSize:11,fontWeight:700,color:PURPLE,background:PURPLE+"15",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:fm}}>{b.n}</span>
+          <span style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.65}}>{renderInline(b.text)}</span>
         </div>;
-        return<p key={bi} style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.75}}>{b.text}</p>;
+        if(b.type==="kv")return<div key={bi} style={{display:"flex",gap:10,marginBottom:5,padding:"6px 10px",background:K.bg,borderRadius:_isBm?0:6,border:"1px solid "+K.bdr}}>
+          <span style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,flexShrink:0,minWidth:100}}>{b.key}</span>
+          <span style={{fontSize:12,color:K.mid,fontFamily:fb}}>{renderInline(b.value)}</span>
+        </div>;
+        if(b.type==="table")return<div key={bi} style={{overflowX:"auto",marginBottom:12,marginTop:8}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,fontFamily:fm}}>
+            {b.rows.map(function(row,ri){
+              var isHeader=ri===0;
+              return<tr key={ri} style={{borderBottom:"1px solid "+K.bdr,background:ri%2===0?K.bg:"transparent"}}>
+                {row.map(function(cell,ci){return isHeader
+                  ?<th key={ci} style={{padding:"6px 10px",textAlign:"left",fontWeight:700,color:K.txt,fontSize:11,letterSpacing:.5}}>{cell}</th>
+                  :<td key={ci} style={{padding:"6px 10px",color:K.mid}}>{renderInline(cell)}</td>;
+                })}
+              </tr>;
+            })}
+          </table>
+        </div>;
+        if(b.type==="para")return<p key={bi} style={{margin:"0 0 10px",fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.8}}>{renderInline(b.text)}</p>;
+        return null;
       })}
     </div>;
   }
