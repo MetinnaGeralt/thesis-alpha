@@ -5430,37 +5430,8 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           </div>}</div>})}
       </div>}
     </div>}
-    // Build breadcrumb for topbar left side
-    var tbCrumbs=[];
-    if(!isMobile){
-      var tbSep=<svg key={"sep"+Math.random()} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0,opacity:0.4}}><polyline points="9 18 15 12 9 6"/></svg>;
-      var tbRoot=sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too Hard":"Portfolio";
-      var tbPageLabels={strategy:"Strategy",watchlist:"Watchlist",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",timeline:"Portfolio",assets:"Capital Overview",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",ai:"Research Prompts",hub:"Portfolio",learn:"Learning Hub",screener:"Screener"};
-      tbCrumbs.push(<button key="r" onClick={function(){setSelId(null);setPage("dashboard");}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim+"cc":"#fff",fontSize:12,fontWeight:selId||page!=="dashboard"?400:600,cursor:"pointer",padding:"0 2px",fontFamily:fm,letterSpacing:0,whiteSpace:"nowrap"}}>{tbRoot}</button>);
-      if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
-        tbCrumbs.push(tbSep);
-        tbCrumbs.push(<span key="pg" style={{fontSize:12,fontWeight:600,color:"#fff",fontFamily:fm}}>{tbPageLabels[page]||page}</span>);
-      }
-      if(selId&&sel){
-        tbCrumbs.push(tbSep);
-        tbCrumbs.push(<button key="co" onClick={function(){setSubPage(null);setDetailTab("dossier");}} style={{background:"none",border:"none",color:subPage||detailTab!=="dossier"?K.dim+"cc":"#fff",fontSize:12,fontWeight:subPage||detailTab!=="dossier"?400:600,cursor:"pointer",padding:"0 2px",fontFamily:fm,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-          <span style={{width:14,height:14,borderRadius:3,overflow:"hidden",flexShrink:0,display:"inline-flex"}}><CoLogo domain={sel.domain} ticker={sel.ticker} size={14}/></span>
-          {sel.ticker}
-        </button>);
-        if(subPage){tbCrumbs.push(tbSep);tbCrumbs.push(<span key="sp" style={{fontSize:12,fontWeight:600,color:"#fff",fontFamily:fm}}>{{financials:"Financials",moat:"Moat"}[subPage]||subPage}</span>);}
-        else if(detailTab&&detailTab!=="dossier"){tbCrumbs.push(tbSep);tbCrumbs.push(<span key="dt" style={{fontSize:12,fontWeight:600,color:"#fff",fontFamily:fm}}>{{kpis:"KPI Tracker",library:"Research"}[detailTab]||detailTab}</span>);}
-      }
-    }
-    return<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:bm?"4px 16px":"6px 32px",borderBottom:"1px solid "+K.bdr+"40",background:K.side,position:"sticky",top:0,zIndex:50}}>
-      {/* Left: breadcrumbs */}
-      <div style={{display:"flex",alignItems:"center",gap:4}}>
-        <button onClick={function(){setSelId(null);setPage("dashboard");}} style={{background:"none",border:"none",padding:"0 6px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center",opacity:0.6}} title="Home">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        </button>
-        {tbCrumbs}
-      </div>
-      {/* Right: icons */}
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
+    return<div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",padding:bm?"4px 16px":"6px 32px",borderBottom:"1px solid "+K.bdr,background:K.side,position:"sticky",top:0,zIndex:50,gap:10}}>
+
     {["thesis_dark","thesis_light","dark","light"].indexOf(theme)>=0&&<button onClick={toggleTheme} style={{background:"none",border:"1px solid "+K.bdr,borderRadius:_isBm?0:8,padding:"4px 6px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28}} title={theme==="light"?"Light":"Dark"+(theme==="forest"?" Forest":"")+(theme==="purple"?" Purple":"")+(((streakData.current||0)<1&&(theme==="dark"||theme==="light"))?" — streak 1 wk to unlock more themes":"")}>{isDark?<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={K.mid} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>}</button>}
     <div style={{position:"relative",cursor:"pointer",padding:4}} onClick={function(){setShowNotifs(!showNotifs);if(!showNotifs)setNotifs(function(p){return p.map(function(n){return Object.assign({},n,{read:true})})})}}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={unread>0?K.mid:K.dim} strokeWidth="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -5487,7 +5458,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
     <div style={{position:"relative",cursor:"pointer"}} onClick={function(){setShowProfile(!showProfile)}}>
       {avatarUrl?<img src={avatarUrl} style={{width:28,height:28,borderRadius:"50%",objectFit:"cover",border:"2px solid "+K.acc}}/>
         :<div style={{width:28,height:28,borderRadius:"50%",background:K.acc+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:K.acc,fontWeight:600,fontFamily:fm,border:"2px solid "+K.acc+"40"}}>{(username||props.user||"U")[0].toUpperCase()}</div>}
-    </div></div></div>}
+    </div></div>}
 
   // ── AI Detectors (simplified reference — same logic, theme-aware) ──
   // ── Research Links (paste URLs per holding) ──
@@ -16936,6 +16907,33 @@ function ProWelcomeGift(){
     })()}
     <div style={{flex:1,overflowY:"auto",overflowX:"hidden",width:isMobile?"100%":"auto",paddingBottom:isMobile?56:0}}><TopBar/>
 
+    {/* ── BREADCRUMB NAV ── */}
+    {!isMobile&&(function(){
+      var crumbs=[];
+      var sep=<svg key="sep" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={K.bdr} strokeWidth="1.8" strokeLinecap="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>;
+      var rootLabel=sideTab==="watchlist"?"Watchlist":sideTab==="toohard"?"Too-Hard Pile":"Portfolio";
+      crumbs.push(<button key="root" onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",color:selId||page!=="dashboard"?K.dim:K.acc,fontSize:11,fontWeight:selId||page!=="dashboard"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,whiteSpace:"nowrap"}}>{rootLabel}</button>);
+      var pageLabels={strategy:"My Strategy",watchlist:"Watchlist",analytics:"Portfolio",calendar:"Portfolio",dividends:"Portfolio",timeline:"Portfolio",assets:"Capital Overview",journal:"Journal",review:(effectivePlan==="pro"?"Owner's Letter":"Weekly Review"),library:"Library",ai:"Research Prompts",hub:"Portfolio",learn:"Learning Hub",screener:"Screener"};
+      if(page!=="dashboard"&&!selId&&page!=="hub"&&page!=="calendar"&&page!=="dividends"&&page!=="analytics"&&page!=="timeline"){
+        crumbs.push(sep);
+        crumbs.push(<span key="page" style={{fontSize:11,fontWeight:600,color:K.acc,fontFamily:fm}}>{pageLabels[page]||page}</span>);
+      }
+      if(selId&&sel){
+        crumbs.push(sep);
+        crumbs.push(<button key="co" onClick={function(){setSubPage(null);setDetailTab("dossier")}} style={{background:"none",border:"none",color:subPage||detailTab!=="dossier"?K.mid:K.acc,fontSize:11,fontWeight:subPage||detailTab!=="dossier"?500:700,cursor:"pointer",padding:"0 2px",fontFamily:fm,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+          <span style={{width:14,height:14,borderRadius:3,overflow:"hidden",flexShrink:0,display:"inline-flex"}}><CoLogo domain={sel.domain} ticker={sel.ticker} size={14}/></span>
+          {sel.ticker}
+        </button>);
+        if(subPage){crumbs.push(sep);crumbs.push(<button key="sp" style={{background:"none",border:"none",color:K.acc,fontSize:11,fontWeight:700,cursor:"default",padding:"0 2px",fontFamily:fm}}>{{financials:"Financials",moat:"Moat Tracker"}[subPage]||subPage}</button>);}
+        else if(detailTab&&detailTab!=="dossier"){crumbs.push(sep);crumbs.push(<span key="dt" style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm}}>{{kpis:"KPI Tracker",library:"Research"}[detailTab]||detailTab}</span>);}
+      }
+      return<div style={{display:"flex",alignItems:"center",gap:4,padding:"5px 32px",borderBottom:"1px solid "+K.bdr+"60",background:K.bg,position:"sticky",top:_isBm?0:43,zIndex:40,minHeight:28}}>
+        <button onClick={function(){setSelId(null);setPage("dashboard")}} style={{background:"none",border:"none",padding:"0 4px 0 0",cursor:"pointer",color:K.dim,display:"flex",alignItems:"center"}} title="Home">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </button>
+        {crumbs}
+      </div>;
+    })()}
     {/* ── Profile Panel ── */}
     {showProfile&&<div style={{position:"fixed",inset:0,zIndex:199}} onClick={function(){setShowProfile(false)}}/>}
     {showProfile&&(function(){
