@@ -17011,43 +17011,37 @@ function ProWelcomeGift(){
           <span style={{fontSize:16,color:focus.color,flexShrink:0,marginTop:6}}>{"→"}</span>
         </div>}
 
-        {/* ── Mr Market ── */}
-        {mrMarket&&<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",
-          background:mrMarket.color+"06",border:"1px solid "+mrMarket.color+"25",
-          borderRadius:_isBm?0:12,marginBottom:16,cursor:"pointer"}}
-          onClick={function(){}}>
-          <div style={{flexShrink:0}}>
-            <svg width="36" height="44" viewBox="0 0 100 120" fill="none" style={{overflow:"visible"}}>
-              {/* Hat */}
-              <rect x="38" y="8" width="24" height="18" rx="1.5" fill={mrMarket.color+"40"} stroke={mrMarket.color} strokeWidth="3"/>
-              <rect x="28" y="24" width="44" height="6" rx="1" fill={mrMarket.color+"60"} stroke={mrMarket.color} strokeWidth="2"/>
-              {/* Face */}
-              <ellipse cx="50" cy="44" rx="18" ry="18" fill={mrMarket.mood==="extreme_fear"?"#FFE4E6":mrMarket.mood==="greed"||mrMarket.mood==="extreme_greed"?"#DCFCE7":"#FEF9C3"}/>
-              {/* Eyes */}
-              <circle cx="43" cy="41" r="2.5" fill="#374151"/>
-              <circle cx="57" cy="41" r="2.5" fill="#374151"/>
-              {/* Eyebrows — mood-responsive */}
-              {mrMarket.mood==="extreme_fear"&&<><path d="M39 35 Q43 38 47 35" stroke="#EF4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/><path d="M53 35 Q57 38 61 35" stroke="#EF4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/></>}
-              {mrMarket.mood==="fear"&&<><path d="M39 36 Q43 38 47 36" stroke="#F59E0B" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M53 36 Q57 38 61 36" stroke="#F59E0B" strokeWidth="2" fill="none" strokeLinecap="round"/></>}
-              {(mrMarket.mood==="greed"||mrMarket.mood==="extreme_greed")&&<><path d="M39 38 Q43 35 47 38" stroke="#10B981" strokeWidth="2" fill="none" strokeLinecap="round"/><path d="M53 38 Q57 35 61 38" stroke="#10B981" strokeWidth="2" fill="none" strokeLinecap="round"/></>}
-              {/* Mouth */}
-              {mrMarket.mood==="extreme_fear"&&<path d="M42 52 Q50 46 58 52" stroke="#EF4444" strokeWidth="2.5" fill="none" strokeLinecap="round"/>}
-              {mrMarket.mood==="fear"&&<path d="M43 51 Q50 47 57 51" stroke="#F59E0B" strokeWidth="2" fill="none" strokeLinecap="round"/>}
-              {mrMarket.mood==="neutral"&&<path d="M43 50 L57 50" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"/>}
-              {mrMarket.mood==="greed"&&<path d="M43 48 Q50 54 57 48" stroke="#10B981" strokeWidth="2" fill="none" strokeLinecap="round"/>}
-              {mrMarket.mood==="extreme_greed"&&<path d="M42 47 Q50 56 58 47" stroke="#10B981" strokeWidth="2.5" fill="none" strokeLinecap="round"/>}
-              {/* Body/suit */}
-              <rect x="34" y="64" width="32" height="22" rx="3" fill={mrMarket.color+"30"} stroke={mrMarket.color} strokeWidth="2"/>
+                {/* ── Mr Market ── */}
+        {mrMarket&&<div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",
+          background:mrMarket.color+"07",border:"1px solid "+mrMarket.color+"20",
+          borderRadius:_isBm?0:12,marginBottom:16}}>
+          <div style={{flexShrink:0,width:52,height:52}}>
+            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+              <circle cx="26" cy="26" r="25" fill={mrMarket.color+"10"} stroke={mrMarket.color+"25"} strokeWidth="1"/>
+              <ellipse cx="26" cy="16" rx="11" ry="2.5" fill={mrMarket.color+"50"}/>
+              <rect x="19" y="6" width="14" height="11" rx="2" fill={mrMarket.color+"40"} stroke={mrMarket.color+"80"} strokeWidth="1.2"/>
+              <rect x="19" y="13" width="14" height="2.5" fill={mrMarket.color+"70"}/>
+              <circle cx="26" cy="30" r="10"
+                fill={mrMarket.mood==="extreme_fear"?"#FEE2E2":mrMarket.mood==="fear"?"#FEF3C7":mrMarket.mood==="neutral"?"#F3F4F6":mrMarket.mood==="greed"?"#DCFCE7":"#D1FAE5"}
+                stroke={mrMarket.color+"40"} strokeWidth="1"/>
+              {mrMarket.mood==="extreme_fear"&&<><ellipse cx="23" cy="28.5" rx="1.8" ry="2.2" fill="#374151"/><ellipse cx="29" cy="28.5" rx="1.8" ry="2.2" fill="#374151"/><path d="M21 25.5 L25 27" stroke="#EF4444" strokeWidth="1.2" strokeLinecap="round"/><path d="M27 27 L31 25.5" stroke="#EF4444" strokeWidth="1.2" strokeLinecap="round"/><path d="M23 34 Q26 30.5 29 34" stroke="#EF4444" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
+              {mrMarket.mood==="fear"&&<><circle cx="23" cy="29" r="1.6" fill="#374151"/><circle cx="29" cy="29" r="1.6" fill="#374151"/><path d="M22 26.5 L25 27.5" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round"/><path d="M27 27.5 L30 26.5" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round"/><path d="M23 33.5 Q26 31 29 33.5" stroke="#F59E0B" strokeWidth="1.3" fill="none" strokeLinecap="round"/></>}
+              {mrMarket.mood==="neutral"&&<><circle cx="23" cy="29" r="1.5" fill="#6B7280"/><circle cx="29" cy="29" r="1.5" fill="#6B7280"/><path d="M23.5 33 L28.5 33" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/></>}
+              {mrMarket.mood==="greed"&&<><circle cx="23" cy="28.5" r="1.6" fill="#374151"/><circle cx="29" cy="28.5" r="1.6" fill="#374151"/><path d="M21.5 26 L24.5 27" stroke="#10B981" strokeWidth="1.2" strokeLinecap="round"/><path d="M27.5 27 L30.5 26" stroke="#10B981" strokeWidth="1.2" strokeLinecap="round"/><path d="M22 32 Q26 35.5 30 32" stroke="#10B981" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
+              {mrMarket.mood==="extreme_greed"&&<><path d="M21.5 27.5 Q23 26 24.5 27.5" stroke="#374151" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M27.5 27.5 Q29 26 30.5 27.5" stroke="#374151" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M21.5 31.5 Q26 36 30.5 31.5" stroke="#10B981" strokeWidth="1.6" fill="none" strokeLinecap="round"/></>}
+              <path d="M24.5 40 L26 43 L27.5 40 L26 38.5 Z" fill={mrMarket.color+"60"}/>
+              <path d="M19 40 Q22 38 24.5 40 L26 38.5 L27.5 40 Q30 38 33 40" stroke={mrMarket.color+"50"} strokeWidth="1" fill="none"/>
             </svg>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:mrMarket.color,fontFamily:fm,marginBottom:3}}>{"Mr. Market today"}</div>
-            <div style={{fontSize:13,fontWeight:700,color:mrMarket.color,fontFamily:fm,marginBottom:2}}>{mrMarket.mood_label||mrMarket.label}</div>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:2,textTransform:"uppercase",color:mrMarket.color,fontFamily:fm,marginBottom:2,opacity:0.8}}>{"Mr. Market · Today"}</div>
+            <div style={{fontSize:14,fontWeight:700,color:mrMarket.color,fontFamily:fm,marginBottom:3}}>{mrMarket.mood_label||mrMarket.label}</div>
             <div style={{fontSize:11,color:K.mid,fontFamily:fb,lineHeight:1.6,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{mrMarket.offer}</div>
           </div>
-          {mrMarket.vix&&<div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>VIX</div>
-            <div style={{fontSize:15,fontWeight:700,color:mrMarket.color,fontFamily:fm}}>{mrMarket.vix.toFixed(1)}</div>
+          {mrMarket.vix&&<div style={{textAlign:"right",flexShrink:0,paddingLeft:8,borderLeft:"1px solid "+mrMarket.color+"20"}}>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>{"VIX"}</div>
+            <div style={{fontSize:20,fontWeight:800,color:mrMarket.color,fontFamily:fm,lineHeight:1}}>{mrMarket.vix.toFixed(1)}</div>
+            <div style={{fontSize:9,color:K.dim,fontFamily:fm,marginTop:2}}>{mrMarket.vix<15?"calm":mrMarket.vix<20?"low":mrMarket.vix<30?"elevated":mrMarket.vix<40?"high":"extreme"}</div>
           </div>}
         </div>}
 
@@ -18218,10 +18212,11 @@ function ProWelcomeGift(){
             </div>
           </div>
           {/* Price + return */}
-          {pos.currentPrice>0&&<div style={{marginTop:10,display:"flex",alignItems:"baseline",gap:6}}>
+          {pos.currentPrice>0&&!ownersMode&&<div style={{marginTop:10,display:"flex",alignItems:"baseline",gap:6}}>
             <span style={{fontSize:16,fontWeight:700,color:"rgba(255,255,255,0.95)",fontFamily:fm}}>${pos.currentPrice.toFixed(pos.currentPrice<10?2:0)}</span>
             {pctReturn!=null&&<span style={{fontSize:11,fontWeight:600,color:pctReturn>=0?K.grn:K.red,fontFamily:fm}}>{pctReturn>=0?"+":""}{pctReturn.toFixed(1)}%</span>}
           </div>}
+          {ownersMode&&<div style={{marginTop:8,fontSize:9,color:"rgba(255,255,255,0.35)",fontFamily:fm,letterSpacing:1,textTransform:"uppercase"}}>{"Owner mode"}</div>}
         </div>
         {/* Section nav */}
         <div style={{flex:1,padding:"8px 0"}}>
