@@ -19,7 +19,7 @@ const MONTHLY_CAP_USD = parseFloat(process.env.ANTHROPIC_MONTHLY_CAP || "30");
 // claude-sonnet-4: ~$3 per 1M input tokens, ~$15 per 1M output tokens
 const COST_PER_CALL = {
   digest:  0.003,  // AI conviction digest — ~150 out tokens
-  letter:  0.015,  // Owner's Letter — ~700 out tokens
+  letter:  0.025,  // Owner's Letter — ~1400 out tokens
   journal: 0.004,  // Journal narrative — ~200 out tokens
   ramble:  0.003,  // Clean up ramble — ~150 out tokens
   import:  0.025,  // Analysis import — large input + structured JSON output
@@ -29,7 +29,7 @@ const COST_PER_CALL = {
 // ── Per-user daily rate limits ─────────────────────────────────────────────────
 const DAILY_LIMIT_PER_USER = {
   digest:  7,   // max once per review, reviews are weekly
-  letter:  3,   // monthly letter + 2 regenerations
+  letter:  1,   // 1 per quarter — no manual generation
   journal: 14,  // once per review + a few manual
   ramble:  20,  // most frequent — cleanup calls
   import:  5,   // 5 analysis imports per day is plenty
@@ -226,7 +226,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: model || "claude-sonnet-4-20250514",
-        max_tokens: Math.min(max_tokens || 1000, 1000), // hard cap at 1000 tokens out
+        max_tokens: Math.min(max_tokens || 1400, 1400), // hard cap at 1400 for letter support
         messages,
       }),
     });
