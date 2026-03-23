@@ -14170,11 +14170,27 @@ function ProWelcomeGift(){
       </div>}
 
       {/* Empty state */}
-      {items.length===0&&readingList.length===0&&<div style={{textAlign:"center",padding:"80px 0",color:K.dim}}>
-        <div style={{fontSize:28,marginBottom:16}}>{"📚"}</div>
-        <div style={{fontSize:16,fontWeight:700,color:K.mid,fontFamily:fh,marginBottom:8}}>{"Your library is empty"}</div>
-        <div style={{fontSize:14,maxWidth:400,margin:"0 auto 24px",lineHeight:1.7,color:K.dim}}>{"Save articles, annual reports, and your own research — tagged to the companies you follow."}</div>
-        <button onClick={function(){setLibModal({type:"item"});}} style={Object.assign({},S.btnP,{padding:"11px 28px",fontSize:14})}>{"Add first resource"}</button>
+      {items.length===0&&readingList.length===0&&<div style={{maxWidth:520,margin:"0 auto",padding:"60px 0",textAlign:"center"}}>
+        <div style={{fontSize:32,marginBottom:16}}>{"📚"}</div>
+        <div style={{fontSize:20,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.3px",marginBottom:8}}>{"Build your research hub"}</div>
+        <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.75,marginBottom:28,maxWidth:400,margin:"0 auto 28px"}}>
+          {"Every Buffett letter. Every annual report. Every article that shaped your thinking. Every AI deep dive you've run. All in one place, tagged to the companies you follow."}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10,marginBottom:24,textAlign:"left"}}>
+          {[
+            {icon:"🤖",label:"AI Analysis",desc:"Paste your Claude or ChatGPT deep dives"},
+            {icon:"📄",label:"Annual Reports",desc:"Clip key pages from 10-Ks and earnings calls"},
+            {icon:"🎥",label:"Videos & Links",desc:"Save Buffett talks, interviews, and research"},
+          ].map(function(p,i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"12px 14px"}}>
+            <div style={{fontSize:18,marginBottom:6}}>{p.icon}</div>
+            <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{p.label}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.4}}>{p.desc}</div>
+          </div>;})}
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={function(){setLibModal({type:"folder"});}} style={Object.assign({},S.btn,{padding:"10px 20px",fontSize:13})}>{"+ Create folder"}</button>
+          <button onClick={function(){setLibModal({type:"item"});}} style={Object.assign({},S.btnP,{padding:"10px 24px",fontSize:13})}>{"+ Add first resource"}</button>
+        </div>
       </div>}
       {libTab!=="featured"&&filtered.length===0&&items.length>0&&<div style={{textAlign:"center",padding:"60px 0",color:K.dim}}>
         <div style={{fontSize:14,marginBottom:8}}>No resources match your filters</div>
@@ -16677,10 +16693,35 @@ function ProWelcomeGift(){
         </div>}
 
         {/* ── Empty portfolio ── */}
-        {portfolio.length===0&&<div style={{textAlign:"center",padding:"60px 0"}}>
-          <div style={{fontSize:16,fontWeight:700,color:K.mid,fontFamily:fh,marginBottom:8}}>Which business do you understand best well enough to own?</div>
-          <div style={{fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.7,maxWidth:380,margin:"0 auto 20px"}}>
-            Own like Buffett — one business at a time, deeply understood. Add your first holding and build the thesis that keeps you honest.
+        {portfolio.length===0&&<div style={{textAlign:"center",padding:"48px 0 60px",maxWidth:520,margin:"0 auto"}}>
+          {/* Positioning statement */}
+          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:16,opacity:0.7}}>{"Welcome to ThesisAlpha"}</div>
+          <div style={{fontSize:22,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-0.5px",lineHeight:1.3,marginBottom:12}}>
+            {"Where serious investors write down their thinking."}
+          </div>
+          <div style={{fontSize:14,color:K.mid,fontFamily:fb,lineHeight:1.75,marginBottom:28,maxWidth:440,margin:"0 auto 28px"}}>
+            {"So they can own better businesses, make better decisions, and actually learn from what they get right and wrong."}
+          </div>
+          {/* Three pillars */}
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12,marginBottom:28,textAlign:"left"}}>
+            {[
+              {icon:"📝",title:"Build your thesis",desc:"Write why you own it. What would break it. What would make it a great business."},
+              {icon:"📊",title:"Track what matters",desc:"Set KPIs. Monitor earnings. Score your decisions. Know if you were right."},
+              {icon:"📚",title:"Learn as you go",desc:"Mental models, glossary, and contextual prompts — wired into the tools."},
+            ].map(function(p,i){return<div key={i} style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 16px"}}>
+              <div style={{fontSize:20,marginBottom:8}}>{p.icon}</div>
+              <div style={{fontSize:12,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:4}}>{p.title}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{p.desc}</div>
+            </div>;})}
+          </div>
+          {/* Already have AI analysis CTA */}
+          <div style={{background:K.acc+"08",border:"1px dashed "+K.acc+"40",borderRadius:_isBm?0:10,padding:"12px 18px",marginBottom:20,cursor:"pointer",display:"flex",alignItems:"center",gap:10}}
+            onClick={function(){setModal({type:"add"});}}>
+            <div style={{flex:1,textAlign:"left"}}>
+              <div style={{fontSize:12,fontWeight:700,color:K.acc,fontFamily:fm,marginBottom:2}}>{"Already have a Claude or ChatGPT analysis?"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{"Add your company → go to Deep Dive → paste your analysis in. ThesisAlpha will structure it automatically."}</div>
+            </div>
+            <span style={{fontSize:14,color:K.acc,flexShrink:0}}>{"→"}</span>
           </div>
           <button onClick={function(){setModal({type:"add"});}}
             style={Object.assign({},S.btnP,{padding:"11px 28px",fontSize:14})}>Add first holding</button>
