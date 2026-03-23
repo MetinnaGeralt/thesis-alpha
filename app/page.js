@@ -14516,12 +14516,12 @@ function ProWelcomeGift(){
 
     var filteredModels=(MENTAL_MODELS||[]).filter(function(m){
       var matchCat=mcat==="All"||m.cat===mcat;
-      var matchSearch=!search||m.title.toLowerCase().includes(search.toLowerCase())||m.body.toLowerCase().includes(search.toLowerCase());
+      var matchSearch=!search||(m.title||"").toLowerCase().includes(search.toLowerCase())||(m.body||"").toLowerCase().includes(search.toLowerCase());
       return matchCat&&matchSearch;
     });
     var filteredGlossary=(GLOSSARY||[]).filter(function(g){
       var matchCat=gcat==="All"||g.cat===gcat;
-      var matchSearch=!search||g.term.toLowerCase().includes(search.toLowerCase())||g.definition.toLowerCase().includes(search.toLowerCase());
+      var matchSearch=!search||(g.term||"").toLowerCase().includes(search.toLowerCase())||(g.definition||"").toLowerCase().includes(search.toLowerCase());
       return matchCat&&matchSearch;
     });
 
