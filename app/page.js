@@ -769,6 +769,7 @@ function TrackerApp(props){
   var _lensData=useState({}),lensData=_lensData[0],setLensData=_lensData[1];
   var _lensLd=useState(false),lensLoading=_lensLd[0],setLensLoading=_lensLd[1];
   var _scrTab=useState("screener"),screenTab=_scrTab[0],setScreenTab=_scrTab[1];
+  var _om=useState(false),ownersMode=_om[0],setOwnersMode=_om[1];
   // Fetch lens data when screener lenses tab is opened
   useEffect(function(){
     if(screenTab!=="lenses")return;
@@ -1286,7 +1287,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
       else{setCheckSt(function(p){var n=Object.assign({},p);n[cid]="not-yet";return n})}}
     catch(e){console.warn("checkOne error:",e);setCheckSt(function(p){var n=Object.assign({},p);n[cid]="error";return n})}
     setTimeout(function(){setCheckSt(function(p){var n=Object.assign({},p);delete n[cid];return n})},6000)}
-  async function checkAll(){var all=cos.filter(function(c){return c.status==="portfolio"||c.status==="watchlist"});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
+  async function checkAll(){var all=cos.filter(function(c){return (c.status==="portfolio"||c.status==="watchlist")&&c.kpis&&c.kpis.length>0});for(var i=0;i<all.length;i++){await checkOne(all[i].id);await new Promise(function(r){setTimeout(r,1200)})}}
   async function refreshPrices(){setPriceLoading(true);
     for(var i=0;i<cos.length;i++){var c=cos[i];try{
       var rP=fetchPrice(c.ticker);var rQ=fetchQuote(c.ticker);
@@ -16469,6 +16470,20 @@ function ProWelcomeGift(){
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div style={{fontSize:10,fontWeight:700,color:K.dim,fontFamily:fm,letterSpacing:1.5,textTransform:"uppercase"}}>Your businesses</div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {/* Owners mode toggle */}
+              <button onClick={function(){setOwnersMode(!ownersMode);}}
+                title={ownersMode?"Show prices":"Owner mode — hide prices"}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"5px 10px",
+                  borderRadius:_isBm?0:7,border:"1px solid "+(ownersMode?K.acc+"40":K.bdr),
+                  background:ownersMode?K.acc+"12":"transparent",color:ownersMode?K.acc:K.dim,
+                  fontSize:11,fontWeight:ownersMode?700:400,cursor:"pointer",fontFamily:fm,transition:"all .15s"}}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  {ownersMode
+                    ?<><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                    :<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                </svg>
+                {ownersMode?"Owner mode":""}
+              </button>
               {autoNotify&&<span style={{fontSize:9,color:K.grn,background:K.grn+"12",border:"1px solid "+K.grn+"30",borderRadius:3,padding:"2px 6px",fontFamily:fm,fontWeight:600}}>Auto ON</span>}
               <button onClick={function(){if(requirePro("earnings"))checkAll();}}
                 style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",
@@ -16527,14 +16542,36 @@ function ProWelcomeGift(){
                     {kpiLabel&&<span style={{fontSize:9,fontWeight:600,color:kpiColor,background:kpiColor+"12",borderRadius:3,padding:"1px 6px",fontFamily:fm}}>{isChecking?"Checking...":kpiLabel}</span>}
                   </div>
                 </div>
-                {/* Price */}
-                <div style={{textAlign:"right",flexShrink:0}}>
-                  {price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>
+                {/* Price / IV section */}
+                <div style={{textAlign:"right",flexShrink:0,minWidth:90}}>
+                  {!ownersMode&&price>0&&<div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>
                     {cSym+(price>=100?price.toFixed(0):price.toFixed(2))}
                   </div>}
-                  {price>0&&change!==0&&<div style={{fontSize:10,color:chgColor,fontFamily:fm,fontWeight:600}}>
+                  {!ownersMode&&price>0&&change!==0&&<div style={{fontSize:10,color:chgColor,fontFamily:fm,fontWeight:600}}>
                     {(change>0?"+":"")+change.toFixed(1)+"%"}
                   </div>}
+                  {pos.avgCost>0&&<div style={{fontSize:10,color:K.dim,fontFamily:fm,marginTop:ownersMode?0:2}}>
+                    {"Cost: "+cSym+(pos.avgCost>=100?pos.avgCost.toFixed(0):pos.avgCost.toFixed(2))}
+                  </div>}
+                  {/* Intrinsic value bar */}
+                  {(function(){
+                    var iv=c2.ivEstimate||0;
+                    if(!iv||!price)return null;
+                    var pct=Math.min(Math.max(price/iv,0),2);
+                    var barColor=pct<=0.8?K.grn:pct<=1.0?K.amb:K.red;
+                    var label=pct<=0.8?"Undervalued":pct<=1.0?"Fair value":"Overvalued";
+                    return<div style={{marginTop:4}}>
+                      <div style={{width:90,height:4,background:K.bdr,borderRadius:2,overflow:"hidden"}}>
+                        <div style={{width:Math.min(pct*50,100)+"%",height:"100%",background:barColor,borderRadius:2,transition:"width .3s"}}/>
+                      </div>
+                      {!ownersMode&&<div style={{fontSize:9,color:barColor,fontFamily:fm,fontWeight:600,marginTop:2,textAlign:"right"}}>{label}</div>}
+                    </div>;
+                  })()}
+                  {!c2.ivEstimate&&price>0&&<button
+                    onClick={function(e){e.stopPropagation();setModal({type:"position",id:c2.id});}}
+                    style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginTop:3,display:"block",width:"100%",textAlign:"center"}}>
+                    {"Set IV"}
+                  </button>}
                 </div>
                 {/* Chevron */}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2">
