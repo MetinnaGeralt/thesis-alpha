@@ -10534,45 +10534,68 @@ function ProWelcomeGift(){
     var portf2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
     if(portf2.length===0){if(onDone)onDone(null);return;}
     setLetterLoading(true);setLetterError(null);
-    var month=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
-    // Build rich context from all available data
+    var now=new Date();
+    var qNum=Math.ceil((now.getMonth()+1)/3);
+    var year=now.getFullYear();
+    var quarter="Q"+qNum+" "+year;
+    var month=now.toLocaleString("en-US",{month:"long",year:"numeric"});
+    // Rich context
     var holdingLines=portf2.map(function(c){
       var pos=c.position||{};
-      var ret=pos.avgCost&&pos.currentPrice?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"unknown return";
-      var thesis=c.thesisNote?c.thesisNote.substring(0,200):"no thesis written";
-      var kpiStr=(c.kpis||[]).length>0?"KPIs tracked: "+(c.kpis||[]).slice(0,3).map(function(k){return k.label+(k.lastResult!=null?" (last: "+k.lastResult+")":"");}).join(", "):"no KPIs set";
+      var ret=pos.avgCost&&pos.currentPrice?((pos.currentPrice-pos.avgCost)/pos.avgCost*100).toFixed(1)+"%":"unknown";
+      var thesis=c.thesisNote?c.thesisNote.substring(0,180):"no thesis written";
+      var kpiStr=(c.kpis||[]).length>0?"KPIs: "+(c.kpis||[]).slice(0,3).map(function(k){return k.label+(k.lastResult!=null?" ("+k.lastResult+")":"");}).join(", "):"no KPIs set";
       var conv=c.conviction||5;
       var ch=(c.convictionHistory||[]).slice(-8);
-      var convDir="";
-      if(ch.length>=4){var first=ch[0].rating;var last=ch[ch.length-1].rating;var delta=last-first;
-        if(delta>=2)convDir=" [conviction has been BUILDING +"+delta+" pts over "+ch.length+" weeks]";
-        else if(delta<=-2)convDir=" [conviction has been DRIFTING "+delta+" pts over "+ch.length+" weeks]";
-        else convDir=" [conviction has held steady around "+last+"]";}
+      var convDir="stable";
+      if(ch.length>=4){var d=ch[ch.length-1].rating-ch[0].rating;if(d>=2)convDir="BUILDING +"+d+" pts";else if(d<=-2)convDir="DRIFTING "+d+" pts";}
       var thesisDays=c.thesisUpdatedAt?Math.floor((Date.now()-new Date(c.thesisUpdatedAt).getTime())/864e5):null;
-      var thesisAge=thesisDays!==null?" (thesis last updated "+thesisDays+" days ago)":"";
-      var decCount=(c.decisions||[]).filter(function(d){return d.date&&new Date(d.date)>new Date(Date.now()-30*864e5);}).length;
-      return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10"+convDir+", return "+ret+". "+kpiStr+". Thesis: "+thesis+thesisAge+(decCount>0?". "+decCount+" decision(s) logged this month":".");
+      var stale=thesisDays!==null&&thesisDays>90?" (STALE: "+thesisDays+"d since update)":"";
+      var decStr=(c.decisions||[]).filter(function(d){return d.date&&new Date(d.date)>new Date(Date.now()-90*864e5);}).map(function(d){return d.action+(d.reasoning?" '"+d.reasoning.substring(0,60)+"'":"")+(d.outcome?" ["+d.outcome+"]":"");}).join("; ")||"none";
+      return "- "+c.ticker+" ("+c.name+"): conviction "+conv+"/10 ["+convDir+"], return "+ret+stale+". "+kpiStr+". Thesis excerpt: "+thesis+". Recent decisions: "+decStr;
     }).join("\n");
-    var recentDecs=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){recentDecs.push(c.ticker+" - "+d.action+(d.reasoning?" - "+d.reasoning.substring(0,80):""));}});});
-    var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+(i+1)+" months ago: "+l.summary;}).join("\n");
-    var prompt="You are writing the Owner\u2019s Letter \u2014 a private monthly letter delivered to a long-term investor by their portfolio. The businesses they own are speaking to them directly, as a trusted partner who has been quietly watching.\n\nTake your voice from Warren Buffett\u2019s shareholder letters: plain-spoken, warm, occasionally self-deprecating, never performative. Specific over general. One concrete observation carries more weight than three abstract ones. Honest about gaps without being harsh \u2014 the tone is a mentor who believes in this investor, not a critic.\n\nSTRUCTURE (4\u20135 paragraphs, no headers, no bullets):\n1. Open with something specific that happened this month \u2014 a price move, an earnings call, a decision logged, a conviction change. Ground the letter immediately.\n2. Name one thing the investor did well in their process this month \u2014 not the outcome, the behaviour. Staying put when prices fell. Writing a thesis. Logging a decision honestly.\n3. Name one thing worth a second look \u2014 a stale thesis, a holding with no KPIs, conviction that has been quietly drifting. Raise it gently. Trust them to think about it.\n4. A brief forward-looking reflection \u2014 what to watch, what\u2019s building, what the portfolio is becoming over time.\n5. Close with a single question they should carry into next month. Make it hard. Make it the kind of question only someone who has been paying attention could ask.\n\nRULES:\n- Reference specific tickers and real numbers from the data. Never be generic.\n- If conviction has been building on a holding, acknowledge it warmly. If it has been drifting, name it honestly but without alarm.\n- If a thesis is stale (90+ days), mention it as something worth tending to \u2014 not a failure.\n- If decisions were logged, reference the reasoning the investor wrote. They did the work; the letter should notice.\n- The closing question must be impossible to answer in one sentence. It should linger.\n- Do not repeat themes from previous letters.\n- Never mention price targets, buy/sell recommendations, or frame returns as the primary measure of success.\n- Sign as \u2018\u2014 Your Portfolio\u2019 followed by the tickers on a second line.\n\nMonth: "+month+"\n\nPortfolio:\n"+holdingLines+"\n\nRecent decisions (last 90 days):\n"+(recentDecs.length>0?recentDecs.join("\n"):"None logged this period.")+"\n\nReview streak: "+streakData.current+" weeks"+(weeklyReviews.length>0?", avg portfolio conviction "+((weeklyReviews[0].summary&&weeklyReviews[0].summary.avgConv)||"?")+" / 10 this week":"")+".\n\n"+(letterHistory?"What the last letters covered:\n"+letterHistory+"\n\nDo not revisit these themes.\n\n":"")+(myStrategy&&(myStrategy.whatIInvestIn||myStrategy.howIBehave||myStrategy.whatIAvoid)?"\\n\\nInvestor stated strategy (hold them accountable if recent behavior conflicts):\\n"+(myStrategy.whatIInvestIn?"What they invest in: "+myStrategy.whatIInvestIn.substring(0,250)+"\\n":"")+(myStrategy.howIBehave?"How they behave: "+myStrategy.howIBehave.substring(0,250)+"\\n":"")+(myStrategy.whatIAvoid?"What to avoid: "+myStrategy.whatIAvoid.substring(0,250)+"\\n":""):"")+"Now write the letter.";
+    var decisions=[];cos.forEach(function(c){(c.decisions||[]).slice(0,3).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5)){decisions.push({ticker:c.ticker,action:d.action,price:d.price||d.priceAtTime,date:d.date?d.date.substring(0,10):"",reasoning:(d.reasoning||"").substring(0,80),outcome:d.outcome||null});}});});
+    var decStr=decisions.length>0?decisions.map(function(d){return d.date+" "+d.action+" "+d.ticker+(d.price?" @ $"+d.price:"")+(d.reasoning?" — '"+d.reasoning+"'":"")+(d.outcome?" ["+d.outcome+"]":"");}).join("\n"):"None logged this quarter.";
+    var letterHistory=ownersLetters.slice(0,3).map(function(l,i){return "Letter "+i+" quarters ago: "+l.summary;}).join("\n");
+    var stratStr="";
+    if(myStrategy&&(myStrategy.whatIInvestIn||myStrategy.howIBehave||myStrategy.whatIAvoid)){
+      stratStr="\n\nInvestor's stated strategy:\n"+(myStrategy.whatIInvestIn?"Invests in: "+myStrategy.whatIInvestIn.substring(0,200)+"\n":"")+(myStrategy.howIBehave?"Behaves: "+myStrategy.howIBehave.substring(0,200)+"\n":"")+(myStrategy.whatIAvoid?"Avoids: "+myStrategy.whatIAvoid.substring(0,200)+"\n":"");
+    }
+    var prompt="You are writing the Owner's Letter — a private quarterly letter delivered to a long-term investor by their portfolio. The voice is warm, direct, conversational — like a trusted partner who has been quietly watching. Think of how Warren Buffett writes to his partners: plain-spoken, specific, occasionally dry, never generic. Use 'I' (the portfolio speaking). Reference tickers and real numbers.\n\nRespond ONLY with valid JSON, no markdown, no backticks. Use this exact structure:\n{\n  \"letter\": \"5 paragraphs separated by \\n\\n. Open with something specific that happened. Name one behaviour they did well (not outcome — behaviour). Name one thing worth a second look. Forward look for next quarter. Close with a single hard question.\",\n  \"closingQuote\": \"A motivational quote of 1-2 sentences, written in the style of a great investor, tailored specifically to what happened this quarter and the themes in the letter. Not a real quote — an original one that fits their situation.\",\n  \"closingQuoteAttr\": \"Tailored for your quarter · "+quarter+"\",\n  \"whatWorked\": [{\"title\": \"short title\", \"desc\": \"2 sentences, specific, warm\"}],\n  \"whatWorked2\": {\"title\": \"short title\", \"desc\": \"2 sentences, specific, warm\"},\n  \"needsAttention\": {\"title\": \"short title\", \"desc\": \"2 sentences, honest but not harsh\"},\n  \"needsAttention2\": {\"title\": \"short title\", \"desc\": \"2 sentences\"},\n  \"lesson\": \"2-3 sentences connecting this quarter's behaviour to a long-term investing principle\",\n  \"watchItem\": {\"title\": \"what to watch next quarter\", \"desc\": \"2 sentences, specific action\"},\n  \"closingQuestion\": \"The hard question to carry into next quarter. Should be impossible to answer in one sentence.\"\n}\n\nQuarter: "+quarter+"\nPortfolio:\n"+holdingLines+"\n\nDecisions (last 90 days):\n"+decStr+"\n\nReview streak: "+(streakData.current||0)+" weeks."+(letterHistory?"\n\nPrevious letters (don't repeat themes):\n"+letterHistory:"")+stratStr+"\n\nNow write the letter.";
     (async function(){
       var tok=await getAuthToken();
       return fetch("/api/ai",{method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:prompt}],callType:"import"})});})().then(function(r){return r.json();})
-      .then(function(d){
-        var text=(d.content&&d.content[0]&&d.content[0].text)||"";
-        if(!text){setLetterError("Couldn’t generate letter — try again.");setLetterLoading(false);return;}
-        // Extract summary (first sentence)
-        var summary=text.split(".")[0].substring(0,120);
-        var letter={id:Date.now(),date:new Date().toISOString(),month:month,text:text,summary:summary,holdings:portf2.length};
-        saveOwnersLetter(letter);
-        setLetterLoading(false);
-        if(onDone)onDone(letter);
-      })
-      .catch(function(e){setLetterError("Generation failed — please try again.");setLetterLoading(false);});
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+(tok||"")},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1400,messages:[{role:"user",content:prompt}],callType:"letter"})});
+    })().then(function(r){return r.json();})
+    .then(function(d){
+      var raw=(d.content&&d.content[0]&&d.content[0].text)||"";
+      if(!raw){setLetterError("Couldn't generate letter — try again.");setLetterLoading(false);return;}
+      var parsed=null;
+      try{
+        var clean=raw.replace(/^```json\s*/,"").replace(/^```\s*/,"").replace(/```\s*$/,"").trim();
+        parsed=JSON.parse(clean);
+      }catch(e){
+        // Fallback: treat as plain letter text
+        parsed={letter:raw,closingQuote:"The big money is not in the buying and the selling, but in the waiting — and the waiting only works if you did the thinking first.",closingQuoteAttr:"Tailored for your quarter · "+quarter,whatWorked:{title:"You stayed the course",desc:"The portfolio held together this quarter. That matters."},whatWorked2:{title:"You logged your thinking",desc:"Decisions were recorded. That compounds over time."},needsAttention:{title:"Some theses need updating",desc:"A few holdings haven't been reviewed recently."},needsAttention2:{title:"Keep building",desc:"Conviction data tells a clear story when you update it regularly."},lesson:"Investing is more about behaviour than analysis. This quarter was a reminder of that.",watchItem:{title:"Review before next earnings",desc:"Update your KPIs and thesis for each upcoming report."},closingQuestion:"Which of your holdings would you be most uncomfortable explaining to a knowledgeable friend — and why?"};
+        parsed.letter=raw;
+      }
+      var summary=(parsed.letter||"").split(".")[0].substring(0,120);
+      var letter={id:Date.now(),date:new Date().toISOString(),month:month,quarter:quarter,qNum:qNum,year:year,
+        text:parsed.letter||raw,
+        closingQuote:parsed.closingQuote||"",closingQuoteAttr:parsed.closingQuoteAttr||"Tailored for your quarter · "+quarter,
+        whatWorked:parsed.whatWorked||{},whatWorked2:parsed.whatWorked2||{},
+        needsAttention:parsed.needsAttention||{},needsAttention2:parsed.needsAttention2||{},
+        lesson:parsed.lesson||"",watchItem:parsed.watchItem||{},
+        closingQuestion:parsed.closingQuestion||"",
+        summary:summary,holdings:portf2.length};
+      saveOwnersLetter(letter);
+      setLetterLoading(false);
+      if(onDone)onDone(letter);
+    })
+    .catch(function(e){setLetterError("Generation failed — please try again.");setLetterLoading(false);});
   }
+
 
   function WeeklyReview(){
     var portfolio=cos.filter(function(c){return(c.status||"portfolio")==="portfolio"});
@@ -11668,132 +11691,346 @@ function ProWelcomeGift(){
 
   // ── Owner's Letter ─────────────────────────────────────────
   function OwnersLetterPage(){
-    var portfolio2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
-    var thisMonth=new Date().toLocaleString("en-US",{month:"long",year:"numeric"});
-    var currentLetter=ownersLetters.length>0&&ownersLetters[0].month===thisMonth?ownersLetters[0]:null;
-    var _selected=useState(currentLetter||ownersLetters[0]||null),selectedLetter=_selected[0],setSelectedLetter=_selected[1];
+    var portf2=cos.filter(function(c){return(c.status||"portfolio")==="portfolio";});
+    var now=new Date();
+    var qNum=Math.ceil((now.getMonth()+1)/3);
+    var year=now.getFullYear();
+    var thisQuarter="Q"+qNum+" "+year;
+    var currentLetter=ownersLetters.length>0&&ownersLetters[0].quarter===thisQuarter?ownersLetters[0]:null;
+    var _sel=useState(currentLetter||ownersLetters[0]||null),selectedLetter=_sel[0],setSelectedLetter=_sel[1];
 
-    // Determine registration age from trial start or earliest data
-    var regDate=null;
-    try{var td=localStorage.getItem("ta-trial");if(td){var tp=JSON.parse(td);if(tp.start)regDate=new Date(tp.start);}}catch(e){}
-    if(!regDate&&weeklyReviews.length>0){var last=weeklyReviews[weeklyReviews.length-1];if(last.date)regDate=new Date(last.date);}
-    var ageInDays=regDate?Math.floor((Date.now()-regDate.getTime())/864e5):0;
-    // Depth gate: enough data for the letter to say something real
     var thesesWritten=cos.filter(function(c){return c.thesisNote&&c.thesisNote.trim().length>50;}).length;
-    var decisionsLogged=cos.reduce(function(s,c){return s+(c.decisions||[]).length;},0);
-    var hasDepth=thesesWritten>=2&&(decisionsLogged>=1||weeklyReviews.length>=1);
+    var decisionsLogged=cos.reduce(function(acc,c){return acc+(c.decisions||[]).length;},0);
+    var hasDepth=thesesWritten>=2&&decisionsLogged>=1;
     var hasEarned=ownersLetters.length>0||hasDepth;
+
+    // Conviction data for chart
+    var convData=portf2.slice(0,5).map(function(c){
+      return{ticker:c.ticker,conv:c.conviction||0,history:(c.convictionHistory||[]).slice(-7).map(function(h){return h.rating;})};
+    });
 
     function handleGenerate(){
       generateOwnersLetter(function(l){if(l)setSelectedLetter(l);});
+    }
+
+    function exportLetterPDF(letter){
+      var paras=(letter.text||"").split("\n\n").filter(function(p){return p.trim();});
+      var tickers=portf2.map(function(c){return c.ticker;}).join(" · ");
+      var css='@page{size:A4;margin:22mm 26mm 22mm 26mm}*{margin:0;padding:0;box-sizing:border-box}'
+        +'body{font-family:"EB Garamond",Georgia,serif;color:#1a1a1a;background:#FAF9F6;font-size:13.5px;line-height:1.9}'
+        +'.wrap{max-width:560px;margin:0 auto;background:#FAF9F6}'
+        +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1.5px solid #1a1a1a;padding-bottom:16px;margin-bottom:24px}'
+        +'.kicker{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:5px}'
+        +'.title{font-size:22px;font-weight:400;color:#1a1a1a}'
+        +'.meta{text-align:right;font-family:"JetBrains Mono",monospace;font-size:10px;color:#888;letter-spacing:1px}'
+        +'.from{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:28px}'
+        +'p{margin-bottom:20px;font-size:13.5px;line-height:1.9;color:#1a1a1a}'
+        +'p:first-of-type::first-letter{font-size:52px;line-height:0.8;float:left;margin-right:9px;margin-top:4px}'
+        +'.callout{border-left:2px solid #1a1a1a;padding:12px 18px;margin:24px 0;background:#F0EDE8}'
+        +'.callout p{font-style:italic;color:#555;margin:0}'
+        +'.cq{border:1px solid #ddd;padding:22px 26px;text-align:center;margin:28px 0;background:#F8F6F2}'
+        +'.cq-text{font-style:italic;font-size:15px;line-height:1.85;color:#1a1a1a;margin-bottom:10px}'
+        +'.cq-src{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#888}'
+        +'.q-block{border-top:1px solid #ddd;padding-top:22px;margin-top:8px}'
+        +'.q-label{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:10px}'
+        +'.q-text{font-style:italic;font-size:15px;line-height:1.8;color:#1a1a1a}'
+        +'.sig{margin-top:28px;padding-top:16px;border-top:0.5px solid #ddd}'
+        +'.s1{font-size:13px;color:#888;margin-bottom:5px}'
+        +'.s2{font-family:"JetBrains Mono",monospace;font-size:11px;color:#aaa;letter-spacing:1px}'
+        +'@media print{body{background:#FAF9F6}}';
+      var calloutPara=paras.length>2?paras.splice(2,1)[0]:"";
+      var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Owner\'s Letter — '+letter.quarter+'</title>'
+        +'<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">'
+        +'<style>'+css+'</style></head><body><div class="wrap">'
+        +'<div class="hdr"><div><div class="kicker">Private · Quarterly · Pro</div><div class="title">The Owner\'s Letter</div></div>'
+        +'<div class="meta"><div>'+letter.quarter+'</div><div>'+new Date(letter.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+'</div></div></div>'
+        +'<div class="from">From your portfolio · to you</div>';
+      paras.forEach(function(p,i){
+        if(i===2&&calloutPara){html+='<div class="callout"><p>'+calloutPara+'</p></div>';}
+        html+='<p>'+p+'</p>';
+      });
+      if(letter.closingQuote){html+='<div class="cq"><div class="cq-text">&#8220;'+letter.closingQuote+'&#8221;</div><div class="cq-src">'+(letter.closingQuoteAttr||"")+'</div></div>';}
+      if(letter.closingQuestion){html+='<div class="q-block"><div class="q-label">Carry into next quarter</div><div class="q-text">&#8220;'+letter.closingQuestion+'&#8221;</div></div>';}
+      html+='<div class="sig"><div class="s1">— Your Portfolio</div><div class="s2">'+tickers+'</div></div>'
+        +'</div></body></html>';
+      var w=window.open("","_blank");if(!w){showToast("Allow pop-ups to export PDF","info",3000);return;}
+      w.document.write(html);w.document.close();setTimeout(function(){w.print();},700);
+    }
+
+    function emailLetter(letter){
+      if(!isPro&&!trialActive){setShowUpgrade(true);setUpgradeCtx("export");return;}
+      var paras=(letter.text||"").split("\n\n").filter(function(p){return p.trim();});
+      var F='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+      var bodyHtml='<div style="background:#FAF9F6;border-radius:12px;padding:36px 40px;border:1px solid rgba(0,0,0,0.06)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1.5px solid #1a1a1a;padding-bottom:16px;margin-bottom:22px">'
+        +'<div><div style="font-family:monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:4px">Private · Quarterly · Pro</div>'
+        +'<div style="font-family:Georgia,serif;font-size:22px;color:#1a1a1a">The Owner\'s Letter</div></div>'
+        +'<div style="text-align:right;font-family:monospace;font-size:10px;color:#888"><div>'+letter.quarter+'</div><div>'+new Date(letter.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})+'</div></div></div>'
+        +'<div style="font-family:monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:24px">From your portfolio · to you</div>';
+      paras.forEach(function(p,i){
+        var isCallout=i===2;
+        if(isCallout){bodyHtml+='<div style="border-left:2px solid #1a1a1a;padding:12px 18px;margin:20px 0;background:#EDEAE5"><p style="font-family:Georgia,serif;font-size:13px;line-height:1.85;color:#555;font-style:italic;margin:0">'+p+'</p></div>';}
+        else{bodyHtml+='<p style="font-family:Georgia,serif;font-size:13.5px;line-height:1.9;color:#1a1a1a;margin:0 0 18px">'+p+'</p>';}
+      });
+      if(letter.closingQuote){bodyHtml+='<div style="border:1px solid #ddd;padding:20px 24px;text-align:center;margin:24px 0;background:#F5F3EF"><div style="font-family:Georgia,serif;font-size:14px;line-height:1.85;color:#1a1a1a;font-style:italic;margin-bottom:8px">&#8220;'+letter.closingQuote+'&#8221;</div><div style="font-family:monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#888">'+(letter.closingQuoteAttr||"")+'</div></div>';}
+      if(letter.closingQuestion){bodyHtml+='<div style="border-top:1px solid #ddd;padding-top:20px;margin-top:4px"><div style="font-family:monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:10px">Carry into next quarter</div><div style="font-family:Georgia,serif;font-size:14px;color:#1a1a1a;line-height:1.8;font-style:italic">&#8220;'+letter.closingQuestion+'&#8221;</div></div>';}
+      bodyHtml+='<div style="margin-top:28px;padding-top:16px;border-top:0.5px solid #ddd"><div style="font-size:13px;color:#888;font-family:'+F+';margin-bottom:5px">— Your Portfolio</div>'
+        +'<div style="font-family:monospace;font-size:11px;color:#aaa;letter-spacing:1px">'+portf2.map(function(c){return c.ticker;}).join(" · ")+'</div></div>'
+        +'</div>';
+      sendEmail("Your "+letter.quarter+" Owner's Letter — ThesisAlpha",emailBase(bodyHtml,"Your quarterly letter from your portfolio is ready."));
+    }
+
+    var CREAM="#FAF9F6";
+    var INK="#1a1a1a";
+    var INK2="#555";
+    var INK3="#888";
+    var INK4="#aaa";
+    var RULE="rgba(26,26,26,0.15)";
+
+    function LetterPage({letter}){
+      var paras=(letter.text||"").split("\n\n").filter(function(p){return p.trim();});
+      var mainParas=paras.slice(0,2).concat(paras.slice(3));
+      var calloutPara=paras[2]||"";
+      return<div style={{background:CREAM,border:"0.5px solid "+RULE,borderRadius:_isBm?0:12,padding:isMobile?"28px 24px":"52px 56px",marginBottom:16,fontFamily:"'EB Garamond',Georgia,serif"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"1.5px solid "+INK,paddingBottom:20,marginBottom:28}}>
+          <div>
+            <div style={{fontFamily:fm,fontSize:9,letterSpacing:2,textTransform:"uppercase",color:INK3,marginBottom:5}}>{"Private · Quarterly · Pro"}</div>
+            <div style={{fontSize:isMobile?20:24,fontWeight:400,color:INK,lineHeight:1.2}}>{"The Owner's Letter"}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,color:INK3,marginBottom:4}}>{letter.quarter||letter.month}</div>
+            <div style={{fontSize:12,color:INK3,fontFamily:fb}}>{new Date(letter.date).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})}</div>
+          </div>
+        </div>
+        <div style={{fontFamily:fm,fontSize:9,letterSpacing:2,textTransform:"uppercase",color:INK3,marginBottom:32}}>{"From your portfolio · to you"}</div>
+        {/* Letter body */}
+        <div>
+          {mainParas.slice(0,2).map(function(p,i){return<p key={i} style={{fontSize:isMobile?14.5:15.5,lineHeight:1.95,color:INK,marginBottom:22,fontFamily:"'EB Garamond',Georgia,serif"}}>{p}</p>;})}
+          {calloutPara&&<div style={{borderLeft:"2.5px solid "+INK,padding:"14px 20px",margin:"28px 0",background:"rgba(26,26,26,0.04)"}}>
+            <p style={{fontSize:14.5,lineHeight:1.8,color:INK2,fontStyle:"italic",margin:0,fontFamily:"'EB Garamond',Georgia,serif"}}>{calloutPara}</p>
+          </div>}
+          {mainParas.slice(2).map(function(p,i){return<p key={i+2} style={{fontSize:isMobile?14.5:15.5,lineHeight:1.95,color:INK,marginBottom:22,fontFamily:"'EB Garamond',Georgia,serif"}}>{p}</p>;})}
+        </div>
+        {/* Closing quote */}
+        {letter.closingQuote&&<div style={{border:"0.5px solid "+RULE,borderRadius:_isBm?0:10,padding:"24px 28px",margin:"28px 0",background:"rgba(26,26,26,0.025)",textAlign:"center"}}>
+          <div style={{width:32,height:1.5,background:INK,margin:"0 auto 18px"}}/>
+          <div style={{fontSize:isMobile?15:16.5,lineHeight:1.85,color:INK,fontStyle:"italic",fontFamily:"'EB Garamond',Georgia,serif",marginBottom:14}}>{"\u201C"+letter.closingQuote+"\u201D"}</div>
+          <div style={{fontFamily:fm,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:INK3}}>{letter.closingQuoteAttr||""}</div>
+        </div>}
+        {/* Closing question */}
+        {letter.closingQuestion&&<div style={{borderTop:"0.5px solid "+RULE,paddingTop:24,marginTop:4}}>
+          <div style={{fontFamily:fm,fontSize:9,letterSpacing:2,textTransform:"uppercase",color:INK3,marginBottom:12}}>{"Carry into next quarter"}</div>
+          <div style={{fontSize:isMobile?15:16.5,lineHeight:1.8,color:INK,fontStyle:"italic",fontFamily:"'EB Garamond',Georgia,serif"}}>{"\""+letter.closingQuestion+"\""}</div>
+        </div>}
+        {/* Signature */}
+        <div style={{marginTop:32,paddingTop:20,borderTop:"0.5px solid "+RULE}}>
+          <div style={{fontSize:13,color:INK3,fontFamily:fb,marginBottom:5}}>{"— Your Portfolio"}</div>
+          <div style={{fontFamily:fm,fontSize:11,color:INK4,letterSpacing:1}}>{portf2.map(function(c){return c.ticker;}).join(" · ")}</div>
+        </div>
+      </div>;
+    }
+
+    function SnapshotPage({letter}){
+      var scored=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){if(d.outcome)scored.push(d);});});
+      var rights=scored.filter(function(d){return d.outcome==="right";}).length;
+      var rightPct=scored.length>0?Math.round(rights/scored.length*100):null;
+      var stale=portf2.filter(function(c){return c.thesisUpdatedAt&&Math.floor((Date.now()-new Date(c.thesisUpdatedAt).getTime())/864e5)>90;}).length;
+      var avgConv=portf2.length>0?(portf2.reduce(function(s,c){return s+(c.conviction||0);},0)/portf2.length).toFixed(1):"-";
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:20,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"Portfolio snapshot · "+thisQuarter}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24}}>
+          {[{l:"Avg conviction",v:avgConv+"/10"},{l:"Decisions logged",v:scored.length+""},{l:"Right calls",v:rightPct!=null?rightPct+"%":"—"},{l:"Stale theses",v:stale+"/"+portf2.length}].map(function(s,i){return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fm,marginBottom:5}}>{s.l}</div>
+            <div style={{fontSize:20,fontWeight:700,color:K.txt,fontFamily:fm,lineHeight:1}}>{s.v}</div>
+          </div>;})}
+        </div>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,marginBottom:12}}>{"Holdings · conviction"}</div>
+        {portf2.slice(0,6).map(function(c){
+          var pct=Math.min((c.conviction||0)/10*100,100);
+          var clr=pct>=70?K.grn:pct>=40?K.amb:K.red;
+          var ch=(c.convictionHistory||[]).slice(-4);
+          var delta=ch.length>=2?ch[ch.length-1].rating-ch[0].rating:0;
+          return<div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"0.5px solid "+K.bdr}}>
+            <div style={{fontFamily:fm,fontSize:11,fontWeight:600,color:K.txt,minWidth:60}}>{c.ticker}</div>
+            <div style={{flex:1,height:5,background:K.bdr,borderRadius:3,overflow:"hidden"}}><div style={{width:pct+"%",height:"100%",background:clr,borderRadius:3}}/></div>
+            <div style={{fontFamily:fm,fontSize:11,color:K.dim,minWidth:36,textAlign:"right"}}>{(c.conviction||0)+"/10"}</div>
+            <div style={{fontSize:10,fontFamily:fm,minWidth:36,color:delta>0?K.grn:delta<0?K.red:K.dim,textAlign:"right"}}>{delta>0?"↑ +"+delta:delta<0?"↓ "+delta:"→ 0"}</div>
+          </div>;
+        })}
+      </div>;
+    }
+
+    function WhatWorkedPage({letter}){
+      var items=[
+        {flag:"What you did well",flagColor:K.grn,title:letter.whatWorked&&letter.whatWorked.title||"You stayed consistent",desc:letter.whatWorked&&letter.whatWorked.desc||""},
+        {flag:"What you did well",flagColor:K.grn,title:letter.whatWorked2&&letter.whatWorked2.title||"You logged your thinking",desc:letter.whatWorked2&&letter.whatWorked2.desc||""},
+        {flag:"What needs attention",flagColor:K.amb,title:letter.needsAttention&&letter.needsAttention.title||"Some theses need updating",desc:letter.needsAttention&&letter.needsAttention.desc||""},
+        {flag:"What needs attention",flagColor:K.amb,title:letter.needsAttention2&&letter.needsAttention2.title||"Keep building",desc:letter.needsAttention2&&letter.needsAttention2.desc||""},
+      ];
+      var decisions=[];cos.forEach(function(c){(c.decisions||[]).forEach(function(d){if(d.date&&new Date(d.date)>new Date(Date.now()-90*864e5))decisions.push(Object.assign({},d,{ticker:c.ticker,domain:c.domain}));});});
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:20,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"What worked · what didn't"}</div>
+        {items.map(function(item,i){return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:10,padding:"16px 20px",marginBottom:10}}>
+          <div style={{display:"inline-block",fontFamily:fm,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",padding:"3px 8px",borderRadius:3,marginBottom:8,background:item.flagColor+"18",color:item.flagColor}}>{item.flag}</div>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{item.title}</div>
+          <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6}}>{item.desc}</div>
+        </div>;})}
+        {decisions.length>0&&<div style={{marginTop:20}}>
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,marginBottom:12}}>{"Decision record · this quarter"}</div>
+          <div style={{display:"grid",gridTemplateColumns:"70px 1fr 60px 72px",gap:8,padding:"6px 0",borderBottom:"0.5px solid "+K.bdr,fontFamily:fm,fontSize:10,color:K.dim}}>
+            <div>Date</div><div>Decision</div><div>Price</div><div>Outcome</div>
+          </div>
+          {decisions.slice(0,5).map(function(d,i){
+            var ac={BUY:K.grn,ADD:K.grn,SELL:K.red,TRIM:K.red,HOLD:K.amb}[d.action]||K.acc;
+            var oc=d.outcome==="right"?K.grn:d.outcome==="wrong"?K.red:K.dim;
+            return<div key={i} style={{display:"grid",gridTemplateColumns:"70px 1fr 60px 72px",gap:8,padding:"8px 0",borderBottom:"0.5px solid "+K.bdr,alignItems:"center"}}>
+              <div style={{fontFamily:fm,fontSize:10,color:K.dim}}>{(d.date||"").substring(0,10)}</div>
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <span style={{fontSize:9,fontFamily:fm,fontWeight:700,color:ac,background:ac+"18",padding:"2px 6px",borderRadius:3}}>{d.action}</span>
+                <span style={{fontFamily:fm,fontSize:11,color:K.txt}}>{d.ticker}</span>
+              </div>
+              <div style={{fontFamily:fm,fontSize:11,color:K.dim}}>{d.price?"$"+d.price:d.priceAtTime?"$"+d.priceAtTime:"—"}</div>
+              <div style={{fontSize:9,fontFamily:fm,fontWeight:600,color:oc,background:oc+"12",padding:"2px 7px",borderRadius:3,textAlign:"center"}}>{d.outcome||"Pending"}</div>
+            </div>;
+          })}
+        </div>}
+      </div>;
+    }
+
+    function LessonPage({letter}){
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:20,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"This quarter's lesson"}</div>
+        <div style={{border:"0.5px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"24px 28px",textAlign:"center",marginBottom:20}}>
+          <div style={{fontFamily:"'EB Garamond',Georgia,serif",fontSize:isMobile?16:18,lineHeight:1.85,color:K.txt,fontStyle:"italic",marginBottom:12}}>
+            {"\u201CThe investor's chief problem — and even his worst enemy — is likely to be himself. In the end, how your investments behave is much less important than how you behave.\u201D"}
+          </div>
+          <div style={{fontFamily:fm,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:K.dim}}>{"Benjamin Graham · The Intelligent Investor · 1949"}</div>
+        </div>
+        {letter.lesson&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"18px 22px"}}>
+          <div style={{display:"inline-block",fontFamily:fm,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",padding:"3px 8px",borderRadius:3,marginBottom:8,background:K.blue+"18",color:K.blue}}>{"This quarter's lesson"}</div>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{"Sitting still is a skill"}</div>
+          <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.65}}>{letter.lesson}</div>
+        </div>}
+      </div>;
+    }
+
+    function WatchPage({letter}){
+      return<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:20,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"What to watch · next quarter"}</div>
+        {letter.watchItem&&letter.watchItem.title&&<div style={{background:K.bg,borderRadius:_isBm?0:10,padding:"18px 22px",marginBottom:12}}>
+          <div style={{display:"inline-block",fontFamily:fm,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",padding:"3px 8px",borderRadius:3,marginBottom:8,background:K.blue+"18",color:K.blue}}>{"Watch"}</div>
+          <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:4}}>{letter.watchItem.title}</div>
+          <div style={{fontSize:12,color:K.mid,fontFamily:fb,lineHeight:1.6}}>{letter.watchItem.desc}</div>
+        </div>}
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,marginBottom:12,marginTop:4}}>{"Conviction by holding"}</div>
+        {portf2.slice(0,6).map(function(c){
+          var dots=[];for(var i=1;i<=10;i++){dots.push(i);}
+          var conv=c.conviction||0;
+          return<div key={c.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 0",borderBottom:"0.5px solid "+K.bdr}}>
+            <div style={{fontFamily:fm,fontSize:11,minWidth:60,color:K.txt}}>{c.ticker}</div>
+            <div style={{display:"flex",gap:2,flex:1}}>{dots.map(function(d){return<div key={d} style={{width:8,height:8,borderRadius:"50%",background:d<=conv?"#6B4CE6":K.bdr}}/>;})}</div>
+            <div style={{fontFamily:fm,fontSize:11,color:K.dim,minWidth:36}}>{conv+"/10"}</div>
+          </div>;
+        })}
+        {letter.closingQuestion&&<div style={{borderTop:"0.5px solid "+K.bdr,paddingTop:20,marginTop:20}}>
+          <div style={{fontFamily:fm,fontSize:9,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:12}}>{"The question to carry"}</div>
+          <div style={{fontFamily:"'EB Garamond',Georgia,serif",fontSize:isMobile?15:16,color:K.txt,lineHeight:1.8,fontStyle:"italic"}}>{"\""+letter.closingQuestion+"\""}</div>
+        </div>}
+        <div style={{marginTop:24,paddingTop:16,borderTop:"0.5px solid "+K.bdr}}>
+          <div style={{fontFamily:fm,fontSize:12,color:K.dim}}>{"— Your Portfolio"}</div>
+          <div style={{fontFamily:fm,fontSize:11,color:K.dim,letterSpacing:0.5,marginTop:3}}>{portf2.map(function(c){return c.ticker;}).join(" · ")}</div>
+        </div>
+      </div>;
     }
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
       {/* Header */}
       <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
-          <h1 style={{margin:0,fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:isThesis?-0.5:0}}>{"Owner\u2019s Letter"}</h1>
-          <p style={{margin:"4px 0 0",fontSize:14,color:K.dim}}>{"A private monthly letter from your portfolio \u2014 written from the businesses\u2019 perspective."}</p>
+          <h1 style={{margin:0,fontSize:isMobile?22:24,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{"Owner's Letter"}</h1>
+          <p style={{margin:"4px 0 0",fontSize:13,color:K.dim,fontFamily:fm}}>{"Your private quarterly letter. Generated from your portfolio data — not generic advice."}</p>
         </div>
-        {hasEarned&&<button onClick={handleGenerate} disabled={letterLoading} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13,opacity:letterLoading?0.5:1,display:"flex",alignItems:"center",gap:7})}>
-          {letterLoading
-            ?<><div style={{width:13,height:13,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin 1s linear infinite"}}/>{"Generating..."}</>
-            :<>{currentLetter?"Regenerate this month":"Generate "+thisMonth}</>}
-        </button>}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {selectedLetter&&<button onClick={function(){exportLetterPDF(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            {"Export PDF"}
+          </button>}
+          {selectedLetter&&<button onClick={function(){emailLetter(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+            {"Send to inbox"}
+          </button>}
+          {hasEarned&&<button onClick={handleGenerate} disabled={!!letterLoading} style={Object.assign({},S.btnP,{padding:"8px 18px",fontSize:12,display:"flex",alignItems:"center",gap:6})}>
+            {letterLoading?<div style={{width:11,height:11,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin .8s linear infinite"}}/>:null}
+            {letterLoading?"Generating...":(currentLetter?"Regenerate "+thisQuarter:"Generate "+thisQuarter)}
+          </button>}
+        </div>
       </div>
 
-      {letterError&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:K.red}}>{letterError}</div>}
+      {letterError&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 16px",fontSize:13,color:K.red,fontFamily:fm,marginBottom:16}}>{letterError}</div>}
 
-      {/* NOT YET EARNED — anticipation screen */}
-      {!hasEarned&&<div>
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"40px",textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:48,marginBottom:16}}>{"✉️"}</div>
-          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Coming soon"}</div>
-          <div style={{fontSize:isMobile?18:22,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.3}}>
-            {"The letter unlocks when it has something real to say."}
+      {/* NOT YET EARNED */}
+      {!hasEarned&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"28px 20px":"40px",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
+        <div style={{fontSize:40,marginBottom:16}}>{"✉️"}</div>
+        <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Unlocks when it has something real to say"}</div>
+        <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.4}}>{"The letter earns its words."}</div>
+        <div style={{fontSize:13,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.75}}>{"Write a thesis for two holdings, log one decision, and we'll have something worth reading."}</div>
+        {[{label:"Thesis written for 2+ holdings",done:thesesWritten>=2},{label:"At least one decision logged",done:decisionsLogged>=1}].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"0.5px solid "+K.bdr,maxWidth:280,margin:"0 auto"}}>
+          <div style={{width:18,height:18,borderRadius:"50%",background:item.done?K.grn+"20":K.bdr,border:"1.5px solid "+(item.done?K.grn:K.dim),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {item.done&&<span style={{fontSize:10,color:K.grn}}>{"✓"}</span>}
           </div>
-          <div style={{fontSize:14,color:K.dim,maxWidth:440,margin:"0 auto 28px",lineHeight:1.75}}>
-            {"Write a thesis for two holdings, log one decision, and complete one weekly review. That gives the letter enough to say something specific about you."}
-          </div>
-          {/* Depth checklist */}
-          <div style={{maxWidth:360,margin:"0 auto 20px",textAlign:"left"}}>
-            {[
-              {label:"Thesis written for 2+ holdings",done:thesesWritten>=2},
-              {label:"At least one decision logged",done:decisionsLogged>=1},
-              {label:"At least one weekly review done",done:weeklyReviews.length>=1},
-            ].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid "+K.bdr}}>
-              <div style={{width:18,height:18,borderRadius:"50%",background:item.done?K.grn+"20":K.bdr,border:"2px solid "+(item.done?K.grn:K.bdr),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                {item.done&&<span style={{fontSize:10,color:K.grn}}>✓</span>}
-              </div>
-              <span style={{fontSize:13,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
-            </div>;})}
-          </div>
-          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>{"Use ThesisAlpha as you normally would. Write your thesis. Track KPIs. Log decisions. The letter is being built from everything you do."}</div>
-        </div>
-        {/* What to expect */}
-        <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px"}}>
-          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:16}}>{"What your first letter will include"}</div>
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {[
-              {label:"What changed and why",desc:"Not just that conviction moved \u2014 but what that movement means when you look at it honestly."},
-              {label:"What you got right",desc:"Something specific you did well this month. Not the return. The behaviour."},
-              {label:"What\u2019s worth a second look",desc:"A stale thesis. A holding you haven\u2019t thought about. Something quiet that deserves attention."},
-              {label:"One question",desc:"The kind you can\u2019t answer quickly. Something to carry into next month and actually sit with."},
-            ].map(function(item,i){return<div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-              <div style={{width:6,height:6,borderRadius:"50%",background:K.acc,flexShrink:0,marginTop:6}}/>
-              <div>
-                <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:2}}>{item.label}</div>
-                <div style={{fontSize:12,color:K.dim,lineHeight:1.6}}>{item.desc}</div>
-              </div>
-            </div>;})}
-          </div>
-        </div>
+          <span style={{fontSize:13,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
+        </div>;})}
       </div>}
 
-      {/* LOADING — generating first letter */}
-      {hasEarned&&letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:"48px 40px",textAlign:"center"}}>
-        <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin 1s linear infinite",margin:"0 auto 20px"}}/>
-        <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>Reading your portfolio...</div>
-        <div style={{fontSize:13,color:K.dim}}>{"This takes about 20 seconds."}</div>
+      {/* LOADING */}
+      {hasEarned&&letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"48px",textAlign:"center"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin .8s linear infinite",margin:"0 auto 16px"}}/>
+        <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>{"Reading your portfolio..."}</div>
+        <div style={{fontSize:13,color:K.dim,fontFamily:fm}}>{"About 20 seconds."}</div>
       </div>}
 
       {/* EMPTY — earned but not yet generated */}
-      {hasEarned&&!letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:16,padding:"60px 40px",textAlign:"center"}}>
-        <div style={{fontSize:48,marginBottom:16}}>{"📬"}</div>
-        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your letter is ready to generate"}</div>
-        <div style={{fontSize:14,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.7}}>{"30 days of data collected. Generate your first Owner\u2019s Letter whenever you\u2019re ready."}</div>
-        <button onClick={handleGenerate} style={Object.assign({},S.btnP,{padding:"12px 36px",fontSize:14})}>{"Generate my first letter"}</button>
+      {hasEarned&&!letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"48px",textAlign:"center"}}>
+        <div style={{fontSize:40,marginBottom:16}}>{"📬"}</div>
+        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your letter is ready to write."}</div>
+        <div style={{fontSize:13,color:K.dim,maxWidth:340,margin:"0 auto 24px",lineHeight:1.7}}>{"Your portfolio has been watching. Click below and it will speak."}</div>
+        <button onClick={handleGenerate} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>{"Generate "+thisQuarter+" letter"}</button>
       </div>}
 
       {/* ARCHIVE + READER */}
-      {ownersLetters.length>0&&<div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"220px 1fr",gap:16,alignItems:"start"}}>
-        <div style={{display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,fontFamily:fm,fontWeight:700,marginBottom:4,paddingLeft:4}}>Archive</div>
-          {ownersLetters.map(function(l,i){var isActive=selectedLetter&&selectedLetter.id===l.id;var isThis=l.month===thisMonth;
-            return<button key={l.id} onClick={function(){setSelectedLetter(l);}} style={{textAlign:"left",padding:"10px 12px",borderRadius:_isBm?0:8,border:"1px solid "+(isActive?K.acc+"50":K.bdr),background:isActive?K.acc+"08":"transparent",cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <span style={{fontSize:12,fontWeight:700,color:isActive?K.acc:K.txt,fontFamily:fm}}>{l.month}</span>
-                {isThis&&<span style={{fontSize:9,color:K.acc,background:K.acc+"15",padding:"1px 6px",borderRadius:3,fontFamily:fm,fontWeight:700}}>This month</span>}
-              </div>
-              <span style={{fontSize:11,color:K.dim,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"block"}}>{l.summary||"Owner\u2019s Letter"}</span>
-            </button>;
-          })}
+      {ownersLetters.length>0&&<div>
+        {/* Quarter pills */}
+        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+          {ownersLetters.slice(0,6).map(function(l){var act=selectedLetter&&selectedLetter.id===l.id;
+            return<button key={l.id} onClick={function(){setSelectedLetter(l);}}
+              style={{fontFamily:fm,fontSize:11,padding:"5px 14px",borderRadius:999,border:"0.5px solid "+(act?"#1a1a1a":K.bdr),
+                background:act?"#1a1a1a":"transparent",color:act?"#fff":K.dim,cursor:"pointer",letterSpacing:0.5}}>
+              {l.quarter||l.month}
+            </button>;})}
         </div>
-        {selectedLetter&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"20px 18px":"32px 40px"}}>
-          <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:6}}>{selectedLetter.month}</div>
-          <div style={{fontSize:isMobile?18:22,fontWeight:800,color:K.txt,fontFamily:fh,marginBottom:24,lineHeight:1.3}}>{"Owner\u2019s Letter"}</div>
-          <div style={{fontSize:14,color:K.txt,lineHeight:2.0,fontFamily:fb,whiteSpace:"pre-wrap",maxWidth:580}}>{selectedLetter.text}</div>
-          <div style={{marginTop:32,paddingTop:20,borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-            <span style={{fontSize:11,color:K.dim,fontFamily:fm}}>{selectedLetter.holdings+" holding"+(selectedLetter.holdings!==1?"s":"")+" \u00b7 "+new Date(selectedLetter.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</span>
-            <button onClick={function(){
-              var prefill=selectedLetter.month+" Reflection\n\n"+selectedLetter.text.substring(0,400)+"...\n\nMy response:\n";
-              setModal({type:"doc",prefill:{docType:"annual_review",title:"Reflection \u2014 "+selectedLetter.month,content:prefill}});
-            }} style={Object.assign({},S.btn,{fontSize:11,padding:"6px 14px"})}>{"Save to Research Trail"}</button>
-          </div>
+
+        {selectedLetter&&<div>
+          {/* Page 1 — The letter */}
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 1 of 5 · The letter"}</div>
+          <LetterPage letter={selectedLetter}/>
+          {/* Page 2 — Snapshot */}
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 2 of 5 · Portfolio snapshot"}</div>
+          <SnapshotPage letter={selectedLetter}/>
+          {/* Page 3 — What worked */}
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 3 of 5 · What worked, what didn't"}</div>
+          <WhatWorkedPage letter={selectedLetter}/>
+          {/* Page 4 — Lesson */}
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 4 of 5 · This quarter's lesson"}</div>
+          <LessonPage letter={selectedLetter}/>
+          {/* Page 5 — Watch */}
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 5 of 5 · What to watch"}</div>
+          <WatchPage letter={selectedLetter}/>
         </div>}
       </div>}
     </div>;
   }
+
 
   // ── All Assets / Net Worth Hub ────────────────────────────────────────────
   function AllAssets(){
