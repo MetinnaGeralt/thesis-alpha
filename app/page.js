@@ -11945,85 +11945,108 @@ function ProWelcomeGift(){
     }
 
     return<div style={{padding:isMobile?"0 16px 80px":isThesis?"0 40px 80px":"0 32px 60px",maxWidth:820}}>
-      {/* Header */}
-      <div style={{padding:isMobile?"16px 0 12px":"28px 0 20px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
-        <div>
-          <h1 style={{margin:0,fontSize:isMobile?22:24,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{"Owner's Letter"}</h1>
-          <p style={{margin:"4px 0 0",fontSize:13,color:K.dim,fontFamily:fm}}>{"Your private quarterly letter. Generated from your portfolio data — not generic advice."}</p>
+
+      {/* ── Page header ── */}
+      <div style={{padding:isMobile?"16px 0 20px":"32px 0 24px",borderBottom:"1px solid "+K.bdr,marginBottom:28}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.acc,marginBottom:8,fontWeight:700}}>{"Private · Quarterly · Pro"}</div>
+            <h1 style={{margin:"0 0 8px",fontSize:isMobile?22:26,fontWeight:isThesis?800:400,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{"The Owner's Letter"}</h1>
+            <p style={{margin:0,fontSize:13,color:K.dim,fontFamily:fm,lineHeight:1.7,maxWidth:520}}>{"Four times a year, your portfolio sends you a private letter. It reflects on what happened, names what you did well and what deserves a second look, and leaves you with one question you won't be able to answer in a sentence."}</p>
+          </div>
+          {selectedLetter&&<div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap"}}>
+            <button onClick={function(){exportLetterPDF(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              {"Export PDF"}
+            </button>
+            <button onClick={function(){emailLetter(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
+              {"Send to inbox"}
+            </button>
+          </div>}
         </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {selectedLetter&&<button onClick={function(){exportLetterPDF(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            {"Export PDF"}
-          </button>}
-          {selectedLetter&&<button onClick={function(){emailLetter(selectedLetter);}} style={Object.assign({},S.btn,{padding:"8px 16px",fontSize:12,display:"flex",alignItems:"center",gap:5})}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>
-            {"Send to inbox"}
-          </button>}
-          {hasEarned&&<button onClick={handleGenerate} disabled={!!letterLoading} style={Object.assign({},S.btnP,{padding:"8px 18px",fontSize:12,display:"flex",alignItems:"center",gap:6})}>
-            {letterLoading?<div style={{width:11,height:11,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",animation:"spin .8s linear infinite"}}/>:null}
-            {letterLoading?"Generating...":(currentLetter?"Regenerate "+thisQuarter:"Generate "+thisQuarter)}
-          </button>}
-        </div>
+
+        {/* What to expect cards */}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(4,1fr)",gap:10,marginTop:20}}>
+          {[
+            {icon:"✍️",label:"The letter",desc:"Warm, specific prose. Your portfolio speaking directly to you."},
+            {icon:"📊",label:"Your snapshot",desc:"Conviction, decisions, and KPI record for the quarter."},
+            {icon:"🔍",label:"What worked",desc:"One behaviour praised. One thing worth a second look."},
+            {icon:"📬",label:"In your inbox",desc:"Arrives automatically each quarter. Exportable as PDF."},
+          ].map(function(c,i){return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
+            <div style={{fontSize:16,marginBottom:6}}>{c.icon}</div>
+            <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:3}}>{c.label}</div>
+            <div style={{fontSize:11,color:K.dim,fontFamily:fb,lineHeight:1.5}}>{c.desc}</div>
+          </div>;})}</div>
       </div>
 
-      {letterError&&<div style={{background:K.red+"10",border:"1px solid "+K.red+"30",borderRadius:_isBm?0:8,padding:"10px 16px",fontSize:13,color:K.red,fontFamily:fm,marginBottom:16}}>{letterError}</div>}
-
-      {/* NOT YET EARNED */}
-      {!hasEarned&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:16,padding:isMobile?"28px 20px":"40px",textAlign:"center",maxWidth:520,margin:"0 auto"}}>
-        <div style={{fontSize:40,marginBottom:16}}>{"✉️"}</div>
-        <div style={{fontSize:11,fontWeight:700,color:K.acc,fontFamily:fm,letterSpacing:2,textTransform:"uppercase",marginBottom:10}}>{"Unlocks when it has something real to say"}</div>
-        <div style={{fontSize:isMobile?16:18,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:12,lineHeight:1.4}}>{"The letter earns its words."}</div>
-        <div style={{fontSize:13,color:K.dim,maxWidth:380,margin:"0 auto 24px",lineHeight:1.75}}>{"Write a thesis for two holdings, log one decision, and we'll have something worth reading."}</div>
-        {[{label:"Thesis written for 2+ holdings",done:thesesWritten>=2},{label:"At least one decision logged",done:decisionsLogged>=1}].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"0.5px solid "+K.bdr,maxWidth:280,margin:"0 auto"}}>
-          <div style={{width:18,height:18,borderRadius:"50%",background:item.done?K.grn+"20":K.bdr,border:"1.5px solid "+(item.done?K.grn:K.dim),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {item.done&&<span style={{fontSize:10,color:K.grn}}>{"✓"}</span>}
+      {/* ── NO LETTERS YET — waiting state ── */}
+      {ownersLetters.length===0&&<div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:16,marginBottom:24}}>
+          {/* Next letter countdown */}
+          <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"28px 32px"}}>
+            <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:16}}>{"Next letter"}</div>
+            <div style={{fontSize:32,fontWeight:800,color:K.txt,fontFamily:fh,letterSpacing:"-1px",marginBottom:4}}>{thisQuarter}</div>
+            <div style={{fontSize:13,color:K.dim,fontFamily:fm,marginBottom:20,lineHeight:1.6}}>{"Your first letter arrives when your portfolio has enough to say — typically after your first quarter of consistent tracking."}</div>
+            <div style={{background:K.bg,borderRadius:_isBm?0:8,padding:"12px 16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:K.txt,fontFamily:fm,marginBottom:10}}>{"Building your letter requires:"}</div>
+              {[
+                {label:"Thesis written for 2+ holdings",done:thesesWritten>=2},
+                {label:"At least one decision logged",done:decisionsLogged>=1},
+              ].map(function(item,i){return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"0.5px solid "+K.bdr}}>
+                <div style={{width:16,height:16,borderRadius:"50%",background:item.done?K.grn+"20":K.bdr,border:"1.5px solid "+(item.done?K.grn:K.dim),display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {item.done&&<span style={{fontSize:9,color:K.grn}}>{"✓"}</span>}
+                </div>
+                <span style={{fontSize:12,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
+              </div>;})}
+            </div>
           </div>
-          <span style={{fontSize:13,color:item.done?K.txt:K.dim,fontFamily:fm}}>{item.label}</span>
-        </div>;})}
+          {/* What the letter will look like */}
+          <div style={{background:"#FAF9F6",border:"1px solid rgba(26,26,26,0.1)",borderRadius:_isBm?0:12,padding:"28px 32px",fontFamily:"'EB Garamond',Georgia,serif"}}>
+            <div style={{fontFamily:fm,fontSize:9,letterSpacing:2,textTransform:"uppercase",color:"#888",marginBottom:4}}>{"Preview"}</div>
+            <div style={{fontSize:18,fontWeight:400,color:"#1a1a1a",borderBottom:"1px solid rgba(26,26,26,0.15)",paddingBottom:12,marginBottom:16}}>{"The Owner's Letter"}</div>
+            <div style={{fontSize:13.5,lineHeight:1.9,color:"#1a1a1a",marginBottom:12}}>
+              {"Well, that was a quarter worth talking about. You held when it was difficult, you logged the decision honestly, and — in at least one case — you wrote down why you were wrong. That's rarer than it sounds."}
+            </div>
+            <div style={{borderLeft:"2px solid rgba(26,26,26,0.15)",padding:"10px 16px",marginBottom:12,background:"rgba(26,26,26,0.03)"}}>
+              <div style={{fontSize:12.5,lineHeight:1.75,color:"#555",fontStyle:"italic"}}>{"Your best holding this quarter wasn't the one with the best return. It was the one you understood deeply enough to hold through the noise."}</div>
+            </div>
+            <div style={{fontSize:12,color:"#aaa",fontFamily:fm,letterSpacing:0.5}}>{"— Your Portfolio"}</div>
+          </div>
+        </div>
+
+        {/* Past issues teaser — greyed out */}
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Archive · your future letters"}</div>
+        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+          {["Q1 2026","Q4 2025","Q3 2025","Q2 2025"].map(function(q){return<div key={q} style={{fontFamily:fm,fontSize:11,padding:"5px 14px",borderRadius:999,border:"0.5px solid "+K.bdr,color:K.dim,background:"transparent",opacity:0.4}}>{q}</div>;})}
+        </div>
+        <div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:10,padding:"20px 24px",textAlign:"center",opacity:0.6}}>
+          <div style={{fontSize:13,color:K.dim,fontFamily:fb,lineHeight:1.6}}>{"Letters will accumulate here over time — a permanent record of how your thinking evolved each quarter."}</div>
+        </div>
       </div>}
 
-      {/* LOADING */}
-      {hasEarned&&letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"48px",textAlign:"center"}}>
-        <div style={{width:36,height:36,borderRadius:"50%",border:"3px solid "+K.acc+"30",borderTop:"3px solid "+K.acc,animation:"spin .8s linear infinite",margin:"0 auto 16px"}}/>
-        <div style={{fontSize:15,fontWeight:600,color:K.txt,fontFamily:fm,marginBottom:6}}>{"Reading your portfolio..."}</div>
-        <div style={{fontSize:13,color:K.dim,fontFamily:fm}}>{"About 20 seconds."}</div>
-      </div>}
-
-      {/* EMPTY — earned but not yet generated */}
-      {hasEarned&&!letterLoading&&ownersLetters.length===0&&<div style={{background:K.card,border:"1px dashed "+K.bdr,borderRadius:_isBm?0:12,padding:"48px",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:16}}>{"📬"}</div>
-        <div style={{fontSize:18,fontWeight:600,color:K.txt,fontFamily:fh,marginBottom:8}}>{"Your letter is ready to write."}</div>
-        <div style={{fontSize:13,color:K.dim,maxWidth:340,margin:"0 auto 24px",lineHeight:1.7}}>{"Your portfolio has been watching. Click below and it will speak."}</div>
-        <button onClick={handleGenerate} style={Object.assign({},S.btnP,{padding:"12px 32px",fontSize:14})}>{"Generate "+thisQuarter+" letter"}</button>
-      </div>}
-
-      {/* ARCHIVE + READER */}
+      {/* ── ARCHIVE + READER ── */}
       {ownersLetters.length>0&&<div>
         {/* Quarter pills */}
-        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-          {ownersLetters.slice(0,6).map(function(l){var act=selectedLetter&&selectedLetter.id===l.id;
+        <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
+          <div style={{fontFamily:fm,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",color:K.dim,marginRight:4}}>{"Archive"}</div>
+          {ownersLetters.slice(0,8).map(function(l){var act=selectedLetter&&selectedLetter.id===l.id;
             return<button key={l.id} onClick={function(){setSelectedLetter(l);}}
               style={{fontFamily:fm,fontSize:11,padding:"5px 14px",borderRadius:999,border:"0.5px solid "+(act?"#1a1a1a":K.bdr),
-                background:act?"#1a1a1a":"transparent",color:act?"#fff":K.dim,cursor:"pointer",letterSpacing:0.5}}>
+                background:act?"#1a1a1a":"transparent",color:act?"#fff":K.dim,cursor:"pointer",letterSpacing:0.5,transition:"all .15s"}}>
               {l.quarter||l.month}
             </button>;})}
         </div>
 
         {selectedLetter&&<div>
-          {/* Page 1 — The letter */}
           <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 1 of 5 · The letter"}</div>
           <LetterPage letter={selectedLetter}/>
-          {/* Page 2 — Snapshot */}
           <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 2 of 5 · Portfolio snapshot"}</div>
           <SnapshotPage letter={selectedLetter}/>
-          {/* Page 3 — What worked */}
           <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 3 of 5 · What worked, what didn't"}</div>
           <WhatWorkedPage letter={selectedLetter}/>
-          {/* Page 4 — Lesson */}
           <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 4 of 5 · This quarter's lesson"}</div>
           <LessonPage letter={selectedLetter}/>
-          {/* Page 5 — Watch */}
           <div style={{fontFamily:fm,fontSize:10,letterSpacing:2.5,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:10,borderBottom:"0.5px solid "+K.bdr}}>{"Page 5 of 5 · What to watch"}</div>
           <WatchPage letter={selectedLetter}/>
         </div>}
