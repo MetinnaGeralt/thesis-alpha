@@ -773,6 +773,8 @@ function TrackerApp(props){
   var _lensLd=useState(false),lensLoading=_lensLd[0],setLensLoading=_lensLd[1];
   var _scrTab=useState("screener"),screenTab=_scrTab[0],setScreenTab=_scrTab[1];
   var _om=useState(false),ownersMode=_om[0],setOwnersMode=_om[1];
+  var _cpt=useState(null),companyPageTicker=_cpt[0],setCompanyPageTicker=_cpt[1];
+  var _cpf=useState(null),companyPageFrom=_cpf[0],setCompanyPageFrom=_cpf[1];
   // Fetch lens data when screener lenses tab is opened
   useEffect(function(){
     if(screenTab!=="lenses")return;
@@ -6834,6 +6836,14 @@ function calcMoatFromData(finData,businessModelType){
             {"News"}
             {(c.latestNews||[]).length>0&&dossierTab!=="news"&&<span style={{fontSize:9,fontWeight:700,color:"#F59E0B",background:"#F59E0B18",borderRadius:99,padding:"1px 5px",fontFamily:fm}}>{(c.latestNews||[]).length}</span>}
           </button>
+          <button onClick={function(){setDossierTab("company");}}
+            style={{padding:"9px 20px",background:"none",border:"none",
+              borderBottom:"2px solid "+(dossierTab==="company"?"#1D9E75":"transparent"),
+              color:dossierTab==="company"?"#1D9E75":K.dim,cursor:"pointer",
+              fontSize:14,fontFamily:fm,fontWeight:dossierTab==="company"?700:400,
+              transition:"all .15s"}}>
+            {"Company Info"}
+          </button>
           <button onClick={function(){setDossierTab("deepdive");}} style={{display:"none"}}>
             {(function(){
               var hasDive=(c.docs||[]).some(function(d){return (d.docType==="deep_dive"&&d.deepDive)||d.docType==="freeform_dive";});
@@ -8291,6 +8301,11 @@ function calcMoatFromData(finData,businessModelType){
             </div>}
           </div>;
         })()}
+
+        {/* ══════════════════════════════════════════════════════
+            TAB: COMPANY INFO
+            ══════════════════════════════════════════════════════ */}
+        {dossierTab==="company"&&<CompanyPage ticker={c.ticker}/>}
 
         {/* ══════════════════════════════════════════════════════
             TAB 2: DEEP DIVE
@@ -14953,6 +14968,230 @@ function ProWelcomeGift(){
 
 
   // ── Screener Page ────────────────────────────────────────────────────────────
+  function CompanyPage({ticker}){
+    var _data=useState(null),cpData=_data[0],setCpData=_data[1];
+    var _load=useState(true),cpLoad=_load[0],setCpLoad=_load[1];
+    var _err=useState(null),cpErr=_err[0],setCpErr=_err[1];
+    var t=ticker||(sel&&sel.ticker)||"";
+    var ownedCo=cos.find(function(c){return c.ticker===t;});
+
+    useEffect(function(){
+      if(!t){setCpLoad(false);return;}
+      setCpLoad(true);setCpErr(null);setCpData(null);
+      (async function(){
+        try{
+          var results=await Promise.all([
+            fmp("profile/"+t),
+            fmp("ratios-ttm/"+t),
+            fmp("key-metrics-ttm/"+t),
+            fmp("income-statement/"+t+"?limit=3"),
+          ]);
+          var prof=results[0]&&(Array.isArray(results[0])?results[0][0]:results[0]);
+          var rat=results[1]&&(Array.isArray(results[1])?results[1][0]:results[1]);
+          var km=results[2]&&(Array.isArray(results[2])?results[2][0]:results[2]);
+          var inc=Array.isArray(results[3])?results[3]:[];
+          if(!prof){setCpErr("Company not found: "+t);setCpLoad(false);return;}
+          setCpData({prof:prof,rat:rat,km:km,inc:inc});
+        }catch(e){setCpErr("Failed to load data for "+t);}
+        setCpLoad(false);
+      })();
+    },[t]);
+
+    if(!t)return<div style={{padding:"60px 32px",textAlign:"center",color:K.dim,fontFamily:fm}}>{"No ticker specified."}</div>;
+
+    if(cpLoad)return<div style={{padding:"80px 32px",textAlign:"center"}}>
+      <div style={{width:32,height:32,borderRadius:"50%",border:"3px solid "+K.bdr,borderTop:"3px solid "+K.acc,animation:"spin .8s linear infinite",margin:"0 auto 16px"}}/>
+      <div style={{fontSize:13,color:K.dim,fontFamily:fm}}>{"Loading "+t+"..."}</div>
+    </div>;
+
+    if(cpErr)return<div style={{padding:"60px 32px",textAlign:"center"}}>
+      <div style={{fontSize:14,color:K.red,fontFamily:fm,marginBottom:12}}>{cpErr}</div>
+      <button onClick={function(){setPage("screener");}} style={Object.assign({},S.btn,{fontSize:13})}>{"← Back to Screener"}</button>
+    </div>;
+
+    var p=cpData.prof||{};var r=cpData.rat||{};var k=cpData.km||{};var inc=cpData.inc||[];
+    var price=p.price||0;
+    var mktCap=p.mktCap||0;
+    var fmtMktCap=mktCap>=1e12?"$"+(mktCap/1e12).toFixed(1)+"T":mktCap>=1e9?"$"+(mktCap/1e9).toFixed(1)+"B":mktCap>=1e6?"$"+(mktCap/1e6).toFixed(1)+"M":"—";
+    var fmtNum=function(v,unit,dec){
+      if(v==null||isNaN(v))return"—";
+      var n=parseFloat(v);
+      if(unit==="%")return(n*100).toFixed(dec||1)+"%";
+      if(unit==="x")return n.toFixed(dec||1)+"x";
+      return n.toFixed(dec||1);
+    };
+    // Colour vs benchmarks
+    var benchmarks={grossMargin:{sp:45,unit:"%",higher:true},opMargin:{sp:13,unit:"%",higher:true},netMargin:{sp:12,unit:"%",higher:true},roic:{sp:15,unit:"%",higher:true},pe:{sp:22,unit:"x",higher:false},evEbitda:{sp:14,unit:"x",higher:false},netDebtEbitda:{sp:1.5,unit:"x",higher:false},pb:{sp:3.5,unit:"x",higher:false}};
+    var metColor=function(id,val){
+      if(val==null)return K.dim;
+      var b=benchmarks[id];if(!b)return K.mid;
+      var n=parseFloat(val)*(b.unit==="%"?100:1);
+      if(b.higher)return n>=b.sp?K.grn:n>=b.sp*0.7?K.amb:K.red;
+      return n<=b.sp?K.grn:n<=b.sp*1.4?K.amb:K.red;
+    };
+    var metrics=[
+      {id:"grossMargin",label:"Gross Margin",val:r.grossProfitMarginTTM,sp:"45%",unit:"%"},
+      {id:"opMargin",label:"Op. Margin",val:r.operatingProfitMarginTTM,sp:"13%",unit:"%"},
+      {id:"netMargin",label:"Net Margin",val:r.netProfitMarginTTM,sp:"12%",unit:"%"},
+      {id:"roic",label:"ROIC",val:k.returnOnInvestedCapitalTTM,sp:"15%",unit:"%"},
+      {id:"pe",label:"P/E",val:k.peRatioTTM,sp:"22x",unit:"x",noMult:true},
+      {id:"evEbitda",label:"EV/EBITDA",val:k.enterpriseValueOverEBITDATTM,sp:"14x",unit:"x",noMult:true},
+      {id:"netDebtEbitda",label:"Net Debt/EBITDA",val:k.netDebtToEBITDATTM,sp:"1.5x",unit:"x",noMult:true},
+      {id:"pb",label:"P/B",val:k.pbRatioTTM,sp:"3.5x",unit:"x",noMult:true},
+    ];
+    var revGrowth=inc.length>=2?((inc[0].revenue-inc[1].revenue)/Math.abs(inc[1].revenue)*100):null;
+    var earnGrowth=inc.length>=2&&inc[1].netIncome!==0?((inc[0].netIncome-inc[1].netIncome)/Math.abs(inc[1].netIncome)*100):null;
+    var iv=ownedCo&&ownedCo.ivEstimate?parseFloat(ownedCo.ivEstimate):null;
+    var mosPct=iv&&price?((iv-price)/iv*100):null;
+    var PURPLE="#8B5CF6";
+
+    return<div style={{padding:isMobile?"0 16px 80px":"0 32px 60px",maxWidth:900}}>
+
+      {/* ── Back button ── */}
+      <div style={{padding:"20px 0 8px"}}>
+        <button onClick={function(){if(companyPageFrom==="screener"){setPage("screener");}else if(companyPageFrom==="search"){setCmdOpen(false);}else{setPage("dashboard");}}}
+          style={{background:"none",border:"none",color:K.dim,fontSize:12,fontFamily:fm,cursor:"pointer",display:"flex",alignItems:"center",gap:6,padding:0}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          {"Back"}
+        </button>
+      </div>
+
+      {/* ── Hero ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"24px 28px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:16,flexWrap:"wrap"}}>
+          <CoLogo domain={p.website?p.website.replace(/https?:\/\/(www\.)?/,"").split("/")[0]:""} ticker={t} size={48}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:4}}>
+              <h1 style={{margin:0,fontSize:isMobile?20:24,fontWeight:700,color:K.txt,fontFamily:fh,letterSpacing:"-.3px"}}>{p.companyName||t}</h1>
+              <span style={{fontFamily:fm,fontSize:11,color:K.acc,background:K.acc+"15",borderRadius:4,padding:"2px 8px",fontWeight:700}}>{t}</span>
+              {p.exchangeShortName&&<span style={{fontFamily:fm,fontSize:10,color:K.dim,background:K.bg,border:"1px solid "+K.bdr,borderRadius:4,padding:"2px 6px"}}>{p.exchangeShortName}</span>}
+            </div>
+            <div style={{fontSize:12,color:K.dim,fontFamily:fm,marginBottom:8}}>{p.sector&&p.industry?p.sector+" · "+p.industry:p.sector||p.industry||""}</div>
+            <div style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.65,maxWidth:600}}>
+              {p.description?(p.description.length>280?p.description.substring(0,280)+"…":p.description):"No description available."}
+            </div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:28,fontWeight:800,color:K.txt,fontFamily:fm,lineHeight:1}}>{price>0?(cSym+(price>=100?price.toFixed(0):price.toFixed(2))):"—"}</div>
+            {p.changes!=null&&<div style={{fontSize:12,fontWeight:600,fontFamily:fm,color:p.changes>=0?K.grn:K.red,marginTop:2}}>{(p.changes>=0?"+":"")+p.changes.toFixed(2)+" ("+((p.changesPercentage||0)).toFixed(1)+"%)"}</div>}
+          </div>
+        </div>
+        {/* Stats strip */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,borderTop:"0.5px solid "+K.bdr,paddingTop:14}}>
+          {[
+            {l:"Market cap",v:fmtMktCap},
+            {l:"CEO",v:(p.ceo||"—").split(" ").slice(0,2).join(" ")},
+            {l:"Employees",v:p.fullTimeEmployees?parseInt(p.fullTimeEmployees).toLocaleString():"—"},
+            {l:"Country",v:p.country||"—"},
+          ].map(function(s2,i){return<div key={i}>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:3}}>{s2.l}</div>
+            <div style={{fontSize:13,fontWeight:600,color:K.txt,fontFamily:fm}}>{s2.v}</div>
+          </div>;})}
+        </div>
+      </div>
+
+      {/* ── Margin of safety bar (if IV set) ── */}
+      {iv&&price>0&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:10,padding:"14px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>{"Margin of safety vs your IV estimate ("+(cSym+iv.toFixed(2))+")"}</div>
+          <div style={{height:6,background:K.bdr,borderRadius:3,overflow:"hidden"}}>
+            <div style={{width:Math.min(Math.max((price/iv)*100,0),100)+"%",height:"100%",background:mosPct>0?K.grn:K.red,borderRadius:3,transition:"width .3s"}}/>
+          </div>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0}}>
+          <div style={{fontSize:18,fontWeight:800,fontFamily:fm,color:mosPct>0?K.grn:K.red,lineHeight:1}}>
+            {mosPct>0?"+"+(mosPct.toFixed(1))+"%":mosPct.toFixed(1)+"%"}
+          </div>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm}}>{mosPct>0?"below IV":"above IV"}</div>
+        </div>
+      </div>}
+
+      {/* ── Key metrics grid ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:16,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span>{"Key metrics · TTM"}</span>
+          <span style={{fontSize:9,color:K.dim,fontStyle:"normal",textTransform:"none",letterSpacing:0}}>{"vs S&P 500 avg"}</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)",gap:12}}>
+          {metrics.map(function(m){
+            var raw=m.val;
+            var n=raw!=null?parseFloat(raw):null;
+            var display=n==null?"—":m.noMult?n.toFixed(1)+m.unit:(n*100).toFixed(1)+m.unit;
+            var clr=metColor(m.id,raw);
+            return<div key={m.id} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"12px 14px"}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:4}}>{m.label}</div>
+              <div style={{fontSize:20,fontWeight:800,color:clr,fontFamily:fm,lineHeight:1,marginBottom:3}}>{display}</div>
+              <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{"S&P avg: "+m.sp}</div>
+            </div>;
+          })}
+        </div>
+      </div>
+
+      {/* ── Revenue & earnings growth ── */}
+      {inc.length>=2&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:16,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"Revenue & earnings · YoY"}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          {[{label:"Revenue growth",val:revGrowth,cur:inc[0].revenue,prev:inc[1].revenue},{label:"Net income growth",val:earnGrowth,cur:inc[0].netIncome,prev:inc[1].netIncome}].map(function(g,i){
+            var clr=g.val==null?K.dim:g.val>=0?K.grn:K.red;
+            var fmtBig=function(v){if(!v)return"—";var a=Math.abs(v);return(v<0?"-$":"+$")+(a>=1e9?(a/1e9).toFixed(1)+"B":a>=1e6?(a/1e6).toFixed(0)+"M":"<1M");};
+            return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:8,padding:"14px 16px"}}>
+              <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:6}}>{g.label}</div>
+              <div style={{fontSize:22,fontWeight:800,color:clr,fontFamily:fm,lineHeight:1,marginBottom:4}}>{g.val!=null?(g.val>=0?"+":"")+g.val.toFixed(1)+"%":"—"}</div>
+              <div style={{fontSize:11,color:K.dim,fontFamily:fm}}>{fmtBig(g.cur-g.prev)+" vs prior year"}</div>
+              <div style={{marginTop:8,height:4,background:K.bdr,borderRadius:2,overflow:"hidden"}}>
+                <div style={{width:Math.min(Math.abs(g.val||0)/30*100,100)+"%",height:"100%",background:clr,borderRadius:2}}/>
+              </div>
+            </div>;
+          })}
+        </div>
+        {inc.length>=3&&<div style={{marginTop:16}}>
+          <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:8}}>{"Revenue trend"}</div>
+          <div style={{display:"flex",gap:6,alignItems:"flex-end",height:48}}>
+            {inc.slice(0,3).reverse().map(function(y,i){
+              var maxRev=Math.max.apply(null,inc.map(function(x){return x.revenue||0;}));
+              var h=maxRev>0?Math.max((y.revenue/maxRev)*44,4):4;
+              return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <div style={{width:"100%",height:h,background:i===inc.slice(0,3).length-1?K.acc:K.bdr,borderRadius:"2px 2px 0 0",transition:"height .3s"}}/>
+                <div style={{fontSize:9,color:K.dim,fontFamily:fm}}>{y.calendarYear||y.date&&y.date.substring(0,4)}</div>
+              </div>;
+            })}
+          </div>
+        </div>}
+      </div>}
+
+      {/* ── Business description ── */}
+      {p.description&&p.description.length>280&&<div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",marginBottom:16}}>
+        <div style={{fontFamily:fm,fontSize:10,letterSpacing:2,textTransform:"uppercase",color:K.dim,marginBottom:14,paddingBottom:12,borderBottom:"0.5px solid "+K.bdr}}>{"About the business"}</div>
+        <p style={{fontSize:13,color:K.mid,fontFamily:fb,lineHeight:1.75,margin:0}}>{p.description}</p>
+        <div style={{marginTop:16,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {[{l:"IPO",v:p.ipoDate||"—"},{l:"Founded",v:p.ipoDate?p.ipoDate.substring(0,4):"—"},{l:"Exchange",v:p.exchangeShortName||"—"}].map(function(s2,i){return<div key={i} style={{background:K.bg,borderRadius:_isBm?0:6,padding:"10px 12px"}}>
+            <div style={{fontSize:10,color:K.dim,fontFamily:fm,marginBottom:2}}>{s2.l}</div>
+            <div style={{fontSize:12,fontWeight:600,color:K.txt,fontFamily:fm}}>{s2.v}</div>
+          </div>;})}
+        </div>
+      </div>}
+
+      {/* ── CTA ── */}
+      <div style={{background:K.card,border:"1px solid "+K.bdr,borderRadius:_isBm?0:12,padding:"20px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:3}}>
+            {ownedCo?(ownedCo.status==="portfolio"?"In your portfolio":"On your watchlist"):"Not in your portfolio"}
+          </div>
+          <div style={{fontSize:12,color:K.dim,fontFamily:fm}}>
+            {ownedCo?"Open the dossier to review your thesis, KPIs, and decisions.":"Add to your portfolio or watchlist to start building a thesis."}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {ownedCo
+            ?<button onClick={function(){setSelId(ownedCo.id);setDetailTab("dossier");setPage("dashboard");}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13})}>{"Open dossier →"}</button>
+            :<><button onClick={function(){setModal({type:"add",data:{_ticker:t,_name:p.companyName||t,_status:"portfolio"}});}} style={Object.assign({},S.btnP,{padding:"9px 20px",fontSize:13})}>{"+ Add to portfolio"}</button>
+              <button onClick={function(){setModal({type:"add",data:{_ticker:t,_name:p.companyName||t,_status:"watchlist"}});}} style={Object.assign({},S.btn,{padding:"9px 16px",fontSize:13})}>{"+ Watchlist"}</button></>
+          }
+        </div>
+      </div>
+    </div>;
+  }
+
   function ScreenerPage(){
     var GRN="#10B981";
     // Metric definitions for filters
@@ -15305,7 +15544,10 @@ function ProWelcomeGift(){
             onMouseLeave={function(e){e.currentTarget.style.background=ri%2===0?K.card:"transparent";}}>
             {/* Company */}
             <div style={{padding:"10px 12px",display:"flex",alignItems:"center",gap:8,cursor:"pointer",minWidth:0}}
-              onClick={function(){if(own){var c2=cos.find(function(c){return c.ticker===co.ticker;});if(c2){setSelId(c2.id);setPage("dashboard");}}}}>
+              onClick={function(){
+                if(own){var c2=cos.find(function(c){return c.ticker===co.ticker;});if(c2){setSelId(c2.id);setPage("dashboard");}}
+                else{setCompanyPageTicker(co.ticker);setCompanyPageFrom("screener");setPage("company");}
+              }}>
               <CoLogo domain={co.domain} ticker={co.ticker} size={22}/>
               <div style={{minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:700,color:own?K.txt:K.mid,fontFamily:fm,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{co.ticker}</div>
@@ -18116,7 +18358,7 @@ function ProWelcomeGift(){
         <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:K.amb}}>Your Pro trial has ended</div>
           <div style={{fontSize:12,color:K.mid,marginTop:2}}>Your theses, decisions, and data are safe. Upgrade to keep using data features.</div></div>
         <button onClick={function(){setShowUpgrade(true);setUpgradeCtx("trial-expired")}} style={Object.assign({},S.btnP,{padding:"8px 20px",fontSize:12,whiteSpace:"nowrap"})}>Upgrade to Pro</button></div>}
-      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="learn"?<LearningPage/>:page==="screener"?<ScreenerPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
+      return null}()}<div className="ta-fade" style={isMobile?{padding:"0 4px"}:bm?{padding:"0"}:undefined}>{showProWelcome&&<ProWelcomeGift/>}{page==="home"&&isMobile?<MobileHome/>:page==="log"&&isMobile?<MobileLog/>:page==="read"&&isMobile?<MobileRead/>:page==="hub"?<OwnersHub/>:page==="assets"?<AllAssets/>:page==="ai"?<AIAdvisor/>:page==="library"?<LibraryPage/>:page==="journal"?<JournalPage/>:page==="strategy"?<MyStrategyPage/>:page==="learn"?<LearningPage/>:page==="company"?<CompanyPage ticker={companyPageTicker}/>:page==="screener"?<ScreenerPage/>:page==="watchlist"?<WatchlistPage/>:page==="review"?<OwnersLetterPage/>:page==="timeline"?<PortfolioTimeline/>:page==="analytics"?<PortfolioAnalytics/>:page==="calendar"?<EarningsCalendar/>:page==="dividends"?<DividendHub/>:sel&&subPage==="financials"?<FinancialsPage company={sel}/>:sel&&subPage==="moat"?<MoatTracker company={sel}/>:sel?<DetailView/>:<Dashboard/>}</div></div>
     {isMobile&&<div style={{position:"fixed",bottom:0,left:0,right:0,height:54,background:K.card+"f8",backdropFilter:_isBm?"none":"blur(12px)",borderTop:"1px solid "+K.bdr,display:"flex",alignItems:"stretch",zIndex:100}}>
       {(function(){
        var mItems=[
@@ -18151,13 +18393,20 @@ function ProWelcomeGift(){
       var results=[];
       // 1. Companies — match ticker or name
       var coMatches=cos.filter(function(c){return!q||(c.ticker.toLowerCase().indexOf(q)>=0||c.name.toLowerCase().indexOf(q)>=0)}).slice(0,q?6:5);
-      if(coMatches.length){results.push({group:"Holdings",items:coMatches.map(function(c){
-        var h=gH(c.kpis);var pos2=c.position||{};var isPort=(c.status||"portfolio")==="portfolio";
-        return{id:"co-"+c.id,label:c.ticker,sub:c.name,badge:isPort?null:"watchlist",badgeColor:K.amb,
+      if(coMatches.length){results.push({group:"Holdings & Watchlist",items:coMatches.map(function(c){
+        var pos2=c.position||{};var isPort=(c.status||"portfolio")==="portfolio";
+        return{id:"co-"+c.id,label:c.ticker,sub:c.name,badge:isPort?"Dossier":"Watchlist",badgeColor:isPort?K.acc:K.amb,
           meta:pos2.currentPrice>0?cSym+pos2.currentPrice.toFixed(2):null,
           icon:"overview",color:K.blue,
           action:function(){setCmdOpen(false);setCmdQuery("");setSelId(c.id);setDetailTab("dossier");setPage("dashboard")}}
       })})}
+      if(q&&q.length>=1&&q.length<=8&&/^[A-Za-z0-9.]+$/.test(q)){
+        var alreadyOwned=cos.some(function(c){return c.ticker.toLowerCase()===q.toLowerCase();});
+        if(!alreadyOwned){results.push({group:"Research",items:[{
+          id:"cp-"+q,label:"Research "+q.toUpperCase(),sub:"Open company profile page",
+          badge:"Company Page",badgeColor:"#1D9E75",icon:"search",color:"#1D9E75",
+          action:function(){var tk=q.toUpperCase();setCmdOpen(false);setCmdQuery("");setCompanyPageTicker(tk);setCompanyPageFrom("search");setPage("company");}
+        }]});}}
       // 2. Pages
       var PAGES=[
         {id:"pg-dash",label:"Portfolio",icon:"overview",color:K.blue,action:function(){setCmdOpen(false);setSelId(null);setHubTab("holdings");setPage("dashboard")}},
