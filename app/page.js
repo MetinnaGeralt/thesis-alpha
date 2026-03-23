@@ -1364,7 +1364,7 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
           '<div style="font-size:14px;color:#374151;margin-bottom:16px">Current price <strong>'+cSym+(c.position.currentPrice>=100?c.position.currentPrice.toFixed(0):c.position.currentPrice.toFixed(2))+'</strong> has reached your alert of <strong>'+cSym+c.alertPrice+'</strong>.</div>'+
           (c.fatPitchPrice?'<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#166534">Your fat pitch target is <strong>'+cSym+c.fatPitchPrice+'</strong> — check if this is the entry you’ve been waiting for.</div>':'')+
           '<div style="font-size:13px;color:#6b7280;margin-bottom:20px">Open ThesisAlpha to review your thesis and decide if now is the time.</div>'+
-          '<a href="https://thesisalpha.com" style="display:inline-block;background:#8B5CF6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">Review '+c.ticker+' dossier →</a>'+
+          '<a href="https://thesisalpha.io" style="display:inline-block;background:#8B5CF6;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px">Review '+c.ticker+' dossier →</a>'+
           '</div>';
         var html=emailBase(bodyHtml,c.ticker+' hit your price alert of '+cSym+c.alertPrice);
         try{await authFetch('/api/email',{method:'POST',body:JSON.stringify({to:props.user,subject:subject,html:html})});}catch(e){}
