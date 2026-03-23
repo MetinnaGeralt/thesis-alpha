@@ -739,9 +739,12 @@ function TrackerApp(props){
   // ── Atomic Moat feed ──────────────────────────────────────────────────
   var _am=useState(null),atomicArticles=_am[0],setAtomicArticles=_am[1];
   var _ab=useState(function(){try{var b=localStorage.getItem('ta-alert-banners');return b?JSON.parse(b):[]}catch(e){return[]}}),alertBanners=_ab[0],setAlertBanners=_ab[1];
+  var _dfu=useState(function(){try{var b=localStorage.getItem('ta-decision-followups');return b?JSON.parse(b):[]}catch(e){return[]}}),decisionFollowUps=_dfu[0],setDecisionFollowUps=_dfu[1];
   var _at=useState(null),alertToast=_at[0],setAlertToast=_at[1];
   function showAlertToast(msg){setAlertToast(msg);setTimeout(function(){setAlertToast(null);},5000);}
   function dismissAlertBanner(id){setAlertBanners(function(prev){var next=prev.filter(function(b){return b.id!==id;});try{localStorage.setItem('ta-alert-banners',JSON.stringify(next));}catch(e){}return next;});}
+  function dismissFollowUp(id){setDecisionFollowUps(function(prev){var next=prev.filter(function(b){return b.id!==id;});try{localStorage.setItem('ta-decision-followups',JSON.stringify(next));}catch(e){}return next;});}
+  function scoreFollowUp(id,outcome){cos.forEach(function(c){(c.decisions||[]).forEach(function(d){if(d.id===id){upd(c.id,function(prev){return Object.assign({},prev,{decisions:(prev.decisions||[]).map(function(dec){return dec.id===id?Object.assign({},dec,{outcome:outcome,outcomeDate:new Date().toISOString()}):dec;})});});}});});dismissFollowUp(id);}
   var _amLoaded=useState(false),atomicLoaded=_amLoaded[0],setAtomicLoaded=_amLoaded[1];
   useEffect(function(){
     var cacheKey="ta-atomic-feed";var cacheTTL=3600000;// 1h
@@ -1257,6 +1260,36 @@ if(saved.portfolioView==="list"&&!saved.fundCols)saved.portfolioView="fundamenta
   var sel=cos.find(function(c){return c.id===selId})||null;
   // Close notif panel when navigating
   useEffect(function(){setShowNotifs(false)},[selId,page,subPage]);
+  // Check for decision follow-ups (90 days after BUY/ADD with no outcome scored)
+  useEffect(function(){
+    var FOLLOWUP_DAYS=90;
+    var now=Date.now();
+    var existing=decisionFollowUps.map(function(f){return f.id;});
+    var newFollowUps=[];
+    cos.forEach(function(c){
+      (c.decisions||[]).forEach(function(d){
+        if(!d.id||existing.indexOf(d.id)>=0)return;
+        if(d.action!=="BUY"&&d.action!=="ADD")return;
+        if(d.outcome)return; // already scored
+        if(!d.date)return;
+        var daysAgo=Math.floor((now-new Date(d.date).getTime())/86400000);
+        if(daysAgo<FOLLOWUP_DAYS)return;
+        newFollowUps.push({
+          id:d.id,ticker:c.ticker,companyId:c.id,domain:c.domain,name:c.name,
+          action:d.action,price:d.price||d.priceAtTime||null,
+          date:d.date,reasoning:(d.reasoning||"").substring(0,120),
+          daysAgo:daysAgo,currentPrice:(c.position||{}).currentPrice||0,
+        });
+      });
+    });
+    if(newFollowUps.length>0){
+      setDecisionFollowUps(function(prev){
+        var merged=prev.concat(newFollowUps).slice(-20);
+        try{localStorage.setItem('ta-decision-followups',JSON.stringify(merged));}catch(e){}
+        return merged;
+      });
+    }
+  },[cos.length]);
   var upd=function(id,fn){setCos(function(p){return p.map(function(c){return c.id===id?(typeof fn==="function"?fn(c):Object.assign({},c,fn)):c})})};
   // ── Structured Journal Entry System ──
   function logJournalEntry(companyId,entry){
@@ -16362,6 +16395,52 @@ function ProWelcomeGift(){
           })}
         </div>}
 
+        {/* ── Decision Follow-Up Cards ── */}
+        {decisionFollowUps&&decisionFollowUps.length>0&&<div style={{marginBottom:16}}>
+          {decisionFollowUps.slice(0,3).map(function(fu){
+            var pct=fu.price&&fu.currentPrice?((fu.currentPrice-fu.price)/fu.price*100):null;
+            var pctColor=pct!=null?(pct>=0?K.grn:K.red):K.dim;
+            return<div key={fu.id} style={{background:PURPLE+"08",border:"1px solid "+PURPLE+"30",borderLeft:"4px solid "+PURPLE,
+              borderRadius:_isBm?0:10,padding:"14px 18px",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+                <CoLogo domain={fu.domain} ticker={fu.ticker} size={28}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:10,fontWeight:700,color:PURPLE,fontFamily:fm,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>
+                    {"Decision check-in · "+fu.daysAgo+" days ago"}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:700,color:K.txt,fontFamily:fh,marginBottom:3}}>
+                    {"You bought "+fu.ticker+(fu.price?" @ $"+fu.price:"")+" — was this right?"}
+                  </div>
+                  {fu.reasoning&&<div style={{fontSize:12,color:K.dim,fontFamily:fb,lineHeight:1.5,marginBottom:8,fontStyle:"italic"}}>
+                    {"\""+fu.reasoning+(fu.reasoning.length>=120?"...":"")+"\""}
+                  </div>}
+                  {pct!=null&&<div style={{fontSize:12,color:pctColor,fontFamily:fm,fontWeight:600,marginBottom:8}}>
+                    {"Currently: $"+fu.currentPrice.toFixed(2)+" ("+(pct>=0?"+":"")+pct.toFixed(1)+"% since your decision)"}
+                  </div>}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                    <button onClick={function(){scoreFollowUp(fu.id,"right");showToast("✓ Logged as right call. Learning compounds.",undefined,3000);}}
+                      style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.grn+"40",background:K.grn+"12",color:K.grn,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                      {"✓ Right call"}
+                    </button>
+                    <button onClick={function(){scoreFollowUp(fu.id,"wrong");showToast("Logged. Every wrong call is a lesson — review your reasoning.",undefined,3500);}}
+                      style={{padding:"7px 16px",borderRadius:_isBm?0:7,border:"1px solid "+K.red+"40",background:K.red+"12",color:K.red,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fm}}>
+                      {"✗ Wrong call"}
+                    </button>
+                    <button onClick={function(){setSelId(fu.companyId);setDetailTab("dossier");}}
+                      style={{padding:"7px 14px",borderRadius:_isBm?0:7,border:"1px solid "+K.bdr,background:"transparent",color:K.dim,fontSize:12,cursor:"pointer",fontFamily:fm}}>
+                      {"Review thesis →"}
+                    </button>
+                    <button onClick={function(){dismissFollowUp(fu.id);}}
+                      style={{background:"none",border:"none",color:K.dim,cursor:"pointer",fontSize:20,padding:"2px 6px",lineHeight:1,marginLeft:"auto"}}
+                      onMouseEnter={function(e){e.currentTarget.style.color=K.txt;}}
+                      onMouseLeave={function(e){e.currentTarget.style.color=K.dim;}}>{"×"}</button>
+                  </div>
+                </div>
+              </div>
+            </div>;
+          })}
+        </div>}
+
         {/* ── Header ── */}
         <div style={{padding:isMobile?"20px 0 16px":"32px 0 20px",display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12}}>
           <div>
@@ -16567,11 +16646,26 @@ function ProWelcomeGift(){
                       {!ownersMode&&<div style={{fontSize:9,color:barColor,fontFamily:fm,fontWeight:600,marginTop:2,textAlign:"right"}}>{label}</div>}
                     </div>;
                   })()}
-                  {!c2.ivEstimate&&price>0&&<button
-                    onClick={function(e){e.stopPropagation();setModal({type:"position",id:c2.id});}}
-                    style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginTop:3,display:"block",width:"100%",textAlign:"center"}}>
-                    {"Set IV"}
-                  </button>}
+                  {!c2.ivEstimate&&price>0&&(function(){
+                    var _iv=useState(false),showIv=_iv[0],setShowIv=_iv[1];
+                    var _ivv=useState(""),ivVal=_ivv[0],setIvVal=_ivv[1];
+                    if(showIv)return<div style={{display:"flex",gap:3,marginTop:3}} onClick={function(e){e.stopPropagation();}}>
+                      <input autoFocus value={ivVal} onChange={function(e){setIvVal(e.target.value);}}
+                        onKeyDown={function(e){
+                          if(e.key==="Enter"&&parseFloat(ivVal)>0){upd(c2.id,{ivEstimate:parseFloat(ivVal)});setShowIv(false);}
+                          if(e.key==="Escape"){setShowIv(false);}
+                        }}
+                        placeholder="IV $"
+                        style={{width:60,fontSize:10,padding:"2px 5px",background:K.card,border:"1px solid "+K.acc+"50",borderRadius:_isBm?0:4,color:K.txt,fontFamily:fm,outline:"none"}}/>
+                      <button onMouseDown={function(e){e.preventDefault();if(parseFloat(ivVal)>0){upd(c2.id,{ivEstimate:parseFloat(ivVal)});}setShowIv(false);}}
+                        style={{fontSize:9,padding:"2px 5px",background:K.acc,border:"none",borderRadius:_isBm?0:3,color:"#fff",cursor:"pointer",fontFamily:fm}}>{"✓"}</button>
+                    </div>;
+                    return<button
+                      onClick={function(e){e.stopPropagation();setShowIv(true);}}
+                      style={{fontSize:9,color:K.dim,background:"none",border:"1px dashed "+K.bdr,borderRadius:3,padding:"1px 6px",cursor:"pointer",fontFamily:fm,marginTop:3,display:"block",width:"100%",textAlign:"center"}}>
+                      {"Set IV"}
+                    </button>;
+                  })()}
                 </div>
                 {/* Chevron */}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={K.dim} strokeWidth="2">
