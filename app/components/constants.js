@@ -430,7 +430,6 @@ var GLOSSARY=[
    threshold:"Owner earnings significantly above reported net income typically indicates asset-light business model. Significantly below suggests heavy reinvestment requirement.",
    source:"Warren Buffett, Berkshire Hathaway Annual Letter, 1986"},
 
-  {id:"ev_ebitda",term:"EV/EBITDA",cat:"Valuation"},
 
   {id:"moat_g",term:"Economic Moat",cat:"Concepts",
    definition:"A structural competitive advantage that enables a business to earn returns on invested capital above its cost of capital for an extended period, despite competitive pressure. Morningstar categorises moat sources as: intangible assets (brands, patents, regulatory licences), cost advantages, switching costs, network effects, and efficient scale. Wide moat businesses are expected to maintain competitive advantage for 20+ years; narrow moat for 10+ years.",
