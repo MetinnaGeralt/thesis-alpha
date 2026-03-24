@@ -17015,22 +17015,58 @@ function ProWelcomeGift(){
         {mrMarket&&<div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",
           background:mrMarket.color+"07",border:"1px solid "+mrMarket.color+"20",
           borderRadius:_isBm?0:12,marginBottom:16}}>
-          <div style={{flexShrink:0,width:52,height:52}}>
-            <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-              <circle cx="26" cy="26" r="25" fill={mrMarket.color+"10"} stroke={mrMarket.color+"25"} strokeWidth="1"/>
-              <ellipse cx="26" cy="16" rx="11" ry="2.5" fill={mrMarket.color+"50"}/>
-              <rect x="19" y="6" width="14" height="11" rx="2" fill={mrMarket.color+"40"} stroke={mrMarket.color+"80"} strokeWidth="1.2"/>
-              <rect x="19" y="13" width="14" height="2.5" fill={mrMarket.color+"70"}/>
-              <circle cx="26" cy="30" r="10"
-                fill={mrMarket.mood==="extreme_fear"?"#FEE2E2":mrMarket.mood==="fear"?"#FEF3C7":mrMarket.mood==="neutral"?"#F3F4F6":mrMarket.mood==="greed"?"#DCFCE7":"#D1FAE5"}
-                stroke={mrMarket.color+"40"} strokeWidth="1"/>
-              {mrMarket.mood==="extreme_fear"&&<><ellipse cx="23" cy="28.5" rx="1.8" ry="2.2" fill="#374151"/><ellipse cx="29" cy="28.5" rx="1.8" ry="2.2" fill="#374151"/><path d="M21 25.5 L25 27" stroke="#EF4444" strokeWidth="1.2" strokeLinecap="round"/><path d="M27 27 L31 25.5" stroke="#EF4444" strokeWidth="1.2" strokeLinecap="round"/><path d="M23 34 Q26 30.5 29 34" stroke="#EF4444" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
-              {mrMarket.mood==="fear"&&<><circle cx="23" cy="29" r="1.6" fill="#374151"/><circle cx="29" cy="29" r="1.6" fill="#374151"/><path d="M22 26.5 L25 27.5" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round"/><path d="M27 27.5 L30 26.5" stroke="#F59E0B" strokeWidth="1.2" strokeLinecap="round"/><path d="M23 33.5 Q26 31 29 33.5" stroke="#F59E0B" strokeWidth="1.3" fill="none" strokeLinecap="round"/></>}
-              {mrMarket.mood==="neutral"&&<><circle cx="23" cy="29" r="1.5" fill="#6B7280"/><circle cx="29" cy="29" r="1.5" fill="#6B7280"/><path d="M23.5 33 L28.5 33" stroke="#9CA3AF" strokeWidth="1.3" strokeLinecap="round"/></>}
-              {mrMarket.mood==="greed"&&<><circle cx="23" cy="28.5" r="1.6" fill="#374151"/><circle cx="29" cy="28.5" r="1.6" fill="#374151"/><path d="M21.5 26 L24.5 27" stroke="#10B981" strokeWidth="1.2" strokeLinecap="round"/><path d="M27.5 27 L30.5 26" stroke="#10B981" strokeWidth="1.2" strokeLinecap="round"/><path d="M22 32 Q26 35.5 30 32" stroke="#10B981" strokeWidth="1.4" fill="none" strokeLinecap="round"/></>}
-              {mrMarket.mood==="extreme_greed"&&<><path d="M21.5 27.5 Q23 26 24.5 27.5" stroke="#374151" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M27.5 27.5 Q29 26 30.5 27.5" stroke="#374151" strokeWidth="1.5" fill="none" strokeLinecap="round"/><path d="M21.5 31.5 Q26 36 30.5 31.5" stroke="#10B981" strokeWidth="1.6" fill="none" strokeLinecap="round"/></>}
-              <path d="M24.5 40 L26 43 L27.5 40 L26 38.5 Z" fill={mrMarket.color+"60"}/>
-              <path d="M19 40 Q22 38 24.5 40 L26 38.5 L27.5 40 Q30 38 33 40" stroke={mrMarket.color+"50"} strokeWidth="1" fill="none"/>
+          <div style={{flexShrink:0,width:56,height:56}}>
+            <svg width="56" height="56" viewBox="0 0 56 72" fill="none">
+              {/* Aura circle — centred on face */}
+              <circle cx="28" cy="42" r="26" fill={mrMarket.color+"0D"} stroke={mrMarket.color+"25"} strokeWidth="1"/>
+              {/* ── TOP HAT ── tall crown + wide brim */}
+              {/* Brim */}
+              <ellipse cx="28" cy="20" rx="10" ry="2.2" fill={mrMarket.color+"80"} stroke={mrMarket.color} strokeWidth="0.8"/>
+              {/* Crown — tall rectangle */}
+              <rect x="21" y="5" width="14" height="16" rx="2" fill={mrMarket.color+"60"} stroke={mrMarket.color} strokeWidth="1"/>
+              {/* Hat band */}
+              <rect x="21" y="16.5" width="14" height="2.5" fill={mrMarket.color} opacity="0.5"/>
+              {/* ── FACE ── */}
+              <circle cx="28" cy="36" r="12"
+                fill={mrMarket.mood==="extreme_fear"?"#FEE2E2":mrMarket.mood==="fear"?"#FEF3C7":mrMarket.mood==="neutral"?"#F1F5F9":mrMarket.mood==="greed"?"#DCFCE7":"#D1FAE5"}
+                stroke={mrMarket.color+"50"} strokeWidth="1"/>
+              {/* Eyes + brows + mouth per mood */}
+              {mrMarket.mood==="extreme_fear"&&<>
+                <ellipse cx="24" cy="34.5" rx="1.8" ry="2.2" fill="#1F2937"/>
+                <ellipse cx="32" cy="34.5" rx="1.8" ry="2.2" fill="#1F2937"/>
+                <path d="M21.5 30 L25.5 31.5" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M30.5 31.5 L34.5 30" stroke="#EF4444" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M24 41 Q28 37 32 41" stroke="#EF4444" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              </>}
+              {mrMarket.mood==="fear"&&<>
+                <circle cx="24" cy="35" r="1.7" fill="#374151"/>
+                <circle cx="32" cy="35" r="1.7" fill="#374151"/>
+                <path d="M22 31 L25.5 32" stroke="#F59E0B" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M30.5 32 L34 31" stroke="#F59E0B" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M24.5 40 Q28 37.5 31.5 40" stroke="#F59E0B" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+              </>}
+              {mrMarket.mood==="neutral"&&<>
+                <circle cx="24" cy="35" r="1.6" fill="#6B7280"/>
+                <circle cx="32" cy="35" r="1.6" fill="#6B7280"/>
+                <path d="M24.5 40 L31.5 40" stroke="#9CA3AF" strokeWidth="1.4" strokeLinecap="round"/>
+              </>}
+              {mrMarket.mood==="greed"&&<>
+                <circle cx="24" cy="34.5" r="1.7" fill="#374151"/>
+                <circle cx="32" cy="34.5" r="1.7" fill="#374151"/>
+                <path d="M22 31.5 L25.5 30" stroke="#10B981" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M30.5 30 L34 31.5" stroke="#10B981" strokeWidth="1.3" strokeLinecap="round"/>
+                <path d="M24 39 Q28 43 32 39" stroke="#10B981" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              </>}
+              {mrMarket.mood==="extreme_greed"&&<>
+                <path d="M22 33.5 Q24 31.5 26 33.5" stroke="#1F2937" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                <path d="M30 33.5 Q32 31.5 34 33.5" stroke="#1F2937" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                <path d="M22 33.5 Q24 34.5 26 33.5" fill="#374151"/>
+                <path d="M30 33.5 Q32 34.5 34 33.5" fill="#374151"/>
+                <path d="M23.5 39 Q28 44.5 32.5 39" stroke="#10B981" strokeWidth="1.7" fill="none" strokeLinecap="round"/>
+              </>}
+              {/* ── COLLAR + TIE ── visible below face */}
+              <path d="M20 52 Q23 49 26 51 L28 49 L30 51 Q33 49 36 52" stroke={mrMarket.color} strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+              <path d="M26 51 L28 55 L30 51 L28 49 Z" fill={mrMarket.color+"80"}/>
             </svg>
           </div>
           <div style={{flex:1,minWidth:0}}>
