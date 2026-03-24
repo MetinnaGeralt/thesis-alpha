@@ -17021,11 +17021,11 @@ function ProWelcomeGift(){
               <circle cx="28" cy="42" r="26" fill={mrMarket.color+"0D"} stroke={mrMarket.color+"25"} strokeWidth="1"/>
               {/* ── TOP HAT ── tall crown + wide brim */}
               {/* Brim */}
-              <ellipse cx="28" cy="20" rx="10" ry="2.2" fill={mrMarket.color+"80"} stroke={mrMarket.color} strokeWidth="0.8"/>
+              <ellipse cx="28" cy="23" rx="10" ry="2.2" fill={mrMarket.color+"80"} stroke={mrMarket.color} strokeWidth="0.8"/>
               {/* Crown — tall rectangle */}
-              <rect x="21" y="5" width="14" height="16" rx="2" fill={mrMarket.color+"60"} stroke={mrMarket.color} strokeWidth="1"/>
+              <rect x="21" y="8" width="14" height="16" rx="2" fill={mrMarket.color+"60"} stroke={mrMarket.color} strokeWidth="1"/>
               {/* Hat band */}
-              <rect x="21" y="16.5" width="14" height="2.5" fill={mrMarket.color} opacity="0.5"/>
+              <rect x="21" y="19.5" width="14" height="2.5" fill={mrMarket.color} opacity="0.5"/>
               {/* ── FACE ── */}
               <circle cx="28" cy="36" r="12"
                 fill={mrMarket.mood==="extreme_fear"?"#FEE2E2":mrMarket.mood==="fear"?"#FEF3C7":mrMarket.mood==="neutral"?"#F1F5F9":mrMarket.mood==="greed"?"#DCFCE7":"#D1FAE5"}
